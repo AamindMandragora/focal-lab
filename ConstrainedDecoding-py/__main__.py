@@ -1,10 +1,4 @@
-# ALTERNATE PROJECT
-# trying to use llm for symbolic regression (trad ML): have some data, fit polynomial to data
-# can't enforce constraints on polynomials, just write it as a program then optimize
-# when you have a constraint (output > 0) = dafny postcondition, then the regression becomes a dafny program
-
-# WHAT TO DO NOW
-# start with gsm symbolic grammar from crane/dingo paper, test against database, also folio
+# start with gsm symbolic grammar from crane/dingo paper, test against gsm-symbolic, also folio
 # https://github.com/apple/ml-gsm-symbolic
 # write autosynthesized constrained decoder that can beat CRANE
 # figure out which models are better, try QWEN-3 or Llama
@@ -18,8 +12,8 @@ from ConstrainedDecoding import default__
 import os
 import json
 
-BENCH_PATH = "./ml-gsm-symbolic/generated_data/GSM_symbolic.jsonl"
-OUT_DIR = "ml-gsm-symbolic-outputs"
+BENCH_PATH = "./datasets/ml-gsm-symbolic/generated_data/GSM_symbolic.jsonl"
+OUT_DIR = "./outputs/ml-gsm-symbolic-outputs"
 MAX_STEPS = 200
 
 os.makedirs(OUT_DIR, exist_ok=True)

@@ -21,7 +21,7 @@ from typing import Optional, List, Union
 # Define the specific pre-trained model identifier to load
 MODEL_NAME = "Qwen/Qwen2-Math-72B"
 # Define the filename of the grammar file used for parsing
-GRAMMAR_FILE = "gsm.lark"
+GRAMMAR_FILE = "./grammars/gsm.lark"
 # Specify the device to run the model on (GPU)
 DEVICE = "cuda"
 # Set the maximum number of new tokens to generate in one step
