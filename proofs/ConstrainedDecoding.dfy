@@ -125,4 +125,85 @@ module ConstrainedDecoding {
             }
         }
     }
+
+    // ---------------------------------------------------------------------
+    // CSD-parameterized constrained decoding (window-local)
+    //
+    // This variant models a constrained decoder whose "allowed next tokens" and
+    // "choice of token" are provided by an external, compositional CSD policy.
+    // ---------------------------------------------------------------------
+
+    // Abstract handle for a constrained-decoding strategy component.
+    // (In the whole-loop model in `proofs/CSD.dfy`, this corresponds to the
+    // constrained fallback strategy used after retries.)
+    type Strategy = int
+    type StrategyState = int
+
+    // CSD-provided allowed-next set for a constrained-window prefix.
+    //
+    // Contracts are chosen so that we can reuse IsCorrectDecoder:
+    // - any allowed token must be a grammar-allowed next token, and
+    // - if a prefix is valid and incomplete, the CSD must allow progress.
+    function {:extern} {:axiom} Strategy_AllowedNext(s: Strategy, st: StrategyState, prefix: Prefix): set<Token>
+        ensures forall t :: t in Strategy_AllowedNext(s, st, prefix) ==> t in Parser_AllowedNext(prefix)
+        ensures Parser_ValidPrefix(prefix) ==> (Parser_IsComplete(prefix) || |Strategy_AllowedNext(s, st, prefix)| > 0)
+
+    function {:extern} {:axiom} Strategy_ChooseToken(s: Strategy, st: StrategyState, prefix: Prefix): Token
+        requires |Strategy_AllowedNext(s, st, prefix)| > 0
+        ensures Strategy_ChooseToken(s, st, prefix) in Strategy_AllowedNext(s, st, prefix)
+
+    function Strategy_ConstrainedDecode(s: Strategy, st: StrategyState, prefix: Prefix, maxSteps: nat): (result: Prefix)
+        requires maxSteps >= 0
+        requires Parser_ValidPrefix(prefix)
+        decreases maxSteps
+        ensures Parser_ValidPrefix(result)
+        ensures Parser_IsComplete(result) || |result| == |prefix| + maxSteps
+    {
+        if Parser_IsComplete(prefix) then
+            prefix
+        else if maxSteps == 0 then
+            prefix
+        else
+            var allowed_tokens := Strategy_AllowedNext(s, st, prefix);
+            if |allowed_tokens| == 0 then
+                // By the CSD_AllowedNext contract, this implies the prefix is complete.
+                prefix
+            else
+                var generated_token := Strategy_ChooseToken(s, st, prefix);
+                Strategy_ConstrainedDecode(s, st, prefix + [generated_token], maxSteps - 1)
+    }
+
+    lemma Strategy_ConstrainedDecode_Correct(s: Strategy, st: StrategyState, prefix: Prefix, maxSteps: nat)
+        requires Parser_ValidPrefix(prefix)
+        decreases maxSteps
+        ensures IsCorrectDecoder(prefix, Strategy_ConstrainedDecode(s, st, prefix, maxSteps), maxSteps)
+    {
+        if Parser_IsComplete(prefix) {
+            assert Parser_ValidPrefix(prefix);
+            assert IsCorrectDecoder(prefix, prefix, maxSteps);
+        } else if maxSteps == 0 {
+            assert Parser_ValidPrefix(prefix);
+            assert |Strategy_ConstrainedDecode(s, st, prefix, maxSteps)| == |prefix|;
+            assert IsCorrectDecoder(prefix, prefix, 0);
+        } else {
+            var allowed_tokens := Strategy_AllowedNext(s, st, prefix);
+            if |allowed_tokens| == 0 {
+                // From Parser_ValidPrefix(prefix) and the CSD_AllowedNext contract:
+                assert Parser_IsComplete(prefix);
+                assert IsCorrectDecoder(prefix, prefix, 0);
+            } else {
+                var generated_token := Strategy_ChooseToken(s, st, prefix);
+                assert generated_token in allowed_tokens;
+                assert generated_token in Parser_AllowedNext(prefix);
+                assert Parser_ValidPrefix(prefix + [generated_token]);
+                var subresult := Strategy_ConstrainedDecode(s, st, prefix + [generated_token], maxSteps - 1);
+                assert |subresult| >= |prefix| + 1;
+                assert prefix == subresult[..|prefix|];
+                assert subresult[|prefix|] == generated_token;
+                assert generated_token in Parser_AllowedNext(subresult[..|prefix|]);
+                assert (forall k :: |prefix| <= k < |subresult| ==> subresult[k] in Parser_AllowedNext(subresult[..k]));
+                Strategy_ConstrainedDecode_Correct(s, st, prefix + [generated_token], maxSteps - 1);
+            }
+        }
+    }
 }

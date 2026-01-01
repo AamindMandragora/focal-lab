@@ -137,3 +137,10 @@ class SamplingStrategy_Nucleus(SamplingStrategy, NamedTuple('Nucleus', [])):
     def __hash__(self) -> int:
         return super().__hash__()
 
+
+# -----------------------------
+# Extern hook wiring
+# -----------------------------
+# `SampleWithStrategy` is declared `{:extern}` in Dafny; we provide it in `module_.py`.
+default__.SampleWithStrategy = staticmethod(module_.SampleWithStrategy)
+
