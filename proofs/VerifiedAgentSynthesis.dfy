@@ -1,196 +1,161 @@
-module CRANE {
-  
-  // we alias some types here for readability purposes
+module VerifiedDecoderAgent {
   type Token = string
   type Prefix = seq<Token>
-  type Logits = map<Token, real>
+  type Id = nat
+  type Logit = real
 
-  // standard sampling strategies that can't be represented easily in dafny due to their probabilistic natures, so we'll need to have them implemented in python
-  datatype SamplingStrategy =
-    | ArgMax
-    | Temperature
-    | TopK
-    | Nucleus
+  class LM {
+    const Tokens: seq<Token>
+    const Ids: seq<Id>
+    var Logits: seq<Logit>
 
-  // these three functions will all use Lark to determine if the current string is valid/complete under the grammar and what tokens the LLM is allowed to generate, so implementations not necessary (this also means we don't have to represent a grammar in dafny, thank god)
-  function {:extern} {:axiom} Parser_ValidPrefix(prefix: Prefix): bool
-  function {:extern} {:axiom} Parser_IsComplete(prefix: Prefix): bool
-    ensures Parser_IsComplete(prefix) ==> Parser_ValidPrefix(prefix)
-  function {:extern} {:axiom} Parser_AllowedNext(prefix: Prefix): set<Token>
-    ensures forall t :: t in Parser_AllowedNext(prefix) ==> Parser_ValidPrefix(prefix + [t])
-    ensures Parser_ValidPrefix(prefix) ==> (Parser_IsComplete(prefix) || |Parser_AllowedNext(prefix)| > 0)
+    predicate ValidTokensIdsLogits() reads this
+    {
+      ((|Tokens| == |Ids|) && (|Ids| == |Logits|) && (|Ids| > 0 && Ids[0] == 0)) &&
+      (forall i, j :: 0 <= i < |Tokens| && 0 <= j < |Tokens| && i != j ==> Tokens[i] != Tokens[j]) &&
+      (forall token: Token :: token in Tokens ==> (exists i :: 0 <= i < |Ids| && Tokens[i] == token)) &&
+      (forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) && 
+      (forall i :: 0 <= i < |Logits| ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)
+    }
 
-  // this represents the LLM taking a string and giving logits for each possible next token
-  function {:extern} {:axiom} GetLogits(prefix: Prefix): Logits
-    ensures forall t :: t is Token ==> t in GetLogits(prefix)
+    constructor {:axiom} ()
+      ensures ValidTokensIdsLogits()
 
-  // checks if every valid next token has a corresponding logit
-  predicate ValidLogitsForPrefix(logits: Logits, prefix: Prefix)
-  {
-    forall t :: t in Parser_AllowedNext(prefix) ==> t in logits
-  }
+    function IdToToken(id: Id) : (token: Token)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires id in Ids
+      ensures token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      Tokens[id]
+    }
 
-  // this is the part that constrains according to the grammar (checks for all valid possible tokens, their raw scores stay the same, and all others are zeroed out)
-  function {:extern} {:axiom} MaskLogits(prefix: Prefix, logits: Logits): Logits
-    requires forall t :: t is Token ==> t in logits
-    ensures forall t :: t in logits ==> t in MaskLogits(prefix, logits)
-    ensures forall t :: t in Parser_AllowedNext(prefix) ==> MaskLogits(prefix, logits)[t] == logits[t]
-    ensures forall t :: t !in Parser_AllowedNext(prefix) ==> MaskLogits(prefix, logits)[t] == 0.0
+    function TokenToId(token: Token) : (id: Id)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires token in Tokens
+      ensures id in Ids
+      ensures ValidTokensIdsLogits()
+    {
+      TokenToIdRecursive(token, Tokens)
+    }
 
-  // the actual sampling function, QWEN should replace the strategy here with one of the above
-  function {:extern} {:axiom} SampleWithStrategy(
-    logits: Logits,
-    candidates: set<Token>,
-    strategy: SamplingStrategy
-  ): Token
-    requires |candidates| > 0
-    requires forall t :: t in candidates ==> t in logits
-    ensures SampleWithStrategy(logits, candidates, strategy) in candidates
+    function TokenToIdRecursive(token: Token, tokens: seq<Token>) : (id: Id)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires forall t: Token :: t in tokens ==> t in Tokens
+      requires token in tokens
+      requires 0 < |tokens| <= |Ids|
+      ensures id in Ids
+      ensures 0 <= TokenToIdRecursive(token, tokens) < |tokens|
+      ensures ValidTokensIdsLogits()
+    {
+      if tokens[0] == token then 0
+      else 1 + TokenToIdRecursive(token, tokens[1..])
+    }
 
-  // the part of the CRANE algorithm that chooses the next token
-  function CRANE_ChooseToken(
-    prefix: Prefix,
-    constrained: bool,
-    strategy: SamplingStrategy
-  ): Token
-    requires Parser_ValidPrefix(prefix)
-    requires ValidLogitsForPrefix(GetLogits(prefix), prefix)
-    requires |Parser_AllowedNext(prefix)| > 0
-    ensures CRANE_ChooseToken(prefix, constrained, strategy) in Parser_AllowedNext(prefix)
-  {
-    if constrained then
-      SampleWithStrategy(
-        MaskLogits(prefix, GetLogits(prefix)),
-        Parser_AllowedNext(prefix),
-        strategy
-      )
-    else
-      SampleWithStrategy(
-        GetLogits(prefix),
-        Parser_AllowedNext(prefix),
-        strategy
-      )
-  }
+    function IdToLogit(id: Id) : (logit: Logit)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires id in Ids
+      ensures logit in Logits
+      ensures ValidTokensIdsLogits()
+    {
+      Logits[id]
+    }
 
-  // hacky way to get the boolean for being inside/outside constrained decoding (stateless functions)
-  function IsConstrained(currGen: seq<Token>, S1: Token): bool {
-    S1 in currGen
-  }
+    function TokenToLogit(token: Token): (logit: Logit)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      IdToLogit(TokenToId(token))
+    }
 
-  // another hacky way to advance the currGen pointer (stateless functions pt 2)
-  function AdvancePointer(
-    constrained: bool,
-    newTokens: seq<Token>,
-    S2: Token,
-    pointer: int
-  ): int
-    requires |newTokens| > 0
-  {
-    if constrained && newTokens[|newTokens| - 1] == S2 then
-      |newTokens|
-    else
-      pointer
-  }
+    function TokensToLogits(tokens: seq<Token>): (logits: seq<Logit>)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires |tokens| > 0
+      requires forall token: Token :: token in tokens ==> token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      if (|tokens| == 1) then [TokenToLogit(tokens[0])]
+      else [TokenToLogit(tokens[0])] + TokensToLogits(tokens[1..])
+    }
 
-  // the entire CRANE decoding algorithm (slightly modified)
-  function CRANE_Decode(
-    tokens: Prefix,
-    maxSteps: nat,
-    S1: Token,
-    S2: Token,
-    pointer: int,
-    strategy: SamplingStrategy
-  ): Prefix
-    requires Parser_ValidPrefix(tokens)
-    requires 0 <= pointer <= |tokens|
-    decreases maxSteps
-    ensures Parser_ValidPrefix(
-      CRANE_Decode(tokens, maxSteps, S1, S2, pointer, strategy)
-    )
-  {
-    if Parser_IsComplete(tokens) then
-      tokens
-    else if maxSteps == 0 then
-      tokens
-    else
-      var currGen := tokens[pointer..];
-      var constrained := IsConstrained(currGen, S1);
-      if |Parser_AllowedNext(tokens)| == 0 then
-        tokens
-      else
-        var tok := CRANE_ChooseToken(tokens, constrained, strategy);
-        var newTokens := tokens + [tok];
-        var pointer := AdvancePointer(constrained, newTokens, S2, pointer);
-        if tok == "EOS" then
-          newTokens
-        else
-          CRANE_Decode(newTokens, maxSteps - 1, S1, S2, pointer, strategy)
-  }
+    function IdsToLogits(ids: seq<Id>): (logits: seq<Logit>)
+      reads this
+      requires ValidTokensIdsLogits()
+      requires |ids| > 0
+      requires forall id: Id :: id in ids ==> id in Ids
+      ensures ValidTokensIdsLogits()
+    {
+      if (|ids| == 1) then [IdToLogit(ids[0])]
+      else [IdToLogit(ids[0])] + IdsToLogits(ids[1..])
+    }
 
-  // a group of assertions that must hold for the above code
-  predicate IsCorrectCRANEDecoder(
-    prefix: Prefix,
-    result: Prefix,
-    maxSteps: nat
-  )
-  {
-    Parser_ValidPrefix(result)
-    && |result| >= |prefix| > 0
-    && (Parser_IsComplete(result)
-        || |result| == |prefix| + maxSteps
-        || result[|result| - 1] == "EOS")
-    && prefix == result[..|prefix|]
-    && (forall k ::
-        |prefix| <= k < |result|
-        ==> result[k] in Parser_AllowedNext(result[..k]))
-  }
+    method MaskToken(token: Token)
+      modifies this
+      requires ValidTokensIdsLogits()
+      requires token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      var id := TokenToId(token);
+      Logits := Logits[..id] + [0.0] + Logits[id+1..];
+    }
 
-  // the induction proof proving the above code follows the specified contracts and is valid
-  lemma CRANE_Decode_Correct(
-    prefix: Prefix,
-    maxSteps: nat,
-    S1: Token,
-    S2: Token,
-    strategy: SamplingStrategy,
-    pointer: int := 0
-  )
-    requires Parser_ValidPrefix(prefix)
-    requires ValidLogitsForPrefix(GetLogits(prefix), prefix)
-    requires |prefix| > 0
-    requires 0 <= pointer <= |prefix|
-    decreases maxSteps
-    ensures IsCorrectCRANEDecoder(
-      prefix,
-      CRANE_Decode(prefix, maxSteps, S1, S2, pointer, strategy),
-      maxSteps
-    )
-  {
-    if Parser_IsComplete(prefix) {
-      assert Parser_ValidPrefix(prefix);
-    } else if maxSteps == 0 {
-      assert |CRANE_Decode(prefix, 0, S1, S2, pointer, strategy)| == |prefix|;
-    } else if |Parser_AllowedNext(prefix)| == 0 {
-      assert Parser_IsComplete(prefix);
-    } else {
-      var currGen := prefix[pointer..];
-      var constrained := IsConstrained(currGen, S1);
-      var tok := CRANE_ChooseToken(prefix, constrained, strategy);
-      assert tok in Parser_AllowedNext(prefix);
-      assert Parser_ValidPrefix(prefix + [tok]);
-      var newTokens := prefix + [tok];
-      var pointer := AdvancePointer(constrained, newTokens, S2, pointer);
-      if tok == "EOS" {
-        assert Parser_ValidPrefix(prefix + [tok]);
-      } else {
-        CRANE_Decode_Correct(
-          prefix + [tok],
-          maxSteps - 1,
-          S1,
-          S2,
-          strategy,
-          pointer
-        );
+    method MaskTokens(tokens: seq<Token>)
+      modifies this
+      requires ValidTokensIdsLogits()
+      requires forall token: Token :: token in tokens ==> token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      var N := |tokens|;
+      var i := 0;
+      while (i < N)
+        invariant ValidTokensIdsLogits()
+        decreases N - i
+      {
+        MaskToken(tokens[i]);
+        i := i + 1;
       }
     }
+
+    method {:extern} {:axiom} GenerateLogits(input: Prefix) modifies this
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+
+    method {:extern} {:axiom} ChooseNextToken(input: Prefix) returns (token: Token)
+      requires ValidTokensIdsLogits()
+      ensures token in Tokens
+      ensures ValidTokensIdsLogits()
   }
+
+  class Parser {
+    predicate {:extern} {:axiom} IsValidPrefix(prefix: Prefix)
+      ensures forall k: nat :: 0 <= k < |prefix| - 1 ==> IsValidPrefix(prefix[k..])
+
+    predicate {:extern} {:axiom} IsCompletePrefix(prefix: Prefix)
+      ensures IsValidPrefix(prefix)
+
+    function {:extern} {:axiom} ValidNextTokens(prefix: Prefix): seq<Token>
+      requires IsValidPrefix(prefix)
+      ensures forall t :: t in ValidNextTokens(prefix) ==> IsValidPrefix(prefix + [t])
+      ensures IsValidPrefix(prefix) ==> (IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0)
+  }
+
+  method {:extern} {:axiom} ConstrainedDecode(lm: LM, parser: Parser, prefix: Prefix, maxSteps: nat) returns (result: Prefix)
+    requires lm.ValidTokensIdsLogits()
+    requires parser.IsValidPrefix(prefix)
+    requires maxSteps >= 0
+    requires |prefix| > 0
+    ensures parser.IsValidPrefix(result)
+    ensures |result| >= |prefix|
+    ensures prefix == result[..|prefix|]
+    ensures |result| <= |prefix| + maxSteps
+    ensures parser.IsCompletePrefix(result) || |result| == |prefix| + maxSteps || (result[|result| - 1] in lm.Tokens && lm.TokenToLogit(result[|result| - 1]) != 0.0)
+    ensures forall k :: |prefix| <= k < |result| ==> (parser.IsValidPrefix(result[..k])) && (result[k] in parser.ValidNextTokens(result[..k]))
+    ensures lm.ValidTokensIdsLogits()
 }
