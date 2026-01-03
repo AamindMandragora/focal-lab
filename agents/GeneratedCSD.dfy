@@ -11,7 +11,7 @@
 //
 // =============================================================================
 
-include "../VerifiedAgentSynthesis.dfy"
+include "../proofs/VerifiedAgentSynthesis.dfy"
 
 module GeneratedCSD {
   import opened VerifiedDecoderAgent
