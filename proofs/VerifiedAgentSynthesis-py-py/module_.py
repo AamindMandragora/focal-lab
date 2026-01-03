@@ -512,8 +512,15 @@ def _filter_tokens_by_terminals(allTokens: Set[str], expected_terminals: Set[str
     return result
 
 
-def ChooseToken(c, parser, prefix, allTokens):
+def ChooseToken(lm, c, parser, prefix, allTokens):
     """Select a token from the allowed set using LLM probabilities.
+    
+    Args:
+        lm: LM instance (provides vocabulary context)
+        c: TokenConstraint
+        parser: Parser instance
+        prefix: Current token sequence
+        allTokens: Set of all possible tokens
     
     Uses the LLM to rank tokens and picks the highest-probability
     token from the allowed set.
@@ -634,8 +641,17 @@ def CheckSemantic(pred, output):
     return True
 
 
-def CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps):
-    """Complete a valid prefix under a token constraint."""
+def CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps):
+    """Complete a valid prefix under a token constraint using LM.
+    
+    Args:
+        lm: LM instance for token selection
+        parser: Parser instance for grammar validation
+        prefix: Starting token sequence
+        constraint: TokenConstraint to apply
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum tokens to generate
+    """
     result = list(prefix)
     steps = 0
     
@@ -657,15 +673,24 @@ def CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps):
             except:
                 pass
         
-        next_token = ChooseToken(constraint, parser, _dafny.Seq(result), allTokens)
+        next_token = ChooseToken(lm, constraint, parser, _dafny.Seq(result), allTokens)
         result.append(next_token)
         steps += 1
     
     return _dafny.Seq(result)
 
 
-def ApplySeqOp(op, parser, output, allTokens, maxSteps):
-    """Apply a sequence operation."""
+def ApplySeqOp(lm, op, parser, output, allTokens, maxSteps):
+    """Apply a sequence operation using LM for completion.
+    
+    Args:
+        lm: LM instance for token generation
+        op: SeqOperation to apply
+        parser: Parser instance
+        output: Current output sequence
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum steps for completion
+    """
     import VerifiedDecoderAgent as VDA
     
     if op.is_Identity:
@@ -674,7 +699,7 @@ def ApplySeqOp(op, parser, output, allTokens, maxSteps):
         return ApplyRepair(op.rules, output)
     elif op.is_PrefixCompleteOp:
         if parser is not None and hasattr(parser, 'IsValidPrefix') and parser.IsValidPrefix(output):
-            return CompletePrefixConstrained(parser, output, op.constraint, allTokens, maxSteps)
+            return CompletePrefixConstrained(lm, parser, output, op.constraint, allTokens, maxSteps)
         return output
     elif op.is_ValidateOp:
         return output
@@ -722,8 +747,17 @@ def CheckOutput(check, parser, output):
 # Attempt execution
 # =============================================================================
 
-def RunAttempt(attempt, parser, prompt, allTokens, maxSteps):
-    """Execute a single generation attempt."""
+def RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps):
+    """Execute a single generation attempt using LM.
+    
+    Args:
+        lm: LM instance for generation
+        attempt: Attempt to execute
+        parser: Parser instance
+        prompt: Starting prompt sequence
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum tokens to generate
+    """
     import VerifiedDecoderAgent as VDA
     
     if attempt.is_Unconstrained:
@@ -740,15 +774,15 @@ def RunAttempt(attempt, parser, prompt, allTokens, maxSteps):
         return prompt
     
     elif attempt.is_ConstrainedAttempt:
-        return CompletePrefixConstrained(parser, prompt, attempt.constraint, allTokens, maxSteps)
+        return CompletePrefixConstrained(lm, parser, prompt, attempt.constraint, allTokens, maxSteps)
     
     elif attempt.is_WithRepair:
-        base_output = RunAttempt(attempt.base, parser, prompt, allTokens, maxSteps)
+        base_output = RunAttempt(lm, attempt.base, parser, prompt, allTokens, maxSteps)
         return ApplyRepair(attempt.rules, base_output)
     
     elif attempt.is_WithSeqOp:
-        base_output = RunAttempt(attempt.base, parser, prompt, allTokens, maxSteps)
-        return ApplySeqOp(attempt.op, parser, base_output, allTokens, maxSteps)
+        base_output = RunAttempt(lm, attempt.base, parser, prompt, allTokens, maxSteps)
+        return ApplySeqOp(lm, attempt.op, parser, base_output, allTokens, maxSteps)
     
     return prompt
 
@@ -757,53 +791,74 @@ def RunAttempt(attempt, parser, prompt, allTokens, maxSteps):
 # Strategy execution
 # =============================================================================
 
-def RunStrategy(strategy, parser, prompt, allTokens, maxSteps):
-    """Execute a CSD strategy."""
+def RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps):
+    """Execute a CSD strategy using LM.
+    
+    Args:
+        lm: LM instance for generation
+        strategy: Strategy to execute
+        parser: Parser instance
+        prompt: Starting prompt sequence
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum tokens to generate
+    """
     import VerifiedDecoderAgent as VDA
     
     if strategy.is_Window:
         return _run_window_strategy(
-            strategy.startDelim, strategy.endDelim,
+            lm, strategy.startDelim, strategy.endDelim,
             strategy.inside, strategy.outside,
             parser, prompt, allTokens, maxSteps
         )
     
     elif strategy.is_TryK:
         for _ in range(strategy.k):
-            output = RunAttempt(strategy.attempt, parser, prompt, allTokens, maxSteps)
+            output = RunAttempt(lm, strategy.attempt, parser, prompt, allTokens, maxSteps)
             if CheckOutput(strategy.check, parser, output):
                 return output
-        return RunStrategy(strategy.fallback, parser, prompt, allTokens, maxSteps)
+        return RunStrategy(lm, strategy.fallback, parser, prompt, allTokens, maxSteps)
     
     elif strategy.is_Cascade:
         for strat in strategy.strategies:
-            output = RunStrategy(strat, parser, prompt, allTokens, maxSteps)
+            output = RunStrategy(lm, strat, parser, prompt, allTokens, maxSteps)
             if CheckOutput(strategy.check, parser, output):
                 return output
         if strategy.strategies:
-            return RunStrategy(strategy.strategies[-1], parser, prompt, allTokens, maxSteps)
+            return RunStrategy(lm, strategy.strategies[-1], parser, prompt, allTokens, maxSteps)
         return prompt
     
     elif strategy.is_BestOfN:
         outputs = []
         for _ in range(strategy.n):
-            output = RunStrategy(strategy.base, parser, prompt, allTokens, maxSteps)
+            output = RunStrategy(lm, strategy.base, parser, prompt, allTokens, maxSteps)
             outputs.append(output)
             if CheckOutput(strategy.check, parser, output):
                 return output
         return outputs[0] if outputs else prompt
     
     elif strategy.is_Constrained:
-        return CompletePrefixConstrained(parser, prompt, strategy.constraint, allTokens, maxSteps)
+        return CompletePrefixConstrained(lm, parser, prompt, strategy.constraint, allTokens, maxSteps)
     
     elif strategy.is_Free:
-        return RunAttempt(VDA.Attempt_Unconstrained(), parser, prompt, allTokens, maxSteps)
+        return RunAttempt(lm, VDA.Attempt_Unconstrained(), parser, prompt, allTokens, maxSteps)
     
     return prompt
 
 
-def _run_window_strategy(startDelim, endDelim, inside, outside, parser, prompt, allTokens, maxSteps):
-    """Execute CRANE-style windowing strategy."""
+def _run_window_strategy(lm, startDelim, endDelim, inside, outside, parser, prompt, allTokens, maxSteps):
+    """Execute CRANE-style windowing strategy using LM.
+    
+    Args:
+        lm: LM instance for token selection
+        startDelim: Delimiter marking start of constrained window (e.g., "<<")
+        endDelim: Delimiter marking end of constrained window (e.g., ">>")
+        inside: TokenConstraint to apply inside windows
+        outside: TokenConstraint to apply outside windows
+        parser: Parser instance
+        prompt: Starting prompt sequence
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum tokens to generate
+    """
     _ensure_llm_initialized()
     
     result = list(prompt)
@@ -835,7 +890,7 @@ def _run_window_strategy(startDelim, endDelim, inside, outside, parser, prompt, 
             allowed = AllowedNext(constraint, parser, current_prefix, allTokens)
             if not allowed:
                 break
-            next_token = ChooseToken(constraint, parser, current_prefix, allTokens)
+            next_token = ChooseToken(lm, constraint, parser, current_prefix, allTokens)
         
         result.append(next_token)
         steps += 1
@@ -861,9 +916,21 @@ def _run_window_strategy(startDelim, endDelim, inside, outside, parser, prompt, 
 # Main Run function
 # =============================================================================
 
-def Run(strategy, parser, prompt, allTokens, maxSteps):
-    """Execute a strategy that guarantees valid output."""
-    return RunStrategy(strategy, parser, prompt, allTokens, maxSteps)
+def Run(lm, strategy, parser, prompt, allTokens, maxSteps):
+    """Execute a strategy that guarantees valid output using LM.
+    
+    Args:
+        lm: LM instance (must satisfy ValidTokensIdsLogits())
+        strategy: Strategy to execute (must satisfy GuaranteesValidOutput())
+        parser: Parser instance
+        prompt: Starting prompt sequence (must have |prompt| > 0)
+        allTokens: Set of all possible tokens
+        maxSteps: Maximum tokens to generate
+    
+    Returns:
+        Output sequence that is guaranteed to be valid under the parser.
+    """
+    return RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)
 
 
 # =============================================================================

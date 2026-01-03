@@ -201,11 +201,13 @@ module VerifiedDecoderAgent {
     ensures c.NoConstraint? ==> 
       AllowedNext(c, parser, prefix, allTokens) == allTokens
 
-  // ChooseToken: select a token from the allowed set (extern - sampling strategy)
-  function {:extern} {:axiom} ChooseToken(c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): Token
-    reads parser
+  // ChooseToken: select a token from the allowed set using LM logits
+  function {:extern} {:axiom} ChooseToken(lm: LM, c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): Token
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     requires |AllowedNext(c, parser, prefix, allTokens)| > 0
-    ensures ChooseToken(c, parser, prefix, allTokens) in AllowedNext(c, parser, prefix, allTokens)
+    ensures ChooseToken(lm, c, parser, prefix, allTokens) in AllowedNext(c, parser, prefix, allTokens)
+    ensures ChooseToken(lm, c, parser, prefix, allTokens) in lm.Tokens
 
   // ---------------------------------------------------------------------------
   // Layer 2: Sequence-Level Operations
@@ -240,29 +242,34 @@ module VerifiedDecoderAgent {
   // CheckSemantic: evaluate a semantic predicate on an output
   predicate {:extern} {:axiom} CheckSemantic(pred: SemanticPredicate, output: Prefix)
 
-  // CompletePrefixConstrained: complete a valid prefix under a token constraint
+  // CompletePrefixConstrained: complete a valid prefix under a token constraint using LM
   function {:extern} {:axiom} CompletePrefixConstrained(
-      parser: Parser, prefix: Prefix, constraint: TokenConstraint, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads parser
+      lm: LM, parser: Parser, prefix: Prefix, constraint: TokenConstraint, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix(prefix)
     // Key guarantee: output is still valid
-    ensures parser.IsValidPrefix(CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps))
+    ensures parser.IsValidPrefix(CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps))
     // Output extends the prefix
-    ensures |CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps)| >= |prefix|
+    ensures |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| >= |prefix|
     // Output is bounded
-    ensures |CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps)| <= |prefix| + maxSteps
+    ensures |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| <= |prefix| + maxSteps
+    // All generated tokens are in LM vocabulary
+    ensures forall i :: |prefix| <= i < |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| ==>
+      CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)[i] in lm.Tokens
 
-  // ApplySeqOp: apply a sequence operation
+  // ApplySeqOp: apply a sequence operation using LM for completion
   function {:extern} {:axiom} ApplySeqOp(
-      op: SeqOperation, parser: Parser, output: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads parser
+      lm: LM, op: SeqOperation, parser: Parser, output: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     // Identity returns unchanged
-    ensures op.Identity? ==> ApplySeqOp(op, parser, output, allTokens, maxSteps) == output
+    ensures op.Identity? ==> ApplySeqOp(lm, op, parser, output, allTokens, maxSteps) == output
     // Repair applies repair rules
-    ensures op.Repair? ==> ApplySeqOp(op, parser, output, allTokens, maxSteps) == ApplyRepair(op.rules, output)
+    ensures op.Repair? ==> ApplySeqOp(lm, op, parser, output, allTokens, maxSteps) == ApplyRepair(op.rules, output)
     // PrefixComplete maintains validity if input was valid
     ensures op.PrefixCompleteOp? && parser.IsValidPrefix(output) ==> 
-      parser.IsValidPrefix(ApplySeqOp(op, parser, output, allTokens, maxSteps))
+      parser.IsValidPrefix(ApplySeqOp(lm, op, parser, output, allTokens, maxSteps))
 
   // ---------------------------------------------------------------------------
   // Layer 3: Loop-Level Orchestration
@@ -317,32 +324,40 @@ module VerifiedDecoderAgent {
     ensures check.Either? ==> (CheckOutput(check, parser, output) <==> 
       (CheckOutput(check.a, parser, output) || CheckOutput(check.b, parser, output)))
 
-  // RunAttempt: execute a single attempt and return the output
+  // RunAttempt: execute a single attempt using LM and return the output
   function {:extern} {:axiom} RunAttempt(
-      attempt: Attempt, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads parser
+      lm: LM, attempt: Attempt, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     // Constrained attempts produce valid output
-    ensures attempt.ConstrainedAttempt? ==> parser.IsValidPrefix(RunAttempt(attempt, parser, prompt, allTokens, maxSteps))
+    ensures attempt.ConstrainedAttempt? ==> parser.IsValidPrefix(RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps))
     // Output is bounded in length
-    ensures |RunAttempt(attempt, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    ensures |RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    // All generated tokens are from LM vocabulary
+    ensures forall i :: |prompt| <= i < |RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)| ==>
+      RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
 
-  // RunStrategy: execute a strategy and return the output
+  // RunStrategy: execute a strategy using LM and return the output
   // This is the main entry point for running a CSD
   function {:extern} {:axiom} RunStrategy(
-      strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads parser
+      lm: LM, strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     // Constrained strategy always produces valid output
-    ensures strategy.Constrained? ==> parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+    ensures strategy.Constrained? ==> parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
     // Window strategy produces valid output (CRANE guarantee)
-    ensures strategy.Window? ==> parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+    ensures strategy.Window? ==> parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
     // Output is bounded
-    ensures |RunStrategy(strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    ensures |RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
     // TryK with Constrained fallback guarantees valid output
     ensures strategy.TryK? && strategy.fallback.Constrained? ==> 
-      parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+      parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
     // Cascade ending in Constrained guarantees valid output
     ensures strategy.Cascade? && |strategy.strategies| > 0 && strategy.strategies[|strategy.strategies| - 1].Constrained? ==>
-      parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+      parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
+    // All generated tokens are from LM vocabulary
+    ensures forall i :: |prompt| <= i < |RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)| ==>
+      RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
 
   // ---------------------------------------------------------------------------
   // Convenience constructors for common patterns
@@ -391,19 +406,23 @@ module VerifiedDecoderAgent {
   // ---------------------------------------------------------------------------
   // The primary function for executing a CSD strategy.
 
-  // Run: execute a strategy that guarantees valid output
+  // Run: execute a strategy that guarantees valid output using LM
   // This is the function that Qwen-generated code should ultimately call
   function {:extern} {:axiom} Run(
-      strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads parser
+      lm: LM, strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
     requires GuaranteesValidOutput(strategy)
     requires |prompt| > 0
     // THE KEY GUARANTEE: output is always valid under the parser
-    ensures parser.IsValidPrefix(Run(strategy, parser, prompt, allTokens, maxSteps))
+    ensures parser.IsValidPrefix(Run(lm, strategy, parser, prompt, allTokens, maxSteps))
     // Output is bounded in length
-    ensures |Run(strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    ensures |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
     // Output extends the prompt
-    ensures |Run(strategy, parser, prompt, allTokens, maxSteps)| >= |prompt|
+    ensures |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| >= |prompt|
+    // All generated tokens are from LM vocabulary
+    ensures forall i :: |prompt| <= i < |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| ==>
+      Run(lm, strategy, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
 
   // ---------------------------------------------------------------------------
   // Lemmas for Strategy Composition
