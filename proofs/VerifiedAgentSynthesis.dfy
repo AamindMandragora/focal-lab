@@ -201,13 +201,20 @@ module VerifiedDecoderAgent {
     ensures c.NoConstraint? ==> 
       AllowedNext(c, parser, prefix, allTokens) == allTokens
 
-  // ChooseToken: select a token from the allowed set using LM logits
+  // ChooseToken: select the HIGHEST-LOGIT token from the allowed set
+  // This is the key function that connects LM preferences to constrained decoding
   function {:extern} {:axiom} ChooseToken(lm: LM, c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): Token
     reads lm, parser
     requires lm.ValidTokensIdsLogits()
     requires |AllowedNext(c, parser, prefix, allTokens)| > 0
+    // Basic: result is in the allowed set
     ensures ChooseToken(lm, c, parser, prefix, allTokens) in AllowedNext(c, parser, prefix, allTokens)
+    // Result is in LM's vocabulary
     ensures ChooseToken(lm, c, parser, prefix, allTokens) in lm.Tokens
+    // KEY: result has the MAXIMUM logit among all allowed tokens
+    // This expresses: we pick the token the LM most prefers, subject to constraints
+    ensures forall t :: t in AllowedNext(c, parser, prefix, allTokens) && t in lm.Tokens ==>
+      lm.TokenToLogit(ChooseToken(lm, c, parser, prefix, allTokens)) >= lm.TokenToLogit(t)
 
   // ---------------------------------------------------------------------------
   // Layer 2: Sequence-Level Operations
@@ -242,7 +249,26 @@ module VerifiedDecoderAgent {
   // CheckSemantic: evaluate a semantic predicate on an output
   predicate {:extern} {:axiom} CheckSemantic(pred: SemanticPredicate, output: Prefix)
 
+  // GreedyOptimal: predicate expressing that a sequence was generated greedily
+  // by always picking the highest-logit token from the allowed set at each step
+  predicate GreedyOptimal(lm: LM, parser: Parser, constraint: TokenConstraint, 
+                          prefix: Prefix, output: Prefix, allTokens: set<Token>)
+    reads lm, parser
+    requires lm.ValidTokensIdsLogits()
+  {
+    // Output extends prefix
+    |output| >= |prefix| &&
+    // Each generated token was the greedy choice at that step
+    forall i :: |prefix| <= i < |output| ==>
+      (output[i] in lm.Tokens &&
+       output[i] in AllowedNext(constraint, parser, output[..i], allTokens) &&
+       // It was the max-logit choice
+       forall t :: t in AllowedNext(constraint, parser, output[..i], allTokens) && t in lm.Tokens ==>
+         lm.TokenToLogit(output[i]) >= lm.TokenToLogit(t))
+  }
+
   // CompletePrefixConstrained: complete a valid prefix under a token constraint using LM
+  // Uses GREEDY decoding - always picks the highest-logit token from the allowed set
   function {:extern} {:axiom} CompletePrefixConstrained(
       lm: LM, parser: Parser, prefix: Prefix, constraint: TokenConstraint, allTokens: set<Token>, maxSteps: nat): Prefix
     reads lm, parser
@@ -257,6 +283,9 @@ module VerifiedDecoderAgent {
     // All generated tokens are in LM vocabulary
     ensures forall i :: |prefix| <= i < |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| ==>
       CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)[i] in lm.Tokens
+    // KEY: output was generated greedily according to LM logits
+    ensures GreedyOptimal(lm, parser, constraint, prefix, 
+                          CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps), allTokens)
 
   // ApplySeqOp: apply a sequence operation using LM for completion
   function {:extern} {:axiom} ApplySeqOp(
@@ -336,6 +365,10 @@ module VerifiedDecoderAgent {
     // All generated tokens are from LM vocabulary
     ensures forall i :: |prompt| <= i < |RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)| ==>
       RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
+    // KEY: Constrained attempts are GREEDY OPTIMAL - they use the LM's preferences
+    ensures attempt.ConstrainedAttempt? && parser.IsValidPrefix(prompt) ==> 
+      GreedyOptimal(lm, parser, attempt.constraint, prompt, 
+                    RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps), allTokens)
 
   // RunStrategy: execute a strategy using LM and return the output
   // This is the main entry point for running a CSD
@@ -358,6 +391,10 @@ module VerifiedDecoderAgent {
     // All generated tokens are from LM vocabulary
     ensures forall i :: |prompt| <= i < |RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)| ==>
       RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
+    // KEY: Constrained strategies use GREEDY decoding according to LM preferences
+    ensures strategy.Constrained? && parser.IsValidPrefix(prompt) ==>
+      GreedyOptimal(lm, parser, strategy.constraint, prompt,
+                    RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps), allTokens)
 
   // ---------------------------------------------------------------------------
   // Convenience constructors for common patterns
