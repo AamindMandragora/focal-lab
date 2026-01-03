@@ -18,7 +18,7 @@ module VerifiedDecoderAgent {
       (forall i :: 0 <= i < |Logits| ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)
     }
 
-    constructor {:axiom} ()
+    constructor {:extern} {:axiom} ()
       ensures ValidTokensIdsLogits()
 
     function IdToToken(id: Id) : (token: Token)
@@ -144,6 +144,300 @@ module VerifiedDecoderAgent {
       requires IsValidPrefix(prefix)
       ensures forall t :: t in ValidNextTokens(prefix) ==> IsValidPrefix(prefix + [t])
       ensures IsValidPrefix(prefix) ==> (IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0)
+  }
+
+  // ============================================================================
+  // COMPOSITIONAL CONSTRAINED DECODING STRATEGIES (CSD)
+  // ============================================================================
+  // 
+  // Layer 1: Token-Level Constraints
+  // Layer 2: Sequence-Level Operations  
+  // Layer 3: Loop-Level Orchestration
+  //
+  // These primitives can be composed by an LLM (Qwen) to form complete CSDs.
+  // ============================================================================
+
+  // ---------------------------------------------------------------------------
+  // Layer 1: Token-Level Constraints
+  // ---------------------------------------------------------------------------
+  // Constraints applied at each decoding step to filter which tokens are allowed.
+
+  datatype TokenConstraint =
+    | GrammarMask                                        // Only tokens continuing valid parse
+    | Lookahead(depth: nat)                              // Filter tokens leading to dead ends within depth steps
+    | LengthBound(min: nat, max: nat)                    // Track length, force EOS at max, block EOS before min
+    | BanTokens(banned: set<Token>)                      // Explicitly ban tokens
+    | AllowOnlyTokens(allowed: set<Token>)               // Whitelist tokens
+    | Intersect(a: TokenConstraint, b: TokenConstraint)  // Must pass both constraints
+    | Union(a: TokenConstraint, b: TokenConstraint)      // Can pass either constraint
+    | NoConstraint                                       // Allow all tokens
+
+  // AllowedNext: compute the set of allowed next tokens given a constraint and prefix
+  function {:extern} {:axiom} AllowedNext(c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): set<Token>
+    reads parser
+    // GrammarMask ensures tokens continue a valid parse
+    ensures c.GrammarMask? ==> 
+      (forall t :: t in AllowedNext(c, parser, prefix, allTokens) ==> 
+        (parser.IsValidPrefix(prefix) ==> parser.IsValidPrefix(prefix + [t])))
+    // Lookahead ensures tokens continue a valid parse AND avoid dead ends
+    ensures c.Lookahead? ==> 
+      (forall t :: t in AllowedNext(c, parser, prefix, allTokens) ==> 
+        (parser.IsValidPrefix(prefix) ==> parser.IsValidPrefix(prefix + [t])))
+    // BanTokens removes banned tokens from consideration
+    ensures c.BanTokens? ==> 
+      AllowedNext(c, parser, prefix, allTokens) == allTokens - c.banned
+    // AllowOnlyTokens restricts to whitelist
+    ensures c.AllowOnlyTokens? ==> 
+      AllowedNext(c, parser, prefix, allTokens) == allTokens * c.allowed
+    // Intersect is set intersection
+    ensures c.Intersect? ==> 
+      AllowedNext(c, parser, prefix, allTokens) == 
+        AllowedNext(c.a, parser, prefix, allTokens) * AllowedNext(c.b, parser, prefix, allTokens)
+    // Union is set union
+    ensures c.Union? ==> 
+      AllowedNext(c, parser, prefix, allTokens) == 
+        AllowedNext(c.a, parser, prefix, allTokens) + AllowedNext(c.b, parser, prefix, allTokens)
+    // NoConstraint allows all tokens
+    ensures c.NoConstraint? ==> 
+      AllowedNext(c, parser, prefix, allTokens) == allTokens
+
+  // ChooseToken: select a token from the allowed set (extern - sampling strategy)
+  function {:extern} {:axiom} ChooseToken(c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): Token
+    reads parser
+    requires |AllowedNext(c, parser, prefix, allTokens)| > 0
+    ensures ChooseToken(c, parser, prefix, allTokens) in AllowedNext(c, parser, prefix, allTokens)
+
+  // ---------------------------------------------------------------------------
+  // Layer 2: Sequence-Level Operations
+  // ---------------------------------------------------------------------------
+  // Operations on partial or complete outputs.
+
+  // RepairRules: configuration for deterministic output repair
+  datatype RepairRules =
+    | BracketBalance      // Fix mismatched brackets/parens
+    | QuoteFix            // Fix unclosed quotes
+    | WhitespaceNormalize // Normalize whitespace
+    | ComposedRepair(a: RepairRules, b: RepairRules)  // Apply multiple repairs
+    | NoRepair            // Identity (no repair)
+
+  // SemanticPredicate: abstract type for semantic validity checks (extern for compilation)
+  type {:extern} SemanticPredicate(==)
+
+  // SeqOperation: operations that transform or validate complete/partial outputs
+  datatype SeqOperation =
+    | Repair(rules: RepairRules)                        // Apply deterministic fixes
+    | PrefixCompleteOp(constraint: TokenConstraint)     // Complete a valid prefix under constraint
+    | ValidateOp(pred: SemanticPredicate)               // Check semantic validity
+    | Identity                                          // No-op, return as-is
+
+  // ApplyRepair: apply repair rules to an output
+  function {:extern} {:axiom} ApplyRepair(rules: RepairRules, output: Prefix): Prefix
+    // Repair doesn't increase length by more than a small constant
+    ensures |ApplyRepair(rules, output)| <= |output| + 10
+    // Repair preserves at least some of the original content
+    ensures |ApplyRepair(rules, output)| >= 1 || |output| == 0
+
+  // CheckSemantic: evaluate a semantic predicate on an output
+  predicate {:extern} {:axiom} CheckSemantic(pred: SemanticPredicate, output: Prefix)
+
+  // CompletePrefixConstrained: complete a valid prefix under a token constraint
+  function {:extern} {:axiom} CompletePrefixConstrained(
+      parser: Parser, prefix: Prefix, constraint: TokenConstraint, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads parser
+    requires parser.IsValidPrefix(prefix)
+    // Key guarantee: output is still valid
+    ensures parser.IsValidPrefix(CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps))
+    // Output extends the prefix
+    ensures |CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps)| >= |prefix|
+    // Output is bounded
+    ensures |CompletePrefixConstrained(parser, prefix, constraint, allTokens, maxSteps)| <= |prefix| + maxSteps
+
+  // ApplySeqOp: apply a sequence operation
+  function {:extern} {:axiom} ApplySeqOp(
+      op: SeqOperation, parser: Parser, output: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads parser
+    // Identity returns unchanged
+    ensures op.Identity? ==> ApplySeqOp(op, parser, output, allTokens, maxSteps) == output
+    // Repair applies repair rules
+    ensures op.Repair? ==> ApplySeqOp(op, parser, output, allTokens, maxSteps) == ApplyRepair(op.rules, output)
+    // PrefixComplete maintains validity if input was valid
+    ensures op.PrefixCompleteOp? && parser.IsValidPrefix(output) ==> 
+      parser.IsValidPrefix(ApplySeqOp(op, parser, output, allTokens, maxSteps))
+
+  // ---------------------------------------------------------------------------
+  // Layer 3: Loop-Level Orchestration
+  // ---------------------------------------------------------------------------
+  // Strategies for orchestrating entire generation attempts.
+
+  // CheckPredicate: what to check to determine if an output is acceptable
+  datatype CheckPredicate =
+    | ParseOk                                            // Output parses under grammar
+    | SemanticOk(pred: SemanticPredicate)                // Custom semantic check
+    | Both(a: CheckPredicate, b: CheckPredicate)         // Must pass both checks
+    | Either(a: CheckPredicate, b: CheckPredicate)       // Must pass at least one
+
+  // Attempt: a single generation attempt
+  datatype Attempt =
+    | Unconstrained                                      // Free LLM generation (no constraints)
+    | ConstrainedAttempt(constraint: TokenConstraint)    // Constrained generation
+    | WithRepair(base: Attempt, rules: RepairRules)      // Attempt + repair on output
+    | WithSeqOp(base: Attempt, op: SeqOperation)         // Attempt + sequence operation
+
+  // Strategy: loop-level orchestration of attempts
+  datatype Strategy =
+    // CRANE-style windowing: unconstrained outside delimiters, constrained inside
+    | Window(startDelim: Token, endDelim: Token, inside: TokenConstraint, outside: TokenConstraint)
+    
+    // Retry: try attempt up to k times, then fallback
+    | TryK(k: nat, attempt: Attempt, check: CheckPredicate, fallback: Strategy)
+    
+    // Cascade: try strategies in order until one succeeds
+    | Cascade(strategies: seq<Strategy>, check: CheckPredicate)
+    
+    // Best-of-N: generate n outputs, pick first valid (or highest scoring if multiple valid)
+    | BestOfN(n: nat, base: Strategy, check: CheckPredicate)
+    
+    // Terminal: just run constrained decode with given constraint
+    | Constrained(constraint: TokenConstraint)
+    
+    // Unconstrained terminal: just run free generation
+    | Free
+
+  // CheckOutput: evaluate a check predicate on an output
+  predicate {:extern} {:axiom} CheckOutput(check: CheckPredicate, parser: Parser, output: Prefix)
+    reads parser
+    // ParseOk means the parser accepts it
+    ensures check.ParseOk? ==> (CheckOutput(check, parser, output) <==> parser.IsValidPrefix(output))
+    // SemanticOk delegates to CheckSemantic
+    ensures check.SemanticOk? ==> (CheckOutput(check, parser, output) <==> CheckSemantic(check.pred, output))
+    // Both requires both to pass
+    ensures check.Both? ==> (CheckOutput(check, parser, output) <==> 
+      (CheckOutput(check.a, parser, output) && CheckOutput(check.b, parser, output)))
+    // Either requires at least one to pass
+    ensures check.Either? ==> (CheckOutput(check, parser, output) <==> 
+      (CheckOutput(check.a, parser, output) || CheckOutput(check.b, parser, output)))
+
+  // RunAttempt: execute a single attempt and return the output
+  function {:extern} {:axiom} RunAttempt(
+      attempt: Attempt, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads parser
+    // Constrained attempts produce valid output
+    ensures attempt.ConstrainedAttempt? ==> parser.IsValidPrefix(RunAttempt(attempt, parser, prompt, allTokens, maxSteps))
+    // Output is bounded in length
+    ensures |RunAttempt(attempt, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+
+  // RunStrategy: execute a strategy and return the output
+  // This is the main entry point for running a CSD
+  function {:extern} {:axiom} RunStrategy(
+      strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads parser
+    // Constrained strategy always produces valid output
+    ensures strategy.Constrained? ==> parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+    // Window strategy produces valid output (CRANE guarantee)
+    ensures strategy.Window? ==> parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+    // Output is bounded
+    ensures |RunStrategy(strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    // TryK with Constrained fallback guarantees valid output
+    ensures strategy.TryK? && strategy.fallback.Constrained? ==> 
+      parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+    // Cascade ending in Constrained guarantees valid output
+    ensures strategy.Cascade? && |strategy.strategies| > 0 && strategy.strategies[|strategy.strategies| - 1].Constrained? ==>
+      parser.IsValidPrefix(RunStrategy(strategy, parser, prompt, allTokens, maxSteps))
+
+  // ---------------------------------------------------------------------------
+  // Convenience constructors for common patterns
+  // ---------------------------------------------------------------------------
+
+  // CRANE-style: unconstrained reasoning with constrained answer windows
+  function CRANEStyle(startDelim: Token, endDelim: Token): Strategy
+  {
+    Window(startDelim, endDelim, GrammarMask, NoConstraint)
+  }
+
+  // Retry K times unconstrained, then fall back to constrained
+  function RetryThenConstrained(k: nat): Strategy
+  {
+    TryK(k, Unconstrained, ParseOk, Constrained(GrammarMask))
+  }
+
+  // Best-of-N with repair, falling back to constrained
+  function BestOfNWithRepair(n: nat, repairRules: RepairRules): Strategy
+  {
+    BestOfN(n, 
+      TryK(1, WithRepair(Unconstrained, repairRules), ParseOk, Constrained(GrammarMask)),
+      ParseOk)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Strategy Validity Predicates
+  // ---------------------------------------------------------------------------
+  // These predicates determine whether a strategy guarantees valid output.
+
+  // GuaranteesValidOutput: true if the strategy always produces parser-valid output
+  predicate GuaranteesValidOutput(strategy: Strategy)
+  {
+    match strategy
+    case Constrained(_) => true
+    case Window(_, _, _, _) => true  // CRANE guarantees valid constrained windows
+    case TryK(_, _, _, fallback) => GuaranteesValidOutput(fallback)
+    case Cascade(strategies, _) => 
+      |strategies| > 0 && GuaranteesValidOutput(strategies[|strategies| - 1])
+    case BestOfN(_, base, _) => GuaranteesValidOutput(base)
+    case Free => false
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main Entry Point: Run
+  // ---------------------------------------------------------------------------
+  // The primary function for executing a CSD strategy.
+
+  // Run: execute a strategy that guarantees valid output
+  // This is the function that Qwen-generated code should ultimately call
+  function {:extern} {:axiom} Run(
+      strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
+    reads parser
+    requires GuaranteesValidOutput(strategy)
+    requires |prompt| > 0
+    // THE KEY GUARANTEE: output is always valid under the parser
+    ensures parser.IsValidPrefix(Run(strategy, parser, prompt, allTokens, maxSteps))
+    // Output is bounded in length
+    ensures |Run(strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
+    // Output extends the prompt
+    ensures |Run(strategy, parser, prompt, allTokens, maxSteps)| >= |prompt|
+
+  // ---------------------------------------------------------------------------
+  // Lemmas for Strategy Composition
+  // ---------------------------------------------------------------------------
+
+  // Lemma: TryK with valid fallback guarantees valid output
+  lemma TryKGuaranteesValid(k: nat, attempt: Attempt, check: CheckPredicate, fallback: Strategy)
+    requires GuaranteesValidOutput(fallback)
+    ensures GuaranteesValidOutput(TryK(k, attempt, check, fallback))
+  {
+    // Follows from definition of GuaranteesValidOutput
+  }
+
+  // Lemma: Cascade ending in valid strategy guarantees valid output
+  lemma CascadeGuaranteesValid(strategies: seq<Strategy>, check: CheckPredicate)
+    requires |strategies| > 0
+    requires GuaranteesValidOutput(strategies[|strategies| - 1])
+    ensures GuaranteesValidOutput(Cascade(strategies, check))
+  {
+    // Follows from definition of GuaranteesValidOutput
+  }
+
+  // Lemma: Constrained always guarantees valid output
+  lemma ConstrainedGuaranteesValid(constraint: TokenConstraint)
+    ensures GuaranteesValidOutput(Constrained(constraint))
+  {
+    // Immediate from definition
+  }
+
+  // Lemma: Window (CRANE) always guarantees valid output
+  lemma WindowGuaranteesValid(startDelim: Token, endDelim: Token, inside: TokenConstraint, outside: TokenConstraint)
+    ensures GuaranteesValidOutput(Window(startDelim, endDelim, inside, outside))
+  {
+    // CRANE's key property: constrained windows are always valid
   }
 
   method {:extern} {:axiom} ConstrainedDecode(lm: LM, parser: Parser, prefix: Prefix, maxSteps: nat) returns (result: Prefix)
