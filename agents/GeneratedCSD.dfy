@@ -1,13 +1,10 @@
 // =============================================================================
-// GeneratedCSD.dfy - Template for Qwen-generated CSD strategies
+// GeneratedCSD.dfy - Template for QWEN-generated Constrained Decoding (CSD) Strategies
 // =============================================================================
 //
-// This file is a template where Qwen generates constrained decoding strategies.
-// The synthesis script will:
-//   1. Prompt Qwen to generate code for the QWEN_SNIPPET section
-//   2. Insert the generated code between the markers
-//   3. Run `dafny verify` to check validity
-//   4. Compile to Python if verification passes
+// Purpose:
+//   This file is a **template** where QWEN generates the body of a single
+//   constrained decoding strategy. The Dafny verifier will check correctness.
 //
 // =============================================================================
 
@@ -16,72 +13,79 @@ include "../proofs/VerifiedAgentSynthesis.dfy"
 module GeneratedCSD {
   import opened VerifiedDecoderAgent
 
-  // ===========================================================================
-  // QWEN_SNIPPET_START
-  // ===========================================================================
-  // Qwen generates a Strategy function here.
+  // =============================================================================
+  // === Method Skeleton ===
   //
-  // Available primitives (from VerifiedAgentSynthesis.py):
+  // QWEN must ONLY generate the **contents of this method**. Do NOT redefine
+  // the method signature, preconditions, or postconditions.
   //
-  // Token-Level Constraints (TokenConstraint):
-  //   - GrammarMask                    : Only grammar-valid tokens
-  //   - Lookahead(depth)               : Avoid dead ends within depth steps
-  //   - LengthBound(min, max)          : Enforce length constraints
-  //   - BanTokens(banned)              : Blacklist specific tokens
-  //   - AllowOnlyTokens(allowed)       : Whitelist specific tokens
-  //   - Intersect(a, b)                : Must pass both constraints
-  //   - Union(a, b)                    : Can pass either constraint
-  //   - NoConstraint                   : Allow all tokens
+  // Requirements for your code inside this method:
+  //   1. Maintain lm.ValidTokensIdsLogits() at all times.
+  //   2. All generated sequences must satisfy parser.IsValidPrefix(generated).
+  //   3. Sequence must be complete if |generated| < maxSteps:
+  //        |generated| == maxSteps || parser.IsCompletePrefix(generated)
+  //   4. Only valid tokens at each step:
+  //        parser.ValidNextToken(generated[..i], generated[i])
+  //   5. Length of sequence must not exceed maxSteps.
+  //   6. Use only provided helpers functions.
   //
-  // Repair Rules (RepairRules):
-  //   - BracketBalance                 : Fix mismatched brackets
-  //   - QuoteFix                       : Fix unclosed quotes
-  //   - WhitespaceNormalize            : Normalize whitespace
-  //   - ComposedRepair(a, b)           : Apply multiple repairs
-  //   - NoRepair                       : No repair
-  //
-  // Attempts (Attempt):
-  //   - Unconstrained                  : Free LLM generation
-  //   - ConstrainedAttempt(constraint) : Constrained generation
-  //   - WithRepair(base, rules)        : Attempt + repair
-  //
-  // Check Predicates (CheckPredicate):
-  //   - ParseOk                        : Output parses under grammar
-  //   - Both(a, b)                     : Must pass both checks
-  //   - Either(a, b)                   : Must pass at least one
-  //
-  // Strategies (Strategy):
-  //   - Window(start, end, inside, outside) : CRANE-style windowing
-  //   - TryK(k, attempt, check, fallback)   : Retry k times, then fallback
-  //   - Cascade(strategies, check)          : Try strategies in order
-  //   - BestOfN(n, base, check)             : Generate n, pick first valid
-  //   - Constrained(constraint)             : Terminal constrained decode
-  //   - Free                                : Terminal free generation
-  //
-  // Convenience functions:
-  //   - CRANEStyle(startDelim, endDelim)    : CRANE windowing with << >>
-  //   - RetryThenConstrained(k)             : Try k unconstrained, then constrained
-  //   - BestOfNWithRepair(n, rules)         : Best-of-N with repair
-  //
-  // IMPORTANT: The strategy MUST satisfy GuaranteesValidOutput(strategy)
-  // This means it must eventually fall back to Constrained or Window.
-  // ===========================================================================
+  // =============================================================================
 
-  function GeneratedStrategy(): Strategy
+  // =============================================================================
+  // === Available Helper Functions for QWEN CSD Synthesis ===
+  // =============================================================================
+  //
+  // LM class (language model):
+  //   - lm.ValidTokensIdsLogits(): predicate ensuring token/logit consistency
+  //   - lm.IdToToken(id: Id) -> Token
+  //   - lm.TokenToId(token: Token) -> Id
+  //   - lm.IdToLogit(id: Id) -> Logit
+  //   - lm.TokenToLogit(token: Token) -> Logit
+  //   - lm.IdsToLogits(ids: seq<Id>) -> seq<Logit>
+  //   - lm.TokensToLogits(tokens: seq<Token>) -> seq<Logit>
+  //   - lm.MaskToken(token: Token)
+  //   - lm.MaskTokens(tokens: seq<Token>)
+  //   - lm.MaskTokensExcept(tokens: seq<Token>)
+  //   - lm.IsMasked(token: Token): predicate
+  //   - lm.HasUnmaskedToken(): predicate
+  //   - lm.GenerateLogits(input: Prefix)
+  //   - lm.ChooseNextToken() -> Token
+  //
+  // Parser class:
+  //   - parser.IsValidPrefix(prefix: Prefix): predicate
+  //   - parser.IsCompletePrefix(prefix: Prefix): predicate
+  //   - parser.IsDeadPrefix(prefix: Prefix): predicate
+  //   - parser.ValidNextToken(prefix: Prefix, token: Token): predicate
+  //   - parser.ValidNextTokens(prefix: Prefix) -> seq<Token>  // extern
+  //
+  // CSDHelpers class:
+  //   - CSDHelpers.UnconstrainedStep(lm, prompt, generated) -> Token
+  //   - CSDHelpers.ConstrainedStep(lm, parser, prompt, generated) -> Token
+  //   - CSDHelpers.UnconstrainedGeneration(lm, prompt, maxSteps) -> seq<Token>
+  //   - CSDHelpers.ConstrainedGeneration(lm, parser, prompt, maxSteps) -> seq<Token>
+  //
+  // =============================================================================
+  // Notes:
+  //   - Only use these helpers for manipulating tokens, logits, and generating sequences.
+  //   - Do NOT modify lm.Logits directly outside of LM methods or CSDHelpers.
+  //   - All generated sequences must maintain lm.ValidTokensIdsLogits() and respect parser constraints.
+  // =============================================================================
+
+  method MyCSDStrategy(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
+    modifies lm.Logits
+    requires lm.ValidTokensIdsLogits()
+    requires parser.IsValidPrefix([])
+    requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+    ensures lm.ValidTokensIdsLogits()
+    ensures |generated| <= maxSteps
+    ensures parser.IsValidPrefix(generated)
+    ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
   {
-    QWEN_INSERT_STRATEGY_HERE  // <-- Qwen replaces this line
-  }
-
-  // ===========================================================================
-  // QWEN_SNIPPET_END
-  // ===========================================================================
-
-  // Lemma: Verify that the generated strategy guarantees valid output
-  lemma GeneratedStrategyIsValid()
-    ensures GuaranteesValidOutput(GeneratedStrategy())
-  {
-    // This lemma will fail verification if GeneratedStrategy() doesn't
-    // satisfy GuaranteesValidOutput. Qwen must generate a valid strategy.
+    // QWEN_SNIPPET_INSERTED_HERE
+    // =========================
+    // Generate your code here.
+    // Only fill in the body of the method.
+    // Use loops, recursion, or calls to CSDHelpers.
+    // Do NOT change the method signature or ensures/requires clauses.
   }
 }
-

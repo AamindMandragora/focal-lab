@@ -5,68 +5,90 @@ module VerifiedDecoderAgent {
   type Logit = real
 
   class LM {
+    // Library functions to be implemented in Python using TensorFlow.
+
     const Tokens: seq<Token>
     const Ids: seq<Id>
-    var Logits: seq<Logit>
+    var Logits: array<Logit>
 
-    predicate ValidTokensIdsLogits() reads this
+    // This predicate ensures that there's a bijection from Ids to Tokens, that the set of Ids are just a subsequence of the natural numbers (like indices in an array), and that each token has a corresponding logit between some upper and lower bound (pre-softmax).
+    predicate ValidTokensIdsLogits()
+      reads this
+      reads this.Logits
     {
-      ((|Tokens| == |Ids|) && (|Ids| == |Logits|) && (|Ids| > 0 && Ids[0] == 0)) &&
+      ((|Tokens| == |Ids|) && (|Ids| == Logits.Length) && (|Ids| > 0 && Ids[0] == 0)) &&
+      (forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) && 
       (forall i, j :: 0 <= i < |Tokens| && 0 <= j < |Tokens| && i != j ==> Tokens[i] != Tokens[j]) &&
       (forall token: Token :: token in Tokens ==> (exists i :: 0 <= i < |Ids| && Tokens[i] == token)) &&
-      (forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) && 
-      (forall i :: 0 <= i < |Logits| ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)
+      (forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)
     }
 
+    // The constructor for this LM wrapper class will create lists of Tokens, Ids, and Logits according to the above standards.
     constructor {:extern} {:axiom} ()
       ensures ValidTokensIdsLogits()
 
+    // Function for getting an id's corresponding token.
     function IdToToken(id: Id) : (token: Token)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires id in Ids
       ensures token in Tokens
+      ensures Tokens[id] == token
+      ensures id == TokenToId(token)
       ensures ValidTokensIdsLogits()
     {
       Tokens[id]
     }
 
+    // Function for getting a token's corresponding id.
     function TokenToId(token: Token) : (id: Id)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires token in Tokens
       ensures id in Ids
+      ensures Tokens[id] == token
+      ensures TokenToId(Tokens[id]) == id
       ensures ValidTokensIdsLogits()
     {
-      TokenToIdRecursive(token, Tokens)
+      TokenToIdRecursive(token, 0)
     }
 
-    function TokenToIdRecursive(token: Token, tokens: seq<Token>) : (id: Id)
+    // Helper function for the above method, actual implementation will not be recursive.
+    function TokenToIdRecursive(token: Token, offset: nat) : (id: Id)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
-      requires forall t: Token :: t in tokens ==> t in Tokens
-      requires token in tokens
-      requires 0 < |tokens| <= |Ids|
+      requires token in Tokens
+      requires 0 <= offset < |Tokens|
+      requires (Tokens[offset] == token) || (token in Tokens[offset + 1..])
       ensures id in Ids
-      ensures 0 <= TokenToIdRecursive(token, tokens) < |tokens|
+      ensures 0 <= TokenToIdRecursive(token, offset) < |Ids|
+      ensures Tokens[id] == token
       ensures ValidTokensIdsLogits()
+      decreases |Tokens| - offset
     {
-      if tokens[0] == token then 0
-      else 1 + TokenToIdRecursive(token, tokens[1..])
+      if Tokens[offset] == token then offset
+      else TokenToIdRecursive(token, offset + 1)
     }
 
+    // Function for getting an id's corresponding logit. 
     function IdToLogit(id: Id) : (logit: Logit)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires id in Ids
-      ensures logit in Logits
+      ensures logit in Logits[0..Logits.Length]
       ensures ValidTokensIdsLogits()
     {
       Logits[id]
     }
 
+    // Function for getting a token's corresponding logit.
     function TokenToLogit(token: Token): (logit: Logit)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires token in Tokens
       ensures ValidTokensIdsLogits()
@@ -74,8 +96,10 @@ module VerifiedDecoderAgent {
       IdToLogit(TokenToId(token))
     }
 
+    // Function for getting the corresponding logits for a list of tokens.
     function TokensToLogits(tokens: seq<Token>): (logits: seq<Logit>)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires |tokens| > 0
       requires forall token: Token :: token in tokens ==> token in Tokens
@@ -85,8 +109,10 @@ module VerifiedDecoderAgent {
       else [TokenToLogit(tokens[0])] + TokensToLogits(tokens[1..])
     }
 
+    // Function for getting the corresponding logits for a list of ids.
     function IdsToLogits(ids: seq<Id>): (logits: seq<Logit>)
       reads this
+      reads this.Logits
       requires ValidTokensIdsLogits()
       requires |ids| > 0
       requires forall id: Id :: id in ids ==> id in Ids
@@ -96,26 +122,37 @@ module VerifiedDecoderAgent {
       else [IdToLogit(ids[0])] + IdsToLogits(ids[1..])
     }
 
+    // Method that sets a token's logit to -1e9, ensuring it is never chosen.
     method MaskToken(token: Token)
-      modifies this
+      modifies this.Logits
       requires ValidTokensIdsLogits()
       requires token in Tokens
       ensures ValidTokensIdsLogits()
+      ensures Tokens[TokenToId(token)] == token
+      ensures IsMasked(token)
+      ensures forall t: Token :: t in Tokens && t != token ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])
     {
       var id := TokenToId(token);
-      Logits := Logits[..id] + [0.0] + Logits[id+1..];
+      Logits[id] := -1e9;
     }
 
+    // Method that masks a list of tokens, ensuring none of them are chosen.
     method MaskTokens(tokens: seq<Token>)
-      modifies this
+      modifies this.Logits
       requires ValidTokensIdsLogits()
-      requires forall token: Token :: token in tokens ==> token in Tokens
+      requires |tokens| > 0
+      requires forall token :: token in tokens ==> token in Tokens
       ensures ValidTokensIdsLogits()
+      ensures forall t :: t in tokens ==> IsMasked(t)
+      ensures forall t :: t in Tokens && !(t in tokens) ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])
     {
       var N := |tokens|;
       var i := 0;
-      while (i < N)
+      while i < N
+        invariant 0 <= i <= N
         invariant ValidTokensIdsLogits()
+        invariant forall j :: 0 <= j < i ==> IsMasked(tokens[j])
+        invariant forall t :: t in Tokens && !(t in tokens[..i]) ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])
         decreases N - i
       {
         MaskToken(tokens[i]);
@@ -123,389 +160,191 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method {:extern} {:axiom} GenerateLogits(input: Prefix) modifies this
+    // Method that masks every token except for a list of tokens, ensuring only one of them is chosen.
+    method MaskTokensExcept(tokens: seq<Token>)
+      modifies this.Logits
+      requires ValidTokensIdsLogits()
+      requires |tokens| > 0
+      requires forall token :: token in tokens ==> token in Tokens
+      ensures ValidTokensIdsLogits()
+      ensures forall t :: t in Tokens && !(t in tokens) ==> IsMasked(t)
+      ensures forall t :: t in tokens ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])
+    {
+      var toMask: seq<Token> := [];
+      var N := |Tokens|;
+      var i := 0;
+
+      while i < N
+        invariant 0 <= i <= N
+        invariant ValidTokensIdsLogits()
+        invariant forall j :: 0 <= j < i && !(Tokens[j] in tokens) ==> Tokens[j] in toMask
+        invariant forall j :: 0 <= j < i && Tokens[j] in tokens ==> !(Tokens[j] in toMask)
+        invariant forall t: Token :: t in toMask ==> t !in tokens && t in Tokens
+        decreases N - i
+      {
+        if !(Tokens[i] in tokens) {
+          toMask := toMask + [Tokens[i]];
+        }
+        i := i + 1;
+      }
+
+      if |toMask|> 0 {
+        MaskTokens(toMask);
+      }
+    }
+
+    // Function that checks if a specific token is masked.
+    predicate IsMasked(token: Token)
+      reads this
+      reads this.Logits
+      requires ValidTokensIdsLogits()
+      requires token in Tokens
+      ensures ValidTokensIdsLogits()
+    {
+      Logits[TokenToId(token)] == -1e9
+    }
+
+    // Function that checks if an unmasked token exists to choose from.
+    predicate HasUnmaskedToken()
+      reads this
+      reads this.Logits
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+    {
+      exists t: Token :: t in Tokens && !IsMasked(t)
+    }
+
+    // Extern method that calculates the logits for next possible tokens given an input string.
+    method {:extern} {:axiom} GenerateLogits(input: Prefix)
+      modifies this.Logits
       requires ValidTokensIdsLogits()
       ensures ValidTokensIdsLogits()
 
-    method {:extern} {:axiom} ChooseNextToken(input: Prefix) returns (token: Token)
+    // Extern method choosing the next token using the calculated logits.
+    method {:extern} {:axiom} ChooseNextToken() returns (token: Token)
       requires ValidTokensIdsLogits()
       ensures token in Tokens
+      ensures !IsMasked(token)
       ensures ValidTokensIdsLogits()
   }
 
   class Parser {
+    // Library functions to be implemented in Python using Lark.
+
+    // Extern function checking if the given prefix is valid under the grammar.
     predicate {:extern} {:axiom} IsValidPrefix(prefix: Prefix)
       ensures forall k: nat :: 0 <= k < |prefix| - 1 ==> IsValidPrefix(prefix[k..])
 
+    // Extern function checking if the given prefix is complete under the grammar.
     predicate {:extern} {:axiom} IsCompletePrefix(prefix: Prefix)
       ensures IsValidPrefix(prefix)
 
+    // Function checking if the prefix isn't complete and cannot be completed.
+    predicate IsDeadPrefix(prefix: Prefix)
+    {
+      !IsCompletePrefix(prefix) && |ValidNextTokens(prefix)| == 0
+    }
+
+    // Function checking if the given token is a valid continuation of the prefix.
+    predicate ValidNextToken(prefix: Prefix, token: Token)
+      requires IsValidPrefix(prefix)
+    {
+      token in ValidNextTokens(prefix)
+    }
+
+    // Extern function returning the set of next tokens valid under the grammar.
     function {:extern} {:axiom} ValidNextTokens(prefix: Prefix): seq<Token>
       requires IsValidPrefix(prefix)
       ensures forall t :: t in ValidNextTokens(prefix) ==> IsValidPrefix(prefix + [t])
-      ensures IsValidPrefix(prefix) ==> (IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0)
+      ensures (IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0)
   }
 
-  // ============================================================================
-  // COMPOSITIONAL CONSTRAINED DECODING STRATEGIES (CSD)
-  // ============================================================================
-  // 
-  // Layer 1: Token-Level Constraints
-  // Layer 2: Sequence-Level Operations  
-  // Layer 3: Loop-Level Orchestration
-  //
-  // These primitives can be composed by an LLM (Qwen) to form complete CSDs.
-  // ============================================================================
+  class CSDHelpers {
+    // Library functions that QWEN must directly use to synthesize the constrained decoding agent.
 
-  // ---------------------------------------------------------------------------
-  // Layer 1: Token-Level Constraints
-  // ---------------------------------------------------------------------------
-  // Constraints applied at each decoding step to filter which tokens are allowed.
+    // Performs a single unconstrained decoding step and returns the next token.
+    static method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+    {
+      lm.GenerateLogits(prompt + generated);
+      next := lm.ChooseNextToken();
+    }
 
-  datatype TokenConstraint =
-    | GrammarMask                                        // Only tokens continuing valid parse
-    | Lookahead(depth: nat)                              // Filter tokens leading to dead ends within depth steps
-    | LengthBound(min: nat, max: nat)                    // Track length, force EOS at max, block EOS before min
-    | BanTokens(banned: set<Token>)                      // Explicitly ban tokens
-    | AllowOnlyTokens(allowed: set<Token>)               // Whitelist tokens
-    | Intersect(a: TokenConstraint, b: TokenConstraint)  // Must pass both constraints
-    | Union(a: TokenConstraint, b: TokenConstraint)      // Can pass either constraint
-    | NoConstraint                                       // Allow all tokens
+    // Performs a single constrained decoding step and returns the next token.
+    static method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix) returns (next: Token)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(generated)
+      requires !parser.IsCompletePrefix(generated)
+      requires forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures forall t: Token :: t in lm.Tokens ==> (lm.IsMasked(t) || parser.ValidNextToken(generated, t))
+      ensures parser.ValidNextToken(generated, next)
+      ensures !lm.IsMasked(next)
+      ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
+    {
+      lm.GenerateLogits(prompt + generated);
+      lm.MaskTokensExcept(parser.ValidNextTokens(generated));
+      next := lm.ChooseNextToken();
+      ConstrainedStepNextValid(lm, parser, generated, next);
+    }
 
-  // AllowedNext: compute the set of allowed next tokens given a constraint and prefix
-  function {:extern} {:axiom} AllowedNext(c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): set<Token>
-    reads parser
-    // GrammarMask ensures tokens continue a valid parse
-    ensures c.GrammarMask? ==> 
-      (forall t :: t in AllowedNext(c, parser, prefix, allTokens) ==> 
-        (parser.IsValidPrefix(prefix) ==> parser.IsValidPrefix(prefix + [t])))
-    // Lookahead ensures tokens continue a valid parse AND avoid dead ends
-    ensures c.Lookahead? ==> 
-      (forall t :: t in AllowedNext(c, parser, prefix, allTokens) ==> 
-        (parser.IsValidPrefix(prefix) ==> parser.IsValidPrefix(prefix + [t])))
-    // BanTokens removes banned tokens from consideration
-    ensures c.BanTokens? ==> 
-      AllowedNext(c, parser, prefix, allTokens) == allTokens - c.banned
-    // AllowOnlyTokens restricts to whitelist
-    ensures c.AllowOnlyTokens? ==> 
-      AllowedNext(c, parser, prefix, allTokens) == allTokens * c.allowed
-    // Intersect is set intersection
-    ensures c.Intersect? ==> 
-      AllowedNext(c, parser, prefix, allTokens) == 
-        AllowedNext(c.a, parser, prefix, allTokens) * AllowedNext(c.b, parser, prefix, allTokens)
-    // Union is set union
-    ensures c.Union? ==> 
-      AllowedNext(c, parser, prefix, allTokens) == 
-        AllowedNext(c.a, parser, prefix, allTokens) + AllowedNext(c.b, parser, prefix, allTokens)
-    // NoConstraint allows all tokens
-    ensures c.NoConstraint? ==> 
-      AllowedNext(c, parser, prefix, allTokens) == allTokens
+    // Performs unconstrained decoding until we run out of steps.
+    static method UnconstrainedGeneration(lm: LM, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+    {
+      generated := [];
+      var steps := 0;
+      while steps < maxSteps
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        decreases maxSteps - steps
+      {
+        var next := UnconstrainedStep(lm, prompt, generated);
+        generated := generated + [next];
+        steps := steps + 1;
+      }
+    }
 
-  // ChooseToken: select the HIGHEST-LOGIT token from the allowed set
-  // This is the key function that connects LM preferences to constrained decoding
-  function {:extern} {:axiom} ChooseToken(lm: LM, c: TokenConstraint, parser: Parser, prefix: Prefix, allTokens: set<Token>): Token
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    requires |AllowedNext(c, parser, prefix, allTokens)| > 0
-    // Basic: result is in the allowed set
-    ensures ChooseToken(lm, c, parser, prefix, allTokens) in AllowedNext(c, parser, prefix, allTokens)
-    // Result is in LM's vocabulary
-    ensures ChooseToken(lm, c, parser, prefix, allTokens) in lm.Tokens
-    // KEY: result has the MAXIMUM logit among all allowed tokens
-    // This expresses: we pick the token the LM most prefers, subject to constraints
-    ensures forall t :: t in AllowedNext(c, parser, prefix, allTokens) && t in lm.Tokens ==>
-      lm.TokenToLogit(ChooseToken(lm, c, parser, prefix, allTokens)) >= lm.TokenToLogit(t)
+    // A lemma that lets us say if the LM can generate all next valid tokens, then if we append one of those to the end, the LM can still generate all next valid tokens for the new prefix.
+    static lemma {:axiom} ConstrainedStepNextValid(lm: LM, parser: Parser, generated: Prefix, next: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(generated)
+      requires !parser.IsCompletePrefix(generated)
+      requires forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+      requires parser.IsValidPrefix(generated + [next])
+      ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
 
-  // ---------------------------------------------------------------------------
-  // Layer 2: Sequence-Level Operations
-  // ---------------------------------------------------------------------------
-  // Operations on partial or complete outputs.
-
-  // RepairRules: configuration for deterministic output repair
-  datatype RepairRules =
-    | BracketBalance      // Fix mismatched brackets/parens
-    | QuoteFix            // Fix unclosed quotes
-    | WhitespaceNormalize // Normalize whitespace
-    | ComposedRepair(a: RepairRules, b: RepairRules)  // Apply multiple repairs
-    | NoRepair            // Identity (no repair)
-
-  // SemanticPredicate: abstract type for semantic validity checks (extern for compilation)
-  type {:extern} SemanticPredicate(==)
-
-  // SeqOperation: operations that transform or validate complete/partial outputs
-  datatype SeqOperation =
-    | Repair(rules: RepairRules)                        // Apply deterministic fixes
-    | PrefixCompleteOp(constraint: TokenConstraint)     // Complete a valid prefix under constraint
-    | ValidateOp(pred: SemanticPredicate)               // Check semantic validity
-    | Identity                                          // No-op, return as-is
-
-  // ApplyRepair: apply repair rules to an output
-  function {:extern} {:axiom} ApplyRepair(rules: RepairRules, output: Prefix): Prefix
-    // Repair doesn't increase length by more than a small constant
-    ensures |ApplyRepair(rules, output)| <= |output| + 10
-    // Repair preserves at least some of the original content
-    ensures |ApplyRepair(rules, output)| >= 1 || |output| == 0
-
-  // CheckSemantic: evaluate a semantic predicate on an output
-  predicate {:extern} {:axiom} CheckSemantic(pred: SemanticPredicate, output: Prefix)
-
-  // GreedyOptimal: predicate expressing that a sequence was generated greedily
-  // by always picking the highest-logit token from the allowed set at each step
-  predicate GreedyOptimal(lm: LM, parser: Parser, constraint: TokenConstraint, 
-                          prefix: Prefix, output: Prefix, allTokens: set<Token>)
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-  {
-    // Output extends prefix
-    |output| >= |prefix| &&
-    // Each generated token was the greedy choice at that step
-    forall i :: |prefix| <= i < |output| ==>
-      (output[i] in lm.Tokens &&
-       output[i] in AllowedNext(constraint, parser, output[..i], allTokens) &&
-       // It was the max-logit choice
-       forall t :: t in AllowedNext(constraint, parser, output[..i], allTokens) && t in lm.Tokens ==>
-         lm.TokenToLogit(output[i]) >= lm.TokenToLogit(t))
+    // Performs unconstrained decoding until we run out of steps or the generated string is complete in the grammar.
+    static method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      generated := [];
+      var steps := 0;
+      while steps < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant parser.IsValidPrefix(generated)
+        invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+        decreases maxSteps - steps
+      {
+        var next := ConstrainedStep(lm, parser, prompt, generated);
+        generated := generated + [next];
+        steps := steps + 1;
+      }
+    }
   }
-
-  // CompletePrefixConstrained: complete a valid prefix under a token constraint using LM
-  // Uses GREEDY decoding - always picks the highest-logit token from the allowed set
-  function {:extern} {:axiom} CompletePrefixConstrained(
-      lm: LM, parser: Parser, prefix: Prefix, constraint: TokenConstraint, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    requires parser.IsValidPrefix(prefix)
-    // Key guarantee: output is still valid
-    ensures parser.IsValidPrefix(CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps))
-    // Output extends the prefix
-    ensures |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| >= |prefix|
-    // Output is bounded
-    ensures |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| <= |prefix| + maxSteps
-    // All generated tokens are in LM vocabulary
-    ensures forall i :: |prefix| <= i < |CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)| ==>
-      CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps)[i] in lm.Tokens
-    // KEY: output was generated greedily according to LM logits
-    ensures GreedyOptimal(lm, parser, constraint, prefix, 
-                          CompletePrefixConstrained(lm, parser, prefix, constraint, allTokens, maxSteps), allTokens)
-
-  // ApplySeqOp: apply a sequence operation using LM for completion
-  function {:extern} {:axiom} ApplySeqOp(
-      lm: LM, op: SeqOperation, parser: Parser, output: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    // Identity returns unchanged
-    ensures op.Identity? ==> ApplySeqOp(lm, op, parser, output, allTokens, maxSteps) == output
-    // Repair applies repair rules
-    ensures op.Repair? ==> ApplySeqOp(lm, op, parser, output, allTokens, maxSteps) == ApplyRepair(op.rules, output)
-    // PrefixComplete maintains validity if input was valid
-    ensures op.PrefixCompleteOp? && parser.IsValidPrefix(output) ==> 
-      parser.IsValidPrefix(ApplySeqOp(lm, op, parser, output, allTokens, maxSteps))
-
-  // ---------------------------------------------------------------------------
-  // Layer 3: Loop-Level Orchestration
-  // ---------------------------------------------------------------------------
-  // Strategies for orchestrating entire generation attempts.
-
-  // CheckPredicate: what to check to determine if an output is acceptable
-  datatype CheckPredicate =
-    | ParseOk                                            // Output parses under grammar
-    | SemanticOk(pred: SemanticPredicate)                // Custom semantic check
-    | Both(a: CheckPredicate, b: CheckPredicate)         // Must pass both checks
-    | Either(a: CheckPredicate, b: CheckPredicate)       // Must pass at least one
-
-  // Attempt: a single generation attempt
-  datatype Attempt =
-    | Unconstrained                                      // Free LLM generation (no constraints)
-    | ConstrainedAttempt(constraint: TokenConstraint)    // Constrained generation
-    | WithRepair(base: Attempt, rules: RepairRules)      // Attempt + repair on output
-    | WithSeqOp(base: Attempt, op: SeqOperation)         // Attempt + sequence operation
-
-  // Strategy: loop-level orchestration of attempts
-  datatype Strategy =
-    // CRANE-style windowing: unconstrained outside delimiters, constrained inside
-    | Window(startDelim: Token, endDelim: Token, inside: TokenConstraint, outside: TokenConstraint)
-    
-    // Retry: try attempt up to k times, then fallback
-    | TryK(k: nat, attempt: Attempt, check: CheckPredicate, fallback: Strategy)
-    
-    // Cascade: try strategies in order until one succeeds
-    | Cascade(strategies: seq<Strategy>, check: CheckPredicate)
-    
-    // Best-of-N: generate n outputs, pick first valid (or highest scoring if multiple valid)
-    | BestOfN(n: nat, base: Strategy, check: CheckPredicate)
-    
-    // Terminal: just run constrained decode with given constraint
-    | Constrained(constraint: TokenConstraint)
-    
-    // Unconstrained terminal: just run free generation
-    | Free
-
-  // CheckOutput: evaluate a check predicate on an output
-  predicate {:extern} {:axiom} CheckOutput(check: CheckPredicate, parser: Parser, output: Prefix)
-    reads parser
-    // ParseOk means the parser accepts it
-    ensures check.ParseOk? ==> (CheckOutput(check, parser, output) <==> parser.IsValidPrefix(output))
-    // SemanticOk delegates to CheckSemantic
-    ensures check.SemanticOk? ==> (CheckOutput(check, parser, output) <==> CheckSemantic(check.pred, output))
-    // Both requires both to pass
-    ensures check.Both? ==> (CheckOutput(check, parser, output) <==> 
-      (CheckOutput(check.a, parser, output) && CheckOutput(check.b, parser, output)))
-    // Either requires at least one to pass
-    ensures check.Either? ==> (CheckOutput(check, parser, output) <==> 
-      (CheckOutput(check.a, parser, output) || CheckOutput(check.b, parser, output)))
-
-  // RunAttempt: execute a single attempt using LM and return the output
-  function {:extern} {:axiom} RunAttempt(
-      lm: LM, attempt: Attempt, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    // Constrained attempts produce valid output
-    ensures attempt.ConstrainedAttempt? ==> parser.IsValidPrefix(RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps))
-    // Output is bounded in length
-    ensures |RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
-    // All generated tokens are from LM vocabulary
-    ensures forall i :: |prompt| <= i < |RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)| ==>
-      RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
-    // KEY: Constrained attempts are GREEDY OPTIMAL - they use the LM's preferences
-    ensures attempt.ConstrainedAttempt? && parser.IsValidPrefix(prompt) ==> 
-      GreedyOptimal(lm, parser, attempt.constraint, prompt, 
-                    RunAttempt(lm, attempt, parser, prompt, allTokens, maxSteps), allTokens)
-
-  // RunStrategy: execute a strategy using LM and return the output
-  // This is the main entry point for running a CSD
-  function {:extern} {:axiom} RunStrategy(
-      lm: LM, strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    // Constrained strategy always produces valid output
-    ensures strategy.Constrained? ==> parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
-    // Window strategy produces valid output (CRANE guarantee)
-    ensures strategy.Window? ==> parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
-    // Output is bounded
-    ensures |RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
-    // TryK with Constrained fallback guarantees valid output
-    ensures strategy.TryK? && strategy.fallback.Constrained? ==> 
-      parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
-    // Cascade ending in Constrained guarantees valid output
-    ensures strategy.Cascade? && |strategy.strategies| > 0 && strategy.strategies[|strategy.strategies| - 1].Constrained? ==>
-      parser.IsValidPrefix(RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps))
-    // All generated tokens are from LM vocabulary
-    ensures forall i :: |prompt| <= i < |RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)| ==>
-      RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
-    // KEY: Constrained strategies use GREEDY decoding according to LM preferences
-    ensures strategy.Constrained? && parser.IsValidPrefix(prompt) ==>
-      GreedyOptimal(lm, parser, strategy.constraint, prompt,
-                    RunStrategy(lm, strategy, parser, prompt, allTokens, maxSteps), allTokens)
-
-  // ---------------------------------------------------------------------------
-  // Convenience constructors for common patterns
-  // ---------------------------------------------------------------------------
-
-  // CRANE-style: unconstrained reasoning with constrained answer windows
-  function CRANEStyle(startDelim: Token, endDelim: Token): Strategy
-  {
-    Window(startDelim, endDelim, GrammarMask, NoConstraint)
-  }
-
-  // Retry K times unconstrained, then fall back to constrained
-  function RetryThenConstrained(k: nat): Strategy
-  {
-    TryK(k, Unconstrained, ParseOk, Constrained(GrammarMask))
-  }
-
-  // Best-of-N with repair, falling back to constrained
-  function BestOfNWithRepair(n: nat, repairRules: RepairRules): Strategy
-  {
-    BestOfN(n, 
-      TryK(1, WithRepair(Unconstrained, repairRules), ParseOk, Constrained(GrammarMask)),
-      ParseOk)
-  }
-
-  // ---------------------------------------------------------------------------
-  // Strategy Validity Predicates
-  // ---------------------------------------------------------------------------
-  // These predicates determine whether a strategy guarantees valid output.
-
-  // GuaranteesValidOutput: true if the strategy always produces parser-valid output
-  predicate GuaranteesValidOutput(strategy: Strategy)
-  {
-    match strategy
-    case Constrained(_) => true
-    case Window(_, _, _, _) => true  // CRANE guarantees valid constrained windows
-    case TryK(_, _, _, fallback) => GuaranteesValidOutput(fallback)
-    case Cascade(strategies, _) => 
-      |strategies| > 0 && GuaranteesValidOutput(strategies[|strategies| - 1])
-    case BestOfN(_, base, _) => GuaranteesValidOutput(base)
-    case Free => false
-  }
-
-  // ---------------------------------------------------------------------------
-  // Main Entry Point: Run
-  // ---------------------------------------------------------------------------
-  // The primary function for executing a CSD strategy.
-
-  // Run: execute a strategy that guarantees valid output using LM
-  // This is the function that Qwen-generated code should ultimately call
-  function {:extern} {:axiom} Run(
-      lm: LM, strategy: Strategy, parser: Parser, prompt: Prefix, allTokens: set<Token>, maxSteps: nat): Prefix
-    reads lm, parser
-    requires lm.ValidTokensIdsLogits()
-    requires GuaranteesValidOutput(strategy)
-    requires |prompt| > 0
-    // THE KEY GUARANTEE: output is always valid under the parser
-    ensures parser.IsValidPrefix(Run(lm, strategy, parser, prompt, allTokens, maxSteps))
-    // Output is bounded in length
-    ensures |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| <= |prompt| + maxSteps
-    // Output extends the prompt
-    ensures |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| >= |prompt|
-    // All generated tokens are from LM vocabulary
-    ensures forall i :: |prompt| <= i < |Run(lm, strategy, parser, prompt, allTokens, maxSteps)| ==>
-      Run(lm, strategy, parser, prompt, allTokens, maxSteps)[i] in lm.Tokens
-
-  // ---------------------------------------------------------------------------
-  // Lemmas for Strategy Composition
-  // ---------------------------------------------------------------------------
-
-  // Lemma: TryK with valid fallback guarantees valid output
-  lemma TryKGuaranteesValid(k: nat, attempt: Attempt, check: CheckPredicate, fallback: Strategy)
-    requires GuaranteesValidOutput(fallback)
-    ensures GuaranteesValidOutput(TryK(k, attempt, check, fallback))
-  {
-    // Follows from definition of GuaranteesValidOutput
-  }
-
-  // Lemma: Cascade ending in valid strategy guarantees valid output
-  lemma CascadeGuaranteesValid(strategies: seq<Strategy>, check: CheckPredicate)
-    requires |strategies| > 0
-    requires GuaranteesValidOutput(strategies[|strategies| - 1])
-    ensures GuaranteesValidOutput(Cascade(strategies, check))
-  {
-    // Follows from definition of GuaranteesValidOutput
-  }
-
-  // Lemma: Constrained always guarantees valid output
-  lemma ConstrainedGuaranteesValid(constraint: TokenConstraint)
-    ensures GuaranteesValidOutput(Constrained(constraint))
-  {
-    // Immediate from definition
-  }
-
-  // Lemma: Window (CRANE) always guarantees valid output
-  lemma WindowGuaranteesValid(startDelim: Token, endDelim: Token, inside: TokenConstraint, outside: TokenConstraint)
-    ensures GuaranteesValidOutput(Window(startDelim, endDelim, inside, outside))
-  {
-    // CRANE's key property: constrained windows are always valid
-  }
-
-  method {:extern} {:axiom} ConstrainedDecode(lm: LM, parser: Parser, prefix: Prefix, maxSteps: nat) returns (result: Prefix)
-    requires lm.ValidTokensIdsLogits()
-    requires parser.IsValidPrefix(prefix)
-    requires maxSteps >= 0
-    requires |prefix| > 0
-    ensures parser.IsValidPrefix(result)
-    ensures |result| >= |prefix|
-    ensures prefix == result[..|prefix|]
-    ensures |result| <= |prefix| + maxSteps
-    ensures parser.IsCompletePrefix(result) || |result| == |prefix| + maxSteps || (result[|result| - 1] in lm.Tokens && lm.TokenToLogit(result[|result| - 1]) != 0.0)
-    ensures forall k :: |prefix| <= k < |result| ==> (parser.IsValidPrefix(result[..k])) && (result[k] in parser.ValidNextTokens(result[..k]))
-    ensures lm.ValidTokensIdsLogits()
 }
