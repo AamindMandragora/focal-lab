@@ -346,5 +346,22 @@ module VerifiedDecoderAgent {
         steps := steps + 1;
       }
     }
+
+    // Deletes invalid tokens from the end of the generated prefix until it becomes valid, then returns.
+    static method RollbackToValidPrefix(parser: Parser, generated: Prefix) returns (repaired: Prefix)
+      requires parser.IsValidPrefix([])
+      ensures parser.IsValidPrefix(repaired)
+      ensures |repaired| <= |generated|
+    {
+      repaired := generated;
+
+      while !parser.IsValidPrefix(repaired) || parser.IsDeadPrefix(repaired)
+        invariant |repaired| <= |generated|
+        invariant parser.IsValidPrefix(repaired) || |repaired| > 0
+        decreases |repaired|
+      {
+        repaired := repaired[..|repaired|-1];
+      }
+    }
   }
 }
