@@ -81,11 +81,6 @@ module GeneratedCSD {
     ensures parser.IsValidPrefix(generated)
     ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
   {
-    // QWEN_SNIPPET_INSERTED_HERE
-    // =========================
-    // Generate your code here.
-    // Only fill in the body of the method.
-    // Use loops, recursion, or calls to CSDHelpers.
-    // Do NOT change the method signature or ensures/requires clauses.
+    // QWEN_INSERT_STRATEGY_HERE
   }
 }

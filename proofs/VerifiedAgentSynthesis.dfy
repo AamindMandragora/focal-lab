@@ -322,13 +322,15 @@ module VerifiedDecoderAgent {
       requires parser.IsValidPrefix(generated + [next])
       ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
 
-    // Performs unconstrained decoding until we run out of steps or the generated string is complete in the grammar.
+    // Performs constrained decoding until we run out of steps or the generated string is complete in the grammar.
     static method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
       ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
     {
       generated := [];
@@ -362,6 +364,297 @@ module VerifiedDecoderAgent {
       {
         repaired := repaired[..|repaired|-1];
       }
+    }
+
+    // =========================================================================
+    // COMPOSABLE STRATEGY HELPERS
+    // These can be combined to create more interesting strategies.
+    // =========================================================================
+
+    // Strategy 1: Try unconstrained first, then fall back to constrained.
+    // Generates unconstrainedSteps tokens freely, validates, and if invalid
+    // or incomplete, switches to constrained for remaining steps.
+    static method TryUnconstrainedThenConstrained(
+      lm: LM, 
+      parser: Parser, 
+      prompt: Prefix, 
+      maxSteps: nat,
+      unconstrainedSteps: nat
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      requires unconstrainedSteps <= maxSteps
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      // Phase 1: Try unconstrained generation
+      var unconstrained := UnconstrainedGeneration(lm, prompt, unconstrainedSteps);
+      
+      // Phase 2: Rollback to valid prefix
+      var validPrefix := RollbackToValidPrefix(parser, unconstrained);
+      
+      // Phase 3: If complete, we're done
+      if parser.IsCompletePrefix(validPrefix) {
+        generated := validPrefix;
+      } else {
+        // Phase 4: Complete with constrained decoding
+        var remainingSteps := maxSteps - |validPrefix|;
+        generated := validPrefix;
+        var steps := |validPrefix|;
+        
+        // Need to establish the invariant for valid next tokens
+        RollbackPreservesTokenInvariant(lm, parser, validPrefix);
+        
+        while steps < maxSteps && !parser.IsCompletePrefix(generated)
+          invariant |validPrefix| <= steps <= maxSteps
+          invariant lm.ValidTokensIdsLogits()
+          invariant steps == |generated|
+          invariant parser.IsValidPrefix(generated)
+          invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+          decreases maxSteps - steps
+        {
+          var next := ConstrainedStep(lm, parser, prompt, generated);
+          generated := generated + [next];
+          steps := steps + 1;
+        }
+      }
+    }
+
+    // Lemma: After rollback, valid next tokens are still in LM vocabulary
+    static lemma {:axiom} RollbackPreservesTokenInvariant(lm: LM, parser: Parser, prefix: Prefix)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(prefix)
+      ensures forall t: Token :: t in parser.ValidNextTokens(prefix) ==> t in lm.Tokens
+
+    // Helper: Complete an existing VALID prefix using constrained steps.
+    // This is useful for multi-stage strategies that first construct a partial valid prefix
+    // (e.g., via rollback/validation/speculation) and then want a simple verified completion step.
+    static method CompletePrefix(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      partial: Prefix,
+      maxSteps: nat
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(partial)
+      requires |partial| <= maxSteps
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures |generated| >= |partial|
+      ensures generated[..|partial|] == partial
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      generated := partial;
+      var steps := |partial|;
+
+      // Establish the "valid next tokens are in LM vocabulary" invariant for the starting prefix.
+      RollbackPreservesTokenInvariant(lm, parser, partial);
+
+      while steps < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant |partial| <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant parser.IsValidPrefix(generated)
+        invariant generated[..|partial|] == partial
+        invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+        decreases maxSteps - steps
+      {
+        var next := ConstrainedStep(lm, parser, prompt, generated);
+        generated := generated + [next];
+        steps := steps + 1;
+      }
+    }
+
+    // Strategy 2: Unconstrained with rollback and completion.
+    // Generates fully unconstrained, rolls back to valid, completes with constrained.
+    static method UnconstrainedWithCompletion(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      maxSteps: nat
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      // Generate unconstrained
+      var unconstrained := UnconstrainedGeneration(lm, prompt, maxSteps);
+      
+      // Rollback to valid
+      var validPrefix := RollbackToValidPrefix(parser, unconstrained);
+      
+      // If already complete, done
+      if parser.IsCompletePrefix(validPrefix) {
+        generated := validPrefix;
+      } else {
+        // Complete with constrained
+        var remainingSteps := maxSteps - |validPrefix|;
+        generated := validPrefix;
+        var steps := |validPrefix|;
+        
+        RollbackPreservesTokenInvariant(lm, parser, validPrefix);
+        
+        while steps < maxSteps && !parser.IsCompletePrefix(generated)
+          invariant |validPrefix| <= steps <= maxSteps
+          invariant lm.ValidTokensIdsLogits()
+          invariant steps == |generated|
+          invariant parser.IsValidPrefix(generated)
+          invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+          decreases maxSteps - steps
+        {
+          var next := ConstrainedStep(lm, parser, prompt, generated);
+          generated := generated + [next];
+          steps := steps + 1;
+        }
+      }
+    }
+
+    // Strategy 3: Hybrid - alternate between unconstrained and constrained steps.
+    // Every 'interval' steps, do one unconstrained step (if still valid).
+    static method HybridGeneration(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      maxSteps: nat,
+      unconstrainedInterval: nat  // Do unconstrained every N steps (0 = never)
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      requires unconstrainedInterval > 0
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      generated := [];
+      var steps := 0;
+      
+      while steps < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant parser.IsValidPrefix(generated)
+        invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+        decreases maxSteps - steps
+      {
+        // Decide: unconstrained or constrained?
+        if unconstrainedInterval > 0 && steps % unconstrainedInterval == 0 && steps > 0 {
+          // Try unconstrained step
+          var unconstrainedToken := UnconstrainedStep(lm, prompt, generated);
+          
+          // Check if it's valid
+          if parser.ValidNextToken(generated, unconstrainedToken) {
+            ConstrainedStepNextValid(lm, parser, generated, unconstrainedToken);
+            generated := generated + [unconstrainedToken];
+          } else {
+            // Fall back to constrained
+            var next := ConstrainedStep(lm, parser, prompt, generated);
+            generated := generated + [next];
+          }
+        } else {
+          // Regular constrained step
+          var next := ConstrainedStep(lm, parser, prompt, generated);
+          generated := generated + [next];
+        }
+        steps := steps + 1;
+      }
+    }
+
+    // Strategy 4: Speculative decoding - generate K tokens unconstrained,
+    // validate, keep valid prefix, repeat.
+    static method SpeculativeGeneration(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      maxSteps: nat,
+      speculativeWindow: nat  // How many tokens to speculate at once
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      requires speculativeWindow > 0
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      generated := [];
+      var steps := 0;
+      
+      while steps < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant parser.IsValidPrefix(generated)
+        invariant forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+        decreases maxSteps - steps
+      {
+        // Speculate: generate up to speculativeWindow tokens unconstrained
+        var speculateSteps := if steps + speculativeWindow <= maxSteps 
+                              then speculativeWindow 
+                              else maxSteps - steps;
+        var speculated := UnconstrainedGeneration(lm, prompt + generated, speculateSteps);
+        
+        // Validate each token one by one, keep valid prefix
+        var validCount := 0;
+        var tempPrefix := generated;
+        
+        while validCount < |speculated| && parser.IsValidPrefix(tempPrefix + [speculated[validCount]])
+          invariant 0 <= validCount <= |speculated|
+          invariant parser.IsValidPrefix(tempPrefix)
+          invariant tempPrefix == generated + speculated[..validCount]
+          decreases |speculated| - validCount
+        {
+          tempPrefix := tempPrefix + [speculated[validCount]];
+          validCount := validCount + 1;
+        }
+        
+        // If we accepted at least one speculated token
+        if validCount > 0 {
+          generated := tempPrefix;
+          steps := steps + validCount;
+          RollbackPreservesTokenInvariant(lm, parser, generated);
+        } else {
+          // No speculated tokens valid, fall back to single constrained step
+          var next := ConstrainedStep(lm, parser, prompt, generated);
+          generated := generated + [next];
+          steps := steps + 1;
+        }
+      }
+    }
+
+    // Strategy 5: Pure constrained (alias for clarity in prompts)
+    static method PureConstrainedGeneration(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      maxSteps: nat
+    ) returns (generated: Prefix)
+      modifies lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires forall t: Token :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    {
+      generated := ConstrainedGeneration(lm, parser, prompt, maxSteps);
     }
   }
 }
