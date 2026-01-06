@@ -8,7 +8,7 @@
 //
 // =============================================================================
 
-include "VerifiedAgentSynthesis.dfy"
+include "/home/advayth2/verified-agent-synthesis/dafny/VerifiedAgentSynthesis.dfy"
 
 module GeneratedCSD {
   import opened VerifiedDecoderAgent

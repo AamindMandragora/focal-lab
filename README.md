@@ -60,6 +60,9 @@ python run_synthesis.py --task "Generate a simple retry strategy" \
 
 # Specify output name
 python run_synthesis.py --task "Create a hybrid JSON strategy" --output-name my_strategy
+
+# Specify location for dafny executable
+python run_synthesis.py --task "Create a hybrid JSON strategy" --dafny-path ./dafny-lang/dafny/dafny
 ```
 
 ---
@@ -124,7 +127,6 @@ csd-generation/
 │   └── runtime_stubs.py      # Extern implementations for Dafny code
 │
 ├── parsers/                  # Grammar and parsing utilities
-│   ├── json_prefix.py        # Hand-optimized JSON prefix validator
 │   ├── lark_parser.py        # Generic Lark-based grammar parser
 │   └── model_token_parser.py # Token-level parsing for LMs
 │
@@ -139,7 +141,6 @@ csd-generation/
 │   └── validate_json_csd.py       # Validate JSON-oriented strategies
 │
 ├── tests/                    # Unit tests
-│   └── test_json_prefix.py
 │
 ├── outputs/                  # Generated outputs
 │   └── generated-csd/
@@ -325,23 +326,6 @@ parser = LarkGrammarParser.from_grammar_file("my_grammar.lark")
 # Check validity
 is_valid = parser.is_valid_prefix('{"key": ')  # True
 is_complete = parser.is_complete('{"key": "value"}')  # True
-```
-
-### JSON Prefix Validator (Optimized)
-
-```python
-from parsers import is_valid_json_prefix, is_complete_json, JsonPrefixValidator
-
-# Quick checks
-is_valid_json_prefix('{"key": "value"')  # True - valid prefix
-is_complete_json('{"key": "value"}')      # True - complete JSON
-
-# Incremental validation
-validator = JsonPrefixValidator()
-validator.feed("{")    # True
-validator.feed('"')    # True
-validator.feed("key")  # True
-validator.is_complete() # False
 ```
 
 ---
