@@ -287,68 +287,15 @@ class StrategyRunner:
                 return self._lm_tokens
         
         # Create a JSON-aware parser
-        class JsonParser(VerifiedDecoderAgent.Parser):
-            """Parser that validates JSON structure."""
-            
-            def __init__(self, lm_tokens):
-                super().__init__()
-                self._lm_tokens = lm_tokens
-                self._token_list = list(lm_tokens)
-                
-                # Import JSON validator
-                from parsers.json_prefix import is_valid_json_prefix, is_complete_json
-                self._is_valid_prefix = is_valid_json_prefix
-                self._is_complete = is_complete_json
-            
-            def _tokens_to_text(self, tokens) -> str:
-                """Convert token sequence to text."""
-                if hasattr(tokens, '__iter__'):
-                    return "".join(str(t) for t in tokens)
-                return str(tokens)
-            
-            def IsValidPrefix(self, prefix) -> bool:
-                """Check if prefix decodes to valid JSON prefix."""
-                if len(prefix) == 0:
-                    return True
-                text = self._tokens_to_text(prefix)
-                return self._is_valid_prefix(text)
-            
-            def IsCompletePrefix(self, prefix) -> bool:
-                """Check if prefix decodes to complete JSON."""
-                if len(prefix) == 0:
-                    return False
-                text = self._tokens_to_text(prefix)
-                return self._is_complete(text)
-            
-            def ValidNextTokens(self, prefix):
-                """Get tokens that can validly follow the prefix."""
-                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
-                
-                # If current prefix is invalid, return empty
-                if current_text and not self._is_valid_prefix(current_text):
-                    return _dafny.SeqWithoutIsStrInference([])
-                
-                # Filter tokens
-                valid = []
-                for token in self._token_list:
-                    token_str = str(token)
-                    if not token_str:
-                        continue
-                    extended = current_text + token_str
-                    if self._is_valid_prefix(extended):
-                        valid.append(token)
-                
-                return _dafny.SeqWithoutIsStrInference(valid)
         
         # Create instances based on parser mode
         is_json_mode = self.parser_mode == "json"
         lm = TestLM(vocab_size=self.vocab_size, json_mode=is_json_mode)
         
+        parser = TestParser(lm._Tokens)
         if is_json_mode:
-            parser = JsonParser(lm._Tokens)
             prompt = _dafny.SeqWithoutIsStrInference([])  # Empty prompt for JSON
         else:
-            parser = TestParser(lm._Tokens)
             prompt = _dafny.SeqWithoutIsStrInference(["<START>"])
         
         return lm, parser, prompt, self.max_steps

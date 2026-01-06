@@ -81,6 +81,12 @@ module GeneratedCSD {
     ensures parser.IsValidPrefix(generated)
     ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
   {
-    // QWEN_INSERT_STRATEGY_HERE
+    // CSD_RATIONALE_BEGIN
+// I chose HybridGeneration because it balances exploration (unconstrained tokens) with constraint adherence,
+// which is suitable for generating sequences that slowly solve parts of a problem. Interval N=5 provides a moderate
+// level of exploration without overly violating constraints.
+// CSD_RATIONALE_END
+
+generated := CSDHelpers.HybridGeneration(lm, parser, prompt, maxSteps, 5);
   }
 }
