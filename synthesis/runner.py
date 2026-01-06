@@ -2,6 +2,8 @@
 Python runner for compiled Dafny CSD strategies.
 
 Executes the compiled Python code and captures results/errors.
+
+Supports both permissive testing mode and real JSON parsing mode.
 """
 
 import importlib.util
@@ -9,7 +11,10 @@ import sys
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Literal
+
+# Type for parser mode
+ParserMode = Literal["permissive", "json"]
 
 
 @dataclass
@@ -39,13 +44,18 @@ class StrategyRunner:
     
     Loads the generated Python module, injects runtime stubs,
     and executes the strategy with test inputs.
+    
+    Supports two parser modes:
+    - "permissive": Accepts all tokens (for testing compilation)
+    - "json": Uses real JSON prefix validation
     """
     
     def __init__(
         self,
         runtime_stubs_path: Optional[Path] = None,
         vocab_size: int = 1000,
-        max_steps: int = 100
+        max_steps: int = 100,
+        parser_mode: ParserMode = "permissive"
     ):
         """
         Initialize the runner.
@@ -54,22 +64,24 @@ class StrategyRunner:
             runtime_stubs_path: Path to runtime_stubs.py (auto-detected if None)
             vocab_size: Vocabulary size for the LM stub
             max_steps: Maximum generation steps
+            parser_mode: "permissive" for testing, "json" for real JSON validation
         """
         self.vocab_size = vocab_size
         self.max_steps = max_steps
+        self.parser_mode = parser_mode
         
         # Auto-detect runtime stubs path
         if runtime_stubs_path is None:
             runtime_stubs_path = (
                 Path(__file__).parent.parent / 
-                "ConstrainedDecoding-py" / 
+                "runtime" / 
                 "runtime_stubs.py"
             )
         
         if not runtime_stubs_path.exists():
             raise FileNotFoundError(
                 f"Runtime stubs not found at {runtime_stubs_path}. "
-                "Make sure runtime_stubs.py exists in ConstrainedDecoding-py/"
+                "Make sure runtime_stubs.py exists in runtime/"
             )
         
         self.runtime_stubs_path = runtime_stubs_path
@@ -161,29 +173,78 @@ class StrategyRunner:
         
         # Create a Dafny-compatible LM with extern implementations
         class TestLM(VerifiedDecoderAgent.LM):
-            def __init__(self, vocab_size=100):
+            def __init__(self, vocab_size=100, json_mode=False):
                 super().__init__()
+                self.json_mode = json_mode
                 # Initialize vocabulary
-                tokens = []
-                for i in range(vocab_size):
-                    if i == 0:
-                        tokens.append("<EOS>")
-                    elif i < 26:
-                        tokens.append(chr(ord('a') + i - 1))
-                    else:
-                        tokens.append(f"<T{i}>")
+                tokens = self._create_vocabulary(vocab_size, json_mode)
                 
                 self._Tokens = _dafny.SeqWithoutIsStrInference(tokens)
-                self._Ids = _dafny.SeqWithoutIsStrInference(list(range(vocab_size)))
-                self.Logits = _dafny.Array(None, vocab_size)
-                for i in range(vocab_size):
+                self._Ids = _dafny.SeqWithoutIsStrInference(list(range(len(tokens))))
+                self.Logits = _dafny.Array(None, len(tokens))
+                for i in range(len(tokens)):
                     self.Logits[i] = _dafny.BigRational(0)
+            
+            def _create_vocabulary(self, vocab_size, json_mode):
+                """Create vocabulary, optionally with JSON tokens."""
+                if not json_mode:
+                    tokens = []
+                    for i in range(vocab_size):
+                        if i == 0:
+                            tokens.append("<EOS>")
+                        elif i < 26:
+                            tokens.append(chr(ord('a') + i - 1))
+                        else:
+                            tokens.append(f"<T{i}>")
+                    return tokens
+                
+                # JSON-friendly vocabulary
+                tokens = []
+                
+                # Structural tokens
+                structural = ["{", "}", "[", "]", ":", ",", " ", "\n", "\t", '"']
+                tokens.extend(structural)
+                
+                # Escape sequences
+                escapes = ["\\", "\\n", "\\t", "\\r", '\\"', "\\\\"]
+                tokens.extend(escapes)
+                
+                # Numbers
+                tokens.extend(list("0123456789"))
+                tokens.extend([".", "-", "+", "e", "E"])
+                
+                # JSON literals
+                tokens.extend(["true", "false", "null"])
+                
+                # Letters
+                for c in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                    tokens.append(c)
+                
+                # Common keys
+                tokens.extend(["name", "value", "id", "type", "data", "message"])
+                
+                # EOS
+                tokens.append("<EOS>")
+                
+                # Fill to vocab_size
+                while len(tokens) < vocab_size:
+                    tokens.append(f"<T{len(tokens)}>")
+                
+                return tokens[:vocab_size]
             
             def GenerateLogits(self, input_prefix):
                 """Extern: Generate random logits for testing."""
                 import random
                 for i in range(self.Logits.length(0)):
                     self.Logits[i] = _dafny.BigRational(random.gauss(0, 1))
+                
+                # Bias toward structural tokens in JSON mode
+                if self.json_mode:
+                    structural = {"{", "}", "[", "]", ":", ",", '"', " "}
+                    for i, token in enumerate(self._Tokens):
+                        if str(token) in structural:
+                            current = float(str(self.Logits[i]))
+                            self.Logits[i] = _dafny.BigRational(current + 2.0)
             
             def ChooseNextToken(self):
                 """Extern: Choose highest logit token that isn't masked."""
@@ -225,10 +286,70 @@ class StrategyRunner:
                 """Extern: Return all LM tokens as valid."""
                 return self._lm_tokens
         
-        # Create instances
-        lm = TestLM(vocab_size=self.vocab_size)
-        parser = TestParser(lm._Tokens)
-        prompt = _dafny.SeqWithoutIsStrInference(["<START>"])
+        # Create a JSON-aware parser
+        class JsonParser(VerifiedDecoderAgent.Parser):
+            """Parser that validates JSON structure."""
+            
+            def __init__(self, lm_tokens):
+                super().__init__()
+                self._lm_tokens = lm_tokens
+                self._token_list = list(lm_tokens)
+                
+                # Import JSON validator
+                from parsers.json_prefix import is_valid_json_prefix, is_complete_json
+                self._is_valid_prefix = is_valid_json_prefix
+                self._is_complete = is_complete_json
+            
+            def _tokens_to_text(self, tokens) -> str:
+                """Convert token sequence to text."""
+                if hasattr(tokens, '__iter__'):
+                    return "".join(str(t) for t in tokens)
+                return str(tokens)
+            
+            def IsValidPrefix(self, prefix) -> bool:
+                """Check if prefix decodes to valid JSON prefix."""
+                if len(prefix) == 0:
+                    return True
+                text = self._tokens_to_text(prefix)
+                return self._is_valid_prefix(text)
+            
+            def IsCompletePrefix(self, prefix) -> bool:
+                """Check if prefix decodes to complete JSON."""
+                if len(prefix) == 0:
+                    return False
+                text = self._tokens_to_text(prefix)
+                return self._is_complete(text)
+            
+            def ValidNextTokens(self, prefix):
+                """Get tokens that can validly follow the prefix."""
+                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                
+                # If current prefix is invalid, return empty
+                if current_text and not self._is_valid_prefix(current_text):
+                    return _dafny.SeqWithoutIsStrInference([])
+                
+                # Filter tokens
+                valid = []
+                for token in self._token_list:
+                    token_str = str(token)
+                    if not token_str:
+                        continue
+                    extended = current_text + token_str
+                    if self._is_valid_prefix(extended):
+                        valid.append(token)
+                
+                return _dafny.SeqWithoutIsStrInference(valid)
+        
+        # Create instances based on parser mode
+        is_json_mode = self.parser_mode == "json"
+        lm = TestLM(vocab_size=self.vocab_size, json_mode=is_json_mode)
+        
+        if is_json_mode:
+            parser = JsonParser(lm._Tokens)
+            prompt = _dafny.SeqWithoutIsStrInference([])  # Empty prompt for JSON
+        else:
+            parser = TestParser(lm._Tokens)
+            prompt = _dafny.SeqWithoutIsStrInference(["<START>"])
         
         return lm, parser, prompt, self.max_steps
     

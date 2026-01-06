@@ -204,7 +204,7 @@ def run_verification_only(args):
     from synthesis.compiler import DafnyCompiler
     from synthesis.runner import StrategyRunner
     
-    dafny_file = Path(__file__).parent / "agents" / "GeneratedCSD.dfy"
+    dafny_file = Path(__file__).parent / "dafny" / "GeneratedCSD.dfy"
     
     if not dafny_file.exists():
         print(f"Error: {dafny_file} not found")
