@@ -14,7 +14,7 @@ The generator expects these entrypoints:
 """
 
 # NOTE:
-# The synthesized output is injected into `agents/GeneratedCSD.dfy` as the BODY
+# The synthesized output is injected into `dafny/GeneratedCSD.dfy` as the BODY
 # of method `MyCSDStrategy(...) returns (generated: Prefix)`.
 #
 # The output may be a multi-line Dafny method body. It must assign the out-parameter

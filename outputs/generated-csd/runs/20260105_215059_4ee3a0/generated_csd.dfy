@@ -81,6 +81,13 @@ module GeneratedCSD {
     ensures parser.IsValidPrefix(generated)
     ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
   {
-    // QWEN_INSERT_STRATEGY_HERE
+    // CSD_RATIONALE_BEGIN
+// I chose a multi-step approach to ensure strict adherence to the INI format. For small maxSteps, I use pure constrained generation to avoid unnecessary complexity. For larger maxSteps, I employ a speculative strategy with a window size of 4 to balance between speed and validation efficiency. This approach allows for early creativity while maintaining overall validity.
+// CSD_RATIONALE_END
+if maxSteps < 12 {
+    generated := CSDHelpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);
+} else {
+    generated := CSDHelpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 4);
+}
   }
 }
