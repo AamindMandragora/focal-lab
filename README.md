@@ -324,8 +324,8 @@ parser = create_parser_for_format("json")
 parser = LarkGrammarParser.from_grammar_file("my_grammar.lark")
 
 # Check validity
-is_valid = parser.is_valid_prefix('{"key": ')  # True
-is_complete = parser.is_complete('{"key": "value"}')  # True
+is_valid = parser.IsValidPrefix('{"key": ')  # True
+IsCompletePrefix = parser.IsCompletePrefix('{"key": "value"}')  # True
 ```
 
 ---
