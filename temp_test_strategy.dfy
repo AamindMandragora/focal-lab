@@ -3,7 +3,7 @@ include "VerifiedAgentSynthesis.dfy"
 module GeneratedCSD {
   import opened VerifiedDecoderAgent
 
-  method MyCSDStrategy(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, eosToken: Token) returns (generated: Prefix, cost: int)
+  method MyCSDStrategy(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat) returns (generated: Prefix, cost: int)
     modifies lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
@@ -11,16 +11,18 @@ module GeneratedCSD {
     requires "<<" in lm.Tokens && ">>" in lm.Tokens
     ensures lm.ValidTokensIdsLogits()
     ensures |generated| <= maxSteps
-    
+    ensures parser.IsValidPrefix(generated)
+    ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
+    ensures cost <= 2 * maxSteps
   {
     var helpers := new CSDHelpers();
+    
     // CSD_RATIONALE_BEGIN
-    // I chose CraneGeneration for the GSM-Symbolic dataset because it matches the 
-    // CRANE-style windowing requirement: unconstrained reasoning segments outside
-    // of << and >> delimiters, and constrained math expressions inside them.
+    // We use HybridGeneration to interleave reasoning and constrained steps.
+    // The cost will be at most 2 * maxSteps.
     // CSD_RATIONALE_END
-
-    generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 50, eosToken);
+    generated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);
+    
     cost := helpers.cost;
   }
 }
