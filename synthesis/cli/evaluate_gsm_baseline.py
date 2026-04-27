@@ -1,33 +1,24 @@
 #!/usr/bin/env python3
-"""
-Build and evaluate the fixed GSM baseline strategy.
+"""Evaluate a fixed GSM baseline run.
 
-This replaces the old shell script that embedded a large Python heredoc and
-hard-coded machine-specific environment variables.
+The old built-in starter strategy has been removed from synthesis so it cannot
+seed generated CSDs. This command now refuses to synthesize a canned baseline
+and points callers at existing-run evaluation instead.
 """
 
 from __future__ import annotations
 
 import argparse
-import os
-import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from verification.compiler import DafnyCompiler
-from generation.generator import StrategyGenerator
-from verification.verifier import DafnyVerifier
-from verification.transpiler.transpiler import transpile_contract_library
-
-
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Build and evaluate the fixed GSM baseline strategy.",
+        description="Deprecated fixed GSM baseline evaluator.",
     )
     parser.add_argument(
         "--model",
@@ -71,39 +62,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def _build_baseline_run() -> Path:
-    outputs_dir = PROJECT_ROOT / "outputs"
-    outputs_dir.mkdir(parents=True, exist_ok=True)
-
-    run_dir = outputs_dir / f"vanilla_baseline_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-    run_dir.mkdir(parents=True, exist_ok=True)
-
-    dafny_bin = PROJECT_ROOT / "dafny" / "dafny"
-    full_code = StrategyGenerator().inject_strategy(StrategyGenerator.STARTER_STRATEGY)
-
-    verifier = DafnyVerifier(dafny_path=str(dafny_bin))
-    verify_result = verifier.verify(full_code)
-    if not verify_result.success:
-        raise RuntimeError("Verification failed:\n" + verify_result.get_error_summary())
-
-    compiler = DafnyCompiler(dafny_path=str(dafny_bin), output_dir=run_dir)
-    compile_result = compiler.compile(full_code, output_name="generated_csd")
-    if not compile_result.success:
-        raise RuntimeError("Compilation failed:\n" + compile_result.get_error_summary())
-
-    (run_dir / "generated_csd.py").write_text(full_code, encoding="utf-8")
-    transpiled = transpile_contract_library(
-        full_code,
-        module_name_hint="generated_csd",
-        axiomatize=False,
+    raise RuntimeError(
+        "The fixed starter baseline was removed so synthesis no longer seeds the model "
+        "with canned strategy code. Re-evaluate an existing run with "
+        "`python -m synthesis.cli.evaluate_existing_run --run-dir <run-dir>` instead."
     )
-    if transpiled.is_ok():
-        (run_dir / "generated_csd.dfy").write_text(transpiled.value, encoding="utf-8")
-
-    (PROJECT_ROOT / "outputs" / "latest_run.txt").write_text(
-        str(run_dir) + "\n",
-        encoding="utf-8",
-    )
-    return run_dir
 
 
 def main() -> int:

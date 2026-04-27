@@ -1,0 +1,35 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with numeric constants and optional variables. CRITICAL RULES: 1. Pure arithmetic expressions are valid; the final << >> segment may be either a single expression or a single equation. 2. The evaluator computes the numeric value of the final constrained expression, so the model does not need to simplify all the way to a standalone numeral. 3. Use variables only when they genuinely help; pure numeric expressions like 16 * 8.5 + 4 * 10.5 + 13 are allowed. 4. Preserve numeric values exactly from the problem statement. Do not round or truncate decimals like 8.5 into 8. 5. The constrained answer segment should stay short, compact, and mathematically meaningful. 6. Prefer exactly one final << >> answer span; avoid emitting extra delimiter windows after the answer, and do not mention << or >> in the free-form reasoning text. 7. The final constrained segment must be complete before the closing delimiter.",
+  "total_attempts": 1,
+  "timestamp": "2026-04-27T05:34:21.227478",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "",
+      "strategy_analysis": {
+        "strategy_name": "CustomLoop",
+        "parameters": {
+          "uses_rollback": false,
+          "uses_answer_channel": false
+        },
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": ""
+      },
+      "timestamp": "2026-04-27T05:34:21.227318",
+      "succeeded": false,
+      "failed_at": "generation",
+      "error_summary": "Qwen did not produce a usable initial strategy: Generated strategy is structurally invalid. It must contain executable decoding logic with a while loop and helper step calls. Last issue: Every constrained helper call must be inside a branch or loop condition that explicitly checks `helpers.CanConstrain(generated)` or `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`. Unguarded calls: AppendSoftConstrainedStep.",
+      "verification": null,
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 0,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

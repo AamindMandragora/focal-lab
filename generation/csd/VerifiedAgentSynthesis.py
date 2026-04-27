@@ -710,6 +710,7 @@ class CSDHelpers:
         ensures=(
             "this.lm == lm && this.parser == parser",
             "lm.ValidTokensIdsLogits()",
+            "this.lm.ValidTokensIdsLogits()",
         ),
     )
     def __init__(self, lm: LM, parser: Parser) -> None:
@@ -831,6 +832,7 @@ class CSDHelpers:
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
             "stepsLeft' == stepsLeft - 1",
+            "stepsLeft' >= 0",
             "next in lm.Tokens",
             "!lm.IsMasked(next)",
         ),
@@ -945,6 +947,7 @@ class CSDHelpers:
     @dafny_spec(
         kind="method",
         requires=(
+            "this.lm.ValidTokensIdsLogits()",
             "token in lm.Tokens",
             "stepsLeft >= 1",
         ),
@@ -1002,6 +1005,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
             "updated[|prefix|] in lm.Tokens",
             "!lm.IsMasked(updated[|prefix|])",
         ),
@@ -1024,6 +1028,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
             "updated[|prefix|] in lm.Tokens",
             "!lm.IsMasked(updated[|prefix|])",
             "parser.ValidNextToken(LongestValidSuffix(prefix), updated[|prefix|])",
@@ -1049,6 +1054,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
             "updated[|prefix|] in lm.Tokens",
             "!lm.IsMasked(updated[|prefix|])",
         ),
@@ -1074,6 +1080,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
             "updated[|prefix|] in lm.Tokens",
             "!lm.IsMasked(updated[|prefix|])",
             "parser.ValidNextToken(LongestValidSuffix(prefix), updated[|prefix|])",
@@ -1098,6 +1105,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
             "updated[|prefix|] in lm.Tokens",
             "!lm.IsMasked(updated[|prefix|])",
             "stepsLeft <= completionThreshold && CanConstrain(prefix) ==> parser.ValidNextToken(LongestValidSuffix(prefix), updated[|prefix|])",
@@ -1112,6 +1120,7 @@ class CSDHelpers:
     @dafny_spec(
         kind="method",
         requires=(
+            "this.lm.ValidTokensIdsLogits()",
             "token in lm.Tokens",
             "stepsLeft >= 1",
         ),
@@ -1120,6 +1129,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "updated == prefix + [token]",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
         ),
     )
     def AppendForcedToken(self, prefix: Prefix, token: Token, stepsLeft: int) -> tuple[Prefix, int]:
@@ -1129,6 +1139,7 @@ class CSDHelpers:
     @dafny_spec(
         kind="method",
         requires=(
+            "this.lm.ValidTokensIdsLogits()",
             "LeftDelimiter in lm.Tokens",
             "stepsLeft >= 1",
         ),
@@ -1137,6 +1148,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "updated == prefix + [LeftDelimiter]",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
         ),
     )
     def AppendLeftDelimiter(self, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:
@@ -1146,6 +1158,7 @@ class CSDHelpers:
     @dafny_spec(
         kind="method",
         requires=(
+            "this.lm.ValidTokensIdsLogits()",
             "RightDelimiter in lm.Tokens",
             "stepsLeft >= 1",
         ),
@@ -1154,6 +1167,7 @@ class CSDHelpers:
             "remainingSteps == stepsLeft - 1",
             "remainingSteps >= 0",
             "updated == prefix + [RightDelimiter]",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
         ),
     )
     def AppendRightDelimiter(self, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:

@@ -256,6 +256,8 @@ def test_repair_injects_standard_loop_invariants_for_lm_logit_preconditions():
     )
 
     assert changed
+    assert "# invariant helpers.lm == lm" in repaired
+    assert "# invariant helpers.parser == parser" in repaired
     assert "# invariant lm.ValidTokensIdsLogits()" in repaired
     assert "# invariant 0 <= stepsLeft <= maxSteps" in repaired
     assert "# invariant |generated| + stepsLeft <= maxSteps" in repaired

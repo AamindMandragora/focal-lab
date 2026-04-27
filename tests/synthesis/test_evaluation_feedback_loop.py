@@ -133,6 +133,26 @@ def test_build_evaluation_failure_prompt_and_generator_refinement():
     assert refined == "new strategy"
 
 
+def test_generator_raises_instead_of_using_canned_fallback():
+    from generation.generator import StrategyGenerationError, StrategyGenerator
+
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    generator.max_new_tokens = 192
+    generator.temperature = 0.7
+    generator._generate_text = Mock(return_value="not a strategy")
+    generator._extract_strategy = Mock(return_value="not a strategy")
+    generator._ensure_rationale_block = Mock(side_effect=ValueError("missing rationale"))
+
+    with pytest.raises(StrategyGenerationError, match="usable initial strategy"):
+        generator._generate_valid_strategy(
+            "system",
+            "user",
+            failure_context="Qwen did not produce a usable initial strategy",
+        )
+
+    assert not hasattr(StrategyGenerator, "STARTER_STRATEGY")
+
+
 @patch("synthesis.feedback_loop.DafnyCompiler")
 def test_pipeline_retries_after_evaluation_failure(mock_dafny_compiler):
     from verification.compiler import CompilationResult

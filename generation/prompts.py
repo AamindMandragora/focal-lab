@@ -43,6 +43,8 @@ Prefer these helpers and always assign the tuple result back into `generated, st
 Never use an `Append*` helper as a bare statement.
 Never write `next_token, stepsLeft = helpers.AppendConstrainedStep(...)` or any other
 `Append*` call into `next_token`; `Append*` returns an updated prefix, not a token.
+Use hard `AppendConstrainedStep` or `AppendTopKConstrainedStep` for final answer tokens;
+`AppendSoftConstrainedStep` is only a guarded biasing experiment and is not a hard syntax guarantee.
 If you use raw `ForcedTokenStep`, always write:
 `next_token, new_steps = helpers.ForcedTokenStep(...)`,
 then append `next_token`, then set `stepsLeft = new_steps`.
@@ -50,13 +52,17 @@ then append `next_token`, then set `stepsLeft = new_steps`.
 ## Ownership Rules
 
 Grammar-state queries live on `parser`, not on `helpers`.
+Budget convenience over the current generated prefix lives on `helpers`.
 
 - Correct: `helpers.CanConstrain(generated)`
+- Correct: `helpers.MinStepsToComplete(generated)`
 - Correct: `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`
+- Correct: `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ValidContinuationCount(helpers.LongestValidSuffix(generated))`
 - Wrong: `helpers.IsCompletePrefix(...)`
 - Wrong: `helpers.ValidContinuationCount(...)`
 - Wrong: `parser.IsCompletePrefix(generated)`
+- Wrong: `parser.MinStepsToComplete(...)`
 
 ## Constrained-Call Rule
 
@@ -74,11 +80,30 @@ must be inside a branch or loop condition that explicitly mentions
 
 Do not rely on a phase variable alone.
 
+Valid guarded form:
+
+```python
+elif phase == 2 and helpers.CanConstrain(generated):
+    if pressure > 1:
+        generated, stepsLeft = helpers.AppendTopKConstrainedStep(prompt, generated, 8, stepsLeft)
+    else:
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+```
+
+Invalid unguarded form:
+
+```python
+elif phase == 2:
+    generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, 0.5, stepsLeft)
+```
+
 ## Minimal Proof-Friendly Loop Pattern
 
 Place these exact comments immediately above each decoding `while` loop:
 
 ```python
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
 # invariant lm.ValidTokensIdsLogits()
 # invariant 0 <= stepsLeft <= maxSteps
 # invariant |generated| + stepsLeft <= maxSteps
@@ -100,6 +125,8 @@ Use this order:
 
 Do not mention `<<` or `>>` in reasoning text outside the final answer span.
 For GSM arithmetic, preserve decimals exactly; do not turn `8.5` into `8`.
+- Do not add a fallback branch that abandons grammar constraints and keeps generating
+  unconstrained tokens after entering the final answer segment.
 """
 
 
@@ -194,7 +221,7 @@ state variables instead of string slicing.
 
 - `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `UnconstrainedStep`; appends the chosen token for you.
 - `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `ConstrainedStep`; appends the grammar-valid token for you.
-- `helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)` — preferred wrapper around `SoftConstrainedStep`.
+- `helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)` — wrapper around `SoftConstrainedStep`; guarded only, and not a hard syntax guarantee for final answer tokens.
 - `helpers.AppendTopKConstrainedStep(prompt, generated, k, stepsLeft)` — preferred wrapper around `TopKConstrainedStep`.
 - `helpers.AppendBudgetAwareStep(prompt, generated, stepsLeft, threshold)` — preferred wrapper around `BudgetAwareStep`.
 - `helpers.AppendForcedToken(generated, token, stepsLeft)` — preferred wrapper around `ForcedTokenStep`; appends `token` for you.
@@ -206,12 +233,16 @@ When possible, prefer the Append* helpers because they avoid the common proof mi
 ### Which object owns which method
 
 Only a small set of names live on `helpers`. Grammar-state queries like completeness and continuation counts live on `parser`, not on `helpers`.
+Budget convenience over the current generated prefix lives on `helpers`.
 
 - Correct: `helpers.CanConstrain(generated)`
+- Correct: `helpers.MinStepsToComplete(generated)`
 - Correct: `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`
+- Correct: `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ValidContinuationCount(helpers.LongestValidSuffix(generated))`
 - Wrong: `helpers.IsCompletePrefix(...)`
 - Wrong: `helpers.ValidContinuationCount(...)`
+- Wrong: `parser.MinStepsToComplete(...)`
 
 If you need parser information about the generated answer segment, first compute the grammar-relevant suffix with `helpers.LongestValidSuffix(generated)` and pass that suffix to `parser`.
 
@@ -225,6 +256,8 @@ If you need parser information about the generated answer segment, first compute
 - `parser.IsDeadPrefix(prefix)` — True if the prefix cannot be extended.
 - `parser.ValidContinuationCount(prefix)` — number of valid continuations.
 - `parser.ParserDistanceToComplete(prefix)` — lower bound on steps to complete the grammar.
+- There is no `parser.MinStepsToComplete(...)`. Use `helpers.MinStepsToComplete(generated)`
+  or `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`.
 
 ### Logit shaping (on `lm`, not `helpers`)
 
@@ -243,6 +276,7 @@ If you need parser information about the generated answer segment, first compute
 - `helpers.BiasForCompletion(prefix, bonus)` — bias tokens that would complete the grammar by +bonus.
 - `helpers.HasBudget(stepsLeft, needed)` — returns stepsLeft >= needed.
 - `helpers.MinStepsToComplete(prefix)` — lower bound on steps to finish from current suffix.
+  Pass the current full prefix such as `generated`; this helper extracts the suffix internally.
 
 ### Repair utilities
 
@@ -272,19 +306,41 @@ the evaluator can compute its numeric value and does not require a standalone nu
 A typical strategy body:
 1. Generate free-form reasoning with `helpers.AppendUnconstrainedStep(...)` into `generated`.
 2. Emit `LeftDelimiter` with `helpers.AppendLeftDelimiter(generated, stepsLeft)`.
-3. Loop `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` until `not helpers.CanConstrain(generated)`.
+3. In a branch whose condition says `helpers.CanConstrain(generated)`, append hard grammar-valid
+   answer tokens with `helpers.AppendConstrainedStep(...)` or `helpers.AppendTopKConstrainedStep(...)`.
 4. Emit `RightDelimiter` with `helpers.AppendRightDelimiter(generated, stepsLeft)`.
 
 After step 2, `LongestValidSuffix` resets to `[]` (since `<<` is not a grammar token), so the
 first `ConstrainedStep` will choose from `ValidNextTokens([])` — the grammar's starting tokens.
 Do not jump directly from free-form reasoning to `AppendConstrainedStep` without first emitting
 `LeftDelimiter`.
+Do not include a fallback branch that switches to unconstrained generation after entering
+the final answer segment. If constraints are tight, use soft/top-k constrained helpers or
+budget-aware constrained helpers, but keep the answer-bearing segment grammar-controlled.
+Do not rely on `AppendSoftConstrainedStep` as the only answer builder: it biases invalid tokens
+but does not hard-guarantee the appended token is grammar-valid. Prefer hard constrained or
+top-k constrained appends for the final `<< ... >>` content.
+
+Safe adaptive constrained branch shape:
+
+```python
+elif phase == 2 and helpers.CanConstrain(generated):
+    if pressure > 1:
+        generated, stepsLeft = helpers.AppendTopKConstrainedStep(prompt, generated, 8, stepsLeft)
+    else:
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+```
+
+Do not put constrained append calls under a plain `elif phase == 2:` branch; the guard must be
+visible on an enclosing `if`, `elif`, or `while` condition.
 
 ## Python subset rules
 
 - Use normal Python syntax: `while ...:`, `if ...:`, `and`, `or`, `not`, `==`, `!=`.
 - Use Python comments beginning with `#`.
 - If you need loop invariants for the Dafny transpiler, put them as comments IMMEDIATELY above the `while`:
+    # invariant helpers.lm == lm
+    # invariant helpers.parser == parser
     # invariant lm.ValidTokensIdsLogits()
     # invariant 0 <= stepsLeft <= maxSteps
     # invariant |generated| + stepsLeft <= maxSteps
@@ -294,6 +350,8 @@ Do not jump directly from free-form reasoning to `AppendConstrainedStep` without
 - Do not use Python `for` loops. Use `while` loops only.
 - Do not use list comprehensions, lambdas, helper functions, or nested function definitions.
 - Do not use `break` unless truly necessary.
+- If a terminal branch would only update phase/state without consuming `stepsLeft`, use `break`
+  so the verifier can prove the `decreases stepsLeft` clause.
 - If you branch between different step choices, predeclare branch outputs before the `if`:
     next_token = eosToken
     new_steps = stepsLeft
@@ -331,6 +389,8 @@ Requirements:
 - Output ONLY the Python body inserted into `MyCSDStrategy`.
 - Start with the required rationale block using `#` comments.
 - Use a `while` loop with these exact invariants as preceding comments:
+    # invariant helpers.lm == lm
+    # invariant helpers.parser == parser
     # invariant lm.ValidTokensIdsLogits()
     # invariant 0 <= stepsLeft <= maxSteps
     # invariant |generated| + stepsLeft <= maxSteps
@@ -343,8 +403,12 @@ Requirements:
   ensure the current grammar suffix is incomplete, preferably with `helpers.CanConstrain(generated)`.
 - Put constrained helper calls inside a branch whose condition explicitly mentions
   `helpers.CanConstrain(generated)`. Do not rely on some earlier phase variable alone.
+- For adaptive soft/top-k/hard policies, put the guard on the enclosing branch, then choose the
+  variant inside it; e.g. `elif phase == 2 and helpers.CanConstrain(generated):`.
 - Do not write `helpers.IsCompletePrefix(...)` or `helpers.ValidContinuationCount(...)`.
   Those are parser calls, not helper calls.
+- Do not write `parser.MinStepsToComplete(...)`. Use `helpers.MinStepsToComplete(generated)` or
+  `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`.
 - The strategy MUST emit `LeftDelimiter` (prefer `helpers.AppendLeftDelimiter(...)`), followed by
   grammar-constrained tokens (prefer `helpers.AppendConstrainedStep(...)`), followed by
   `RightDelimiter` (prefer `helpers.AppendRightDelimiter(...)`).
@@ -362,6 +426,7 @@ Requirements:
 - Novelty requirements:
   - Do NOT produce a trivial two-phase "all unconstrained then all constrained" loop with no
     adaptive control.
+  - Do NOT use an unconstrained fallback branch inside or after the final answer segment.
   - Use multiple state variables to drive adaptive decisions across phases.
   - At least two interacting signals must affect what step type is chosen each iteration.
   - Favor strategies that evolve their constraint strength over time (e.g., soft → hard, or
@@ -394,6 +459,8 @@ Rules:
 - Keep the strategy within the supported Python subset from the system prompt.
 - Use `# invariant ...` and `# decreases ...` comments immediately above `while` loops.
 - Keep the standard proof-carrying loop lines unless there is a strong reason to strengthen them:
+    # invariant helpers.lm == lm
+    # invariant helpers.parser == parser
     # invariant lm.ValidTokensIdsLogits()
     # invariant 0 <= stepsLeft <= maxSteps
     # invariant |generated| + stepsLeft <= maxSteps
@@ -497,8 +564,11 @@ Rules:
 - Every decoding `while` loop must be budget-bounded, e.g. `while stepsLeft > 0 and ...:`.
 - Prefer `helpers.CanConstrain(generated)` over spelling out the full suffix-complete check.
 - Include the standard proof-carrying loop lines:
+  `# invariant helpers.lm == lm`,
+  `# invariant helpers.parser == parser`,
   `# invariant lm.ValidTokensIdsLogits()`,
   `# invariant 0 <= stepsLeft <= maxSteps`,
+  `# invariant |generated| + stepsLeft <= maxSteps`,
   and `# decreases stepsLeft`.
 - Prefer the Append* helpers:
   `helpers.AppendLeftDelimiter(generated, stepsLeft)`,
@@ -507,9 +577,16 @@ Rules:
 - Keep parser queries on `parser`, not on `helpers`. For example, write
   `parser.ValidContinuationCount(helpers.LongestValidSuffix(generated))`, not
   `helpers.ValidContinuationCount(...)`.
+- Do not call `parser.MinStepsToComplete(...)`; use `helpers.MinStepsToComplete(generated)` or
+  `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`.
 - Only call constrained helpers while `helpers.CanConstrain(generated)`.
 - Put each constrained-helper call in a branch whose condition explicitly mentions
   `helpers.CanConstrain(generated)`.
+- If the issue mentions an unguarded constrained helper, use this shape:
+  `elif phase == 2 and helpers.CanConstrain(generated):`
+  then nest adaptive choices such as soft/top-k/hard inside that branch.
+- Never put `AppendSoftConstrainedStep`, `AppendConstrainedStep`, or
+  `AppendTopKConstrainedStep` under a plain `elif phase == 2:` branch.
 - If you use raw forced-token calls, always capture them with `next_token, new_steps = ...`.
 - Assign every Append* result back into `generated` and `stepsLeft`.
 - If you use `helpers.RepairByRetry(prompt, generated, maxRetries, stepsLeft)`, only call it when

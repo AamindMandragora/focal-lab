@@ -16,7 +16,7 @@ from typing import Optional
 
 from verification.transpiler.transpiler import transpile_contract_library
 from evaluation.evaluator import EvaluationResult, Evaluator
-from generation.generator import StrategyGenerator
+from generation.generator import StrategyGenerationError, StrategyGenerator
 from generation.rationale import extract_rationale
 from verification.compiler import CompilationResult, DafnyCompiler
 from verification.verifier import DafnyVerifier, VerificationResult
@@ -26,6 +26,7 @@ from .runner import RuntimeResult, StrategyRunner
 class FailureStage(Enum):
     """Stage where synthesis attempt failed."""
 
+    GENERATION = "generation"
     VERIFICATION = "verification"
     COMPILATION = "compilation"
     RUNTIME = "runtime"
@@ -391,6 +392,8 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
                     ):
                         out.extend(
                             [
+                                f"{indent}# invariant helpers.lm == lm",
+                                f"{indent}# invariant helpers.parser == parser",
                                 f"{indent}# invariant lm.ValidTokensIdsLogits()",
                                 f"{indent}# invariant 0 <= {budget_var} <= maxSteps",
                                 f"{indent}# invariant |generated| + {budget_var} <= maxSteps",
@@ -962,29 +965,37 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
                 break
 
     # Fix: "precondition for this call could not be proved" for lm.ValidTokensIdsLogits() —
-    # helper methods (UnconstrainedStep, ConstrainedStep, GetDelimitedContent) require it.
-    # Add invariant lm.ValidTokensIdsLogits() to the while loop (provable: template establishes
-    # it before the loop; step postconditions maintain it).
+    # helper methods are called through the helpers object, so loops must preserve both the
+    # LM invariant and the helper-field aliases established by the template.
     if (
         "precondition for this call could not be proved" in error_summary
         and "ValidTokensIdsLogits" in error_summary
-        and "invariant lm.ValidTokensIdsLogits()" not in repaired
     ):
-        # Insert as first invariant in the while loop, before other invariants or decreases
-        new_repaired = re.sub(
-            r"(while\s+[^\n]+\n)((\s+invariant\b|\s+decreases\b))",
-            r"\1    invariant lm.ValidTokensIdsLogits()\n\2",
-            repaired,
-            count=1,
-        )
-        if new_repaired == repaired:
-            # Fallback: insert before the opening { of the while loop
-            new_repaired = re.sub(
-                r"(while\s+[^\n]+\n)(\s*\{)",
-                r"\1    invariant lm.ValidTokensIdsLogits()\n\2",
-                repaired,
-                count=1,
-            )
+        additions = [
+            "# invariant helpers.lm == lm",
+            "# invariant helpers.parser == parser",
+            "# invariant lm.ValidTokensIdsLogits()",
+        ]
+        first_while = re.search(r"(?m)^(\s*)while\b", repaired)
+        new_repaired = repaired
+        if first_while:
+            insert_at = first_while.start()
+            cursor = insert_at
+            for spec_line in reversed(repaired[:insert_at].splitlines(keepends=True)):
+                if re.match(r"^\s*#\s*(invariant|decreases)\b", spec_line):
+                    cursor -= len(spec_line)
+                    insert_at = cursor
+                    continue
+                break
+            existing_prefix = repaired[:first_while.start()]
+            missing = [line for line in additions if line not in existing_prefix]
+            if missing:
+                indent = first_while.group(1)
+                new_repaired = (
+                    repaired[:insert_at]
+                    + "".join(indent + line + "\n" for line in missing)
+                    + repaired[insert_at:]
+                )
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
@@ -1028,7 +1039,7 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
 
     # Fix: strategies with multiple while loops often only annotate the first one.
     # When postcondition fails or ForcedTokenStep precondition fails, add standard
-    # invariants (lm.ValidTokensIdsLogits, |generated|+stepsLeft<=maxSteps, decreases stepsLeft)
+    # invariants (helper aliases, lm.ValidTokensIdsLogits, budget bounds, decreases stepsLeft)
     # before every while loop. Use a tight 5-line context window matching what _loop_specs
     # can actually pick up (it stops scanning at the previous while loop's body lines).
     if "postcondition could not be proved" in error_summary or (
@@ -1045,7 +1056,10 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
         for line in lines_in:
             if re.match(r"^\s*while\b", line):
                 indent = re.match(r"^(\s*)", line).group(1)
+                result_lines.append(indent + "# invariant helpers.lm == lm")
+                result_lines.append(indent + "# invariant helpers.parser == parser")
                 result_lines.append(indent + "# invariant lm.ValidTokensIdsLogits()")
+                result_lines.append(indent + "# invariant 0 <= stepsLeft <= maxSteps")
                 result_lines.append(indent + "# invariant |generated| + stepsLeft <= maxSteps")
                 result_lines.append(indent + "# decreases stepsLeft")
                 changed = True
@@ -1814,7 +1828,22 @@ class SynthesisPipeline:
         print(f"Generating initial strategy for: {task_description[:80]}...")
         print("  (LLM steps can take 1–2 min each; evaluation can take several minutes. Interrupt with Ctrl+C if needed.)")
         t0 = time.perf_counter()
-        strategy_code = self.generator.generate_initial(task_description)
+        try:
+            strategy_code = self.generator.generate_initial(task_description)
+        except StrategyGenerationError as exc:
+            print(f"  ✗ Initial generation failed: {exc}")
+            attempt = SynthesisAttempt(
+                attempt_number=1,
+                strategy_code="",
+                timestamp=datetime.now().isoformat(),
+                failed_at=FailureStage.GENERATION,
+                error_summary=str(exc),
+            )
+            attempts.append(attempt)
+            report_path: Path | None = None
+            if self.save_reports:
+                report_path = self._save_failure_report(attempts, task_description, run_dir)
+            raise SynthesisExhaustionError("Initial generation failed", attempts, report_path) from exc
         print(f"  (initial generation took {time.perf_counter() - t0:.1f}s)")
 
         long_run_message_shown = False
@@ -1889,9 +1918,14 @@ class SynthesisPipeline:
                 # Refine based on verification error via model (one LLM call; can take minutes if GPU is slow or OOM → CPU)
                 print("  Refining based on verification error... (LLM call may take 1–2 min)")
                 t0 = time.perf_counter()
-                strategy_code = self.generator.refine_after_verification_error(
-                    strategy_code, error_msg
-                )
+                try:
+                    strategy_code = self.generator.refine_after_verification_error(
+                        strategy_code, error_msg
+                    )
+                except StrategyGenerationError as exc:
+                    attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    print(f"  ✗ Refinement generation failed: {exc}")
+                    break
                 print(f"  (refinement took {time.perf_counter() - t0:.1f}s)")
                 continue
 
@@ -1922,9 +1956,14 @@ class SynthesisPipeline:
 
                 # Refine based on runtime error
                 print("  Refining based on runtime error...")
-                strategy_code = self.generator.refine_after_runtime_error(
-                    strategy_code, runtime_result.get_error_summary()
-                )
+                try:
+                    strategy_code = self.generator.refine_after_runtime_error(
+                        strategy_code, runtime_result.get_error_summary()
+                    )
+                except StrategyGenerationError as exc:
+                    attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    print(f"  ✗ Refinement generation failed: {exc}")
+                    break
                 continue
 
             print(f"  ✓ Execution successful ({runtime_result.execution_time_ms:.1f}ms)")
@@ -1940,10 +1979,15 @@ class SynthesisPipeline:
                 attempts.append(attempt)
 
                 print("  Refining based on empty runtime output...")
-                strategy_code = self.generator.refine_after_runtime_error(
-                    strategy_code,
-                    attempt.error_summary,
-                )
+                try:
+                    strategy_code = self.generator.refine_after_runtime_error(
+                        strategy_code,
+                        attempt.error_summary,
+                    )
+                except StrategyGenerationError as exc:
+                    attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    print(f"  ✗ Refinement generation failed: {exc}")
+                    break
                 continue
 
             # Stage 3: Evaluation — use same device as generator to avoid loading on a full GPU
@@ -1968,9 +2012,14 @@ class SynthesisPipeline:
                 attempts.append(attempt)
 
                 print("  Refining based on evaluation error...")
-                strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code, eval_result.get_feedback_summary()
-                )
+                try:
+                    strategy_code = self.generator.refine_after_evaluation_failure(
+                        strategy_code, eval_result.get_feedback_summary()
+                    )
+                except StrategyGenerationError as exc:
+                    attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    print(f"  ✗ Refinement generation failed: {exc}")
+                    break
                 continue
 
             # Check if evaluation meets thresholds
@@ -1989,9 +2038,14 @@ class SynthesisPipeline:
                 attempts.append(attempt)
 
                 print("  Refining based on evaluation results...")
-                strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code, eval_result.get_feedback_summary()
-                )
+                try:
+                    strategy_code = self.generator.refine_after_evaluation_failure(
+                        strategy_code, eval_result.get_feedback_summary()
+                    )
+                except StrategyGenerationError as exc:
+                    attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    print(f"  ✗ Refinement generation failed: {exc}")
+                    break
                 continue
 
             print(f"  ✓ Evaluation passed:")
@@ -2150,8 +2204,8 @@ class SynthesisPipeline:
                         "GuaranteesValidOutput lemma failed", 0
                     ) + 1
                 if "Free" in attempt.error_summary:
-                    error_counts["Uses Free without fallback"] = error_counts.get(
-                        "Uses Free without fallback", 0
+                    error_counts["Uses legacy Free construct"] = error_counts.get(
+                        "Uses legacy Free construct", 0
                     ) + 1
                 if "type" in attempt.error_summary.lower():
                     error_counts["Type error"] = error_counts.get("Type error", 0) + 1

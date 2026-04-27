@@ -127,7 +127,9 @@ The central helper class that composes the LM and Parser into reusable decoding 
 
 ### Suffix-Based Grammar Alignment
 
-Instead of requiring explicit delimiter management, these functions find the grammar-relevant portion of any prefix by scanning for the longest suffix that constitutes a valid parser prefix.
+The current `GeneratedAgentTemplate.py` returns one `generated` token prefix, and evaluation extracts the final answer from the final `LeftDelimiter ... RightDelimiter` span. Strategies should therefore track delimiter/phase state explicitly while using these suffix helpers to find the grammar-relevant answer prefix inside `generated`.
+
+These functions find the grammar-relevant portion of any prefix by scanning for the longest suffix that constitutes a valid parser prefix.
 
 | Name | Signature | Function |
 |------|-----------|----------|
@@ -157,7 +159,7 @@ These wrap the raw step helpers but return the updated prefix directly. They are
 |------|-----------|----------|
 | `AppendUnconstrainedStep(prompt, prefix, stepsLeft)` | `(Prefix, Prefix, int) → (Prefix, int)` | Wrapper around `UnconstrainedStep`. Appends the chosen token to `prefix` and returns `(prefix + [next], stepsLeft - 1)`. Preferred for free-form generation. |
 | `AppendConstrainedStep(prompt, prefix, stepsLeft)` | `(Prefix, Prefix, int) → (Prefix, int)` | Wrapper around `ConstrainedStep`. Requires `CanConstrain(prefix)`. Appends one grammar-valid token to `prefix` and returns the updated prefix plus remaining budget. Preferred for constrained answer growth. |
-| `AppendSoftConstrainedStep(prompt, prefix, penalty, stepsLeft)` | `(Prefix, Prefix, Logit, int) → (Prefix, int)` | Wrapper around `SoftConstrainedStep`. Requires `CanConstrain(prefix)` and `penalty > 0.0`. |
+| `AppendSoftConstrainedStep(prompt, prefix, penalty, stepsLeft)` | `(Prefix, Prefix, Logit, int) → (Prefix, int)` | Wrapper around `SoftConstrainedStep`. Requires `CanConstrain(prefix)` and `penalty > 0.0`. This is a soft biasing operation, not a hard syntax guarantee for the final answer segment. |
 | `AppendTopKConstrainedStep(prompt, prefix, k, stepsLeft)` | `(Prefix, Prefix, int, int) → (Prefix, int)` | Wrapper around `TopKConstrainedStep`. Requires `CanConstrain(prefix)` and `1 <= k <= |lm.Tokens|`. |
 | `AppendBudgetAwareStep(prompt, prefix, stepsLeft, completionThreshold)` | `(Prefix, Prefix, int, int) → (Prefix, int)` | Wrapper around `BudgetAwareStep`. Useful when the strategy wants updated-prefix ergonomics but still wants the budget-aware switching policy. |
 | `AppendForcedToken(prefix, token, stepsLeft)` | `(Prefix, Token, int) → (Prefix, int)` | Wrapper around `ForcedTokenStep`. Appends the forced token directly and returns the updated prefix and remaining budget. |
@@ -209,6 +211,8 @@ Help strategies make budget-aware decisions.
 | `HasBudget(stepsLeft, needed)` | `(int, int) → bool` | Returns `stepsLeft >= needed`. Pure convenience predicate for readable strategy conditions. |
 | `MinStepsToComplete(prefix)` | `(Prefix) → int` | Wrapper around `parser.ParserDistanceToComplete(LongestValidSuffix(prefix))`. Returns a lower bound on the steps needed to finish the grammar from the current state. |
 
+`MinStepsToComplete` lives on `helpers`, not on `parser`. If calling `parser` directly, use `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`.
+
 ### Composite Step Helpers
 
 Higher-level operations that compose multiple primitives for common patterns.
@@ -235,9 +239,9 @@ Every logit-shaping operation is designed to compose with every other:
 
 ### Suffix-Based Grammar Alignment
 
-Instead of explicit delimiter windows that assume CRANE-style interleaved constrained/unconstrained regions, `LongestValidSuffix` lets any strategy apply grammar awareness at any point. The strategy author simply calls a constrained step and the helper determines the grammar state from the suffix. This means:
+Instead of explicit parser-state windows that assume CRANE-style interleaved constrained/unconstrained regions, `LongestValidSuffix` lets any strategy apply grammar awareness at any point. The strategy still owns output-phase decisions such as when to emit `LeftDelimiter` and `RightDelimiter`, while the helper determines grammar state from the suffix. This means:
 
-- No delimiter bookkeeping in the strategy body.
+- Strategies track delimiter phase with local state, not string slicing.
 - Grammar constraints can be applied intermittently, gradually, or continuously.
 - The same helper works whether the strategy is doing free-form generation, structured output, or a hybrid.
 

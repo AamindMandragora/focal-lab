@@ -50,6 +50,10 @@ def _is_hf_connection_error(exc: Exception) -> bool:
     ))
 
 
+class StrategyGenerationError(RuntimeError):
+    """Raised when the model cannot produce a structurally valid strategy."""
+
+
 class StrategyGenerator:
     """
     Generates Python CSD strategies using Qwen.
@@ -110,43 +114,6 @@ class StrategyGenerator:
         "ValidContinuationCount",
         "ParserDistanceToComplete",
     }
-
-    STARTER_STRATEGY = """\
-# CSD_RATIONALE_BEGIN
-# Fallback starter strategy: budget-split between unconstrained reasoning and grammar-constrained answer inside << >> delimiters.
-# CSD_RATIONALE_END
-phase = 0
-reasoning_tokens = 0
-constrained_tokens = 0
-reasoning_budget = 8
-if stepsLeft < 16:
-    reasoning_budget = stepsLeft // 4
-# invariant lm.ValidTokensIdsLogits()
-# invariant 0 <= stepsLeft <= maxSteps
-# invariant 0 <= reasoning_tokens
-# invariant 0 <= constrained_tokens
-# invariant 0 <= phase <= 3
-# invariant |generated| + stepsLeft <= maxSteps
-# decreases stepsLeft
-while stepsLeft > 0 and phase < 3:
-    if phase == 0 and reasoning_tokens < reasoning_budget and stepsLeft > 2:
-        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-        reasoning_tokens = reasoning_tokens + 1
-        if reasoning_tokens >= reasoning_budget or stepsLeft <= 2:
-            phase = 1
-    elif phase == 0:
-        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
-        phase = 2
-    elif phase == 1:
-        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
-        phase = 2
-    elif phase == 2 and helpers.CanConstrain(generated):
-        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
-        constrained_tokens = constrained_tokens + 1
-    elif phase == 2 and not helpers.CanConstrain(generated):
-        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-        phase = 3
-"""
 
     def __init__(
         self,
@@ -877,10 +844,16 @@ while stepsLeft > 0 and phase < 3:
                 "The body must either append produced tokens with generated = generated + [next_token] "
                 "or use an Append* helper that assigns back into generated."
             )
+        if "# invariant helpers.lm == lm" not in body:
+            return "The body must include the standard loop invariant `# invariant helpers.lm == lm`."
+        if "# invariant helpers.parser == parser" not in body:
+            return "The body must include the standard loop invariant `# invariant helpers.parser == parser`."
         if "# invariant lm.ValidTokensIdsLogits()" not in body:
             return "The body must include the standard loop invariant `# invariant lm.ValidTokensIdsLogits()`."
         if "# invariant 0 <= stepsLeft <= maxSteps" not in body:
             return "The body must include the standard loop invariant `# invariant 0 <= stepsLeft <= maxSteps`."
+        if "# invariant |generated| + stepsLeft <= maxSteps" not in body:
+            return "The body must include the standard loop invariant `# invariant |generated| + stepsLeft <= maxSteps`."
         if "# decreases stepsLeft" not in body:
             return "The body must include the standard decreases clause `# decreases stepsLeft` immediately above a decoding while loop."
         if len(extra_state) < 2:
@@ -973,18 +946,12 @@ while stepsLeft > 0 and phase < 3:
             score += 8
         return score
 
-    def _fallback_strategy(self, reason: str) -> str:
-        print(f"  Warning: {reason}")
-        print("  Falling back to a built-in starter strategy so the pipeline can keep moving.")
-        return self.STARTER_STRATEGY
-
     def _generate_valid_strategy(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
-        fallback_reason: str,
-        fallback_strategy: Optional[str] = None,
+        failure_context: str,
     ) -> str:
         budgets = [
             max(self.max_new_tokens, self.MIN_STRATEGY_TOKENS),
@@ -1032,12 +999,8 @@ while stepsLeft > 0 and phase < 3:
             print(f"  Selected the most novel structurally valid candidate (score={best_score}).")
             return best_strategy
 
-        if fallback_strategy is not None and self._structural_issue(fallback_strategy) is None:
-            print(f"  Warning: {fallback_reason} ({last_error or 'invalid model output'}).")
-            print("  Reusing the previous valid strategy.")
-            return fallback_strategy
-
-        return self._fallback_strategy(f"{fallback_reason} ({last_error or 'invalid model output'})")
+        detail = last_error or "invalid model output"
+        raise StrategyGenerationError(f"{failure_context}: {detail}")
     
     def generate_initial(self, task_description: str) -> str:
         """
@@ -1053,7 +1016,7 @@ while stepsLeft > 0 and phase < 3:
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
-            fallback_reason="Qwen did not produce a usable initial strategy",
+            failure_context="Qwen did not produce a usable initial strategy",
         )
     
     def refine_after_verification_error(
@@ -1077,8 +1040,7 @@ while stepsLeft > 0 and phase < 3:
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
-            fallback_reason="Qwen did not produce a usable verification repair",
-            fallback_strategy=previous_strategy,
+            failure_context="Qwen did not produce a usable verification repair",
         )
     
     def refine_after_runtime_error(
@@ -1102,8 +1064,7 @@ while stepsLeft > 0 and phase < 3:
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
-            fallback_reason="Qwen did not produce a usable runtime repair",
-            fallback_strategy=previous_strategy,
+            failure_context="Qwen did not produce a usable runtime repair",
         )
     
     def refine_after_compilation_error(
@@ -1127,8 +1088,7 @@ while stepsLeft > 0 and phase < 3:
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
-            fallback_reason="Qwen did not produce a usable compilation repair",
-            fallback_strategy=previous_strategy,
+            failure_context="Qwen did not produce a usable compilation repair",
         )
 
     def refine_after_evaluation_failure(
@@ -1156,8 +1116,7 @@ while stepsLeft > 0 and phase < 3:
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
-            fallback_reason="Qwen did not produce a usable evaluation repair",
-            fallback_strategy=previous_strategy,
+            failure_context="Qwen did not produce a usable evaluation repair",
         )
 
     def inject_strategy(self, strategy: str) -> str:

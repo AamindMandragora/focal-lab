@@ -52,7 +52,9 @@ def MyCSDStrategy(
     phase = 0
     reasoning_tokens = 0
     constrained_tokens = 0
-    reasoning_budget = stepsLeft // 2
+    reasoning_budget = 8
+    if stepsLeft < 16:
+        reasoning_budget = stepsLeft // 4
     # invariant lm.ValidTokensIdsLogits()
     # invariant 0 <= stepsLeft <= maxSteps
     # invariant 0 <= reasoning_tokens
@@ -61,34 +63,22 @@ def MyCSDStrategy(
     # invariant |generated| + stepsLeft <= maxSteps
     # decreases stepsLeft
     while stepsLeft > 0 and phase < 3:
-        next_token = eosToken
-        new_steps = stepsLeft
         if phase == 0 and reasoning_tokens < reasoning_budget and stepsLeft > 2:
-            next_token, new_steps = helpers.UnconstrainedStep(prompt, generated, stepsLeft)
-            generated = generated + [next_token]
-            stepsLeft = new_steps
+            generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
             reasoning_tokens = reasoning_tokens + 1
             if reasoning_tokens >= reasoning_budget or stepsLeft <= 2:
                 phase = 1
         elif phase == 0:
-            next_token, new_steps = helpers.ForcedTokenStep(prompt, generated, LeftDelimiter, stepsLeft)
-            generated = generated + [next_token]
-            stepsLeft = new_steps
+            generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
             phase = 2
         elif phase == 1:
-            next_token, new_steps = helpers.ForcedTokenStep(prompt, generated, LeftDelimiter, stepsLeft)
-            generated = generated + [next_token]
-            stepsLeft = new_steps
+            generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
             phase = 2
-        elif phase == 2 and not parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
-            next_token, new_steps = helpers.ConstrainedStep(prompt, generated, stepsLeft)
-            generated = generated + [next_token]
-            stepsLeft = new_steps
+        elif phase == 2 and helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
             constrained_tokens = constrained_tokens + 1
-        elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
-            next_token, new_steps = helpers.ForcedTokenStep(prompt, generated, RightDelimiter, stepsLeft)
-            generated = generated + [next_token]
-            stepsLeft = new_steps
+        elif phase == 2 and not helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
             phase = 3
     remainingSteps = stepsLeft
     return generated, remainingSteps

@@ -210,8 +210,11 @@ def test_structural_issue_accepts_valid_new_api_strategy():
 phase = 0
 reasoning_tokens = 0
 constrained_count = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
 # invariant lm.ValidTokensIdsLogits()
 # invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
 # decreases stepsLeft
 while stepsLeft > 0 and phase < 3:
     next_token = eosToken
@@ -284,8 +287,11 @@ def test_structural_issue_accepts_append_helper_strategy():
 phase = 0
 reasoning_tokens = 0
 constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
 # invariant lm.ValidTokensIdsLogits()
 # invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
 # decreases stepsLeft
 while stepsLeft > 0 and phase < 3:
     if phase == 0 and reasoning_tokens < 2 and stepsLeft > 2:
