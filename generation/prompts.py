@@ -352,6 +352,8 @@ visible on an enclosing `if`, `elif`, or `while` condition.
 - Do not use `break` unless truly necessary.
 - If a terminal branch would only update phase/state without consuming `stepsLeft`, use `break`
   so the verifier can prove the `decreases stepsLeft` clause.
+- If a terminal branch would only update phase/state without consuming `stepsLeft`, use `break`
+  so the verifier can prove the `decreases stepsLeft` clause.
 - If you branch between different step choices, predeclare branch outputs before the `if`:
     next_token = eosToken
     new_steps = stepsLeft
