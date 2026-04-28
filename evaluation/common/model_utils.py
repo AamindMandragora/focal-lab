@@ -1,8 +1,7 @@
 """
 Model loading and management utilities for CSD evaluation.
 
-Provides optimized model loading for CUDA/CPU with proper device handling
-for multi-GPU setups using accelerate's device_map="auto".
+Provides optimized model loading for CUDA/CPU with proper device handling.
 """
 
 from __future__ import annotations
@@ -165,6 +164,15 @@ def get_max_input_length(model, tokenizer) -> int:
     return max_len or 4096
 
 
+def _device_map_for_selected_device(device: str):
+    """Return a HuggingFace device_map that honors the selected CUDA device."""
+    if os.environ.get("CSD_EVAL_DEVICE_MAP_AUTO", "").strip().lower() in {"1", "true", "yes", "on"}:
+        return "auto"
+    if device == "cuda":
+        return {"": "cuda:0"}
+    return {"": device}
+
+
 def create_huggingface_lm(
     model_name: str,
     device: str,
@@ -206,12 +214,11 @@ def create_huggingface_lm(
         if added:
             print(f"  Added {added} FOL keyword token(s) for single-token formula extension.")
 
-    # Always use device_map="auto" for CUDA to leverage all available GPUs
     if device.startswith("cuda"):
         kwargs = {
             "pretrained_model_name_or_path": model_name,
             "trust_remote_code": True,
-            "device_map": "auto",
+            "device_map": _device_map_for_selected_device(device),
         }
         
         if load_in_4bit:
@@ -229,8 +236,7 @@ def create_huggingface_lm(
             
         model = _load_causal_lm(**kwargs)
         input_device = get_model_input_device(model)
-        num_gpus = torch.cuda.device_count()
-        print(f"Model loaded across {num_gpus} GPU(s), inputs go to {input_device}")
+        print(f"Model loaded on {input_device}")
     else:
         # CPU fallback
         model = _load_causal_lm(
@@ -508,7 +514,7 @@ def create_huggingface_lm_native(
         kwargs = {
             "pretrained_model_name_or_path": model_name,
             "trust_remote_code": True,
-            "device_map": "auto",
+            "device_map": _device_map_for_selected_device(device),
         }
         if load_in_4bit:
             from transformers import BitsAndBytesConfig

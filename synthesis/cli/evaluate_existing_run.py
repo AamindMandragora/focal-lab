@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from evaluation.common.run_artifacts import find_compiled_module_dir
+from evaluation.common.run_artifacts import find_strategy_module_dir
 from evaluation.evaluator import Evaluator
 
 
@@ -31,7 +31,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dataset",
         default="folio",
-        choices=("folio", "gsm_symbolic", "pddl", "sygus_slia"),
+        choices=("folio", "gsm_symbolic", "pddl", "sygus_slia", "spider"),
         help="Dataset evaluator to use.",
     )
     parser.add_argument(
@@ -84,7 +84,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = _build_arg_parser().parse_args()
 
-    compiled_path = find_compiled_module_dir(args.run_dir)
+    strategy_dir = find_strategy_module_dir(args.run_dir)
+    python_source_path = strategy_dir / "GeneratedCSD.py"
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.model,
@@ -95,7 +96,7 @@ def main() -> int:
         load_in_4bit=args.load_in_4bit,
     )
     result = evaluator.evaluate_sample(
-        compiled_module_path=compiled_path,
+        python_source_path=python_source_path,
         sample_size=args.sample_size,
     )
 
@@ -113,7 +114,7 @@ def main() -> int:
         return 0
 
     print(f"Run dir: {args.run_dir}")
-    print(f"Compiled module: {compiled_path}")
+    print(f"Python source: {python_source_path}")
     print(f"Dataset: {args.dataset} | Model: {args.model} | Sample size: {args.sample_size}")
     print("Using the current synthesis evaluator\n")
     result.print_outputs_vs_expected()

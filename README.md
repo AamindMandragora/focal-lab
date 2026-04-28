@@ -4,8 +4,8 @@ This project synthesizes constrained decoding strategies (CSDs) in a Python-firs
 
 1. **Generation**: an LLM writes a Python strategy body against a fixed CSD template.
 2. **Verification**: that Python is transpiled to Dafny and verified there.
-3. **Evaluation**: the verified compiled strategy is measured on real benchmark datasets.
-4. **Synthesis loop**: generation, verification, compilation, runtime checks, and evaluation are repeated until thresholds are met or the budget is exhausted.
+3. **Evaluation**: the original verified Python strategy is measured on real benchmark datasets.
+4. **Synthesis loop**: generation, verification, native Python runtime checks, and evaluation are repeated until thresholds are met or the budget is exhausted.
 
 The source of truth is the Python code under `generation/`, not handwritten Dafny source files.
 
@@ -22,11 +22,10 @@ generation/
 verification/
   Python -> Dafny transpilation
   dafny verify
-  dafny build --target:py
         |
         v
 evaluation/
-  run the compiled strategy on dataset examples
+  run the original GeneratedCSD.py on dataset examples
   compute accuracy / format / syntax metrics
         |
         v
@@ -48,7 +47,7 @@ verified-agent-synthesis/
 │       ├── GeneratedAgentTemplate.py
 │       └── GeneratedAgentTemplate.md
 │
-├── verification/      # Python -> Dafny verification and compilation
+├── verification/      # Python -> Dafny verification
 │   ├── verifier.py
 │   ├── compiler.py
 │   ├── dafny_runner.py
@@ -92,11 +91,11 @@ The shared contract library lives in [generation/csd/VerifiedAgentSynthesis.py](
 
 ### Verification happens through transpilation
 
-The verification stage lowers Python CSD code through [verification/transpiler/transpiler.py](/home/advayth2/projects/verified-agent-synthesis/verification/transpiler/transpiler.py), then runs Dafny verification and Dafny-to-Python compilation through [verification/verifier.py](/home/advayth2/projects/verified-agent-synthesis/verification/verifier.py) and [verification/compiler.py](/home/advayth2/projects/verified-agent-synthesis/verification/compiler.py).
+The verification stage lowers Python CSD code through [verification/transpiler/transpiler.py](/home/advayth2/projects/verified-agent-synthesis/verification/transpiler/transpiler.py), then runs Dafny verification through [verification/verifier.py](/home/advayth2/projects/verified-agent-synthesis/verification/verifier.py). The active synthesis loop does not run `dafny build --target:py`; after verification, runtime and evaluation use the original generated Python source.
 
 ### Evaluation is dataset-driven
 
-The compiled strategy is then evaluated against benchmark tasks:
+The verified Python strategy is then evaluated against benchmark tasks:
 
 - `gsm_symbolic`
 - `folio`
@@ -127,16 +126,20 @@ python run_synthesis.py \
 Use a preset-driven wrapper:
 
 ```bash
-python synthesis/cli/generate_csd.py gsm_symbolic --model-preset qwen7b
+python synthesis/cli/generate_csd.py gsm_symbolic
 ```
+
+By default, CSD generation uses `gpt-5.4` and evaluation uses
+`Qwen/Qwen2.5-Coder-7B-Instruct`. Override them with `--model/--model-preset`
+and `--eval-model/--eval-model-preset`.
 
 Use shell shortcuts for specific dataset/model pairs:
 
 ```bash
-bash synthesis/shell/gsm_symbolic_qwen3b.sh
 bash synthesis/shell/gsm_symbolic_qwen7b.sh
 bash synthesis/shell/folio_qwen3b.sh
 bash synthesis/shell/pddl_qwen7b.sh
+bash synthesis/shell/spider_gpt54_qwen7b.sh
 ```
 
 Evaluate a saved run directly:
@@ -155,7 +158,7 @@ python synthesis/cli/evaluate_existing_run.py \
   --dataset folio
 ```
 
-Run a compiled strategy against a grammar manually:
+Legacy helper: run a Dafny-built strategy against a grammar manually:
 
 ```bash
 python synthesis/cli/run_csd_with_grammar.py \
@@ -170,14 +173,13 @@ Runtime artifacts are written under:
 ```text
 outputs/
 ├── latest_run.txt
-└── YYYYMMDD_HHMMSS_HASH/
+└── YYYYMMDD_HHMMSS/
 ```
 
 Each run directory typically contains:
 
 - the generated Python strategy
 - the transpiled Dafny source
-- the compiled Python module
 - success or failure reports
 
 ## Notes

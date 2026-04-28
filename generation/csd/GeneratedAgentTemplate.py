@@ -5,6 +5,7 @@ from VerifiedAgentSynthesis import (
     LM,
     LeftDelimiter,
     RightDelimiter,
+    SpacedLeftDelimiter,
     Parser,
     Prefix,
     Token,
@@ -47,7 +48,7 @@ def MyCSDStrategy(
     generated = []
     stepsLeft = maxSteps
     # QWEN_INSERT_STRATEGY_BEGIN
-    raise NotImplementedError("QWEN_INSERT_STRATEGY_HERE")
+    pass
     # QWEN_INSERT_STRATEGY_END
     remainingSteps = stepsLeft
     return generated, remainingSteps

@@ -7,9 +7,51 @@ the Dafny Parser interface used by CSD strategies.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from evaluation.common.generation import dafny_seq_to_str
+
+
+_TRAILING_DECIMAL_RE = re.compile(r"(?:^|[^A-Za-z0-9_])[-+]?\d+\.$")
+_TRAILING_SCRATCH_VAR_PREFIX_RE = re.compile(r"(?:^|[^A-Za-z0-9_])[A-Za-z][A-Za-z0-9_]*_$")
+
+
+def _is_recoverable_decimal_prefix(text: str, lark_parser) -> bool:
+    """True for prefixes such as `8.` where one more digit can complete NUMBER."""
+    if not _TRAILING_DECIMAL_RE.search(text):
+        return False
+    try:
+        lark_parser.parse(text + "0")
+        return True
+    except Exception as exc:
+        # `8.0` may still be an incomplete expression under the active start rule,
+        # which Lark reports as EOF. That is still a valid decoding prefix.
+        if exc.__class__.__name__ == "UnexpectedEOF":
+            return True
+        token = getattr(exc, "token", None)
+        return getattr(token, "type", None) == "$END"
+
+
+def _is_recoverable_scratch_var_prefix(text: str, lark_parser) -> bool:
+    """True for prefixes such as `x_` where one more digit can complete SCRATCH_VAR."""
+    if not _TRAILING_SCRATCH_VAR_PREFIX_RE.search(text):
+        return False
+    try:
+        lark_parser.parse(text + "0")
+        return True
+    except Exception as exc:
+        if exc.__class__.__name__ == "UnexpectedEOF":
+            return True
+        token = getattr(exc, "token", None)
+        return getattr(token, "type", None) == "$END"
+
+
+def _is_recoverable_lark_prefix(text: str, lark_parser) -> bool:
+    return (
+        _is_recoverable_decimal_prefix(text, lark_parser)
+        or _is_recoverable_scratch_var_prefix(text, lark_parser)
+    )
 
 
 def create_lark_dafny_parser(
@@ -94,9 +136,9 @@ def create_lark_dafny_parser(
             except self._UnexpectedEOF:
                 res = True
             except self._UnexpectedToken as e:
-                res = (e.token.type == '$END')
+                res = (e.token.type == '$END') or _is_recoverable_lark_prefix(text, self._lark)
             except self._UnexpectedCharacters:
-                res = False
+                res = _is_recoverable_lark_prefix(text, self._lark)
             except Exception:
                 res = False
 
@@ -410,9 +452,9 @@ def create_lark_native_parser(
             except UnexpectedEOF:
                 res = True
             except UnexpectedToken as e:
-                res = e.token.type == "$END"
+                res = e.token.type == "$END" or _is_recoverable_lark_prefix(text, lark_parser)
             except UnexpectedCharacters:
-                res = False
+                res = _is_recoverable_lark_prefix(text, lark_parser)
             except Exception:
                 res = False
             self._cache[text] = res

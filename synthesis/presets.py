@@ -24,10 +24,13 @@ class SynthesisPreset:
         self,
         *,
         model_name: str,
+        eval_model_name: str,
         max_iterations: int,
         temperature: float,
         device: str,
         output_name: str | None = None,
+        max_tokens: int | None = None,
+        generation_timeout: int | None = None,
         min_accuracy: float | None = None,
         min_format_rate: float | None = None,
         min_syntax_rate: float | None = None,
@@ -44,10 +47,16 @@ class SynthesisPreset:
             output_name or self.output_name,
             "--model",
             model_name,
+            "--eval-model",
+            eval_model_name,
             "--temperature",
             str(temperature),
             "--device",
             device,
+            "--max-tokens",
+            str(1200 if max_tokens is None else max_tokens),
+            "--generation-timeout",
+            str(0 if generation_timeout is None else generation_timeout),
             "--max-iterations",
             str(max_iterations),
             "--min-accuracy",
@@ -64,9 +73,13 @@ class SynthesisPreset:
 
 
 MODEL_PRESETS = {
+    "gpt54": "gpt-5.4",
     "qwen3b": "Qwen/Qwen2.5-Coder-3B-Instruct",
     "qwen7b": "Qwen/Qwen2.5-Coder-7B-Instruct",
 }
+
+DEFAULT_GENERATION_MODEL_PRESET = "gpt54"
+DEFAULT_EVAL_MODEL_PRESET = "qwen7b"
 
 
 DATASET_PRESETS = {
@@ -77,28 +90,73 @@ DATASET_PRESETS = {
             "Generate short symbolic mathematical expressions for GSM-Symbolic "
             "reasoning. The parser enforces a strict arithmetic expression grammar "
             "with numeric constants and optional variables. CRITICAL RULES: "
-            "1. Pure arithmetic expressions are valid; the final << >> segment may "
-            "be either a single expression or a single equation. "
-            "2. The evaluator computes the numeric value of the final constrained "
-            "expression, so the model does not need to simplify all the way to a "
-            "standalone numeral. "
-            "3. Use variables only when they genuinely help; pure numeric "
-            "expressions like 16 * 8.5 + 4 * 10.5 + 13 are allowed. "
-            "4. Preserve numeric values exactly from the problem statement. Do "
-            "not round or truncate decimals like 8.5 into 8. "
-            "5. The constrained answer segment should stay short, compact, and "
+            "1. Any content intended for parser/evaluator handling must appear "
+            "inside << >> delimiters, and every delimited span must be "
+            "grammar-valid. Pure arithmetic expressions are valid; the final "
+            "<< >> segment may be either a single expression or a single equation. "
+            "2. Prefer strategies that naturally interleave free-form reasoning with "
+            "grammar-verified delimited arithmetic spans. The evaluator LM may write "
+            "plain-text reasoning, then open << >> for a complete subexpression or "
+            "scratch assignment, close it, continue reasoning, and finally emit a "
+            "complete answer-bearing << >> span. Do not force a fixed scratchpad "
+            "template or a fixed number of free-form/constrained tokens. Avoid "
+            "trivial one-short-prefix, one-span policies; they usually capture only "
+            "the last local subproblem rather than the full answer. Since delimiter "
+            "tokens are masked during free-form reasoning, a strategy that wants a "
+            "natural transition should prefer raw observed steps such as "
+            "UnconstrainedAllowLeftDelimiterStep over AppendUnconstrainedStep before "
+            "the first delimiter, allowing the LM to emit << naturally; if format is at "
+            "risk, UnconstrainedNudgeLeftDelimiterStep may bias << without forcing it. "
+            "Do not wait until only a few steps remain before nudging; leave enough "
+            "budget to emit the delimiter, a complete expression, and the close. Otherwise open a "
+            "verified span only after a reasoning milestone such as punctuation, "
+            "newline, therefore/total/answer wording, or real budget pressure. Do "
+            "not open immediately after a generic first word like To or The. Intermediate "
+            "verified spans should usually be reusable scratch assignments such as "
+            "<<x_1 = 16 * 8.5>>, with the final span composing those scratch values. "
+            "Strongly prefer this mini-expression style when a problem has multiple "
+            "quantities: bind one or two complete useful quantities in earlier spans "
+            "such as <<x_1 = 16 * 8.5>> and <<x_2 = 4 * 10.5>>, then make the final "
+            "graded span combine them, e.g. <<x_1 + x_2 + 13>>. Do not close the run "
+            "after the first scratch span; after a non-final scratch span, return to "
+            "free-form reasoning and later emit a final answer span that reuses it. "
+            "3. Prefer a compact complete arithmetic expression in the final "
+            "span; the evaluator computes it, and expressions are less brittle "
+            "than forcing a fully simplified numeral. The GSM CSD grammar rejects "
+            "lone numerals such as 1 or 8 and first-operation fragments such as "
+            "16 * 8; emit an expression with at least one top-level "
+            "plus/minus clause, e.g. 8 + 0, when the answer is directly known. "
+            "Completion means the strategy may close the span, not that it must close "
+            "immediately if continuing the expression is still semantically useful. "
+            "4. Use variables only when they genuinely help. Dataset variables "
+            "must have prompt bindings; optional scratch variables such as x_1 "
+            "or total_1 may be introduced by earlier complete delimited "
+            "assignments like <<x_1 = 48 / 2>> and then reused later. Pure "
+            "numeric expressions like 16 * 8.5 + 4 * 10.5 + 13 are allowed. "
+            "5. Preserve numeric values exactly from the problem statement. Do "
+            "not round or truncate decimals like 8.5 into 8, do not replace "
+            "values like 13 with 1, and prefer copying all relevant numbers "
+            "from the question into the expression before simplifying. "
+            "6. The constrained answer segment should stay short, compact, and "
             "mathematically meaningful. "
-            "6. Prefer exactly one final << >> answer span; avoid emitting extra "
-            "delimiter windows after the answer, and do not mention << or >> in "
-            "the free-form reasoning text. "
             "7. The final constrained segment must be complete before the closing "
-            "delimiter."
+            "delimiter. Prefer ConstrainedOrRightDelimiterStep when you want the LM "
+            "to choose >> naturally; it only permits >> after parser completion. "
+            "After emitting the right delimiter, "
+            "either stop if this was the final answer span, or continue delimiter-masked "
+            "free-form reasoning before explicitly opening another verified span. In the "
+            "answer phase, test parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)) "
+            "before open-ended CanConstrain/CanExtendConstrained branches, or add an "
+            "explicit not-complete guard, so complete expressions cannot extend forever. "
+            "8. Multiple independent delimited verified spans are encouraged when "
+            "they emerge naturally from the reasoning. The final << >> span is the "
+            "graded answer."
         ),
         min_accuracy=0.5,
         min_format_rate=1.0,
         min_syntax_rate=1.0,
         eval_sample_size=10,
-        eval_max_steps=2048,
+        eval_max_steps=300,
     ),
     "folio": SynthesisPreset(
         dataset="folio",
@@ -158,6 +216,27 @@ DATASET_PRESETS = {
         eval_sample_size=5,
         eval_max_steps=256,
     ),
+    "spider": SynthesisPreset(
+        dataset="spider",
+        output_name="spider_sql_csd",
+        task_description=(
+            "Generate SQL queries for the Spider text-to-SQL benchmark. The parser "
+            "enforces a SQL SELECT-query grammar. CRITICAL RULES: "
+            "1. The final constrained segment is a single SQL query inside << >>. "
+            "2. Prefer compact SELECT statements over verbose explanations in the "
+            "constrained answer span. "
+            "3. Use schema/table/column names from the prompt exactly when available. "
+            "4. Use standard SQL clauses such as SELECT, FROM, WHERE, GROUP BY, "
+            "HAVING, ORDER BY, LIMIT, JOIN, and nested SELECT only when needed. "
+            "5. Do not put prose, markdown, or semicolon-only filler inside the final "
+            "constrained segment."
+        ),
+        min_accuracy=0.2,
+        min_format_rate=0.8,
+        min_syntax_rate=0.8,
+        eval_sample_size=5,
+        eval_max_steps=512,
+    ),
 }
 
 
@@ -174,7 +253,7 @@ def resolve_model_name(model: str | None = None, model_preset: str | None = None
     """Resolve a model alias, preferring an explicit model name."""
     if model:
         return model
-    preset_name = model_preset or "qwen7b"
+    preset_name = model_preset or DEFAULT_GENERATION_MODEL_PRESET
     try:
         return MODEL_PRESETS[preset_name]
     except KeyError as exc:

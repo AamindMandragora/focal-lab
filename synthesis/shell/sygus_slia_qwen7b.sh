@@ -1,25 +1,8 @@
 #!/bin/bash
-# Make CSD for SyGuS SLIA using Qwen 7B.
+# Make CSD for SyGuS SLIA using GPT 5.4 generation and Qwen 7B evaluation.
 # Usage: bash synthesis/shell/sygus_slia_qwen7b.sh [extra generate_csd args]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-cd "$REPO_ROOT"
-
-DEVICE="${DEVICE:-auto}"
-MAX_ITERATIONS="${MAX_ITERATIONS:-10}"
-TEMPERATURE="${TEMPERATURE:-0.7}"
-
-echo "Making SyGuS SLIA CSD (Qwen 7B) from the preset wrapper..."
-echo "Tip: set DEVICE=cuda:3 or CUDA_VISIBLE_DEVICES=3 to pin a GPU."
-echo ""
-
-python -m synthesis.cli.generate_csd sygus_slia \
-  --model-preset qwen7b \
-  --max-iterations "$MAX_ITERATIONS" \
-  --temperature "$TEMPERATURE" \
-  --device "$DEVICE" \
-  "$@"
-
-echo "SyGuS SLIA CSD (Qwen 7B) done. Run dir: outputs/ (see latest_run.txt)"
+source "$SCRIPT_DIR/common.sh"
+csd_run_preset sygus_slia "SyGuS SLIA" "$@"

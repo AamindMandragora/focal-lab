@@ -11,8 +11,8 @@ syncode: "<<" start ">>"
 
 start: expr
 
-// For CSD parsing - expression must end with >>
-csd_start: expr ">>"
+// For CSD parsing - expression is complete before the delimiter helper emits >>
+csd_start: expr
 
 // Simple expression grammar - ONLY VARIABLES, no numeric literals
 ?expr: term

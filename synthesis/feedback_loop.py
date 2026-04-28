@@ -1,14 +1,13 @@
 """
 Main synthesis pipeline with feedback-based refinement.
 
-Orchestrates the generate -> verify -> compile -> run loop with
+Orchestrates the generate -> verify -> run loop with
 iterative refinement based on errors.
 """
 
 import json
-import secrets
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -18,7 +17,6 @@ from verification.transpiler.transpiler import transpile_contract_library
 from evaluation.evaluator import EvaluationResult, Evaluator
 from generation.generator import StrategyGenerationError, StrategyGenerator
 from generation.rationale import extract_rationale
-from verification.compiler import CompilationResult, DafnyCompiler
 from verification.verifier import DafnyVerifier, VerificationResult
 from .runner import RuntimeResult, StrategyRunner
 
@@ -28,7 +26,6 @@ class FailureStage(Enum):
 
     GENERATION = "generation"
     VERIFICATION = "verification"
-    COMPILATION = "compilation"
     RUNTIME = "runtime"
     EVALUATION = "evaluation"
 
@@ -61,9 +58,9 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
     ):
         pattern = re.compile(
             r"(?m)^(?P<indent>[ \t]*)if (?P<cond>[^\n]+):\n"
-            r"(?P=indent)[ \t]+(?P<name1>[A-Za-z_]\w*)\s*,\s*(?P<name2>[A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedAnswerStep|ExpressiveStep|UnconstrainedStep)\([^\n]+\)\n"
+            r"(?P=indent)[ \t]+(?P<name1>[A-Za-z_]\w*)\s*,\s*(?P<name2>[A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedStep|SoftConstrainedStep|TopKConstrainedStep|UnconstrainedStep|ForcedTokenStep|BudgetAwareStep)\([^\n]+\)\n"
             r"(?P=indent)else:\n"
-            r"(?P=indent)[ \t]+(?P=name1)\s*,\s*(?P=name2)\s*=\s*helpers\.(?:ConstrainedAnswerStep|ExpressiveStep|UnconstrainedStep)\([^\n]+\)"
+            r"(?P=indent)[ \t]+(?P=name1)\s*,\s*(?P=name2)\s*=\s*helpers\.(?:ConstrainedStep|SoftConstrainedStep|TopKConstrainedStep|UnconstrainedStep|ForcedTokenStep|BudgetAwareStep)\([^\n]+\)"
         )
 
         def _predeclare_branch_outputs(m: re.Match) -> str:
@@ -137,6 +134,21 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
         ]
         for pattern, replacement in python_only_patterns:
             new_repaired = re.sub(pattern, replacement, repaired)
+    if new_repaired != repaired:
+        repaired = new_repaired
+        changed = True
+
+    # Helper calls already consume one budget step and establish the budget invariants. A
+    # manual stepsLeft decrement after a helper call double-counts the budget and commonly
+    # makes `0 <= stepsLeft <= maxSteps` unprovable. Preserve assignments from raw-step
+    # returns (`stepsLeft = new_steps`), but strip arithmetic self-updates.
+    if "stepsLeft" in repaired:
+        manual_budget_patterns = [
+            r"(?m)^[ \t]*stepsLeft\s*[-+*/%]=[^\n]*\n?",
+            r"(?m)^[ \t]*stepsLeft\s*=\s*stepsLeft\s*[-+*/%][^\n]*\n?",
+        ]
+        for pattern in manual_budget_patterns:
+            new_repaired = re.sub(pattern, "", repaired)
             if new_repaired != repaired:
                 repaired = new_repaired
                 changed = True
@@ -480,16 +492,6 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
         repaired = new_repaired
         changed = True
 
-    # Fix: old API — helpers.RollbackToValidPrefix(parser, generated) -> helpers.RollbackToValidPrefix(generated)
-    new_repaired = re.sub(
-        r"helpers\.RollbackToValidPrefix\s*\(\s*parser\s*,\s*",
-        "helpers.RollbackToValidPrefix(",
-        repaired,
-    )
-    if new_repaired != repaired:
-        repaired = new_repaired
-        changed = True
-
     # Fix: SoftConstrainedStep called with wrong number of args (2 instead of 4) — replace with ConstrainedStep
     if "wrong number of arguments" in error_summary and "SoftConstrainedStep" in error_summary:
         new_repaired = re.sub(
@@ -516,6 +518,40 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             r"helpers\.BudgetAwareStep\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^,]+)\s*,\s*(?:threshold|completionThreshold)\s*=\s*([^)]+)\)",
             r"helpers.BudgetAwareStep(\1, \2, \3, \4)",
             repaired,
+        )
+        if new_repaired != repaired:
+            repaired = new_repaired
+            changed = True
+
+    # Fix: TopK helpers written with Python keyword arguments; the transpiler lowers only
+    # positional helper calls, so keywords can surface as "wrong number of arguments".
+    if "wrong number of arguments" in error_summary and "TopKConstrainedStep" in error_summary:
+        new_repaired = re.sub(
+            r"helpers\.(AppendTopKConstrainedStep|TopKConstrainedStep)\s*\(\s*([^,\n]+)\s*,\s*([^,\n]+)\s*,\s*k\s*=\s*([^,\n]+)\s*,\s*stepsLeft\s*=\s*([^)]+)\)",
+            r"helpers.\1(\2, \3, \4, \5)",
+            repaired,
+        )
+        new_repaired = re.sub(
+            r"helpers\.(AppendTopKConstrainedStep|TopKConstrainedStep)\s*\(\s*([^,\n]+)\s*,\s*([^,\n]+)\s*,\s*stepsLeft\s*=\s*([^,\n]+)\s*,\s*k\s*=\s*([^)]+)\)",
+            r"helpers.\1(\2, \3, \5, \4)",
+            new_repaired,
+        )
+        if new_repaired != repaired:
+            repaired = new_repaired
+            changed = True
+
+    # Fix: proving an arbitrary literal like k=5 satisfies k <= |lm.Tokens| is noisy.
+    # Fall back to the hard constrained helper; it gives the same final grammar guarantee.
+    if "TopKConstrainedStep" in error_summary and "1 <= k <= |lm.Tokens|" in error_summary:
+        new_repaired = re.sub(
+            r"helpers\.AppendTopKConstrainedStep\s*\(\s*([^,\n]+)\s*,\s*([^,\n]+)\s*,\s*[^,\n]+\s*,\s*([^)]+)\)",
+            r"helpers.AppendConstrainedStep(\1, \2, \3)",
+            repaired,
+        )
+        new_repaired = re.sub(
+            r"helpers\.TopKConstrainedStep\s*\(\s*([^,\n]+)\s*,\s*([^,\n]+)\s*,\s*[^,\n]+\s*,\s*([^)]+)\)",
+            r"helpers.ConstrainedStep(\1, \2, \3)",
+            new_repaired,
         )
         if new_repaired != repaired:
             repaired = new_repaired
@@ -849,37 +885,6 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             repaired = new_repaired
             changed = True
 
-    # Fix: when only failure is invariant parser.IsValidPrefix(generated) and strategy uses UnconstrainedStep, fall back to ConstrainedStep-only loop (mixed strategy cannot preserve invariant with non-permissive parser)
-    if (
-        "invariant could not be proved" in error_summary
-        and "IsValidPrefix(generated)" in error_summary
-        and "UnconstrainedStep" in repaired
-        and "ConstrainedStep" in repaired
-    ):
-        # Replace the if/else that chooses UnconstrainedStep vs ConstrainedStep with a single ConstrainedStep body (with lemma before it)
-        simple_loop = re.compile(
-            r"if\s+parser\.IsCompletePrefix\s*\(\s*generated\s*\)\s*\|\|\s*\|generated\|\s*==\s*0\s*"
-            r"\{\s*"
-            r"(?:var\s+)?next\s*,\s*newSteps\s*:=\s*helpers\.UnconstrainedStep\s*\([^)]*\)\s*;\s*"
-            r"generated\s*:=\s*generated\s*\+\s*\[next\]\s*;\s*stepsLeft\s*:=\s*newSteps\s*;\s*"
-            r"\}\s*else\s*\{\s*"
-            r"(?:CSDHelpers\.RollbackPreservesTokenInvariant\s*\(\s*lm\s*,\s*parser\s*,\s*generated\s*\)\s*;\s*)?"
-            r"(?:var\s+)?next\s*,\s*newSteps\s*:=\s*helpers\.ConstrainedStep\s*\([^)]*\)\s*;\s*"
-            r"generated\s*:=\s*generated\s*\+\s*\[next\]\s*;\s*stepsLeft\s*:=\s*newSteps\s*;\s*"
-            r"\}",
-            re.MULTILINE | re.DOTALL,
-        )
-        replacement = (
-            "  var next, newSteps := helpers.ConstrainedStep(prompt, generated, stepsLeft);\n"
-            "  generated := generated + [next];\n"
-            "  stepsLeft := newSteps;\n"
-            "  }"
-        )
-        new_repaired = simple_loop.sub(replacement, repaired, count=1)
-        if new_repaired != repaired:
-            repaired = new_repaired
-            changed = True
-
     # Fix: "index out of range" when accessing generated[|generated|-1] with empty generated — guard with |generated| > 0
     if "index out of range" in error_summary and "generated[|generated|-1]" in repaired:
         # Wrap last-element access in condition: (|generated| > 0 && generated[|generated|-1] != LeftDelimiter) etc.
@@ -922,6 +927,14 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
+        new_repaired = re.sub(
+            r"(?m)^(?P<indent>[ \t]*)else:\s*\n(?P=indent)[ \t]+[A-Za-z_]\w*\s*(?:\+=\s*1|=\s*[A-Za-z_]\w*\s*\+\s*1|=\s*\d+)\s*$",
+            r"\g<indent>else:\n\g<indent>    break",
+            repaired,
+        )
+        if new_repaired != repaired:
+            repaired = new_repaired
+            changed = True
 
     # Fix: if a mode-membership invariant is failing because the loop introduces a terminal "done"
     # state, drop the overly specific invariant instead of repeating the same invalid state machine.
@@ -934,23 +947,6 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
-
-    # Fix: finalization requires a nonempty valid answer. If the strategy can exit with an empty
-    # answer, inject one last constrained answer step when budget remains.
-    if (
-        "precondition for this call could not be proved" in error_summary
-        and ("parser.IsValidPrefix(answer)" in error_summary or "|answer| > 0" in error_summary)
-        and "helpers.FinalizeDelimitedAnswer" in error_summary
-        and "if len(answer) == 0 and stepsLeft > 0 and not parser.IsCompletePrefix(answer):" not in repaired
-    ):
-        guard = (
-            "\nif len(answer) == 0 and stepsLeft > 0 and not parser.IsCompletePrefix(answer):\n"
-            "    next_token, new_steps = helpers.ConstrainedAnswerStep(prompt, generated, answer, stepsLeft)\n"
-            "    answer = answer + [next_token]\n"
-            "    stepsLeft = new_steps\n"
-        )
-        repaired = repaired.rstrip() + guard
-        changed = True
 
     # Fix: "invariant could not be proved" for stepCounter <= maxSteps — remove that invariant (stepCounter can grow without bound in some branches)
     if "invariant could not be proved" in error_summary and "stepCounter" in error_summary and "maxSteps" in error_summary:
@@ -1178,32 +1174,6 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             repaired = new_repaired
             changed = True
 
-    # Fix: "precondition ... ConstrainedWindowValid" -> add missing loop invariant
-    # Applies when ConstrainedStep or UnconstrainedStep precondition fails due to missing invariant
-    if (
-        "precondition for this call could not be proved" in error_summary
-        and "ConstrainedWindowValid" in error_summary
-        and ("ConstrainedStep" in repaired or "UnconstrainedStep" in repaired)
-    ):
-        # Insert invariant after |generated| + stepsLeft <= maxSteps or |generated| <= maxSteps invariant
-        new_repaired = re.sub(
-            r"(invariant\s+\|generated\|\s*(?:\+\s*stepsLeft\s*)?<=\s*maxSteps\b)",
-            r"\1\n    invariant helpers.ConstrainedWindowValid(generated)",
-            repaired,
-            count=1,
-        )
-        if new_repaired == repaired:
-            # Fallback: insert after lm.ValidTokensIdsLogits() invariant
-            new_repaired = re.sub(
-                r"(invariant\s+lm\.ValidTokensIdsLogits\s*\(\s*\))",
-                r"\1\n    invariant helpers.ConstrainedWindowValid(generated)",
-                repaired,
-                count=1,
-            )
-        if new_repaired != repaired:
-            repaired = new_repaired
-            changed = True
-
     # Fix: model uses lm.ChooseNextTokenUnconstrained() which no longer exists — remove such calls
     if "ChooseNextTokenUnconstrained" in repaired:
         new_repaired = re.sub(
@@ -1268,13 +1238,12 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             changed = ".Exists(" not in repaired or repaired != strategy_code
 
     # Fix: "decreases expression might not decrease" — caused by resetting or increasing stepsLeft in the loop.
-    # Replace the else branch that does RollbackToValidPrefix + stepsLeft := ... with a step so the loop always decreases.
+    # Remove rollback-as-control-flow; it violates the single final delimiter span discipline and
+    # can reset the measure. Breaking is safer than synthesizing a fallback strategy.
     if "decreases expression might not decrease" in error_summary and "RollbackToValidPrefix" in repaired:
-        step_replacement = (
+        break_replacement = (
             " else {\n"
-            "    var next, newSteps := helpers.ConstrainedStep(prompt, generated, stepsLeft);\n"
-            "    generated := generated + [next];\n"
-            "    stepsLeft := newSteps;\n"
+            "    break;\n"
             "  }"
         )
         # Match else { ... RollbackToValidPrefix(...); ... stepsLeft := maxSteps... ; ... } (stepsLeft must only decrease)
@@ -1285,7 +1254,7 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             r"(?:\s*[^\n]*\n)*?\s*\}",
             re.MULTILINE,
         )
-        new_repaired = else_block.sub(step_replacement, repaired, count=1)
+        new_repaired = else_block.sub(break_replacement, repaired, count=1)
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
@@ -1404,41 +1373,33 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
                     repaired = repaired.replace(match.group(0), f"{indent}var next: Token; var newSteps: nat;\n{match.group(0)}", 1)
                     changed = True
 
-    # Fix: "precondition for this call could not be proved" for InsideDelimitedWindow — ConstrainedStep called before window is open.
-    # Replace a bare ConstrainedStep in the loop body with an if/else: ConstrainedStep when inside window, UnconstrainedStep otherwise.
+    # Fix: "precondition for this call could not be proved" when "stepsLeft >= 1" — guard Step calls so we only call when stepsLeft >= 1.
     if (
-        "precondition for this call could not be proved" in error_summary
-        and "InsideDelimitedWindow" in error_summary
-        and "ConstrainedStep" in repaired
-    ):
-        bare_constrained = re.compile(
-            r"^(\s*)(var\s+next\s*,\s*newSteps\s*:=\s*helpers\.ConstrainedStep\s*\([^)]*\)\s*;\s*\n"
-            r"\s*generated\s*:=\s*generated\s*\+\s*\[next\]\s*;\s*\n"
-            r"\s*stepsLeft\s*:=\s*newSteps\s*;\s*)$",
-            re.MULTILINE,
+        "stepsLeft >= 1" in error_summary
+        and (
+            "precondition for this call could not be proved" in error_summary
+            or "AppendLeftDelimiter" in repaired
+            or "AppendRightDelimiter" in repaired
         )
-        def wrap_with_window_guard(m: re.Match) -> str:
-            indent, block = m.group(1), m.group(2)
-            lines = block.strip().split("\n")
-            inner_cs = "\n".join(f"{indent}  {l.strip()}" for l in lines)
-            inner_us = f"{indent}  next, newSteps := helpers.UnconstrainedStep(prompt, generated, stepsLeft);"
-            return (
-                f"{indent}var next: Token; var newSteps: nat;\n"
-                f"{indent}if helpers.InsideDelimitedWindow(generated) && !parser.IsCompletePrefix(helpers.GetDelimitedContent(generated)) {{\n"
-                f"{inner_cs}\n"
-                f"{indent}}} else {{\n"
-                f"{inner_us}\n"
-                f"{indent}  generated := generated + [next];\n"
-                f"{indent}  stepsLeft := newSteps;\n"
-                f"{indent}}}\n"
-            )
-        new_repaired = bare_constrained.sub(wrap_with_window_guard, repaired, count=1)
+    ):
+        def _guard_append_delimiter(m: re.Match) -> str:
+            indent = m.group("indent")
+            line = m.group("line")
+            start = m.start()
+            prev_line = repaired[:start].rstrip("\n").rsplit("\n", 1)[-1] if "\n" in repaired[:start] else ""
+            if "stepsLeft >= 1" in prev_line or "stepsLeft > 0" in prev_line:
+                return m.group(0)
+            return f"{indent}if stepsLeft > 0:\n{indent}    {line}"
+
+        new_repaired = re.sub(
+            r"(?m)^(?P<indent>[ \t]*)(?P<line>generated\s*,\s*stepsLeft\s*=\s*helpers\.Append(?:Left|Right)Delimiter\s*\(\s*generated\s*,\s*stepsLeft\s*\))\s*$",
+            _guard_append_delimiter,
+            repaired,
+        )
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
 
-    # Fix: "precondition for this call could not be proved" when "stepsLeft >= 1" — guard Step calls so we only call when stepsLeft >= 1.
-    if "precondition for this call could not be proved" in error_summary and "stepsLeft >= 1" in error_summary:
         # Wrap the 3-line block (Step call; generated := ...; stepsLeft := newSteps;) in "if stepsLeft >= 1 { ... } else { break; }"
         step_block = re.compile(
             r"^(\s*)((?:var\s+)?next\s*,\s*newSteps\s*:=\s*helpers\.(?:ConstrainedStep|UnconstrainedStep)\s*\([^)]*\)\s*;\s*\n"
@@ -1451,20 +1412,6 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
             inner = "\n".join(f"{indent}  {line.strip()}" for line in block.strip().split("\n"))
             return f"{indent}if stepsLeft >= 1 {{\n{inner}\n{indent}}} else {{ break; }}\n"
         new_repaired = step_block.sub(wrap_steps_guard, repaired)
-        if new_repaired != repaired:
-            repaired = new_repaired
-            changed = True
-
-    # Fix: "the method returns 1 value but is assigned to 0 variable" for RollbackToValidPrefix — LLM calls it without assigning. Must assign: generated := helpers.RollbackToValidPrefix(generated)
-    if "returns 1 value but is assigned to 0 variable" in error_summary and "RollbackToValidPrefix" in repaired:
-        standalone_rollback = re.compile(
-            r"^(\s*)helpers\.RollbackToValidPrefix\s*\(\s*(?:parser\s*,\s*)?generated\s*\)\s*;(?:\s*//[^\n]*)?\s*$",
-            re.MULTILINE,
-        )
-        new_repaired = standalone_rollback.sub(
-            lambda m: f"{m.group(1)}generated := helpers.RollbackToValidPrefix(generated);",
-            repaired,
-        )
         if new_repaired != repaired:
             repaired = new_repaired
             changed = True
@@ -1512,12 +1459,10 @@ def parse_strategy_type(strategy_code: str) -> dict:
     )
 
     # Detect which primitives are used.
-    uses_constrained = "ConstrainedStep" in strategy_code_for_match or "ConstrainedAnswerStep" in strategy_code_for_match
-    uses_unconstrained = (
-        "UnconstrainedStep" in strategy_code_for_match or "ExpressiveStep" in strategy_code_for_match
-    )
+    uses_constrained = "ConstrainedStep" in strategy_code_for_match
+    uses_unconstrained = "UnconstrainedStep" in strategy_code_for_match
     uses_rollback = "RollbackToValidPrefix" in strategy_code_for_match
-    uses_answer_channel = "ConstrainedAnswerStep" in strategy_code_for_match
+    uses_answer_channel = False
     if "AppendConstrainedStep" in strategy_code_for_match or "AppendSoftConstrainedStep" in strategy_code_for_match:
         uses_constrained = True
     if "AppendUnconstrainedStep" in strategy_code_for_match:
@@ -1556,23 +1501,23 @@ class SynthesisAttempt:
 
     # Results from each stage (None if stage not reached)
     verification_result: Optional[VerificationResult] = None
-    compilation_result: Optional[CompilationResult] = None
     runtime_result: Optional[RuntimeResult] = None
     eval_result: Optional[EvaluationResult] = None
 
     # Failure information
     failed_at: Optional[FailureStage] = None
     error_summary: str = ""
+    generation_diagnostics: list[dict[str, object]] = field(default_factory=list)
 
     def succeeded(self) -> bool:
         """Check if this attempt succeeded completely."""
         return (
-            self.verification_result is not None
+            self.failed_at is None
+            and self.verification_result is not None
             and self.verification_result.success
-            and self.compilation_result is not None
-            and self.compilation_result.success
             and self.runtime_result is not None
             and self.runtime_result.success
+            and (self.eval_result is None or self.eval_result.success)
         )
 
     def get_strategy_analysis(self) -> dict:
@@ -1596,19 +1541,12 @@ class SynthesisAttempt:
             "succeeded": self.succeeded(),
             "failed_at": self.failed_at.value if self.failed_at else None,
             "error_summary": self.error_summary,
+            "generation_diagnostics": self.generation_diagnostics,
             "verification": {
                 "success": self.verification_result.success if self.verification_result else None,
                 "error_count": len(self.verification_result.errors) if self.verification_result else 0,
             }
             if self.verification_result
-            else None,
-            "compilation": {
-                "success": self.compilation_result.success if self.compilation_result else None,
-                "output_dir": str(self.compilation_result.output_dir)
-                if self.compilation_result and self.compilation_result.output_dir
-                else None,
-            }
-            if self.compilation_result
             else None,
             "runtime": {
                 "success": self.runtime_result.success if self.runtime_result else None,
@@ -1689,7 +1627,7 @@ class SynthesisResult:
 
     success: bool
     strategy_code: str
-    compiled_module_path: Optional[Path]
+    python_source_path: Optional[Path]
     output_dir: Optional[Path]
     run_dir: Optional[Path]
     attempts: list[SynthesisAttempt]
@@ -1708,8 +1646,8 @@ class SynthesisResult:
         return {
             "success": self.success,
             "strategy_code": self.strategy_code,
-            "compiled_module_path": str(self.compiled_module_path)
-            if self.compiled_module_path
+            "python_source_path": str(self.python_source_path)
+            if self.python_source_path
             else None,
             "output_dir": str(self.output_dir) if self.output_dir else None,
             "run_dir": str(self.run_dir) if self.run_dir else None,
@@ -1724,21 +1662,22 @@ class SynthesisPipeline:
 
     Orchestrates:
     1. Initial strategy generation with Qwen
-    2. Dafny verification
-    3. Compilation to Python
-    4. Runtime testing
-    5. Evaluation on dataset sample (optional)
-    6. Feedback-based refinement on failure
+    2. Python-to-Dafny transpilation for verification only
+    3. Runtime testing of the original generated Python source
+    4. Evaluation on dataset sample
+    5. Feedback-based refinement on failure
     """
 
     DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent / "outputs"
+    GENERATED_CSD_FILENAME = "GeneratedCSD.py"
+    GENERATED_CSD_DAFNY_FILENAME = "GeneratedCSD.dfy"
 
     def __init__(
         self,
         evaluator: Evaluator,
         generator: Optional[StrategyGenerator] = None,
         verifier: Optional[DafnyVerifier] = None,
-        compiler: Optional[DafnyCompiler] = None,
+        compiler: Optional[object] = None,
         runner: Optional[StrategyRunner] = None,
         max_iterations: int = 5,
         output_dir: Optional[Path] = None,
@@ -1756,7 +1695,8 @@ class SynthesisPipeline:
             evaluator: Evaluator for dataset-based feedback (required)
             generator: Strategy generator (creates default if None)
             verifier: Dafny verifier (creates default if None)
-            compiler: Dafny compiler (creates default if None)
+            compiler: Ignored compatibility argument. The active pipeline verifies by
+                transpiling Python to Dafny, then runs the original Python source directly.
             runner: Strategy runner (creates default if None)
             max_iterations: Maximum refinement iterations
             output_dir: Directory for outputs and reports
@@ -1769,7 +1709,7 @@ class SynthesisPipeline:
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
         self.verifier = verifier or DafnyVerifier()
-        self.compiler = compiler or DafnyCompiler()
+        self.compiler = None
         self.runner = runner  # Will be created per-task in synthesize()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
@@ -1784,6 +1724,46 @@ class SynthesisPipeline:
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    def _update_latest_run_pointers(self, run_dir: Path, *, status: str = "") -> None:
+        """Keep outputs/latest and outputs/latest_run.txt pointing at the same run."""
+        latest_txt = run_dir.parent / "latest_run.txt"
+        try:
+            latest_txt.write_text(str(run_dir) + "\n", encoding="utf-8")
+        except Exception as exc:
+            print(f"Warning: Could not update latest_run.txt: {exc}")
+
+        try:
+            latest_link = run_dir.parent / "latest"
+            if latest_link.exists() or latest_link.is_symlink():
+                latest_link.unlink()
+            latest_link.symlink_to(run_dir.name, target_is_directory=True)
+            suffix = f" ({status})" if status else ""
+            print(f"Latest run pointers{suffix}: {latest_link} -> {run_dir}")
+        except Exception as exc:
+            print(f"Warning: Could not update latest symlink: {exc}")
+
+    def _capture_generation_diagnostics(self) -> list[dict[str, object]]:
+        """Return the generator's latest rejected raw candidates for failure reports."""
+        diagnostics = getattr(self.generator, "last_generation_diagnostics", None)
+        if isinstance(diagnostics, list) and diagnostics:
+            return [dict(item) for item in diagnostics if isinstance(item, dict)]
+
+        raw_outputs = getattr(self.generator, "last_raw_outputs", None)
+        if not isinstance(raw_outputs, list):
+            return []
+        return [
+            {
+                "candidate": idx,
+                "raw_output_empty": raw == "",
+                "raw_output_length": len(raw),
+                "raw_output": raw,
+                "accepted": False,
+                "issue": "No structured generation diagnostics were recorded.",
+            }
+            for idx, raw in enumerate(raw_outputs, start=1)
+            if isinstance(raw, str)
+        ]
+
     def synthesize(
         self,
         task_description: str,
@@ -1794,7 +1774,8 @@ class SynthesisPipeline:
 
         Args:
             task_description: Description of what the strategy should accomplish
-            output_name: Name for the output module
+            output_name: Requested strategy label stored in reports; run directories
+                are timestamp-named and the generated module is always GeneratedCSD.py
 
         Returns:
             SynthesisResult on success
@@ -1813,16 +1794,18 @@ class SynthesisPipeline:
         else:
             runner = self.runner
 
-        # Create an isolated output directory for this run
-        run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + secrets.token_hex(3)
+        # Keep run directories chronological and easy to find.  The generated
+        # Python module inside each run is always GeneratedCSD.py.
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         run_dir = self.output_dir / run_id
+        collision_index = 1
+        while run_dir.exists():
+            run_dir = self.output_dir / f"{run_id}_{collision_index:02d}"
+            collision_index += 1
         run_dir.mkdir(parents=True, exist_ok=True)
 
-        # Update a convenience pointer to the most recent run
-        try:
-            (self.output_dir / "latest_run.txt").write_text(str(run_dir) + "\n")
-        except Exception:
-            pass
+        # Keep both latest shortcuts synchronized from the start, including interrupted runs.
+        self._update_latest_run_pointers(run_dir, status="started")
 
         # Initial generation (one LLM call, can take 30–90s or longer on CPU/slow GPU)
         print(f"Generating initial strategy for: {task_description[:80]}...")
@@ -1838,6 +1821,7 @@ class SynthesisPipeline:
                 timestamp=datetime.now().isoformat(),
                 failed_at=FailureStage.GENERATION,
                 error_summary=str(exc),
+                generation_diagnostics=self._capture_generation_diagnostics(),
             )
             attempts.append(attempt)
             report_path: Path | None = None
@@ -1924,6 +1908,7 @@ class SynthesisPipeline:
                     )
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
                     break
                 print(f"  (refinement took {time.perf_counter() - t0:.1f}s)")
@@ -1931,11 +1916,11 @@ class SynthesisPipeline:
 
             print("  ✓ Verification passed")
 
-            python_path = run_dir / f"{output_name}.py"
+            python_path = run_dir / self.GENERATED_CSD_FILENAME
             python_path.write_text(full_code, encoding="utf-8")
             transpiled_result = transpile_contract_library(full_code, module_name_hint=python_path.stem, axiomatize=False)
             if transpiled_result.is_ok():
-                transpiled_dafny_path = run_dir / f"{output_name}.dfy"
+                transpiled_dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
                 transpiled_dafny_path.write_text(transpiled_result.value, encoding="utf-8")
                 print(f"  Python CSD saved to: {python_path}")
                 print(f"  Transpiled Dafny saved to: {transpiled_dafny_path}")
@@ -1962,6 +1947,7 @@ class SynthesisPipeline:
                     )
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
                     break
                 continue
@@ -1986,6 +1972,7 @@ class SynthesisPipeline:
                     )
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
                     break
                 continue
@@ -2018,6 +2005,7 @@ class SynthesisPipeline:
                     )
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
                     break
                 continue
@@ -2044,6 +2032,7 @@ class SynthesisPipeline:
                     )
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                    attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
                     break
                 continue
@@ -2071,7 +2060,7 @@ class SynthesisPipeline:
                 success=True,
                 strategy_code=strategy_code,
                 full_python_code=full_code,
-                compiled_module_path=python_path,
+                python_source_path=python_path,
                 output_dir=run_dir,
                 run_dir=run_dir,
                 attempts=attempts,
@@ -2115,15 +2104,7 @@ class SynthesisPipeline:
 
         print(f"Failure report saved to: {report_path}")
 
-        # Create 'latest' symlink in the runs directory even on failure
-        try:
-            latest_link = run_dir.parent / "latest"
-            if latest_link.exists() or latest_link.is_symlink():
-                latest_link.unlink()
-            latest_link.symlink_to(run_dir.name, target_is_directory=True)
-            print(f"Latest run link (failed) updated: {latest_link}")
-        except Exception as e:
-            print(f"Warning: Could not create 'latest' symlink: {e}")
+        self._update_latest_run_pointers(run_dir, status="failed")
 
         return report_path
 
@@ -2136,15 +2117,15 @@ class SynthesisPipeline:
         run_dir: Path,
     ) -> None:
         """Save a success report and the final strategy."""
-        python_path = run_dir / f"{output_name}.py"
+        python_path = run_dir / self.GENERATED_CSD_FILENAME
         if not python_path.exists():
             with open(python_path, "w") as f:
                 f.write(full_code)
 
-        transpiled_result = transpile_contract_library(full_code, module_name_hint=output_name, axiomatize=False)
+        transpiled_result = transpile_contract_library(full_code, module_name_hint=python_path.stem, axiomatize=False)
         dafny_path = None
         if transpiled_result.is_ok():
-            dafny_path = run_dir / f"{output_name}.dfy"
+            dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
             if not dafny_path.exists():
                 with open(dafny_path, "w") as f:
                     f.write(transpiled_result.value)
@@ -2158,6 +2139,7 @@ class SynthesisPipeline:
             "tool_choice_rationale": rationale_extracted.rationale,
             "python_file": str(python_path),
             "transpiled_dafny_file": str(dafny_path) if dafny_path else None,
+            "requested_output_name": output_name,
             "total_attempts": len(attempts),
             "timestamp": datetime.now().isoformat(),
         }
@@ -2168,22 +2150,14 @@ class SynthesisPipeline:
         print(f"Strategy saved to: {python_path}")
         print(f"Success report saved to: {report_path}")
 
-        # Create 'latest' symlink in the runs directory
-        try:
-            latest_link = run_dir.parent / "latest"
-            if latest_link.exists() or latest_link.is_symlink():
-                latest_link.unlink()
-            latest_link.symlink_to(run_dir.name, target_is_directory=True)
-            print(f"Latest run link updated: {latest_link}")
-        except Exception as e:
-            print(f"Warning: Could not create 'latest' symlink: {e}")
+        self._update_latest_run_pointers(run_dir, status="succeeded")
 
     def _analyze_failure_patterns(self, attempts: list[SynthesisAttempt]) -> dict:
         """Analyze common failure patterns across attempts."""
         patterns = {
             "verification_failures": 0,
-            "compilation_failures": 0,
             "runtime_failures": 0,
+            "evaluation_failures": 0,
             "common_errors": [],
         }
 
@@ -2192,10 +2166,10 @@ class SynthesisPipeline:
         for attempt in attempts:
             if attempt.failed_at == FailureStage.VERIFICATION:
                 patterns["verification_failures"] += 1
-            elif attempt.failed_at == FailureStage.COMPILATION:
-                patterns["compilation_failures"] += 1
             elif attempt.failed_at == FailureStage.RUNTIME:
                 patterns["runtime_failures"] += 1
+            elif attempt.failed_at == FailureStage.EVALUATION:
+                patterns["evaluation_failures"] += 1
 
             # Extract key error phrases
             if attempt.error_summary:

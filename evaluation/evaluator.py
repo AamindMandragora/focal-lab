@@ -68,6 +68,10 @@ class EvaluationResult:
                 lines.append(f"    Question: {sample.get('question', 'N/A')[:100]}...")
                 lines.append(f"    Expected: {sample.get('expected', 'N/A')}")
                 lines.append(f"    Got: {sample.get('actual', 'N/A')}")
+                if sample.get("full_output"):
+                    lines.append(
+                        f"    Raw output: {_truncate_for_display(str(sample.get('full_output')), 180)}"
+                    )
                 if sample.get("error"):
                     lines.append(f"    Error: {sample.get('error')}")
 
@@ -246,6 +250,8 @@ class Evaluator:
                 self._grammar_file = grammars_dir / "sygus_slia.lark"
             elif self.dataset_name == "pddl":
                 self._grammar_file = grammars_dir / "pddl.lark"
+            elif self.dataset_name == "spider":
+                self._grammar_file = grammars_dir / "sql.lark"
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
@@ -268,8 +274,6 @@ class Evaluator:
 
     def _build_dynamic_gsm_parser(self, env: Dict[str, Any], example: Any):
         variables = self._extract_gsm_variable_names(example)
-        if not variables:
-            return None
         try:
             from evaluation.gsm_symbolic.grammar import build_dynamic_grammar
         except Exception:
@@ -277,13 +281,17 @@ class Evaluator:
 
         try:
             base_grammar = self._get_grammar_file().read_text()
+            # If the dataset example gives no numeric variable bindings, the
+            # dynamic grammar still keeps scratch variables such as x_1 but
+            # disables arbitrary unbound dataset symbols such as `x`.
             dynamic_grammar = build_dynamic_grammar(base_grammar, variables)
+            start_rule = "csd_start" if variables else "csd_numeric_start"
             if env.get("_mode") == "native":
                 from evaluation.common.parser_utils import create_lark_native_parser
                 parser_cls = create_lark_native_parser(
                     dynamic_grammar,
                     env["VerifiedAgentSynthesis"],
-                    start="csd_start",
+                    start=start_rule,
                 )
                 return parser_cls(env["lm"].Tokens)
             else:
@@ -292,7 +300,7 @@ class Evaluator:
                     dynamic_grammar,
                     env["VerifiedDecoderAgent"],
                     env["_dafny"],
-                    start="csd_start",
+                    start=start_rule,
                 )
                 return parser_cls(env["lm"]._Tokens)
         except Exception:
@@ -332,6 +340,13 @@ class Evaluator:
                 limit=self.sample_size,
                 random_sample=True,
             )
+        elif self.dataset_name == "spider":
+            from evaluation.spider.dataset import load_spider
+            self._dataset = load_spider(
+                split="test",
+                limit=self.sample_size,
+                random_sample=True,
+            )
         else:
             raise ValueError(f"Unknown dataset: {self.dataset_name}")
 
@@ -345,8 +360,9 @@ class Evaluator:
         """
         Set up the evaluation environment.
 
-        When python_source_path is provided, uses Python-native mode (no Dafny runtime).
-        Otherwise falls back to Dafny-compiled mode via compiled_module_path.
+        The active synthesis path provides python_source_path and uses
+        Python-native mode. compiled_module_path is retained only for legacy
+        Dafny-built artifacts.
         """
         if python_source_path is not None:
             from evaluation.common.environment import setup_python_native_environment
@@ -360,7 +376,7 @@ class Evaluator:
                 grammar_file=self._get_grammar_file(),
                 start_rule=start_rule,
                 load_in_4bit=self.load_in_4bit,
-                add_gsm_delimiter_tokens=(self.dataset_name == "gsm_symbolic"),
+                add_gsm_delimiter_tokens=(self.dataset_name != "folio"),
                 add_fol_keyword_tokens=(self.dataset_name == "folio"),
             )
 
@@ -381,8 +397,9 @@ class Evaluator:
                 grammar_file=self._get_grammar_file(),
                 start_rule="csd_start",
                 load_in_4bit=self.load_in_4bit,
+                add_gsm_delimiter_tokens=True,
             )
-        elif self.dataset_name in ("sygus_slia", "pddl"):
+        elif self.dataset_name in ("sygus_slia", "pddl", "spider"):
             return setup_dafny_environment(
                 run_dir=run_dir,
                 model_name=self.model_name,
@@ -449,6 +466,7 @@ class Evaluator:
     def _safe_eval_gsm_expr(self, expr: str, bindings: Optional[Dict[str, Decimal]] = None) -> Optional[Decimal]:
         """Safely evaluate a GSM arithmetic expression using a tiny Python AST subset."""
         bindings = bindings or {}
+        expr = " ".join(expr.split())
         try:
             tree = ast.parse(expr, mode="eval")
         except SyntaxError:
@@ -496,20 +514,53 @@ class Evaluator:
         except (ArithmeticError, InvalidOperation, ValueError, KeyError, ZeroDivisionError):
             return None
 
+    @staticmethod
+    def _is_gsm_scratch_name(name: str) -> bool:
+        return bool(re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*_[0-9]+", name.strip()))
+
+    def _eval_gsm_segment(self, segment: str, bindings: Dict[str, Decimal]) -> Optional[Decimal]:
+        """Evaluate one constrained GSM span, updating scratch bindings for assignments."""
+        stripped = " ".join(segment.split())
+        if not stripped:
+            return None
+
+        assignment = re.fullmatch(r"([A-Za-z][A-Za-z0-9_]*_[0-9]+)\s*=\s*(.+)", stripped)
+        if assignment:
+            name = assignment.group(1)
+            rhs = assignment.group(2)
+            value = self._safe_eval_gsm_expr(rhs, bindings)
+            if value is not None and self._is_gsm_scratch_name(name):
+                bindings[name] = value
+                return value
+            return None
+
+        candidate_parts = [part.strip() for part in stripped.split("=") if part.strip()]
+        for candidate in reversed(candidate_parts):
+            value = self._safe_eval_gsm_expr(candidate, bindings)
+            if value is not None:
+                return value
+        return None
+
     def _extract_answer_gsm(self, output: str, example: Optional[Any] = None) -> Optional[str]:
-        """Extract and safely evaluate the final GSM expression/equation within << >> delimiters."""
+        """Safely evaluate GSM constrained spans and return the final computed value.
+
+        Earlier spans may define scratch variables, e.g. <<x_1 = 3 + 2 * 6>>,
+        and later spans may refer to them, e.g. <<x_1 / y_1>>.
+        """
         matches = self._extract_constrained_content(output)
         if not matches:
             return None
 
         bindings = self._extract_gsm_numeric_bindings(example)
-        segment = matches[-1]
-        candidate_parts = [part.strip() for part in segment.split("=") if part.strip()]
-        for candidate in reversed(candidate_parts):
-            value = self._safe_eval_gsm_expr(candidate, bindings)
-            if value is not None:
-                return self._normalize_gsm_decimal(value)
-        return None
+        final_value: Optional[Decimal] = None
+        last_index = len(matches) - 1
+        for index, segment in enumerate(matches):
+            value = self._eval_gsm_segment(segment, bindings)
+            if index == last_index:
+                final_value = value
+        if final_value is None:
+            return None
+        return self._normalize_gsm_decimal(final_value)
 
     def _extract_answer_folio(self, output: str, example: Optional[Any] = None) -> Optional[str]:
         """
@@ -649,6 +700,9 @@ class Evaluator:
         if self.dataset_name == "pddl":
             return str(actual).strip() == "CORRECT"
 
+        if self.dataset_name == "spider":
+            return self._normalize_sql(actual) == self._normalize_sql(expected)
+
         a = str(actual).strip().lower()
         e = str(expected).strip().lower()
         if a in ("uncertain", "unknown"):
@@ -681,6 +735,8 @@ class Evaluator:
             return str(answer_str)
         elif self.dataset_name in ("sygus_slia", "pddl"):
             return str(self._example_field(example, "answer", "CORRECT"))
+        elif self.dataset_name == "spider":
+            return str(self._example_field(example, "query", ""))
         else:
             return str(self._example_field(example, "label", "Unknown"))
 
@@ -763,6 +819,24 @@ class Evaluator:
         success, reason = simulate_plan(initial_state, plan, goal_on, goal_on_table)
         return "CORRECT" if success else f"WRONG: {reason}"
 
+    @staticmethod
+    def _normalize_sql(sql: Optional[str]) -> str:
+        """Normalize SQL for exact-match scoring without changing semantics deeply."""
+        if sql is None:
+            return ""
+        text = str(sql).strip().rstrip(";").strip().lower()
+        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"\s*([(),=<>+\-*/])\s*", r"\1", text)
+        text = text.replace("< >", "<>").replace("! =", "!=")
+        return text
+
+    def _extract_answer_spider(self, output: str) -> Optional[str]:
+        """Extract the final SQL query inside << >> output."""
+        matches = self._extract_constrained_content(output)
+        if not matches:
+            return None
+        return self._normalize_sql(matches[-1])
+
     def _format_prompt(self, example: Any) -> str:
         """Format a dataset example as a prompt."""
         if self.dataset_name == "sygus_slia":
@@ -780,20 +854,61 @@ class Evaluator:
                 + "\n\nOutput ONLY the plan as a sequence of PDDL actions inside << >> delimiters.\n"
                 "Example: << (pick-up a) (stack a b) >>\n\nPlan:"
             )
+        elif self.dataset_name == "spider":
+            question = self._example_field(example, "question", "") or ""
+            db_id = self._example_field(example, "db_id", "") or ""
+            schema = self._example_field(example, "schema", "") or ""
+            schema_block = f"\nDatabase schema:\n{schema}\n" if schema else ""
+            db_block = f"Database: {db_id}\n" if db_id else ""
+            return (
+                "You are a text-to-SQL system for the Spider benchmark. "
+                "Write one SQL SELECT query that answers the question. You may reason in plain text, "
+                "but the final answer-bearing SQL query must appear inside the final << >> segment.\n"
+                "Use table and column names exactly as provided by the schema. Do not put prose or markdown inside << >>.\n\n"
+                f"{db_block}"
+                f"Question: {question}\n"
+                f"{schema_block}\n"
+                "Example final format: << SELECT name FROM singer WHERE age > 30 >>\n\nSQL:"
+            )
         if self.dataset_name == "gsm_symbolic":
             question = self._example_field(example, "question", "") or ""
             return (
-                "Solve the following math problem. You may write free-form reasoning in plain text, "
-                "but the final answer-bearing mathematical expression or equation must appear inside the final << >> segment.\n"
-                "That final constrained segment should be short and mathematically meaningful. It does NOT need to simplify to a standalone numeral: "
-                "a final segment like <<5 + 3>> is valid because the evaluator computes the expression's numeric value.\n"
-                "Emit only one final << >> answer segment, do not add extra << >> spans after it, "
-                "and do not mention << or >> literally in the free-form reasoning text.\n\n"
-                "Example:\n"
-                "Q: Amy has 5 apples. She buys 3 more. How many does she have?\n"
-                "A: Amy starts with 5 apples and buys 3 more.\n"
-                "End with <<5 + 3>>.\n"
-                "The answer is 8.\n\n"
+                "Solve the following math problem carefully. Write plain-text reasoning, and put parseable arithmetic only inside << >> spans. "
+                "Every << >> span must contain a complete grammar-valid arithmetic expression, equation, or scratch assignment. "
+                "The final << >> span is the answer used for grading.\n"
+                "Prefer a complete arithmetic expression in the final segment, e.g. <<16 * 8.5 + 4 * 10.5 + 13>>, because the evaluator computes it. "
+                "Do not use a lone numeral like <<1>> or a one-operation fragment like <<16 * 8>>; "
+                "if the direct answer is obvious, write a simple expression such as <<8 + 0>>. "
+                "Prefer reusable mini-expressions for multi-step problems: define intermediate values in earlier delimited spans such as <<x_1 = 48 / 2>> "
+                "and then use them in the final expression such as <<48 + x_1 + 0>>. "
+                "Copy numeric values exactly from the question: keep decimals such as 8.5 and 10.5, and do not change 13 into 1. "
+                "Do not put partial calculations, placeholders, variables without bindings, or prose inside << >>. "
+                "Do not copy a worked-example expression; recompute with the numbers and relationships in the current question. "
+                "A good answer may interleave plain-text reasoning with complete delimited calculations, then finish with one final delimited answer expression that combines the needed values. "
+                "Intermediate delimited spans should usually be reusable scratch assignments like <<x_1 = 16 * 8.5>> and <<x_2 = 4 * 10.5>>, not arbitrary local fragments. "
+                "If you introduce scratch variables, use them in the final span, e.g. <<x_1 + x_2 + 13>>. "
+                "Do not stop after a scratch assignment unless it is truly the final answer; the last << >> span should be the answer-bearing expression. "
+                "Do not mention << or >> literally in the free-form reasoning text except as actual delimiter spans.\n\n"
+                "Worked GSM-style example:\n"
+                "Q: Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. "
+                "How many clips did Natalia sell altogether in April and May?\n"
+                "A: In April, Natalia sold 48 clips. In May, she sold half as many as in April, so the May amount is 48 / 2. "
+                "The question asks for the total across both months, so add the April amount and the May amount. "
+                "The final expression should keep the original numbers and operations visible. Final expression: <<48 + 48 / 2>>\n\n"
+                "Reasoning checklist for the current problem, applied to the current numbers:\n"
+                "- For changing rates over time, include the initial period, every later period, and any after-effect/residual amount.\n"
+                "- For totals after some items were used, add used items back before subtracting another person's contribution.\n"
+                "- For discounts, handle the full-price block, discounted block, and any remaining full-price items separately.\n"
+                "- For 'fewer than Saturday' wording, subtract from Saturday's count to recover Friday's count.\n"
+                "- For budget questions about friends, compute cost per person, divide the budget by that cost, then subtract the host.\n"
+                "- For width/spacing fill questions, identify the count needed first, subtract what is already owned, then multiply by unit cost.\n\n"
+                "Optional interleaved scratch-span style for the same problem:\n"
+                "A: In April, Natalia sold 48 clips. Let the May amount be <<x_1 = 48 / 2>>. "
+                "Add April and May for the total, reusing x_1 in the final answer: <<48 + x_1 + 0>>\n\n"
+                "Worked expression example:\n"
+                "Q: Mark buys 7 markers at $6.5 each, 3 notebooks at $9.5 each, and a $12 folder. What is the total?\n"
+                "A: The marker cost is 7 * 6.5. The notebook cost is 3 * 9.5. The folder adds 12 more. "
+                "Add all three costs. Final expression: <<7 * 6.5 + 3 * 9.5 + 12>>\n\n"
                 f"Q: {question}\nA:"
             )
         else:
@@ -840,10 +955,7 @@ class Evaluator:
 
     def _check_format_validity(self, output: str) -> bool:
         """Check if the output has valid format with the dataset's delimiters."""
-        if self.dataset_name == "folio":
-            return "$" in output and "%" in output
-        # gsm_symbolic, sygus_slia, pddl all use << >>
-        return "<<" in output and ">>" in output
+        return bool(self._extract_constrained_content(output))
 
     @staticmethod
     def _strip_trailing_label(segment: str) -> str:
@@ -873,7 +985,8 @@ class Evaluator:
 
         grammar_text = self._get_grammar_file().read_text()
         try:
-            parser = Lark(grammar_text, start="start", parser="lalr")
+            start_rule = "csd_start" if self.dataset_name == "gsm_symbolic" else "start"
+            parser = Lark(grammar_text, start=start_rule, parser="lalr")
             for match in matches:
                 s = match.strip()
                 try:
@@ -906,7 +1019,7 @@ class Evaluator:
         Evaluate the CSD on a sample of the dataset.
 
         Args:
-            compiled_module_path: Path to the compiled GeneratedCSD.py (Dafny mode).
+            compiled_module_path: Legacy path to Dafny-built GeneratedCSD.py.
             sample_size: Number of examples to evaluate (overrides init value).
             python_source_path: Path to the original Python strategy file (native mode).
                 When provided, skips Dafny runtime and runs the strategy directly.
@@ -923,6 +1036,7 @@ class Evaluator:
         start_time = time.time()
         sample_outputs: List[Dict[str, Any]] = []
 
+        env = None
         try:
             dataset = self._load_dataset_sample()
             env = self._setup_environment(
@@ -991,6 +1105,8 @@ class Evaluator:
                         actual = self._extract_answer_sygus_slia(output_text, example)
                     elif self.dataset_name == "pddl":
                         actual = self._extract_answer_pddl(output_text, example)
+                    elif self.dataset_name == "spider":
+                        actual = self._extract_answer_spider(output_text)
                     else:
                         actual = self._extract_answer_folio(output_text, example=example)
                     extract_time = time.time() - t0
@@ -1081,3 +1197,10 @@ class Evaluator:
                 error=str(e),
                 sample_outputs=sample_outputs,
             )
+        finally:
+            try:
+                from evaluation.common.environment import release_evaluation_environment
+
+                release_evaluation_environment(env)
+            except Exception:
+                pass

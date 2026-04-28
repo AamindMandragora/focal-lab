@@ -1027,16 +1027,20 @@ _RETURN_NAME_OVERRIDES: dict[str, list[str]] = {
     "RightDelimiter": ["result"],
     "GetDelimitedContent": ["result"],
     "RollbackToValidPrefix": ["repaired"],
-    "UnconstrainedStep": ["next", "stepsLeft'"],
-    "ExpressiveStep": ["next", "stepsLeft'"],
-    "ConstrainedStep": ["next", "stepsLeft'"],
-    "ConstrainedAnswerStep": ["next", "stepsLeft'"],
-    "SoftConstrainedStep": ["next", "stepsLeft'"],
-    "TopKConstrainedStep": ["next", "stepsLeft'"],
-    "ForcedTokenStep": ["next", "stepsLeft'"],
-    "BudgetAwareStep": ["next", "stepsLeft'"],
+    "UnconstrainedStep": ["nextToken", "remainingSteps"],
+    "UnconstrainedAllowLeftDelimiterStep": ["nextToken", "remainingSteps"],
+    "UnconstrainedBiasLeftDelimiterStep": ["nextToken", "remainingSteps"],
+    "UnconstrainedNudgeLeftDelimiterStep": ["nextToken", "remainingSteps"],
+    "ConstrainedStep": ["nextToken", "remainingSteps"],
+    "ExtendConstrainedStep": ["nextToken", "remainingSteps"],
+    "ConstrainedOrRightDelimiterStep": ["nextToken", "remainingSteps"],
+    "SoftConstrainedStep": ["nextToken", "remainingSteps"],
+    "TopKConstrainedStep": ["nextToken", "remainingSteps"],
+    "ForcedTokenStep": ["nextToken", "remainingSteps"],
+    "BudgetAwareStep": ["nextToken", "remainingSteps"],
     "AppendUnconstrainedStep": ["updated", "remainingSteps"],
     "AppendConstrainedStep": ["updated", "remainingSteps"],
+    "AppendExtendConstrainedStep": ["updated", "remainingSteps"],
     "AppendSoftConstrainedStep": ["updated", "remainingSteps"],
     "AppendTopKConstrainedStep": ["updated", "remainingSteps"],
     "AppendBudgetAwareStep": ["updated", "remainingSteps"],
@@ -1072,9 +1076,12 @@ _PARAM_TYPE_OVERRIDES: dict[tuple[str | None, str, str], str] = {
     ("LM", "MaskTokens", "tokens"): "seq<Token>",
     ("LM", "MaskTokensExcept", "tokens"): "seq<Token>",
     ("CSDHelpers", "UnconstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "ExpressiveStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "UnconstrainedAllowLeftDelimiterStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "UnconstrainedBiasLeftDelimiterStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "UnconstrainedNudgeLeftDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "ConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "ConstrainedAnswerStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "ExtendConstrainedStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "ConstrainedOrRightDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "SoftConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "TopKConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "ForcedTokenStep", "stepsLeft"): "nat",
@@ -1082,6 +1089,7 @@ _PARAM_TYPE_OVERRIDES: dict[tuple[str | None, str, str], str] = {
     ("CSDHelpers", "BudgetAwareStep", "completionThreshold"): "nat",
     ("CSDHelpers", "AppendUnconstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendConstrainedStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "AppendExtendConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendSoftConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendTopKConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendBudgetAwareStep", "stepsLeft"): "nat",
@@ -1096,15 +1104,19 @@ _PARAM_TYPE_OVERRIDES: dict[tuple[str | None, str, str], str] = {
 
 _METHOD_RETURN_TYPE_OVERRIDES: dict[tuple[str | None, str], list[str]] = {
     ("CSDHelpers", "UnconstrainedStep"): ["Token", "nat"],
-    ("CSDHelpers", "ExpressiveStep"): ["Token", "nat"],
+    ("CSDHelpers", "UnconstrainedAllowLeftDelimiterStep"): ["Token", "nat"],
+    ("CSDHelpers", "UnconstrainedBiasLeftDelimiterStep"): ["Token", "nat"],
+    ("CSDHelpers", "UnconstrainedNudgeLeftDelimiterStep"): ["Token", "nat"],
     ("CSDHelpers", "ConstrainedStep"): ["Token", "nat"],
-    ("CSDHelpers", "ConstrainedAnswerStep"): ["Token", "nat"],
+    ("CSDHelpers", "ExtendConstrainedStep"): ["Token", "nat"],
+    ("CSDHelpers", "ConstrainedOrRightDelimiterStep"): ["Token", "nat"],
     ("CSDHelpers", "SoftConstrainedStep"): ["Token", "nat"],
     ("CSDHelpers", "TopKConstrainedStep"): ["Token", "nat"],
     ("CSDHelpers", "ForcedTokenStep"): ["Token", "nat"],
     ("CSDHelpers", "BudgetAwareStep"): ["Token", "nat"],
     ("CSDHelpers", "AppendUnconstrainedStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendConstrainedStep"): ["Prefix", "nat"],
+    ("CSDHelpers", "AppendExtendConstrainedStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendSoftConstrainedStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendTopKConstrainedStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendBudgetAwareStep"): ["Prefix", "nat"],
@@ -1207,13 +1219,24 @@ def _annotation_to_dafny(node: ast.AST | None, field_name: str | None = None) ->
 def _const_expr(node: ast.AST) -> str:
     if isinstance(node, ast.Constant):
         if isinstance(node.value, str):
-            return '"' + node.value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+            return _dafny_string_literal(node.value)
         if isinstance(node.value, bool):
             return "true" if node.value else "false"
         return repr(node.value)
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub) and isinstance(node.operand, ast.Constant):
         return "-" + repr(node.operand.value)
     return ast.unparse(node)
+
+
+def _dafny_string_literal(value: str) -> str:
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+        .replace('"', '\\"')
+    )
+    return f'"{escaped}"'
 
 
 def _attr_is_array(node: ast.AST) -> bool:
@@ -1449,7 +1472,7 @@ def _translate_slice(node: ast.Slice, current_class: str | None, name_map: dict[
 def _translate_expr(node: ast.AST, current_class: str | None = None, name_map: dict[str, str] | None = None) -> str:
     if isinstance(node, ast.Constant):
         if isinstance(node.value, str):
-            return '"' + node.value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+            return _dafny_string_literal(node.value)
         if isinstance(node.value, bool):
             return "true" if node.value else "false"
         if node.value is None:
@@ -1683,10 +1706,6 @@ def _special_function_body(name: str, current_class: str | None) -> list[str] | 
             "lm.ValidTokensIdsLogits() &&",
             "delimiter.Left in lm.Tokens &&",
             "delimiter.Right in lm.Tokens",
-        ]
-    if name == "ConstrainedWindowValid" and current_class == "CSDHelpers":
-        return [
-            "!this.delimiter.InsideDelimitedWindow(prefix) || this.parser.IsValidPrefix(this.delimiter.GetDelimitedContent(prefix))",
         ]
     return None
 

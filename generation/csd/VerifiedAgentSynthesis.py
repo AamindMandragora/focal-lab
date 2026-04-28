@@ -12,6 +12,8 @@ Logit: TypeAlias = float
 MODULE_NAME = "VerifiedDecoderAgent"
 LeftDelimiter: Token = "<<"
 RightDelimiter: Token = ">>"
+SpacedLeftDelimiter: Token = " <<"
+SpacedRightDelimiter: Token = " >>"
 
 
 @dataclass(frozen=True)
@@ -764,7 +766,6 @@ class CSDHelpers:
             "forall i :: 0 <= i < |result| ==> result[i] == prefix[|prefix| - |result| + i]",
         ),
         decreases=("|prefix|",),
-        axiom=True,
     )
     def LongestValidSuffix(self, prefix: Prefix) -> Prefix:
         return (
@@ -820,6 +821,14 @@ class CSDHelpers:
     def CanConstrain(self, prefix: Prefix) -> bool:
         return not self.parser.IsCompletePrefix(self.LongestValidSuffix(prefix))
 
+    @dafny_spec(
+        kind="predicate",
+        reads=("this", "this.parser"),
+        requires=("parser.IsValidPrefix([])",),
+    )
+    def CanExtendConstrained(self, prefix: Prefix) -> bool:
+        return len(self.parser.ValidNextTokens(self.LongestValidSuffix(prefix))) > 0
+
     # ── Step Functions ────────────────────────────────────────────────────
 
     @dafny_spec(
@@ -831,15 +840,113 @@ class CSDHelpers:
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next in lm.Tokens",
-            "!lm.IsMasked(next)",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
         ),
     )
     def UnconstrainedStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
         self.lm.ValidTokensIdsLogitsAlways()
         self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            if LeftDelimiter in self.lm.Tokens:
+                self.lm.MaskToken(LeftDelimiter)
+            if RightDelimiter in self.lm.Tokens:
+                self.lm.MaskToken(RightDelimiter)
+            if " <<" in self.lm.Tokens:
+                self.lm.MaskToken(" <<")
+            if " >>" in self.lm.Tokens:
+                self.lm.MaskToken(" >>")
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+    )
+    def UnconstrainedAllowLeftDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            if RightDelimiter in self.lm.Tokens:
+                self.lm.MaskToken(RightDelimiter)
+            if " >>" in self.lm.Tokens:
+                self.lm.MaskToken(" >>")
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+            "bias > 0.0",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+        axiom=True,
+        extern=True,
+    )
+    def UnconstrainedBiasLeftDelimiterStep(self, prompt: Prefix, generated: Prefix, bias: Logit, stepsLeft: int) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            if RightDelimiter in self.lm.Tokens:
+                self.lm.MaskToken(RightDelimiter)
+            if " >>" in self.lm.Tokens:
+                self.lm.MaskToken(" >>")
+            if LeftDelimiter in self.lm.Tokens:
+                self.lm.BiasToken(LeftDelimiter, bias)
+            if " <<" in self.lm.Tokens:
+                self.lm.BiasToken(" <<", bias)
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+    )
+    def UnconstrainedNudgeLeftDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            if RightDelimiter in self.lm.Tokens:
+                self.lm.MaskToken(RightDelimiter)
+            if " >>" in self.lm.Tokens:
+                self.lm.MaskToken(" >>")
+            if LeftDelimiter in self.lm.Tokens:
+                self.lm.BiasToken(LeftDelimiter, 5.0)
+            if " <<" in self.lm.Tokens:
+                self.lm.BiasToken(" <<", 5.0)
         next_token = self.lm.ChooseNextToken()
         return next_token, stepsLeft - 1
 
@@ -854,13 +961,13 @@ class CSDHelpers:
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next in lm.Tokens",
-            "!lm.IsMasked(next)",
-            "parser.ValidNextToken(LongestValidSuffix(generated), next)",
-            "parser.IsValidPrefix(LongestValidSuffix(generated) + [next])",
-            "|LongestValidSuffix(generated + [next])| >= |LongestValidSuffix(generated)| + 1",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
+            "parser.IsValidPrefix(LongestValidSuffix(generated) + [nextToken])",
+            "|LongestValidSuffix(generated + [nextToken])| >= |LongestValidSuffix(generated)| + 1",
         ),
     )
     def ConstrainedStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
@@ -879,16 +986,79 @@ class CSDHelpers:
         requires=(
             "this.lm.ValidTokensIdsLogits()",
             "parser.IsValidPrefix([])",
+            "CanExtendConstrained(generated)",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
+            "parser.IsValidPrefix(LongestValidSuffix(generated) + [nextToken])",
+        ),
+    )
+    def ExtendConstrainedStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.LongestValidSuffixIsValid(generated)
+        suffix = self.LongestValidSuffix(generated)
+        self.AllValidNextTokensInLM(suffix)
+        self.lm.GenerateLogits(prompt + generated)
+        self.lm.MaskTokensExcept(self.parser.ValidNextTokens(suffix))
+        next_token = self.lm.ChooseNextToken()
+        self.LongestValidSuffixAppend(generated, next_token)
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "RightDelimiter in lm.Tokens",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "nextToken == RightDelimiter ==> parser.IsCompletePrefix(LongestValidSuffix(generated))",
+            "nextToken != RightDelimiter ==> parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
+        ),
+        axiom=True,
+        extern=True,
+    )
+    def ConstrainedOrRightDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.LongestValidSuffixIsValid(generated)
+        suffix = self.LongestValidSuffix(generated)
+        self.AllValidNextTokensInLM(suffix)
+        self.lm.GenerateLogits(prompt + generated)
+        valid_tokens = self.parser.ValidNextTokens(suffix)
+        if self.parser.IsCompletePrefix(suffix):
+            self.lm.MaskTokensExcept(valid_tokens + [RightDelimiter])
+        else:
+            self.lm.MaskTokensExcept(valid_tokens)
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
             "!parser.IsCompletePrefix(LongestValidSuffix(generated))",
             "stepsLeft >= 1",
             "penalty > 0.0",
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next in lm.Tokens",
-            "!lm.IsMasked(next)",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
         ),
     )
     def SoftConstrainedStep(self, prompt: Prefix, generated: Prefix, penalty: Logit, stepsLeft: int) -> tuple[Token, int]:
@@ -925,21 +1095,21 @@ class CSDHelpers:
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next in lm.Tokens",
-            "!lm.IsMasked(next)",
-            "parser.ValidNextToken(LongestValidSuffix(generated), next)",
-            "parser.IsValidPrefix(LongestValidSuffix(generated) + [next])",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
+            "parser.IsValidPrefix(LongestValidSuffix(generated) + [nextToken])",
         ),
     )
     def TopKConstrainedStep(self, prompt: Prefix, generated: Prefix, k: int, stepsLeft: int) -> tuple[Token, int]:
         self.LongestValidSuffixIsValid(generated)
         self.lm.GenerateLogits(prompt + generated)
-        self.lm.TopKFilter(k)
         suffix = self.LongestValidSuffix(generated)
         self.AllValidNextTokensInLM(suffix)
         self.lm.MaskTokensExcept(self.parser.ValidNextTokens(suffix))
+        self.lm.TopKFilter(k)
         next_token = self.lm.ChooseNextToken()
         self.LongestValidSuffixAppend(generated, next_token)
         return next_token, stepsLeft - 1
@@ -953,10 +1123,10 @@ class CSDHelpers:
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next == token",
-            "next in lm.Tokens",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken == token",
+            "nextToken in lm.Tokens",
         ),
     )
     def ForcedTokenStep(self, prompt: Prefix, generated: Prefix, token: Token, stepsLeft: int) -> tuple[Token, int]:
@@ -974,11 +1144,11 @@ class CSDHelpers:
         ),
         ensures=(
             "this.lm.ValidTokensIdsLogits()",
-            "stepsLeft' == stepsLeft - 1",
-            "stepsLeft' >= 0",
-            "next in lm.Tokens",
-            "!lm.IsMasked(next)",
-            "stepsLeft <= completionThreshold && !parser.IsCompletePrefix(LongestValidSuffix(generated)) ==> parser.ValidNextToken(LongestValidSuffix(generated), next)",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "stepsLeft <= completionThreshold && !parser.IsCompletePrefix(LongestValidSuffix(generated)) ==> parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
         ),
     )
     def BudgetAwareStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int, completionThreshold: int) -> tuple[Token, int]:
@@ -1037,6 +1207,31 @@ class CSDHelpers:
     )
     def AppendConstrainedStep(self, prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:
         next_token, remaining_steps = self.ConstrainedStep(prompt, prefix, stepsLeft)
+        return prefix + [next_token], remaining_steps
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "CanExtendConstrained(prefix)",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
+            "updated[|prefix|] in lm.Tokens",
+            "!lm.IsMasked(updated[|prefix|])",
+            "parser.ValidNextToken(LongestValidSuffix(prefix), updated[|prefix|])",
+            "parser.IsValidPrefix(LongestValidSuffix(prefix) + [updated[|prefix|]])",
+        ),
+    )
+    def AppendExtendConstrainedStep(self, prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:
+        next_token, remaining_steps = self.ExtendConstrainedStep(prompt, prefix, stepsLeft)
         return prefix + [next_token], remaining_steps
 
     @dafny_spec(
@@ -1208,6 +1403,7 @@ class CSDHelpers:
             "|generated| > 0 ==> |result| >= 0",
         ),
         axiom=True,
+        extern=True,
     )
     def FindLongestValidSpan(self, generated: Prefix) -> Prefix:
         best: Prefix = []
@@ -1238,6 +1434,7 @@ class CSDHelpers:
             "forall span :: span in result ==> (forall t :: t in span ==> t in generated)",
         ),
         axiom=True,
+        extern=True,
     )
     def ExtractAllValidSpans(self, generated: Prefix) -> list[Prefix]:
         spans: list[Prefix] = []
@@ -1276,12 +1473,12 @@ class CSDHelpers:
             "remainingSteps >= 0",
             "remainingSteps >= stepsLeft - maxRetries",
         ),
-        axiom=True,
     )
     def RepairByRetry(self, prompt: Prefix, generated: Prefix, maxRetries: int, stepsLeft: int) -> tuple[Prefix, int]:
         repaired = self.RollbackToValidPrefix(generated)
         retries = 0
         steps_remaining = stepsLeft
+        next_tok: Token = ""
         # invariant 0 <= retries <= maxRetries
         # invariant lm.ValidTokensIdsLogits()
         # invariant parser.IsValidPrefix(LongestValidSuffix(repaired))
@@ -1556,6 +1753,8 @@ __all__ = [
     "DelimitedAnswerValidForParser",
     "LeftDelimiter",
     "RightDelimiter",
+    "SpacedLeftDelimiter",
+    "SpacedRightDelimiter",
     "LM",
     "Parser",
     "Delimiter",

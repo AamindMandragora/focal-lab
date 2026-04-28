@@ -32,7 +32,7 @@ def add_common_eval_args(
         "--run-dir",
         type=Path,
         required=True,
-        help="Path to compiled CSD run directory",
+        help="Path to a CSD run directory",
     )
     parser.add_argument(
         "--model",

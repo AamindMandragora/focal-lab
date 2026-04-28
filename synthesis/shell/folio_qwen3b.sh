@@ -1,25 +1,8 @@
 #!/bin/bash
-# Make CSD for FOLIO using Qwen 3B (lighter).
+# Make CSD for FOLIO using GPT 5.4 generation and Qwen 7B evaluation.
 # Usage: bash synthesis/shell/folio_qwen3b.sh [extra generate_csd args]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-cd "$REPO_ROOT"
-
-DEVICE="${DEVICE:-auto}"
-MAX_ITERATIONS="${MAX_ITERATIONS:-10}"
-TEMPERATURE="${TEMPERATURE:-0.7}"
-
-echo "Making FOLIO CSD (Qwen 3B) from the preset wrapper..."
-echo "Tip: set DEVICE=cuda:3 or CUDA_VISIBLE_DEVICES=3 to pin a GPU."
-echo ""
-
-python -m synthesis.cli.generate_csd folio \
-  --model-preset qwen3b \
-  --max-iterations "$MAX_ITERATIONS" \
-  --temperature "$TEMPERATURE" \
-  --device "$DEVICE" \
-  "$@"
-
-echo "FOLIO CSD (Qwen 3B) done. Run dir: outputs/ (see latest_run.txt)"
+source "$SCRIPT_DIR/common.sh"
+csd_run_preset folio "FOLIO" "$@"

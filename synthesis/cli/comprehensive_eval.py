@@ -42,7 +42,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from evaluation.common.run_artifacts import resolve_run_dir
-from synthesis.presets import get_synthesis_preset
+from synthesis.presets import DEFAULT_EVAL_MODEL_PRESET, MODEL_PRESETS, get_synthesis_preset
 
 # Models to test (excluding Qwen2.5-Math-7B which is fine-tuned on LaTeX)
 MODELS = [
@@ -291,6 +291,7 @@ def generate_csd(
         "run_synthesis.py",
         *preset.to_cli_args(
             model_name=model,
+            eval_model_name=MODEL_PRESETS[DEFAULT_EVAL_MODEL_PRESET],
             max_iterations=max_iterations,
             temperature=temperature,
             device="auto",

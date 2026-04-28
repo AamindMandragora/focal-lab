@@ -4,7 +4,7 @@ Helpers for locating synthesis run artifacts.
 The repo writes synthesized runs directly under ``outputs/`` and many
 tools need the same two operations:
 - resolve the ``latest`` shortcut via ``latest_run.txt``
-- find the compiled directory that contains ``GeneratedCSD.py``
+- find the directory that contains the generated ``GeneratedCSD.py`` source
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-COMPILED_MODULE_FALLBACK_SUBDIRS = (
+STRATEGY_MODULE_FALLBACK_SUBDIRS = (
     "generated_csd",
     "folio_csd",
     "gsm_crane_csd",
@@ -61,7 +61,7 @@ def resolve_run_dir(run_dir: Path) -> Path:
     return actual_path if actual_path.exists() else run_dir
 
 
-def find_compiled_module_dir(run_dir: Path) -> Path:
+def find_strategy_module_dir(run_dir: Path) -> Path:
     """
     Return the directory containing ``GeneratedCSD.py`` for a synthesis run.
     """
@@ -69,7 +69,7 @@ def find_compiled_module_dir(run_dir: Path) -> Path:
     if (resolved_run_dir / "GeneratedCSD.py").exists():
         return resolved_run_dir
 
-    for subdir in COMPILED_MODULE_FALLBACK_SUBDIRS:
+    for subdir in STRATEGY_MODULE_FALLBACK_SUBDIRS:
         candidate = resolved_run_dir / subdir
         if (candidate / "GeneratedCSD.py").exists():
             return candidate
@@ -78,4 +78,14 @@ def find_compiled_module_dir(run_dir: Path) -> Path:
     if found:
         return found[0].parent
 
-    raise FileNotFoundError(f"Compiled module directory not found in {resolved_run_dir}")
+    raise FileNotFoundError(f"GeneratedCSD.py not found in {resolved_run_dir}")
+
+
+def find_compiled_module_dir(run_dir: Path) -> Path:
+    """
+    Backward-compatible alias for older compiled-run tools.
+
+    New synthesis runs keep the authoritative Python source as ``GeneratedCSD.py``
+    and do not Dafny-build it back into Python.
+    """
+    return find_strategy_module_dir(run_dir)

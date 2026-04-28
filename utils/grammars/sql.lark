@@ -1,0 +1,87 @@
+// SQL SELECT grammar for Spider-style text-to-SQL constrained decoding.
+// The constrained segment should be one complete query before the strategy
+// emits the final right delimiter.
+
+csd_start: query
+start: query
+
+?query: select_stmt
+
+select_stmt: select_clause from_clause? where_clause? group_clause? having_clause? order_clause? limit_clause?
+
+select_clause: SELECT distinct? select_list
+distinct: DISTINCT
+select_list: select_item ("," select_item)*
+?select_item: "*" | expr alias?
+alias: AS? NAME
+
+from_clause: FROM table_ref (join_clause | "," table_ref)*
+?table_ref: NAME alias?
+join_clause: JOIN table_ref (ON condition)?
+
+where_clause: WHERE condition
+group_clause: GROUP BY expr_list
+having_clause: HAVING condition
+order_clause: ORDER BY order_item ("," order_item)*
+order_item: expr (ASC | DESC)?
+limit_clause: LIMIT NUMBER
+
+?condition: disjunction
+?disjunction: conjunction (OR conjunction)*
+?conjunction: predicate (AND predicate)*
+?predicate: NOT predicate
+          | expr BETWEEN expr AND expr
+          | expr IN "(" (query | expr_list) ")"
+          | expr LIKE value
+          | expr IS NOT? NULL
+          | comparison
+          | "(" condition ")"
+
+comparison: expr COMP_OP expr
+
+?expr: sum
+?sum: product (("+" | "-") product)*
+?product: atom (("*" | "/") atom)*
+?atom: value
+     | column
+     | function_call
+     | "(" query ")"
+     | "(" expr ")"
+
+function_call: FUNC "(" distinct? ("*" | expr_list)? ")"
+expr_list: expr ("," expr)*
+
+?value: NUMBER | STRING
+column: NAME ("." NAME)?
+
+SELECT.2: /select/i
+DISTINCT.2: /distinct/i
+FROM.2: /from/i
+WHERE.2: /where/i
+GROUP.2: /group/i
+BY.2: /by/i
+HAVING.2: /having/i
+ORDER.2: /order/i
+ASC.2: /asc/i
+DESC.2: /desc/i
+LIMIT.2: /limit/i
+JOIN.2: /join/i
+ON.2: /on/i
+AND.2: /and/i
+OR.2: /or/i
+NOT.2: /not/i
+BETWEEN.2: /between/i
+IN.2: /in/i
+LIKE.2: /like/i
+IS.2: /is/i
+NULL.2: /null/i
+AS.2: /as/i
+FUNC.2: /count|sum|avg|min|max/i
+
+COMP_OP: "=" | "!=" | "<>" | "<=" | ">=" | "<" | ">"
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+STRING: /'[^']*'/ | /"[^"]*"/
+NUMBER: /-?\d+(\.\d+)?/
+
+%import common.WS
+%ignore WS

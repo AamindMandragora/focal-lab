@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 import tempfile
 
 import pytest
@@ -42,22 +42,117 @@ def test_evaluator_helpers_match_current_surface():
     assert evaluator._extract_constrained_content("hello <<5+3=8>> world") == ["5+3=8"]
     assert evaluator._extract_answer_gsm("hello <<5+3>> world") == "8"
     assert evaluator._extract_answer_gsm("hello <<5+3=8>> world") == "8"
+    assert evaluator._extract_answer_gsm("hello <<16 * 8\n+ 4 * 10\n+ 13>> world") == "181"
     assert evaluator._check_format_validity("hello <<5+3=8>> world")
+    assert not evaluator._check_format_validity("hello >>5+3=8<< world")
+    assert evaluator._check_syntax_validity("hello <<16 * 8.5 + 4 * 10.5 + 13>> world")[0]
+    assert not evaluator._check_syntax_validity("hello <<1>> world")[0]
     assert evaluator._get_grammar_file().name == "gsm.lark"
 
 
-def test_evaluator_gsm_expression_evaluation_uses_final_segment_only():
+def test_evaluator_gsm_expression_evaluation_uses_delimited_segments_left_to_right():
     from evaluation.evaluator import Evaluator
 
     evaluator = Evaluator(dataset_name="gsm_symbolic")
 
     assert evaluator._extract_answer_gsm("reasoning <<1+1>> trailing <<16 * 8.5 + 4 * 10.5 + 13>>") == "191"
+    assert (
+        evaluator._extract_answer_gsm("reasoning <<x_1 = 3 + 2 * 6>> trailing <<y_1 = 5 + 10>> final <<x_1 / y_1>>")
+        == "1"
+    )
+    assert evaluator._extract_answer_gsm("reasoning <<x_1 = 48 / 2>> final <<48 + x_1 + 0>>") == "72"
     assert evaluator._extract_answer_gsm("reasoning <<5+3>> trailing <<not valid>>") is None
     assert evaluator._answers_match("191", "191.0")
 
 
+def test_gsm_parser_allows_decimal_prefix_tokens():
+    from evaluation.common.parser_utils import create_lark_native_parser
+    from generation.csd import VerifiedAgentSynthesis as VAS
+
+    grammar = Path("utils/grammars/gsm.lark").read_text()
+    parser_cls = create_lark_native_parser(grammar, VAS, start="csd_numeric_start")
+    parser = parser_cls(["8", ".", "5", "+", "0"])
+
+    assert "." in parser.ValidNextTokens(["8"])
+    assert parser.IsValidPrefix(["8", "."])
+    assert "5" in parser.ValidNextTokens(["8", "."])
+    assert parser.IsCompletePrefix(["8", ".", "5", "+", "0", "+", "0"])
+
+
+def test_gsm_parser_allows_scratch_assignment_prefix_tokens():
+    from evaluation.common.parser_utils import create_lark_native_parser
+    from generation.csd import VerifiedAgentSynthesis as VAS
+
+    grammar = Path("utils/grammars/gsm.lark").read_text()
+    parser_cls = create_lark_native_parser(grammar, VAS, start="csd_start")
+    parser = parser_cls(["x", "_", "1", "=", "3", "+", "2", "*", "6"])
+
+    assert "_" in parser.ValidNextTokens(["x"])
+    assert parser.IsValidPrefix(["x", "_"])
+    assert "1" in parser.ValidNextTokens(["x", "_"])
+    assert parser.IsCompletePrefix(["x", "_", "1", "=", "3", "+", "2", "*", "6"])
+
+
+def test_gsm_prompt_contains_worked_reasoning_example():
+    from evaluation.evaluator import Evaluator
+
+    evaluator = Evaluator(dataset_name="gsm_symbolic")
+    prompt = evaluator._format_prompt({"question": "A box has 6 red pens and 4 blue pens. How many pens?"})
+
+    assert "Worked GSM-style example" in prompt
+    assert "Natalia sold clips to 48" in prompt
+    assert "In May, she sold half as many as in April" in prompt
+    assert "<<48 + 48 / 2>>" in prompt
+    assert "<<x_1 = 48 / 2>>" in prompt
+    assert "<<48 + x_1 + 0>>" in prompt
+    assert "Reasoning checklist for the current problem" in prompt
+    assert "changing rates over time" in prompt
+    assert "discounts" in prompt
+    assert "budget questions about friends" in prompt
+    assert "Do not copy a worked-example expression" in prompt
+    assert "may interleave plain-text reasoning" in prompt
+    assert "Prefer a complete arithmetic expression" in prompt
+    assert "Do not use a lone numeral" in prompt
+    assert "<<8 + 0>>" in prompt
+    assert "Copy numeric values exactly" in prompt
+
+
+def test_gsm_csd_grammar_excludes_closing_delimiter_from_answer():
+    from lark import Lark, UnexpectedInput
+
+    grammar = Path("utils/grammars/gsm.lark").read_text()
+    parser = Lark(grammar, start="csd_start", parser="lalr")
+    numeric_parser = Lark(grammar, start="csd_numeric_start", parser="lalr")
+
+    parser.parse("16 * 8.5 + 4 * 10.5 + 13")
+    parser.parse("121 - 16 - 56")
+    parser.parse("x_1 = 3 + 2 * 6")
+    parser.parse("x_1 / y_1")
+    with pytest.raises(UnexpectedInput):
+        parser.parse("16 * 8.5 + 4 * 10.5 + 13 >>")
+    with pytest.raises(UnexpectedInput):
+        parser.parse("16 * 8")
+    with pytest.raises(UnexpectedInput):
+        parser.parse("8")
+    with pytest.raises(UnexpectedInput):
+        parser.parse("1")
+
+
+def test_gsm_dynamic_grammar_keeps_scratch_vars_but_blocks_unbound_dataset_vars():
+    from lark import Lark, UnexpectedInput
+    from evaluation.gsm_symbolic.grammar import build_dynamic_grammar
+
+    grammar = Path("utils/grammars/gsm.lark").read_text()
+    dynamic = build_dynamic_grammar(grammar, [])
+    parser = Lark(dynamic, start="csd_start", parser="lalr")
+
+    parser.parse("x_1 = 3 + 2 * 6")
+    parser.parse("x_1 + 4 + 0")
+    with pytest.raises(UnexpectedInput):
+        parser.parse("x + 13 - 5")
+
+
 def test_failure_stage_and_attempt_record_evaluation_results():
-    from verification.compiler import CompilationResult
     from evaluation.evaluator import EvaluationResult
     from synthesis.feedback_loop import FailureStage, SynthesisAttempt
     from synthesis.runner import RuntimeResult
@@ -68,7 +163,6 @@ def test_failure_stage_and_attempt_record_evaluation_results():
         strategy_code="strategy",
         timestamp="2026-04-14T00:00:00",
         verification_result=VerificationResult(success=True, raw_output="ok"),
-        compilation_result=CompilationResult(success=True, output_dir=Path("/tmp")),
         runtime_result=RuntimeResult(success=True, output=["x"], cost=1),
         eval_result=EvaluationResult(
             success=True,
@@ -81,12 +175,40 @@ def test_failure_stage_and_attempt_record_evaluation_results():
         ),
         failed_at=FailureStage.EVALUATION,
         error_summary="evaluation failed",
+        generation_diagnostics=[{"candidate": 1, "raw_output_empty": False}],
     )
 
     attempt_dict = attempt.to_dict()
     assert FailureStage.EVALUATION.value == "evaluation"
     assert attempt_dict["failed_at"] == "evaluation"
     assert attempt_dict["evaluation"]["accuracy"] == 0.4
+    assert attempt_dict["generation_diagnostics"][0]["candidate"] == 1
+
+
+def test_successful_attempt_does_not_require_dafny_compilation():
+    from evaluation.evaluator import EvaluationResult
+    from synthesis.feedback_loop import SynthesisAttempt
+    from synthesis.runner import RuntimeResult
+    from verification.verifier import VerificationResult
+
+    attempt = SynthesisAttempt(
+        attempt_number=1,
+        strategy_code="strategy",
+        timestamp="2026-04-14T00:00:00",
+        verification_result=VerificationResult(success=True, raw_output="ok"),
+        runtime_result=RuntimeResult(success=True, output=["x"], cost=1),
+        eval_result=EvaluationResult(
+            success=True,
+            accuracy=1.0,
+            format_rate=1.0,
+            syntax_rate=1.0,
+            num_examples=1,
+            num_correct=1,
+            total_time_seconds=1.0,
+        ),
+    )
+
+    assert attempt.succeeded()
 
 
 def test_pipeline_requires_evaluator_and_stores_thresholds():
@@ -153,9 +275,7 @@ def test_generator_raises_instead_of_using_canned_fallback():
     assert not hasattr(StrategyGenerator, "STARTER_STRATEGY")
 
 
-@patch("synthesis.feedback_loop.DafnyCompiler")
-def test_pipeline_retries_after_evaluation_failure(mock_dafny_compiler):
-    from verification.compiler import CompilationResult
+def test_pipeline_retries_after_evaluation_failure():
     from evaluation.evaluator import EvaluationResult
     from synthesis.feedback_loop import FailureStage, SynthesisPipeline
     from synthesis.runner import RuntimeResult
@@ -196,30 +316,11 @@ def test_pipeline_retries_after_evaluation_failure(mock_dafny_compiler):
     mock_evaluator.evaluate_sample = Mock(side_effect=eval_results)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        module_path = Path(tmpdir) / "GeneratedCSD.py"
-        module_path.write_text("# mock module", encoding="utf-8")
-
-        mock_compiler_instance = Mock()
-        mock_compiler_instance.compile = Mock(
-            return_value=CompilationResult(
-                success=True,
-                output_dir=Path(tmpdir),
-                main_module_path=module_path,
-                raw_output="compiled",
-            )
-        )
-        mock_dafny_compiler.return_value = mock_compiler_instance
-
-        seed_compiler = Mock()
-        seed_compiler.dafny_path = "dafny"
-        seed_compiler.timeout = 120
-        seed_compiler.extra_args = []
-
         pipeline = SynthesisPipeline(
             evaluator=mock_evaluator,
             generator=mock_generator,
             verifier=mock_verifier,
-            compiler=seed_compiler,
+            compiler=None,
             runner=mock_runner,
             max_iterations=3,
             output_dir=Path(tmpdir),
@@ -232,6 +333,8 @@ def test_pipeline_retries_after_evaluation_failure(mock_dafny_compiler):
         result = pipeline.synthesize("test task", output_name="test_csd")
 
     assert result.success
+    assert result.python_source_path is not None
+    assert result.python_source_path.name == "GeneratedCSD.py"
     assert len(result.attempts) == 2
     assert result.attempts[0].failed_at == FailureStage.EVALUATION
     assert result.attempts[1].failed_at is None

@@ -3,7 +3,7 @@ from synthesis.feedback_loop import repair_verification_strategy
 
 def test_repair_replaces_done_state_with_break():
     strategy = """current_step = "explore"
-while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
+while stepsLeft > 0 and current_step != "done":
     if current_step == "explore":
         current_step = "done"
 """
@@ -20,7 +20,7 @@ while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
 
 def test_repair_removes_unprovable_current_step_invariant():
     strategy = """# invariant current_step in ["explore", "generate"]
-while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
+while stepsLeft > 0 and current_step != "done":
     pass
 """
 
@@ -33,7 +33,7 @@ while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
     assert 'current_step in ["explore", "generate"]' not in repaired
 
 
-def test_repair_injects_nonempty_answer_guard_for_finalize():
+def test_repair_does_not_resurrect_old_answer_channel_finalize():
     strategy = """while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
     break
 """
@@ -49,9 +49,9 @@ def test_repair_injects_nonempty_answer_guard_for_finalize():
         "requires |answer| > 0",
     )
 
-    assert changed
-    assert "if len(answer) == 0 and stepsLeft > 0 and not parser.IsCompletePrefix(answer):" in repaired
-    assert "helpers.ConstrainedAnswerStep(prompt, generated, answer, stepsLeft)" in repaired
+    assert not changed
+    assert repaired == strategy
+    assert "ConstrainedAnswerStep" not in repaired
 
 
 def test_repair_rewrites_prefix_truthiness_and_pop():
@@ -223,6 +223,77 @@ def test_repair_rewrites_soft_constrained_keywords_to_positional():
     assert "helpers.SoftConstrainedStep(" in repaired
     assert "penalty=" not in repaired
     assert "stepsLeft=" not in repaired
+
+
+def test_repair_rewrites_topk_keywords_to_positional():
+    strategy = """generated, stepsLeft = helpers.AppendTopKConstrainedStep(prompt, generated, k=5, stepsLeft=stepsLeft)
+"""
+
+    repaired, changed = repair_verification_strategy(
+        strategy,
+        "Dafny verification failed with 1 error(s):\n\n"
+        "(Line 1, Column 1): Error: wrong number of arguments (got 2, but method 'AppendTopKConstrainedStep' expects 4: "
+        "(prompt: Prefix, prefix: Prefix, k: int, stepsLeft: nat))\n",
+    )
+
+    assert changed
+    assert "helpers.AppendTopKConstrainedStep(prompt, generated, 5, stepsLeft)" in repaired
+    assert "k=" not in repaired
+    assert "stepsLeft=" not in repaired
+
+
+def test_repair_replaces_unprovable_topk_with_hard_constrained_step():
+    strategy = """generated, stepsLeft = helpers.AppendTopKConstrainedStep(prompt, generated, 5, stepsLeft)
+"""
+
+    repaired, changed = repair_verification_strategy(
+        strategy,
+        "Dafny verification failed with 1 error(s):\n\n"
+        "VerifiedAgentSynthesis.dfy(809,22): Related location: this is the precondition that could not be proved\n"
+        "requires 1 <= k <= |lm.Tokens|\n"
+        "helpers.AppendTopKConstrainedStep(prompt, generated, 5, stepsLeft)\n",
+    )
+
+    assert changed
+    assert "helpers.AppendConstrainedStep(prompt, generated, stepsLeft)" in repaired
+    assert "AppendTopKConstrainedStep" not in repaired
+
+
+def test_repair_wraps_unguarded_append_delimiters_with_budget_guard():
+    strategy = """generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+"""
+
+    repaired, changed = repair_verification_strategy(
+        strategy,
+        "Dafny verification failed with 2 error(s):\n\n"
+        "VerifiedAgentSynthesis.dfy(866,25): Related location: this is the precondition that could not be proved\n"
+        "requires stepsLeft >= 1\n",
+    )
+
+    assert changed
+    assert "if stepsLeft > 0:\n    generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)" in repaired
+    assert "if stepsLeft > 0:\n    generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)" in repaired
+
+
+def test_repair_removes_manual_stepsleft_decrement():
+    strategy = """while stepsLeft > 0:
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    stepsLeft -= 1
+    phase += 1
+"""
+
+    repaired, changed = repair_verification_strategy(
+        strategy,
+        "Dafny verification failed with 1 error(s):\n\n"
+        "Error: this invariant could not be proved to be maintained by the loop\n"
+        "# invariant 0 <= stepsLeft <= maxSteps\n",
+    )
+
+    assert changed
+    assert "stepsLeft -= 1" not in repaired
+    assert "helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)" in repaired
+    assert "phase += 1" in repaired
 
 
 def test_repair_adds_can_constrain_guard_to_constrained_append_branch():

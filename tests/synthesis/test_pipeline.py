@@ -5,67 +5,58 @@ This verifies that we can:
 - generate a Python strategy body
 - inject it into `generation/csd/GeneratedAgentTemplate.py`
 - verify it through the transpiler
-- compile the transpiled Dafny to Python
-- execute the compiled strategy
+- execute the original generated Python strategy
 """
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, os.getcwd())
 
 from generation.generator import StrategyGenerator
 from verification.verifier import DafnyVerifier
-from verification.compiler import DafnyCompiler
 from synthesis.runner import StrategyRunner
 
 
 def test_synthesis():
+    assert run_synthesis_smoke()
+
+
+def run_synthesis_smoke():
     repo_root = Path(os.getcwd())
     dafny_bin = os.environ.get("DAFNY", str(repo_root / "dafny" / "dafny"))
     verifier = DafnyVerifier(dafny_path=dafny_bin)
-    compiler = DafnyCompiler(dafny_path=dafny_bin)
     runner = StrategyRunner()
 
     strategy_code = """
 # CSD_RATIONALE_BEGIN
-# Simple smoke test for the Python-to-Dafny pipeline with explicit expressive free-form steps and a separate constrained answer channel.
+# Simple smoke test for the Python-to-Dafny pipeline with explicit delimiter emission and single-prefix constrained answer content.
 # CSD_RATIONALE_END
 phase = 0
-preamble_tokens = 0
-exploration_budget = 1
 answer_tokens = 0
+close_attempts = 0
 # invariant lm.ValidTokensIdsLogits()
-# invariant 0 <= stepsLeft <= maxSteps - 2
-# invariant 0 <= preamble_tokens <= 1
-# invariant 0 <= exploration_budget <= 1
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
 # invariant 0 <= answer_tokens
-# invariant helpers.ConstrainedWindowValid(generated)
-# invariant parser.IsValidPrefix(answer)
-# invariant |generated| + |answer| + stepsLeft <= maxSteps - 2
-# invariant |answer| == 0 ==> exploration_budget < stepsLeft
+# invariant 0 <= close_attempts
 # decreases stepsLeft
-while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
-    next_token = eosToken
-    new_steps = stepsLeft
-    spend_freeform = phase < 2 and exploration_budget > 0 and preamble_tokens < 1 and stepsLeft > 1
-    if spend_freeform:
-        next_token, new_steps = helpers.ExpressiveStep(prompt, generated, stepsLeft)
-        generated = generated + [next_token]
-        stepsLeft = new_steps
-        preamble_tokens = preamble_tokens + 1
-        exploration_budget = exploration_budget - 1
-        if preamble_tokens >= 1:
-            phase = 1
-        if preamble_tokens >= 1 or stepsLeft <= 1:
-            phase = 2
-    else:
-        next_token, new_steps = helpers.ConstrainedAnswerStep(prompt, generated, answer, stepsLeft)
-        answer = answer + [next_token]
-        stepsLeft = new_steps
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
         answer_tokens = answer_tokens + 1
-        if answer_tokens >= 1:
-            phase = 3
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        close_attempts = close_attempts + 1
+        phase = 3
+    else:
+        break
 """
     generator = StrategyGenerator()
     full_code = generator.inject_strategy(strategy_code)
@@ -77,18 +68,11 @@ while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
         return False
     print("Verification successful!")
 
-    print("Testing strategy compilation...")
-    c_result = compiler.compile(full_code, output_name="test_csd")
-    if not c_result.success:
-        print("Compilation failed:", c_result.get_error_summary())
-        return False
-    print("Compilation successful!")
-
     print("Testing strategy execution...")
-    if c_result.main_module_path is None:
-        print("No main module path")
-        return False
-    r_result = runner.run(c_result.main_module_path)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        python_path = Path(tmpdir) / "GeneratedCSD.py"
+        python_path.write_text(full_code, encoding="utf-8")
+        r_result = runner.run_python_native(python_path)
     if not r_result.success:
         print("Execution failed:", r_result.get_error_summary())
         return False
@@ -97,7 +81,7 @@ while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
 
 
 if __name__ == "__main__":
-    success = test_synthesis()
+    success = run_synthesis_smoke()
     if success:
         print("\nPipeline verification PASSED")
         sys.exit(0)

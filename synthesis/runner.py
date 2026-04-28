@@ -1,7 +1,8 @@
 """
-Python runner for compiled Dafny CSD strategies.
+Python runner for generated CSD strategies.
 
-Executes the compiled Python code and captures results/errors.
+The active synthesis path runs the original generated Python source directly.
+Legacy helpers for Dafny-compiled modules remain for old artifacts.
 
 Supports both permissive testing mode and real JSON parsing mode.
 Also supports running the original Python source directly (no Dafny compilation).
@@ -24,7 +25,7 @@ ParserMode = Literal["permissive", "json"]
 
 @dataclass
 class RuntimeResult:
-    """Result of running a compiled strategy."""
+    """Result of running a generated strategy."""
     success: bool
     output: Optional[list[str]] = None  # Generated tokens
     cost: int = 0  # Cost from Dafny strategy
@@ -46,13 +47,13 @@ class RuntimeResult:
 
 class StrategyRunner:
     """
-    Executes compiled Dafny strategies in Python.
+    Executes generated strategies in Python.
     
-    Loads the generated Python module, injects runtime stubs,
-    and executes the strategy with test inputs.
+    Loads the generated Python module, injects runtime stubs, and executes the
+    strategy with test inputs.  `run_python_native()` is the active path.
     
     Supports two parser modes:
-    - "permissive": Accepts all tokens (for testing compilation)
+    - "permissive": Accepts all tokens (for smoke testing)
     - "json": Uses real JSON prefix validation
     """
     

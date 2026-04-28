@@ -1,4 +1,53 @@
 from generation.generator import StrategyGenerator
+from generation.generator import StrategyGenerationError
+from generation.generator import _auto_select_device
+
+
+def test_auto_select_device_uses_cpu_when_cuda_gpus_are_too_full(monkeypatch):
+    monkeypatch.setenv("CSD_GENERATOR_LOAD_IN_4BIT", "0")
+    monkeypatch.setattr("generation.generator.torch.cuda.is_available", lambda: True)
+    monkeypatch.setattr("generation.generator.torch.cuda.device_count", lambda: 2)
+    monkeypatch.setattr(
+        "generation.generator.torch.cuda.mem_get_info",
+        lambda gpu_id: ((4 if gpu_id == 0 else 8) * 1024**3, 40 * 1024**3),
+    )
+    monkeypatch.setattr("generation.generator.torch.backends.mps.is_available", lambda: False)
+
+    assert _auto_select_device() == "cpu"
+
+
+def test_auto_select_device_uses_lower_threshold_for_4bit_generation(monkeypatch):
+    monkeypatch.setenv("CSD_GENERATOR_LOAD_IN_4BIT", "1")
+    monkeypatch.delenv("CSD_MIN_CUDA_FREE_GB", raising=False)
+    monkeypatch.setattr("generation.generator.torch.cuda.is_available", lambda: True)
+    monkeypatch.setattr("generation.generator.torch.cuda.device_count", lambda: 2)
+    monkeypatch.setattr(
+        "generation.generator.torch.cuda.mem_get_info",
+        lambda gpu_id: ((5 if gpu_id == 0 else 12) * 1024**3, 40 * 1024**3),
+    )
+
+    assert _auto_select_device() == "cuda:1"
+
+
+def test_auto_select_device_picks_specific_cuda_device_with_enough_memory(monkeypatch):
+    monkeypatch.setenv("CSD_GENERATOR_LOAD_IN_4BIT", "0")
+    monkeypatch.setattr("generation.generator.torch.cuda.is_available", lambda: True)
+    monkeypatch.setattr("generation.generator.torch.cuda.device_count", lambda: 2)
+    monkeypatch.setattr(
+        "generation.generator.torch.cuda.mem_get_info",
+        lambda gpu_id: ((10 if gpu_id == 0 else 34) * 1024**3, 40 * 1024**3),
+    )
+
+    assert _auto_select_device() == "cuda:1"
+
+
+def test_strategy_generator_treats_auto_device_string_as_auto(monkeypatch):
+    monkeypatch.setattr("generation.generator._auto_select_device", lambda: "cpu")
+    monkeypatch.setattr(StrategyGenerator, "_load_template", lambda self: "")
+
+    generator = StrategyGenerator(device="auto")
+
+    assert generator.device == "cpu"
 
 
 def test_normalize_rationale_block_comments_plain_lines():
@@ -12,6 +61,36 @@ flag = False
     normalized = generator._normalize_rationale_block(strategy)
 
     assert "# This rationale line is not commented." in normalized
+
+
+def test_generate_valid_strategy_records_rejected_candidate_diagnostics():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    generator.max_new_tokens = 192
+    generator.temperature = 0.7
+    generator._generate_text = lambda *args, **kwargs: "not a strategy body"
+    generator._extract_strategy = lambda raw: raw
+    generator._ensure_rationale_block = lambda strategy: (_ for _ in ()).throw(
+        ValueError("missing rationale")
+    )
+
+    try:
+        generator._generate_valid_strategy(
+            "system",
+            "user",
+            failure_context="Qwen did not produce a usable initial strategy",
+        )
+    except StrategyGenerationError:
+        pass
+    else:
+        raise AssertionError("expected generation to fail")
+
+    assert len(generator.last_generation_diagnostics) == generator.SEARCH_ATTEMPTS
+    first = generator.last_generation_diagnostics[0]
+    assert first["raw_output"] == "not a strategy body"
+    assert first["raw_output_empty"] is False
+    assert first["extracted_strategy"] == "not a strategy body"
+    assert first["accepted"] is False
+    assert first["issue"] == "missing rationale"
 
 
 def test_structural_issue_rejects_unknown_helper_methods():
@@ -77,7 +156,7 @@ while stepsLeft > 0 and phase < 3:
     elif phase == 2 and helpers.CanConstrain(generated):
         generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
         constraint_mode = constraint_mode + 1
-    else:
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
         generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
         phase = 3
 """
@@ -202,6 +281,37 @@ while stepsLeft > 0 and phase < 2:
     assert "old" in issue.lower() or "replaced" in issue.lower()
 
 
+def test_structural_issue_rejects_repair_salvage_helpers():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+answer_tokens = 0
+# invariant 0 <= stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_tokens = answer_tokens + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated = helpers.RollbackToValidPrefix(generated)
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "repair/salvage" in issue
+    assert "RollbackToValidPrefix" in issue
+
+
 def test_structural_issue_accepts_valid_new_api_strategy():
     generator = StrategyGenerator.__new__(StrategyGenerator)
     strategy = """# CSD_RATIONALE_BEGIN
@@ -268,7 +378,7 @@ while stepsLeft > 0 and phase < 3:
     elif phase == 2 and helpers.CanConstrain(generated):
         generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
         constrained_count = constrained_count + 1
-    else:
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
         generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
         phase = 3
 """
@@ -302,13 +412,13 @@ while stepsLeft > 0 and phase < 3:
     elif phase == 1:
         generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
         phase = 2
-    elif phase == 2 and helpers.CanConstrain(generated):
+    elif phase == 2 and helpers.CanConstrain(generated) and not parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
         if constraint_mode == 0:
             generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, 0.5, stepsLeft)
         else:
             generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
         constraint_mode = constraint_mode + 1
-    else:
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
         generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
         phase = 3
 """
@@ -316,6 +426,445 @@ while stepsLeft > 0 and phase < 3:
     issue = generator._structural_issue(strategy)
 
     assert issue is None
+
+
+def test_structural_issue_rejects_phase_only_top_level_loop_branch():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# Bad branch only mutates phase inside a decreases loop.
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0 and reasoning_tokens < 2 and stepsLeft > 2:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reasoning_tokens = reasoning_tokens + 1
+    elif phase == 0:
+        phase = 1
+    elif phase == 1:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "must either consume a helper step or `break`" in issue
+
+
+def test_structural_issue_rejects_constrained_body_without_delimiters():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 2:
+    if phase == 0 and reasoning_tokens < 2 and stepsLeft > 1:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reasoning_tokens = reasoning_tokens + 1
+        if reasoning_tokens >= 2:
+            phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        if constraint_mode == 0:
+            generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        else:
+            generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+    else:
+        phase = 2
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "emit both LeftDelimiter and RightDelimiter" in issue
+
+
+def test_structural_issue_allows_reasoning_after_right_delimiter_for_interleaving():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+answer_steps = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 4:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        phase = 1
+    elif phase == 1:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    elif phase == 3:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_structural_issue_rejects_fixed_phase_quota_strategy():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_steps = 0
+answer_steps = 0
+min_reasoning_steps = 1
+min_answer_steps = 2
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0 and reasoning_steps < min_reasoning_steps:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reasoning_steps = reasoning_steps + 1
+        phase = 1
+    elif phase == 1:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "fixed phase-quota constants" in issue
+
+
+def test_structural_issue_rejects_nontrivial_fixed_phase_quotas():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_steps = 0
+scratch_steps = 0
+answer_steps = 0
+min_reason_steps = 2
+min_scratch_steps = 3
+min_final_steps = 2
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 5:
+    if phase == 0 and reasoning_steps < min_reason_steps:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reasoning_steps = reasoning_steps + 1
+    elif phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        scratch_steps = scratch_steps + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        phase = 3
+    elif phase == 3:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 4
+    elif phase == 4 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 4 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 5
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "fixed phase-quota constants" in issue
+
+
+def test_structural_issue_rejects_reason_limit_phase_quota():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reason_steps = 0
+answer_tokens = 0
+reason_limit = 2
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0 and reason_steps < reason_limit:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reason_steps = reason_steps + 1
+    elif phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_tokens = answer_tokens + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "fixed phase-quota constants" in issue
+
+
+def test_structural_issue_requires_natural_delimiter_helpers_when_configured(monkeypatch):
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+mode = 0
+seen = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        seen = seen + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "natural delimiter decisions" in issue
+    assert "UnconstrainedAllowLeftDelimiterStep" in issue
+    assert "ConstrainedOrRightDelimiterStep" in issue
+
+
+def test_structural_issue_accepts_natural_delimiter_helpers_when_configured(monkeypatch):
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+next_token = eosToken
+new_steps = stepsLeft
+seen = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        next_token, new_steps = helpers.UnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == LeftDelimiter or next_token == SpacedLeftDelimiter:
+            phase = 1
+        else:
+            seen = seen + 1
+    elif phase == 1 and (helpers.CanConstrain(generated) or parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))):
+        next_token, new_steps = helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == RightDelimiter:
+            phase = 2
+        else:
+            seen = seen + 1
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_structural_issue_accepts_nudge_left_delimiter_helper_when_configured(monkeypatch):
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+next_token = eosToken
+new_steps = stepsLeft
+seen = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        next_token, new_steps = helpers.UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == LeftDelimiter or next_token == SpacedLeftDelimiter:
+            phase = 1
+        else:
+            seen = seen + 1
+    elif phase == 1 and (helpers.CanConstrain(generated) or parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))):
+        next_token, new_steps = helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == RightDelimiter:
+            phase = 2
+        else:
+            seen = seen + 1
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_structural_issue_rejects_nonliteral_bias_left_delimiter_arg():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+next_token = eosToken
+new_steps = stepsLeft
+biasStrength = 3
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        next_token, new_steps = helpers.UnconstrainedBiasLeftDelimiterStep(prompt, generated, biasStrength, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == LeftDelimiter or next_token == SpacedLeftDelimiter:
+            phase = 1
+    elif phase == 1 and (helpers.CanConstrain(generated) or parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))):
+        next_token, new_steps = helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        stepsLeft = new_steps
+        if next_token == RightDelimiter:
+            phase = 2
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "literal positive float bias" in issue
+
+
+def test_structural_issue_rejects_incomplete_tuple_helper_assignment():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+answer_steps = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendExtendConstrainedStep
+        phase = 2
+    elif phase == 2:
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "Tuple assignment is only supported" in issue
 
 
 def test_structural_issue_rejects_bare_forced_token_step_calls():
@@ -566,3 +1115,377 @@ while stepsLeft > 0 and phase < 3:
     assert issue is not None
     assert "Append*" in issue
     assert "next_token" in issue
+
+
+def test_structural_issue_rejects_constrained_calls_before_left_delimiter():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 1
+    elif phase == 1:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "after executable LeftDelimiter" in issue
+
+
+def test_structural_issue_rejects_delimiter_appended_after_loop():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 2:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+    else:
+        break
+if parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+    generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "inside a budget-bounded decoding while loop" in issue
+
+
+def test_structural_issue_rejects_right_delimiter_without_completion_guard():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 2
+    else:
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "parser.IsCompletePrefix" in issue
+    assert "RightDelimiter" in issue
+
+
+def test_structural_issue_rejects_helper_keyword_arguments():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt=prompt, prefix=generated, stepsLeft=stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 2
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "positional arguments" in issue
+    assert "AppendConstrainedStep" in issue
+
+
+def test_structural_issue_rejects_topk_k_larger_than_one():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendTopKConstrainedStep(prompt, generated, 5, stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 2
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "literal k of 1" in issue
+
+
+def test_structural_issue_rejects_manual_stepsleft_mutation():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 4:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reasoning_tokens = reasoning_tokens + 1
+        phase = 1
+    elif phase == 1:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 2
+    elif phase == 2 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+    stepsLeft -= 1
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "Do not manually increment, decrement, or recompute `stepsLeft`" in issue
+
+
+def test_structural_issue_rejects_open_constrain_branch_before_completion_check(monkeypatch):
+    monkeypatch.setenv("CSD_STRICT_COMPLETE_ORDER", "1")
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+answer_steps = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "check `parser.IsCompletePrefix" in issue
+    assert "before an open-ended" in issue
+
+
+def test_structural_issue_allows_constrain_branch_guarded_by_not_complete():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+answer_steps = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated) and not parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        answer_steps = answer_steps + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+    else:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_structural_issue_rejects_mutable_float_control_state():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+constraint_strength = 0.5
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        constraint_strength = constraint_strength - 0.1
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 2
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "mutable float" in issue
+
+
+def test_structural_issue_rejects_return_print_and_remaining_steps():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+constraint_mode = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and phase < 3:
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        constraint_mode = constraint_mode + 1
+        phase = 2
+    elif phase == 2 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 3
+remainingSteps = stepsLeft
+print("done")
+return generated, remainingSteps
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "remainingSteps" in issue
+
+
+def test_structural_issue_rejects_invariants_inside_loop_body():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+reasoning_tokens = 0
+while stepsLeft > 0 and phase < 3:
+    # invariant helpers.lm == lm
+    # invariant helpers.parser == parser
+    # invariant lm.ValidTokensIdsLogits()
+    # invariant 0 <= stepsLeft <= maxSteps
+    # invariant |generated| + stepsLeft <= maxSteps
+    # decreases stepsLeft
+    if phase == 0:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = 1
+    elif phase == 1 and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        reasoning_tokens = reasoning_tokens + 1
+    elif phase == 1 and parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = 2
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "immediately above each decoding `while` line" in issue

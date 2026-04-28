@@ -129,6 +129,8 @@ The central helper class that composes the LM and Parser into reusable decoding 
 
 The current `GeneratedAgentTemplate.py` returns one `generated` token prefix, and evaluation extracts the final answer from the final `LeftDelimiter ... RightDelimiter` span. Strategies should therefore track delimiter/phase state explicitly while using these suffix helpers to find the grammar-relevant answer prefix inside `generated`.
 
+There is no separate `answer` channel initialized by the current template, and the supported helper surface does not include old split-channel names such as `ExpressiveStep`, `ConstrainedAnswerStep`, or `FinalizeDelimitedAnswer`. Free-form text and constrained answer tokens are both appended to `generated`; the delimiter tokens identify the graded answer span.
+
 These functions find the grammar-relevant portion of any prefix by scanning for the longest suffix that constitutes a valid parser prefix.
 
 | Name | Signature | Function |
@@ -145,9 +147,14 @@ Each step function performs one LM decoding step with a specific constraint poli
 | Name | Signature | Function |
 |------|-----------|----------|
 | `UnconstrainedStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Generates logits for `prompt + generated`, then chooses the next token with no masking or shaping. The vanilla baseline. Requires `stepsLeft >= 1`. Ensures `next in lm.Tokens`. |
+| `UnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Free-form reasoning step that masks right delimiters but allows the LM to emit a left delimiter naturally. Useful for strategies that switch into constrained decoding when `next == LeftDelimiter` or `next == SpacedLeftDelimiter`. Requires `stepsLeft >= 1`. Ensures `next in lm.Tokens`. |
+| `UnconstrainedBiasLeftDelimiterStep(prompt, generated, bias, stepsLeft)` | `(Prefix, Prefix, Logit, int) → (Token, int)` | Same as `UnconstrainedAllowLeftDelimiterStep`, but adds a positive bias to `LeftDelimiter` and `SpacedLeftDelimiter` before choosing. Useful under budget pressure when natural opening is too slow, without forcing delimiters. |
+| `UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Same natural-opening policy with a built-in positive delimiter bias. Useful when format is at risk and the strategy should avoid a custom bias variable. |
 | `ConstrainedStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Generates logits for `prompt + generated`, computes `LongestValidSuffix(generated)` to determine the current grammar state, then masks all tokens except `parser.ValidNextTokens(suffix)`. Chooses from the survivors. Requires `stepsLeft >= 1` and that the derived suffix is not already complete. Ensures: `next` is a valid continuation of the grammar state derived from the suffix, `parser.IsValidPrefix(LongestValidSuffix(generated) + [next])`. |
+| `ExtendConstrainedStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Like `ConstrainedStep`, but only requires that `parser.ValidNextTokens(LongestValidSuffix(generated))` is nonempty. Use this when the suffix is already complete but the strategy wants to keep extending the answer before closing. |
+| `ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)` | `(Prefix, Prefix, int) → (Token, int)` | Hard-masks to grammar-valid continuation tokens, plus `RightDelimiter` only when the current grammar suffix is complete. Lets the LM choose when to close `>>` while preserving the guarantee that closed spans are complete. |
 | `SoftConstrainedStep(prompt, generated, penalty, stepsLeft)` | `(Prefix, Prefix, Logit, int) → (Token, int)` | Like `ConstrainedStep`, but instead of masking invalid tokens, applies a negative bias to invalid tokens before choosing. The LM can still select a grammar-invalid token if its raw preference is strong enough to overcome the penalty. Requires `stepsLeft >= 1`, `penalty > 0.0`, and that the derived suffix is not already complete. The verified contract focuses on budget/invariant preservation; the sharper logit-shaping guarantee lives on `SoftConstrainToGrammar`, which operates after logits already exist. |
-| `TopKConstrainedStep(prompt, generated, k, stepsLeft)` | `(Prefix, Prefix, int, int) → (Token, int)` | Generates logits, applies `TopKFilter(k)` to keep only the `k` highest-logit tokens, *then* intersects with grammar-valid tokens via `MaskTokensExcept`. This gives "confident *and* grammar-valid" token selection. Requires `stepsLeft >= 1`, `1 <= k <= |lm.Tokens|`, and that the derived suffix is not already complete. Ensures: `next` is grammar-valid. |
+| `TopKConstrainedStep(prompt, generated, k, stepsLeft)` | `(Prefix, Prefix, int, int) → (Token, int)` | Generates logits, masks to grammar-valid tokens, then applies `TopKFilter(k)` to keep only the `k` highest-logit valid tokens. This gives "confident *and* grammar-valid" token selection. Requires `stepsLeft >= 1`, `1 <= k <= |lm.Tokens|`, and that the derived suffix is not already complete. Ensures: `next` is grammar-valid. |
 | `ForcedTokenStep(prompt, generated, token, stepsLeft)` | `(Prefix, Prefix, Token, int) → (Token, int)` | Skips LM generation entirely and returns `token` as the next token. Requires `token in lm.Tokens` and `stepsLeft >= 1`. Useful for emitting known structural tokens (delimiters, separators, keywords) without consuming an LM call. |
 | `BudgetAwareStep(prompt, generated, stepsLeft, completionThreshold)` | `(Prefix, Prefix, int, int) → (Token, int)` | If `stepsLeft <= completionThreshold` and `parser.IsCompletePrefix(LongestValidSuffix(generated))` is false, switches to `ConstrainedStep` to force grammar compliance before the budget runs out. Otherwise delegates to `UnconstrainedStep`. Requires `stepsLeft >= 1` and `completionThreshold >= 1`. |
 
@@ -159,6 +166,7 @@ These wrap the raw step helpers but return the updated prefix directly. They are
 |------|-----------|----------|
 | `AppendUnconstrainedStep(prompt, prefix, stepsLeft)` | `(Prefix, Prefix, int) → (Prefix, int)` | Wrapper around `UnconstrainedStep`. Appends the chosen token to `prefix` and returns `(prefix + [next], stepsLeft - 1)`. Preferred for free-form generation. |
 | `AppendConstrainedStep(prompt, prefix, stepsLeft)` | `(Prefix, Prefix, int) → (Prefix, int)` | Wrapper around `ConstrainedStep`. Requires `CanConstrain(prefix)`. Appends one grammar-valid token to `prefix` and returns the updated prefix plus remaining budget. Preferred for constrained answer growth. |
+| `AppendExtendConstrainedStep(prompt, prefix, stepsLeft)` | `(Prefix, Prefix, int) → (Prefix, int)` | Wrapper around `ExtendConstrainedStep`. Requires `CanExtendConstrained(prefix)`. Appends one grammar-valid continuation even when the current suffix is complete but extendable. |
 | `AppendSoftConstrainedStep(prompt, prefix, penalty, stepsLeft)` | `(Prefix, Prefix, Logit, int) → (Prefix, int)` | Wrapper around `SoftConstrainedStep`. Requires `CanConstrain(prefix)` and `penalty > 0.0`. This is a soft biasing operation, not a hard syntax guarantee for the final answer segment. |
 | `AppendTopKConstrainedStep(prompt, prefix, k, stepsLeft)` | `(Prefix, Prefix, int, int) → (Prefix, int)` | Wrapper around `TopKConstrainedStep`. Requires `CanConstrain(prefix)` and `1 <= k <= |lm.Tokens|`. |
 | `AppendBudgetAwareStep(prompt, prefix, stepsLeft, completionThreshold)` | `(Prefix, Prefix, int, int) → (Prefix, int)` | Wrapper around `BudgetAwareStep`. Useful when the strategy wants updated-prefix ergonomics but still wants the budget-aware switching policy. |
@@ -166,9 +174,22 @@ These wrap the raw step helpers but return the updated prefix directly. They are
 | `AppendLeftDelimiter(prefix, stepsLeft)` | `(Prefix, int) → (Prefix, int)` | Specialized wrapper for appending `LeftDelimiter`. Preferred over spelling out `AppendForcedToken(prefix, LeftDelimiter, stepsLeft)`. |
 | `AppendRightDelimiter(prefix, stepsLeft)` | `(Prefix, int) → (Prefix, int)` | Specialized wrapper for appending `RightDelimiter`. Preferred over spelling out `AppendForcedToken(prefix, RightDelimiter, stepsLeft)`. |
 
+Generated strategies should visibly emit both delimiter tokens in executable code, typically with:
+
+```python
+generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+...
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
+
+The grammar-controlled answer content is the suffix grown between those two calls. Do not close with `RightDelimiter` until `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))` is true. Completeness is permission to close, not an obligation: if `helpers.CanExtendConstrained(generated)` is true and the answer policy wants a richer expression, continue with `AppendExtendConstrainedStep` before closing.
+
 ### Repair and Salvage
 
-Functions for recovering from invalid or dead-end prefixes.
+Library-internal functions for recovering from invalid or dead-end prefixes.
+They are documented for completeness, but they are not part of the standard
+generated-strategy surface; synthesized strategies should use explicit delimiter
+phases and constrained answer-token steps instead of rollback/retry fallback.
 
 | Name | Signature | Function |
 |------|-----------|----------|
@@ -259,6 +280,6 @@ Instead of explicit parser-state windows that assume CRANE-style interleaved con
 
 - Methods marked as abstract/`extern` are interface points or proof placeholders rather than fully implemented runtime logic.
 - Methods named as lemmas primarily exist to support reasoning about invariants and transitions in constrained decoding; they are proof artifacts, not runtime operations.
-- The runtime decoding flow is centered around the step functions (`UnconstrainedStep`, `ConstrainedStep`, `SoftConstrainedStep`, `TopKConstrainedStep`, `ForcedTokenStep`, `BudgetAwareStep`), the append-style wrappers (`AppendUnconstrainedStep`, `AppendConstrainedStep`, `AppendForcedToken`, `AppendLeftDelimiter`, `AppendRightDelimiter`, etc.), the repair utilities (`RollbackToValidPrefix`, `FindLongestValidSpan`, `RepairByRetry`), and the logit-shaping primitives on `LM`.
+- The standard runtime decoding flow is centered around the step functions (`UnconstrainedStep`, `ConstrainedStep`, `SoftConstrainedStep`, `TopKConstrainedStep`, `ForcedTokenStep`, `BudgetAwareStep`), the append-style wrappers (`AppendUnconstrainedStep`, `AppendConstrainedStep`, `AppendForcedToken`, `AppendLeftDelimiter`, `AppendRightDelimiter`, etc.), and the logit-shaping primitives on `LM`.
 - `CheckpointStack` and `RepetitionTracker` are opt-in state structures. A strategy that doesn't need backtracking or repetition awareness simply doesn't instantiate them.
 - All logit values are clamped to `[-1e9, 1e9]`. The sentinel value `-1e9` means "masked / unselectable."

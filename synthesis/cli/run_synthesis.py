@@ -2,7 +2,7 @@
 """
 CLI entry point for CSD synthesis pipeline with evaluation feedback loop.
 
-The pipeline runs: generate → verify → compile → runtime → evaluate → refine
+The pipeline runs: generate → verify → runtime → evaluate → refine
 until evaluation thresholds are met or max iterations exhausted.
 
 This is the main entry point for making CSDs. For a quick pipeline smoke test
@@ -23,7 +23,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies using Qwen",
+        description="Synthesize constrained decoding strategies using an LLM",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -67,8 +67,15 @@ Examples:
     parser.add_argument(
         "--model", "-m",
         type=str,
+        default="gpt-5.4",
+        help="Generation model name (default: gpt-5.4). OpenAI model names use the OpenAI API; other names use HuggingFace."
+    )
+
+    parser.add_argument(
+        "--eval-model",
+        type=str,
         default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="HuggingFace model name (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
+        help="HuggingFace model name used during evaluation (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
     )
     
     parser.add_argument(
@@ -96,7 +103,7 @@ Examples:
         "--temperature",
         type=float,
         default=0.7,
-        help="Sampling temperature for Qwen (default: 0.7)"
+        help="Sampling temperature for strategy generation (default: 0.7)"
     )
     
     parser.add_argument(
@@ -129,7 +136,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "folio", "sygus_slia", "pddl"],
+        choices=["gsm_symbolic", "folio", "sygus_slia", "pddl", "spider"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -198,7 +205,6 @@ Examples:
     # Import here to avoid loading heavy dependencies if just showing help
     from generation.generator import StrategyGenerator
     from verification.verifier import DafnyVerifier
-    from verification.compiler import DafnyCompiler
     from evaluation.evaluator import Evaluator
     from synthesis.feedback_loop import SynthesisPipeline, SynthesisExhaustionError
 
@@ -221,18 +227,18 @@ Examples:
         temperature=args.temperature,
         generation_timeout=args.generation_timeout if args.generation_timeout > 0 else None,
     )
+    selected_device = generator.device
 
     verifier = DafnyVerifier(dafny_path=args.dafny_path)
-    # Compiler output dir is set per-run inside the pipeline (so runs don't overwrite each other).
-    compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=args.output_dir)
-    # Runner is created by the pipeline with task-appropriate parser mode
+    # Runtime/evaluation uses the original generated Python source after Dafny verification.
+    # There is no Dafny build-back-to-Python step.
 
     # Create evaluator for the feedback loop
     print(f"Setting up evaluator for dataset: {args.dataset}")
     evaluator = Evaluator(
         dataset_name=args.dataset,
-        model_name=args.model,
-        device=device or "cuda",
+        model_name=args.eval_model,
+        device=selected_device,
         vocab_size=args.eval_vocab_size,
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
@@ -243,7 +249,7 @@ Examples:
         evaluator=evaluator,
         generator=generator,
         verifier=verifier,
-        compiler=compiler,
+        compiler=None,
         runner=None,  # Let pipeline create task-appropriate runner
         max_iterations=args.max_iterations,
         output_dir=args.output_dir,
@@ -266,7 +272,7 @@ Examples:
         print("SYNTHESIS COMPLETE")
         print("=" * 60)
         print(f"Strategy: {result.strategy_code}")
-        print(f"Compiled module: {result.compiled_module_path}")
+        print(f"Python source: {result.python_source_path}")
         print(f"Output directory: {result.output_dir}")
         if getattr(result, "run_dir", None):
             print(f"Run directory: {result.run_dir}")

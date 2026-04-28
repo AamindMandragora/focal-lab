@@ -40,6 +40,14 @@ def test_translate_token_in_tuple_literal():
     assert translated == '(next_token == "+" || next_token == "-" || next_token == "*" || next_token == "/")'
 
 
+def test_translate_newline_string_literal_escapes_for_dafny():
+    expr = ast.parse('last_token == "\\n"', mode="eval").body
+    translated = _translate_compare(expr, None)
+
+    assert translated == 'last_token == "\\n"'
+    assert "\n" not in translated.replace("\\n", "")
+
+
 def test_translate_isalpha_predicate():
     expr = ast.parse("answer[-1].isalpha()", mode="eval").body
     translated = _translate_expr(expr)
@@ -105,12 +113,12 @@ def test_translate_break_statement():
 
 def test_translate_while_with_specs_before_setup_lines():
     source = """# invariant lm.ValidTokensIdsLogits()
-# invariant parser.IsValidPrefix(answer)
+# invariant parser.IsValidPrefix(helpers.LongestValidSuffix(generated))
 # decreases stepsLeft
 # Initialize loop state
 phase = 0
 answer_tokens = 0
-while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
+while stepsLeft > 0 and not parser.IsCompletePrefix(helpers.LongestValidSuffix(generated)):
     answer_tokens = answer_tokens + 1
 """
     stmts = ast.parse(source).body
@@ -124,11 +132,11 @@ while stepsLeft > 0 and not parser.IsCompletePrefix(answer):
         indent=0,
     )
 
-    while_line = "while ((stepsLeft > 0) && (!parser.IsCompletePrefix(answer)))"
+    while_line = "while ((stepsLeft > 0) && (!parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))))"
     assert while_line in translated
     while_index = translated.index(while_line)
     assert translated[while_index + 1] == "  invariant lm.ValidTokensIdsLogits()"
-    assert translated[while_index + 2] == "  invariant parser.IsValidPrefix(answer)"
+    assert translated[while_index + 2] == "  invariant parser.IsValidPrefix(helpers.LongestValidSuffix(generated))"
     assert translated[while_index + 3] == "  decreases stepsLeft"
 
 
@@ -194,7 +202,7 @@ def test_transpile_verified_agent_repair_by_retry_preserves_both_returns():
     result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
 
     assert result.is_ok()
-    assert "method {:axiom} RepairByRetry(" in result.value
+    assert "method RepairByRetry(" in result.value
     assert "returns (result: Prefix, remainingSteps: nat)" in result.value
 
 
@@ -204,7 +212,11 @@ def test_transpile_verified_agent_append_helpers_preserve_named_returns():
     result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
 
     assert result.is_ok()
+    assert "method ExtendConstrainedStep(" in result.value
+    assert "returns (nextToken: Token, remainingSteps: nat)" in result.value
     assert "method AppendConstrainedStep(" in result.value
+    assert "returns (updated: Prefix, remainingSteps: nat)" in result.value
+    assert "method AppendExtendConstrainedStep(" in result.value
     assert "returns (updated: Prefix, remainingSteps: nat)" in result.value
     assert "method AppendLeftDelimiter(" in result.value
     assert "returns (updated: Prefix, remainingSteps: nat)" in result.value

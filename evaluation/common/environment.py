@@ -1,13 +1,15 @@
 """
 Shared environment setup for CSD evaluation.
 
-Provides resolve_run_dir, load_compiled_modules, verify_critical_tokens,
+Provides resolve_run_dir, legacy compiled-module loading, token checks,
 setup_dafny_environment, and setup_python_native_environment.
 """
 
 from __future__ import annotations
 
+import gc
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -23,9 +25,13 @@ except ImportError:
 from evaluation.common.run_artifacts import find_compiled_module_dir, resolve_run_dir
 
 
+def _allow_cpu_fallback() -> bool:
+    return os.environ.get("CSD_EVAL_CPU_FALLBACK", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_compiled_modules(run_dir: Path):
     """
-    Load compiled CSD modules from a synthesis run directory.
+    Load legacy Dafny-built CSD modules from a synthesis run directory.
 
     Args:
         run_dir: Path to the synthesis run directory
@@ -34,7 +40,7 @@ def load_compiled_modules(run_dir: Path):
         Tuple of (_dafny, VerifiedDecoderAgent, GeneratedCSD) modules
 
     Raises:
-        FileNotFoundError: If compiled modules are not found
+        FileNotFoundError: If legacy compiled modules are not found
     """
     run_dir = resolve_run_dir(run_dir)
     module_dir = find_compiled_module_dir(run_dir)
@@ -104,7 +110,7 @@ def setup_dafny_environment(
     except RuntimeError as e:
         if "out of memory" not in str(e).lower():
             raise
-        if not device.startswith("cuda") or torch is None:
+        if not device.startswith("cuda") or torch is None or not _allow_cpu_fallback():
             raise
         torch.cuda.empty_cache()
         print("  Evaluation: CUDA OOM, falling back to CPU for model load.")
@@ -181,8 +187,8 @@ def setup_python_native_environment(
     from evaluation.common.model_utils import create_huggingface_lm_native
     from evaluation.common.parser_utils import create_lark_native_parser
 
+    used_cpu_fallback = False
     try:
-        import torch
         lm = create_huggingface_lm_native(
             model_name,
             device,
@@ -195,8 +201,9 @@ def setup_python_native_environment(
     except RuntimeError as e:
         if "out of memory" not in str(e).lower():
             raise
-        import torch as _torch
-        _torch.cuda.empty_cache()
+        if not device.startswith("cuda") or torch is None or not _allow_cpu_fallback():
+            raise
+        torch.cuda.empty_cache()
         print("  Evaluation (native): CUDA OOM, falling back to CPU for model load.")
         lm = create_huggingface_lm_native(
             model_name,
@@ -207,12 +214,13 @@ def setup_python_native_environment(
             load_in_8bit=load_in_8bit,
             add_gsm_delimiter_tokens=add_gsm_delimiter_tokens,
         )
+        used_cpu_fallback = True
 
     grammar_text = grammar_file.read_text()
     LarkNativeParser = create_lark_native_parser(grammar_text, VAS, start=start_rule)
     parser = LarkNativeParser(lm.Tokens)
 
-    return {
+    result = {
         "strategy_module": strategy_module,
         "VerifiedAgentSynthesis": VAS,
         "lm": lm,
@@ -220,3 +228,16 @@ def setup_python_native_environment(
         "tokenizer": lm.tokenizer,
         "_mode": "native",
     }
+    if used_cpu_fallback:
+        result["_eval_cpu_fallback"] = True
+    return result
+
+
+def release_evaluation_environment(env: Dict[str, Any] | None) -> None:
+    """Drop model references and release CUDA cache between synthesis attempts."""
+    if not env:
+        return
+    env.clear()
+    gc.collect()
+    if torch is not None and torch.cuda.is_available():
+        torch.cuda.empty_cache()

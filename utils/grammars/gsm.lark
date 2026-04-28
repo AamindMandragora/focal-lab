@@ -2,17 +2,36 @@ syncode: "<<" start ">>"
 
 start: answer
 
-// For CSD prefix parsing - the constrained answer must become either a single
-// expression or a single equation before the final >>.
-csd_start: answer ">>"
+// For CSD prefix parsing - allow independent constrained scratchpad spans.
+// Earlier spans may bind scratch variables (x_1 = ...), and later/final spans
+// may refer to those variables.
+csd_start: assignment
+         | equation
+         | rich_n_expr
+         | s_expr
+csd_numeric_start: csd_start
 
 // For expression-only parsing (without >> delimiter) - used in constrained generation
 expr_only: answer
 
-?answer: equation
+?answer: assignment
+       | equation
        | any_expr
 
+?assignment: SCRATCH_VAR "=" any_expr
+
 ?equation: any_expr "=" any_expr
+
+// CSD answer expressions must contain at least one top-level additive clause.
+// This prevents the constrained decoder from satisfying GSM with trivial atoms
+// such as "1" or first-operation fragments such as "16 * 8".
+?rich_s_expr: s_term add_op n_term add_op n_term (add_op n_term)*
+            | n_term add_op s_term add_op n_term (add_op n_term)*
+            | n_term add_op n_term add_op s_term (add_op n_term)*
+            | s_term add_op s_term add_op n_term (add_op n_term)*
+            | s_term add_op n_term add_op s_term (add_op n_term)*
+            | n_term add_op s_term add_op s_term (add_op n_term)*
+            | s_term add_op s_term add_op s_term (add_op n_term)*
 
 // Any expression - either symbolic (contains variables) or numeric (numbers only)
 ?any_expr: s_expr
@@ -25,6 +44,8 @@ expr_only: answer
 ?n_expr: n_term
        | n_expr "+" n_term -> add
        | n_expr "-" n_term -> sub
+
+?rich_n_expr: n_term add_op n_term (add_op n_term)*
 
 ?n_term: n_factor
        | n_term "*" n_factor -> mul
@@ -69,6 +90,7 @@ expr_only: answer
          | "(" s_expr ")"
 
 ?s_atom: VARIABLE
+       | SCRATCH_VAR          -> scratch_var
        | VAR_LETTERS          -> var_letters
        | VAR_LETTERS NUMBER   -> var_num
        | VARIABLE NUMBER      -> var_num
@@ -78,13 +100,18 @@ expr_only: answer
 // TERMINALS
 // ============================================================================
 
-// Variables are SINGLE characters only to prevent "ab" or "a b" patterns
+// Scratch variables are for independent constrained GSM spans, e.g.
+// <<x_1 = 3 + 2 * 6>> ... <<x_1 / y_1 + 0>>.
+SCRATCH_VAR.3: /[a-zA-Z][a-zA-Z0-9_]*_[0-9]+/
+
+// Dataset variables are SINGLE characters only to prevent "ab" or "a b" patterns
 // (two variables without an operator). The grammar structure requires operators
 // between terms, so single-char restriction enforces proper syntax.
 // Exception: n0, n1, n2... are allowed for numbered variable references.
-VARIABLE: /n[0-9]+/ | /[a-zA-Z_]/
+VARIABLE.1: /n[0-9]+/ | /[a-zA-Z_]/
 VAR_LETTERS: /[a-zA-Z_]/
 
+add_op: "+" | "-"
 NUMBER: /-?\d+(\.\d+)?/
 
 %import common.WS

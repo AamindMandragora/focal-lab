@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from verification.transpiler.transpiler import transpile_contract_library
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "generation" / "csd"))
 
 from VerifiedAgentSynthesis import (
@@ -21,6 +23,8 @@ from VerifiedAgentSynthesis import (
     Prefix,
     RepetitionTracker,
     RightDelimiter,
+    SpacedLeftDelimiter,
+    SpacedRightDelimiter,
     Token,
 )
 
@@ -71,6 +75,21 @@ class SimpleParser(Parser):
         if len(prefix) >= 3:
             return []
         return list(GRAMMAR_TOKENS)
+
+
+class ExtendableCompleteParser(Parser):
+    """Accepts 'a'/'b' prefixes up to 3 tokens; complete after the first token."""
+
+    def IsValidPrefix(self, prefix: Prefix) -> bool:
+        return len(prefix) <= 3 and all(t in {"a", "b"} for t in prefix)
+
+    def IsCompletePrefix(self, prefix: Prefix) -> bool:
+        return len(prefix) >= 1 and self.IsValidPrefix(prefix)
+
+    def ValidNextTokens(self, prefix: Prefix) -> Prefix:
+        if len(prefix) >= 3:
+            return []
+        return ["a", "b"]
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +294,71 @@ def test_append_constrained_step_appends_grammar_valid_token():
     generated, steps = h.AppendConstrainedStep([], ["<<"], 10)
     assert generated[:1] == ["<<"]
     assert generated[-1] in GRAMMAR_TOKENS
+    assert steps == 9
+
+
+def test_unconstrained_step_masks_delimiter_variants_when_alternatives_exist():
+    lm = SimpleLM(["safe", LeftDelimiter, RightDelimiter, SpacedLeftDelimiter, SpacedRightDelimiter])
+    parser = SimpleParser()
+    helpers = CSDHelpers(lm, parser)
+
+    token, steps = helpers.UnconstrainedStep([], [], 10)
+
+    assert token == "safe"
+    assert steps == 9
+    assert lm.IsMasked(LeftDelimiter)
+    assert lm.IsMasked(RightDelimiter)
+    assert lm.IsMasked(SpacedLeftDelimiter)
+    assert lm.IsMasked(SpacedRightDelimiter)
+
+
+def test_transpiled_helpers_declare_any_referenced_spaced_delimiter_constants():
+    source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text()
+
+    result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
+
+    assert result.is_ok()
+    for constant_name in ("SpacedLeftDelimiter", "SpacedRightDelimiter"):
+        if constant_name in result.value:
+            assert f"const {constant_name}" in result.value
+
+
+def test_transpiled_step_helpers_use_stable_return_names():
+    source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text()
+
+    result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
+
+    assert result.is_ok()
+    assert "stepsLeft'" not in result.value
+    assert "method UnconstrainedStep" in result.value
+    assert "returns (nextToken: Token, remainingSteps: nat)" in result.value
+    assert "ensures nextToken in lm.Tokens" in result.value
+
+
+def test_extend_constrained_step_can_continue_after_complete_prefix():
+    lm = SimpleLM(["a", "b", "<<", ">>"])
+    parser = ExtendableCompleteParser()
+    h = CSDHelpers(lm, parser)
+
+    assert not h.CanConstrain(["<<", "a"])
+    assert h.CanExtendConstrained(["<<", "a"])
+
+    generated, steps = h.AppendExtendConstrainedStep([], ["<<", "a"], 10)
+
+    assert generated == ["<<", "a", "b"]
+    assert steps == 9
+    assert parser.IsCompletePrefix(h.LongestValidSuffix(generated))
+
+
+def test_topk_constrained_step_filters_to_grammar_before_topk():
+    lm = SimpleLM(["a", "b", "c", "!"])
+    parser = SimpleParser()
+    h = CSDHelpers(lm, parser)
+
+    tok, steps = h.TopKConstrainedStep([], ["<<"], 1, 10)
+
+    assert tok == "c"
+    assert tok in GRAMMAR_TOKENS
     assert steps == 9
 
 
