@@ -6,6 +6,7 @@ from VerifiedAgentSynthesis import (
     LeftDelimiter,
     RightDelimiter,
     SpacedLeftDelimiter,
+    SpacedRightDelimiter,
     Parser,
     Prefix,
     Token,

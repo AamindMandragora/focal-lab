@@ -1,8 +1,8 @@
 """
 Tests for the updated VerifiedAgentSynthesis library functions.
 
-Covers: new LM methods, CSDHelpers suffix-based design,
-CheckpointStack, RepetitionTracker, and end-to-end strategy smoke test.
+Covers: new LM methods, CSDHelpers suffix-based design, natural delimiter
+helpers, and end-to-end strategy smoke test.
 """
 
 import sys
@@ -16,12 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "generation" / "csd
 
 from VerifiedAgentSynthesis import (
     CSDHelpers,
-    CheckpointStack,
     LM,
     LeftDelimiter,
     Parser,
     Prefix,
-    RepetitionTracker,
     RightDelimiter,
     SpacedLeftDelimiter,
     SpacedRightDelimiter,
@@ -312,6 +310,19 @@ def test_unconstrained_step_masks_delimiter_variants_when_alternatives_exist():
     assert lm.IsMasked(SpacedRightDelimiter)
 
 
+def test_constrained_or_right_delimiter_allows_spaced_right_after_completion():
+    lm = SimpleLM(["a", "b", "c", RightDelimiter, SpacedRightDelimiter])
+    parser = SimpleParser()
+    helpers = CSDHelpers(lm, parser)
+
+    token, steps = helpers.ConstrainedOrRightDelimiterStep([], ["a", "b", "c"], 10)
+
+    assert token == SpacedRightDelimiter
+    assert steps == 9
+    assert not lm.IsMasked(RightDelimiter)
+    assert not lm.IsMasked(SpacedRightDelimiter)
+
+
 def test_transpiled_helpers_declare_any_referenced_spaced_delimiter_constants():
     source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text()
 
@@ -335,30 +346,28 @@ def test_transpiled_step_helpers_use_stable_return_names():
     assert "ensures nextToken in lm.Tokens" in result.value
 
 
-def test_extend_constrained_step_can_continue_after_complete_prefix():
-    lm = SimpleLM(["a", "b", "<<", ">>"])
-    parser = ExtendableCompleteParser()
-    h = CSDHelpers(lm, parser)
-
-    assert not h.CanConstrain(["<<", "a"])
-    assert h.CanExtendConstrained(["<<", "a"])
-
-    generated, steps = h.AppendExtendConstrainedStep([], ["<<", "a"], 10)
-
-    assert generated == ["<<", "a", "b"]
-    assert steps == 9
-    assert parser.IsCompletePrefix(h.LongestValidSuffix(generated))
-
-
-def test_topk_constrained_step_filters_to_grammar_before_topk():
-    lm = SimpleLM(["a", "b", "c", "!"])
+def test_helper_parser_wrappers_route_through_longest_valid_suffix():
+    lm = SimpleLM(["a", "b", "c", "<<", ">>"])
     parser = SimpleParser()
     h = CSDHelpers(lm, parser)
 
-    tok, steps = h.TopKConstrainedStep([], ["<<"], 1, 10)
+    generated = ["free", "<<", "a", "b", "c"]
 
-    assert tok == "c"
-    assert tok in GRAMMAR_TOKENS
+    assert h.IsComplete(generated)
+    assert h.ValidContinuationCount(generated) == 0
+    assert h.ParserDistanceToComplete(generated) == 0
+    assert h.MinStepsToComplete(generated) == 0
+
+
+def test_append_natural_left_delimiter_step_updates_prefix():
+    lm = SimpleLM(["safe", RightDelimiter, SpacedRightDelimiter, "x", SpacedLeftDelimiter])
+    parser = SimpleParser()
+    h = CSDHelpers(lm, parser)
+
+    generated, steps = h.AppendUnconstrainedNudgeLeftDelimiterStep([], [], 10)
+
+    assert generated == [SpacedLeftDelimiter]
+    assert h.EndsWithLeftDelimiter(generated)
     assert steps == 9
 
 
@@ -369,69 +378,6 @@ def test_append_right_delimiter_appends_exact_token():
     generated, steps = h.AppendRightDelimiter(["a"], 3)
     assert generated == ["a", ">>"]
     assert steps == 2
-
-
-# ---------------------------------------------------------------------------
-# CSDHelpers: SoftConstrainedStep
-# ---------------------------------------------------------------------------
-
-def test_soft_constrained_step_penalizes_invalid():
-    lm = SimpleLM(["a", "b", "c", "<<", ">>"])
-    lm.Logits = [0.0, 0.0, 0.0, 100.0, 100.0]
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-    # Without soft constraint, "<<" or ">>" would win (logit=100)
-    # With SoftConstrainedStep(penalty=200), invalid tokens get -200 bias → ~-100
-    tok, steps = h.SoftConstrainedStep([], ["<<"], 200.0, 10)
-    assert tok in GRAMMAR_TOKENS
-    assert steps == 9
-
-
-# ---------------------------------------------------------------------------
-# CSDHelpers: BudgetAwareStep
-# ---------------------------------------------------------------------------
-
-def test_budget_aware_step_switches_to_constrained_near_end():
-    lm = SimpleLM(["a", "b", "c", "<<", ">>"])
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-    # stepsLeft=2, threshold=3 → stepsLeft <= threshold, grammar incomplete → ConstrainedStep
-    # generated=["<<"] so LongestValidSuffix=[] which is not complete
-    tok, steps = h.BudgetAwareStep([], ["<<"], 2, 3)
-    assert tok in GRAMMAR_TOKENS
-    assert steps == 1
-
-
-def test_append_budget_aware_step_updates_prefix():
-    lm = SimpleLM(["a", "b", "c", "<<", ">>"])
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-    generated, steps = h.AppendBudgetAwareStep([], ["<<"], 2, 3)
-    assert generated[:1] == ["<<"]
-    assert generated[-1] in GRAMMAR_TOKENS
-    assert steps == 1
-
-
-# ---------------------------------------------------------------------------
-# CSDHelpers: RollbackToValidPrefix
-# ---------------------------------------------------------------------------
-
-def test_rollback_to_valid_prefix():
-    lm = SimpleLM(["a", "b", "c", "x"])
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-    # "a", "b", "x" — "x" is invalid, so roll back to ["a", "b"]
-    result = h.RollbackToValidPrefix(["a", "b", "x"])
-    assert parser.IsValidPrefix(result)
-    assert result == ["a", "b"]
-
-
-def test_rollback_fully_invalid_returns_empty():
-    lm = SimpleLM(["x", "y"])
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-    result = h.RollbackToValidPrefix(["x", "y"])
-    assert result == []
 
 
 # ---------------------------------------------------------------------------
@@ -494,75 +440,3 @@ def test_full_strategy_with_append_helpers_produces_delimited_output():
     assert ">>" in output
     suffix = h.LongestValidSuffix(generated[:-1])
     assert parser.IsCompletePrefix(suffix)
-
-
-# ---------------------------------------------------------------------------
-# CheckpointStack
-# ---------------------------------------------------------------------------
-
-def test_checkpoint_stack_push_pop():
-    stack = CheckpointStack()
-    assert stack.IsEmpty()
-    stack.Push(["a", "b"])
-    assert stack.Depth() == 1
-    result = stack.Pop()
-    assert result == ["a", "b"]
-    assert stack.IsEmpty()
-
-
-def test_checkpoint_stack_peek():
-    stack = CheckpointStack()
-    stack.Push(["x"])
-    assert stack.Peek() == ["x"]
-    assert stack.Depth() == 1  # peek does not remove
-
-
-def test_checkpoint_stack_multiple():
-    stack = CheckpointStack()
-    stack.Push(["a"])
-    stack.Push(["b"])
-    stack.Push(["c"])
-    assert stack.Depth() == 3
-    assert stack.Pop() == ["c"]
-    assert stack.Pop() == ["b"]
-    assert stack.Depth() == 1
-
-
-# ---------------------------------------------------------------------------
-# RepetitionTracker
-# ---------------------------------------------------------------------------
-
-def test_repetition_tracker_records_and_counts():
-    rt = RepetitionTracker(2)
-    rt.RecordToken("a")
-    rt.RecordToken("b")
-    rt.RecordToken("a")
-    rt.RecordToken("b")
-    assert rt.GetCount(["a", "b"]) == 2
-
-
-def test_repetition_tracker_penalty_zero_before_ngram_filled():
-    rt = RepetitionTracker(3)
-    rt.RecordToken("a")
-    assert rt.GetRepetitionPenalty("b") == 0.0
-
-
-def test_repetition_tracker_penalty_increases():
-    rt = RepetitionTracker(2)
-    rt.RecordToken("a")
-    rt.RecordToken("b")
-    rt.RecordToken("a")
-    # After ["a","b","a"]: the bigram ("a","b") appeared once. GetRepetitionPenalty("b") checks recent=("a","b").
-    penalty = rt.GetRepetitionPenalty("b")
-    assert penalty >= 1.0
-
-
-def test_apply_repetition_penalties_biases_lm():
-    lm = SimpleLM(["a", "b"])
-    lm.Logits = [5.0, 5.0]
-    rt = RepetitionTracker(1)
-    rt.RecordToken("a")
-    rt.RecordToken("a")
-    rt.ApplyRepetitionPenalties(lm)
-    assert lm.Logits[0] < 5.0   # "a" penalized
-    assert lm.Logits[1] == 5.0  # "b" unchanged

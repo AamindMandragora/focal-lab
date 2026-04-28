@@ -196,14 +196,14 @@ def test_translate_tuple_literal_assignment():
     assert translated == ["var next_token := eosToken;", "var new_steps := 0;"]
 
 
-def test_transpile_verified_agent_repair_by_retry_preserves_both_returns():
+def test_transpile_verified_agent_natural_append_helpers_preserve_named_returns():
     source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text()
 
     result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
 
     assert result.is_ok()
-    assert "method RepairByRetry(" in result.value
-    assert "returns (result: Prefix, remainingSteps: nat)" in result.value
+    assert "method AppendUnconstrainedNudgeLeftDelimiterStep(" in result.value
+    assert "returns (updated: Prefix, remainingSteps: nat)" in result.value
 
 
 def test_transpile_verified_agent_append_helpers_preserve_named_returns():
@@ -212,11 +212,9 @@ def test_transpile_verified_agent_append_helpers_preserve_named_returns():
     result = transpile_contract_library(source, module_name_hint="VerifiedAgentSynthesis")
 
     assert result.is_ok()
-    assert "method ExtendConstrainedStep(" in result.value
-    assert "returns (nextToken: Token, remainingSteps: nat)" in result.value
     assert "method AppendConstrainedStep(" in result.value
     assert "returns (updated: Prefix, remainingSteps: nat)" in result.value
-    assert "method AppendExtendConstrainedStep(" in result.value
+    assert "AppendConstrainedOrRightDelimiterStep(" in result.value
     assert "returns (updated: Prefix, remainingSteps: nat)" in result.value
     assert "method AppendLeftDelimiter(" in result.value
     assert "returns (updated: Prefix, remainingSteps: nat)" in result.value

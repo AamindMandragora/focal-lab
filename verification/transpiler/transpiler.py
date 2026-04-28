@@ -1026,28 +1026,21 @@ _RETURN_NAME_OVERRIDES: dict[str, list[str]] = {
     "LeftDelimiter": ["result"],
     "RightDelimiter": ["result"],
     "GetDelimitedContent": ["result"],
-    "RollbackToValidPrefix": ["repaired"],
     "UnconstrainedStep": ["nextToken", "remainingSteps"],
     "UnconstrainedAllowLeftDelimiterStep": ["nextToken", "remainingSteps"],
     "UnconstrainedBiasLeftDelimiterStep": ["nextToken", "remainingSteps"],
     "UnconstrainedNudgeLeftDelimiterStep": ["nextToken", "remainingSteps"],
     "ConstrainedStep": ["nextToken", "remainingSteps"],
-    "ExtendConstrainedStep": ["nextToken", "remainingSteps"],
     "ConstrainedOrRightDelimiterStep": ["nextToken", "remainingSteps"],
-    "SoftConstrainedStep": ["nextToken", "remainingSteps"],
-    "TopKConstrainedStep": ["nextToken", "remainingSteps"],
     "ForcedTokenStep": ["nextToken", "remainingSteps"],
-    "BudgetAwareStep": ["nextToken", "remainingSteps"],
     "AppendUnconstrainedStep": ["updated", "remainingSteps"],
+    "AppendUnconstrainedAllowLeftDelimiterStep": ["updated", "remainingSteps"],
+    "AppendUnconstrainedNudgeLeftDelimiterStep": ["updated", "remainingSteps"],
     "AppendConstrainedStep": ["updated", "remainingSteps"],
-    "AppendExtendConstrainedStep": ["updated", "remainingSteps"],
-    "AppendSoftConstrainedStep": ["updated", "remainingSteps"],
-    "AppendTopKConstrainedStep": ["updated", "remainingSteps"],
-    "AppendBudgetAwareStep": ["updated", "remainingSteps"],
+    "AppendConstrainedOrRightDelimiterStep": ["updated", "remainingSteps"],
     "AppendForcedToken": ["updated", "remainingSteps"],
     "AppendLeftDelimiter": ["updated", "remainingSteps"],
     "AppendRightDelimiter": ["updated", "remainingSteps"],
-    "RepairByRetry": ["result", "remainingSteps"],
     "ChooseNextToken": ["token"],
     "MyCSDStrategy": ["generated", "remainingSteps"],
 }
@@ -1080,25 +1073,16 @@ _PARAM_TYPE_OVERRIDES: dict[tuple[str | None, str, str], str] = {
     ("CSDHelpers", "UnconstrainedBiasLeftDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "UnconstrainedNudgeLeftDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "ConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "ExtendConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "ConstrainedOrRightDelimiterStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "SoftConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "TopKConstrainedStep", "stepsLeft"): "nat",
     ("CSDHelpers", "ForcedTokenStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "BudgetAwareStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "BudgetAwareStep", "completionThreshold"): "nat",
     ("CSDHelpers", "AppendUnconstrainedStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "AppendUnconstrainedAllowLeftDelimiterStep", "stepsLeft"): "nat",
+    ("CSDHelpers", "AppendUnconstrainedNudgeLeftDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "AppendExtendConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "AppendSoftConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "AppendTopKConstrainedStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "AppendBudgetAwareStep", "stepsLeft"): "nat",
-    ("CSDHelpers", "AppendBudgetAwareStep", "completionThreshold"): "nat",
+    ("CSDHelpers", "AppendConstrainedOrRightDelimiterStep", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendForcedToken", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendLeftDelimiter", "stepsLeft"): "nat",
     ("CSDHelpers", "AppendRightDelimiter", "stepsLeft"): "nat",
-    ("CSDHelpers", "RepairByRetry", "maxRetries"): "nat",
-    ("CSDHelpers", "RepairByRetry", "stepsLeft"): "nat",
     (None, "MyCSDStrategy", "maxSteps"): "nat",
 }
 
@@ -1108,22 +1092,16 @@ _METHOD_RETURN_TYPE_OVERRIDES: dict[tuple[str | None, str], list[str]] = {
     ("CSDHelpers", "UnconstrainedBiasLeftDelimiterStep"): ["Token", "nat"],
     ("CSDHelpers", "UnconstrainedNudgeLeftDelimiterStep"): ["Token", "nat"],
     ("CSDHelpers", "ConstrainedStep"): ["Token", "nat"],
-    ("CSDHelpers", "ExtendConstrainedStep"): ["Token", "nat"],
     ("CSDHelpers", "ConstrainedOrRightDelimiterStep"): ["Token", "nat"],
-    ("CSDHelpers", "SoftConstrainedStep"): ["Token", "nat"],
-    ("CSDHelpers", "TopKConstrainedStep"): ["Token", "nat"],
     ("CSDHelpers", "ForcedTokenStep"): ["Token", "nat"],
-    ("CSDHelpers", "BudgetAwareStep"): ["Token", "nat"],
     ("CSDHelpers", "AppendUnconstrainedStep"): ["Prefix", "nat"],
+    ("CSDHelpers", "AppendUnconstrainedAllowLeftDelimiterStep"): ["Prefix", "nat"],
+    ("CSDHelpers", "AppendUnconstrainedNudgeLeftDelimiterStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendConstrainedStep"): ["Prefix", "nat"],
-    ("CSDHelpers", "AppendExtendConstrainedStep"): ["Prefix", "nat"],
-    ("CSDHelpers", "AppendSoftConstrainedStep"): ["Prefix", "nat"],
-    ("CSDHelpers", "AppendTopKConstrainedStep"): ["Prefix", "nat"],
-    ("CSDHelpers", "AppendBudgetAwareStep"): ["Prefix", "nat"],
+    ("CSDHelpers", "AppendConstrainedOrRightDelimiterStep"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendForcedToken"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendLeftDelimiter"): ["Prefix", "nat"],
     ("CSDHelpers", "AppendRightDelimiter"): ["Prefix", "nat"],
-    ("CSDHelpers", "RepairByRetry"): ["Prefix", "nat"],
     (None, "MyCSDStrategy"): ["Prefix", "nat"],
 }
 
@@ -2222,7 +2200,7 @@ def transpile_contract_library(
                 include_lines.extend(f'include "{value}"' for value in _literal_string_values(node.value))
             elif target == "DAFNY_OPEN_IMPORT" and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
                 import_lines.append(f"  import opened {node.value.value}")
-            elif target in {"LeftDelimiter", "RightDelimiter"}:
+            elif target in {"LeftDelimiter", "RightDelimiter", "SpacedLeftDelimiter", "SpacedRightDelimiter"}:
                 const_lines.append(f"  const {target}: Token := {_const_expr(node.value)}")
             continue
 
@@ -2238,7 +2216,7 @@ def transpile_contract_library(
                 include_lines.extend(f'include "{value}"' for value in _literal_string_values(node.value))
             elif node.target.id == "DAFNY_OPEN_IMPORT" and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
                 import_lines.append(f"  import opened {node.value.value}")
-            elif node.target.id in {"LeftDelimiter", "RightDelimiter"}:
+            elif node.target.id in {"LeftDelimiter", "RightDelimiter", "SpacedLeftDelimiter", "SpacedRightDelimiter"}:
                 const_lines.append(f"  const {node.target.id}: {_annotation_to_dafny(node.annotation)} := {_const_expr(node.value)}")
             continue
 
