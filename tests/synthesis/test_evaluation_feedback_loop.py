@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from unittest.mock import Mock
 import tempfile
@@ -340,3 +341,59 @@ def test_pipeline_retries_after_evaluation_failure():
     assert result.attempts[1].failed_at is None
     assert mock_generator.refine_after_evaluation_failure.call_count == 1
     assert mock_evaluator.evaluate_sample.call_count == 2
+
+
+def test_success_report_includes_evaluation_metrics():
+    from evaluation.evaluator import EvaluationResult
+    from synthesis.feedback_loop import SynthesisPipeline
+    from synthesis.runner import RuntimeResult
+    from verification.verifier import VerificationResult
+
+    mock_generator = Mock()
+    mock_generator.generate_initial = Mock(return_value="strategy_initial")
+    mock_generator.inject_strategy = Mock(return_value="full python code")
+
+    mock_verifier = Mock()
+    mock_verifier.verify = Mock(return_value=VerificationResult(success=True, raw_output="ok"))
+
+    mock_runner = Mock()
+    mock_runner.run_python_native = Mock(return_value=RuntimeResult(success=True, output=["token"], cost=1))
+
+    mock_eval_result = EvaluationResult(
+        success=True,
+        accuracy=0.7,
+        format_rate=0.9,
+        syntax_rate=1.0,
+        num_examples=10,
+        num_correct=7,
+        total_time_seconds=12.0,
+    )
+    mock_evaluator = Mock()
+    mock_evaluator.evaluate_sample = Mock(return_value=mock_eval_result)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pipeline = SynthesisPipeline(
+            evaluator=mock_evaluator,
+            generator=mock_generator,
+            verifier=mock_verifier,
+            compiler=None,
+            runner=mock_runner,
+            max_iterations=1,
+            output_dir=Path(tmpdir),
+            save_reports=True,
+            min_accuracy=0.6,
+            min_format_rate=0.8,
+            min_syntax_rate=0.9,
+        )
+
+        result = pipeline.synthesize("test task", output_name="test_csd")
+        assert result.success
+
+        report_path = result.run_dir / "success_report.json"
+        assert report_path.exists()
+        report = json.loads(report_path.read_text())
+        assert report["evaluation"]["accuracy"] == 0.7
+        assert report["evaluation"]["format_rate"] == 0.9
+        assert report["evaluation"]["syntax_rate"] == 1.0
+        assert report["evaluation"]["num_examples"] == 10
+        assert report["evaluation"]["num_correct"] == 7

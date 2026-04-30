@@ -32,7 +32,7 @@ def test_curated_helper_reference_clarifies_guarded_constrained_calls(monkeypatc
 
     assert "helpers.CanConstrain(generated)" in system_prompt
     assert "helpers.IsComplete(generated)" in system_prompt
-    assert "AppendConstrainedOrRightDelimiterStep" in system_prompt
+    assert "AppendConstrainedStep" in system_prompt
 
 
 def test_curated_helper_reference_requires_visible_delimiter_calls(monkeypatch):
@@ -44,7 +44,7 @@ def test_curated_helper_reference_requires_visible_delimiter_calls(monkeypatch):
     assert "Explicit Delimiters For Non-Natural Runs" in system_prompt
     assert "helpers.AppendLeftDelimiter(generated, stepsLeft)" in system_prompt
     assert "helpers.AppendRightDelimiter(generated, stepsLeft)" in system_prompt
-    assert "AppendConstrainedOrRightDelimiterStep" in system_prompt
+    assert "AppendConstrainedStep" in system_prompt
 
 
 def test_initial_prompt_clarifies_min_steps_ownership(monkeypatch):
@@ -80,14 +80,25 @@ def test_initial_prompt_standardizes_delimiter_order_and_topk(monkeypatch):
 
     combined_prompt = system_prompt + user_prompt
 
-    assert "AppendUnconstrainedNudgeLeftDelimiterStep" in combined_prompt
-    assert "AppendConstrainedOrRightDelimiterStep" in combined_prompt
+    assert "AppendUnconstrainedStep" in combined_prompt
+    assert "AppendConstrainedStep" in combined_prompt
     assert "helpers.EndsWithLeftDelimiter(generated)" in combined_prompt
     assert "helpers.EndsWithRightDelimiter(generated)" in combined_prompt
     assert "no `stepsLeft -= 1`" in combined_prompt
     assert "Helper calls already consume budget" in combined_prompt
     assert "immediately above" in combined_prompt
     assert "Use only the curated helper surface" in combined_prompt
+
+
+def test_initial_prompt_mentions_checkpoint_recovery_helpers(monkeypatch):
+    monkeypatch.delenv("CSD_HELPER_REFERENCE_MODE", raising=False)
+    monkeypatch.delenv("CSD_INCLUDE_HELPER_REFERENCE_MD", raising=False)
+
+    system_prompt, user_prompt = prompts.build_initial_prompt("demo task")
+    combined_prompt = system_prompt + user_prompt
+
+    assert "helpers.Checkpoint(generated)" in combined_prompt
+    assert "helpers.RestoreIfDead(generated, checkpoint)" in combined_prompt
 
 
 def test_initial_prompt_rejects_canconstrain_before_left_delimiter(monkeypatch):
@@ -114,7 +125,7 @@ def test_structure_repair_prompt_targets_unguarded_constrained_helpers(monkeypat
 
     assert "# CSD_RATIONALE_BEGIN" in user_prompt
     assert "curated helper surface" in user_prompt
-    assert "AppendConstrainedOrRightDelimiterStep" in user_prompt
+    assert "AppendConstrainedStep" in user_prompt
     assert "AppendSoftConstrainedStep" in user_prompt
     assert "Do not use removed helpers" in user_prompt
 
@@ -129,8 +140,8 @@ def test_structure_repair_prompt_targets_missing_delimiters(monkeypatch):
     )
 
     assert "structural issue" in user_prompt
-    assert "AppendUnconstrainedNudgeLeftDelimiterStep" in user_prompt
-    assert "AppendConstrainedOrRightDelimiterStep" in user_prompt
+    assert "AppendUnconstrainedStep" in user_prompt
+    assert "AppendConstrainedStep" in user_prompt
     assert "Missing: LeftDelimiter" in user_prompt
     assert "EndsWithLeftDelimiter" in user_prompt
 
@@ -144,7 +155,7 @@ def test_structure_repair_prompt_standardizes_delimiter_protocol(monkeypatch):
         "RightDelimiter emission must be guarded.",
     )
 
-    assert "AppendUnconstrainedNudgeLeftDelimiterStep" in user_prompt
+    assert "AppendUnconstrainedStep" in user_prompt
     assert "EndsWithLeftDelimiter" in user_prompt
     assert "EndsWithRightDelimiter" in user_prompt
     assert "Do not use removed helpers" in user_prompt
@@ -188,3 +199,58 @@ def test_build_initial_prompt_includes_full_helper_reference_when_enabled(monkey
     assert "Verified Agent Synthesis Helper Surface" in system_prompt
     assert "[BEGIN VERIFIED_AGENT_SYNTHESIS_MD]" in system_prompt
     assert "demo task" in user_prompt
+
+
+def test_full_helper_reference_omits_example_sections(monkeypatch):
+    monkeypatch.delenv("CSD_HELPER_REFERENCE_MODE", raising=False)
+    monkeypatch.setenv("CSD_INCLUDE_HELPER_REFERENCE_MD", "1")
+
+    system_prompt, _ = prompts.build_initial_prompt("demo task")
+
+    assert "Example Strategy Skeletons" not in system_prompt
+    assert "### CRANE-like (delimiter-switched)" not in system_prompt
+
+
+def test_initial_prompt_includes_scratch_span_preference_when_enabled(monkeypatch):
+    monkeypatch.setenv("CSD_GSM_PREFER_SCRATCH_SPANS", "1")
+
+    _, user_prompt = prompts.build_initial_prompt("demo task")
+
+    assert "Scratch-span preference reminder" in user_prompt
+    assert "Do not stop after the first closed span" in user_prompt
+    assert "final span should" in user_prompt
+
+
+def test_initial_prompt_omits_scratch_span_preference_when_disabled(monkeypatch):
+    monkeypatch.delenv("CSD_GSM_PREFER_SCRATCH_SPANS", raising=False)
+
+    _, user_prompt = prompts.build_initial_prompt("demo task")
+
+    assert "Scratch-span preference reminder" not in user_prompt
+
+
+def test_verification_prompt_omits_scratch_reminder_for_shorter_repairs(monkeypatch):
+    monkeypatch.setenv("CSD_GSM_PREFER_SCRATCH_SPANS", "1")
+
+    _, user_prompt = prompts.build_verification_error_prompt("phase = 0", "decreases issue")
+
+    assert "Scratch-span preference reminder" not in user_prompt
+
+
+def test_initial_prompt_includes_spider_single_sql_span_reminder_when_enabled(monkeypatch):
+    monkeypatch.setenv("CSD_SPIDER_FORCE_SINGLE_SQL_SPAN", "1")
+
+    _, user_prompt = prompts.build_initial_prompt("demo spider task")
+
+    assert "Spider SQL span reminder" in user_prompt
+    assert "AppendLeftDelimiter" in user_prompt
+    assert "Once `helpers.EndsWithRightDelimiter(generated)` is true, stop immediately." in user_prompt
+    assert "Do not rely on natural LEFT-delimiter nudges for Spider" in user_prompt
+
+
+def test_initial_prompt_omits_spider_single_sql_span_reminder_when_disabled(monkeypatch):
+    monkeypatch.delenv("CSD_SPIDER_FORCE_SINGLE_SQL_SPAN", raising=False)
+
+    _, user_prompt = prompts.build_initial_prompt("demo spider task")
+
+    assert "Spider SQL span reminder" not in user_prompt

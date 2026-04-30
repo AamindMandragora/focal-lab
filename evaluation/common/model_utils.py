@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import math
 import os
+import random
+import re
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -24,6 +26,15 @@ FOL_KEYWORD_TOKENS = [
 # and '>>' (id 2452) for >>. We ensure both ' <<' and ' >>' are in vocab, plus '>>'
 # as a fallback in case ' >>' is not a single BPE token.
 GSM_DELIMITER_STRINGS = [" <<", " >>", ">>"]
+
+# SQL scaffolding tokens that should not be penalized even when they are not
+# explicitly present in the prompt text. These keep the query structure viable.
+SQL_SCAFFOLD_KEYWORDS = frozenset({
+    "select", "from", "where", "join", "on", "and", "or",
+    "group", "by", "having", "order", "limit", "as", "distinct",
+    "max", "min", "count", "sum", "avg", "in", "not", "like", "between",
+    "inner", "left", "right", "full", "outer", "union", "all", "is", "null",
+})
 
 
 def _hf_offline_enabled() -> bool:
@@ -117,6 +128,179 @@ def _valid_tokens_ids_logits_py(tokens: list[str], ids: list[int], logits: list[
     )
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name, "")
+    if not raw:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+def _collect_prompt_sql_bias_tokens(prompt_text: str) -> set[str]:
+    """Collect prompt-grounded SQL token strings (schema/question identifiers and literals)."""
+    text = _extract_spider_grounding_text(prompt_text).strip()
+    if not text:
+        return set()
+    items: set[str] = set()
+    for marker in ('"', "'", ' "', " '"):
+        items.add(marker)
+    for m in re.finditer(r"[A-Za-z_][A-Za-z0-9_]*", text):
+        token = m.group(0)
+        lower = token.lower()
+        items.add(token)
+        items.add(lower)
+        items.add(" " + token)
+        items.add(" " + lower)
+        items.add(f'"{token}"')
+        items.add(f'"{lower}"')
+        items.add(f' "{token}"')
+        items.add(f' "{lower}"')
+    for m in re.finditer(r'"([^"]+)"', text):
+        phrase = m.group(1).strip()
+        if phrase:
+            items.add(phrase)
+            items.add(" " + phrase)
+            items.add(f'"{phrase}"')
+            items.add(f' "{phrase}"')
+    return items
+
+
+def _extract_spider_grounding_text(prompt_text: str) -> str:
+    """
+    Extract Spider grounding text (actual question/schema) and avoid worked examples.
+
+    The Spider prompt template includes demonstration patterns with fixed literals
+    (e.g., specific states). Prompt-token boosting should not over-weight those
+    demonstration literals.
+    """
+    text = prompt_text or ""
+    if "You are a text-to-SQL system for the Spider benchmark." not in text:
+        return text
+
+    lines = text.splitlines()
+    headings = {
+        "Database:",
+        "Question:",
+        "Database schema:",
+        "Columns by table (copy names exactly):",
+    }
+    stop_headings = {
+        "Example final format:",
+        "SQL:",
+        "Example pattern",
+    }
+
+    sections: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if any(line.startswith(stop) for stop in stop_headings):
+            break
+        if any(line.startswith(h) for h in headings):
+            section_lines = [line]
+            i += 1
+            while i < len(lines):
+                nxt = lines[i].strip()
+                if not nxt:
+                    break
+                if any(nxt.startswith(h) for h in headings) or any(nxt.startswith(stop) for stop in stop_headings):
+                    break
+                section_lines.append(nxt)
+                i += 1
+            sections.append("\n".join(section_lines))
+            continue
+        i += 1
+
+    if sections:
+        # Use the last seen grounding block to prioritize the current example.
+        return "\n".join(sections[-4:])
+    return text
+
+
+def _normalize_prompt_bias_token(token: str) -> str:
+    """Normalize token text for fuzzy prompt-grounding checks."""
+    t = (token or "").strip().lower()
+    if len(t) >= 2 and ((t[0] == '"' and t[-1] == '"') or (t[0] == "'" and t[-1] == "'")):
+        t = t[1:-1].strip()
+    return t
+
+
+def _token_is_sql_scaffold(token: str) -> bool:
+    """True for SQL/operator tokens we should keep unpenalized."""
+    t = (token or "").strip()
+    if not t:
+        return True
+    low = t.lower()
+    if low in SQL_SCAFFOLD_KEYWORDS:
+        return True
+    if re.fullmatch(r"[(),.*=<>!+\-/%]+", t):
+        return True
+    if re.fullmatch(r"\d+(?:\.\d+)?", t):
+        return True
+    if re.fullmatch(r"t\d+", low):
+        return True
+    if low in {'"', "'", "`"}:
+        return True
+    return False
+
+
+def _sample_from_masked_logits(
+    logits: list[float],
+    rng: random.Random,
+    temperature: float,
+    top_p: float,
+) -> int:
+    """Sample one index from masked logits (masked entries should be <= -1e8)."""
+    candidates: list[tuple[int, float]] = [(i, v) for i, v in enumerate(logits) if math.isfinite(v) and v > -1e8]
+    if not candidates:
+        return max(range(len(logits)), key=lambda i: logits[i])
+    if len(candidates) == 1:
+        return candidates[0][0]
+
+    temp = max(1e-4, temperature)
+    max_logit = max(v for _, v in candidates)
+    weighted: list[tuple[int, float]] = []
+    total = 0.0
+    for idx, value in candidates:
+        w = math.exp((value - max_logit) / temp)
+        if not math.isfinite(w) or w <= 0.0:
+            w = 0.0
+        weighted.append((idx, w))
+        total += w
+    if total <= 0.0:
+        return max((idx for idx, _ in candidates), key=lambda i: logits[i])
+
+    weighted.sort(key=lambda it: it[1], reverse=True)
+    keep: list[tuple[int, float]] = []
+    running = 0.0
+    p_cut = min(max(top_p, 0.05), 1.0)
+    for idx, w in weighted:
+        keep.append((idx, w))
+        running += w
+        if running / total >= p_cut and len(keep) >= 1:
+            break
+
+    keep_total = sum(w for _, w in keep)
+    if keep_total <= 0.0:
+        return keep[0][0]
+    r = rng.random() * keep_total
+    acc = 0.0
+    for idx, w in keep:
+        acc += w
+        if acc >= r:
+            return idx
+    return keep[-1][0]
+
+
 def get_model_input_device(model) -> torch.device:
     """
     Find the device where the model's embedding layer resides.
@@ -180,6 +364,7 @@ def create_huggingface_lm(
     VerifiedDecoderAgent,
     _dafny,
     token_ids=None,
+    extra_token_strings: list[str] | None = None,
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
     add_fol_keyword_tokens: bool = False,
@@ -272,6 +457,15 @@ def create_huggingface_lm(
                         token_ids.append(tid)
                         existing_ids.add(tid)
                         print(f"  Added GSM delimiter token {repr(s)} (id={tid}) to vocabulary.")
+        if extra_token_strings:
+            existing_ids = set(token_ids)
+            for s in extra_token_strings:
+                if not s:
+                    continue
+                for tid in tokenizer.encode(s, add_special_tokens=False):
+                    if tid not in existing_ids:
+                        token_ids.append(tid)
+                        existing_ids.add(tid)
 
     token_ids, dropped_duplicates = _dedupe_token_ids_by_decoded_string(tokenizer, token_ids)
     if dropped_duplicates:
@@ -284,7 +478,7 @@ def create_huggingface_lm(
     class HuggingFaceLM(VerifiedDecoderAgent.LM):
         """Wrapper that bridges HuggingFace models to the Dafny LM interface."""
         
-        # Token IDs that must not be chosen as the first output token (so we get plain text before the delimiter)
+        # Token IDs that must not be chosen as the first output token.
         _FORBID_FIRST_STRINGS = frozenset({"<<", "<", " <<", " << ", " >>", ">>", "$"})
 
         def __init__(self, hf_model, hf_tokenizer, tokens, tids, dev):
@@ -301,13 +495,29 @@ def create_huggingface_lm(
                 self.Logits[i] = _dafny.BigRational(0)
             # Store full logits for unconstrained generation
             self._full_logits = None
-            # Cache token IDs forbidden as first output token (delimiter + EOS so we get real text, not empty)
+            self._sample_constrained = _env_flag("CSD_CONSTRAINED_SAMPLING", False)
+            self._sample_temperature = _env_float("CSD_CONSTRAINED_TEMPERATURE", 0.35)
+            self._sample_top_p = _env_float("CSD_CONSTRAINED_TOP_P", 0.9)
+            self._prompt_bias_cache_key = ""
+            self._prompt_bias_tokens = set()
+            self._prompt_bias_normalized = set()
+            self._prompt_bias_text_lower = ""
+            self._spider_prompt_token_bonus = _env_float("CSD_SPIDER_PROMPT_TOKEN_BONUS", 0.0)
+            self._spider_prompt_token_bonus_enabled = self._spider_prompt_token_bonus > 0.0
+            self._spider_prompt_token_penalty = _env_float("CSD_SPIDER_PROMPT_TOKEN_PENALTY", 0.0)
+            self._spider_prompt_token_penalty_enabled = self._spider_prompt_token_penalty > 0.0
+            seed = os.environ.get("CSD_CONSTRAINED_SAMPLING_SEED", "").strip()
+            self._sampling_rng = random.Random(int(seed)) if seed else random.Random()
+            # Cache token IDs forbidden as first output token.
             vocab_size = hf_tokenizer.vocab_size if hasattr(hf_tokenizer, "vocab_size") else len(hf_tokenizer)
             self._forbid_first_token_ids = set()
+            allow_leading_delimiter = os.environ.get("CSD_ALLOW_LEADING_DELIMITER", "").strip().lower() in {
+                "1", "true", "yes", "on"
+            }
             for vid in range(min(vocab_size, 200000)):  # cap for speed
                 try:
                     s = _decode_single_token(hf_tokenizer, vid)
-                    if s in HuggingFaceLM._FORBID_FIRST_STRINGS:
+                    if s in HuggingFaceLM._FORBID_FIRST_STRINGS and not allow_leading_delimiter:
                         self._forbid_first_token_ids.add(vid)
                     elif not s:  # forbid tokens that decode to empty string
                         self._forbid_first_token_ids.add(vid)
@@ -330,6 +540,36 @@ def create_huggingface_lm(
                 return "".join(obj[i] for i in range(len(obj)))
             except:
                 return str(obj)
+
+        def ResetForNewExample(self) -> None:
+            """Clear per-example transient LM state between evaluations."""
+            self.instruction_text = ""
+            self._full_logits = None
+            self._first_token_choice = False
+            self._prompt_bias_cache_key = ""
+            self._prompt_bias_tokens = set()
+            self._prompt_bias_normalized = set()
+            self._prompt_bias_text_lower = ""
+            zero = _dafny.BigRational(0)
+            for i in range(self.Logits.length(0)):
+                self.Logits[i] = zero
+
+        def _refresh_prompt_bias_tokens(self):
+            if not (self._spider_prompt_token_bonus_enabled or self._spider_prompt_token_penalty_enabled):
+                self._prompt_bias_tokens = set()
+                self._prompt_bias_normalized = set()
+                self._prompt_bias_text_lower = ""
+                self._prompt_bias_cache_key = self.instruction_text
+                return
+            if self._prompt_bias_cache_key == self.instruction_text:
+                return
+            self._prompt_bias_cache_key = self.instruction_text
+            self._prompt_bias_tokens = _collect_prompt_sql_bias_tokens(self.instruction_text)
+            self._prompt_bias_normalized = {
+                _normalize_prompt_bias_token(tok) for tok in self._prompt_bias_tokens
+                if _normalize_prompt_bias_token(tok)
+            }
+            self._prompt_bias_text_lower = (self.instruction_text or "").lower()
 
         def GenerateLogits(self, input_prefix):
             """Compute logits for the next token given a prefix."""
@@ -387,14 +627,81 @@ def create_huggingface_lm(
             """Return the token with the highest logit score (constrained to vocab)."""
             import os
             debug = os.environ.get('CSD_MASK_DEBUG', '').lower() in ('1', 'true', 'yes')
+            logits_debug = os.environ.get("CSD_LOGITS_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
+            logits_top_k = int(os.environ.get("CSD_LOGITS_TOP_K", "8") or "8")
+            if self.Logits.length(0) <= 0:
+                raise RuntimeError("No logits are available for constrained selection")
+            has_unmasked = False
+            for i in range(self.Logits.length(0)):
+                if float(self.Logits[i]) > -1e8:
+                    has_unmasked = True
+                    break
+            if not has_unmasked:
+                raise RuntimeError("No unmasked token is available after constrained masking")
+            self._refresh_prompt_bias_tokens()
 
-            best_idx, best_val = 0, float(self.Logits[0])
-            for i in range(1, self.Logits.length(0)):
-                val = float(self.Logits[i])
-                if val > best_val:
-                    best_val, best_idx = val, i
+            def _is_prompt_grounded(token: str) -> bool:
+                if not self._prompt_bias_tokens:
+                    return False
+                if token in self._prompt_bias_tokens:
+                    return True
+                norm = _normalize_prompt_bias_token(token)
+                if not norm:
+                    return False
+                if norm in self._prompt_bias_normalized:
+                    return True
+                # Back off to substring grounding for partial BPE pieces.
+                return len(norm) >= 3 and norm in self._prompt_bias_text_lower
+
+            def _score(i: int) -> float:
+                base = float(self.Logits[i])
+                if not (math.isfinite(base) and base > -1e8):
+                    return base
+                token = self._to_str(self._Tokens[i])
+                grounded = _is_prompt_grounded(token)
+                if (
+                    self._spider_prompt_token_bonus_enabled
+                    and grounded
+                ):
+                    base += self._spider_prompt_token_bonus
+                if (
+                    self._spider_prompt_token_penalty_enabled
+                    and not grounded
+                    and not _token_is_sql_scaffold(token)
+                ):
+                    base -= self._spider_prompt_token_penalty
+                return base
+
+            if self._sample_constrained:
+                logits = [_score(i) for i in range(self.Logits.length(0))]
+                best_idx = _sample_from_masked_logits(
+                    logits=logits,
+                    rng=self._sampling_rng,
+                    temperature=self._sample_temperature,
+                    top_p=self._sample_top_p,
+                )
+                best_val = _score(best_idx)
+            else:
+                best_idx, best_val = 0, _score(0)
+                for i in range(1, self.Logits.length(0)):
+                    val = _score(i)
+                    if val > best_val:
+                        best_val, best_idx = val, i
 
             chosen_token = self._Tokens[best_idx]
+            if logits_debug:
+                scored: list[tuple[int, float]] = []
+                for i in range(self.Logits.length(0)):
+                    v = float(self.Logits[i])
+                    if math.isfinite(v) and v > -1e8:
+                        scored.append((i, v))
+                scored.sort(key=lambda x: x[1], reverse=True)
+                top = scored[:max(1, logits_top_k)]
+                debug_parts: list[str] = []
+                for i, v in top:
+                    tok = self._to_str(self._Tokens[i]).replace("\n", "\\n")
+                    debug_parts.append(f"{repr(tok)}:{v:.2f}")
+                print(f"    [LOGITS DEBUG] top={'; '.join(debug_parts)}")
             if debug:
                 # Convert Dafny Seq to string for display
                 try:
@@ -460,11 +767,22 @@ def create_huggingface_lm(
             for i in range(len(valid_tokens)):
                 valid_set.add(seq_to_str(valid_tokens[i]))
 
+            # Spider/sql mode: avoid pure-whitespace constrained loops when meaningful tokens exist.
+            if os.environ.get("CSD_DISALLOW_CONSTRAINED_WHITESPACE", "").strip().lower() in {"1", "true", "yes", "on"}:
+                non_ws = {tok for tok in valid_set if tok.strip() != ""}
+                if non_ws:
+                    valid_set = non_ws
+
             # First token: exclude EOS and delimiter so we don't produce blank output (some strategies use ConstrainedStep first)
             if getattr(self, "_first_token_choice", False):
                 self._first_token_choice = False
                 eos_str = self.tokenizer.decode([self.tokenizer.eos_token_id]) if getattr(self.tokenizer, "eos_token_id", None) is not None else ""
-                forbid = {"", eos_str} | set(HuggingFaceLM._FORBID_FIRST_STRINGS)
+                allow_leading_delimiter = os.environ.get("CSD_ALLOW_LEADING_DELIMITER", "").strip().lower() in {
+                    "1", "true", "yes", "on"
+                }
+                forbid = {"", eos_str}
+                if not allow_leading_delimiter:
+                    forbid |= set(HuggingFaceLM._FORBID_FIRST_STRINGS)
                 reduced = valid_set - forbid
                 if reduced:
                     valid_set = reduced
@@ -491,6 +809,7 @@ def create_huggingface_lm_native(
     vocab_size: int,
     VerifiedAgentSynthesis,
     token_ids=None,
+    extra_token_strings: list[str] | None = None,
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
     add_gsm_delimiter_tokens: bool = False,
@@ -552,6 +871,15 @@ def create_huggingface_lm_native(
                         token_ids.append(tid)
                         existing_ids.add(tid)
                         print(f"  Added GSM delimiter token {repr(s)} (id={tid}) to vocabulary.")
+        if extra_token_strings:
+            existing_ids = set(token_ids)
+            for s in extra_token_strings:
+                if not s:
+                    continue
+                for tid in tokenizer.encode(s, add_special_tokens=False):
+                    if tid not in existing_ids:
+                        token_ids.append(tid)
+                        existing_ids.add(tid)
 
     token_ids, dropped_duplicates = _dedupe_token_ids_by_decoded_string(tokenizer, token_ids)
     if dropped_duplicates:
@@ -578,12 +906,28 @@ def create_huggingface_lm_native(
             self.instruction_text = ""
             self._full_logits = None
             self._first_token_choice = False
+            self._sample_constrained = _env_flag("CSD_CONSTRAINED_SAMPLING", False)
+            self._sample_temperature = _env_float("CSD_CONSTRAINED_TEMPERATURE", 0.35)
+            self._sample_top_p = _env_float("CSD_CONSTRAINED_TOP_P", 0.9)
+            self._prompt_bias_cache_key = ""
+            self._prompt_bias_tokens = set()
+            self._prompt_bias_normalized = set()
+            self._prompt_bias_text_lower = ""
+            self._spider_prompt_token_bonus = _env_float("CSD_SPIDER_PROMPT_TOKEN_BONUS", 0.0)
+            self._spider_prompt_token_bonus_enabled = self._spider_prompt_token_bonus > 0.0
+            self._spider_prompt_token_penalty = _env_float("CSD_SPIDER_PROMPT_TOKEN_PENALTY", 0.0)
+            self._spider_prompt_token_penalty_enabled = self._spider_prompt_token_penalty > 0.0
+            seed = os.environ.get("CSD_CONSTRAINED_SAMPLING_SEED", "").strip()
+            self._sampling_rng = random.Random(int(seed)) if seed else random.Random()
             vocab_sz = tokenizer.vocab_size if hasattr(tokenizer, "vocab_size") else len(tokenizer)
             self._forbid_first_token_ids: set = set()
+            allow_leading_delimiter = os.environ.get("CSD_ALLOW_LEADING_DELIMITER", "").strip().lower() in {
+                "1", "true", "yes", "on"
+            }
             for vid in range(min(vocab_sz, 200000)):
                 try:
                     s = _decode_single_token(tokenizer, vid)
-                    if s in HuggingFaceLMNative._FORBID_FIRST_STRINGS or not s:
+                    if (s in HuggingFaceLMNative._FORBID_FIRST_STRINGS and not allow_leading_delimiter) or not s:
                         self._forbid_first_token_ids.add(vid)
                 except Exception:
                     pass
@@ -599,6 +943,35 @@ def create_huggingface_lm_native(
 
         def ValidTokensIdsLogitsAlways(self) -> None:
             assert self.ValidTokensIdsLogits()
+
+        def ResetForNewExample(self) -> None:
+            """Clear per-example transient LM state between evaluations."""
+            self.instruction_text = ""
+            self._full_logits = None
+            self._first_token_choice = False
+            self._prompt_bias_cache_key = ""
+            self._prompt_bias_tokens = set()
+            self._prompt_bias_normalized = set()
+            self._prompt_bias_text_lower = ""
+            for i in range(len(self.Logits)):
+                self.Logits[i] = 0.0
+
+        def _refresh_prompt_bias_tokens(self) -> None:
+            if not (self._spider_prompt_token_bonus_enabled or self._spider_prompt_token_penalty_enabled):
+                self._prompt_bias_tokens = set()
+                self._prompt_bias_normalized = set()
+                self._prompt_bias_text_lower = ""
+                self._prompt_bias_cache_key = self.instruction_text
+                return
+            if self._prompt_bias_cache_key == self.instruction_text:
+                return
+            self._prompt_bias_cache_key = self.instruction_text
+            self._prompt_bias_tokens = _collect_prompt_sql_bias_tokens(self.instruction_text)
+            self._prompt_bias_normalized = {
+                _normalize_prompt_bias_token(tok) for tok in self._prompt_bias_tokens
+                if _normalize_prompt_bias_token(tok)
+            }
+            self._prompt_bias_text_lower = (self.instruction_text or "").lower()
 
         def GenerateLogits(self, input_prefix: list) -> None:
             prefix_text = "".join(str(t) for t in input_prefix)
@@ -629,7 +1002,61 @@ def create_huggingface_lm_native(
                 self.Logits[i] = v
 
         def ChooseNextToken(self) -> str:
-            best_i = max(range(len(self.Logits)), key=lambda i: self.Logits[i])
+            if not self.Logits:
+                raise RuntimeError("No logits are available for constrained selection")
+            if all((not math.isfinite(float(v))) or float(v) <= -1e8 for v in self.Logits):
+                raise RuntimeError("No unmasked token is available after constrained masking")
+            self._refresh_prompt_bias_tokens()
+
+            def _is_prompt_grounded(token: str) -> bool:
+                if not self._prompt_bias_tokens:
+                    return False
+                if token in self._prompt_bias_tokens:
+                    return True
+                norm = _normalize_prompt_bias_token(token)
+                if not norm:
+                    return False
+                if norm in self._prompt_bias_normalized:
+                    return True
+                return len(norm) >= 3 and norm in self._prompt_bias_text_lower
+
+            def _score(i: int) -> float:
+                base = float(self.Logits[i])
+                if not (math.isfinite(base) and base > -1e8):
+                    return base
+                token = self.Tokens[i]
+                grounded = _is_prompt_grounded(token)
+                if (
+                    self._spider_prompt_token_bonus_enabled
+                    and grounded
+                ):
+                    base += self._spider_prompt_token_bonus
+                if (
+                    self._spider_prompt_token_penalty_enabled
+                    and not grounded
+                    and not _token_is_sql_scaffold(token)
+                ):
+                    base -= self._spider_prompt_token_penalty
+                return base
+
+            if self._sample_constrained:
+                best_i = _sample_from_masked_logits(
+                    logits=[_score(i) for i in range(len(self.Logits))],
+                    rng=self._sampling_rng,
+                    temperature=self._sample_temperature,
+                    top_p=self._sample_top_p,
+                )
+            else:
+                best_i = max(range(len(self.Logits)), key=_score)
+            if os.environ.get("CSD_LOGITS_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}:
+                top_k = int(os.environ.get("CSD_LOGITS_TOP_K", "8") or "8")
+                scored = [(i, v) for i, v in enumerate(self.Logits) if math.isfinite(v) and v > -1e8]
+                scored.sort(key=lambda x: x[1], reverse=True)
+                parts = []
+                for i, v in scored[:max(1, top_k)]:
+                    tok = str(self.Tokens[i]).replace("\n", "\\n")
+                    parts.append(f"{repr(tok)}:{v:.2f}")
+                print(f"    [LOGITS DEBUG] top={'; '.join(parts)}")
             return self.Tokens[best_i]
 
         def ChooseNextTokenUnconstrained(self) -> str:
@@ -641,6 +1068,10 @@ def create_huggingface_lm_native(
 
         def MaskTokensExcept(self, valid_tokens: list) -> None:
             valid_set = set(str(t) for t in valid_tokens)
+            if os.environ.get("CSD_DISALLOW_CONSTRAINED_WHITESPACE", "").strip().lower() in {"1", "true", "yes", "on"}:
+                non_ws = {tok for tok in valid_set if str(tok).strip() != ""}
+                if non_ws:
+                    valid_set = non_ws
             if self._first_token_choice:
                 self._first_token_choice = False
                 eos_str = (
@@ -648,7 +1079,12 @@ def create_huggingface_lm_native(
                     if getattr(tokenizer, "eos_token_id", None) is not None
                     else ""
                 )
-                forbid = {"", eos_str} | set(HuggingFaceLMNative._FORBID_FIRST_STRINGS)
+                allow_leading_delimiter = os.environ.get("CSD_ALLOW_LEADING_DELIMITER", "").strip().lower() in {
+                    "1", "true", "yes", "on"
+                }
+                forbid = {"", eos_str}
+                if not allow_leading_delimiter:
+                    forbid |= set(HuggingFaceLMNative._FORBID_FIRST_STRINGS)
                 reduced = valid_set - forbid
                 if reduced:
                     valid_set = reduced

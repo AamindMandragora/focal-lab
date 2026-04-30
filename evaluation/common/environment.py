@@ -157,6 +157,7 @@ def setup_python_native_environment(
     load_in_8bit: bool = False,
     add_gsm_delimiter_tokens: bool = False,
     add_fol_keyword_tokens: bool = False,
+    extra_token_strings: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """
     Load model and set up a Python-native (non-Dafny) evaluation environment.
@@ -197,6 +198,7 @@ def setup_python_native_environment(
             load_in_4bit=load_in_4bit,
             load_in_8bit=load_in_8bit,
             add_gsm_delimiter_tokens=add_gsm_delimiter_tokens,
+            extra_token_strings=extra_token_strings,
         )
     except RuntimeError as e:
         if "out of memory" not in str(e).lower():
@@ -213,6 +215,7 @@ def setup_python_native_environment(
             load_in_4bit=load_in_4bit,
             load_in_8bit=load_in_8bit,
             add_gsm_delimiter_tokens=add_gsm_delimiter_tokens,
+            extra_token_strings=extra_token_strings,
         )
         used_cpu_fallback = True
 

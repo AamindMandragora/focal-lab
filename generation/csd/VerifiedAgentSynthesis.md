@@ -1,12 +1,16 @@
 # Verified Agent Synthesis Helper Surface
 
-This file documents the public helper surface intended for generated CSD
-strategy bodies. The implementation lives in
-`generation/csd/VerifiedAgentSynthesis.py`.
+This file documents the public helper surface for generated CSD strategy bodies.
 
-The library still contains low-level `LM`, `Parser`, and `Delimiter` machinery,
-but generated strategies should use `CSDHelpers` wrappers instead of directly
-calling parser or logit-shaping methods when a wrapper exists.
+The library provides **orthogonal primitives** that strategies compose freely.
+No step function hardcodes delimiter policy or assumes a particular strategy
+shape (CRANE, IterGen, rollback-repair, etc.).  The strategy decides:
+
+- **when** to emit delimiters (via `AppendLeftDelimiter` / `AppendRightDelimiter`)
+- **how hard** to constrain (unconstrained → soft penalty → top-k → hard mask)
+- **what local state** to maintain (counters, checkpoints, penalty schedules)
+
+All answers must be wrapped in `<< ... >>` for evaluator extraction.
 
 ## Core Types
 
@@ -14,108 +18,214 @@ calling parser or logit-shaping methods when a wrapper exists.
 |------|---------|
 | `Token` | `str` token emitted by the LM. |
 | `Prefix` | `list[Token]`; the generated token prefix. |
-| `LeftDelimiter` | `"<<";` structural open token. |
-| `RightDelimiter` | `">>";` structural close token. |
-| `SpacedLeftDelimiter` | `" <<";` tokenizer variant. |
-| `SpacedRightDelimiter` | `" >>";` tokenizer variant. |
+| `LeftDelimiter` | `"<<"`; structural open token. |
+| `RightDelimiter` | `">>"`; structural close token. |
+| `SpacedLeftDelimiter` | `" <<"`; tokenizer variant. |
+| `SpacedRightDelimiter` | `" >>"`; tokenizer variant. |
 
-`generated` is a single token list containing free-form text, delimiters, and
-constrained content. The evaluator treats delimiter spans as parseable islands;
-the final `<< ... >>` span is the default graded answer.
+## Grammar State Queries
 
-## Strategy-Facing Helpers
+These route all parser queries through `LongestValidSuffix(generated)` so
+strategies never need to call `parser.*` directly.
 
-### Natural Free-Form Steps
+| Helper | Returns |
+|--------|---------|
+| `LongestValidSuffix(generated)` | Longest suffix of `generated` that is a valid parser prefix. |
+| `CanConstrain(generated)` | `True` when the grammar suffix is incomplete (more tokens needed). |
+| `IsComplete(generated)` | `True` when the grammar suffix is a complete parse. |
+| `IsDead(generated)` | `True` when the grammar suffix cannot be extended or completed. |
+| `ValidContinuationCount(generated)` | Number of grammar-valid next tokens. `1` = forced move, `0` = complete or dead. |
+| `ParserDistanceToComplete(generated)` | Lower bound on tokens needed to reach a complete parse. |
+| `MinStepsToComplete(generated)` | Alias for `ParserDistanceToComplete`. |
+
+## Delimiter Predicates
+
+Thin wrappers that handle both spaced and unspaced delimiter variants.
+
+| Helper | Returns |
+|--------|---------|
+| `IsLeftDelimiterToken(token)` | `True` for `<<` and ` <<`. |
+| `IsRightDelimiterToken(token)` | `True` for `>>` and ` >>`. |
+| `EndsWithLeftDelimiter(generated)` | `True` when the last emitted token opened a span. |
+| `EndsWithRightDelimiter(generated)` | `True` when the last emitted token closed a span. |
+| `ContainsLeftDelimiter(generated)` | `True` when any left delimiter appears in `generated`. |
+| `ContainsRightDelimiter(generated)` | `True` when any right delimiter appears in `generated`. |
+
+## Primitive Step Functions
+
+Each does **exactly one thing**: generate logits, apply one shaping policy,
+choose.  All return `(nextToken, stepsLeft - 1)`.
+
+| Step | Constraint | Use when |
+|------|-----------|----------|
+| `UnconstrainedStep(prompt, generated, stepsLeft)` | None | Free-form reasoning, any phase. |
+| `ConstrainedStep(prompt, generated, stepsLeft)` | Hard grammar mask | Inside a constrained span, grammar must be enforced. Requires `CanConstrain(generated)`. |
+| `SoftConstrainedStep(prompt, generated, penalty, stepsLeft)` | Grammar-invalid tokens biased by `-penalty` | Graduated constraint; LM can override grammar if confident enough. |
+| `TopKConstrainedStep(prompt, generated, k, stepsLeft)` | Top-k filter then grammar mask | "Confident AND grammar-valid" selection. |
+| `ForcedTokenStep(prompt, generated, token, stepsLeft)` | Returns `token` directly | Emitting delimiters, structural tokens, separators. |
+
+**Key difference from old API:** `UnconstrainedStep` does not mask delimiters.
+The strategy controls delimiter flow explicitly.  If you want to prevent
+accidental delimiter emission during free-form text, call `MaskAllDelimiters`
+after `GenerateLogits`, or use the logit shaping composites below.
+
+## Logit Shaping Composites
+
+Call these **after** `lm.GenerateLogits(...)` and **before**
+`lm.ChooseNextToken()` to layer multiple shaping policies in one step.
+They compose freely in any order.
+
+| Helper | Effect |
+|--------|--------|
+| `SoftConstrainToGrammar(prefix, penalty)` | Bias grammar-invalid tokens by `-penalty`.  Grammar-valid tokens untouched. |
+| `IntersectWithGrammar(prefix)` | Hard-mask everything not grammar-valid.  Grammar-valid tokens untouched. |
+| `BiasForCompletion(prefix, bonus)` | Bias tokens that would complete the grammar by `+bonus`. |
+| `MaskAllDelimiters(generated)` | Mask all four delimiter variants (`<<`, `>>`, ` <<`, ` >>`). |
+| `MaskRightDelimiters(generated)` | Mask right delimiters only; left delimiters remain choosable. |
+| `MaskLeftDelimiters(generated)` | Mask left delimiters only; right delimiters remain choosable. |
+| `BiasLeftDelimiters(bias)` | Bias left delimiter variants by `+bias`. |
+| `BiasRightDelimiters(bias)` | Bias right delimiter variants by `+bias`. |
+
+### Example: Custom Step with Composed Shaping
+
+```python
+# Generate logits, soft-constrain to grammar, bias completion, mask right delimiters
+lm.GenerateLogits(prompt + generated)
+helpers.SoftConstrainToGrammar(generated, 10.0)
+helpers.BiasForCompletion(generated, 3.0)
+helpers.MaskRightDelimiters(generated)
+next_token = lm.ChooseNextToken()
+generated = generated + [next_token]
+stepsLeft = stepsLeft - 1
+```
+
+## Append Wrappers
+
+Convenience methods that call a step function and append the result.
+Avoid stale-budget and forgotten-append mistakes.
+
+| Helper | Wraps |
+|--------|-------|
+| `AppendUnconstrainedStep(prompt, prefix, stepsLeft)` | `UnconstrainedStep` |
+| `AppendConstrainedStep(prompt, prefix, stepsLeft)` | `ConstrainedStep` |
+| `AppendSoftConstrainedStep(prompt, prefix, penalty, stepsLeft)` | `SoftConstrainedStep` |
+| `AppendTopKConstrainedStep(prompt, prefix, k, stepsLeft)` | `TopKConstrainedStep` |
+| `AppendForcedToken(prefix, token, stepsLeft)` | `ForcedTokenStep` |
+| `AppendLeftDelimiter(prefix, stepsLeft)` | `ForcedTokenStep` with `LeftDelimiter` |
+| `AppendRightDelimiter(prefix, stepsLeft)` | `ForcedTokenStep` with `RightDelimiter` |
+
+## Checkpoint Utilities
+
+Lightweight local recovery without full rollback loops.
 
 | Helper | Purpose |
 |--------|---------|
-| `AppendUnconstrainedStep(prompt, generated, stepsLeft)` | Appends one free-form token while masking delimiter tokens. Use for ordinary reasoning. |
-| `AppendUnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)` | Appends one free-form token while allowing `<<` / ` <<`. |
-| `AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` | Appends one free-form token while biasing `<<` / ` <<`. Use once a state policy says the answer span should open soon. |
-| `UnconstrainedStep(prompt, generated, stepsLeft)` | Raw token-returning version of the ordinary free-form step. |
-| `UnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)` | Raw token-returning version of the allow-left-delimiter step. |
-| `UnconstrainedBiasLeftDelimiterStep(prompt, generated, bias, stepsLeft)` | Raw token-returning left-delimiter step with caller-provided positive bias. |
-| `UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` | Raw token-returning left-delimiter step with built-in positive bias. |
+| `Checkpoint(generated)` | Save a snapshot of the current prefix. |
+| `RestoreCheckpoint(checkpoint)` | Restore exactly the saved prefix. |
+| `RestoreIfDead(generated, checkpoint)` | Return `checkpoint` only when the grammar suffix is dead; otherwise keep `generated`. |
 
-Prefer the append-style helpers in generated strategies. They avoid stale
-budget and forgotten-append mistakes.
-
-### Constrained Span Steps
+## Budget Utilities
 
 | Helper | Purpose |
 |--------|---------|
-| `AppendConstrainedStep(prompt, generated, stepsLeft)` | Appends one grammar-valid token while `helpers.CanConstrain(generated)` is true. |
-| `AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)` | Appends a grammar-valid continuation, or `>>` / ` >>` only when `helpers.IsComplete(generated)` is true. |
-| `ConstrainedStep(prompt, generated, stepsLeft)` | Raw token-returning hard grammar step. |
-| `ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)` | Raw token-returning grammar-or-close step. |
+| `HasBudget(stepsLeft, needed)` | Pure predicate: `stepsLeft >= needed`. |
+| `MinStepsToComplete(prefix)` | Lower bound on steps needed to complete the grammar suffix. |
 
-`AppendConstrainedOrRightDelimiterStep` is the preferred natural-close helper:
-it lets the LM choose the close token, but only after parser completion.
+## LM-Level Primitives
 
-### Delimiter Predicates
+Available on `helpers.lm` when strategies need direct logit control beyond
+the composites above.
 
-| Helper | Purpose |
-|--------|---------|
-| `IsLeftDelimiterToken(token)` | True for `LeftDelimiter` and `SpacedLeftDelimiter`. |
-| `IsRightDelimiterToken(token)` | True for `RightDelimiter` and `SpacedRightDelimiter`. |
-| `EndsWithLeftDelimiter(generated)` | True when the latest emitted token opened a span. |
-| `EndsWithRightDelimiter(generated)` | True when the latest emitted token closed a span. |
+| Method | Effect |
+|--------|--------|
+| `lm.GenerateLogits(input)` | Populate logits for next-token prediction on `input`. |
+| `lm.ChooseNextToken()` | Return highest-logit unmasked token. |
+| `lm.MaskToken(token)` | Set one token's logit to `-1e9`. |
+| `lm.MaskTokens(tokens)` | Mask a list of tokens. |
+| `lm.MaskTokensExcept(tokens)` | Mask everything except allowlist. |
+| `lm.BiasToken(token, delta)` | Add `delta` to one token's logit (clamped to `[-1e9, 1e9]`). |
+| `lm.BiasTokens(tokens, delta)` | Bias a list of tokens. |
+| `lm.ScaleToken(token, factor)` | Multiply one token's logit by `factor` (clamped, `factor != 0`). |
+| `lm.ScaleTokens(tokens, factor)` | Scale a list of tokens. |
+| `lm.ClampLogits(low, high)` | Clip all logits to `[low, high]`. |
+| `lm.TopKFilter(k)` | Mask everything except the `k` highest-logit tokens. |
+| `lm.IsMasked(token)` | Check if a token is masked. |
+| `lm.HasUnmaskedToken()` | Check if any token is still selectable. |
 
-These wrappers keep strategies from forgetting spaced delimiter variants.
+## Example Strategy Skeletons
 
-### Parser-State Wrappers
+### CRANE-like (delimiter-switched)
 
-| Helper | Purpose |
-|--------|---------|
-| `LongestValidSuffix(generated)` | Longest suffix of `generated` accepted as a parser-valid prefix. |
-| `CanConstrain(generated)` | True when the current grammar suffix is incomplete. |
-| `IsComplete(generated)` | True when the current grammar suffix is complete. |
-| `IsDead(generated)` | True when the current grammar suffix cannot be completed. |
-| `ValidContinuationCount(generated)` | Number of valid next tokens from the current grammar suffix. |
-| `ParserDistanceToComplete(generated)` | Lower bound on steps needed to complete the current grammar suffix. |
-| `MinStepsToComplete(generated)` | Alias for `ParserDistanceToComplete(generated)`. |
-| `HasBudget(stepsLeft, needed)` | Pure budget predicate. |
+```python
+# Free-form reasoning, then open a constrained span
+while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+# Constrained span
+while stepsLeft > 0 and helpers.CanConstrain(generated):
+    generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+# Close
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
 
-Generated strategies should prefer these helpers over direct `parser.*` calls.
-They automatically route parser queries through `LongestValidSuffix(generated)`.
+### Graduated constraint (novel)
 
-### Explicit Structural Tokens
+```python
+penalty = 1.0
+while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+while stepsLeft > 0 and helpers.CanConstrain(generated):
+    generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)
+    penalty = penalty + 2.0  # increasing constraint pressure
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
 
-These remain available for non-natural delimiter strategies and non-GSM tasks.
-GSM natural-delimiter runs should not use them for delimiters.
+### Budget-aware with completion bias (novel)
 
-| Helper | Purpose |
-|--------|---------|
-| `ForcedTokenStep(prompt, generated, token, stepsLeft)` | Raw token-returning forced structural token step. |
-| `AppendForcedToken(generated, token, stepsLeft)` | Append a known token. |
-| `AppendLeftDelimiter(generated, stepsLeft)` | Append `LeftDelimiter`. |
-| `AppendRightDelimiter(generated, stepsLeft)` | Append `RightDelimiter`. |
+```python
+while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+while stepsLeft > 0 and helpers.CanConstrain(generated):
+    if helpers.HasBudget(stepsLeft, helpers.MinStepsToComplete(generated) + 2):
+        generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, 5.0, stepsLeft)
+    else:
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
 
-## Removed From The Strategy Surface
+### Multi-pass custom shaping (novel)
 
-The following experimental helpers were removed from `CSDHelpers` because they
-were distracting the synthesis model or weakening the final-span guarantee:
+```python
+while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+while stepsLeft > 0 and helpers.CanConstrain(generated):
+    lm.GenerateLogits(prompt + generated)
+    helpers.SoftConstrainToGrammar(generated, 8.0)
+    helpers.BiasForCompletion(generated, 3.0)
+    helpers.MaskLeftDelimiters(generated)
+    next_token = lm.ChooseNextToken()
+    generated = generated + [next_token]
+    stepsLeft = stepsLeft - 1
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
 
-- soft constrained decoding helpers
-- top-k constrained decoding helpers
-- budget-aware switching helpers
-- extend-constrained helpers
-- rollback/salvage/retry helpers
-- checkpoint and repetition state structures
-- direct composite logit-shaping helpers
+### Checkpoint-based recovery (novel)
 
-The intended GSM natural path is now:
+```python
+while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+checkpoint = helpers.Checkpoint(generated)
+attempts = 0
+while stepsLeft > 0 and helpers.CanConstrain(generated) and attempts < 3:
+    generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    if helpers.IsDead(generated):
+        generated = helpers.RestoreCheckpoint(checkpoint)
+        attempts = attempts + 1
+generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+```
 
-1. Reason with `AppendUnconstrainedStep`.
-2. When a policy believes the final answer is near, use
-   `AppendUnconstrainedNudgeLeftDelimiterStep`.
-3. Once `EndsWithLeftDelimiter(generated)` is true, use
-   `AppendConstrainedOrRightDelimiterStep`.
-4. Once `EndsWithRightDelimiter(generated)` is true, either stop if this was
-   the final answer span or return to free-form reasoning before a later final
-   span.
+## Required Loop Invariants
 
-Every decoding loop still needs the standard invariants:
+Every decoding loop needs:
 
 ```python
 # invariant helpers.lm == lm

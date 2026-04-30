@@ -7,7 +7,9 @@ start: query
 
 ?query: select_stmt
 
-select_stmt: select_clause from_clause? where_clause? group_clause? having_clause? order_clause? limit_clause?
+// Require FROM + WHERE for Spider so constrained decoding cannot terminate at
+// underspecified fragments like `SELECT city_name FROM city`.
+select_stmt: select_clause from_clause where_clause group_clause? having_clause? order_clause? limit_clause?
 
 select_clause: SELECT distinct? select_list
 distinct: DISTINCT
@@ -35,24 +37,40 @@ limit_clause: LIMIT NUMBER
           | expr LIKE value
           | expr IS NOT? NULL
           | comparison
+          | qualified_column COMP_OP qualified_column
           | "(" condition ")"
 
-comparison: expr COMP_OP expr
+// Keep scalar subqueries and arithmetic on RHS, but disallow bare unqualified
+// identifiers there so constants such as state names must be quoted strings.
+comparison: expr COMP_OP rhs_expr
 
 ?expr: sum
 ?sum: product (("+" | "-") product)*
 ?product: atom (("*" | "/") atom)*
 ?atom: value
      | column
+     | qualified_column
      | function_call
      | "(" query ")"
      | "(" expr ")"
 
+?rhs_expr: rhs_sum
+?rhs_sum: rhs_product (("+" | "-") rhs_product)*
+?rhs_product: rhs_atom (("*" | "/") rhs_atom)*
+?rhs_atom: value
+         | function_call
+         | "(" query ")"
+         | "(" rhs_expr ")"
+
 function_call: FUNC "(" distinct? ("*" | expr_list)? ")"
 expr_list: expr ("," expr)*
 
-?value: NUMBER | STRING
-column: NAME ("." NAME)?
+?value: NUMBER | quoted_string
+quoted_string: dquoted_string | squoted_string
+dquoted_string: DQUOTE DQ_CHUNK? DQUOTE
+squoted_string: SQUOTE SQ_CHUNK? SQUOTE
+column: NAME
+qualified_column: NAME "." NAME
 
 SELECT.2: /select/i
 DISTINCT.2: /distinct/i
@@ -80,8 +98,11 @@ FUNC.2: /count|sum|avg|min|max/i
 
 COMP_OP: "=" | "!=" | "<>" | "<=" | ">=" | "<" | ">"
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
-STRING: /'[^']*'/ | /"[^"]*"/
 NUMBER: /-?\d+(\.\d+)?/
+DQUOTE: "\""
+SQUOTE: "'"
+DQ_CHUNK: /[^"\r\n]+/
+SQ_CHUNK: /[^'\r\n]+/
 
 %import common.WS
 %ignore WS

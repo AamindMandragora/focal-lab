@@ -97,16 +97,16 @@ DATASET_PRESETS = {
             "2. Prefer natural delimiter strategies with a small helper surface. "
             "Use delimiter-masked AppendUnconstrainedStep for ordinary reasoning. "
             "After an explicit final-answer cue, scratch-to-final transition, or "
-            "real budget pressure, use AppendUnconstrainedNudgeLeftDelimiterStep "
+            "real budget pressure, use AppendUnconstrainedStep "
             "until helpers.EndsWithLeftDelimiter(generated) is true. Inside the "
-            "span, use AppendConstrainedOrRightDelimiterStep until "
+            "span, use AppendConstrainedStep until "
             "helpers.EndsWithRightDelimiter(generated) is true. Do not use plain "
             "AppendConstrainedStep in natural delimiter mode; it cannot emit "
             "the closing delimiter. Do not break on `not helpers.CanConstrain` "
             "before checking helpers.IsComplete, because complete suffixes are "
             "exactly when `>>` may be emitted. Prefer the positive span guard "
             "`helpers.IsComplete(generated) or helpers.CanConstrain(generated)`, "
-            "then call AppendConstrainedOrRightDelimiterStep. Track durable open-span state "
+            "then call AppendConstrainedStep. Track durable open-span state "
             "such as `phase` or `inside_span`; helpers.EndsWithLeftDelimiter "
             "is an opening event, not the whole inside-span condition. Do not "
             "open immediately after a "
@@ -145,7 +145,12 @@ DATASET_PRESETS = {
             "complete expressions cannot extend forever. "
             "8. Multiple independent delimited verified spans are encouraged when "
             "they emerge naturally from the reasoning. The final << >> span is the "
-            "graded answer."
+            "graded answer. Prefer natural interleaving like reasoning text, then "
+            "a complete scratch assignment span, more reasoning, another scratch "
+            "span, and finally an aggregated answer span. Do not force a fixed "
+            "template or fixed span count. Strongly prefer final spans that "
+            "compose earlier scratch values and remaining constants rather than "
+            "stopping after the first local complete span."
         ),
         min_accuracy=0.5,
         min_format_rate=1.0,
@@ -224,7 +229,10 @@ DATASET_PRESETS = {
             "4. Use standard SQL clauses such as SELECT, FROM, WHERE, GROUP BY, "
             "HAVING, ORDER BY, LIMIT, JOIN, and nested SELECT only when needed. "
             "5. Do not put prose, markdown, or semicolon-only filler inside the final "
-            "constrained segment."
+            "constrained segment. "
+            "6. Prefer one deliberate SQL answer span: short free-form lead-in (if any), "
+            "then emit << SQL >> and close it; avoid long unconstrained rambles that "
+            "never reach a closed span."
         ),
         min_accuracy=0.2,
         min_format_rate=0.8,

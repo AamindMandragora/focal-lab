@@ -6,5 +6,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAX_ITERATIONS="${MAX_ITERATIONS:-10}"
 export CSD_REQUIRE_NATURAL_DELIMITERS="${CSD_REQUIRE_NATURAL_DELIMITERS:-1}"
+export CSD_GSM_PREFER_SCRATCH_SPANS="${CSD_GSM_PREFER_SCRATCH_SPANS:-1}"
 source "$SCRIPT_DIR/common.sh"
 csd_run_preset gsm_symbolic "GSM-Symbolic" "$@"

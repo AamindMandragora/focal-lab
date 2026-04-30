@@ -2053,7 +2053,12 @@ class SynthesisPipeline:
 
             # Save successful strategy
             self._save_success_report(
-                strategy_code, full_code, attempts, output_name, run_dir
+                strategy_code,
+                full_code,
+                attempts,
+                output_name,
+                run_dir,
+                final_eval_result=eval_result,
             )
 
             return SynthesisResult(
@@ -2115,6 +2120,7 @@ class SynthesisPipeline:
         attempts: list[SynthesisAttempt],
         output_name: str,
         run_dir: Path,
+        final_eval_result: Optional[EvaluationResult] = None,
     ) -> None:
         """Save a success report and the final strategy."""
         python_path = run_dir / self.GENERATED_CSD_FILENAME
@@ -2134,6 +2140,17 @@ class SynthesisPipeline:
 
         # Save a report
         report_path = run_dir / "success_report.json"
+        eval_summary: Optional[dict] = None
+        if final_eval_result is not None:
+            eval_summary = {
+                "success": final_eval_result.success,
+                "accuracy": final_eval_result.accuracy,
+                "format_rate": final_eval_result.format_rate,
+                "syntax_rate": final_eval_result.syntax_rate,
+                "num_examples": final_eval_result.num_examples,
+                "num_correct": final_eval_result.num_correct,
+                "total_time_seconds": final_eval_result.total_time_seconds,
+            }
         report = {
             "strategy_code": strategy_code,
             "tool_choice_rationale": rationale_extracted.rationale,
@@ -2141,6 +2158,7 @@ class SynthesisPipeline:
             "transpiled_dafny_file": str(dafny_path) if dafny_path else None,
             "requested_output_name": output_name,
             "total_attempts": len(attempts),
+            "evaluation": eval_summary,
             "timestamp": datetime.now().isoformat(),
         }
 

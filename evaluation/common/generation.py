@@ -65,6 +65,10 @@ def run_crane_csd(
     lm = env["lm"]
     parser = dynamic_parser if dynamic_parser is not None else env["parser"]
 
+    reset_fn = getattr(lm, "ResetForNewExample", None)
+    if callable(reset_fn):
+        reset_fn()
+
     lm.instruction_text = prompt_text
     start_time = time.time()
     import sys
@@ -169,6 +173,10 @@ def run_crane_csd_native(
     parser = dynamic_parser if dynamic_parser is not None else env["parser"]
     strategy_module = env["strategy_module"]
 
+    reset_fn = getattr(lm, "ResetForNewExample", None)
+    if callable(reset_fn):
+        reset_fn()
+
     lm.instruction_text = prompt_text
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     start_time = time.time()
@@ -234,6 +242,10 @@ def run_unconstrained(
     lm = env["lm"]
 
     result_tokens: List[str] = []
+
+    reset_fn = getattr(lm, "ResetForNewExample", None)
+    if callable(reset_fn):
+        reset_fn()
 
     lm.instruction_text = prompt_text
     start_time = time.time()

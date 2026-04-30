@@ -310,19 +310,6 @@ def test_unconstrained_step_masks_delimiter_variants_when_alternatives_exist():
     assert lm.IsMasked(SpacedRightDelimiter)
 
 
-def test_constrained_or_right_delimiter_allows_spaced_right_after_completion():
-    lm = SimpleLM(["a", "b", "c", RightDelimiter, SpacedRightDelimiter])
-    parser = SimpleParser()
-    helpers = CSDHelpers(lm, parser)
-
-    token, steps = helpers.ConstrainedOrRightDelimiterStep([], ["a", "b", "c"], 10)
-
-    assert token == SpacedRightDelimiter
-    assert steps == 9
-    assert not lm.IsMasked(RightDelimiter)
-    assert not lm.IsMasked(SpacedRightDelimiter)
-
-
 def test_transpiled_helpers_declare_any_referenced_spaced_delimiter_constants():
     source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text()
 
@@ -359,18 +346,6 @@ def test_helper_parser_wrappers_route_through_longest_valid_suffix():
     assert h.MinStepsToComplete(generated) == 0
 
 
-def test_append_natural_left_delimiter_step_updates_prefix():
-    lm = SimpleLM(["safe", RightDelimiter, SpacedRightDelimiter, "x", SpacedLeftDelimiter])
-    parser = SimpleParser()
-    h = CSDHelpers(lm, parser)
-
-    generated, steps = h.AppendUnconstrainedNudgeLeftDelimiterStep([], [], 10)
-
-    assert generated == [SpacedLeftDelimiter]
-    assert h.EndsWithLeftDelimiter(generated)
-    assert steps == 9
-
-
 def test_append_right_delimiter_appends_exact_token():
     lm = SimpleLM(["a", "<<", ">>"])
     parser = SimpleParser()
@@ -378,6 +353,43 @@ def test_append_right_delimiter_appends_exact_token():
     generated, steps = h.AppendRightDelimiter(["a"], 3)
     assert generated == ["a", ">>"]
     assert steps == 2
+
+
+def test_checkpoint_and_restore_round_trip():
+    lm = SimpleLM(["a", "<<", ">>"])
+    parser = SimpleParser()
+    h = CSDHelpers(lm, parser)
+
+    checkpoint = h.Checkpoint(["a", "b"])
+    restored = h.RestoreCheckpoint(checkpoint)
+
+    assert checkpoint == ["a", "b"]
+    assert restored == ["a", "b"]
+
+
+def test_restore_if_dead_uses_checkpoint():
+    lm = SimpleLM(["a", "b", "c", "<<", ">>", "free"])
+    alive_parser = SimpleParser()
+    alive_helpers = CSDHelpers(lm, alive_parser)
+
+    checkpoint = alive_helpers.Checkpoint(["a"])
+    alive_prefix = ["free", "<<", "a"]
+    kept = alive_helpers.RestoreIfDead(alive_prefix, checkpoint)
+    assert kept == alive_prefix
+
+    class DeadParser(Parser):
+        def IsValidPrefix(self, prefix: Prefix) -> bool:
+            return len(prefix) == 0
+
+        def IsCompletePrefix(self, prefix: Prefix) -> bool:
+            return False
+
+        def ValidNextTokens(self, prefix: Prefix) -> Prefix:
+            return []
+
+    dead_helpers = CSDHelpers(lm, DeadParser())
+    recovered = dead_helpers.RestoreIfDead([], checkpoint)
+    assert recovered == ["a"]
 
 
 # ---------------------------------------------------------------------------

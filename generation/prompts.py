@@ -24,8 +24,7 @@ Use it as the high-signal helper guide when writing the strategy body.
 - There is no separate `answer` channel in the current template. The strategy returns one
   `generated` prefix. Delimited spans are parseable islands inside that prefix; every
   span a strategy emits between delimiters must be grammar-valid.
-- Do not call old split-channel helpers such as `helpers.ExpressiveStep(...)`,
-  `helpers.ConstrainedAnswerStep(...)`, or `helpers.FinalizeDelimitedAnswer(...)`.
+- Do not call deprecated split-channel helper APIs from older templates.
 - `helpers.LongestValidSuffix(generated)` is also `list[str]`, not a Python string.
 - Never call `generated.startswith(...)`, `generated.endswith(...)`, `generated.strip(...)`,
   or remove delimiters with string slicing. Track phases with booleans/counters instead.
@@ -41,7 +40,7 @@ Prefer these helpers and always assign the tuple result back into `generated, st
 - `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)`
 - `helpers.AppendLeftDelimiter(generated, stepsLeft)`
 - `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)`
-- `helpers.AppendExtendConstrainedStep(prompt, generated, stepsLeft)`
+- `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)`
 - `helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)`
 - `helpers.AppendTopKConstrainedStep(prompt, generated, k, stepsLeft)`; use a literal `k` of
   `1` unless you have a proof guard for `k <= len(lm.Tokens)`
@@ -51,7 +50,7 @@ Never use an `Append*` helper as a bare statement.
 Never write `next_token, stepsLeft = helpers.AppendConstrainedStep(...)` or any other
 `Append*` call into `next_token`; `Append*` returns an updated prefix, not a token.
 Use hard `AppendConstrainedStep` for delimited constrained tokens while the grammar suffix is incomplete.
-Use `AppendExtendConstrainedStep` when the suffix is already complete but still has valid
+Use `AppendConstrainedStep` when the suffix is already complete but still has valid
 continuations and the answer policy wants a richer expression before closing. Use top-k only as
 `AppendTopKConstrainedStep(prompt, generated, 1, stepsLeft)` unless you can prove the bound;
 `AppendSoftConstrainedStep` is only a guarded biasing experiment and is not a hard syntax guarantee.
@@ -72,7 +71,7 @@ Budget convenience over the current generated prefix lives on `helpers`.
 - Correct: `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ValidContinuationCount(helpers.LongestValidSuffix(generated))`
-- Wrong: `helpers.IsCompletePrefix(...)`
+- Wrong: `parser.IsCompletePrefix(generated)`
 - Wrong: `helpers.ValidContinuationCount(...)`
 - Wrong: `parser.IsCompletePrefix(generated)`
 - Wrong: `parser.MinStepsToComplete(...)`
@@ -145,8 +144,8 @@ Use this order:
 2. `generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)`
 3. Append constrained grammar tokens while the answer policy wants more content:
    use `helpers.AppendConstrainedStep(...)` under `helpers.CanConstrain(generated)`;
-   if the suffix is complete but extendable, use `helpers.AppendExtendConstrainedStep(...)`
-   under `helpers.CanExtendConstrained(generated)`.
+   if the suffix is complete but extendable, use `helpers.AppendConstrainedStep(...)`
+   under `helpers.CanConstrain(generated)`.
 4. Only after the grammar suffix is complete and your close policy says the answer is rich enough,
    append `RightDelimiter`
 
@@ -158,8 +157,8 @@ Critical phase rule:
   `helpers.CanConstrain(generated)` for constrained answer-token calls.
 - `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))` means closing is allowed, not
   required. Do not close just because the prefix first becomes complete. If
-  `helpers.CanExtendConstrained(generated)` is true and your answer is still too short, continue
-  with `helpers.AppendExtendConstrainedStep(prompt, generated, stepsLeft)` before closing.
+  `helpers.CanConstrain(generated)` is true and your answer is still too short, continue
+  with `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` before closing.
 - Keep delimiter phases concrete: one phase branch emits only `AppendLeftDelimiter` and advances
   state, later constrained/extend-constrained branches emit answer tokens, and the completion
   branch emits `AppendRightDelimiter` only when completion is true and a separate close policy
@@ -172,8 +171,8 @@ Critical phase rule:
 - A branch that contains `AppendConstrainedStep`, `AppendSoftConstrainedStep`, or
   `AppendTopKConstrainedStep` is invalid unless that same branch condition textually contains
   `helpers.CanConstrain(generated)`. A boolean variable set from `CanConstrain` is not enough.
-- A branch that contains `AppendExtendConstrainedStep` or `ExtendConstrainedStep` must textually
-  contain `helpers.CanExtendConstrained(generated)`.
+- A branch that contains `AppendConstrainedStep` or `ConstrainedStep` must textually
+  contain `helpers.CanConstrain(generated)`.
 
 Do not call constrained helpers before executable left-delimiter emission. Do not append both
 delimiters after the loop; delimiter calls should live inside explicit budget-bounded phase
@@ -210,12 +209,12 @@ instructions that say to use `AppendLeftDelimiter`, `AppendRightDelimiter`,
   phrase into the graded span.
 - A visible raw-step delimiter decision counts as delimiter emission, but use it only after a
   final-answer cue or meaningful budget pressure:
-  `next_token, new_steps = helpers.UnconstrainedAllowLeftDelimiterStep(...)` or
-  `helpers.UnconstrainedNudgeLeftDelimiterStep(...)`, then append `next_token`, update
+  `next_token, new_steps = helpers.UnconstrainedStep(...)` or
+  `helpers.UnconstrainedStep(...)`, then append `next_token`, update
   `stepsLeft`, and switch into the constrained span if
   `next_token == LeftDelimiter or next_token == SpacedLeftDelimiter`.
 - Inside a span, use
-  `next_token, new_steps = helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)`,
+  `next_token, new_steps = helpers.ConstrainedStep(prompt, generated, stepsLeft)`,
   then append `next_token`, update `stepsLeft`, and close the span if
   `next_token == RightDelimiter or next_token == SpacedRightDelimiter`.
 - Track closed verified spans with a real counter such as `closed_spans = 0` or
@@ -224,13 +223,13 @@ instructions that say to use `AppendLeftDelimiter`, `AppendRightDelimiter`,
 - Use that closed-span counter in a loop or branch condition so the strategy can continue after
   a scratch mini-expression and stop after a final answer span. A separate `final_ready` or
   `answer_ready` integer flag is fine.
-- Do not use `UnconstrainedAllowLeftDelimiterStep` as the default first-token/free-form reasoning
+- Do not use `UnconstrainedStep` as the default first-token/free-form reasoning
   step. If it is active from the start, Qwen often emits spans like `In the first 20s,
   <<30 * 1 = 30>>`, which is grammar-valid but not the final answer.
 - Once a state variable such as `final_ready`, `answer_ready`, or `late_pressure` says the answer
-  span should open, keep using `helpers.UnconstrainedNudgeLeftDelimiterStep(...)` in that branch
+  span should open, keep using `helpers.UnconstrainedStep(...)` in that branch
   until the LM emits `LeftDelimiter` / `SpacedLeftDelimiter`. Do not switch back to plain
-  `UnconstrainedAllowLeftDelimiterStep` after readiness; that often causes 300-token rambles with
+  `UnconstrainedStep` after readiness; that often causes 300-token rambles with
   no final delimiter.
 - After a non-final closed span, return to free-form reasoning with delimiter-masked natural
   steps; after the final closed span, set the terminal phase. The policy can still decide that
@@ -259,7 +258,7 @@ while stepsLeft > 0 and phase < 3 and closed_spans < 4:
             if reason_signal > 24:
                 final_ready = 1
         else:
-            next_token, new_steps = helpers.UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+            next_token, new_steps = helpers.UnconstrainedStep(prompt, generated, stepsLeft)
             generated = generated + [next_token]
             stepsLeft = new_steps
             if next_token == LeftDelimiter or next_token == SpacedLeftDelimiter:
@@ -267,7 +266,7 @@ while stepsLeft > 0 and phase < 3 and closed_spans < 4:
             else:
                 reason_signal = reason_signal + 1
     elif phase == 1 and (helpers.CanConstrain(generated) or parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))):
-        next_token, new_steps = helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+        next_token, new_steps = helpers.ConstrainedStep(prompt, generated, stepsLeft)
         generated = generated + [next_token]
         stepsLeft = new_steps
         if next_token == RightDelimiter or next_token == SpacedRightDelimiter:
@@ -303,6 +302,36 @@ def _load_helper_reference_markdown() -> str:
     return HELPER_REFERENCE_PATH.read_text(encoding="utf-8").strip()
 
 
+def _strip_example_sections(markdown_text: str) -> str:
+    """
+    Remove example-centric sections from the full helper markdown before prompt injection.
+
+    This keeps the helper surface reference available without anchoring the model to
+    concrete worked examples or skeleton strategies.
+    """
+    lines = markdown_text.splitlines()
+    out: list[str] = []
+    skipping = False
+    skip_level = 0
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            level = len(stripped) - len(stripped.lstrip("#"))
+            title = stripped[level:].strip().lower()
+            if skipping and level <= skip_level:
+                skipping = False
+            if any(marker in title for marker in ("example", "skeleton")):
+                skipping = True
+                skip_level = level
+                continue
+        if skipping:
+            continue
+        out.append(line)
+
+    return "\n".join(out).strip()
+
+
 def _compose_system_prompt() -> str:
     mode = helper_reference_mode()
     natural_override = ""
@@ -321,11 +350,11 @@ def _compose_system_prompt() -> str:
             + "\n[END CURATED_HELPER_REFERENCE]\n"
             + natural_override
         )
-    reference = _load_helper_reference_markdown()
+    reference = _strip_example_sections(_load_helper_reference_markdown())
     return (
         SYSTEM_PROMPT
         + "\n\n## Additional Authoritative Helper Reference\n\n"
-        + "The following markdown is copied directly from `generation/csd/VerifiedAgentSynthesis.md`.\n"
+        + "The following markdown is copied from `generation/csd/VerifiedAgentSynthesis.md` with example sections removed.\n"
         + "Use it as the authoritative reference for helper names, signatures, object ownership, and contracts.\n"
         + "If this reference conflicts with your memory, follow the reference.\n\n"
         + "[BEGIN VERIFIED_AGENT_SYNTHESIS_MD]\n"
@@ -344,12 +373,12 @@ Natural-delimiter mode reminder:
 - For GSM in this run, do NOT use `AppendLeftDelimiter`, `AppendRightDelimiter`,
   `AppendForcedToken`, or `ForcedTokenStep` for delimiters, even if a generic rule above suggests
   them.
-- Use `UnconstrainedAllowLeftDelimiterStep` or `UnconstrainedNudgeLeftDelimiterStep` to let the
+- Use `UnconstrainedStep` or `UnconstrainedStep` to let the
   LM choose `LeftDelimiter` / `SpacedLeftDelimiter` naturally only after ordinary
   `AppendUnconstrainedStep` reasoning has reached a final-answer cue or budget pressure.
-- Once answer-ready, prefer `UnconstrainedNudgeLeftDelimiterStep` over plain
-  `UnconstrainedAllowLeftDelimiterStep` until the left delimiter actually appears.
-- Use `ConstrainedOrRightDelimiterStep` inside the constrained span, and handle both
+- Once answer-ready, prefer `UnconstrainedStep` over plain
+  `UnconstrainedStep` until the left delimiter actually appears.
+- Use `ConstrainedStep` inside the constrained span, and handle both
   `RightDelimiter` and `SpacedRightDelimiter`.
 - Declare a real closed-span counter (`closed_spans` or `scratch_spans`), increment it in the
   right-delimiter branch, and use it in a branch or loop condition. Do not use `spanTokens`.
@@ -386,37 +415,39 @@ from it as if `<<` or `>>` were substrings. Delimiters are full tokens; emit the
 state variables instead of string slicing.
 
 The current helper/template surface is single-prefix, not split-channel. There is no local
-`answer` list initialized by the template and no supported `helpers.ExpressiveStep(...)`,
-`helpers.ConstrainedAnswerStep(...)`, or `helpers.FinalizeDelimitedAnswer(...)`. Use
+`answer` list initialized by the template and no supported split-channel helper APIs. Use
 `helpers.AppendUnconstrainedStep(...)` for free-form text and `helpers.AppendConstrainedStep(...)`
-or `helpers.AppendExtendConstrainedStep(...)` for grammar-controlled content inside delimiter
+or `helpers.AppendConstrainedStep(...)` for grammar-controlled content inside delimiter
 spans.
 
 ### Raw step functions — consume one step, return (next_token, new_stepsLeft)
 
 - `helpers.UnconstrainedStep(prompt, generated, stepsLeft)` — generates next token with no grammar constraint.
-- `helpers.UnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)` — free-form reasoning step that masks right delimiters but allows the LM to emit `<<` / ` <<` naturally; if the chosen token is a left delimiter, append it and switch into a constrained phase.
-- `helpers.UnconstrainedBiasLeftDelimiterStep(prompt, generated, bias, stepsLeft)` — like `UnconstrainedAllowLeftDelimiterStep`, but positively biases `<<` / ` <<` without forcing it. Use a literal positive bias under real budget pressure when fully natural opening risks missing the format deadline.
-- `helpers.UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` — like `UnconstrainedBiasLeftDelimiterStep` with a built-in positive bias. Prefer this over a custom bias variable when format is at risk; it keeps the delimiter LM-chosen without type/verification friction.
+- `helpers.UnconstrainedStep(prompt, generated, stepsLeft)` — free-form reasoning step that masks right delimiters but allows the LM to emit `<<` / ` <<` naturally; if the chosen token is a left delimiter, append it and switch into a constrained phase.
+- `helpers.UnconstrainedStep(prompt, generated, bias, stepsLeft)` — like `UnconstrainedStep`, but positively biases `<<` / ` <<` without forcing it. Use a literal positive bias under real budget pressure when fully natural opening risks missing the format deadline.
+- `helpers.UnconstrainedStep(prompt, generated, stepsLeft)` — like `UnconstrainedStep` with a built-in positive bias. Prefer this over a custom bias variable when format is at risk; it keeps the delimiter LM-chosen without type/verification friction.
 - `helpers.ConstrainedStep(prompt, generated, stepsLeft)` — computes `LongestValidSuffix(generated)` to find the current grammar state, masks all invalid tokens, then generates. Use this while the current grammar suffix is incomplete.
-- `helpers.ExtendConstrainedStep(prompt, generated, stepsLeft)` — like `ConstrainedStep`, but may be used when the suffix is already complete and still has valid continuations. Completion permits closing; it does not force closing.
-- `helpers.ConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)` — lets the LM choose a grammar-valid continuation token, or `RightDelimiter` / `SpacedRightDelimiter` only when `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))` is true. Use this when you want `>>` / ` >>` to be LM-chosen without sacrificing the syntax guarantee. Capture `next_token, new_steps`, append `next_token`, update `stepsLeft`, and if `next_token == RightDelimiter or next_token == SpacedRightDelimiter` switch out of the constrained phase.
+- `helpers.ConstrainedStep(prompt, generated, stepsLeft)` — like `ConstrainedStep`, but may be used when the suffix is already complete and still has valid continuations. Completion permits closing; it does not force closing.
+- `helpers.ConstrainedStep(prompt, generated, stepsLeft)` — lets the LM choose a grammar-valid continuation token, or `RightDelimiter` / `SpacedRightDelimiter` only when `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))` is true. Use this when you want `>>` / ` >>` to be LM-chosen without sacrificing the syntax guarantee. Capture `next_token, new_steps`, append `next_token`, update `stepsLeft`, and if `next_token == RightDelimiter or next_token == SpacedRightDelimiter` switch out of the constrained phase.
 - `helpers.SoftConstrainedStep(prompt, generated, penalty, stepsLeft)` — like ConstrainedStep but penalizes invalid tokens by `penalty` instead of hard-masking them.
 - `helpers.TopKConstrainedStep(prompt, generated, k, stepsLeft)` — grammar-masks first, then applies top-k filtering among valid tokens.
 - `helpers.ForcedTokenStep(prompt, generated, token, stepsLeft)` — skips LM generation entirely; emits `token` directly. Use to emit structural tokens like `LeftDelimiter` and `RightDelimiter`. Always capture both return values as `next_token, new_steps = helpers.ForcedTokenStep(...)`, then append `next_token` and update `stepsLeft = new_steps`.
-- `helpers.BudgetAwareStep(prompt, generated, stepsLeft, threshold)` — uses ConstrainedStep when `stepsLeft <= threshold` and the grammar is incomplete; otherwise UnconstrainedStep.
+- `helpers.UnconstrainedStep(prompt, generated, stepsLeft, threshold)` — uses ConstrainedStep when `stepsLeft <= threshold` and the grammar is incomplete; otherwise UnconstrainedStep.
 
 ### Preferred append-style helpers — consume one step and return (updated_prefix, remaining_steps)
 
 - `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `UnconstrainedStep`; appends the chosen token for you.
 - `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `ConstrainedStep`; appends the grammar-valid token for you.
-- `helpers.AppendExtendConstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `ExtendConstrainedStep`; use it to keep growing an answer after the grammar suffix first becomes complete.
+- `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` — preferred wrapper around `ConstrainedStep`; use it to keep growing an answer after the grammar suffix first becomes complete.
 - `helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)` — wrapper around `SoftConstrainedStep`; guarded only, and not a hard syntax guarantee for constrained-span tokens.
 - `helpers.AppendTopKConstrainedStep(prompt, generated, k, stepsLeft)` — wrapper around `TopKConstrainedStep`; prefer `k = 1` unless you have a proof guard for `k <= len(lm.Tokens)`.
-- `helpers.AppendBudgetAwareStep(prompt, generated, stepsLeft, threshold)` — preferred wrapper around `BudgetAwareStep`.
+- `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft, threshold)` — preferred wrapper around `UnconstrainedStep`.
 - `helpers.AppendForcedToken(generated, token, stepsLeft)` — preferred wrapper around `ForcedTokenStep`; appends `token` for you.
 - `helpers.AppendLeftDelimiter(generated, stepsLeft)` — append `LeftDelimiter` in one call.
 - `helpers.AppendRightDelimiter(generated, stepsLeft)` — append `RightDelimiter` in one call.
+- `helpers.Checkpoint(generated)` — capture a reusable prefix checkpoint before risky expansion.
+- `helpers.RestoreCheckpoint(checkpoint)` — restore exactly to a saved checkpoint.
+- `helpers.RestoreIfDead(generated, checkpoint)` — if the current suffix is dead, revert to checkpoint; otherwise keep current prefix.
 
 When possible, prefer the Append* helpers because they avoid the common proof mistakes around tuple unpacking, forgotten appends, and stale step budgets.
 
@@ -426,12 +457,12 @@ Only a small set of names live on `helpers`. Grammar-state queries like complete
 Budget convenience over the current generated prefix lives on `helpers`.
 
 - Correct: `helpers.CanConstrain(generated)`
-- Correct: `helpers.CanExtendConstrained(generated)`
+- Correct: `helpers.CanConstrain(generated)`
 - Correct: `helpers.MinStepsToComplete(generated)`
 - Correct: `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`
 - Correct: `parser.ValidContinuationCount(helpers.LongestValidSuffix(generated))`
-- Wrong: `helpers.IsCompletePrefix(...)`
+- Wrong: `parser.IsCompletePrefix(generated)`
 - Wrong: `helpers.ValidContinuationCount(...)`
 - Wrong: `parser.MinStepsToComplete(...)`
 
@@ -600,8 +631,7 @@ Use-case description: {task_description}
 Requirements:
 - Output ONLY the Python body inserted into `MyCSDStrategy`.
 - Start with the required rationale block using `#` comments.
-- Do not use old split-output helper names: no `helpers.ExpressiveStep`,
-  no `helpers.ConstrainedAnswerStep`, no `helpers.FinalizeDelimitedAnswer`, and no local
+- Do not use old split-output helper APIs and no local
   `answer` channel. All emitted tokens go into `generated`.
 - Use a `while` loop with these exact invariants as preceding comments:
     # invariant helpers.lm == lm
@@ -619,11 +649,11 @@ Requirements:
 - Do not manually change `stepsLeft`; no `stepsLeft -= 1`, `stepsLeft += 1`, or
   `stepsLeft = stepsLeft - ...`. Helper calls already consume budget.
 - Prefer the Append* wrappers unless you genuinely need the raw token return.
-- Before any `ConstrainedStep`, `SoftConstrainedStep`, `TopKConstrainedStep`, `BudgetAwareStep`,
+- Before any `ConstrainedStep`, `SoftConstrainedStep`, `TopKConstrainedStep`, `UnconstrainedStep`,
   `AppendConstrainedStep`, `AppendSoftConstrainedStep`, or `AppendTopKConstrainedStep` call,
   ensure the current grammar suffix is incomplete, preferably with `helpers.CanConstrain(generated)`.
-- Before any `ExtendConstrainedStep` or `AppendExtendConstrainedStep` call, ensure there is at
-  least one valid continuation with `helpers.CanExtendConstrained(generated)`.
+- Before any `ConstrainedStep` or `AppendConstrainedStep` call, ensure there is at
+  least one valid continuation with `helpers.CanConstrain(generated)`.
 - Put constrained helper calls inside a branch whose condition explicitly mentions
   `helpers.CanConstrain(generated)`. Do not rely on some earlier phase variable alone.
 - For adaptive soft/top-k/hard policies, put the guard on the enclosing branch, then choose the
@@ -634,9 +664,9 @@ Requirements:
 - Avoid float state in control flow. Never assign `pressure = 0.5`, `penalty = 0.5`, or any
   other float local; use integer counters and pass literal penalties directly inside soft-helper
   calls such as `helpers.AppendSoftConstrainedStep(prompt, generated, 0.5, stepsLeft)`.
-- For `helpers.UnconstrainedBiasLeftDelimiterStep`, pass a literal positive float such as `5.0`
+- For `helpers.UnconstrainedStep`, pass a literal positive float such as `5.0`
   directly in the call. Do not write `biasStrength = 3` or pass an integer/local variable.
-- Do not write `helpers.IsCompletePrefix(...)` or `helpers.ValidContinuationCount(...)`.
+- Do not write parser wrappers on `helpers` that do not exist; use `parser.*` or the supported helper wrappers.
   Those are parser calls, not helper calls.
 - Do not write `parser.MinStepsToComplete(...)`. Use `helpers.MinStepsToComplete(generated)` or
   `parser.ParserDistanceToComplete(helpers.LongestValidSuffix(generated))`.
@@ -649,13 +679,13 @@ Requirements:
   delimited segment.
 - Use explicit delimiter phases: a left-delimiter phase branch emits
   `AppendLeftDelimiter` and advances state; answer phase branches guarded by
-  `helpers.CanConstrain(generated)` or `helpers.CanExtendConstrained(generated)` emit answer
+  `helpers.CanConstrain(generated)` or `helpers.CanConstrain(generated)` emit answer
   tokens; a completion branch guarded by
   `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))` plus an explicit close policy
   emits `AppendRightDelimiter` and exits.
 - Completion is a permission to close, not an instruction to close immediately. If the suffix is
-  complete but the answer is still too short, and `helpers.CanExtendConstrained(generated)` is
-  true, keep emitting answer tokens with `helpers.AppendExtendConstrainedStep(...)`.
+  complete but the answer is still too short, and `helpers.CanConstrain(generated)` is
+  true, keep emitting answer tokens with `helpers.AppendConstrainedStep(...)`.
 - In the constrained answer phase, check completion before open-ended extension. A branch like
   `elif phase == 2 and helpers.CanConstrain(generated): ...` before the complete-prefix branch
   can keep extending a complete expression forever because many complete expressions are also
@@ -666,8 +696,8 @@ Requirements:
 - Any branch containing `AppendConstrainedStep`, `AppendSoftConstrainedStep`, or
   `AppendTopKConstrainedStep` must have `helpers.CanConstrain(generated)` in that branch's own
   condition line. Do not store it in `can_constrain` and do not rely on `phase` alone.
-- Any branch containing `AppendExtendConstrainedStep` must have
-  `helpers.CanExtendConstrained(generated)` in that branch's own condition line.
+- Any branch containing `AppendConstrainedStep` must have
+  `helpers.CanConstrain(generated)` in that branch's own condition line.
 - Include both visible delimiter calls in executable branches unless using raw
   `helpers.ForcedTokenStep(prompt, generated, LeftDelimiter, stepsLeft)` and
   `helpers.ForcedTokenStep(prompt, generated, RightDelimiter, stepsLeft)` equivalents.
@@ -687,7 +717,7 @@ Requirements:
 - Do not emit `RightDelimiter` merely because the suffix first became complete. Use adaptive
   state such as grammar distance, continuation count, budget pressure, or a `close_ready` flag
   derived from semantic progress so the answer can continue through
-  `AppendExtendConstrainedStep` while valid continuations exist. Do not introduce fixed
+  `AppendConstrainedStep` while valid continuations exist. Do not introduce fixed
   `min_reason_steps`, `min_answer_steps`, or similar phase-quota constants.
 - Put `RightDelimiter` emission inside a branch whose condition explicitly mentions
   `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`.
@@ -707,13 +737,13 @@ Requirements:
   grammar distance, phase, and remaining budget.
   Because `AppendUnconstrainedStep` intentionally masks delimiter tokens and hides the emitted
   token from the strategy, use it for ordinary pre-answer reasoning when you do not yet want a
-  delimiter. Do not let `UnconstrainedAllowLeftDelimiterStep` run from the first token: that often
+  delimiter. Do not let `UnconstrainedStep` run from the first token: that often
   captures the first local arithmetic fragment as the final answer. Once there is an explicit
   final-answer cue, scratch-to-final transition, or real budget pressure, use a raw observed step:
-  `helpers.UnconstrainedAllowLeftDelimiterStep(...)` or
-  `helpers.UnconstrainedNudgeLeftDelimiterStep(...)`, then append `next_token`; if it is
+  `helpers.UnconstrainedStep(...)` or
+  `helpers.UnconstrainedStep(...)`, then append `next_token`; if it is
   `LeftDelimiter` or `SpacedLeftDelimiter`, switch into the constrained phase without forcing a
-  left delimiter. Inside a delimited span, prefer `helpers.ConstrainedOrRightDelimiterStep(...)`
+  left delimiter. Inside a delimited span, prefer `helpers.ConstrainedStep(...)`
   when the strategy wants the LM to decide naturally whether to continue the expression or close
   with `>>`; that helper only permits `RightDelimiter` / `SpacedRightDelimiter` after parser completion.
   When checking whether the span closed, handle both `next_token == RightDelimiter` and
@@ -728,14 +758,14 @@ Requirements:
   tokenizations: `LeftDelimiter` and `SpacedLeftDelimiter` (or the literal string `" <<"`), and both
   natural right delimiter tokenizations: `RightDelimiter` and `SpacedRightDelimiter` (or `" >>"`).
   Natural-delimiter GSM strategies must include executable calls to BOTH
-  `helpers.UnconstrainedAllowLeftDelimiterStep(...)` or
-  `helpers.UnconstrainedNudgeLeftDelimiterStep(...)` before the span, AND
-  `helpers.ConstrainedOrRightDelimiterStep(...)` inside the span. Mentioning them in rationale is
+  `helpers.UnconstrainedStep(...)` or
+  `helpers.UnconstrainedStep(...)` before the span, AND
+  `helpers.ConstrainedStep(...)` inside the span. Mentioning them in rationale is
   not enough.
   If evaluation feedback shows missing delimiters or outputs that run to the max token cap before
   opening `<<`, keep the decision natural but switch from
-  `UnconstrainedAllowLeftDelimiterStep` to
-  `UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` under budget pressure. This
+  `UnconstrainedStep` to
+  `UnconstrainedStep(prompt, generated, stepsLeft)` under budget pressure. This
   biases the delimiter without post-hoc wrapping or
   forced delimiter emission. Budget pressure must leave room for the whole verified span; do not
   wait until the last 3-5 tokens before nudging, because the strategy still needs to emit `<<`, a
@@ -809,7 +839,7 @@ Rules:
   `while stepsLeft > 0 and ...:`.
 - Do not call `AppendConstrainedStep` once `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`
   is true. If the answer is complete but still too short and has valid continuations, use
-  `helpers.AppendExtendConstrainedStep(...)` under `helpers.CanExtendConstrained(generated)`.
+  `helpers.AppendConstrainedStep(...)` under `helpers.CanConstrain(generated)`.
 - Completion means right-delimiter emission is allowed, not mandatory. Do not immediately close
   on the first complete prefix unless a separate close policy is satisfied.
 - In a `# decreases stepsLeft` loop, every top-level branch must either consume a helper step or
@@ -884,12 +914,12 @@ equation instead of simplifying to a standalone numeral. It may also use optiona
 defined in earlier grammar-valid delimited spans, but do not force a fixed scratchpad template.
 If the raw GSM outputs look like `To<<...>>`, `The<<...>>`, or otherwise open a delimiter after
 one or two generic words, the strategy opened the constrained span too early. Revise it to observe
-raw unconstrained tokens. Prefer `helpers.UnconstrainedAllowLeftDelimiterStep` so the LM can
+raw unconstrained tokens. Prefer `helpers.UnconstrainedStep` so the LM can
 naturally emit the left delimiter; if it does, append it and enter constrained decoding. Otherwise
 wait for natural reasoning milestones such as punctuation/newline/therefore/total/answer or real
 budget pressure before opening a verified span. Do not replace the failure with
 `reasoning_seen == 1` plus `helpers.HasBudget(...)`; that is the same early-opening bug in another
-form. Similarly, prefer `helpers.ConstrainedOrRightDelimiterStep` inside the span if the failure is
+form. Similarly, prefer `helpers.ConstrainedStep` inside the span if the failure is
 premature or awkward forced `>>`; it lets the LM choose `>>` naturally, but only once the parser
 prefix is complete. This is different from adding a fixed minimum token quota.
 If the raw GSM outputs open around the first local calculation, e.g. `In the next 20s,
@@ -903,7 +933,7 @@ delimiter be natural; or
 later final span that composes scratch values and remaining constants.
 The last span should be the composed answer expression, not the second scratch/local fragment.
 If format fails because no `<<` appears before max steps, use
-`helpers.UnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)` under budget
+`helpers.UnconstrainedStep(prompt, generated, stepsLeft)` under budget
 pressure rather than forcing `AppendLeftDelimiter`. Interpret budget pressure early enough to leave
 room for the constrained expression and closing delimiter, not only at the final few tokens.
 The strategy must still emit `LeftDelimiter`, grammar-constrained tokens, and `RightDelimiter`.
@@ -946,8 +976,7 @@ Rules:
 - Output ONLY the body, not a full file.
 - Keep the rationale block at the top.
 - Include executable decoding logic, not just comments.
-- Do not use old split-output helper names (`helpers.ExpressiveStep`,
-  `helpers.ConstrainedAnswerStep`, `helpers.FinalizeDelimitedAnswer`) or a separate `answer`
+- Do not use old split-output helper APIs or a separate `answer`
   channel; this template returns one `generated` prefix.
 - Every decoding `while` loop must be budget-bounded, e.g. `while stepsLeft > 0 and ...:`.
 - Do not manually change `stepsLeft`; remove `stepsLeft -= 1`, `stepsLeft += 1`, and
@@ -967,7 +996,7 @@ Rules:
 - Prefer the Append* helpers:
   `helpers.AppendLeftDelimiter(generated, stepsLeft)`,
   `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)`,
-  `helpers.AppendExtendConstrainedStep(prompt, generated, stepsLeft)`,
+  `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)`,
   `helpers.AppendRightDelimiter(generated, stepsLeft)`.
 - If the issue says `Missing: LeftDelimiter`, put the actual executable call
   `generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)` in a phase branch.
@@ -988,7 +1017,7 @@ Rules:
 - Completion is only permission to close. Do not switch to the right-delimiter phase solely
   because `parser.IsCompletePrefix(...)` became true; require an adaptive close policy based on
   grammar distance, continuation count, budget pressure, or semantic progress, or continue with
-  `helpers.AppendExtendConstrainedStep(...)` while `helpers.CanExtendConstrained(generated)`.
+  `helpers.AppendConstrainedStep(...)` while `helpers.CanConstrain(generated)`.
 - In a `# decreases stepsLeft` loop, every top-level `if`/`elif`/`else` branch must either call
   a helper step that consumes budget or `break`. Do not write branches that only assign
   `phase = ...`, `close_ready = ...`, or other state and then loop again.
@@ -1030,42 +1059,26 @@ Rules:
 CURATED_HELPER_REFERENCE = """\
 # Curated Helper Mini-Reference
 
-Use this small helper vocabulary for generated strategies. Do not invent helper
-names and do not call parser or LM methods directly when a helper wrapper exists.
+Use these helpers exactly as named. Do not invent helper names.
 
-## Prefix And Delimiters
+## Core State
 
 - `generated` is `list[str]`, not a string.
 - All emitted tokens go into `generated`.
-- Parser/evaluator-handled content must be inside delimiter spans.
-- In natural-delimiter mode, let the LM emit delimiter tokens through the natural
-  delimiter helpers instead of forcing delimiter tokens.
+- Emit answer-bearing tokens inside `<< ... >>`.
 
-## Natural Free-Form Helpers
+## Step Helpers
 
-- `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)` appends one
-  ordinary free-form token while delimiter tokens are masked.
-- `helpers.AppendUnconstrainedAllowLeftDelimiterStep(prompt, generated, stepsLeft)`
-  appends one free-form token while allowing `<<` / ` <<`.
-- `helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)`
-  appends one free-form token while biasing `<<` / ` <<`. Use this once a state
-  policy says the answer span should open soon.
-- `helpers.EndsWithLeftDelimiter(generated)` detects both `<<` and ` <<`.
-- `helpers.IsLeftDelimiterToken(token)` is available when using raw token-returning
-  helpers.
+- `helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)`
+- `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)`
+- `helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)`
+- `helpers.AppendTopKConstrainedStep(prompt, generated, k, stepsLeft)`
+- `helpers.ForcedTokenStep(prompt, generated, token, stepsLeft)`
+- `helpers.AppendForcedToken(generated, token, stepsLeft)`
+- `helpers.AppendLeftDelimiter(generated, stepsLeft)`
+- `helpers.AppendRightDelimiter(generated, stepsLeft)`
 
-## Constrained Span Helpers
-
-- `helpers.AppendConstrainedStep(prompt, generated, stepsLeft)` appends one
-  grammar-valid token while the current suffix is incomplete.
-- `helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)`
-  appends either a grammar-valid continuation, or `>>` / ` >>` only when the
-  current grammar suffix is complete.
-- `helpers.EndsWithRightDelimiter(generated)` detects both `>>` and ` >>`.
-- `helpers.IsRightDelimiterToken(token)` is available when using raw token-returning
-  helpers.
-
-## Grammar / Budget Wrappers
+## Grammar / Span Wrappers
 
 - `helpers.LongestValidSuffix(generated)`
 - `helpers.CanConstrain(generated)`
@@ -1074,63 +1087,39 @@ names and do not call parser or LM methods directly when a helper wrapper exists
 - `helpers.ValidContinuationCount(generated)`
 - `helpers.ParserDistanceToComplete(generated)`
 - `helpers.MinStepsToComplete(generated)`
+- `helpers.EndsWithLeftDelimiter(generated)`
+- `helpers.EndsWithRightDelimiter(generated)`
+- `helpers.IsLeftDelimiterToken(token)`
+- `helpers.IsRightDelimiterToken(token)`
+
+## Logit-Shaping Composites
+
+- `helpers.SoftConstrainToGrammar(generated, penalty)`
+- `helpers.IntersectWithGrammar(generated)`
+- `helpers.BiasForCompletion(generated, bonus)`
+- `helpers.MaskAllDelimiters(generated)`
+- `helpers.MaskLeftDelimiters(generated)`
+- `helpers.MaskRightDelimiters(generated)`
+- `helpers.BiasLeftDelimiters(bias)`
+- `helpers.BiasRightDelimiters(bias)`
+
+## Checkpoint And Budget
+
+- `helpers.Checkpoint(generated)`
+- `helpers.RestoreCheckpoint(checkpoint)`
+- `helpers.RestoreIfDead(generated, checkpoint)`
 - `helpers.HasBudget(stepsLeft, needed)`
-
-Prefer these wrappers over direct `parser.*` calls. They automatically apply
-`LongestValidSuffix(generated)` where needed.
-
-## Explicit Delimiters For Non-Natural Runs
-
-These remain available for datasets or runs that are not using natural delimiter
-mode:
-
-- `helpers.AppendLeftDelimiter(generated, stepsLeft)`
-- `helpers.AppendRightDelimiter(generated, stepsLeft)`
-- `helpers.AppendForcedToken(generated, token, stepsLeft)`
-- `helpers.ForcedTokenStep(prompt, generated, token, stepsLeft)`
-
-## Removed From The Strategy Surface
-
-Do not call soft constraints, top-k constrained steps, budget-aware switching,
-extend-constrained helpers, rollback/salvage helpers, checkpoint stacks,
-repetition trackers, or direct LM logit shaping. Those APIs are intentionally
-not part of the generated strategy surface.
 """
 
 NATURAL_DELIMITER_OVERRIDE = """\
-## GSM Natural-Delimiter Mode Override
+## Delimiter Policy Override
 
-This run has `CSD_REQUIRE_NATURAL_DELIMITERS=1`.
+If this run enables a delimiter override, keep delimiter control explicit:
 
-- Do not force GSM delimiters with `AppendLeftDelimiter`, `AppendRightDelimiter`,
-  `AppendForcedToken`, or `ForcedTokenStep`.
-- Use `AppendUnconstrainedStep` for ordinary reasoning. It masks delimiters, so
-  Qwen does not prematurely turn the first local arithmetic phrase into the
-  graded span.
-- After your state policy sees an answer cue, scratch-to-final transition, or
-  real budget pressure, use `AppendUnconstrainedNudgeLeftDelimiterStep` until
-  `helpers.EndsWithLeftDelimiter(generated)` becomes true.
-- Keep durable open-span state such as `inside_span` or `phase`. Do not use
-  `EndsWithLeftDelimiter(generated)` as the whole condition for being inside a
-  span; it is only true immediately after the delimiter token.
-- Inside the span, use `AppendConstrainedOrRightDelimiterStep` for every
-  constrained-span token. Do not fall back to plain `AppendConstrainedStep` in
-  natural mode; it cannot close the span when the expression becomes complete.
-- Check `helpers.IsComplete(generated)` before any `not helpers.CanConstrain`
-  break. `CanConstrain` is false for complete suffixes, so breaking on it first
-  leaves an unclosed `<< ...` span.
-- The easiest safe span-step guard is:
-  `helpers.IsComplete(generated) or helpers.CanConstrain(generated)`.
-  Under that guard, call
-  `helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)`;
-  put `else: break` only after this positive branch.
-- When `AppendConstrainedOrRightDelimiterStep` emits `>>` and
-  `helpers.EndsWithRightDelimiter(generated)` becomes true, increment a real
-  closed-span counter and either continue free-form reasoning or terminate if
-  this was the final answer span.
-- Multiple verified spans are allowed, but the final span is graded. For GSM,
-  prefer one delayed final expression unless earlier spans are named scratch
-  assignments that the final expression reuses.
+- Open constrained spans with `AppendLeftDelimiter(...)`.
+- Emit constrained tokens with `AppendConstrainedStep(...)` (or guarded soft/top-k variants).
+- Emit `AppendRightDelimiter(...)` only after completion checks.
+- Do not emit raw delimiter string literals directly.
 """
 
 SYSTEM_PROMPT = """\
@@ -1183,8 +1172,16 @@ Requirements:
 - Use only the curated helper surface. Prefer append-style helpers.
 - Do not call removed helpers: no soft constrained steps, no top-k constrained
   steps, no budget-aware switching, no extend-constrained helpers, no rollback
-  or salvage helpers, no checkpoint/repetition structures, and no direct LM
-  logit shaping.
+  or salvage helpers, no repetition structures, and no direct LM logit shaping.
+- Checkpoints are allowed through the curated helpers:
+  `helpers.Checkpoint(generated)`, `helpers.RestoreCheckpoint(checkpoint)`, and
+  `helpers.RestoreIfDead(generated, checkpoint)`. Use them for bounded local
+  recovery, not as the main generation loop.
+- Signature/typing reminder for checkpoint helpers:
+  `Checkpoint`/`RestoreCheckpoint`/`RestoreIfDead` return a prefix only (not a
+  `(generated, stepsLeft)` tuple). Assign as `generated = ...`.
+  Avoid `None` checkpoints; prefer `checkpoint = []` with a separate boolean
+  flag like `has_checkpoint`.
 - Prefer helper parser wrappers: `helpers.IsComplete(generated)`,
   `helpers.ValidContinuationCount(generated)`,
   `helpers.ParserDistanceToComplete(generated)`, and
@@ -1193,19 +1190,19 @@ Requirements:
   or `stepsLeft = stepsLeft - ...`. Helper calls already consume budget.
 - For natural delimiter mode, ordinary reasoning should use
   `helpers.AppendUnconstrainedStep(...)`; answer-opening pressure should use
-  `helpers.AppendUnconstrainedNudgeLeftDelimiterStep(...)`; constrained spans
-  should use `helpers.AppendConstrainedOrRightDelimiterStep(...)`. Detect
+  `helpers.AppendUnconstrainedStep(...)`; constrained spans
+  should use `helpers.AppendConstrainedStep(...)`. Detect
   span boundaries with `helpers.EndsWithLeftDelimiter(generated)` and
   `helpers.EndsWithRightDelimiter(generated)`. In natural mode, avoid plain
   `AppendConstrainedStep`; it extends expressions but cannot emit the closing
   delimiter.
 - Natural mode must keep an explicit span-state variable. Set it when
   `EndsWithLeftDelimiter` becomes true, keep using
-  `AppendConstrainedOrRightDelimiterStep` while it is active, and clear it only
+  `AppendConstrainedStep` while it is active, and clear it only
   after `EndsWithRightDelimiter`.
 - Inside the span, prefer a positive guard:
   `helpers.IsComplete(generated) or helpers.CanConstrain(generated)`, then call
-  `AppendConstrainedOrRightDelimiterStep`. Avoid separate early
+  `AppendConstrainedStep`. Avoid separate early
   `not helpers.CanConstrain` branches.
 - Maintain at least two meaningful local state variables that affect control
   flow. Novel control policies are encouraged, but all parser-handled content
@@ -1254,14 +1251,14 @@ Evaluation feedback:
 
 Improve the control policy without using removed helpers. For GSM, prefer
 ordinary reasoning with `AppendUnconstrainedStep`, then natural answer opening
-with `AppendUnconstrainedNudgeLeftDelimiterStep`, then
-`AppendConstrainedOrRightDelimiterStep` until `EndsWithRightDelimiter`.
+with `AppendUnconstrainedStep`, then
+`AppendConstrainedStep` until `EndsWithRightDelimiter`.
 Avoid opening on the first local calculation. Never put a
 `not helpers.CanConstrain(generated): break` branch before the
 `helpers.IsComplete(generated)` close branch; completion is the moment to allow
 `>>`, not to exit. Prefer one positive branch:
 `helpers.IsComplete(generated) or helpers.CanConstrain(generated)`, then
-`AppendConstrainedOrRightDelimiterStep`. Return only the Python body with the
+`AppendConstrainedStep`. Return only the Python body with the
 required rationale block.
 """
 
@@ -1290,16 +1287,18 @@ Previous strategy:
 
 Rewrite the body using only the curated helper surface. Prefer:
 - `AppendUnconstrainedStep`
-- `AppendUnconstrainedNudgeLeftDelimiterStep`
-- `AppendConstrainedOrRightDelimiterStep`
+- `AppendUnconstrainedStep`
+- `AppendConstrainedStep`
 - `EndsWithLeftDelimiter` / `EndsWithRightDelimiter`
 - `IsComplete`, `CanConstrain`, `ValidContinuationCount`,
   `ParserDistanceToComplete`, `MinStepsToComplete`
+- `Checkpoint`, `RestoreCheckpoint`, `RestoreIfDead` for bounded local recovery
 
 Do not use removed helpers: soft constrained, top-k constrained, budget-aware,
-extend-constrained, rollback/salvage, checkpoint/repetition, or direct LM
-logit-shaping helpers. Return only the corrected Python body with the required
-rationale block.
+extend-constrained, rollback/salvage, repetition, or direct LM logit-shaping
+helpers. Checkpoint helpers are allowed, but keep them bounded and avoid turning
+the strategy into rollback-only decoding. Return only the corrected Python body
+with the required rationale block.
 """
 
 
@@ -1311,15 +1310,15 @@ def _natural_delimiter_user_reminder() -> str:
 Natural-delimiter mode reminder:
 - Do not use forced delimiter helpers for GSM.
 - Use `AppendUnconstrainedStep` for ordinary reasoning.
-- Once answer-ready, use `AppendUnconstrainedNudgeLeftDelimiterStep` until
+- Once answer-ready, use `AppendUnconstrainedStep` until
   `helpers.EndsWithLeftDelimiter(generated)` is true.
-- Inside the span, use `AppendConstrainedOrRightDelimiterStep` until
+- Inside the span, use `AppendConstrainedStep` until
   `helpers.EndsWithRightDelimiter(generated)` is true.
 - Do not use plain `AppendConstrainedStep` in natural mode, and do not break on
   `not helpers.CanConstrain(generated)` before checking `helpers.IsComplete`.
 - Prefer the positive span guard
   `helpers.IsComplete(generated) or helpers.CanConstrain(generated)`, followed
-  by `AppendConstrainedOrRightDelimiterStep`.
+  by `AppendConstrainedStep`.
 - Track open-span state explicitly (`phase`, `inside_span`, or `in_span`);
   `EndsWithLeftDelimiter` is an opening event, not a persistent span-mode
   predicate.
@@ -1327,9 +1326,56 @@ Natural-delimiter mode reminder:
 """
 
 
+def _scratch_span_preference_reminder() -> str:
+    if not _env_flag("CSD_GSM_PREFER_SCRATCH_SPANS"):
+        return ""
+    return """\
+
+Scratch-span preference reminder (GSM):
+- Earlier non-final spans should be named scratch assignments like
+  `<<x_1 = ...>>`, not anonymous local fragments.
+- The final span should compose scratch values with remaining constants, e.g.
+  `<<x_1 + x_2 + 13>>`.
+- Do not stop after the first closed span unless it is explicitly final-ready.
+- After closing a scratch span, continue free-form reasoning and later open
+  another verified span.
+- Keep this natural and adaptive: avoid rigid templates or fixed span counts.
+    """
+
+
+def _spider_single_sql_span_reminder() -> str:
+    if not _env_flag("CSD_SPIDER_FORCE_SINGLE_SQL_SPAN"):
+        return ""
+    return """\
+
+Spider SQL span reminder:
+- Prefer explicit SQL-span opening for Spider with `helpers.AppendLeftDelimiter(...)`.
+- In Spider start-at-span mode, open with `AppendLeftDelimiter(...)` before any
+  unconstrained token generation.
+- Keep unconstrained lead-in short (typically 0-3 steps), then enter the SQL span.
+- Inside the SQL span, prefer `AppendConstrainedStep` so
+  completion can close `>>` naturally; avoid constrained-only loops that never
+  emit a right delimiter.
+- Consider taking a checkpoint before deeper constrained expansion and use
+  `RestoreIfDead(generated, checkpoint)` for bounded local recovery.
+- If you ever use `AppendUnconstrainedStep(...)` in Spider single-span mode,
+  pair it with checkpoint recovery (`Checkpoint` + `RestoreIfDead` or
+  `RestoreCheckpoint`) so unconstrained detours can roll back to a
+  grammar-valid SQL prefix.
+- Once `helpers.EndsWithRightDelimiter(generated)` is true, stop immediately.
+  Do not enter an after-phase that emits additional helper steps, and do not
+  open a second `<< ... >>` span.
+- Do not rely on natural LEFT-delimiter nudges for Spider in this mode.
+- Do not continue long unconstrained narration after deciding to open the answer
+  channel; the run is format-first.
+"""
+
+
 def build_initial_prompt(task_description: str) -> tuple[str, str]:
     user_prompt = INITIAL_GENERATION_PROMPT.format(task_description=task_description)
     user_prompt += _natural_delimiter_user_reminder()
+    user_prompt += _scratch_span_preference_reminder()
+    user_prompt += _spider_single_sql_span_reminder()
     return _compose_system_prompt(), user_prompt
 
 
@@ -1366,6 +1412,8 @@ def build_evaluation_failure_prompt(previous_strategy: str, evaluation_feedback:
         previous_strategy=previous_strategy, evaluation_feedback=evaluation_feedback
     )
     user_prompt += _natural_delimiter_user_reminder()
+    user_prompt += _scratch_span_preference_reminder()
+    user_prompt += _spider_single_sql_span_reminder()
     return _compose_system_prompt(), user_prompt
 
 
@@ -1375,4 +1423,6 @@ def build_structure_repair_prompt(previous_strategy: str, issue: str) -> tuple[s
         issue=issue,
     )
     user_prompt += _natural_delimiter_user_reminder()
+    user_prompt += _scratch_span_preference_reminder()
+    user_prompt += _spider_single_sql_span_reminder()
     return _compose_system_prompt(), user_prompt
