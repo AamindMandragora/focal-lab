@@ -10,15 +10,17 @@ A CSD here is an algorithm that takes:
 and guarantees that the answer-bearing part of the output is grammar-valid.
 
 ## Source Of Truth
-The repository is Python-first.
+The repository is Python-first by default, with an optional Dafny-first fallback path.
 
 Authoritative inputs:
 - [VerifiedAgentSynthesis.py](/home/advayth2/projects/verified-agent-synthesis/generation/csd/VerifiedAgentSynthesis.py): verified helper library and contracts
 - [GeneratedAgentTemplate.py](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.py): synthesis template for new strategies
+- [VerifiedAgentSynthesis.dfy](/home/advayth2/projects/verified-agent-synthesis/generation/csd/VerifiedAgentSynthesis.dfy): checked-in Dafny helper artifact used by the Dafny-first fallback/compiler path
+- [GeneratedAgentTemplate.dfy](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.dfy): checked-in Dafny template used when `--strategy-language dafny`
 
-Dafny is a generated intermediate used for verification.
-Do not treat hand-authored `.dfy` filesadwc as the primary authoring format.
-5faa55f5a55j5f5i56i62;wcda525dw256adwc25ja
+For the default path, Dafny is a generated intermediate used for verification.
+Do not treat checked-in `.dfy` files as the primary authoring format unless you are explicitly working on the Dafny-first fallback path.
+
 ## Core Architecture
 The active template uses a single-prefix architecture:
 - `generated`: all emitted output tokens, including free-form text, delimiter tokens, and constrained answer tokens
@@ -34,24 +36,36 @@ A trivial unconstrained-only loop should not satisfy the template.
 
 ## Core Flow
 The synthesis / verification / evaluation loop is:
-1. An LLM generates a Python body for `MyCSDStrategy`.
+1. By default, an LLM generates a Python body for `MyCSDStrategy`.
 2. That body is injected into [GeneratedAgentTemplate.py](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.py#L1).
 3. The transpiler lowers Python sources to Dafny in a temporary workspace.
 4. `dafny verify` checks the transpiled program.
 5. Runtime and evaluation run the original generated Python source, not Python recompiled from Dafny.
 
+Optional fallback flow:
+1. With `--strategy-language dafny`, the LLM generates a Dafny method body.
+2. That body is injected into [GeneratedAgentTemplate.dfy](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.dfy#L1).
+3. `dafny verify` checks the generated Dafny directly.
+4. `dafny build --target:py` compiles the verified Dafny to Python.
+5. Runtime and evaluation run the compiled Python artifact.
+
 ## Strategy Requirements
-Generated strategies are Python method bodies, not Dafny method bodies.
+Generated strategies are Python method bodies by default. In Dafny-first fallback mode they are Dafny method bodies.
 
 Required conventions:
-- rationale blocks use Python comments:
-  - `# CSD_RATIONALE_BEGIN`
-  - `# CSD_RATIONALE_END`
-- loop invariants are written as Python comments immediately above `while` loops:
-  - `# invariant ...`
-  - `# decreases ...`
-- invariant / decreases comments must use Dafny syntax
-- executable statements must use Python syntax
+- Python mode:
+  - rationale blocks use Python comments:
+    - `# CSD_RATIONALE_BEGIN`
+    - `# CSD_RATIONALE_END`
+  - loop invariants are written as Python comments immediately above `while` loops:
+    - `# invariant ...`
+    - `# decreases ...`
+  - invariant / decreases comments must use Dafny syntax
+  - executable statements must use Python syntax
+- Dafny fallback mode:
+  - rationale / proof blocks use `//` comments
+  - loop invariants live on the Dafny `while` statement itself
+  - executable statements use Dafny syntax (`:=`, braces, `true` / `false`)
 
 Transpiler-supported Python constructs that are especially relevant for synthesis:
 - `next_token is None` / `next_token is not None`
@@ -104,9 +118,11 @@ The GSM grammar in [utils/grammars/gsm.lark](/home/advayth2/projects/verified-ag
 | File | Stage | Role |
 |------|-------|------|
 | [generation/csd/GeneratedAgentTemplate.py](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.py) | **Generation** | Template with dafny_spec contracts into which Qwen injects strategy bodies; defines `MyCSDStrategy` method signature and single-prefix delimiter architecture |
+| [generation/csd/GeneratedAgentTemplate.dfy](/home/advayth2/projects/verified-agent-synthesis/generation/csd/GeneratedAgentTemplate.dfy) | **Generation** | Optional Dafny-first fallback template with a strategy hole for direct Dafny generation |
 | [generation/csd/VerifiedAgentSynthesis.py](/home/advayth2/projects/verified-agent-synthesis/generation/csd/VerifiedAgentSynthesis.py) | **Generation** | Contract library providing verified helpers (CSDHelpers, Delimiter, LM, Parser, dafny_spec decorator) used by template and all strategies |
+| [generation/csd/VerifiedAgentSynthesis.dfy](/home/advayth2/projects/verified-agent-synthesis/generation/csd/VerifiedAgentSynthesis.dfy) | **Generation** | Checked-in Dafny helper artifact used by the Dafny-first fallback verify/compile path |
 | [generation/generator.py](/home/advayth2/projects/verified-agent-synthesis/generation/generator.py) | **Generation** | Qwen model loader and strategy generator; handles initial generation and error-based refinement prompts; extracts and validates strategy bodies |
-| [generation/prompts.py](/home/advayth2/projects/verified-agent-synthesis/generation/prompts.py) | **Generation** | Prompt template system for Python-first strategy generation; builds initial task prompts and feedback repair prompts for verification/compilation/runtime/evaluation failures |
+| [generation/prompts.py](/home/advayth2/projects/verified-agent-synthesis/generation/prompts.py) | **Generation** | Prompt template system for Python-first default generation plus the optional Dafny-first fallback prompts |
 | [generation/rationale.py](/home/advayth2/projects/verified-agent-synthesis/generation/rationale.py) | **Generation** | Utilities for extracting rationale blocks from generated strategy bodies (handles both Python `#` and legacy Dafny `//` style markers) |
 | [verification/transpiler/transpiler.py](/home/advayth2/projects/verified-agent-synthesis/verification/transpiler/transpiler.py) | **Verification** | Main Python-to-Dafny transpiler; parses AST, extracts dafny_spec annotations, lowers Python constructs to Dafny equivalents, generates workspace and dafny files |
 | [verification/transpiler/support/result.py](/home/advayth2/projects/verified-agent-synthesis/verification/transpiler/support/result.py) | **Verification** | Rust-style Result/Ok/Err types for safe error handling in transpiler pipeline |
@@ -150,16 +166,18 @@ The GSM grammar in [utils/grammars/gsm.lark](/home/advayth2/projects/verified-ag
 ## Module Map
 
 ### generation/
-Responsible for converting natural language task descriptions into Python strategy code via Qwen-based generation and refinement.
+Responsible for converting natural language task descriptions into strategy code via Qwen-based generation and refinement.
 
-**Flow**: LLM prompt + template → generate strategy body → extract and validate → inject into GeneratedAgentTemplate.py
+**Flow**: LLM prompt + template → generate strategy body → extract and validate → inject into the Python or Dafny template selected by `--strategy-language`
 
 **Key modules**:
 - `generator.py`: Loads Qwen, generates bodies, applies structural validation (helper methods, no for-loops, visible delimiter emission, constrained answer steps)
 - `prompts.py`: Task-specific prompts and feedback repair prompts (handles verification/compilation/runtime/evaluation errors)
 - `rationale.py`: Extracts embedded rationale blocks from bodies for logging
-- `csd/GeneratedAgentTemplate.py`: The synthesis hole (QWEN_INSERT_STRATEGY_BEGIN/END markers)
-- `csd/VerifiedAgentSynthesis.py`: Verified contract library (the dafny_spec'd types, helpers, and predicates)
+- `csd/GeneratedAgentTemplate.py`: Default Python synthesis hole (QWEN_INSERT_STRATEGY_BEGIN/END markers)
+- `csd/GeneratedAgentTemplate.dfy`: Optional Dafny-first synthesis hole
+- `csd/VerifiedAgentSynthesis.py`: Default contract library (the dafny_spec'd types, helpers, and predicates)
+- `csd/VerifiedAgentSynthesis.dfy`: Checked-in Dafny helper artifact for the fallback path
 
 **Gotchas**:
 - Model must write ONLY the method body, not the function signature or imports
@@ -168,23 +186,26 @@ Responsible for converting natural language task descriptions into Python strate
 - The body must emit `LeftDelimiter`, constrained answer tokens, and `RightDelimiter` in executable code
 
 ### verification/
-Transpiles Python to Dafny and runs verification.
+Transpiles Python to Dafny for the default path, and also supports direct-Dafny verification/compilation for the fallback path.
 
-**Flow**: Generated Python → transpiler (AST walk + dafny_spec extraction) → Dafny workspace → dafny verify
+**Flow**:
+- Python-first: Generated Python → transpiler (AST walk + dafny_spec extraction) → Dafny workspace → `dafny verify`
+- Dafny-first fallback: Generated Dafny → temporary Dafny workspace → `dafny verify` → optional `dafny build --target:py`
 
 **Key modules**:
 - `transpiler/transpiler.py`: Main AST-to-Dafny lowering; extracts dafny_spec annotations, handles Python-specific constructs (is/is not, isinstance, token methods)
 - `transpiler/support/`: Helper utilities for type resolution, comment stripping, mypy type-checking
-- `verifier.py`: Runs dafny verify, parses structured error output for LLM feedback
-- `compiler.py`: Legacy helper for dafny build --target:py; not used by the active synthesis loop
-- `dafny_runner.py`: Shared workspace setup (copies VerifiedAgentSynthesis.py, transpiles, prepares dafny_workspace/)
+- `verifier.py`: Runs `dafny verify`, either on transpiled Python or on direct Dafny fallback sources
+- `compiler.py`: Dafny-to-Python compiler wrapper used by the optional Dafny-first fallback path
+- `dafny_runner.py`: Shared workspace setup for both transpiled-Python verification and direct-Dafny fallback compilation
 
 **Gotchas**:
 - Transpiler is strict about Python subset (no for-loops, lambdas, nested functions)
 - Type annotations must be resolvable (uses mypy for static checking pre-transpile)
 - Dafny errors often mention line/column in transpiled .dfy, not original Python
 - Verification can timeout on large strategies; no artificial limit but Dafny internal timeout ~100s
-- Runtime/evaluation should use the original generated Python source once verification passes
+- Python-first runtime/evaluation should use the original generated Python source once verification passes
+- Dafny-first fallback runtime/evaluation should use the compiled Python artifact emitted by `dafny build`
 
 ### evaluation/
 Evaluates generated CSDs on benchmark datasets and reports metrics for feedback.
@@ -213,11 +234,11 @@ Evaluates generated CSDs on benchmark datasets and reports metrics for feedback.
 ### synthesis/
 End-to-end orchestration and CLI entrypoints for the entire loop.
 
-**Flow**: User CLI → parse args → initialize preset/dataset/model → loop: generate → verify → run original Python → evaluate → repair/refine
+**Flow**: User CLI → parse args → initialize preset/dataset/model → loop: generate → verify → run Python-native or compiled-Python artifact → evaluate → repair/refine
 
 **Key modules**:
-- `feedback_loop.py`: Main orchestration; implements generate→verify→run→evaluate loop with error-based repair
-- `runner.py`: Executes generated strategies in Python-native mode (injects LM/Parser stubs, catches errors)
+- `feedback_loop.py`: Main orchestration; implements generate→verify→run→evaluate loop for both Python-first and Dafny-first modes
+- `runner.py`: Executes generated strategies in Python-native mode or via compiled Dafny Python artifacts
 - `presets.py`: Dataset/model preset definitions (task description, thresholds, sample sizes)
 - `cli/run_synthesis.py`: Main entry point for end-to-end synthesis
 - `cli/generate_csd.py`: Wrapper for preset-driven generation

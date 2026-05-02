@@ -52,6 +52,56 @@ while stepsLeft > 0:
     assert issue is None or "must emit both LeftDelimiter and RightDelimiter" not in issue
 
 
+def test_structural_issue_accepts_split_prefix_gsm_policy_in_natural_mode(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# split-prefix demo
+# CSD_RATIONALE_END
+# CSD_PROOF_SKETCH_BEGIN
+# split-prefix demo
+# CSD_PROOF_SKETCH_END
+inside_constrained = False
+current_constrained = []
+saw_close_context = False
+valid_token_groups = []
+narrow_threshold = 12
+stable_prefix = []
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if not inside_constrained:
+        prev_token, found_prev = helpers.LastTokenBefore(generated, ">>")
+        saw_close_context = found_prev
+        if saw_close_context:
+            generated, inside_constrained, current_constrained, stepsLeft = helpers.OpenConstrainedSpan(generated, stepsLeft)
+            saw_close_context = False
+        else:
+            generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    else:
+        if parser.IsCompletePrefix(current_constrained):
+            generated, inside_constrained, current_constrained, stepsLeft = helpers.CloseConstrainedSpan(generated, current_constrained, stepsLeft)
+            break
+        else:
+            stable_prefix = generated
+            next_token, stepsLeft = helpers.AdaptiveConstrainedStep(prompt, stable_prefix, current_constrained, valid_token_groups, 4.0, narrow_threshold, eosToken, stepsLeft)
+            if next_token == eosToken:
+                break
+            generated, inside_constrained, current_constrained = helpers.AppendConstrainedToken(generated, current_constrained, next_token)
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
 def test_auto_select_device_uses_cpu_when_cuda_gpus_are_too_full(monkeypatch):
     monkeypatch.setenv("CSD_GENERATOR_LOAD_IN_4BIT", "0")
     monkeypatch.setattr("generation.generator.torch.cuda.is_available", lambda: True)
@@ -2051,6 +2101,58 @@ while stepsLeft > 0:
 
     assert "helpers.AppendRightDelimiter(generated, stepsLeft)" in fixed
     assert "helpers.AppendConstrainedStep(prompt, generated, stepsLeft)" not in fixed
+
+
+def test_ensure_nontrivial_strategy_revalidates_after_autofix(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    generator.strategy_language = "python"
+    generator.last_structure_repair_trace = []
+    generator.last_structure_validation_summary = {}
+    generator.last_rationale_repair_count = 0
+
+    repaired_strategy = """# CSD_RATIONALE_BEGIN
+# repaired
+# CSD_RATIONALE_END
+phase = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    break
+"""
+
+    def fake_structural_issue(body: str) -> str | None:
+        if body == "original":
+            return None
+        if body == "broken_after_autofix":
+            return "autofix introduced a structural issue"
+        if body == repaired_strategy:
+            return None
+        return None
+
+    monkeypatch.setattr(generator, "_structural_issue", fake_structural_issue)
+    monkeypatch.setattr(
+        generator,
+        "_autofix_python_strategy",
+        lambda body: "broken_after_autofix" if body == "original" else body,
+    )
+    monkeypatch.setattr(generator, "_ensure_rationale_block", lambda body, max_repairs=2: body)
+    monkeypatch.setattr(generator, "_extract_strategy", lambda body: body)
+    monkeypatch.setattr(generator, "_generate_text", lambda system_prompt, user_prompt, **_: repaired_strategy)
+    monkeypatch.setattr(
+        "generation.generator.build_structure_repair_prompt",
+        lambda previous_strategy, issue, strategy_language="python": ("system", "user"),
+    )
+
+    fixed = generator._ensure_nontrivial_strategy("original", max_repairs=1)
+
+    assert fixed == repaired_strategy
+    assert generator.last_structure_validation_summary["structural_repairs"] == 1
+    assert generator.last_structure_validation_summary["autofix_passes"] >= 1
 
 
 def test_autofix_trims_truncated_tail_until_parseable():

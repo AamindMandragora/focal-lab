@@ -12,7 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from verification.dafny_runner import check_dafny_available, prepare_temp_dafny_dir
+from verification.dafny_runner import (
+    check_dafny_available,
+    prepare_temp_dafny_dir,
+    prepare_temp_dafny_dir_from_dafny,
+)
 
 
 @dataclass
@@ -23,6 +27,7 @@ class VerificationError:
     column: int
     message: str
     error_type: str = "Error"
+    python_line: Optional[int] = None
     
     def __str__(self) -> str:
         return f"{self.file}({self.line},{self.column}): {self.error_type}: {self.message}"
@@ -51,8 +56,10 @@ class VerificationResult:
 
         lines = [f"Dafny verification failed with {len(self.errors)} error(s):", ""]
         for err in self.errors:
-            # Include line, column, and full message so the model can fix the exact location
-            lines.append(f"  (Line {err.line}, Column {err.column}): {err.error_type}: {err.message}")
+            location = f"Dafny line {err.line}, Column {err.column}"
+            if err.python_line is not None:
+                location += f"; Python line {err.python_line}"
+            lines.append(f"  ({location}): {err.error_type}: {err.message}")
         lines.append("")
         # Append raw Dafny output so the model sees the exact errors (e.g. multi-line, related hints)
         if combined_raw:
@@ -75,6 +82,7 @@ class DafnyVerifier:
         r"^(.+?)\((\d+),(\d+)\):\s*(Error|Warning|Info):\s*(.+)$",
         re.MULTILINE
     )
+    PYTHON_LINE_MARKER_PATTERN = re.compile(r"^\s*//\s*Python line\s+(\d+)\s*$")
     
     def __init__(
         self,
@@ -128,6 +136,28 @@ class DafnyVerifier:
                 ))
         
         return errors
+
+    def _build_python_line_map(self, dafny_source: str) -> dict[int, int]:
+        """Map transpiled Dafny line numbers back to the nearest tagged Python source line."""
+        current_python_line: Optional[int] = None
+        mapping: dict[int, int] = {}
+        for lineno, raw_line in enumerate(dafny_source.splitlines(), start=1):
+            marker_match = self.PYTHON_LINE_MARKER_PATTERN.match(raw_line)
+            if marker_match:
+                current_python_line = int(marker_match.group(1))
+                continue
+            if current_python_line is not None:
+                mapping[lineno] = current_python_line
+        return mapping
+
+    def _attach_python_line_numbers(
+        self,
+        errors: list[VerificationError],
+        python_line_map: dict[int, int],
+    ) -> list[VerificationError]:
+        for error in errors:
+            error.python_line = python_line_map.get(error.line)
+        return errors
     
     def verify(self, python_code: str) -> VerificationResult:
         """
@@ -143,6 +173,7 @@ class DafnyVerifier:
             temp_path = Path(temp_dir)
             try:
                 source_file, cwd, _ = prepare_temp_dafny_dir(temp_path, python_code)
+                dafny_source = source_file.read_text(encoding="utf-8")
             except Exception as e:
                 return VerificationResult(
                     success=False,
@@ -186,6 +217,10 @@ class DafnyVerifier:
             # Parse the output
             combined_output = result.stdout + result.stderr
             errors = self._parse_errors(combined_output, str(source_file))
+            errors = self._attach_python_line_numbers(
+                errors,
+                self._build_python_line_map(dafny_source),
+            )
             
             # Dafny returns 0 on success
             success = result.returncode == 0 and len(errors) == 0
@@ -196,6 +231,66 @@ class DafnyVerifier:
                 raw_output=result.stdout,
                 raw_stderr=result.stderr,
                 return_code=result.returncode
+            )
+
+    def verify_dafny(self, dafny_code: str) -> VerificationResult:
+        """Verify generated Dafny strategy code directly."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            try:
+                source_file, cwd = prepare_temp_dafny_dir_from_dafny(temp_path, dafny_code)
+                dafny_source = source_file.read_text(encoding="utf-8")
+            except Exception as e:
+                return VerificationResult(
+                    success=False,
+                    errors=[VerificationError(
+                        file="System", line=0, column=0,
+                        message=str(e),
+                    )],
+                    return_code=-1,
+                )
+
+            cmd = [
+                self.dafny_path,
+                "verify",
+                str(source_file),
+                *self.extra_args
+            ]
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    cwd=cwd,
+                )
+            except subprocess.TimeoutExpired:
+                return VerificationResult(
+                    success=False,
+                    errors=[VerificationError(
+                        file=str(source_file),
+                        line=0,
+                        column=0,
+                        message=f"Verification timed out after {self.timeout} seconds"
+                    )],
+                    raw_output="",
+                    raw_stderr="Timeout",
+                    return_code=-1
+                )
+
+            combined_output = result.stdout + result.stderr
+            errors = self._parse_errors(combined_output, str(source_file))
+            errors = self._attach_python_line_numbers(
+                errors,
+                self._build_python_line_map(dafny_source),
+            )
+            success = result.returncode == 0 and len(errors) == 0
+            return VerificationResult(
+                success=success,
+                errors=errors,
+                raw_output=result.stdout,
+                raw_stderr=result.stderr,
+                return_code=result.returncode,
             )
     
     def verify_file(self, file_path: Path) -> VerificationResult:

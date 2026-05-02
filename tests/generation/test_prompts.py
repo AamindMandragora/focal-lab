@@ -101,6 +101,19 @@ def test_initial_prompt_mentions_checkpoint_recovery_helpers(monkeypatch):
     assert "helpers.RestoreIfDead(generated, checkpoint)" in combined_prompt
 
 
+def test_initial_prompt_mentions_split_prefix_gsm_direction(monkeypatch):
+    monkeypatch.setenv("CSD_HELPER_REFERENCE_MODE", "curated")
+
+    system_prompt, user_prompt = prompts.build_initial_prompt("demo task")
+    combined_prompt = system_prompt + user_prompt
+
+    assert "Split-Prefix / Arithmetic-Biased Policies" in combined_prompt
+    assert "OpenConstrainedSpan" in combined_prompt
+    assert "AdaptiveConstrainedStep" in combined_prompt
+    assert "AppendConstrainedToken" in combined_prompt
+    assert "CloseConstrainedSpan" in combined_prompt
+
+
 def test_initial_prompt_rejects_canconstrain_before_left_delimiter(monkeypatch):
     monkeypatch.delenv("CSD_HELPER_REFERENCE_MODE", raising=False)
     monkeypatch.delenv("CSD_INCLUDE_HELPER_REFERENCE_MD", raising=False)

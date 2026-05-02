@@ -20,12 +20,21 @@ from verification.transpiler.transpiler import prepare_dafny_workspace_from_pyth
 
 GENERATED_MODULE_FILENAME = "GeneratedCSD.py"
 VERIFIED_AGENT_FILENAME = "VerifiedAgentSynthesis.py"
+GENERATED_DAFNY_MODULE_FILENAME = "GeneratedCSD.dfy"
+VERIFIED_AGENT_DAFNY_FILENAME = "VerifiedAgentSynthesis.dfy"
 
 
 def get_verified_agent_synthesis_path() -> Path | None:
     """Return the Python contract source for VerifiedAgentSynthesis, or None if not found."""
     root = Path(__file__).resolve().parent.parent
     candidate = root / "generation" / "csd" / VERIFIED_AGENT_FILENAME
+    return candidate if candidate.exists() else None
+
+
+def get_verified_agent_synthesis_dafny_path() -> Path | None:
+    """Return the Dafny contract source for VerifiedAgentSynthesis, or None if not found."""
+    root = Path(__file__).resolve().parent.parent
+    candidate = root / "generation" / "csd" / VERIFIED_AGENT_DAFNY_FILENAME
     return candidate if candidate.exists() else None
 
 
@@ -78,3 +87,26 @@ def prepare_temp_dafny_dir(temp_path: Path, python_code: str) -> Tuple[Path, Pat
         raise result.error
 
     return result.value, workspace, generated_python
+
+
+def prepare_temp_dafny_dir_from_dafny(temp_path: Path, dafny_code: str) -> Tuple[Path, Path]:
+    """
+    Materialize a temporary Dafny workspace directly from Dafny sources.
+
+    Args:
+        temp_path: Existing temp directory
+        dafny_code: Complete contents of the generated `GeneratedCSD.dfy`
+
+    Returns:
+        `(source_file_path, cwd)` where `source_file_path` is the Dafny source
+        file to verify/build and `cwd` is the temp workspace root.
+    """
+    source_dafny = get_verified_agent_synthesis_dafny_path()
+    if not source_dafny or not source_dafny.exists():
+        raise FileNotFoundError(f"generation/csd/{VERIFIED_AGENT_DAFNY_FILENAME} not found")
+
+    generated_dafny = temp_path / GENERATED_DAFNY_MODULE_FILENAME
+    generated_dafny.write_text(dafny_code)
+    shutil.copyfile(source_dafny, temp_path / VERIFIED_AGENT_DAFNY_FILENAME)
+
+    return generated_dafny, temp_path

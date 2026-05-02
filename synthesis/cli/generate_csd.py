@@ -48,6 +48,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="Explicit generation model name to use instead of a model preset.",
     )
     parser.add_argument(
+        "--strategy-language",
+        choices=["python", "dafny"],
+        default="python",
+        help="Strategy authoring language to pass through to run_synthesis.py.",
+    )
+    parser.add_argument(
         "--eval-model-preset",
         choices=sorted(MODEL_PRESETS),
         default=DEFAULT_EVAL_MODEL_PRESET,
@@ -135,6 +141,7 @@ def build_synthesis_command(
     dataset: str,
     model_name: str,
     eval_model_name: str,
+    strategy_language: str,
     output_name: str | None = None,
     max_iterations: int = 10,
     temperature: float = 0.7,
@@ -155,6 +162,7 @@ def build_synthesis_command(
         *preset.to_cli_args(
             model_name=model_name,
             eval_model_name=eval_model_name,
+            strategy_language=strategy_language,
             max_iterations=max_iterations,
             temperature=temperature,
             device=device,
@@ -180,6 +188,7 @@ def main() -> int:
         dataset=args.dataset,
         model_name=model_name,
         eval_model_name=eval_model_name,
+        strategy_language=args.strategy_language,
         output_name=args.output_name,
         max_iterations=args.max_iterations,
         temperature=args.temperature,

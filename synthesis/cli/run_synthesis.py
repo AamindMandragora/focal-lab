@@ -70,6 +70,13 @@ Examples:
         default="gpt-5.4",
         help="Generation model name (default: gpt-5.4). OpenAI model names use the OpenAI API; other names use HuggingFace."
     )
+    parser.add_argument(
+        "--strategy-language",
+        type=str,
+        choices=["python", "dafny"],
+        default="python",
+        help="Strategy authoring language to generate and verify (default: python; dafny enables the legacy dafny-first fallback path)"
+    )
 
     parser.add_argument(
         "--eval-model",
@@ -205,6 +212,7 @@ Examples:
     # Import here to avoid loading heavy dependencies if just showing help
     from generation.generator import StrategyGenerator
     from verification.verifier import DafnyVerifier
+    from verification.compiler import DafnyCompiler
     from evaluation.evaluator import Evaluator
     from synthesis.feedback_loop import SynthesisPipeline, SynthesisExhaustionError
 
@@ -226,12 +234,12 @@ Examples:
         max_new_tokens=args.max_tokens,
         temperature=args.temperature,
         generation_timeout=args.generation_timeout if args.generation_timeout > 0 else None,
+        strategy_language=args.strategy_language,
     )
     selected_device = generator.device
 
     verifier = DafnyVerifier(dafny_path=args.dafny_path)
-    # Runtime/evaluation uses the original generated Python source after Dafny verification.
-    # There is no Dafny build-back-to-Python step.
+    compiler = DafnyCompiler(dafny_path=args.dafny_path) if args.strategy_language == "dafny" else None
 
     # Create evaluator for the feedback loop
     print(f"Setting up evaluator for dataset: {args.dataset}")
@@ -249,7 +257,7 @@ Examples:
         evaluator=evaluator,
         generator=generator,
         verifier=verifier,
-        compiler=None,
+        compiler=compiler,
         runner=None,  # Let pipeline create task-appropriate runner
         max_iterations=args.max_iterations,
         output_dir=args.output_dir,

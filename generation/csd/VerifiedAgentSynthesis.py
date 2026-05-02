@@ -912,6 +912,59 @@ class CSDHelpers:
     def ContainsRightDelimiter(self, prefix: Prefix) -> bool:
         return PrefixContains(prefix, RightDelimiter) or PrefixContains(prefix, SpacedRightDelimiter)
 
+    # ── Prefix Scanning Utilities ────────────────────────────────────
+
+    @dafny_spec(
+        kind="method",
+        ensures=(
+            "found ==> token in generated",
+            "!found ==> token == \"\"",
+        ),
+        decreases=("|generated|",),
+    )
+    def LastTokenBefore(self, generated: Prefix, target: Token) -> tuple[Token, bool]:
+        i = len(generated) - 1
+        # invariant -1 <= i < |generated|
+        # decreases i + 1
+        while i >= 1:
+            if generated[i] == target:
+                return generated[i - 1], True
+            i -= 1
+        return "", False
+
+    @dafny_spec(
+        kind="function",
+        ensures=("result >= 0",),
+        decreases=("|generated|",),
+    )
+    def CountOccurrences(self, generated: Prefix, target: Token) -> int:
+        return (
+            0
+            if len(generated) == 0
+            else ((1 if generated[0] == target else 0) + self.CountOccurrences(generated[1:], target))
+        )
+
+    @dafny_spec(
+        kind="function",
+        ensures=("0 <= result <= |generated|",),
+        decreases=("|generated|",),
+    )
+    def TokensSinceLastDelimiter(self, generated: Prefix) -> int:
+        return (
+            0
+            if len(generated) == 0
+            else (
+                0
+                if (
+                    generated[len(generated) - 1] == LeftDelimiter
+                    or generated[len(generated) - 1] == RightDelimiter
+                    or generated[len(generated) - 1] == SpacedLeftDelimiter
+                    or generated[len(generated) - 1] == SpacedRightDelimiter
+                )
+                else 1 + self.TokensSinceLastDelimiter(generated[:-1])
+            )
+        )
+
     # ── Primitive Step Functions ──────────────────────────────────────
     # Ordinary unconstrained steps mask delimiters so free-form reasoning
     # cannot accidentally open/close answer spans. Natural delimiter mode
@@ -1589,8 +1642,8 @@ class CSDHelpers:
         ensures=("this.lm.ValidTokensIdsLogits()",),
     )
     def OpenConstrainedSpan(self, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]:
-        updated, remaining_steps = self.AppendLeftDelimiter(prefix, stepsLeft)
-        return updated, True, [], remaining_steps
+        updated, remainingSteps = self.AppendLeftDelimiter(prefix, stepsLeft)
+        return updated, True, [], remainingSteps
 
     @dafny_spec(
         kind="method",
@@ -1607,8 +1660,8 @@ class CSDHelpers:
         ensures=("this.lm.ValidTokensIdsLogits()",),
     )
     def CloseConstrainedSpan(self, prefix: Prefix, currentConstrained: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]:
-        updated, remaining_steps = self.AppendRightDelimiter(prefix, stepsLeft)
-        return updated, False, [], remaining_steps
+        updated, remainingSteps = self.AppendRightDelimiter(prefix, stepsLeft)
+        return updated, False, [], remainingSteps
 
     @dafny_spec(
         kind="method",
@@ -1629,6 +1682,58 @@ class CSDHelpers:
         updated = prefix + [token]
         updated_constrained = currentConstrained + [token]
         return updated, True, updated_constrained
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "parser.IsValidPrefix(currentConstrained)",
+            "!parser.IsCompletePrefix(currentConstrained)",
+            "stepsLeft >= 1",
+            "bonus > 0.0",
+            "narrowThreshold >= 0",
+            "eosToken in lm.Tokens",
+            "|validTokenGroups| >= 0",
+            "forall g: seq<Token> :: g in validTokenGroups ==> forall t: Token :: t in g ==> t in lm.Tokens",
+            "forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens",
+        ),
+        ensures=("this.lm.ValidTokensIdsLogits()",),
+    )
+    def AdaptiveConstrainedStep(
+        self,
+        prompt: Prefix,
+        stablePrefix: Prefix,
+        currentConstrained: Prefix,
+        validTokenGroups: list[list[Token]],
+        bonus: Logit,
+        narrowThreshold: int,
+        eosToken: Token,
+        stepsLeft: int,
+    ) -> tuple[Token, int]:
+        self.lm.GenerateLogits(prompt + stablePrefix + currentConstrained)
+        valid_tokens = self.parser.ValidNextTokens(currentConstrained)
+        self.lm.MaskTokensExcept(valid_tokens)
+        if self.parser.ValidContinuationCount(currentConstrained) > narrowThreshold:
+            group_index = 0
+            # invariant 0 <= group_index <= |validTokenGroups|
+            # invariant lm.ValidTokensIdsLogits()
+            while group_index < len(validTokenGroups):
+                group = validTokenGroups[group_index]
+                token_index = 0
+                # invariant 0 <= token_index <= |group|
+                # invariant lm.ValidTokensIdsLogits()
+                while token_index < len(group):
+                    token = group[token_index]
+                    if token in valid_tokens:
+                        self.lm.BiasToken(token, bonus)
+                    token_index += 1
+                group_index += 1
+        next_token = self.lm.ChooseNextToken()
+        if next_token == eosToken:
+            return eosToken, stepsLeft - 1
+        return next_token, stepsLeft - 1
 
     @dafny_spec(
         kind="method",

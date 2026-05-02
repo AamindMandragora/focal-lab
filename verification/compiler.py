@@ -15,7 +15,7 @@ from pathlib import Path
 import secrets
 from typing import Optional
 
-from verification.dafny_runner import prepare_temp_dafny_dir
+from verification.dafny_runner import prepare_temp_dafny_dir, prepare_temp_dafny_dir_from_dafny
 
 
 @dataclass
@@ -246,6 +246,109 @@ class DafnyCompiler:
                 raw_output=result.stdout,
                 raw_stderr=result.stderr,
                 return_code=result.returncode
+            )
+
+    def compile_dafny(
+        self,
+        dafny_code: str,
+        output_name: str = "generated_csd"
+    ) -> CompilationResult:
+        """Compile generated Dafny strategy code to executable Python."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            try:
+                source_file, cwd = prepare_temp_dafny_dir_from_dafny(temp_path, dafny_code)
+            except Exception as e:
+                return CompilationResult(
+                    success=False,
+                    errors=[CompilationError(
+                        file="System", line=0, column=0,
+                        message=str(e),
+                    )],
+                    return_code=-1,
+                )
+
+            compile_output = cwd / "compiled"
+            compile_output.mkdir()
+
+            cmd = [
+                self.dafny_path,
+                "build",
+                "--target:py",
+                f"--output:{compile_output / output_name}",
+                str(source_file),
+                *self.extra_args
+            ]
+
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    cwd=cwd,
+                )
+            except subprocess.TimeoutExpired:
+                return CompilationResult(
+                    success=False,
+                    errors=[CompilationError(
+                        file=str(source_file),
+                        line=0,
+                        column=0,
+                        message=f"Compilation timed out after {self.timeout} seconds"
+                    )],
+                    return_code=-1
+                )
+
+            combined_output = result.stdout + result.stderr
+            errors = self._parse_errors(combined_output)
+            if result.returncode != 0 or errors:
+                return CompilationResult(
+                    success=False,
+                    errors=errors,
+                    raw_output=result.stdout,
+                    raw_stderr=result.stderr,
+                    return_code=result.returncode
+                )
+
+            generated_dir = compile_output / output_name
+            if not generated_dir.exists():
+                py_files = list(compile_output.glob("**/*.py"))
+                if not py_files:
+                    return CompilationResult(
+                        success=False,
+                        errors=[CompilationError(
+                            file=str(source_file),
+                            line=0,
+                            column=0,
+                            message="Compilation succeeded but no Python files were generated"
+                        )],
+                        raw_output=result.stdout,
+                        raw_stderr=result.stderr,
+                        return_code=result.returncode
+                    )
+                generated_dir = py_files[0].parent
+
+            final_output_dir = self._unique_final_output_dir(output_name)
+            shutil.copytree(generated_dir, final_output_dir)
+
+            main_module = None
+            for py_file in final_output_dir.glob("**/*.py"):
+                if py_file.stem == output_name or py_file.stem == "GeneratedCSD":
+                    main_module = py_file
+                    break
+            if main_module is None:
+                py_files = list(final_output_dir.glob("**/*.py"))
+                if py_files:
+                    main_module = py_files[0]
+
+            return CompilationResult(
+                success=True,
+                output_dir=final_output_dir,
+                main_module_path=main_module,
+                raw_output=result.stdout,
+                raw_stderr=result.stderr,
+                return_code=result.returncode,
             )
     
     def compile_file(

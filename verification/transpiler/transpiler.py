@@ -1045,6 +1045,13 @@ _RETURN_NAME_OVERRIDES: dict[str, list[str]] = {
     "AppendForcedToken": ["updated", "remainingSteps"],
     "AppendLeftDelimiter": ["updated", "remainingSteps"],
     "AppendRightDelimiter": ["updated", "remainingSteps"],
+    "LastTokenBefore": ["token", "found"],
+    "OpenConstrainedSpan": ["updated", "insideSpan", "currentConstrained", "remainingSteps"],
+    "CloseConstrainedSpan": ["updated", "insideSpan", "updatedConstrained", "remainingSteps"],
+    "AppendConstrainedToken": ["updated", "insideSpan", "updatedConstrained"],
+    "AdaptiveConstrainedStep": ["nextToken", "remainingSteps"],
+    "GroupBoostedConstrainedStep": ["nextToken", "remainingSteps"],
+    "PenalizedConstrainedStep": ["nextToken", "remainingSteps"],
     "ChooseNextToken": ["token"],
     "MyCSDStrategy": ["generated", "remainingSteps"],
 }
@@ -1830,12 +1837,21 @@ def _translate_stmt_list(
     return_names: list[str],
     method_name: str,
     indent: int = 0,
+    include_source_comments: bool = False,
 ) -> list[str]:
     prefix = " " * indent
     name_map = _LOCAL_NAME_OVERRIDES.get(method_name, {})
     lines: list[str] = []
     for stmt in stmts:
+        def emit_source_comment() -> None:
+            if not include_source_comments:
+                return
+            lineno = getattr(stmt, "lineno", None)
+            if lineno is not None:
+                lines.append(prefix + f"// Python line {lineno}")
+
         if isinstance(stmt, ast.AnnAssign):
+            emit_source_comment()
             if not isinstance(stmt.target, ast.Name):
                 raise NotImplementedError("Only local annotated assignments are supported")
             target_name = name_map.get(stmt.target.id, stmt.target.id)
@@ -1855,6 +1871,7 @@ def _translate_stmt_list(
                 declared.add(target_name)
             continue
         if isinstance(stmt, ast.Assign):
+            emit_source_comment()
             target = stmt.targets[0]
             if isinstance(target, ast.Tuple):
                 if isinstance(stmt.value, ast.Tuple):
@@ -1918,25 +1935,51 @@ def _translate_stmt_list(
                 lines.append(prefix + f"{_translate_target(target, current_class, name_map)} := {_translate_expr(stmt.value, current_class, name_map)};")
             continue
         if isinstance(stmt, ast.Expr):
+            emit_source_comment()
             lines.append(prefix + f"{_translate_expr(stmt.value, current_class, name_map)};")
             continue
         if isinstance(stmt, ast.Assert):
+            emit_source_comment()
             lines.append(prefix + f"assert {_translate_expr(stmt.test, current_class, name_map)};")
             continue
         if isinstance(stmt, ast.If):
+            emit_source_comment()
             common_branch_locals = _if_branch_locals(stmt, current_class, name_map)
             for local_name, local_type in common_branch_locals:
                 if local_name not in declared and local_name not in return_names:
                     lines.append(prefix + f"var {local_name}: {local_type};")
                     declared.add(local_name)
             lines.append(prefix + f"if {_translate_expr(stmt.test, current_class, name_map)} {{")
-            lines.extend(_translate_stmt_list(stmt.body, current_class, source_lines, declared.copy(), return_names, method_name, indent + 2))
+            lines.extend(
+                _translate_stmt_list(
+                    stmt.body,
+                    current_class,
+                    source_lines,
+                    declared.copy(),
+                    return_names,
+                    method_name,
+                    indent + 2,
+                    include_source_comments=include_source_comments,
+                )
+            )
             if stmt.orelse:
                 lines.append(prefix + "} else {")
-                lines.extend(_translate_stmt_list(stmt.orelse, current_class, source_lines, declared.copy(), return_names, method_name, indent + 2))
+                lines.extend(
+                    _translate_stmt_list(
+                        stmt.orelse,
+                        current_class,
+                        source_lines,
+                        declared.copy(),
+                        return_names,
+                        method_name,
+                        indent + 2,
+                        include_source_comments=include_source_comments,
+                    )
+                )
             lines.append(prefix + "}")
             continue
         if isinstance(stmt, ast.While):
+            emit_source_comment()
             lines.append(prefix + f"while {_translate_expr(stmt.test, current_class, name_map)}")
             invariants, decreases = _loop_specs(stmt, source_lines)
             for inv in invariants:
@@ -1946,10 +1989,22 @@ def _translate_stmt_list(
                 translated_dec = _translate_len_calls_in_spec(dec, current_class, name_map)
                 lines.append(prefix + "  " + translated_dec)
             lines.append(prefix + "{")
-            lines.extend(_translate_stmt_list(stmt.body, current_class, source_lines, declared.copy(), return_names, method_name, indent + 2))
+            lines.extend(
+                _translate_stmt_list(
+                    stmt.body,
+                    current_class,
+                    source_lines,
+                    declared.copy(),
+                    return_names,
+                    method_name,
+                    indent + 2,
+                    include_source_comments=include_source_comments,
+                )
+            )
             lines.append(prefix + "}")
             continue
         if isinstance(stmt, ast.AugAssign):
+            emit_source_comment()
             op_map = {
                 ast.Add: "+",
                 ast.Sub: "-",
@@ -1964,6 +2019,7 @@ def _translate_stmt_list(
             lines.append(prefix + f"{target} := {target} {op} {value};")
             continue
         if isinstance(stmt, ast.Return):
+            emit_source_comment()
             if not return_names or stmt.value is None:
                 lines.append(prefix + "return;")
             elif (
@@ -1981,14 +2037,17 @@ def _translate_stmt_list(
                 lines.append(prefix + "return;")
             continue
         if isinstance(stmt, ast.Break):
+            emit_source_comment()
             lines.append(prefix + "break;")
             continue
         if isinstance(stmt, ast.Continue):
+            emit_source_comment()
             lines.append(prefix + "continue;")
             continue
         if isinstance(stmt, ast.Pass):
             continue
         if isinstance(stmt, ast.Raise):
+            emit_source_comment()
             lines.append(prefix + "assert false;")
             continue
         raise NotImplementedError(f"Unsupported statement: {type(stmt).__name__}")
@@ -2168,7 +2227,16 @@ def _emit_decl(
         lines.extend(("  " + body_line) if not body_line.startswith("  ") else body_line for body_line in body_lines)
     else:
         declared = {arg.arg for arg in node.args.args if arg.arg != "self"}
-        body_lines = special_stmt_body or _translate_stmt_list(node.body, current_class, source_lines, declared, return_names, node.name, indent=2)
+        body_lines = special_stmt_body or _translate_stmt_list(
+            node.body,
+            current_class,
+            source_lines,
+            declared,
+            return_names,
+            node.name,
+            indent=2,
+            include_source_comments=True,
+        )
         lines.extend(body_lines)
     lines.append("}")
     return lines

@@ -6,6 +6,8 @@ iterative refinement based on errors.
 """
 
 import json
+import os
+import shutil
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,7 +18,8 @@ from typing import Optional
 from verification.transpiler.transpiler import transpile_contract_library
 from evaluation.evaluator import EvaluationResult, Evaluator
 from generation.generator import StrategyGenerationError, StrategyGenerator
-from generation.rationale import extract_rationale
+from generation.rationale import extract_proof_sketch, extract_rationale
+from generation.strategy_memory import record_failure_memory
 from verification.verifier import DafnyVerifier, VerificationResult
 from .runner import RuntimeResult, StrategyRunner
 
@@ -30,6 +33,45 @@ class FailureStage(Enum):
     EVALUATION = "evaluation"
 
 
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip() in {"1", "true", "True", "yes", "on"}
+
+
+def _repeated_verification_guidance(strategy_language: str) -> str:
+    natural_delimiters = _env_flag("CSD_REQUIRE_NATURAL_DELIMITERS")
+    if natural_delimiters:
+        if strategy_language == "dafny":
+            return (
+                "Preserve natural-delimiter control in Dafny mode: use "
+                "helpers.AppendUnconstrainedStep(...) for ordinary reasoning, then "
+                "helpers.AppendUnconstrainedNudgeLeftDelimiterStep(...) until the span opens, track "
+                "EndsWithLeftDelimiter/EndsWithRightDelimiter or equivalent span state, and use "
+                "helpers.AppendConstrainedOrRightDelimiterStep(...) inside the span. Do not switch "
+                "to explicit delimiter forcing in GSM natural mode."
+            )
+        return (
+            "Preserve natural-delimiter control: use helpers.AppendUnconstrainedStep(...) for "
+            "ordinary reasoning, then helpers.AppendUnconstrainedNudgeLeftDelimiterStep(...) until "
+            "helpers.EndsWithLeftDelimiter(generated) is true, and use "
+            "helpers.AppendConstrainedOrRightDelimiterStep(...) while "
+            "helpers.IsComplete(generated) or helpers.CanConstrain(generated). Do not switch to "
+            "explicit delimiter forcing in GSM natural mode."
+        )
+    if strategy_language == "dafny":
+        return (
+            "Prefer the append-style Dafny helper API: use helpers.AppendUnconstrainedStep(...) for "
+            "free-form reasoning, helpers.AppendLeftDelimiter(...), helpers.AppendConstrainedStep(...) "
+            "only inside branches guarded by helpers.CanConstrain(generated), and "
+            "helpers.AppendRightDelimiter(...) once the answer segment is complete."
+        )
+    return (
+        "Prefer the append-style helper API: use helpers.AppendUnconstrainedStep(...) for short "
+        "free-form reasoning, then helpers.AppendLeftDelimiter(...), then "
+        "helpers.AppendConstrainedStep(...) only inside branches guarded by "
+        "helpers.CanConstrain(generated), and finally helpers.AppendRightDelimiter(...)."
+    )
+
+
 def repair_verification_strategy(strategy_code: str, error_summary: str) -> tuple[str, bool]:
     """
     Apply known fixes to strategy code when verification fails with specific errors.
@@ -39,8 +81,52 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
     repaired = strategy_code
     changed = False
 
+    def _add_stepsleft_progress_guards(code: str) -> tuple[str, bool]:
+        """Add a terminal break guard to budget loops so non-consuming paths do not back-edge."""
+        lines = code.splitlines()
+        guarded: list[str] = []
+        i = 0
+        local_changed = False
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+            if stripped.startswith("while ") and stripped.endswith(":") and "stepsLeft > 0" in stripped:
+                guarded.append(line)
+                body_lines: list[str] = []
+                i += 1
+                while i < len(lines):
+                    nxt = lines[i]
+                    nxt_stripped = nxt.lstrip()
+                    nxt_indent = len(nxt) - len(nxt_stripped)
+                    if nxt_stripped and nxt_indent <= indent:
+                        break
+                    body_lines.append(nxt)
+                    i += 1
+                body_indent = " " * (indent + 4)
+                has_snapshot = any(
+                    b.lstrip().startswith("stepsLeftBeforeIteration = stepsLeft")
+                    for b in body_lines
+                )
+                has_guard = any(
+                    b.lstrip().startswith("if stepsLeft >= stepsLeftBeforeIteration:")
+                    for b in body_lines
+                )
+                if not has_snapshot:
+                    guarded.append(f"{body_indent}stepsLeftBeforeIteration = stepsLeft")
+                    local_changed = True
+                guarded.extend(body_lines)
+                if not has_guard:
+                    guarded.append(f"{body_indent}if stepsLeft >= stepsLeftBeforeIteration:")
+                    guarded.append(f"{body_indent}    break")
+                    local_changed = True
+                continue
+            guarded.append(line)
+            i += 1
+        return "\n".join(guarded), local_changed
+
     def _insert_after_rationale_block(code: str, insertion: str) -> str:
-        marker = "# CSD_RATIONALE_END"
+        marker = "# CSD_PROOF_SKETCH_END" if "# CSD_PROOF_SKETCH_END" in code else "# CSD_RATIONALE_END"
         marker_index = code.find(marker)
         if marker_index == -1:
             return insertion + code
@@ -919,6 +1005,10 @@ def repair_verification_strategy(strategy_code: str, error_summary: str) -> tupl
     # sets a string mode like "done" without consuming budget. Replace that terminal assignment
     # with `break` so the loop exits instead of taking a non-decreasing back-edge.
     if "decreases expression might not decrease" in error_summary:
+        new_repaired, progress_guard_changed = _add_stepsleft_progress_guards(repaired)
+        if progress_guard_changed:
+            repaired = new_repaired
+            changed = True
         new_repaired = re.sub(
             r"(?m)^(\s*)([A-Za-z_]\w*)\s*=\s*(['\"])done\3\s*$",
             r"\1break",
@@ -1496,6 +1586,10 @@ class SynthesisAttempt:
     attempt_number: int
     strategy_code: str
     timestamp: str
+    derived_from_attempt: Optional[int] = None
+    derived_from_strategy_code: str = ""
+    change_diff: str = ""
+    revision_instruction: str = ""
     full_python_code: str = ""
     full_dafny_code: str = ""
 
@@ -1535,6 +1629,9 @@ class SynthesisAttempt:
         strategy_analysis = self.get_strategy_analysis()
         return {
             "attempt_number": self.attempt_number,
+            "derived_from_attempt": self.derived_from_attempt,
+            "change_diff": self.change_diff,
+            "revision_instruction": self.revision_instruction,
             "strategy_code": self.strategy_code,
             "strategy_analysis": strategy_analysis,  # For research comparison
             "timestamp": self.timestamp,
@@ -1709,7 +1806,8 @@ class SynthesisPipeline:
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
         self.verifier = verifier or DafnyVerifier()
-        self.compiler = None
+        self.compiler = compiler
+        self.strategy_language = getattr(self.generator, "strategy_language", "python")
         self.runner = runner  # Will be created per-task in synthesize()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
@@ -1723,6 +1821,180 @@ class SynthesisPipeline:
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _strategy_diff(parent_code: str, child_code: str, *, context: int = 2) -> str:
+        """Return a compact diff against the actual parent strategy."""
+        import difflib
+
+        if not parent_code:
+            return "(initial strategy)"
+        old_lines = parent_code.splitlines()
+        new_lines = child_code.splitlines()
+        diff = list(
+            difflib.unified_diff(
+                old_lines,
+                new_lines,
+                fromfile="parent",
+                tofile="attempt",
+                lineterm="",
+                n=context,
+            )
+        )
+        if not diff:
+            return "(no code changes from parent)"
+        text = "\n".join(diff)
+        limit = 6000
+        if len(text) > limit:
+            text = text[:limit] + "\n... (diff truncated)"
+        return text
+
+    @staticmethod
+    def _metric_score(eval_result: EvaluationResult) -> float:
+        """Single monotone score for choosing fallback parents."""
+        return (
+            (2.0 * eval_result.accuracy)
+            + eval_result.format_rate
+            + eval_result.syntax_rate
+        )
+
+    def _revision_instruction(
+        self,
+        eval_result: EvaluationResult,
+        best_eval_result: Optional[EvaluationResult],
+        *,
+        regressed: bool,
+    ) -> str:
+        """Task-agnostic guidance: surgical change near target, redesign far away."""
+        accuracy_gap = max(0.0, self.min_accuracy - eval_result.accuracy)
+        format_gap = max(0.0, self.min_format_rate - eval_result.format_rate)
+        syntax_gap = max(0.0, self.min_syntax_rate - eval_result.syntax_rate)
+        max_gap = max(accuracy_gap, format_gap, syntax_gap)
+        accuracy_healthy = accuracy_gap <= 0.1
+        structure_healthy = format_gap <= 0.02 and syntax_gap <= 0.02
+        best_note = ""
+        if best_eval_result is not None:
+            best_note = (
+                f" Best so far: accuracy={best_eval_result.accuracy:.1%}, "
+                f"format={best_eval_result.format_rate:.1%}, "
+                f"syntax={best_eval_result.syntax_rate:.1%}."
+            )
+        if regressed:
+            return (
+                "This attempt regressed relative to the best known evaluated strategy. "
+                "Revert to the best parent and make a different, minimal change; do not continue "
+                "the regressed direction." + best_note
+            )
+        if max_gap <= 0.05:
+            return (
+                "The strategy is close to target. Make exactly one small behavioral change, keep the "
+                "overall architecture, and preserve any metrics that are already above threshold." + best_note
+            )
+        if structure_healthy and not accuracy_healthy:
+            return (
+                "Format and syntax are already healthy, so do not spend this revision on delimiter mechanics. "
+                "Rethink semantic finality, scratch-to-final composition, or how the policy distinguishes an "
+                "intermediate calculation from the actual requested answer." + best_note
+            )
+        if not structure_healthy and accuracy_gap <= 0.15:
+            return (
+                "The main issue is structural discipline. Make one focused change to span opening, completion "
+                "handling, or delimiter closure before changing the broader reasoning policy." + best_note
+            )
+        if max_gap <= 0.15:
+            return (
+                "The strategy is moderately below target. Make one focused change to the most likely "
+                "failure mode; avoid broad rewrites unless the history shows this architecture is stuck." + best_note
+            )
+        return (
+            "The strategy is far below target. Redesign the control policy rather than making a tiny "
+            "parameter tweak, while avoiding approaches listed as regressions or repeated verification failures."
+            + best_note
+        )
+
+    def _attempt_brief(self, attempt: SynthesisAttempt) -> str:
+        """One-line description of what an attempt tried and how it ended."""
+        analysis = attempt.get_strategy_analysis()
+        category = analysis.get("category", "unknown")
+        helpers = []
+        code = attempt.strategy_code
+        for name in (
+            "AppendUnconstrainedStep",
+            "AppendUnconstrainedNudgeLeftDelimiterStep",
+            "AppendLeftDelimiter",
+            "AppendConstrainedStep",
+            "AppendConstrainedOrRightDelimiterStep",
+            "AppendRightDelimiter",
+            "RestoreIfDead",
+            "Checkpoint",
+        ):
+            if name in code:
+                helpers.append(name)
+        helper_text = ", ".join(helpers[:5]) if helpers else "no major helpers detected"
+        if attempt.eval_result is not None:
+            outcome = (
+                f"eval accuracy={attempt.eval_result.accuracy:.1%}, "
+                f"format={attempt.eval_result.format_rate:.1%}, "
+                f"syntax={attempt.eval_result.syntax_rate:.1%}"
+            )
+        elif attempt.failed_at is not None:
+            outcome = f"failed at {attempt.failed_at.value}"
+        else:
+            outcome = "incomplete"
+        return f"{category}; helpers: {helper_text}; {outcome}"
+
+    def _history_context(
+        self,
+        attempts: list[SynthesisAttempt],
+        *,
+        best_attempt: Optional[SynthesisAttempt],
+        regressed_attempts: list[SynthesisAttempt],
+        max_attempts: int = 6,
+    ) -> str:
+        """Chronological attempt history for LLM refinement prompts."""
+        if not attempts:
+            return ""
+
+        lines: list[str] = [
+            "Iteration history:",
+            "Use this history before proposing a change. Avoid repeating failed or regressed directions.",
+        ]
+        if best_attempt and best_attempt.eval_result:
+            lines.append(
+                "Best evaluated strategy so far: "
+                f"attempt {best_attempt.attempt_number} "
+                f"(accuracy={best_attempt.eval_result.accuracy:.1%}, "
+                f"format={best_attempt.eval_result.format_rate:.1%}, "
+                f"syntax={best_attempt.eval_result.syntax_rate:.1%})."
+            )
+
+        for attempt in attempts[-max_attempts:]:
+            parent = (
+                f" derived from attempt {attempt.derived_from_attempt}"
+                if attempt.derived_from_attempt is not None
+                else " initial"
+            )
+            lines.append(f"- Attempt {attempt.attempt_number} ({parent}): {self._attempt_brief(attempt)}")
+            if attempt.revision_instruction:
+                lines.append(f"  Revision note: {attempt.revision_instruction}")
+            if attempt.change_diff:
+                lines.append("  Diff against actual parent:")
+                for diff_line in attempt.change_diff.splitlines()[:80]:
+                    lines.append(f"    {diff_line}")
+            if attempt.failed_at == FailureStage.VERIFICATION and attempt.error_summary:
+                err = attempt.error_summary.replace("\n", " ")
+                lines.append(f"  Verification failure: {err[:500]}")
+            elif attempt.failed_at == FailureStage.RUNTIME and attempt.error_summary:
+                err = attempt.error_summary.replace("\n", " ")
+                lines.append(f"  Runtime failure: {err[:500]}")
+
+        if regressed_attempts:
+            lines.append("")
+            lines.append("Regressed approaches to avoid repeating:")
+            for attempt in regressed_attempts[-8:]:
+                lines.append(f"- Attempt {attempt.attempt_number}: {self._attempt_brief(attempt)}")
+
+        return "\n".join(lines)
 
     def _update_latest_run_pointers(self, run_dir: Path, *, status: str = "") -> None:
         """Keep outputs/latest and outputs/latest_run.txt pointing at the same run."""
@@ -1741,6 +2013,43 @@ class SynthesisPipeline:
             print(f"Latest run pointers{suffix}: {latest_link} -> {run_dir}")
         except Exception as exc:
             print(f"Warning: Could not update latest symlink: {exc}")
+
+    def _attempt_artifact_path(self, run_dir: Path, attempt_number: int, suffix: str) -> Path:
+        return run_dir / f"attempt_{attempt_number:02d}_{suffix}"
+
+    def _persist_attempt_artifacts(
+        self,
+        attempt: SynthesisAttempt,
+        run_dir: Path,
+        *,
+        transpiled_dafny: Optional[str] = None,
+    ) -> None:
+        """Persist attempt-local source artifacts before verification and repair."""
+        try:
+            if self.strategy_language == "dafny":
+                artifact_path = self._attempt_artifact_path(
+                    run_dir,
+                    attempt.attempt_number,
+                    self.GENERATED_CSD_DAFNY_FILENAME,
+                )
+                artifact_path.write_text(attempt.full_dafny_code or attempt.full_python_code, encoding="utf-8")
+                return
+
+            python_path = self._attempt_artifact_path(
+                run_dir,
+                attempt.attempt_number,
+                self.GENERATED_CSD_FILENAME,
+            )
+            python_path.write_text(attempt.full_python_code or attempt.full_dafny_code, encoding="utf-8")
+            if transpiled_dafny:
+                dafny_path = self._attempt_artifact_path(
+                    run_dir,
+                    attempt.attempt_number,
+                    self.GENERATED_CSD_DAFNY_FILENAME,
+                )
+                dafny_path.write_text(transpiled_dafny, encoding="utf-8")
+        except Exception as exc:
+            print(f"Warning: Could not persist attempt artifacts: {exc}")
 
     def _capture_generation_diagnostics(self) -> list[dict[str, object]]:
         """Return the generator's latest rejected raw candidates for failure reports."""
@@ -1763,6 +2072,29 @@ class SynthesisPipeline:
             for idx, raw in enumerate(raw_outputs, start=1)
             if isinstance(raw, str)
         ]
+
+    def _persist_failure_memory(self, task_description: str, attempt: SynthesisAttempt) -> None:
+        metrics: dict[str, float] | None = None
+        if attempt.eval_result is not None:
+            metrics = {
+                "accuracy": attempt.eval_result.accuracy,
+                "format_rate": attempt.eval_result.format_rate,
+                "syntax_rate": attempt.eval_result.syntax_rate,
+            }
+        try:
+            record_failure_memory(
+                task_description,
+                attempt_number=attempt.attempt_number,
+                stage=attempt.failed_at.value if attempt.failed_at else "unknown",
+                attempt_brief=self._attempt_brief(attempt),
+                revision_instruction=attempt.revision_instruction,
+                error_summary=attempt.error_summary,
+                strategy_code=attempt.strategy_code,
+                change_diff=attempt.change_diff,
+                metrics=metrics,
+            )
+        except Exception as exc:
+            print(f"Warning: Could not update strategy memory: {exc}")
 
     def synthesize(
         self,
@@ -1824,12 +2156,20 @@ class SynthesisPipeline:
                 generation_diagnostics=self._capture_generation_diagnostics(),
             )
             attempts.append(attempt)
+            self._persist_failure_memory(task_description, attempt)
             report_path: Path | None = None
             if self.save_reports:
                 report_path = self._save_failure_report(attempts, task_description, run_dir)
             raise SynthesisExhaustionError("Initial generation failed", attempts, report_path) from exc
         print(f"  (initial generation took {time.perf_counter() - t0:.1f}s)")
 
+        next_parent_attempt: Optional[int] = None
+        next_parent_strategy_code = ""
+        best_eval_attempt: Optional[SynthesisAttempt] = None
+        best_eval_strategy_code = ""
+        best_eval_result: Optional[EvaluationResult] = None
+        best_eval_score = -1.0
+        regressed_attempts: list[SynthesisAttempt] = []
         long_run_message_shown = False
         for iteration in range(self.max_iterations):
             attempt_num = iteration + 1
@@ -1843,21 +2183,47 @@ class SynthesisPipeline:
             print(f"{'='*60}")
             print(f"Strategy: {strategy_code}")
 
-            # Create full Dafny code
+            # Create full source code in the configured strategy language
             full_code = self.generator.inject_strategy(strategy_code)
 
             # Create attempt record
             attempt = SynthesisAttempt(
                 attempt_number=attempt_num,
                 strategy_code=strategy_code,
-                full_python_code=full_code,
+                derived_from_attempt=next_parent_attempt,
+                derived_from_strategy_code=next_parent_strategy_code,
+                change_diff=self._strategy_diff(next_parent_strategy_code, strategy_code),
+                full_python_code=full_code if self.strategy_language == "python" else "",
+                full_dafny_code=full_code if self.strategy_language == "dafny" else "",
                 timestamp=datetime.now().isoformat(),
             )
 
+            precomputed_transpiled_dafny: Optional[str] = None
+            if self.strategy_language == "python":
+                precomputed_transpiled_result = transpile_contract_library(
+                    full_code,
+                    module_name_hint=f"GeneratedCSD_attempt_{attempt_num}",
+                    axiomatize=False,
+                )
+                if precomputed_transpiled_result.is_ok():
+                    precomputed_transpiled_dafny = precomputed_transpiled_result.value
+            self._persist_attempt_artifacts(
+                attempt,
+                run_dir,
+                transpiled_dafny=precomputed_transpiled_dafny,
+            )
+
             # Stage 1: Verification
-            print("\n[1/3] Verifying transpiled Python strategy...")
+            if self.strategy_language == "dafny":
+                print("\n[1/3] Verifying generated Dafny strategy...")
+            else:
+                print("\n[1/3] Verifying transpiled Python strategy...")
             t0 = time.perf_counter()
-            verification_result = self.verifier.verify(full_code)
+            verification_result = (
+                self.verifier.verify_dafny(full_code)
+                if self.strategy_language == "dafny"
+                else self.verifier.verify(full_code)
+            )
             attempt.verification_result = verification_result
             print(f"  (verification took {time.perf_counter() - t0:.1f}s)")
 
@@ -1868,6 +2234,7 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.VERIFICATION
                 attempt.error_summary = error_summary
                 attempts.append(attempt)
+                self._persist_failure_memory(task_description, attempt)
 
                 # Check if we're stuck on the same error repeatedly
                 error_msg = verification_result.get_error_summary()
@@ -1883,10 +2250,7 @@ class SynthesisPipeline:
                     error_msg = (
                         f"WARNING: This is the SAME error for {consecutive_same + 1} consecutive attempts. "
                         f"Your previous fixes did NOT work. You MUST use a COMPLETELY DIFFERENT approach. "
-                        f"Prefer the append-style helper API: use helpers.AppendUnconstrainedStep(...) for short "
-                        f"free-form reasoning, then helpers.AppendLeftDelimiter(...), then "
-                        f"helpers.AppendConstrainedStep(...) only inside branches guarded by "
-                        f"helpers.CanConstrain(generated), and finally helpers.AppendRightDelimiter(...).\n\n"
+                        f"{_repeated_verification_guidance(self.strategy_language)}\n\n"
                         f"Original error:\n{error_msg}"
                     )
 
@@ -1898,14 +2262,29 @@ class SynthesisPipeline:
                         break
                 if strategy_code != pre_repair_code:
                     print("  Applied automatic fix (e.g. duplicate stepsLeft / Rollback assignment / precondition); re-verifying...")
+                    next_parent_attempt = attempt_num
+                    next_parent_strategy_code = attempt.strategy_code
                     continue
+                if attempt_num >= self.max_iterations:
+                    print("  No verification-refinement call made because the iteration budget is exhausted.")
+                    break
                 # Refine based on verification error via model (one LLM call; can take minutes if GPU is slow or OOM → CPU)
                 print("  Refining based on verification error... (LLM call may take 1–2 min)")
                 t0 = time.perf_counter()
                 try:
-                    strategy_code = self.generator.refine_after_verification_error(
-                        strategy_code, error_msg
+                    context = self._history_context(
+                        attempts,
+                        best_attempt=best_eval_attempt,
+                        regressed_attempts=regressed_attempts,
                     )
+                    contextual_error = error_msg
+                    if context:
+                        contextual_error += "\n\n" + context
+                    strategy_code = self.generator.refine_after_verification_error(
+                        strategy_code, contextual_error
+                    )
+                    next_parent_attempt = attempt_num
+                    next_parent_strategy_code = attempt.strategy_code
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
@@ -1916,21 +2295,82 @@ class SynthesisPipeline:
 
             print("  ✓ Verification passed")
 
-            python_path = run_dir / self.GENERATED_CSD_FILENAME
-            python_path.write_text(full_code, encoding="utf-8")
-            transpiled_result = transpile_contract_library(full_code, module_name_hint=python_path.stem, axiomatize=False)
-            if transpiled_result.is_ok():
-                transpiled_dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
-                transpiled_dafny_path.write_text(transpiled_result.value, encoding="utf-8")
-                print(f"  Python CSD saved to: {python_path}")
-                print(f"  Transpiled Dafny saved to: {transpiled_dafny_path}")
+            python_path: Path | None = None
+            compiled_module_path: Path | None = None
+            if self.strategy_language == "dafny":
+                dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
+                dafny_path.write_text(full_code, encoding="utf-8")
+                print(f"  Dafny CSD saved to: {dafny_path}")
+                if self.compiler is None:
+                    raise RuntimeError("Dafny-first synthesis requires a compiler instance.")
+                print("\n[2/4] Compiling verified Dafny strategy to Python...")
+                t0 = time.perf_counter()
+                compilation_result = self.compiler.compile_dafny(full_code, output_name="GeneratedCSD")
+                print(f"  (compilation took {time.perf_counter() - t0:.1f}s)")
+                if not compilation_result.success or compilation_result.main_module_path is None:
+                    print("  ✗ Compilation failed")
+                    attempt.failed_at = FailureStage.RUNTIME
+                    attempt.error_summary = (
+                        compilation_result.get_error_summary()
+                        if compilation_result is not None
+                        else "Compilation failed"
+                    )
+                    attempts.append(attempt)
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        print("  No compilation-refinement call made because the iteration budget is exhausted.")
+                        break
+                    print("  Refining based on compilation error...")
+                    try:
+                        context = self._history_context(
+                            attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        compilation_feedback = attempt.error_summary
+                        if context:
+                            compilation_feedback += "\n\n" + context
+                        strategy_code = self.generator.refine_after_compilation_error(
+                            strategy_code,
+                            compilation_feedback,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Refinement generation failed: {exc}")
+                        break
+                    continue
+                compiled_dir = run_dir / f"compiled_python_attempt_{attempt_num}"
+                if compiled_dir.exists():
+                    shutil.rmtree(compiled_dir)
+                if compilation_result.output_dir is not None:
+                    shutil.copytree(compilation_result.output_dir, compiled_dir)
+                    compiled_module_candidate = compiled_dir / compilation_result.main_module_path.name
+                    if compiled_module_candidate.exists():
+                        compiled_module_path = compiled_module_candidate
+                    else:
+                        compiled_matches = list(compiled_dir.glob("**/GeneratedCSD.py"))
+                        compiled_module_path = compiled_matches[0] if compiled_matches else compilation_result.main_module_path
+                else:
+                    compiled_module_path = compilation_result.main_module_path
+                print(f"  Compiled Python saved to: {compiled_module_path}")
+                print("\n[3/4] Testing compiled runtime execution...")
+                runtime_result = runner.run(compiled_module_path)
             else:
-                print(f"  Python CSD saved to: {python_path}")
-
-            # Stage 2: Runtime test (Dafny compilation skipped — run Python source directly)
-            print("\n[2/3] Testing runtime execution...")
-
-            runtime_result = runner.run_python_native(python_path)
+                python_path = run_dir / self.GENERATED_CSD_FILENAME
+                python_path.write_text(full_code, encoding="utf-8")
+                if precomputed_transpiled_dafny is not None:
+                    transpiled_dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
+                    transpiled_dafny_path.write_text(precomputed_transpiled_dafny, encoding="utf-8")
+                    print(f"  Python CSD saved to: {python_path}")
+                    print(f"  Transpiled Dafny saved to: {transpiled_dafny_path}")
+                else:
+                    print(f"  Python CSD saved to: {python_path}")
+                # Stage 2: Runtime test (Dafny compilation skipped — run Python source directly)
+                print("\n[2/3] Testing runtime execution...")
+                runtime_result = runner.run_python_native(python_path)
             attempt.runtime_result = runtime_result
 
             if not runtime_result.success:
@@ -1938,13 +2378,24 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.RUNTIME
                 attempt.error_summary = runtime_result.get_error_summary()
                 attempts.append(attempt)
+                self._persist_failure_memory(task_description, attempt)
 
                 # Refine based on runtime error
                 print("  Refining based on runtime error...")
                 try:
-                    strategy_code = self.generator.refine_after_runtime_error(
-                        strategy_code, runtime_result.get_error_summary()
+                    context = self._history_context(
+                        attempts,
+                        best_attempt=best_eval_attempt,
+                        regressed_attempts=regressed_attempts,
                     )
+                    runtime_feedback = runtime_result.get_error_summary()
+                    if context:
+                        runtime_feedback += "\n\n" + context
+                    strategy_code = self.generator.refine_after_runtime_error(
+                        strategy_code, runtime_feedback
+                    )
+                    next_parent_attempt = attempt_num
+                    next_parent_strategy_code = attempt.strategy_code
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
@@ -1963,13 +2414,24 @@ class SynthesisPipeline:
                     "The strategy must execute at least one decoding step in the smoke environment."
                 )
                 attempts.append(attempt)
+                self._persist_failure_memory(task_description, attempt)
 
                 print("  Refining based on empty runtime output...")
                 try:
+                    context = self._history_context(
+                        attempts,
+                        best_attempt=best_eval_attempt,
+                        regressed_attempts=regressed_attempts,
+                    )
+                    runtime_feedback = attempt.error_summary
+                    if context:
+                        runtime_feedback += "\n\n" + context
                     strategy_code = self.generator.refine_after_runtime_error(
                         strategy_code,
-                        attempt.error_summary,
+                        runtime_feedback,
                     )
+                    next_parent_attempt = attempt_num
+                    next_parent_strategy_code = attempt.strategy_code
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
@@ -1977,14 +2439,21 @@ class SynthesisPipeline:
                     break
                 continue
 
-            # Stage 3: Evaluation — use same device as generator to avoid loading on a full GPU
+            # Stage 3/4: Evaluation — use same device as generator to avoid loading on a full GPU
             if getattr(self.generator, "device", None):
                 self.evaluator.device = self.generator.device
-            print("\n[3/3] Evaluating on dataset sample... (may take several minutes)")
-            eval_result = self.evaluator.evaluate_sample(
-                python_source_path=python_path,
-                sample_size=self.eval_sample_size,
-            )
+            stage_label = "[4/4]" if self.strategy_language == "dafny" else "[3/3]"
+            print(f"\n{stage_label} Evaluating on dataset sample... (may take several minutes)")
+            if self.strategy_language == "dafny":
+                eval_result = self.evaluator.evaluate_sample(
+                    compiled_module_path=compiled_module_path,
+                    sample_size=self.eval_sample_size,
+                )
+            else:
+                eval_result = self.evaluator.evaluate_sample(
+                    python_source_path=python_path,
+                    sample_size=self.eval_sample_size,
+                )
             attempt.eval_result = eval_result
 
             # Always print outputs vs expected so we can spot Prover9 "Unknown" cheesing
@@ -1997,12 +2466,29 @@ class SynthesisPipeline:
                 attempt.failed_at = FailureStage.EVALUATION
                 attempt.error_summary = eval_result.error or "Evaluation failed"
                 attempts.append(attempt)
+                self._persist_failure_memory(task_description, attempt)
+
+                if attempt_num >= self.max_iterations:
+                    print("  No evaluation-refinement call made because the iteration budget is exhausted.")
+                    break
 
                 print("  Refining based on evaluation error...")
                 try:
-                    strategy_code = self.generator.refine_after_evaluation_failure(
-                        strategy_code, eval_result.get_feedback_summary()
+                    refine_parent_attempt = best_eval_attempt.attempt_number if best_eval_attempt else attempt_num
+                    refine_parent_strategy = best_eval_strategy_code if best_eval_attempt else strategy_code
+                    context = self._history_context(
+                        attempts,
+                        best_attempt=best_eval_attempt,
+                        regressed_attempts=regressed_attempts,
                     )
+                    eval_feedback = eval_result.get_feedback_summary()
+                    if context:
+                        eval_feedback += "\n\n" + context
+                    strategy_code = self.generator.refine_after_evaluation_failure(
+                        refine_parent_strategy, eval_feedback
+                    )
+                    next_parent_attempt = refine_parent_attempt
+                    next_parent_strategy_code = refine_parent_strategy
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
@@ -2021,15 +2507,66 @@ class SynthesisPipeline:
                 print(f"    Format: {eval_result.format_rate:.1%} (min: {self.min_format_rate:.1%})")
                 print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
                 print(eval_result.get_detailed_samples(max_samples=3))
+                score = self._metric_score(eval_result)
+                regressed = best_eval_attempt is not None and score < best_eval_score
+                if best_eval_attempt is None or score > best_eval_score:
+                    best_eval_attempt = attempt
+                    best_eval_strategy_code = strategy_code
+                    best_eval_result = eval_result
+                    best_eval_score = score
+                    print(f"  New best evaluated strategy so far: attempt {attempt_num}")
+                elif regressed:
+                    regressed_attempts.append(attempt)
+                    print(
+                        f"  Attempt {attempt_num} regressed from best attempt "
+                        f"{best_eval_attempt.attempt_number}; next refinement will branch from best."
+                    )
+                attempt.revision_instruction = self._revision_instruction(
+                    eval_result,
+                    best_eval_result,
+                    regressed=regressed,
+                )
                 attempt.failed_at = FailureStage.EVALUATION
                 attempt.error_summary = eval_result.get_feedback_summary()
                 attempts.append(attempt)
+                self._persist_failure_memory(task_description, attempt)
+
+                if attempt_num >= self.max_iterations:
+                    print("  No evaluation-refinement call made because the iteration budget is exhausted.")
+                    break
 
                 print("  Refining based on evaluation results...")
                 try:
-                    strategy_code = self.generator.refine_after_evaluation_failure(
-                        strategy_code, eval_result.get_feedback_summary()
+                    refine_parent_attempt = (
+                        best_eval_attempt.attempt_number
+                        if regressed and best_eval_attempt is not None
+                        else attempt_num
                     )
+                    refine_parent_strategy = (
+                        best_eval_strategy_code
+                        if regressed and best_eval_attempt is not None
+                        else strategy_code
+                    )
+                    threshold_feedback = (
+                        "Required thresholds:\n"
+                        f"  Accuracy: {self.min_accuracy:.1%}\n"
+                        f"  Format Rate: {self.min_format_rate:.1%}\n"
+                        f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
+                        f"Revision instruction:\n  {attempt.revision_instruction}\n\n"
+                        + eval_result.get_feedback_summary()
+                    )
+                    context = self._history_context(
+                        attempts,
+                        best_attempt=best_eval_attempt,
+                        regressed_attempts=regressed_attempts,
+                    )
+                    if context:
+                        threshold_feedback += "\n\n" + context
+                    strategy_code = self.generator.refine_after_evaluation_failure(
+                        refine_parent_strategy, threshold_feedback
+                    )
+                    next_parent_attempt = refine_parent_attempt
+                    next_parent_strategy_code = refine_parent_strategy
                 except StrategyGenerationError as exc:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
@@ -2064,7 +2601,8 @@ class SynthesisPipeline:
             return SynthesisResult(
                 success=True,
                 strategy_code=strategy_code,
-                full_python_code=full_code,
+                full_python_code=full_code if self.strategy_language == "python" else "",
+                full_dafny_code=full_code if self.strategy_language == "dafny" else "",
                 python_source_path=python_path,
                 output_dir=run_dir,
                 run_dir=run_dir,
@@ -2098,6 +2636,7 @@ class SynthesisPipeline:
 
         report = {
             "task_description": task_description,
+            "strategy_language": self.strategy_language,
             "total_attempts": len(attempts),
             "timestamp": datetime.now().isoformat(),
             "attempts": [attempt.to_dict() for attempt in attempts],
@@ -2123,20 +2662,30 @@ class SynthesisPipeline:
         final_eval_result: Optional[EvaluationResult] = None,
     ) -> None:
         """Save a success report and the final strategy."""
-        python_path = run_dir / self.GENERATED_CSD_FILENAME
-        if not python_path.exists():
-            with open(python_path, "w") as f:
-                f.write(full_code)
-
-        transpiled_result = transpile_contract_library(full_code, module_name_hint=python_path.stem, axiomatize=False)
-        dafny_path = None
-        if transpiled_result.is_ok():
+        python_path: Path | None = None
+        dafny_path: Path | None = None
+        if self.strategy_language == "dafny":
             dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
             if not dafny_path.exists():
                 with open(dafny_path, "w") as f:
-                    f.write(transpiled_result.value)
+                    f.write(full_code)
+            compiled_matches = list(run_dir.glob("compiled_python_attempt_*/**/GeneratedCSD.py"))
+            if compiled_matches:
+                python_path = compiled_matches[0]
+        else:
+            python_path = run_dir / self.GENERATED_CSD_FILENAME
+            if not python_path.exists():
+                with open(python_path, "w") as f:
+                    f.write(full_code)
+            transpiled_result = transpile_contract_library(full_code, module_name_hint=python_path.stem, axiomatize=False)
+            if transpiled_result.is_ok():
+                dafny_path = run_dir / self.GENERATED_CSD_DAFNY_FILENAME
+                if not dafny_path.exists():
+                    with open(dafny_path, "w") as f:
+                        f.write(transpiled_result.value)
 
         rationale_extracted = extract_rationale(strategy_code)
+        proof_sketch_extracted = extract_proof_sketch(strategy_code)
 
         # Save a report
         report_path = run_dir / "success_report.json"
@@ -2154,10 +2703,14 @@ class SynthesisPipeline:
         report = {
             "strategy_code": strategy_code,
             "tool_choice_rationale": rationale_extracted.rationale,
-            "python_file": str(python_path),
+            "proof_sketch": proof_sketch_extracted.text,
+            "python_file": str(python_path) if python_path else None,
             "transpiled_dafny_file": str(dafny_path) if dafny_path else None,
+            "strategy_language": self.strategy_language,
             "requested_output_name": output_name,
             "total_attempts": len(attempts),
+            "attempts": [attempt.to_dict() for attempt in attempts],
+            "failure_patterns": self._analyze_failure_patterns(attempts),
             "evaluation": eval_summary,
             "timestamp": datetime.now().isoformat(),
         }
@@ -2165,7 +2718,10 @@ class SynthesisPipeline:
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 
-        print(f"Strategy saved to: {python_path}")
+        if python_path:
+            print(f"Strategy saved to: {python_path}")
+        if dafny_path:
+            print(f"Dafny strategy saved to: {dafny_path}")
         print(f"Success report saved to: {report_path}")
 
         self._update_latest_run_pointers(run_dir, status="succeeded")
@@ -2177,9 +2733,11 @@ class SynthesisPipeline:
             "runtime_failures": 0,
             "evaluation_failures": 0,
             "common_errors": [],
+            "regressed_approaches": [],
         }
 
         error_counts: dict[str, int] = {}
+        best_eval_score = -1.0
 
         for attempt in attempts:
             if attempt.failed_at == FailureStage.VERIFICATION:
@@ -2188,6 +2746,18 @@ class SynthesisPipeline:
                 patterns["runtime_failures"] += 1
             elif attempt.failed_at == FailureStage.EVALUATION:
                 patterns["evaluation_failures"] += 1
+
+            if attempt.eval_result is not None:
+                score = self._metric_score(attempt.eval_result)
+                if best_eval_score >= 0.0 and score < best_eval_score:
+                    patterns["regressed_approaches"].append(
+                        {
+                            "attempt": attempt.attempt_number,
+                            "summary": self._attempt_brief(attempt),
+                        }
+                    )
+                if score > best_eval_score:
+                    best_eval_score = score
 
             # Extract key error phrases
             if attempt.error_summary:

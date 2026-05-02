@@ -33,6 +33,12 @@ def run_synthesis_smoke():
 # CSD_RATIONALE_BEGIN
 # Simple smoke test for the Python-to-Dafny pipeline with explicit delimiter emission and single-prefix constrained answer content.
 # CSD_RATIONALE_END
+# CSD_PROOF_SKETCH_BEGIN
+# The loop keeps the standard helper/library invariants and decreases stepsLeft.
+# AppendLeftDelimiter and AppendRightDelimiter consume one step and preserve the budget invariant.
+# AppendConstrainedStep is called only under CanConstrain, so parser validity of the active suffix is preserved.
+# Phase monotonically moves from open to constrained decoding to closed, so the loop makes progress or breaks.
+# CSD_PROOF_SKETCH_END
 phase = 0
 answer_tokens = 0
 close_attempts = 0

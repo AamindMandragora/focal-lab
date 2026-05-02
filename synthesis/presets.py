@@ -25,6 +25,7 @@ class SynthesisPreset:
         *,
         model_name: str,
         eval_model_name: str,
+        strategy_language: str,
         max_iterations: int,
         temperature: float,
         device: str,
@@ -47,6 +48,8 @@ class SynthesisPreset:
             output_name or self.output_name,
             "--model",
             model_name,
+            "--strategy-language",
+            strategy_language,
             "--eval-model",
             eval_model_name,
             "--temperature",
@@ -165,7 +168,12 @@ DATASET_PRESETS = {
             "span, and finally an aggregated answer span. Do not force a fixed "
             "template or fixed span count. Strongly prefer final spans that "
             "compose earlier scratch values and remaining constants rather than "
-            "stopping after the first local complete span."
+            "stopping after the first local complete span. If a strategy needs "
+            "to decide when arithmetic scratch work is beginning, use a raw "
+            "delimiter-masked step so it can observe the emitted token; seeing "
+            "`=` or ` =` after a quantity/name cue is a strong reason to begin "
+            "persistent natural left-delimiter nudging for a scratch span, then "
+            "continue reasoning and emit a later final span."
         ),
         min_accuracy=0.5,
         min_format_rate=1.0,
@@ -245,9 +253,11 @@ DATASET_PRESETS = {
             "HAVING, ORDER BY, LIMIT, JOIN, and nested SELECT only when needed. "
             "5. Do not put prose, markdown, or semicolon-only filler inside the final "
             "constrained segment. "
-            "6. Prefer one deliberate SQL answer span: short free-form lead-in (if any), "
-            "then emit << SQL >> and close it; avoid long unconstrained rambles that "
-            "never reach a closed span."
+            "6. Prefer one deliberate SQL answer span: in direct-span mode, emit "
+            "the left delimiter as the first action with AppendLeftDelimiter, then "
+            "decode under parser control using AppendConstrainedOrRightDelimiterStep "
+            "until the right delimiter is emitted, and stop. Avoid long unconstrained "
+            "rambles that never reach a closed span."
         ),
         min_accuracy=0.2,
         min_format_rate=0.8,

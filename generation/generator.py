@@ -25,7 +25,7 @@ from .prompts import (
     build_evaluation_failure_prompt,
     build_structure_repair_prompt,
 )
-from .rationale import extract_rationale
+from .rationale import extract_proof_sketch, extract_rationale
 
 
 def _hf_offline_enabled() -> bool:
@@ -117,21 +117,19 @@ class StrategyGenerator:
     # Default model - can be overridden
     DEFAULT_MODEL = "gpt-5.4"
     
-    # Path to the template file
-    TEMPLATE_PATH = Path(__file__).resolve().parent / "csd" / "GeneratedAgentTemplate.py"
-
-    # Markers delimiting the hole to replace
-    STRATEGY_BEGIN_MARKER = "    # QWEN_INSERT_STRATEGY_BEGIN"
-    STRATEGY_END_MARKER = "    # QWEN_INSERT_STRATEGY_END"
+    TEMPLATE_PY_PATH = Path(__file__).resolve().parent / "csd" / "GeneratedAgentTemplate.py"
+    TEMPLATE_DAFNY_PATH = Path(__file__).resolve().parent / "csd" / "GeneratedAgentTemplate.dfy"
 
     # Under this budget, Qwen often truncates before emitting a full rationale + loop body.
     MIN_STRATEGY_TOKENS = 192
     SEARCH_ATTEMPTS = 12
     DIAGNOSTIC_TEXT_LIMIT = 12_000
     ALLOWED_HELPER_METHODS = {
+        "AdaptiveConstrainedStep",
         "AllValidNextTokensInLM",
         "AppendConstrainedStep",
         "AppendConstrainedOrRightDelimiterStep",
+        "AppendConstrainedToken",
         "AppendForcedToken",
         "AppendLeftDelimiter",
         "AppendRightDelimiter",
@@ -145,30 +143,37 @@ class StrategyGenerator:
         "BiasRightDelimiters",
         "CanConstrain",
         "Checkpoint",
+        "CloseConstrainedSpan",
         "ConstrainedOrRightDelimiterStep",
         "ConstrainedStep",
         "ContainsLeftDelimiter",
         "ContainsRightDelimiter",
+        "CountOccurrences",
         "EndsWithLeftDelimiter",
         "EndsWithRightDelimiter",
         "ForcedTokenStep",
+        "GroupBoostedConstrainedStep",
         "HasBudget",
         "IntersectWithGrammar",
         "IsComplete",
         "IsDead",
         "IsLeftDelimiterToken",
         "IsRightDelimiterToken",
+        "LastTokenBefore",
         "LongestValidSuffix",
         "MaskAllDelimiters",
         "MaskLeftDelimiters",
         "MaskRightDelimiters",
         "MinStepsToComplete",
+        "OpenConstrainedSpan",
         "ParserDistanceToComplete",
+        "PenalizedConstrainedStep",
         "RestoreCheckpoint",
         "RestoreIfDead",
         "SoftConstrainToGrammar",
         "SoftConstrainedStep",
         "TopKConstrainedStep",
+        "TokensSinceLastDelimiter",
         "UnconstrainedAllowLeftDelimiterStep",
         "UnconstrainedBiasLeftDelimiterStep",
         "UnconstrainedNudgeLeftDelimiterStep",
@@ -195,6 +200,7 @@ class StrategyGenerator:
         temperature: float = 0.7,
         top_p: float = 0.9,
         generation_timeout: Optional[int] = None,
+        strategy_language: str = "python",
     ):
         """
         Initialize the strategy generator.
@@ -210,6 +216,7 @@ class StrategyGenerator:
         """
         self.model_name = model_name or self.DEFAULT_MODEL
         self.uses_openai = _is_openai_model_name(self.model_name)
+        self.strategy_language = strategy_language
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.top_p = top_p
@@ -236,18 +243,29 @@ class StrategyGenerator:
         self.last_raw_outputs: list[str] = []
         self.last_generation_diagnostics: list[dict[str, object]] = []
         self.last_structure_repair_trace: list[dict[str, object]] = []
+        self.last_structure_validation_summary: dict[str, object] = {}
+        self.last_rationale_repair_count = 0
+
+        if self.strategy_language == "dafny":
+            self.template_path = self.TEMPLATE_DAFNY_PATH
+            self.strategy_begin_marker = "  // QWEN_INSERT_STRATEGY_BEGIN"
+            self.strategy_end_marker = "  // QWEN_INSERT_STRATEGY_END"
+        else:
+            self.template_path = self.TEMPLATE_PY_PATH
+            self.strategy_begin_marker = "    # QWEN_INSERT_STRATEGY_BEGIN"
+            self.strategy_end_marker = "    # QWEN_INSERT_STRATEGY_END"
 
         # Load template
         self._template = self._load_template()
     
     def _load_template(self) -> str:
-        """Load the `generation/csd/GeneratedAgentTemplate.py` template."""
-        if not self.TEMPLATE_PATH.exists():
+        """Load the configured strategy template."""
+        if not self.template_path.exists():
             raise FileNotFoundError(
-                f"Template not found at {self.TEMPLATE_PATH}. "
-                "Make sure generation/csd/GeneratedAgentTemplate.py exists."
+                f"Template not found at {self.template_path}. "
+                "Make sure the configured generation/csd template exists."
             )
-        return self.TEMPLATE_PATH.read_text()
+        return self.template_path.read_text()
     
     def _ensure_model_loaded(self) -> None:
         """Lazy-load the model and tokenizer. On CUDA OOM, try other GPUs before CPU."""
@@ -579,30 +597,88 @@ class StrategyGenerator:
 
         return strategy.strip()
 
+    def _extract_dafny_strategy(self, raw_output: str) -> str:
+        """Extract a Dafny method body from the model output."""
+        code_block_pattern = r"```(?:python|py|dafny)?\s*([\s\S]*?)```"
+        match = re.search(code_block_pattern, raw_output)
+        if match:
+            raw_output = match.group(1)
+        else:
+            truncated_pattern = r"^```(?:python|py|dafny)?\s*([\s\S]*)$"
+            match = re.search(truncated_pattern, raw_output.strip())
+            if match:
+                raw_output = match.group(1)
+
+        strategy = raw_output.strip()
+        method_match = re.search(
+            r"method\s+MyCSDStrategy\s*\([^)]*\)\s*(?:returns\s*\([^)]*\))?[\s\S]*?\{([\s\S]*)\}\s*$",
+            strategy,
+        )
+        if method_match:
+            strategy = textwrap.dedent(method_match.group(1)).strip()
+
+        strategy = re.sub(r"(?m)^(\s*)#", r"\1//", strategy)
+        return strategy.strip()
+
+    def _has_required_comment_blocks(self, strategy_body: str) -> bool:
+        """Return True when both reasoning scaffolds are present and non-empty."""
+        rationale = extract_rationale(strategy_body)
+        proof_sketch = extract_proof_sketch(strategy_body)
+        return (
+            rationale.rationale is not None
+            and rationale.has_markers
+            and proof_sketch.text is not None
+            and proof_sketch.has_markers
+        )
+
+    def _ensure_nontrivial_dafny_strategy(self, strategy_body: str) -> str:
+        """Lightweight structural validation for Dafny-first fallback mode."""
+        body = self._body_without_rationale(strategy_body)
+        executable_lines = [
+            line for line in body.splitlines()
+            if line.strip() and not line.lstrip().startswith("//") and not line.lstrip().startswith("#")
+        ]
+        if not executable_lines:
+            raise ValueError("The body has no executable Dafny statements after the rationale block.")
+        if "while " not in body:
+            raise ValueError("The body must contain a while loop that performs decoding steps.")
+        if "helpers." not in body:
+            raise ValueError("The body must call helper methods from `helpers`.")
+        return strategy_body
+
     def _ensure_rationale_block(self, strategy_body: str, *, max_repairs: int = 2) -> str:
         """
-        Ensure the strategy body contains the required rationale markers.
+        Ensure the strategy body contains required rationale and proof-sketch markers.
 
         If missing, attempt a small number of "format repair" generations that rewrite
         the body into the required structure without changing semantics.
         """
-        extracted = extract_rationale(strategy_body)
-        if extracted.rationale is not None and extracted.has_markers:
+        if self._has_required_comment_blocks(strategy_body):
+            self.last_rationale_repair_count = 0
             return self._normalize_rationale_block(strategy_body)
 
         current = strategy_body
-        for _ in range(max_repairs):
-            system_prompt, user_prompt = build_format_repair_prompt(current)
+        for repair_round in range(1, max_repairs + 1):
+            system_prompt, user_prompt = build_format_repair_prompt(
+                current,
+                strategy_language=self.strategy_language,
+            )
             repaired_raw = self._generate_text(system_prompt, user_prompt)
-            repaired = self._extract_strategy(repaired_raw)
-            extracted = extract_rationale(repaired)
-            if extracted.rationale is not None and extracted.has_markers:
+            repaired = (
+                self._extract_dafny_strategy(repaired_raw)
+                if self.strategy_language == "dafny"
+                else self._extract_strategy(repaired_raw)
+            )
+            if self._has_required_comment_blocks(repaired):
+                self.last_rationale_repair_count = repair_round
                 return self._normalize_rationale_block(repaired)
             current = repaired
 
+        self.last_rationale_repair_count = max_repairs
         raise ValueError(
-            "Generated strategy is missing required rationale block markers "
-            "(# CSD_RATIONALE_BEGIN ... # CSD_RATIONALE_END)."
+            "Generated strategy is missing required rationale/proof-sketch block markers "
+            "(# CSD_RATIONALE_BEGIN ... # CSD_RATIONALE_END and "
+            "# CSD_PROOF_SKETCH_BEGIN ... # CSD_PROOF_SKETCH_END)."
         )
 
     def _body_without_rationale(self, strategy_body: str) -> str:
@@ -610,17 +686,35 @@ class StrategyGenerator:
         return extracted.body_without_rationale if extracted.has_markers else strategy_body
 
     def _normalize_rationale_block(self, strategy_body: str) -> str:
+        strategy_body = self._normalize_comment_block(
+            strategy_body,
+            begin_markers={"# CSD_RATIONALE_BEGIN", "// CSD_RATIONALE_BEGIN"},
+            end_markers={"# CSD_RATIONALE_END", "// CSD_RATIONALE_END"},
+        )
+        return self._normalize_comment_block(
+            strategy_body,
+            begin_markers={"# CSD_PROOF_SKETCH_BEGIN", "// CSD_PROOF_SKETCH_BEGIN"},
+            end_markers={"# CSD_PROOF_SKETCH_END", "// CSD_PROOF_SKETCH_END"},
+        )
+
+    def _normalize_comment_block(
+        self,
+        strategy_body: str,
+        *,
+        begin_markers: set[str],
+        end_markers: set[str],
+    ) -> str:
         lines = strategy_body.splitlines()
         begin_idx = None
         end_idx = None
         for i, line in enumerate(lines):
-            if line.strip() in {"# CSD_RATIONALE_BEGIN", "// CSD_RATIONALE_BEGIN"}:
+            if line.strip() in begin_markers:
                 begin_idx = i
                 break
         if begin_idx is None:
             return strategy_body
         for j in range(begin_idx + 1, len(lines)):
-            if lines[j].strip() in {"# CSD_RATIONALE_END", "// CSD_RATIONALE_END"}:
+            if lines[j].strip() in end_markers:
                 end_idx = j
                 break
         if end_idx is None:
@@ -945,6 +1039,7 @@ class StrategyGenerator:
         constrained_step_calls = 0
         forced_token_calls = 0
         unconstrained_calls = 0
+        split_prefix_step_calls = 0
         emits_left_delimiter = False
         emits_right_delimiter = False
         left_delimiter_lines: list[int] = []
@@ -990,6 +1085,7 @@ class StrategyGenerator:
         bad_bias_helper_lines: list[int] = []
         uses_natural_left_delimiter = False
         uses_natural_right_delimiter = False
+        uses_split_prefix_policy = False
         single_right_close_terminal_lines: list[int] = []
         forced_left_delimiter_lines: list[int] = []
         forced_right_delimiter_lines: list[int] = []
@@ -998,6 +1094,7 @@ class StrategyGenerator:
         low_reason_nudge_lines: list[int] = []
         parser_readiness_early_open_lines: list[int] = []
         phase_break_open_lines: list[int] = []
+        state_only_open_transition_lines: list[int] = []
         natural_open_plain_fallback_lines: list[int] = []
         negative_index_lines: list[int] = []
         premature_not_can_constrain_lines: list[int] = []
@@ -1024,11 +1121,26 @@ class StrategyGenerator:
             "AppendLeftDelimiter",
             "AppendRightDelimiter",
         }
+        generated_updating_helper_methods = append_helper_methods | {
+            "OpenConstrainedSpan",
+            "CloseConstrainedSpan",
+            "AppendConstrainedToken",
+        }
         constrained_helper_methods = {
             "ConstrainedStep",
             "ConstrainedOrRightDelimiterStep",
             "AppendConstrainedStep",
             "AppendConstrainedOrRightDelimiterStep",
+            "AdaptiveConstrainedStep",
+            "GroupBoostedConstrainedStep",
+            "PenalizedConstrainedStep",
+        }
+        split_prefix_step_methods = {
+            "OpenConstrainedSpan",
+            "CloseConstrainedSpan",
+            "AdaptiveConstrainedStep",
+            "GroupBoostedConstrainedStep",
+            "PenalizedConstrainedStep",
         }
         unconstrained_helper_methods = {
             "UnconstrainedStep",
@@ -1063,6 +1175,9 @@ class StrategyGenerator:
             "AppendUnconstrainedNudgeLeftDelimiterStep",
             "AppendConstrainedStep",
             "AppendConstrainedOrRightDelimiterStep",
+            "AdaptiveConstrainedStep",
+            "GroupBoostedConstrainedStep",
+            "PenalizedConstrainedStep",
         }
 
         OLD_API = {
@@ -1188,7 +1303,7 @@ class StrategyGenerator:
                     return True
             return False
 
-        min_required_reason_steps = 0
+        min_required_reason_steps = 40 if require_natural_delimiters else 0
         min_required_answer_steps = 0
 
         def _is_reason_budget_name(name: str) -> bool:
@@ -1355,6 +1470,16 @@ class StrategyGenerator:
                     return True
             return False
 
+        def _descendant_is_in_if_body(descendant: ast.AST, if_node: ast.If) -> bool:
+            """True when descendant executes in if_node.body, not in its else/elif branch."""
+            current = descendant
+            while current in parent_map:
+                parent = parent_map[current]
+                if parent is if_node:
+                    return current in if_node.body
+                current = parent
+            return False
+
         def _is_answer_pressure_name(name: str) -> bool:
             normalized = name.replace("_", "").lower()
             return (
@@ -1416,6 +1541,8 @@ class StrategyGenerator:
                 normalized in {"phase", "stage", "state"}
                 or "inspan" in normalized
                 or "insidespan" in normalized
+                or "insideconstrained" in normalized
+                or "inconstrained" in normalized
                 or "spanopen" in normalized
                 or "openspan" in normalized
                 or "answeropen" in normalized
@@ -1438,8 +1565,8 @@ class StrategyGenerator:
         def _is_scratch_span_state_name(name: str) -> bool:
             normalized = name.replace("_", "").lower()
             return (
-                ("scratch" in normalized and any(marker in normalized for marker in ("mode", "ready", "open", "span", "phase")))
-                or normalized in {"scratchmode", "scratchphase", "scratchready", "opening_scratch_span"}
+                ("scratch" in normalized and any(marker in normalized for marker in ("mode", "ready", "open", "span", "phase", "intent")))
+                or normalized in {"scratchmode", "scratchphase", "scratchready", "scratchintent", "opening_scratch_span"}
             )
 
         def _condition_handles_right_delimiter_token(test: ast.AST) -> bool:
@@ -1830,6 +1957,16 @@ class StrategyGenerator:
                         require_natural_delimiters
                         and branch_body
                         and not _contains_helper_step(branch_body)
+                        and not _contains_break_or_return(branch_body)
+                        and _branch_assigns_opening_state(branch_body)
+                    ):
+                        state_only_open_transition_lines.append(
+                            getattr(branch_body[0], "lineno", getattr(statement, "lineno", 0))
+                        )
+                    if (
+                        require_natural_delimiters
+                        and branch_body
+                        and not _contains_helper_step(branch_body)
                         and _contains_break_or_return(branch_body)
                         and _branch_assigns_opening_state(branch_body)
                     ):
@@ -1978,6 +2115,8 @@ class StrategyGenerator:
                             helper_parser_confusions.add(attr)
                     if attr in constrained_helper_methods:
                         constrained_step_calls += 1
+                        if attr in {"AdaptiveConstrainedStep", "GroupBoostedConstrainedStep", "PenalizedConstrainedStep"}:
+                            uses_split_prefix_policy = True
                         if (
                             os.environ.get("CSD_REQUIRE_NATURAL_DELIMITERS", "").strip() in {"1", "true", "True"}
                             and attr in {"ConstrainedStep", "AppendConstrainedStep"}
@@ -2000,6 +2139,9 @@ class StrategyGenerator:
                                     break
                             if not guarded:
                                 unguarded_constrained_calls.add(attr)
+                    if attr in split_prefix_step_methods:
+                        split_prefix_step_calls += 1
+                        uses_split_prefix_policy = True
                     if attr in forced_helper_methods:
                         forced_token_calls += 1
                     if attr in unconstrained_helper_methods:
@@ -2014,7 +2156,11 @@ class StrategyGenerator:
                                 current = parent_map[current]
                                 if isinstance(current, ast.While):
                                     break
-                                if isinstance(current, ast.If) and _condition_is_opening_context(current.test):
+                                if (
+                                    isinstance(current, ast.If)
+                                    and _condition_is_opening_context(current.test)
+                                    and _descendant_is_in_if_body(node, current)
+                                ):
                                     natural_open_plain_fallback_lines.append(getattr(node, "lineno", 0))
                                     break
                         if attr in {
@@ -2025,6 +2171,16 @@ class StrategyGenerator:
                             "AppendUnconstrainedNudgeLeftDelimiterStep",
                         }:
                             uses_natural_left_delimiter = True
+                    if attr == "OpenConstrainedSpan":
+                        uses_split_prefix_policy = True
+                        emits_left_delimiter = True
+                        left_delimiter_lines.append(getattr(node, "lineno", 0))
+                    elif attr == "CloseConstrainedSpan":
+                        uses_split_prefix_policy = True
+                        emits_right_delimiter = True
+                        right_delimiter_lines.append(getattr(node, "lineno", 0))
+                    elif attr == "AppendConstrainedToken":
+                        uses_split_prefix_policy = True
                     if attr == "AppendLeftDelimiter":
                         emits_left_delimiter = True
                         left_delimiter_lines.append(getattr(node, "lineno", 0))
@@ -2275,7 +2431,7 @@ class StrategyGenerator:
                     and isinstance(node.value.func, ast.Attribute)
                     and isinstance(node.value.func.value, ast.Name)
                     and node.value.func.value.id == "helpers"
-                    and node.value.func.attr in append_helper_methods
+                    and node.value.func.attr in generated_updating_helper_methods
                 ):
                     append_helper_wrong_targets.add(node.value.func.attr)
                 if (
@@ -2285,7 +2441,7 @@ class StrategyGenerator:
                     and isinstance(node.value.func, ast.Attribute)
                     and isinstance(node.value.func.value, ast.Name)
                     and node.value.func.value.id == "helpers"
-                    and node.value.func.attr in append_helper_methods
+                    and node.value.func.attr in generated_updating_helper_methods
                 ):
                     target_names = {
                         elt.id
@@ -2485,18 +2641,19 @@ class StrategyGenerator:
                 "Helper calls that require context must pass the function input `prompt` as the first argument. "
                 f"Found `{call_name}` with a non-`prompt` first argument near line {line}."
             )
-        total_step_calls = constrained_step_calls + forced_token_calls + unconstrained_calls
+        total_step_calls = constrained_step_calls + forced_token_calls + unconstrained_calls + split_prefix_step_calls
         if total_step_calls == 0:
             return (
                 "The body must call at least one step method "
-                "(AppendConstrainedStep, AppendConstrainedOrRightDelimiterStep, AppendLeftDelimiter, "
+                "(AppendConstrainedStep, AppendConstrainedOrRightDelimiterStep, OpenConstrainedSpan, "
+                "CloseConstrainedSpan, AdaptiveConstrainedStep, AppendLeftDelimiter, "
                 "AppendUnconstrainedStep, UnconstrainedNudgeLeftDelimiterStep, ForcedTokenStep, etc.)."
             )
         if constrained_step_calls == 0:
             return (
                 "The body must include at least one constrained step "
                 "(helpers.ConstrainedStep, helpers.ConstrainedOrRightDelimiterStep, "
-                "or their Append* wrappers) "
+                "`helpers.AdaptiveConstrainedStep(...)`, or equivalent constrained-token logic) "
                 "to produce grammar-valid answer content."
             )
         if (not require_natural_delimiters) and (not emits_left_delimiter or not emits_right_delimiter):
@@ -2548,6 +2705,23 @@ class StrategyGenerator:
                 f"{negative_index_lines[0]}."
             )
         if require_natural_delimiters:
+            split_prefix_open = "OpenConstrainedSpan" in helper_calls
+            split_prefix_close = "CloseConstrainedSpan" in helper_calls
+            split_prefix_append = "AppendConstrainedToken" in helper_calls
+            split_prefix_constrained = any(
+                name in helper_calls
+                for name in {
+                    "AdaptiveConstrainedStep",
+                    "GroupBoostedConstrainedStep",
+                    "PenalizedConstrainedStep",
+                }
+            )
+            uses_split_prefix_family = (
+                uses_split_prefix_policy
+                and split_prefix_open
+                and split_prefix_close
+                and split_prefix_append
+            )
             span_counter_state = {
                 name for name in extra_state if _is_verified_span_counter_name(name)
             }
@@ -2560,7 +2734,20 @@ class StrategyGenerator:
                     right_delimiter_span_counter_updates.update(
                         _assigned_state_names(if_node.body) & span_counter_state
                     )
-            if not uses_natural_left_delimiter or not uses_natural_right_delimiter:
+            if uses_split_prefix_policy and not uses_split_prefix_family:
+                return (
+                    "Split-prefix GSM policies must use the full helper family: "
+                    "`OpenConstrainedSpan(...)`, `AppendConstrainedToken(...)`, and "
+                    "`CloseConstrainedSpan(...)`, with durable local `inside_constrained` / "
+                    "`current_constrained` state."
+                )
+            if uses_split_prefix_family and not split_prefix_constrained:
+                return (
+                    "Split-prefix GSM policies must include a constrained-token chooser such as "
+                    "`AdaptiveConstrainedStep(...)`, `GroupBoostedConstrainedStep(...)`, or "
+                    "`PenalizedConstrainedStep(...)` before `AppendConstrainedToken(...)`."
+                )
+            if (not uses_split_prefix_family) and (not uses_natural_left_delimiter or not uses_natural_right_delimiter):
                 missing = []
                 if not uses_natural_left_delimiter:
                     missing.append("UnconstrainedAllowLeftDelimiterStep/UnconstrainedNudgeLeftDelimiterStep")
@@ -2590,9 +2777,11 @@ class StrategyGenerator:
                     "condition, the strategy leaves constrained mode after one token and may emit repeated "
                     "`<<` delimiters. Set the span state when `EndsWithLeftDelimiter` becomes true, keep "
                     "using `AppendConstrainedOrRightDelimiterStep` while that state is active, and clear it "
-                    "after `EndsWithRightDelimiter`."
+                    "after `EndsWithRightDelimiter`. Split-prefix policies may instead use "
+                    "`inside_constrained` / `current_constrained` state with "
+                    "`OpenConstrainedSpan` / `CloseConstrainedSpan`."
                 )
-            if natural_plain_constrained_lines:
+            if natural_plain_constrained_lines and not uses_split_prefix_family:
                 return (
                     "In GSM natural-delimiter mode, do not use plain `ConstrainedStep` or "
                     "`helpers.AppendConstrainedStep(...)` inside a span. Use "
@@ -2633,11 +2822,14 @@ class StrategyGenerator:
                     f"line {premature_not_can_constrain_lines[0]}."
                 )
             if (
+                not uses_split_prefix_family
+                and (
                 "EndsWithLeftDelimiter" not in strategy_body
                 and "IsLeftDelimiterToken" not in strategy_body
                 and "SpacedLeftDelimiter" not in strategy_body
                 and '" <<"' not in strategy_body
                 and "' <<'" not in strategy_body
+                )
             ):
                 return (
                     "When using natural left-delimiter helpers, handle both left-delimiter tokenizations. "
@@ -2645,12 +2837,15 @@ class StrategyGenerator:
                     "or use `helpers.IsLeftDelimiterToken(next_token)` for raw token-returning steps."
                 )
             if (
+                not uses_split_prefix_family
+                and (
                 uses_natural_right_delimiter
                 and "EndsWithRightDelimiter" not in strategy_body
                 and "IsRightDelimiterToken" not in strategy_body
                 and "SpacedRightDelimiter" not in strategy_body
                 and '" >>"' not in strategy_body
                 and "' >>'" not in strategy_body
+                )
             ):
                 return (
                     "When using natural right-delimiter helpers, handle both right-delimiter tokenizations. "
@@ -2658,7 +2853,7 @@ class StrategyGenerator:
                     "Prefer `helpers.EndsWithRightDelimiter(generated)` after append-style constrained-or-close "
                     "steps, or use `helpers.IsRightDelimiterToken(next_token)` for raw token-returning steps."
                 )
-            if single_right_close_terminal_lines:
+            if single_right_close_terminal_lines and not uses_split_prefix_family:
                 return (
                     "Do not use a single global `sawRight` / `rightClosed` flag as the decoding-loop "
                     "terminator in GSM natural-delimiter mode. That stops after the first scratch or "
@@ -2666,7 +2861,7 @@ class StrategyGenerator:
                     "then continue free-form reasoning after non-final spans and stop only after the "
                     f"final answer span. First risky loop is near line {single_right_close_terminal_lines[0]}."
                 )
-            if not span_counter_state:
+            if not uses_split_prefix_family and not span_counter_state:
                 return (
                     "GSM natural-delimiter strategies should track verified/scratch spans explicitly "
                     "(for example `closed_spans` or `scratch_spans`) so the first mini-expression is "
@@ -2674,14 +2869,14 @@ class StrategyGenerator:
                     "tokens inside one span and are not enough. Continue after non-final spans and emit "
                     "a later final span that composes the scratch values."
                 )
-            if not right_delimiter_span_counter_updates:
+            if not uses_split_prefix_family and not right_delimiter_span_counter_updates:
                 return (
                     "When `ConstrainedOrRightDelimiterStep` naturally emits `RightDelimiter` or "
                     "`SpacedRightDelimiter`, update a real closed-span counter such as `closed_spans = "
                     "closed_spans + 1`. That lets the strategy distinguish scratch mini-expressions "
                     "from the later final answer span."
                 )
-            if not any(_state_used_in_conditions(name) for name in span_counter_state):
+            if not uses_split_prefix_family and not any(_state_used_in_conditions(name) for name in span_counter_state):
                 return (
                     "Use the closed-span/scratch-span counter in branch or loop conditions so it affects "
                     "whether decoding continues after a scratch mini-expression versus stops after the "
@@ -2697,6 +2892,16 @@ class StrategyGenerator:
                     "corresponding helper call in the same branch, or keep looping under a variant that "
                     "still consumes `stepsLeft`. First phase/break transition is near line "
                     f"{phase_break_open_lines[0]}."
+                )
+            if state_only_open_transition_lines:
+                return (
+                    "Do not switch into answer-opening state (for example by setting `answer_ready`, "
+                    "`final_ready`, `phase = \"wrapup\"`, or `phase = \"open\"`) in a branch that consumes "
+                    "no helper step and does not terminate. With the standard no-progress guard, that "
+                    "pattern usually exits immediately with plain prose and no verified `<< ... >>` span. "
+                    "When a branch enters wrap-up/open/span state, emit the corresponding helper step in "
+                    "that same branch. First state-only transition is near line "
+                    f"{state_only_open_transition_lines[0]}."
                 )
             if parser_readiness_early_open_lines:
                 return (
@@ -2976,8 +3181,9 @@ class StrategyGenerator:
             )
         if append_helper_wrong_targets:
             return (
-                "Append* helper calls return (updated_prefix, remaining_steps) and must be assigned back into "
-                "`generated, stepsLeft`, not token variables like `next_token`. Offending helpers: "
+                "Helpers that update the generated prefix must assign the updated prefix back into "
+                "`generated` (and, when applicable, update `stepsLeft` from the returned budget). "
+                "Do not assign those results only into token variables like `next_token`. Offending helpers: "
                 + ", ".join(sorted(append_helper_wrong_targets)) + "."
             )
         if none_checkpoint_assign_lines:
@@ -3047,21 +3253,27 @@ class StrategyGenerator:
                 helper_lines.append((getattr(node, "lineno", 0), node.func.attr))
         constrained_lines = [line for line, attr in helper_lines if attr in constrained_helper_methods]
         if (
+            not uses_split_prefix_policy
+            and (
             not uses_natural_left_delimiter
             and constrained_lines
             and left_delimiter_lines
             and min(constrained_lines) < min(left_delimiter_lines)
+            )
         ):
             return (
                 "Constrained answer-token helpers must appear after executable LeftDelimiter emission in the method body. "
                 "Do not generate constrained answer content before `helpers.AppendLeftDelimiter(...)`."
             )
         if (
+            not uses_split_prefix_policy
+            and (
             not spider_force_single_sql_span
             and not uses_natural_right_delimiter
             and constrained_lines
             and right_delimiter_lines
             and min(right_delimiter_lines) <= min(constrained_lines)
+            )
         ):
             return (
                 "RightDelimiter emission must appear after constrained answer-token helpers, and only after "
@@ -3174,19 +3386,42 @@ class StrategyGenerator:
         current = strategy_body
         trace: list[dict[str, object]] = []
         self.last_structure_repair_trace = trace
+        self.last_structure_validation_summary = {}
+        autofix_passes = 0
         for repair_round in range(1, max_repairs + 1):
             issue = self._structural_issue(current)
             if issue is None:
-                return current
+                fixed = self._autofix_python_strategy(current)
+                autofix_changed = fixed != current
+                if autofix_changed:
+                    autofix_passes += 1
+                final_issue = self._structural_issue(fixed)
+                if final_issue is None:
+                    self.last_structure_validation_summary = {
+                        "structural_repairs": len(trace),
+                        "autofix_passes": autofix_passes,
+                        "autofix_changed": autofix_changed,
+                    }
+                    return fixed
+                current = fixed
+                issue = final_issue
             repair_record: dict[str, object] = {
                 "round": repair_round,
                 "input_strategy_length": len(current),
                 "input_strategy": self._diagnostic_excerpt(current),
                 "issue": issue,
             }
-            system_prompt, user_prompt = build_structure_repair_prompt(current, issue)
+            system_prompt, user_prompt = build_structure_repair_prompt(
+                current,
+                issue,
+                strategy_language=self.strategy_language,
+            )
             repaired_raw = self._generate_text(system_prompt, user_prompt)
-            repaired = self._extract_strategy(repaired_raw)
+            repaired = (
+                self._extract_dafny_strategy(repaired_raw)
+                if self.strategy_language == "dafny"
+                else self._extract_strategy(repaired_raw)
+            )
             repair_record.update(
                 {
                     "repair_raw_output_empty": repaired_raw == "",
@@ -3202,7 +3437,19 @@ class StrategyGenerator:
 
         issue = self._structural_issue(current)
         if issue is None:
-            return current
+            fixed = self._autofix_python_strategy(current)
+            autofix_changed = fixed != current
+            if autofix_changed:
+                autofix_passes += 1
+            final_issue = self._structural_issue(fixed)
+            if final_issue is None:
+                self.last_structure_validation_summary = {
+                    "structural_repairs": len(trace),
+                    "autofix_passes": autofix_passes,
+                    "autofix_changed": autofix_changed,
+                }
+                return fixed
+            issue = final_issue
         trace.append(
             {
                 "round": max_repairs + 1,
@@ -3217,6 +3464,25 @@ class StrategyGenerator:
             "Generated strategy is structurally invalid. "
             f"It must contain executable decoding logic with a while loop and helper step calls. Last issue: {issue}"
         )
+
+    def _candidate_rank(
+        self,
+        novelty_score: int,
+        *,
+        validation_summary: Optional[dict[str, object]] = None,
+        rationale_repairs: Optional[int] = None,
+    ) -> tuple[int, int]:
+        summary = validation_summary or {}
+        structural_repairs = int(summary.get("structural_repairs", 0))
+        autofix_passes = int(summary.get("autofix_passes", 0))
+        rationale_repair_count = (
+            self.last_rationale_repair_count if rationale_repairs is None else rationale_repairs
+        )
+        stability_score = 100
+        stability_score -= 20 * structural_repairs
+        stability_score -= 8 * autofix_passes
+        stability_score -= 6 * rationale_repair_count
+        return stability_score, novelty_score
 
     def _novelty_score(self, strategy_body: str) -> int:
         body = self._body_without_rationale(strategy_body)
@@ -3276,6 +3542,20 @@ class StrategyGenerator:
             score += 24
         if "AppendConstrainedOrRightDelimiterStep" in helper_calls:
             score += 26
+        if "AdaptiveConstrainedStep" in helper_calls:
+            score += 28
+        if "GroupBoostedConstrainedStep" in helper_calls:
+            score += 20
+        if "PenalizedConstrainedStep" in helper_calls:
+            score += 16
+        if "OpenConstrainedSpan" in helper_calls:
+            score += 18
+        if "CloseConstrainedSpan" in helper_calls:
+            score += 18
+        if "AppendConstrainedToken" in helper_calls:
+            score += 16
+        if "LastTokenBefore" in helper_calls or "CountOccurrences" in helper_calls:
+            score += 8
         if {"ForcedTokenStep", "AppendForcedToken", "AppendLeftDelimiter", "AppendRightDelimiter"} & helper_calls:
             score += 8
         if (
@@ -3341,8 +3621,30 @@ class StrategyGenerator:
         last_error: str | None = None
         current_system = system_prompt
         current_user = user_prompt
-        valid_candidates: list[tuple[int, str]] = []
+        valid_candidates: list[tuple[tuple[int, int], str]] = []
+        rejected_candidates: list[dict[str, object]] = []
         self.last_generation_diagnostics = []
+        strategy_language = getattr(self, "strategy_language", "python")
+
+        def _rejection_history_context() -> str:
+            if not rejected_candidates:
+                return ""
+            lines = [
+                "Rejected candidate history:",
+                "Before proposing the next repair, inspect this list and avoid repeating the same structural direction.",
+            ]
+            for item in rejected_candidates[-6:]:
+                candidate = item.get("candidate", "?")
+                issue = str(item.get("issue", "")).replace("\n", " ")
+                if "Last issue:" in issue:
+                    issue = issue.split("Last issue:", 1)[1].strip()
+                if len(issue) > 500:
+                    issue = issue[:500] + "..."
+                strategy_excerpt = str(item.get("extracted_strategy", ""))
+                helpers = sorted(set(re.findall(r"helpers\.([A-Za-z_]\w*)", strategy_excerpt)))
+                helper_text = ", ".join(helpers[:8]) if helpers else "no helper calls detected"
+                lines.append(f"- Candidate {candidate}: {issue} Helpers: {helper_text}.")
+            return "\n".join(lines)
 
         for idx, (budget, temp) in enumerate(zip(budgets, temperatures), start=1):
             raw_output = self._generate_text(
@@ -3351,7 +3653,11 @@ class StrategyGenerator:
                 max_new_tokens=budget,
                 temperature=temp,
             )
-            strategy = self._extract_strategy(raw_output)
+            strategy = (
+                self._extract_dafny_strategy(raw_output)
+                if strategy_language == "dafny"
+                else self._extract_strategy(raw_output)
+            )
             diagnostic: dict[str, object] = {
                 "candidate": idx,
                 "max_new_tokens": budget,
@@ -3371,13 +3677,29 @@ class StrategyGenerator:
             try:
                 self.last_structure_repair_trace = []
                 strategy = self._ensure_rationale_block(strategy)
-                strategy = self._ensure_nontrivial_strategy(strategy)
+                if strategy_language == "dafny":
+                    strategy = self._ensure_nontrivial_dafny_strategy(strategy)
+                else:
+                    strategy = self._ensure_nontrivial_strategy(strategy)
                 novelty_score = self._novelty_score(strategy)
+                validation_summary = dict(getattr(self, "last_structure_validation_summary", {}))
+                rationale_repairs = int(getattr(self, "last_rationale_repair_count", 0))
+                candidate_rank = self._candidate_rank(
+                    novelty_score,
+                    validation_summary=validation_summary,
+                    rationale_repairs=rationale_repairs,
+                )
                 diagnostic["accepted"] = True
                 diagnostic["novelty_score"] = novelty_score
+                diagnostic["candidate_rank"] = {
+                    "stability_score": candidate_rank[0],
+                    "novelty_score": candidate_rank[1],
+                }
+                diagnostic["validation_summary"] = validation_summary
+                diagnostic["rationale_repair_count"] = rationale_repairs
                 diagnostic["final_strategy_length"] = len(strategy)
                 diagnostic["final_strategy"] = self._diagnostic_excerpt(strategy)
-                valid_candidates.append((novelty_score, strategy))
+                valid_candidates.append((candidate_rank, strategy))
                 current_system, current_user = system_prompt, user_prompt
                 continue
             except ValueError as exc:
@@ -3386,10 +3708,24 @@ class StrategyGenerator:
                 diagnostic["structure_repair_trace"] = [
                     dict(item) for item in getattr(self, "last_structure_repair_trace", [])
                 ]
+                rejected_candidates.append(dict(diagnostic))
                 current_system, current_user = build_structure_repair_prompt(
-                    strategy or raw_output or "# CSD_RATIONALE_BEGIN\n# Empty output.\n# CSD_RATIONALE_END",
+                    strategy
+                    or raw_output
+                    or (
+                        "# CSD_RATIONALE_BEGIN\n"
+                        "# Empty output.\n"
+                        "# CSD_RATIONALE_END\n"
+                        "# CSD_PROOF_SKETCH_BEGIN\n"
+                        "# No executable strategy was produced.\n"
+                        "# CSD_PROOF_SKETCH_END"
+                    ),
                     last_error,
+                    strategy_language=strategy_language,
                 )
+                history_context = _rejection_history_context()
+                if history_context:
+                    current_user += "\n\n" + history_context
                 print(
                     f"  Initial generation attempt {idx} produced an invalid body; "
                     f"retrying with a stricter repair prompt ({last_error})."
@@ -3398,8 +3734,11 @@ class StrategyGenerator:
                 self.last_generation_diagnostics.append(diagnostic)
 
         if valid_candidates:
-            best_score, best_strategy = max(valid_candidates, key=lambda item: item[0])
-            print(f"  Selected the most novel structurally valid candidate (score={best_score}).")
+            best_rank, best_strategy = max(valid_candidates, key=lambda item: item[0])
+            print(
+                "  Selected the strongest structurally valid candidate "
+                f"(stability={best_rank[0]}, novelty={best_rank[1]})."
+            )
             return best_strategy
 
         detail = last_error or "invalid model output"
@@ -3415,7 +3754,10 @@ class StrategyGenerator:
         Returns:
             Strategy body (Python code)
         """
-        system_prompt, user_prompt = build_initial_prompt(task_description)
+        system_prompt, user_prompt = build_initial_prompt(
+            task_description,
+            strategy_language=self.strategy_language,
+        )
         return self._generate_valid_strategy(
             system_prompt,
             user_prompt,
@@ -3438,7 +3780,9 @@ class StrategyGenerator:
             New strategy body
         """
         system_prompt, user_prompt = build_verification_error_prompt(
-            previous_strategy, error_message
+            previous_strategy,
+            error_message,
+            strategy_language=self.strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3462,7 +3806,9 @@ class StrategyGenerator:
             New strategy body
         """
         system_prompt, user_prompt = build_runtime_error_prompt(
-            previous_strategy, error_traceback
+            previous_strategy,
+            error_traceback,
+            strategy_language=self.strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3486,7 +3832,9 @@ class StrategyGenerator:
             New strategy body
         """
         system_prompt, user_prompt = build_compilation_error_prompt(
-            previous_strategy, error_message
+            previous_strategy,
+            error_message,
+            strategy_language=self.strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3514,7 +3862,9 @@ class StrategyGenerator:
             New strategy body
         """
         system_prompt, user_prompt = build_evaluation_failure_prompt(
-            previous_strategy, evaluation_feedback
+            previous_strategy,
+            evaluation_feedback,
+            strategy_language=self.strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3534,11 +3884,11 @@ class StrategyGenerator:
         """
         body = textwrap.dedent(strategy).strip("\n")
         indented = textwrap.indent(body, "    ")
-        start = self._template.find(self.STRATEGY_BEGIN_MARKER)
-        end = self._template.find(self.STRATEGY_END_MARKER)
+        start = self._template.find(self.strategy_begin_marker)
+        end = self._template.find(self.strategy_end_marker)
         if start == -1 or end == -1 or end < start:
-            raise ValueError("Strategy hole markers not found in generation/csd/GeneratedAgentTemplate.py")
-        end += len(self.STRATEGY_END_MARKER)
+            raise ValueError(f"Strategy hole markers not found in {self.template_path}")
+        end += len(self.strategy_end_marker)
         return self._template[:start] + indented + self._template[end:]
     
     def get_template(self) -> str:

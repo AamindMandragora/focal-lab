@@ -1,6 +1,7 @@
 import ast
 from pathlib import Path
 
+from generation.csd.VerifiedAgentSynthesis import CSDHelpers, LM, Parser
 from verification.transpiler.transpiler import (
     _translate_compare,
     _translate_expr,
@@ -196,3 +197,93 @@ def test_translate_tuple_literal_assignment():
     assert translated == ["var next_token := eosToken;", "var new_steps := 0;"]
 
 
+class _DummyParser(Parser):
+    def IsValidPrefix(self, prefix):
+        return all(token in {"a", "b"} for token in prefix)
+
+    def IsCompletePrefix(self, prefix):
+        return False
+
+    def ValidNextTokens(self, prefix):
+        return ["a", "b"]
+
+
+class _DummyLM(LM):
+    def __init__(self):
+        super().__init__()
+        self.Tokens = ["a", "b", "<eos>", "<<", ">>", " <<", " >>"]
+        self.Ids = list(range(len(self.Tokens)))
+        self.Logits = [0.0] * len(self.Tokens)
+        self.last_input = None
+
+    def GenerateLogits(self, input):
+        self.last_input = list(input)
+        base = {
+            "a": 1.0,
+            "b": 0.0,
+            "<eos>": -5.0,
+            "<<": -10.0,
+            ">>": -10.0,
+            " <<": -10.0,
+            " >>": -10.0,
+        }
+        self.Logits = [base[token] for token in self.Tokens]
+
+
+def test_split_prefix_adaptive_step_biases_valid_group_and_uses_clean_context():
+    lm = _DummyLM()
+    parser = _DummyParser()
+    helpers = CSDHelpers(lm, parser)
+
+    token, remaining = helpers.AdaptiveConstrainedStep(
+        ["prompt"],
+        ["reason"],
+        ["a"],
+        [["b"]],
+        2.0,
+        1,
+        "<eos>",
+        5,
+    )
+
+    assert lm.last_input == ["prompt", "reason", "a"]
+    assert token == "b"
+    assert remaining == 4
+
+
+def test_prefix_scanning_helpers_report_recent_structure():
+    helpers = CSDHelpers(_DummyLM(), _DummyParser())
+    generated = ["reason", "<<", "x", ">>", "tail"]
+
+    assert helpers.LastTokenBefore(generated, ">>") == ("x", True)
+    assert helpers.LastTokenBefore(["only"], "only") == ("", False)
+    assert helpers.CountOccurrences(generated, ">>") == 1
+    assert helpers.CountOccurrences(generated, "<<") == 1
+    assert helpers.TokensSinceLastDelimiter(generated) == 1
+    assert helpers.TokensSinceLastDelimiter(["reason", "tail"]) == 2
+
+
+def test_transpile_contract_library_uses_new_return_name_overrides():
+    source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text(encoding="utf-8")
+    result = transpile_contract_library(source)
+    assert result.is_ok(), result.error
+    output = result.value
+
+    assert "method AdaptiveConstrainedStep" in output
+    assert "returns (nextToken: Token, remainingSteps: int)" in output
+    assert "method LastTokenBefore" in output
+    assert "returns (token: Token, found: bool)" in output
+    assert "method OpenConstrainedSpan" in output
+    assert "returns (updated: Prefix, insideSpan: bool, currentConstrained: Prefix, remainingSteps: int)" in output
+    assert "method CloseConstrainedSpan" in output
+    assert "returns (updated: Prefix, insideSpan: bool, updatedConstrained: Prefix, remainingSteps: int)" in output
+
+
+def test_transpile_contract_library_emits_python_line_markers():
+    source = Path("generation/csd/VerifiedAgentSynthesis.py").read_text(encoding="utf-8")
+    result = transpile_contract_library(source)
+    assert result.is_ok(), result.error
+
+    output = result.value
+
+    assert "// Python line " in output

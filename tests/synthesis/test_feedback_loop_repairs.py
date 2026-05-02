@@ -1,4 +1,9 @@
-from synthesis.feedback_loop import repair_verification_strategy
+from synthesis.feedback_loop import (
+    SynthesisAttempt,
+    SynthesisPipeline,
+    _repeated_verification_guidance,
+    repair_verification_strategy,
+)
 
 
 def test_repair_replaces_done_state_with_break():
@@ -16,6 +21,37 @@ while stepsLeft > 0 and current_step != "done":
     assert changed
     assert 'current_step = "done"' not in repaired
     assert repaired.endswith("        break") or "\n        break\n" in repaired
+
+
+def test_repeated_verification_guidance_respects_natural_delimiters(monkeypatch):
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+
+    guidance = _repeated_verification_guidance("python")
+
+    assert "AppendConstrainedOrRightDelimiterStep" in guidance
+    assert "AppendLeftDelimiter" not in guidance
+    assert "AppendRightDelimiter" not in guidance
+
+
+def test_persist_attempt_artifacts_writes_attempt_local_sources(tmp_path):
+    pipeline = SynthesisPipeline.__new__(SynthesisPipeline)
+    pipeline.strategy_language = "python"
+
+    attempt = SynthesisAttempt(
+        attempt_number=2,
+        strategy_code="phase = 0",
+        timestamp="2026-05-02T00:00:00",
+        full_python_code="print('hello')\n",
+    )
+
+    pipeline._persist_attempt_artifacts(
+        attempt,
+        tmp_path,
+        transpiled_dafny="module GeneratedCSD {}\n",
+    )
+
+    assert (tmp_path / "attempt_02_GeneratedCSD.py").read_text(encoding="utf-8") == "print('hello')\n"
+    assert (tmp_path / "attempt_02_GeneratedCSD.dfy").read_text(encoding="utf-8") == "module GeneratedCSD {}\n"
 
 
 def test_repair_removes_unprovable_current_step_invariant():
