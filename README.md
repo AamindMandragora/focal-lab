@@ -77,7 +77,7 @@ This is the CLI entry point for the synthesis pipeline.
 | `--output-dir` | | `outputs/generated-csd/` | Base output directory |
 | `--dafny-path` | | `dafny` | Path to Dafny executable |
 | `--temperature` | | 0.7 | Sampling temperature for Qwen |
-| `--max-tokens` | | 256 | Maximum tokens to generate per attempt |
+| `--synthesis-max-tokens` | | 1024 | Maximum tokens for CSD synthesis generation per attempt |
 | `--device` | | `auto` | Device for inference: `cuda`, `mps`, `cpu`, `auto` |
 | `--verify-only` | | | Only verify existing `GeneratedCSD.dfy` |
 | `--compile-only` | | | Verify and compile without generating |

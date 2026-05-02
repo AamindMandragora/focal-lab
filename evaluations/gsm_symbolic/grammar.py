@@ -61,14 +61,25 @@ def build_dynamic_grammar(base_grammar: str, variables: List[str]) -> str:
     return result
 
 
-def extract_variables_from_mapping(variable_mapping: dict) -> List[str]:
+def extract_variables_from_mapping(
+    variable_mapping: dict,
+    include_string_variables: bool = False,
+) -> List[str]:
     """
-    Extract the list of variable names from a variable mapping.
-    
+    Extract allowed variable names from a CRANE-style variable mapping.
+
+    By default, string-valued placeholders such as person or object names are excluded
+    because GSM arithmetic expressions should only reference numeric quantities.
+
     Args:
-        variable_mapping: Dict mapping variable names to their values
-        
+        variable_mapping: Dict mapping variable names to their declared types
+        include_string_variables: Whether to keep entries whose type is ``"str"``
+
     Returns:
-        List of variable names
+        List of allowed variable names
     """
-    return list(variable_mapping.keys())
+    variables: List[str] = []
+    for name, value_type in variable_mapping.items():
+        if include_string_variables or str(value_type).lower() != 'str':
+            variables.append(name)
+    return variables

@@ -1,0 +1,137 @@
+"""
+Execution-accuracy scoring for Spider predictions.
+
+Thin wrapper over the vendored Spider evaluator at
+syncode/syncode/utils/sql_spider_eval/evaluation.py, which exposes:
+
+    evaluate(predict, gold, db_dir, etype, table, result_jsonl=None)
+        -> (scores, error_types)
+
+We write predictions and gold to temp files in the order of `examples`,
+then call evaluate() and return its structured results.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+from evaluations.sql_spider.dataset import (
+    default_db_dir,
+    default_tables_json,
+    write_gold_file,
+)
+
+
+def _ensure_syncode_import_path() -> None:
+    """
+    Make `syncode.*` imports resolvable from the repo's vendored syncode.
+
+    Mirrors the working pattern used elsewhere in the repo (see parser_utils):
+    only the repo root needs to be on sys.path. The editable-install finder
+    (or, in its absence, this sys.path entry) resolves ``syncode`` to
+    ``csd-generation/syncode/syncode``, which makes qualified imports like
+    ``from syncode.parsers.grammars import Grammar`` work — and the vendored
+    package's internal unqualified imports resolve relative to that.
+    """
+    repo_root = Path(__file__).parent.parent.parent           # csd-generation/
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+
+
+def _clean_sql(text: str) -> str:
+    """Post-process a model completion into a single-line SQL string."""
+    if text is None:
+        return ""
+    s = str(text).strip()
+    # Drop anything after a blank line (matches syncode Dataset.post_process_answer)
+    s = s.split("\n\n")[0]
+    # Collapse newlines to spaces
+    s = s.replace("\n", " ").replace("\r", " ")
+    # Strip trailing semicolons and whitespace
+    s = s.strip().rstrip(";").strip()
+    return s
+
+
+def execute_accuracy(
+    predictions: List[str],
+    examples: List[Dict[str, Any]],
+    db_dir: Optional[Path] = None,
+    tables_json: Optional[Path] = None,
+    etype: str = "exec",
+) -> Tuple[Dict[str, Any], Dict[str, int], List[Dict[str, Any]]]:
+    """
+    Score a batch of predictions against their examples' gold SQL.
+
+    Args:
+        predictions: list of model completions, parallel to `examples`.
+        examples: list of Spider example dicts (from load_spider).
+        db_dir: path to Spider's database directory (defaults to SPIDER_DB_DIR).
+        tables_json: path to Spider's tables.json (defaults to SPIDER_TABLES_JSON).
+        etype: "exec" (execution accuracy only), "match" (exact set match),
+               or "all" (both).
+
+    Returns:
+        (scores, error_types, per_row)
+          - scores: nested dict by hardness level -> {"exec": float, "count": int, ...}
+          - error_types: counter of syntax-validity outcomes
+          - per_row: list of per-example dicts with {pred, gold, db_id, exec, validity}
+    """
+    _ensure_syncode_import_path()
+
+    if db_dir is None:
+        db_dir = default_db_dir()
+    if tables_json is None:
+        tables_json = default_tables_json()
+
+    if len(predictions) != len(examples):
+        raise ValueError(
+            f"predictions ({len(predictions)}) and examples ({len(examples)}) must match"
+        )
+
+    with tempfile.TemporaryDirectory(prefix="sql_eval_") as tmp:
+        pred_path = Path(tmp) / "pred.sql"
+        gold_path = Path(tmp) / "gold.sql"
+
+        with open(pred_path, "w") as f:
+            for pred in predictions:
+                f.write(_clean_sql(pred) + "\n")
+        write_gold_file(examples, gold_path)
+
+        # result_jsonl gets in-place mutated to attach validity/error per row
+        result_jsonl: List[Dict[str, Any]] = [
+            {
+                "task_id": i,
+                "pred": _clean_sql(predictions[i]),
+                "gold": (examples[i].get("query") or "").strip(),
+                "db_id": examples[i].get("db_id", ""),
+            }
+            for i in range(len(examples))
+        ]
+
+        from syncode.utils.sql_spider_eval.evaluation import evaluate
+
+        scores, error_types = evaluate(
+            str(pred_path),
+            str(gold_path),
+            str(db_dir),
+            etype,
+            str(tables_json),
+            result_jsonl=result_jsonl,
+        )
+
+    return scores, dict(error_types), result_jsonl
+
+
+def score_predictions(
+    predictions: List[str],
+    examples: List[Dict[str, Any]],
+    **kwargs: Any,
+) -> float:
+    """Return the overall execution accuracy (level='all') as a float in [0, 1]."""
+    scores, _, _ = execute_accuracy(predictions, examples, **kwargs)
+    return float(scores.get("all", {}).get("exec", 0.0))

@@ -5,9 +5,8 @@ start: s_expr
 // For CSD prefix parsing - Accepts ONLY symbolic expressions (must contain variables)
 // This forces the model to use the symbolic variables defined in the question.
 csd_start: s_expr ">>"
-
-// For expression-only parsing (without >> delimiter) - used in constrained generation
 expr_only: s_expr
+
 
 // Any expression - either symbolic (contains variables) or numeric (numbers only)
 // This is a UNION rule that accepts both types for CSD termination purposes.
@@ -65,8 +64,6 @@ expr_only: s_expr
          | "(" s_expr ")"
 
 ?s_atom: VARIABLE
-       | VAR_LETTERS          -> var_letters
-       | VAR_LETTERS NUMBER   -> var_num
        | VARIABLE NUMBER      -> var_num
        | "int" "(" s_expr ")"
 
@@ -74,12 +71,10 @@ expr_only: s_expr
 // TERMINALS
 // ============================================================================
 
-// Variables are SINGLE characters only to prevent "ab" or "a b" patterns
-// (two variables without an operator). The grammar structure requires operators
-// between terms, so single-char restriction enforces proper syntax.
-// Exception: n0, n1, n2... are allowed for numbered variable references.
-VARIABLE: /n[0-9]+/ | /[a-zA-Z_]/
-VAR_LETTERS: /[a-zA-Z_]/
+// Variables may be descriptive identifiers so the model can reuse names
+// it introduces in the answer text, such as total, brokerage_fee, or o_new.
+// Digits and underscores are allowed after the first character.
+VARIABLE: /[a-zA-Z_][a-zA-Z0-9_]*/
 
 NUMBER: /-?\d+(\.\d+)?/
 

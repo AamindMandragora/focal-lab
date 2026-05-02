@@ -7,36 +7,37 @@ until evaluation thresholds are met or max iterations exhausted.
 
 Usage:
     python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-        --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
+        --min-accuracy 0.3 --min-syntax-rate 0.5
 
     python run_synthesis.py --task "..." --dataset folio \\
-        --min-accuracy 0.5 --min-format-rate 0.8 --min-syntax-rate 0.7
+        --min-accuracy 0.5 --min-syntax-rate 0.7
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies using Qwen",
+        description="Synthesize constrained decoding strategies using HuggingFace, vLLM, or API backends",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # GSM-Symbolic
   python run_synthesis.py --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
+      --min-accuracy 0.3 --min-syntax-rate 0.5
 
   # FOLIO
   python run_synthesis.py --task "Generate FOL reasoning strategy" \\
       --dataset folio \\
-      --min-accuracy 0.5 --min-format-rate 0.8 --min-syntax-rate 0.7
+      --min-accuracy 0.5 --min-syntax-rate 0.7
 
   # With more iterations and custom eval sample size
   python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5 \\
+      --min-accuracy 0.3 --min-syntax-rate 0.5 \\
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
     )
@@ -59,14 +60,44 @@ Examples:
         "--generation-model",
         type=str,
         default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="HuggingFace model for CSD generation (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
+        help="Model identifier for CSD generation (local HuggingFace or API model name)"
+    )
+
+    parser.add_argument(
+        "--generation-backend",
+        type=str,
+        choices=["huggingface", "vllm", "openai"],
+        default="vllm",
+        help="Backend for strategy generation (default: vllm)"
+    )
+
+    parser.add_argument(
+        "--generation-api-base-url",
+        type=str,
+        default=None,
+        help="Optional base URL for an OpenAI-compatible generation API"
+    )
+
+    parser.add_argument(
+        "--generation-api-key",
+        type=str,
+        default=None,
+        help="Optional API key for generation. Defaults to OPENAI_API_KEY."
     )
 
     parser.add_argument(
         "--eval-model",
         type=str,
         default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="HuggingFace model for evaluation data generation (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
+        help="Model for evaluation data generation/runtime (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
+    )
+
+    parser.add_argument(
+        "--eval-backend",
+        type=str,
+        choices=["huggingface", "vllm", "openai"],
+        default="vllm",
+        help="Backend for evaluation runtime (default: vllm; openai is unsupported for constrained runtime)."
     )
     
     parser.add_argument(
@@ -98,10 +129,12 @@ Examples:
     )
     
     parser.add_argument(
+        "--synthesis-max-tokens",
         "--max-tokens",
+        dest="synthesis_max_tokens",
         type=int,
-        default=512,
-        help="Maximum tokens to generate per attempt (default: 512)"
+        default=4096,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 4096)"
     )
     
     parser.add_argument(
@@ -122,7 +155,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "folio"],
+        choices=["gsm_symbolic", "folio", "spider"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -135,17 +168,17 @@ Examples:
     )
 
     parser.add_argument(
-        "--min-format-rate",
-        type=float,
-        required=True,
-        help="Minimum format validity rate threshold (e.g. 0.5)"
-    )
-
-    parser.add_argument(
         "--min-syntax-rate",
         type=float,
         required=True,
         help="Minimum syntax validity rate threshold (e.g. 0.5)"
+    )
+
+    parser.add_argument(
+        "--require-delimiters",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require evaluated outputs to contain at least one << >> span (default: true)"
     )
 
     parser.add_argument(
@@ -156,13 +189,91 @@ Examples:
     )
 
     parser.add_argument(
+        "--eval-seed",
+        type=int,
+        default=None,
+        help="Optional RNG seed for reproducible evaluation sampling"
+    )
+    parser.add_argument(
+        "--eval-random",
+        type=lambda v: str(v).lower() in ("1", "true", "yes", "y", "t"),
+        default=True,
+        help="If True (default), sample eval set randomly with --eval-seed. "
+             "If False, take the first --eval-sample-size examples deterministically."
+    )
+
+    parser.add_argument(
         "--eval-max-steps",
         type=int,
         default=150,
         help="Maximum generation steps during evaluation (default: 150)"
     )
 
+    parser.add_argument(
+        "--eval-step-token-budget",
+        type=int,
+        default=1,
+        help="Max tokens per outer generation step (1=token-level default, >1=symbol-level for structured outputs like SQL)"
+    )
+
+    parser.add_argument(
+        "--eval-max-seconds-per-example",
+        type=float,
+        default=None,
+        help="Optional runtime budget per evaluated example in seconds"
+    )
+
+    parser.add_argument(
+        "--load-in-4bit",
+        action="store_true",
+        help="Load generation model in 4-bit quantization"
+    )
+
+    parser.add_argument(
+        "--load-in-8bit",
+        action="store_true",
+        help="Load generation model in 8-bit quantization"
+    )
+
+    parser.add_argument(
+        "--vllm-tensor-parallel-size",
+        type=int,
+        default=None,
+        help="Explicit tensor parallel size for vLLM. Defaults to visible GPU count."
+    )
+
+    parser.add_argument(
+        "--vllm-pipeline-parallel-size",
+        type=int,
+        default=1,
+        help="Explicit pipeline parallel size for vLLM (default: 1)"
+    )
+
+    parser.add_argument(
+        "--vllm-gpu-memory-utilization",
+        type=float,
+        default=0.8,
+        help="GPU memory fraction reserved by vLLM (default: 0.8)"
+    )
+
+    parser.add_argument(
+        "--vllm-max-model-len",
+        type=int,
+        default=4096,
+        help="Maximum model context length passed to vLLM (default: 4096)"
+    )
+
+    parser.add_argument(
+        "--vllm-enforce-eager",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Disable torch.compile and CUDA graphs in vLLM for stability (default: true)"
+    )
+
     args = parser.parse_args()
+
+    if args.generation_backend == "vllm" or args.eval_backend == "vllm":
+        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
     # Normalize output_dir if provided (handle potential backslashes from user input)
     if args.output_dir:
@@ -182,12 +293,26 @@ Examples:
 
     generator = StrategyGenerator(
         model_name=args.generation_model,
+        backend=args.generation_backend,
         device=device,
-        max_new_tokens=args.max_tokens,
-        temperature=args.temperature
+        max_new_tokens=args.synthesis_max_tokens,
+        temperature=args.temperature,
+        load_in_4bit=args.load_in_4bit,
+        load_in_8bit=args.load_in_8bit,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        vllm_pipeline_parallel_size=args.vllm_pipeline_parallel_size,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_max_model_len=args.vllm_max_model_len,
+        vllm_enforce_eager=args.vllm_enforce_eager,
+        api_base_url=args.generation_api_base_url,
+        api_key=args.generation_api_key,
     )
 
-    verifier = DafnyVerifier(dafny_path=args.dafny_path)
+    verifier = DafnyVerifier(
+        dafny_path=args.dafny_path,
+        timeout=180,
+        extra_args=["--verification-time-limit", "120"],
+    )
     # Compiler output dir is set per-run inside the pipeline (so runs don't overwrite each other).
     compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=args.output_dir)
     # Runner is created by the pipeline with task-appropriate parser mode
@@ -199,9 +324,21 @@ Examples:
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
+        backend=args.eval_backend,
         device=device or "cuda",
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        load_in_4bit=args.load_in_4bit,
+        load_in_8bit=args.load_in_8bit,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        vllm_pipeline_parallel_size=args.vllm_pipeline_parallel_size,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_max_model_len=args.vllm_max_model_len,
+        vllm_enforce_eager=args.vllm_enforce_eager,
+        sample_seed=args.eval_seed,
+        random_sample=args.eval_random,
+        max_seconds_per_example=args.eval_max_seconds_per_example,
     )
 
     pipeline = SynthesisPipeline(
@@ -215,9 +352,10 @@ Examples:
         save_reports=not args.no_save_reports,
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
-        min_format_rate=args.min_format_rate,
         min_syntax_rate=args.min_syntax_rate,
+        require_delimiters=args.require_delimiters,
         eval_sample_size=args.eval_sample_size,
+        eval_max_seconds_per_example=args.eval_max_seconds_per_example,
     )
     
     # Run synthesis
@@ -261,4 +399,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

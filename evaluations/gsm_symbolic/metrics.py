@@ -17,13 +17,13 @@ class GSMMetrics:
     
     Tracks:
     - Answer accuracy (exact numeric match)
-    - Valid format rate (outputs contain proper delimiters)
+    - Whether outputs contain proper << >> delimiters
     - Syntax validity (math expressions pass grammar validation)
     - Token usage and timing
     """
     n: int = 0
     correct: int = 0
-    valid_format: int = 0
+    examples_with_delimiters: int = 0
     syntax_valid_segments: int = 0
     total_segments: int = 0
     total_tokens: int = 0
@@ -33,9 +33,9 @@ class GSMMetrics:
         """Compute answer accuracy as percentage."""
         return 100.0 * self.correct / max(1, self.n)
 
-    def format_rate(self) -> float:
-        """Compute valid format rate as percentage."""
-        return 100.0 * self.valid_format / max(1, self.n)
+    def all_examples_contain_delimiters(self) -> bool:
+        """Return whether every evaluated example contained at least one << >> span."""
+        return self.examples_with_delimiters == self.n and self.n > 0
 
     def syntax_validity(self) -> float:
         """Compute syntax validity rate as percentage."""
@@ -52,7 +52,7 @@ class GSMMetrics:
     def update(
         self,
         is_correct: bool,
-        is_valid_format: bool,
+        contains_delimiters: bool,
         token_count: int,
         time_seconds: float,
         constrained_segments: list = None
@@ -62,14 +62,14 @@ class GSMMetrics:
         
         Args:
             is_correct: Whether the answer was correct
-            is_valid_format: Whether the output format was valid
+            contains_delimiters: Whether the output contained at least one << >> span
             token_count: Number of tokens generated
             time_seconds: Time taken for generation
             constrained_segments: Optional list of (segment_text, is_valid) tuples
         """
         self.n += 1
         self.correct += 1 if is_correct else 0
-        self.valid_format += 1 if is_valid_format else 0
+        self.examples_with_delimiters += 1 if contains_delimiters else 0
         self.total_tokens += token_count
         self.total_time += time_seconds
         
@@ -84,7 +84,11 @@ class GSMMetrics:
         lines = [
             f"Examples: {self.n}",
             f"Answer Accuracy: {self.accuracy():.1f}%",
-            f"Valid Format Rate: {self.format_rate():.1f}%",
+            (
+                "Contains << >>: "
+                f"{'yes' if self.all_examples_contain_delimiters() else 'no'} "
+                f"({self.examples_with_delimiters}/{self.n} examples)"
+            ),
         ]
         if self.total_segments > 0:
             lines.append(f"Syntax Validity: {self.syntax_validity():.1f}% ({self.syntax_valid_segments}/{self.total_segments} segments)")

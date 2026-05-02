@@ -22,6 +22,11 @@ from evaluations.gsm_symbolic.environment import (
     setup_dafny_environment,
     verify_critical_tokens,
 )
+from evaluations.gsm_symbolic.grammar import (
+    build_dynamic_grammar,
+    extract_variables_from_mapping,
+)
+from evaluations.common.parser_utils import create_lark_dafny_parser
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
@@ -59,6 +64,8 @@ def main():
     metrics = GSMMetrics()
 
     print(f"Setting up Dafny environment...")
+    grammar_text = args.grammar.read_text()
+    parser_factory_cache = {}
     dafny_env = setup_dafny_environment(
         run_dir=args.run_dir,
         model_name=args.model,
@@ -83,19 +90,39 @@ def main():
 
         prompt = (
             "Solve the following math problem step by step. "
-            "Assign a single-letter variable to each quantity and state its numeric value. "
+            "Define variables for each quantity and state their numeric values. "
+            "You may use descriptive identifiers with letters, digits, and underscores, "
+            "and must reuse those same variable names inside << >> expressions. "
             "Write each computation step as a SHORT expression inside << >> delimiters — "
-            "one step per << >> window, closing >> before starting the next step.\n\n"
-            "Example:\n"
-            "Q: A store sells pens for $3 each and notebooks for $8 each. "
+            "one step per << >> window, closing >> before starting the next step. "
+            "Once you have written the final answer, stop immediately. Do not continue with extra explanation, confirmation, code fences, or another answer block.\n\n"
+            "Example response format:\n"
+            "Problem: A store sells pens for $3 each and notebooks for $8 each. "
             "Bob buys 4 pens and 2 notebooks. How much does he spend?\n"
-            "A: Let p = 3, n = 8, a = 4, b = 2.\n"
+            "Response:\n"
+            "Let p = 3, n = 8, a = 4, b = 2.\n"
             "Pen total = <<a * p>>\n"
             "Notebook total = <<b * n>>\n"
             "Total spent = <<a * p + b * n>>\n"
             "The answer is a * p + b * n.\n\n"
-            f"Q: {question}\nA:"
+            f"Problem: {question}\nResponse:\n"
         )
+
+        dynamic_parser = None
+        if allowed_variables:
+            cache_key = tuple(sorted(allowed_variables))
+            parser_factory = parser_factory_cache.get(cache_key)
+            if parser_factory is None:
+                dynamic_grammar = build_dynamic_grammar(grammar_text, list(cache_key))
+                parser_factory = create_lark_dafny_parser(
+                    dynamic_grammar,
+                    dafny_env["VerifiedDecoderAgent"],
+                    dafny_env["_dafny"],
+                    start="csd_start",
+                    tokenizer=dafny_env["tokenizer"],
+                )
+                parser_factory_cache[cache_key] = parser_factory
+            dynamic_parser = parser_factory(dafny_env["lm"]._Tokens)
 
         if args.unconstrained:
             out_text, tok_count, dt = run_unconstrained(
@@ -107,10 +134,11 @@ def main():
             out_text, tok_count, dt, constrained_segments = run_crane_csd(
                 dafny_env, prompt, args.max_steps, args.grammar,
                 debug_delimiters=args.debug_delimiters,
+                dynamic_parser=dynamic_parser,
             )
 
-        # Evaluate format: output must contain at least one <<...>> segment
-        is_valid_format = bool(re.search(r"<<[^<>]+>>", out_text))
+        # Diagnostic only: record whether the output contained at least one <<...>> segment
+        contains_delimiters = bool(re.search(r"<<[^<>]+>>", out_text))
 
         # Evaluate accuracy: extract expected answer, extract actual from last <<>> segment
         expected = None
@@ -159,7 +187,7 @@ def main():
 
         metrics.update(
             is_correct=is_correct,
-            is_valid_format=is_valid_format,
+            contains_delimiters=contains_delimiters,
             token_count=tok_count,
             time_seconds=dt,
             constrained_segments=constrained_segments,
