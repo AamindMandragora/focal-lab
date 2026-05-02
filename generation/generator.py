@@ -131,17 +131,21 @@ class StrategyGenerator:
     ALLOWED_HELPER_METHODS = {
         "AllValidNextTokensInLM",
         "AppendConstrainedStep",
+        "AppendConstrainedOrRightDelimiterStep",
         "AppendForcedToken",
         "AppendLeftDelimiter",
         "AppendRightDelimiter",
         "AppendSoftConstrainedStep",
         "AppendTopKConstrainedStep",
+        "AppendUnconstrainedAllowLeftDelimiterStep",
+        "AppendUnconstrainedNudgeLeftDelimiterStep",
         "AppendUnconstrainedStep",
         "BiasForCompletion",
         "BiasLeftDelimiters",
         "BiasRightDelimiters",
         "CanConstrain",
         "Checkpoint",
+        "ConstrainedOrRightDelimiterStep",
         "ConstrainedStep",
         "ContainsLeftDelimiter",
         "ContainsRightDelimiter",
@@ -165,6 +169,9 @@ class StrategyGenerator:
         "SoftConstrainToGrammar",
         "SoftConstrainedStep",
         "TopKConstrainedStep",
+        "UnconstrainedAllowLeftDelimiterStep",
+        "UnconstrainedBiasLeftDelimiterStep",
+        "UnconstrainedNudgeLeftDelimiterStep",
         "UnconstrainedStep",
         "ValidContinuationCount",
     }
@@ -634,12 +641,37 @@ class StrategyGenerator:
     def _autofix_python_strategy(self, strategy_body: str) -> str:
         lines = strategy_body.splitlines()
         fixed: list[str] = []
+        complete_block_indent: int | None = None
         i = 0
         while i < len(lines):
             line = lines[i]
+            stripped_line = line.lstrip()
+            indent = len(line) - len(stripped_line)
+
+            # Track `if/elif helpers.IsComplete(generated):` blocks so we can
+            # rewrite invalid constrained-step usage into an explicit close.
+            if complete_block_indent is not None and stripped_line and indent <= complete_block_indent:
+                complete_block_indent = None
+            if (
+                stripped_line.startswith("if ")
+                or stripped_line.startswith("elif ")
+            ) and "helpers.IsComplete(generated)" in stripped_line and stripped_line.endswith(":") and "helpers.CanConstrain(generated)" not in stripped_line:
+                complete_block_indent = indent
+
+            if complete_block_indent is not None and indent > complete_block_indent:
+                complete_replacement = (
+                    r"\1generated, stepsLeft = helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)"
+                    if _env_flag("CSD_REQUIRE_NATURAL_DELIMITERS", False)
+                    else r"\1generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)"
+                )
+                line = re.sub(
+                    r"^(\s*)generated\s*,\s*stepsLeft\s*=\s*helpers\.AppendConstrainedStep\(\s*prompt\s*,\s*generated\s*,\s*stepsLeft\s*\)\s*$",
+                    complete_replacement,
+                    line,
+                )
+
             fixed.append(line)
             stripped = line.lstrip()
-            indent = len(line) - len(stripped)
             if stripped.startswith("if ") and stripped.endswith(":"):
                 branch_indent = " " * (indent + 4)
                 if i + 3 < len(lines):
@@ -651,11 +683,11 @@ class StrategyGenerator:
                             break
                     if else_line is not None and else_line + 1 < len(lines):
                         branch_assign = re.match(
-                            rf"^{re.escape(branch_indent)}([A-Za-z_]\w*)\s*,\s*([A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedStep|ConstrainedStep|UnconstrainedStep|UnconstrainedStep|UnconstrainedStep|UnconstrainedStep|ForcedTokenStep)\(",
+                            rf"^{re.escape(branch_indent)}([A-Za-z_]\w*)\s*,\s*([A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedStep|ConstrainedOrRightDelimiterStep|UnconstrainedStep|UnconstrainedAllowLeftDelimiterStep|UnconstrainedBiasLeftDelimiterStep|UnconstrainedNudgeLeftDelimiterStep|ForcedTokenStep)\(",
                             first_branch,
                         )
                         else_assign = re.match(
-                            rf"^{re.escape(branch_indent)}([A-Za-z_]\w*)\s*,\s*([A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedStep|ConstrainedStep|UnconstrainedStep|UnconstrainedStep|UnconstrainedStep|UnconstrainedStep|ForcedTokenStep)\(",
+                            rf"^{re.escape(branch_indent)}([A-Za-z_]\w*)\s*,\s*([A-Za-z_]\w*)\s*=\s*helpers\.(?:ConstrainedStep|ConstrainedOrRightDelimiterStep|UnconstrainedStep|UnconstrainedAllowLeftDelimiterStep|UnconstrainedBiasLeftDelimiterStep|UnconstrainedNudgeLeftDelimiterStep|ForcedTokenStep)\(",
                             lines[else_line + 1],
                         )
                         if branch_assign and else_assign and branch_assign.groups() == else_assign.groups():
@@ -667,13 +699,214 @@ class StrategyGenerator:
                                 default_rhs = "stepsLeft"
                                 fixed.insert(len(fixed) - 1, " " * indent + f"{name2} = {default_rhs}")
             i += 1
-        return "\n".join(fixed)
+        normalized = "\n".join(fixed)
+        # Normalize malformed helper prompt arguments frequently emitted by models:
+        # use `prompt` instead of an empty list literal for prompt-taking helpers.
+        normalized = re.sub(
+            r"helpers\.(AppendUnconstrainedStep|AppendUnconstrainedAllowLeftDelimiterStep|AppendUnconstrainedNudgeLeftDelimiterStep|AppendConstrainedStep|AppendConstrainedOrRightDelimiterStep|UnconstrainedStep|UnconstrainedAllowLeftDelimiterStep|UnconstrainedBiasLeftDelimiterStep|UnconstrainedNudgeLeftDelimiterStep|ConstrainedStep|ConstrainedOrRightDelimiterStep|AppendSoftConstrainedStep|SoftConstrainedStep)\(\s*\[\s*\]\s*,",
+            r"helpers.\1(prompt,",
+            normalized,
+        )
+        # Append* helpers return `(generated, stepsLeft)` and must not be assigned
+        # to `stepsLeft` alone.
+        normalized = re.sub(
+            r"(?m)^(\s*)stepsLeft\s*=\s*helpers\.(AppendUnconstrainedStep|AppendUnconstrainedAllowLeftDelimiterStep|AppendUnconstrainedNudgeLeftDelimiterStep|AppendConstrainedStep|AppendConstrainedOrRightDelimiterStep|AppendSoftConstrainedStep|AppendTopKConstrainedStep|AppendLeftDelimiter|AppendRightDelimiter|AppendForcedToken)\(",
+            r"\1generated, stepsLeft = helpers.\2(",
+            normalized,
+        )
+        if _env_flag("CSD_REQUIRE_NATURAL_DELIMITERS", False):
+            # Natural right-delimiter helpers are intentionally completion-aware:
+            # calling them when the suffix is complete is how `>>` becomes
+            # available. Do not collapse the mixed guard to CanConstrain-only.
+            normalized = re.sub(
+                r"(?m)^(\s*(?:if|elif)\s+)helpers\.CanConstrain\(generated\)(\s*:)",
+                r"\1(helpers.IsComplete(generated) or helpers.CanConstrain(generated))\2",
+                normalized,
+            )
+        else:
+            # Plain constrained-step calls have a !IsComplete precondition, so
+            # legacy explicit-delimiter strategies need CanConstrain-only guards.
+            normalized = re.sub(
+                r"helpers\.IsComplete\(generated\)\s+or\s+helpers\.CanConstrain\(generated\)",
+                r"helpers.CanConstrain(generated)",
+                normalized,
+            )
+            normalized = re.sub(
+                r"helpers\.CanConstrain\(generated\)\s+or\s+helpers\.IsComplete\(generated\)",
+                r"helpers.CanConstrain(generated)",
+                normalized,
+            )
+        # Transpiler-safe fallback for generated string cue scans over
+        # LongestValidSuffix (e.g. "".join(...).lower() and "... in suffix").
+        normalized = re.sub(
+            r'(?m)^(\s*)([A-Za-z_]\w*)\s*=\s*""\.join\(\s*helpers\.LongestValidSuffix\(generated\)\s*\)\.lower\(\)\s*$',
+            r'\1\2 = ""',
+            normalized,
+        )
+        normalized = re.sub(
+            r'(?m)^(\s*)if\s+.*\bin\s+suffix\b.*:\s*$',
+            r"\1if False:",
+            normalized,
+        )
+        # Conservatively avoid non-decreasing loop paths caused by `continue`.
+        normalized = re.sub(r"(?m)^(\s*)continue\s*$", r"\1break", normalized)
+        # Add a direct decreases guard in step-budget loops: only continue when
+        # `stepsLeft` strictly decreases over the full iteration.
+        lines3 = normalized.splitlines()
+        guarded: list[str] = []
+        i3 = 0
+        while i3 < len(lines3):
+            line3 = lines3[i3]
+            stripped3 = line3.lstrip()
+            indent3 = len(line3) - len(stripped3)
+            if stripped3.startswith("while ") and stripped3.endswith(":") and "stepsLeft > 0" in stripped3:
+                guarded.append(line3)
+                body_lines: list[str] = []
+                i3 += 1
+                while i3 < len(lines3):
+                    nxt = lines3[i3]
+                    nxt_stripped = nxt.lstrip()
+                    nxt_indent = len(nxt) - len(nxt_stripped)
+                    if nxt_stripped and nxt_indent <= indent3:
+                        break
+                    body_lines.append(nxt)
+                    i3 += 1
+                body_indent = " " * (indent3 + 4)
+                has_snapshot = any(
+                    b.lstrip().startswith("stepsLeftBeforeIteration = stepsLeft")
+                    for b in body_lines
+                )
+                has_decreases_guard = any(
+                    b.lstrip().startswith("if stepsLeft >= stepsLeftBeforeIteration:")
+                    for b in body_lines
+                )
+                if not has_snapshot:
+                    guarded.append(f"{body_indent}stepsLeftBeforeIteration = stepsLeft")
+                guarded.extend(body_lines)
+                if not has_decreases_guard:
+                    guarded.append(f"{body_indent}if stepsLeft >= stepsLeftBeforeIteration:")
+                    guarded.append(f"{body_indent}    break")
+                continue
+            guarded.append(line3)
+            i3 += 1
+        normalized = "\n".join(guarded)
+        # Salvage truncated generations by dropping malformed tail lines until
+        # the method body parses as Python.
+        parse_candidate = normalized
+        for _ in range(24):
+            try:
+                wrapped = "def _strategy():\n" + textwrap.indent(parse_candidate, "    ")
+                ast.parse(wrapped)
+                normalized = parse_candidate
+                break
+            except SyntaxError:
+                candidate_lines = parse_candidate.splitlines()
+                if not candidate_lines:
+                    break
+                candidate_lines = candidate_lines[:-1]
+                while candidate_lines and not candidate_lines[-1].strip():
+                    candidate_lines.pop()
+                parse_candidate = "\n".join(candidate_lines)
+        # Add a conservative fallback branch for dangling top-level `if/elif`
+        # chains in `stepsLeft` loops so the loop can always terminate.
+        try:
+            wrapped = "def _strategy():\n" + textwrap.indent(normalized, "    ")
+            tree = ast.parse(wrapped)
+            loop_progress_helpers = {
+                "AppendUnconstrainedStep",
+                "AppendUnconstrainedAllowLeftDelimiterStep",
+                "AppendUnconstrainedNudgeLeftDelimiterStep",
+                "AppendConstrainedStep",
+                "AppendConstrainedOrRightDelimiterStep",
+                "AppendSoftConstrainedStep",
+                "AppendTopKConstrainedStep",
+                "AppendLeftDelimiter",
+                "AppendRightDelimiter",
+                "AppendForcedToken",
+                "UnconstrainedStep",
+                "UnconstrainedAllowLeftDelimiterStep",
+                "UnconstrainedBiasLeftDelimiterStep",
+                "UnconstrainedNudgeLeftDelimiterStep",
+                "ConstrainedStep",
+                "ConstrainedOrRightDelimiterStep",
+                "SoftConstrainedStep",
+                "TopKConstrainedStep",
+                "ForcedTokenStep",
+            }
+
+            def _contains_loop_progress(statements: list[ast.stmt]) -> bool:
+                for statement in statements:
+                    for inner in ast.walk(statement):
+                        if isinstance(inner, (ast.Break, ast.Return)):
+                            return True
+                        if (
+                            isinstance(inner, ast.Call)
+                            and isinstance(inner.func, ast.Attribute)
+                            and isinstance(inner.func.value, ast.Name)
+                            and inner.func.value.id == "helpers"
+                            and inner.func.attr in loop_progress_helpers
+                        ):
+                            return True
+                return False
+
+            lines4 = normalized.splitlines()
+            insertions: list[tuple[int, int]] = []
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.While) or "stepsLeft > 0" not in ast.unparse(node.test):
+                    continue
+                for stmt_idx, statement in enumerate(node.body):
+                    if not isinstance(statement, ast.If):
+                        continue
+                    guard_test_text = ast.unparse(statement.test)
+                    if (
+                        "stepsLeftBeforeIteration" in guard_test_text
+                        and "stepsLeft >=" in guard_test_text
+                    ):
+                        continue
+                    tail_if = statement
+                    while len(tail_if.orelse) == 1 and isinstance(tail_if.orelse[0], ast.If):
+                        tail_if = tail_if.orelse[0]
+                    if tail_if.orelse:
+                        continue
+                    trailing = node.body[stmt_idx + 1 :]
+                    if _contains_loop_progress(trailing):
+                        continue
+                    insert_after = getattr(tail_if, "end_lineno", None)
+                    if_line = getattr(statement, "lineno", None)
+                    if insert_after is None or if_line is None:
+                        continue
+                    if_index = if_line - 2
+                    insert_index = insert_after - 1
+                    if not (0 <= if_index < len(lines4)) or not (0 <= insert_index <= len(lines4)):
+                        continue
+                    indent = len(lines4[if_index]) - len(lines4[if_index].lstrip())
+                    probe = insert_index
+                    while probe < len(lines4) and not lines4[probe].strip():
+                        probe += 1
+                    if probe < len(lines4) and lines4[probe].startswith(" " * indent + "else:"):
+                        continue
+                    insertions.append((insert_index, indent))
+            for insert_index, indent in sorted(set(insertions), reverse=True):
+                lines4[insert_index:insert_index] = [
+                    " " * indent + "else:",
+                    " " * (indent + 4) + "break",
+                ]
+            normalized = "\n".join(lines4)
+        except Exception:
+            pass
+        return normalized
 
     def _structural_issue(self, strategy_body: str) -> str | None:
         body = self._body_without_rationale(strategy_body)
         prefer_scratch_spans = _env_flag("CSD_GSM_PREFER_SCRATCH_SPANS", False)
+        require_natural_delimiters = _env_flag("CSD_REQUIRE_NATURAL_DELIMITERS", False)
+        skip_structural_validation = _env_flag("CSD_SKIP_STRUCTURAL_VALIDATION", False)
         spider_force_single_sql_span = _env_flag("CSD_SPIDER_FORCE_SINGLE_SQL_SPAN", False)
         spider_force_span_at_start = _env_flag("CSD_SPIDER_FORCE_SPAN_AT_START", False)
+        has_step_snapshot_guard = (
+            "stepsLeftBeforeIteration = stepsLeft" in body
+            and "if stepsLeft >= stepsLeftBeforeIteration:" in body
+        )
         executable_lines = [
             line for line in body.splitlines()
             if line.strip() and not line.lstrip().startswith("#")
@@ -686,6 +919,9 @@ class StrategyGenerator:
             tree = ast.parse(wrapped)
         except SyntaxError as exc:
             return f"The body is not valid Python: {exc.msg}."
+
+        if skip_structural_validation:
+            return None
 
         parent_map: dict[ast.AST, ast.AST] = {}
         for parent in ast.walk(tree):
@@ -723,6 +959,8 @@ class StrategyGenerator:
         delimiter_calls_outside_loop: set[str] = set()
         unguarded_right_delimiter_calls: set[str] = set()
         nondecreasing_else_lines: list[int] = []
+        dangling_if_chain_lines: list[int] = []
+        top_level_break_lines: list[int] = []
         manual_stepsleft_mutations: list[int] = []
         none_checkpoint_assign_lines: list[int] = []
         insufficient_reason_budget_lines: list[int] = []
@@ -756,11 +994,20 @@ class StrategyGenerator:
         forced_left_delimiter_lines: list[int] = []
         forced_right_delimiter_lines: list[int] = []
         low_final_ready_lines: list[int] = []
+        late_budget_answer_pressure_lines: list[int] = []
+        low_reason_nudge_lines: list[int] = []
+        parser_readiness_early_open_lines: list[int] = []
+        phase_break_open_lines: list[int] = []
+        natural_open_plain_fallback_lines: list[int] = []
         negative_index_lines: list[int] = []
         premature_not_can_constrain_lines: list[int] = []
         natural_plain_constrained_lines: list[int] = []
+        natural_completion_blind_right_helper_lines: list[int] = []
+        sequential_helper_without_budget_lines: list[int] = []
         generated_join_lines: list[int] = []
         stray_expression_lines: list[int] = []
+        continue_lines: list[int] = []
+        budget_only_open_lines: list[int] = []
         spider_long_freeform_lines: list[int] = []
         bad_prompt_arg_calls: list[tuple[str, int]] = []
         if_count = 0
@@ -769,28 +1016,28 @@ class StrategyGenerator:
         while_nodes = [node for node in ast.walk(tree) if isinstance(node, ast.While)]
         append_helper_methods = {
             "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
+            "AppendUnconstrainedAllowLeftDelimiterStep",
+            "AppendUnconstrainedNudgeLeftDelimiterStep",
             "AppendConstrainedStep",
-            "AppendConstrainedStep",
+            "AppendConstrainedOrRightDelimiterStep",
             "AppendForcedToken",
             "AppendLeftDelimiter",
             "AppendRightDelimiter",
         }
         constrained_helper_methods = {
             "ConstrainedStep",
-            "ConstrainedStep",
+            "ConstrainedOrRightDelimiterStep",
             "AppendConstrainedStep",
-            "AppendConstrainedStep",
+            "AppendConstrainedOrRightDelimiterStep",
         }
         unconstrained_helper_methods = {
             "UnconstrainedStep",
-            "UnconstrainedStep",
-            "UnconstrainedStep",
-            "UnconstrainedStep",
+            "UnconstrainedAllowLeftDelimiterStep",
+            "UnconstrainedBiasLeftDelimiterStep",
+            "UnconstrainedNudgeLeftDelimiterStep",
             "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
+            "AppendUnconstrainedAllowLeftDelimiterStep",
+            "AppendUnconstrainedNudgeLeftDelimiterStep",
         }
         forced_helper_methods = {
             "ForcedTokenStep",
@@ -798,18 +1045,24 @@ class StrategyGenerator:
             "AppendLeftDelimiter",
             "AppendRightDelimiter",
         }
+        step_consuming_helper_methods = (
+            append_helper_methods
+            | constrained_helper_methods
+            | unconstrained_helper_methods
+            | forced_helper_methods
+        )
         prompt_arg_required_methods = {
             "UnconstrainedStep",
-            "UnconstrainedStep",
-            "UnconstrainedStep",
-            "UnconstrainedStep",
+            "UnconstrainedAllowLeftDelimiterStep",
+            "UnconstrainedBiasLeftDelimiterStep",
+            "UnconstrainedNudgeLeftDelimiterStep",
             "ConstrainedStep",
-            "ConstrainedStep",
+            "ConstrainedOrRightDelimiterStep",
             "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
-            "AppendUnconstrainedStep",
+            "AppendUnconstrainedAllowLeftDelimiterStep",
+            "AppendUnconstrainedNudgeLeftDelimiterStep",
             "AppendConstrainedStep",
-            "AppendConstrainedStep",
+            "AppendConstrainedOrRightDelimiterStep",
         }
 
         OLD_API = {
@@ -855,26 +1108,6 @@ class StrategyGenerator:
                     and isinstance(inner.func.value, ast.Name)
                     and inner.func.value.id == "helpers"
                     and inner.func.attr == "CanConstrain"
-                    and len(inner.args) >= 1
-                    and _is_name(inner.args[0], "generated")
-                ):
-                    return True
-                if (
-                    isinstance(inner, ast.Call)
-                    and isinstance(inner.func, ast.Attribute)
-                    and isinstance(inner.func.value, ast.Name)
-                    and inner.func.value.id == "parser"
-                    and inner.func.attr == "IsCompletePrefix"
-                    and len(inner.args) >= 1
-                    and _has_generated_suffix_call(inner.args[0])
-                ):
-                    return True
-                if (
-                    isinstance(inner, ast.Call)
-                    and isinstance(inner.func, ast.Attribute)
-                    and isinstance(inner.func.value, ast.Name)
-                    and inner.func.value.id == "helpers"
-                    and inner.func.attr == "IsComplete"
                     and len(inner.args) >= 1
                     and _is_name(inner.args[0], "generated")
                 ):
@@ -962,26 +1195,27 @@ class StrategyGenerator:
             lowered = name.lower()
             return (
                 ("reason" in lowered or "setup" in lowered or "prelude" in lowered)
-                and any(marker in lowered for marker in ("min", "max", "limit", "budget", "target"))
+                and any(marker in lowered for marker in ("min", "max", "limit", "budget", "target", "threshold"))
             )
 
         def _is_answer_budget_name(name: str) -> bool:
             lowered = name.lower()
             return (
                 ("answer" in lowered or "constrained" in lowered)
-                and any(marker in lowered for marker in ("min", "limit", "budget", "target"))
+                and any(marker in lowered for marker in ("min", "limit", "budget", "target", "threshold"))
             )
 
         def _is_fixed_phase_quota_name(name: str) -> bool:
             lowered = name.lower()
             return (
-                any(marker in lowered for marker in ("min", "minimum", "max", "limit", "quota", "target", "budget"))
+                any(marker in lowered for marker in ("min", "minimum", "max", "limit", "quota", "target", "budget", "threshold"))
                 and any(
                     marker in lowered
                     for marker in (
                         "reason",
                         "setup",
                         "prelude",
+                        "wrap",
                         "answer",
                         "final",
                         "constrained",
@@ -991,6 +1225,21 @@ class StrategyGenerator:
                     )
                 )
             )
+
+        def _is_bad_fixed_phase_quota(name: str, node: ast.AST | None) -> bool:
+            if not _is_literal_int(node):
+                return False
+            value = node.value
+            lowered = name.lower()
+            if any(marker in lowered for marker in ("reason", "setup", "prelude")):
+                return value < 40
+            if "wrap" in lowered:
+                return value < 4
+            if any(marker in lowered for marker in ("answer", "final", "constrained", "search")):
+                return value < 6
+            if any(marker in lowered for marker in ("scratch", "span")):
+                return value <= 2
+            return False
 
         def _is_spider_freeform_state_name(name: str) -> bool:
             lowered = name.lower()
@@ -1013,10 +1262,138 @@ class StrategyGenerator:
                     for part in parts
                     if isinstance(part, ast.Constant) and isinstance(part.value, int)
                 ]
-                if not constants or min(constants) >= 8:
+                if not constants or min(constants) >= 40:
                     continue
                 if any(isinstance(op, (ast.Gt, ast.GtE, ast.Lt, ast.LtE)) for op in inner.ops):
                     return True
+            return False
+
+        def _condition_has_low_setup_or_reason_threshold(test: ast.AST, *, threshold: int) -> bool:
+            for inner in ast.walk(test):
+                if not isinstance(inner, ast.Compare):
+                    continue
+                parts = [inner.left, *inner.comparators]
+                names = {
+                    part.id.lower()
+                    for part in parts
+                    if isinstance(part, ast.Name)
+                }
+                if not any(
+                    marker in name
+                    for name in names
+                    for marker in ("reason", "setup", "prelude")
+                ):
+                    continue
+                constants = [
+                    part.value
+                    for part in parts
+                    if isinstance(part, ast.Constant) and isinstance(part.value, int)
+                ]
+                if constants and min(constants) < threshold:
+                    return True
+            return False
+
+        def _condition_has_parser_readiness_trigger(test: ast.AST) -> bool:
+            readiness_helpers = {
+                "CanConstrain",
+                "IsComplete",
+                "MinStepsToComplete",
+                "ParserDistanceToComplete",
+                "ValidContinuationCount",
+            }
+            readiness_parser_methods = {
+                "IsCompletePrefix",
+                "ParserDistanceToComplete",
+                "ValidContinuationCount",
+            }
+            for inner in ast.walk(test):
+                if (
+                    isinstance(inner, ast.Call)
+                    and isinstance(inner.func, ast.Attribute)
+                    and isinstance(inner.func.value, ast.Name)
+                ):
+                    if inner.func.value.id == "helpers" and inner.func.attr in readiness_helpers:
+                        return True
+                    if inner.func.value.id == "parser" and inner.func.attr in readiness_parser_methods:
+                        return True
+            return False
+
+        def _condition_is_opening_context(test: ast.AST) -> bool:
+            opening_values = {
+                "open",
+                "opening",
+                "nudge",
+                "nudging",
+                "seek",
+                "seeking",
+                "answer",
+                "answeropen",
+                "answeropening",
+            }
+            for inner in ast.walk(test):
+                if isinstance(inner, ast.Name):
+                    lowered = inner.id.lower()
+                    if "open_attempt" in lowered or "nudge_attempt" in lowered or "seek_step" in lowered:
+                        return True
+                if not isinstance(inner, ast.Compare):
+                    continue
+                parts = [inner.left, *inner.comparators]
+                names = {
+                    part.id.lower()
+                    for part in parts
+                    if isinstance(part, ast.Name)
+                }
+                values = {
+                    part.value.replace("_", "").lower()
+                    for part in parts
+                    if isinstance(part, ast.Constant) and isinstance(part.value, str)
+                }
+                if (
+                    any(name in {"phase", "stage", "state", "mode"} for name in names)
+                    and any(value in opening_values for value in values)
+                ):
+                    return True
+            return False
+
+        def _is_answer_pressure_name(name: str) -> bool:
+            normalized = name.replace("_", "").lower()
+            return (
+                "answerpressure" in normalized
+                or "finalpressure" in normalized
+                or "answerready" in normalized
+                or "finalready" in normalized
+                or "seekspan" in normalized
+                or "shouldopen" in normalized
+                or "openanswer" in normalized
+            )
+
+        def _condition_has_tiny_remaining_budget_trigger(test: ast.AST) -> bool:
+            for inner in ast.walk(test):
+                if (
+                    isinstance(inner, ast.UnaryOp)
+                    and isinstance(inner.op, ast.Not)
+                    and isinstance(inner.operand, ast.Call)
+                    and isinstance(inner.operand.func, ast.Attribute)
+                    and isinstance(inner.operand.func.value, ast.Name)
+                    and inner.operand.func.value.id == "helpers"
+                    and inner.operand.func.attr == "HasBudget"
+                    and len(inner.operand.args) >= 2
+                    and _is_name(inner.operand.args[0], "stepsLeft")
+                    and isinstance(inner.operand.args[1], ast.Constant)
+                    and isinstance(inner.operand.args[1].value, int)
+                    and inner.operand.args[1].value < 16
+                ):
+                    return True
+                if not isinstance(inner, ast.Compare):
+                    continue
+                compare_parts = [inner.left, *inner.comparators]
+                for left, op, right in zip(compare_parts, inner.ops, compare_parts[1:]):
+                    if isinstance(left, ast.Name) and left.id == "stepsLeft" and isinstance(right, ast.Constant):
+                        if isinstance(right.value, int) and right.value < 16 and isinstance(op, (ast.Lt, ast.LtE)):
+                            return True
+                    if isinstance(right, ast.Name) and right.id == "stepsLeft" and isinstance(left, ast.Constant):
+                        if isinstance(left.value, int) and left.value < 16 and isinstance(op, (ast.Gt, ast.GtE)):
+                            return True
             return False
 
         def _is_verified_span_counter_name(name: str) -> bool:
@@ -1150,6 +1527,81 @@ class StrategyGenerator:
                 return False
             return True
 
+        def _condition_has_stepsleft_threshold(test: ast.AST) -> bool:
+            for inner in ast.walk(test):
+                if not isinstance(inner, ast.Compare):
+                    continue
+                parts = [inner.left, *inner.comparators]
+                has_stepsleft = any(isinstance(part, ast.Name) and part.id == "stepsLeft" for part in parts)
+                if not has_stepsleft:
+                    continue
+                has_int = any(isinstance(part, ast.Constant) and isinstance(part.value, int) for part in parts)
+                if not has_int:
+                    continue
+                if any(isinstance(op, (ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for op in inner.ops):
+                    return True
+            return False
+
+        def _condition_has_stepsleft_positive_guard(test: ast.AST) -> bool:
+            for inner in ast.walk(test):
+                if not isinstance(inner, ast.Compare):
+                    continue
+                compare_parts = [inner.left, *inner.comparators]
+                for left, op, right in zip(compare_parts, inner.ops, compare_parts[1:]):
+                    if isinstance(left, ast.Name) and left.id == "stepsLeft" and isinstance(right, ast.Constant):
+                        if isinstance(right.value, int):
+                            if isinstance(op, ast.Gt) and right.value >= 0:
+                                return True
+                            if isinstance(op, ast.GtE) and right.value >= 1:
+                                return True
+                    if isinstance(right, ast.Name) and right.id == "stepsLeft" and isinstance(left, ast.Constant):
+                        if isinstance(left.value, int):
+                            if isinstance(op, ast.Lt) and left.value >= 0:
+                                return True
+                            if isinstance(op, ast.LtE) and left.value >= 1:
+                                return True
+            return False
+
+        def _condition_mentions_open_intent_signal(test: ast.AST) -> bool:
+            for inner in ast.walk(test):
+                if not isinstance(inner, ast.Name):
+                    continue
+                lowered = inner.id.lower()
+                if any(
+                    marker in lowered
+                    for marker in (
+                        "final",
+                        "answer",
+                        "ready",
+                        "scratch",
+                        "span",
+                        "closed",
+                        "cue",
+                        "signal",
+                        "pressure",
+                        "phase",
+                        "state",
+                    )
+                ):
+                    return True
+            return False
+
+        def _append_left_is_budget_only(node: ast.AST) -> bool:
+            current = node
+            while current in parent_map:
+                current = parent_map[current]
+                if not isinstance(current, ast.If):
+                    continue
+                test = current.test
+                if not _condition_has_stepsleft_threshold(test):
+                    continue
+                if _condition_has_complete_guard(test):
+                    continue
+                if _condition_mentions_open_intent_signal(test):
+                    continue
+                return True
+            return False
+
         def _has_ancestor_while(node: ast.AST) -> bool:
             current = node
             while current in parent_map:
@@ -1164,6 +1616,17 @@ class StrategyGenerator:
                 current = parent_map[current]
                 if isinstance(current, (ast.If, ast.While)) and _condition_has_complete_guard(current.test):
                     return True
+            return False
+
+        def _has_can_constrain_only_ancestor(node: ast.AST) -> bool:
+            current = node
+            while current in parent_map:
+                current = parent_map[current]
+                if not isinstance(current, (ast.If, ast.While)):
+                    continue
+                if not _condition_has_can_constrain_guard(current.test):
+                    continue
+                return not _condition_has_complete_guard(current.test)
             return False
 
         def _contains_helper_step(statements: list[ast.stmt]) -> bool:
@@ -1184,6 +1647,71 @@ class StrategyGenerator:
                         return True
             return False
 
+        def _is_step_consuming_helper_call(node: ast.AST) -> bool:
+            return (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "helpers"
+                and node.func.attr in step_consuming_helper_methods
+            )
+
+        def _first_step_consuming_helper_line(statement: ast.stmt) -> int | None:
+            for inner in ast.walk(statement):
+                if _is_step_consuming_helper_call(inner):
+                    return getattr(inner, "lineno", getattr(statement, "lineno", 0))
+            return None
+
+        def _unguarded_step_lines_after_prior(
+            statement: ast.stmt,
+            *,
+            stepsleft_guarded: bool = False,
+        ) -> list[int]:
+            if isinstance(statement, ast.If):
+                guarded = stepsleft_guarded or _condition_has_stepsleft_positive_guard(statement.test)
+                lines: list[int] = []
+                for branch_statement in [*statement.body, *statement.orelse]:
+                    lines.extend(
+                        _unguarded_step_lines_after_prior(
+                            branch_statement,
+                            stepsleft_guarded=guarded,
+                        )
+                    )
+                return lines
+            if isinstance(statement, ast.While):
+                guarded = stepsleft_guarded or _condition_has_stepsleft_positive_guard(statement.test)
+                lines = []
+                for branch_statement in [*statement.body, *statement.orelse]:
+                    lines.extend(
+                        _unguarded_step_lines_after_prior(
+                            branch_statement,
+                            stepsleft_guarded=guarded,
+                        )
+                    )
+                return lines
+            if stepsleft_guarded:
+                return []
+            line = _first_step_consuming_helper_line(statement)
+            return [line] if line is not None else []
+
+        def _collect_sequential_helper_without_budget_guard_lines(
+            statements: list[ast.stmt],
+        ) -> list[int]:
+            lines: list[int] = []
+            seen_step_on_this_path = False
+            for statement in statements:
+                if seen_step_on_this_path:
+                    lines.extend(_unguarded_step_lines_after_prior(statement))
+                if isinstance(statement, ast.If):
+                    lines.extend(_collect_sequential_helper_without_budget_guard_lines(statement.body))
+                    lines.extend(_collect_sequential_helper_without_budget_guard_lines(statement.orelse))
+                elif isinstance(statement, ast.While):
+                    lines.extend(_collect_sequential_helper_without_budget_guard_lines(statement.body))
+                    lines.extend(_collect_sequential_helper_without_budget_guard_lines(statement.orelse))
+                if _first_step_consuming_helper_line(statement) is not None:
+                    seen_step_on_this_path = True
+            return lines
+
         def _contains_break_or_return(statements: list[ast.stmt]) -> bool:
             return any(isinstance(inner, (ast.Break, ast.Return)) for statement in statements for inner in ast.walk(statement))
 
@@ -1198,6 +1726,39 @@ class StrategyGenerator:
                                 return True
                     if isinstance(inner, ast.AugAssign) and isinstance(inner.target, ast.Name):
                         if inner.target.id not in {"generated", "stepsLeft", "next_token", "new_steps"}:
+                            return True
+            return False
+
+        def _branch_assigns_opening_state(statements: list[ast.stmt]) -> bool:
+            opening_values = {"open", "opening", "nudge", "span", "answer", "final"}
+            for statement in statements:
+                for inner in ast.walk(statement):
+                    targets: list[ast.Name] = []
+                    value: ast.AST | None = None
+                    if isinstance(inner, ast.Assign):
+                        targets.extend(target for target in inner.targets if isinstance(target, ast.Name))
+                        value = inner.value
+                    elif isinstance(inner, ast.AnnAssign) and isinstance(inner.target, ast.Name):
+                        targets.append(inner.target)
+                        value = inner.value
+                    else:
+                        continue
+                    for target in targets:
+                        target_name = target.id.lower()
+                        target_is_phase = target_name in {"phase", "stage", "state", "mode"}
+                        target_is_answer_pressure = _is_answer_pressure_name(target.id)
+                        if (
+                            target_is_phase
+                            and isinstance(value, ast.Constant)
+                            and isinstance(value.value, str)
+                            and value.value.replace("_", "").lower() in opening_values
+                        ):
+                            return True
+                        if (
+                            target_is_answer_pressure
+                            and isinstance(value, ast.Constant)
+                            and value.value in {True, 1}
+                        ):
                             return True
             return False
 
@@ -1243,13 +1804,38 @@ class StrategyGenerator:
             return offenders
 
         for while_node in while_nodes:
-            for statement in while_node.body:
+            for stmt_idx, statement in enumerate(while_node.body):
+                if isinstance(statement, ast.Break):
+                    top_level_break_lines.append(getattr(statement, "lineno", 0))
+                    continue
                 if not isinstance(statement, ast.If):
                     continue
+                current_if = statement
+                while len(current_if.orelse) == 1 and isinstance(current_if.orelse[0], ast.If):
+                    current_if = current_if.orelse[0]
+                has_final_else = bool(current_if.orelse)
+                if not has_final_else:
+                    trailing_statements = while_node.body[stmt_idx + 1 :]
+                    trailing_progress = (
+                        _contains_helper_step(trailing_statements)
+                        or _contains_break_or_return(trailing_statements)
+                    )
+                    if not trailing_progress:
+                        dangling_if_chain_lines.append(getattr(statement, "lineno", 0))
                 branches = _top_level_if_branches(statement)
                 seen_open_constrain_line = 0
                 seen_complete_branch = False
                 for branch_test, branch_body in branches:
+                    if (
+                        require_natural_delimiters
+                        and branch_body
+                        and not _contains_helper_step(branch_body)
+                        and _contains_break_or_return(branch_body)
+                        and _branch_assigns_opening_state(branch_body)
+                    ):
+                        phase_break_open_lines.append(
+                            getattr(branch_body[0], "lineno", getattr(statement, "lineno", 0))
+                        )
                     if (
                         seen_open_constrain_line
                         and _condition_has_complete_guard(branch_test)
@@ -1318,6 +1904,8 @@ class StrategyGenerator:
                     )
                 ):
                     stray_expression_lines.append(getattr(node, "lineno", 0))
+            if isinstance(node, ast.Continue):
+                continue_lines.append(getattr(node, "lineno", 0))
             if (
                 isinstance(node, ast.Subscript)
                 and isinstance(node.slice, ast.UnaryOp)
@@ -1325,6 +1913,17 @@ class StrategyGenerator:
             ):
                 negative_index_lines.append(getattr(node, "lineno", 0))
             if isinstance(node, ast.If):
+                if require_natural_delimiters and _has_ancestor_while(node):
+                    for _branch_test, branch_body in _top_level_if_branches(node):
+                        if (
+                            branch_body
+                            and not _contains_helper_step(branch_body)
+                            and _contains_break_or_return(branch_body)
+                            and _branch_assigns_opening_state(branch_body)
+                        ):
+                            phase_break_open_lines.append(
+                                getattr(branch_body[0], "lineno", getattr(node, "lineno", 0))
+                            )
                 if _condition_mentions_is_complete(node.test):
                     for statement in node.body:
                         for inner in ast.walk(statement):
@@ -1384,24 +1983,54 @@ class StrategyGenerator:
                             and attr in {"ConstrainedStep", "AppendConstrainedStep"}
                         ):
                             natural_plain_constrained_lines.append(getattr(node, "lineno", 0))
-                        current = node
-                        guarded = False
-                        while current in parent_map:
-                            current = parent_map[current]
-                            if isinstance(current, (ast.If, ast.While)) and _condition_has_constrain_guard(current.test):
-                                guarded = True
-                                break
-                        if not guarded:
-                            unguarded_constrained_calls.add(attr)
+                        if attr in {"ConstrainedOrRightDelimiterStep", "AppendConstrainedOrRightDelimiterStep"}:
+                            uses_natural_right_delimiter = True
+                            if (
+                                os.environ.get("CSD_REQUIRE_NATURAL_DELIMITERS", "").strip() in {"1", "true", "True"}
+                                and _has_can_constrain_only_ancestor(node)
+                            ):
+                                natural_completion_blind_right_helper_lines.append(getattr(node, "lineno", 0))
+                        if attr in {"ConstrainedStep", "AppendConstrainedStep"}:
+                            current = node
+                            guarded = False
+                            while current in parent_map:
+                                current = parent_map[current]
+                                if isinstance(current, (ast.If, ast.While)) and _condition_has_constrain_guard(current.test):
+                                    guarded = True
+                                    break
+                            if not guarded:
+                                unguarded_constrained_calls.add(attr)
                     if attr in forced_helper_methods:
                         forced_token_calls += 1
                     if attr in unconstrained_helper_methods:
                         unconstrained_calls += 1
                         unconstrained_lines.append(getattr(node, "lineno", 0))
+                        if (
+                            require_natural_delimiters
+                            and attr in {"UnconstrainedStep", "AppendUnconstrainedStep"}
+                        ):
+                            current = node
+                            while current in parent_map:
+                                current = parent_map[current]
+                                if isinstance(current, ast.While):
+                                    break
+                                if isinstance(current, ast.If) and _condition_is_opening_context(current.test):
+                                    natural_open_plain_fallback_lines.append(getattr(node, "lineno", 0))
+                                    break
+                        if attr in {
+                            "UnconstrainedAllowLeftDelimiterStep",
+                            "UnconstrainedBiasLeftDelimiterStep",
+                            "UnconstrainedNudgeLeftDelimiterStep",
+                            "AppendUnconstrainedAllowLeftDelimiterStep",
+                            "AppendUnconstrainedNudgeLeftDelimiterStep",
+                        }:
+                            uses_natural_left_delimiter = True
                     if attr == "AppendLeftDelimiter":
                         emits_left_delimiter = True
                         left_delimiter_lines.append(getattr(node, "lineno", 0))
                         forced_left_delimiter_lines.append(getattr(node, "lineno", 0))
+                        if _append_left_is_budget_only(node):
+                            budget_only_open_lines.append(getattr(node, "lineno", 0))
                         if not _has_ancestor_while(node):
                             delimiter_calls_outside_loop.add(attr)
                     elif attr == "AppendRightDelimiter":
@@ -1468,6 +2097,20 @@ class StrategyGenerator:
                         suffix_string_methods.add(attr)
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
                 print_calls += 1
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                attr = node.func.attr
+                if attr in {
+                    "AppendUnconstrainedNudgeLeftDelimiterStep",
+                    "UnconstrainedNudgeLeftDelimiterStep",
+                    "AppendUnconstrainedAllowLeftDelimiterStep",
+                    "UnconstrainedAllowLeftDelimiterStep",
+                }:
+                    current = node
+                    while current in parent_map:
+                        current = parent_map[current]
+                        if isinstance(current, ast.If) and _condition_has_low_reason_final_threshold(current.test):
+                            low_reason_nudge_lines.append(getattr(node, "lineno", 0))
+                            break
             if isinstance(node, ast.Compare):
                 if any(isinstance(part, ast.Constant) and isinstance(part.value, float) for part in [node.left, *node.comparators]):
                     float_comparisons.append(getattr(node, "lineno", 0))
@@ -1575,6 +2218,42 @@ class StrategyGenerator:
                         if isinstance(current, ast.If) and _condition_has_low_reason_final_threshold(current.test):
                             low_final_ready_lines.append(getattr(node, "lineno", 0))
                             break
+                answer_pressure_assignment = any(
+                    isinstance(target, ast.Name)
+                    and _is_answer_pressure_name(target.id)
+                    for target in node.targets
+                )
+                if (
+                    (final_ready_assignment or answer_pressure_assignment)
+                    and isinstance(node.value, ast.Constant)
+                    and node.value.value in {True, 1}
+                ):
+                    current = node
+                    while current in parent_map:
+                        current = parent_map[current]
+                        if (
+                            isinstance(current, ast.If)
+                            and _condition_has_parser_readiness_trigger(current.test)
+                            and _condition_has_low_setup_or_reason_threshold(current.test, threshold=40)
+                        ):
+                            parser_readiness_early_open_lines.append(getattr(node, "lineno", 0))
+                            break
+                if answer_pressure_assignment:
+                    if (
+                        isinstance(node.value, ast.Constant)
+                        and node.value.value is True
+                    ):
+                        current = node
+                        while current in parent_map:
+                            current = parent_map[current]
+                            if (
+                                isinstance(current, ast.If)
+                                and _condition_has_tiny_remaining_budget_trigger(current.test)
+                            ):
+                                late_budget_answer_pressure_lines.append(getattr(node, "lineno", 0))
+                                break
+                    elif _condition_has_tiny_remaining_budget_trigger(node.value):
+                        late_budget_answer_pressure_lines.append(getattr(node, "lineno", 0))
                 if len(node.targets) == 1 and isinstance(node.targets[0], ast.Tuple):
                     if not isinstance(node.value, (ast.Call, ast.Tuple)):
                         malformed_tuple_assignment_lines.append(getattr(node, "lineno", 0))
@@ -1627,7 +2306,7 @@ class StrategyGenerator:
                         "generated", "stepsLeft", "next_token", "new_steps",
                     }:
                         extra_state.add(target.id)
-                        if _is_fixed_phase_quota_name(target.id) and _is_literal_int(node.value):
+                        if _is_fixed_phase_quota_name(target.id) and _is_bad_fixed_phase_quota(target.id, node.value):
                             fixed_phase_quota_lines.append(getattr(node, "lineno", 0))
                         if any(isinstance(inner, ast.Constant) and isinstance(inner.value, float) for inner in ast.walk(node.value)):
                             mutable_float_state.add(target.id)
@@ -1676,7 +2355,7 @@ class StrategyGenerator:
                     assigns_remaining_steps = True
                 if node.target.id not in {"generated", "stepsLeft", "next_token", "new_steps"}:
                     extra_state.add(node.target.id)
-                    if _is_fixed_phase_quota_name(node.target.id) and _is_literal_int(node.value):
+                    if _is_fixed_phase_quota_name(node.target.id) and _is_bad_fixed_phase_quota(node.target.id, node.value):
                         fixed_phase_quota_lines.append(getattr(node, "lineno", 0))
                     if node.value is not None and any(
                         isinstance(inner, ast.Constant) and isinstance(inner.value, float)
@@ -1732,11 +2411,19 @@ class StrategyGenerator:
                 ):
                     mutable_float_state.add(node.target.id)
 
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "_strategy":
+                sequential_helper_without_budget_lines = (
+                    _collect_sequential_helper_without_budget_guard_lines(node.body)
+                )
+                break
+
         if old_api_calls:
             return (
                 "The body uses the old delimiter-based API which has been replaced. "
                 "Remove these calls: " + ", ".join(sorted(old_api_calls)) + ". "
                 "Prefer helpers.AppendUnconstrainedStep, helpers.AppendConstrainedStep, "
+                "helpers.AppendConstrainedOrRightDelimiterStep, "
                 "and helpers.AppendLeftDelimiter/helpers.AppendRightDelimiter instead."
             )
         if repair_helper_calls:
@@ -1802,17 +2489,17 @@ class StrategyGenerator:
         if total_step_calls == 0:
             return (
                 "The body must call at least one step method "
-                "(AppendConstrainedStep, AppendLeftDelimiter, AppendUnconstrainedStep, "
-                "ConstrainedStep, ForcedTokenStep, UnconstrainedStep, etc.)."
+                "(AppendConstrainedStep, AppendConstrainedOrRightDelimiterStep, AppendLeftDelimiter, "
+                "AppendUnconstrainedStep, UnconstrainedNudgeLeftDelimiterStep, ForcedTokenStep, etc.)."
             )
         if constrained_step_calls == 0:
             return (
                 "The body must include at least one constrained step "
-                "(helpers.ConstrainedStep, helpers.ConstrainedStep, "
+                "(helpers.ConstrainedStep, helpers.ConstrainedOrRightDelimiterStep, "
                 "or their Append* wrappers) "
                 "to produce grammar-valid answer content."
             )
-        if not emits_left_delimiter or not emits_right_delimiter:
+        if (not require_natural_delimiters) and (not emits_left_delimiter or not emits_right_delimiter):
             missing = []
             if not emits_left_delimiter:
                 missing.append("LeftDelimiter")
@@ -1848,8 +2535,8 @@ class StrategyGenerator:
             )
         if bad_bias_helper_lines:
             return (
-                "helpers.UnconstrainedStep requires a literal positive float bias, "
-                "e.g. `helpers.UnconstrainedStep(prompt, generated, 5.0, stepsLeft)`. "
+                "helpers.UnconstrainedBiasLeftDelimiterStep requires a literal positive float bias, "
+                "e.g. `helpers.UnconstrainedBiasLeftDelimiterStep(prompt, generated, 5.0, stepsLeft)`. "
                 "Do not store the bias in an int variable such as `biasStrength = 3`. "
                 f"First invalid bias argument is near line {bad_bias_helper_lines[0]}."
             )
@@ -1860,7 +2547,7 @@ class StrategyGenerator:
                 "`if len(generated) > 0:` guard instead. First negative index is near line "
                 f"{negative_index_lines[0]}."
             )
-        if os.environ.get("CSD_REQUIRE_NATURAL_DELIMITERS", "").strip() in {"1", "true", "True"}:
+        if require_natural_delimiters:
             span_counter_state = {
                 name for name in extra_state if _is_verified_span_counter_name(name)
             }
@@ -1876,14 +2563,14 @@ class StrategyGenerator:
             if not uses_natural_left_delimiter or not uses_natural_right_delimiter:
                 missing = []
                 if not uses_natural_left_delimiter:
-                    missing.append("UnconstrainedStep or UnconstrainedStep")
+                    missing.append("UnconstrainedAllowLeftDelimiterStep/UnconstrainedNudgeLeftDelimiterStep")
                 if not uses_natural_right_delimiter:
-                    missing.append("ConstrainedStep")
+                    missing.append("ConstrainedOrRightDelimiterStep or AppendConstrainedOrRightDelimiterStep")
                 return (
                     "This GSM run requires natural delimiter decisions rather than forced delimiter phases. "
-                    "Use `helpers.UnconstrainedStep(...)` or "
-                    "`helpers.UnconstrainedStep(...)` during free-form reasoning so "
-                    "the LM may emit `<<` naturally, then use `helpers.ConstrainedStep(...)` "
+                    "Use `helpers.UnconstrainedAllowLeftDelimiterStep(...)` or "
+                    "`helpers.UnconstrainedNudgeLeftDelimiterStep(...)` after the answer-ready signal so "
+                    "the LM may emit `<<` naturally, then use `helpers.ConstrainedOrRightDelimiterStep(...)` "
                     "inside the constrained span so the LM may emit `>>` naturally only after parser completion. "
                     "Missing: " + ", ".join(missing) + "."
                 )
@@ -1891,8 +2578,8 @@ class StrategyGenerator:
                 return (
                     "This GSM run is configured for natural delimiter decisions, so do not force delimiters "
                     "with AppendLeftDelimiter, AppendRightDelimiter, AppendForcedToken, or ForcedTokenStep. "
-                    "Let `UnconstrainedStep` or `UnconstrainedStep` choose `<<` / ` <<`, and let "
-                    "`ConstrainedStep` choose `>>` after parser completion. "
+                    "Let `UnconstrainedAllowLeftDelimiterStep` or `UnconstrainedNudgeLeftDelimiterStep` choose `<<` / ` <<`, and let "
+                    "`ConstrainedOrRightDelimiterStep` choose `>>` after parser completion. "
                     f"First forced delimiter is near line {(forced_left_delimiter_lines or forced_right_delimiter_lines)[0]}."
                 )
             if not open_span_state or not any(_state_used_in_conditions(name) for name in open_span_state):
@@ -1902,26 +2589,47 @@ class StrategyGenerator:
                     "is only true immediately after the `<<` token; if you use it as the whole span-mode "
                     "condition, the strategy leaves constrained mode after one token and may emit repeated "
                     "`<<` delimiters. Set the span state when `EndsWithLeftDelimiter` becomes true, keep "
-                    "using `AppendConstrainedStep` while that state is active, and clear it "
+                    "using `AppendConstrainedOrRightDelimiterStep` while that state is active, and clear it "
                     "after `EndsWithRightDelimiter`."
                 )
             if natural_plain_constrained_lines:
                 return (
                     "In GSM natural-delimiter mode, do not use plain `ConstrainedStep` or "
-                    "`AppendConstrainedStep` inside a span. Use "
-                    "`helpers.AppendConstrainedStep(...)` for every constrained-span "
-                    "token so completion can naturally close with `>>` instead of getting stuck in an "
+                    "`helpers.AppendConstrainedStep(...)` inside a span. Use "
+                    "`helpers.ConstrainedOrRightDelimiterStep(...)` or "
+                    "`helpers.AppendConstrainedOrRightDelimiterStep(...)` for constrained-span "
+                    "tokens so completion can naturally close with `>>` instead of getting stuck in an "
                     f"open span. First plain constrained call is near line {natural_plain_constrained_lines[0]}."
+                )
+            natural_rollback_helpers = sorted(helper_calls & {"RestoreCheckpoint", "RestoreIfDead"})
+            if natural_rollback_helpers:
+                return (
+                    "Avoid checkpoint rollback helpers in GSM natural-delimiter strategies. "
+                    "`RestoreCheckpoint`/`RestoreIfDead` require extra checkpoint-length invariants and often "
+                    "break the simple `|generated| + stepsLeft <= maxSteps` proof. Prefer one "
+                    "step-consuming helper call per loop iteration, then use `EndsWithRightDelimiter`, "
+                    "`IsDead`, `IsComplete`, and durable phase state to decide the next iteration. "
+                    "Rollback helpers used: " + ", ".join(natural_rollback_helpers) + "."
+                )
+            if natural_completion_blind_right_helper_lines:
+                return (
+                    "In GSM natural-delimiter mode, do not gate "
+                    "`AppendConstrainedOrRightDelimiterStep` behind only "
+                    "`helpers.CanConstrain(generated)`. `CanConstrain` becomes false exactly when the "
+                    "suffix is complete and `>>` is allowed, so that branch exits with an open `<< ...` "
+                    "span. Either call the right-closure helper unconditionally while durable open-span "
+                    "state is active, or guard it with "
+                    "`helpers.IsComplete(generated) or helpers.CanConstrain(generated)`. First "
+                    f"completion-blind right helper is near line {natural_completion_blind_right_helper_lines[0]}."
                 )
             if premature_not_can_constrain_lines:
                 return (
                     "`helpers.CanConstrain(generated)` is false when the current grammar suffix is already "
                     "complete, so a `not helpers.CanConstrain(generated): break` branch before an "
-                    "`helpers.IsComplete(generated)` close branch exits with an unclosed `<< ...` span. "
-                    "Use this positive branch shape instead: "
-                    "`elif helpers.IsComplete(generated) or helpers.CanConstrain(generated): "
-                    "generated, stepsLeft = helpers.AppendConstrainedStep(...)`; "
-                    "then use `else: break` only after that branch. First premature break is near "
+                    "`helpers.IsComplete(generated)` close/exit branch exits with an unclosed `<< ...` span. "
+                    "Handle completion before fallback break logic (for example, switch out of span mode "
+                    "or transition to unconstrained decoding), and call constrained-step helpers only when "
+                    "`helpers.CanConstrain(generated)` is true. First premature break is near "
                     f"line {premature_not_can_constrain_lines[0]}."
                 )
             if (
@@ -1968,7 +2676,7 @@ class StrategyGenerator:
                 )
             if not right_delimiter_span_counter_updates:
                 return (
-                    "When `ConstrainedStep` naturally emits `RightDelimiter` or "
+                    "When `ConstrainedOrRightDelimiterStep` naturally emits `RightDelimiter` or "
                     "`SpacedRightDelimiter`, update a real closed-span counter such as `closed_spans = "
                     "closed_spans + 1`. That lets the strategy distinguish scratch mini-expressions "
                     "from the later final answer span."
@@ -1979,14 +2687,64 @@ class StrategyGenerator:
                     "whether decoding continues after a scratch mini-expression versus stops after the "
                     "final answer span."
                 )
+            if phase_break_open_lines:
+                return (
+                    "Do not switch into an opening/span phase and immediately `break` out of the decoding "
+                    "loop before emitting a helper step. That exits with plain free-form text or an "
+                    "unclosed span instead of giving `UnconstrainedNudgeLeftDelimiterStep` and "
+                    "`ConstrainedOrRightDelimiterStep` a chance to emit the final `<< ... >>` segment. "
+                    "When a phase changes to `open`, `nudge`, `span`, or `answer`, either perform the "
+                    "corresponding helper call in the same branch, or keep looping under a variant that "
+                    "still consumes `stepsLeft`. First phase/break transition is near line "
+                    f"{phase_break_open_lines[0]}."
+                )
+            if parser_readiness_early_open_lines:
+                return (
+                    "Do not set `final_ready`/`answer_ready` from parser-distance or valid-continuation "
+                    "signals after only a short setup phase. Those predicates describe grammar shape, not "
+                    "semantic finality, and in GSM they tend to open on intermediate fragments such as "
+                    "`2 * 30 = 60`. Use them only after a durable forty-plus-token setup/final-cue phase, "
+                    "or combine them with explicit scratch-to-final state. First early parser-readiness "
+                    f"assignment is near line {parser_readiness_early_open_lines[0]}."
+                )
+            if natural_open_plain_fallback_lines:
+                return (
+                    "After entering a GSM natural opening/nudge phase, do not fall back to plain "
+                    "`AppendUnconstrainedStep` or `UnconstrainedStep`. That lets the LM solve in prose "
+                    "without ever emitting `<<`, causing max-token no-delimiter failures. Once "
+                    "`answer_ready` or `phase == \"open\"` is active, keep using "
+                    "`AppendUnconstrainedNudgeLeftDelimiterStep(...)` until `helpers.EndsWithLeftDelimiter` "
+                    "becomes true, or break only on a real no-progress/dead-end guard. First plain "
+                    f"open-phase unconstrained fallback is near line {natural_open_plain_fallback_lines[0]}."
+                )
             if low_final_ready_lines:
                 return (
                     "Do not set `final_ready = 1` from a low reasoning-token threshold such as "
-                    "`reason_signal >= 6`, `reason_steps > 3`, or `cue_signal = 1` after four "
+                    "`reason_signal >= 24`, `reason_steps > 3`, or `cue_signal = 1` after four "
                     "tokens; those policies open on the first "
                     "local arithmetic fragment. Wait for explicit final-answer cues, a scratch-to-final "
-                    "transition, or at least a moderate compact-reasoning threshold. First risky assignment is "
+                    "transition, or a substantially later delimiter-masked reasoning/setup phase "
+                    "around forty-plus tokens when relying on counters alone. "
+                    "First risky assignment is "
                     f"near line {low_final_ready_lines[0]}."
+                )
+            if low_reason_nudge_lines:
+                return (
+                    "Do not start natural delimiter opening from a low reasoning-token threshold such as "
+                    "`reasoning_steps >= 24` or `reason_steps > 6`. That still captures the first local "
+                    "arithmetic fragment. For the late-single-final GSM pattern, keep delimiters masked "
+                    "through a substantially later ordinary reasoning/setup phase, then nudge only after "
+                    "roughly forty-plus reasoning/setup steps or explicit final-answer state. First risky nudge is near line "
+                    f"{low_reason_nudge_lines[0]}."
+                )
+            if late_budget_answer_pressure_lines:
+                return (
+                    "Do not wait until only a tiny token budget remains before starting natural answer opening. "
+                    "A rule like `not helpers.HasBudget(stepsLeft, 6)` or `stepsLeft <= 4` gives the LM too few "
+                    "chances to emit `<<`, so GSM outputs often exhaust the budget with no delimited answer. "
+                    "Start the answer-opening/nudge phase earlier using a moderate budget threshold "
+                    "(for example around 16-32 remaining steps) combined with answer intent or scratch-to-final "
+                    f"state. First late-budget pressure assignment is near line {late_budget_answer_pressure_lines[0]}."
                 )
             if prefer_scratch_spans:
                 final_span_state = {
@@ -2061,7 +2819,9 @@ class StrategyGenerator:
                 "AppendUnconstrainedStep",
                 "UnconstrainedStep",
                 "AppendConstrainedStep",
+                "AppendConstrainedOrRightDelimiterStep",
                 "ConstrainedStep",
+                "ConstrainedOrRightDelimiterStep",
                 "AppendLeftDelimiter",
                 "AppendRightDelimiter",
             }
@@ -2112,8 +2872,8 @@ class StrategyGenerator:
                     "With `CSD_SPIDER_FORCE_SINGLE_SQL_SPAN=1`, use explicit delimiter helpers for Spider: "
                     "`helpers.AppendLeftDelimiter(...)` for SQL-span opening. "
                     "Do not use natural LEFT-delimiter helpers such as "
-                    "`AppendUnconstrainedStep`, "
-                    "or `AppendUnconstrainedStep`."
+                    "`AppendUnconstrainedAllowLeftDelimiterStep` "
+                    "or `AppendUnconstrainedNudgeLeftDelimiterStep`."
                 )
             if "AppendLeftDelimiter" not in helper_calls:
                 return (
@@ -2122,13 +2882,13 @@ class StrategyGenerator:
                     "an explicit SQL answer span."
                 )
             if (
-                "ConstrainedStep" not in helper_calls
-                and "AppendConstrainedStep" not in helper_calls
+                "ConstrainedOrRightDelimiterStep" not in helper_calls
+                and "AppendConstrainedOrRightDelimiterStep" not in helper_calls
             ):
                 return (
                     "With `CSD_SPIDER_FORCE_SINGLE_SQL_SPAN=1`, constrained SQL spans must use a "
-                    "right-closure-capable helper (`ConstrainedStep` or "
-                    "`AppendConstrainedStep`) so the model can close `>>` as soon as "
+                    "right-closure-capable helper (`ConstrainedOrRightDelimiterStep` or "
+                    "`AppendConstrainedOrRightDelimiterStep`) so the model can close `>>` as soon as "
                     "the SQL prefix is complete."
                 )
             if spider_long_freeform_lines:
@@ -2164,10 +2924,11 @@ class StrategyGenerator:
                     )
         if fixed_phase_quota_lines:
             return (
-                "Do not introduce fixed phase-quota constants such as `min_reason_steps`, "
-                "`reason_limit`, `max_answer_steps`, or `answer_budget`. For GSM, prefer adaptive interleaving: "
-                "reason freely, optionally emit complete verified spans, and close spans using parser "
-                "completion plus semantic/budget signals rather than fixed token-count quotas. "
+                "Do not introduce tiny fixed phase-quota constants such as `min_reason_steps`, "
+                "`reason_limit`, `max_answer_steps`, or `answer_budget`. For GSM, a durable delayed "
+                "free-form phase is acceptable, but short quotas tend to capture the first local "
+                "arithmetic fragment. Reason long enough before the final span, and close spans using parser "
+                "completion plus semantic/budget signals rather than tiny token-count quotas. "
                 f"First fixed phase quota is near line {fixed_phase_quota_lines[0]}."
             )
         if insufficient_reason_budget_lines:
@@ -2226,11 +2987,18 @@ class StrategyGenerator:
                 "separate boolean like `has_checkpoint`. First invalid assignment is near line "
                 f"{none_checkpoint_assign_lines[0]}."
             )
+        if sequential_helper_without_budget_lines:
+            return (
+                "A helper call can consume the last remaining step, so do not make a second step-consuming "
+                "helper call later in the same loop iteration unless that later call is under an explicit "
+                "`stepsLeft > 0` or `stepsLeft >= 1` guard. Prefer one helper append per iteration, then "
+                "inspect `EndsWithLeftDelimiter`/`EndsWithRightDelimiter` and let the next loop iteration "
+                f"continue. First unguarded second helper is near line {sequential_helper_without_budget_lines[0]}."
+            )
         if unguarded_constrained_calls:
             return (
                 "Every constrained helper call must be inside a branch or loop condition that explicitly checks "
-                "`helpers.CanConstrain(generated)`, `helpers.IsComplete(generated)`, or "
-                "`parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`. "
+                "`helpers.CanConstrain(generated)`. "
                 "Unguarded calls: " + ", ".join(sorted(unguarded_constrained_calls)) + "."
             )
         if complete_branch_constrained_lines:
@@ -2246,6 +3014,21 @@ class StrategyGenerator:
                 "`helpers.IsComplete(generated)` or `parser.IsCompletePrefix(helpers.LongestValidSuffix(generated))`. Do not close the answer "
                 "span unconditionally or merely because a phase variable changed. Offending calls: "
                 + ", ".join(sorted(unguarded_right_delimiter_calls)) + "."
+            )
+        if dangling_if_chain_lines and not has_step_snapshot_guard:
+            return (
+                "Inside a `# decreases stepsLeft` loop, top-level `if/elif` chains must have an explicit final "
+                "`else` fallback that either consumes a helper step or `break`s. Otherwise some states can loop "
+                "without decreasing `stepsLeft`. First dangling chain is near line "
+                f"{dangling_if_chain_lines[0]}."
+            )
+        if budget_only_open_lines:
+            return (
+                "Do not open a new constrained window based only on remaining token budget "
+                "(for example `if stepsLeft <= k: AppendLeftDelimiter(...)`). That tends to reopen spans "
+                "repeatedly near the end. Gate opening with explicit answer intent/state "
+                "(for example `final_ready`, `closed_spans`, or answer-cue state), not raw budget alone. "
+                f"First budget-only opening is near line {budget_only_open_lines[0]}."
             )
         if delimiter_calls_outside_loop:
             return (
@@ -2284,11 +3067,24 @@ class StrategyGenerator:
                 "RightDelimiter emission must appear after constrained answer-token helpers, and only after "
                 "`helpers.IsComplete(generated)` is true."
             )
-        if nondecreasing_else_lines:
+        if nondecreasing_else_lines and not has_step_snapshot_guard:
             return (
                 "Branches inside a `# decreases stepsLeft` loop must either consume a helper step or `break`; "
                 "do not use an `else` branch that only changes phase/state and loops again. "
                 f"First non-consuming else branch is near line {nondecreasing_else_lines[0]}."
+            )
+        if continue_lines:
+            return (
+                "Do not use `continue` inside the decoding while loop. In Dafny this often breaks the "
+                "`# decreases stepsLeft` proof when some continue paths do not consume a helper step. "
+                f"First `continue` is near line {continue_lines[0]}."
+            )
+        if top_level_break_lines:
+            return (
+                "Do not place a bare top-level `break` directly in the decoding while loop body. "
+                "Use guarded branch-local termination (for example inside explicit completion/dead-state branches), "
+                "otherwise the strategy exits after one step and never reaches a verified answer span. "
+                f"First top-level `break` is near line {top_level_break_lines[0]}."
             )
         if stray_expression_lines:
             return (
@@ -2468,20 +3264,37 @@ class StrategyGenerator:
         if (
             "ConstrainedStep" in helper_calls
             or "AppendConstrainedStep" in helper_calls
-            or "ConstrainedStep" in helper_calls
+            or "ConstrainedOrRightDelimiterStep" in helper_calls
+            or "AppendConstrainedOrRightDelimiterStep" in helper_calls
         ):
             score += 10
         if "ConstrainedStep" in helper_calls:
             score += 18
         if "AppendConstrainedStep" in helper_calls:
             score += 20
+        if "ConstrainedOrRightDelimiterStep" in helper_calls:
+            score += 24
+        if "AppendConstrainedOrRightDelimiterStep" in helper_calls:
+            score += 26
         if {"ForcedTokenStep", "AppendForcedToken", "AppendLeftDelimiter", "AppendRightDelimiter"} & helper_calls:
             score += 8
-        if "UnconstrainedStep" in helper_calls or "AppendUnconstrainedStep" in helper_calls:
+        if (
+            "UnconstrainedStep" in helper_calls
+            or "AppendUnconstrainedStep" in helper_calls
+            or "UnconstrainedAllowLeftDelimiterStep" in helper_calls
+            or "UnconstrainedNudgeLeftDelimiterStep" in helper_calls
+            or "AppendUnconstrainedAllowLeftDelimiterStep" in helper_calls
+            or "AppendUnconstrainedNudgeLeftDelimiterStep" in helper_calls
+        ):
             score += 24
-        if "UnconstrainedStep" in helper_calls:
+        if "UnconstrainedNudgeLeftDelimiterStep" in helper_calls:
             score += 28
-        if "UnconstrainedStep" in helper_calls or "AppendUnconstrainedStep" in helper_calls:
+        if (
+            "UnconstrainedAllowLeftDelimiterStep" in helper_calls
+            or "UnconstrainedNudgeLeftDelimiterStep" in helper_calls
+            or "AppendUnconstrainedAllowLeftDelimiterStep" in helper_calls
+            or "AppendUnconstrainedNudgeLeftDelimiterStep" in helper_calls
+        ):
             score += 32
         if "UnconstrainedStep" in helper_calls:
             score += 14
@@ -2500,6 +3313,10 @@ class StrategyGenerator:
         *,
         failure_context: str,
     ) -> str:
+        search_attempts = max(
+            1,
+            int(os.environ.get("CSD_GENERATION_SEARCH_ATTEMPTS", str(self.SEARCH_ATTEMPTS))),
+        )
         budgets = [
             max(self.max_new_tokens, self.MIN_STRATEGY_TOKENS),
             max(self.max_new_tokens, 320),
@@ -2507,7 +3324,7 @@ class StrategyGenerator:
             max(self.max_new_tokens, 640),
             max(self.max_new_tokens, 800),
         ]
-        while len(budgets) < self.SEARCH_ATTEMPTS:
+        while len(budgets) < search_attempts:
             budgets.append(budgets[-1])
         temperatures = [
             max(self.temperature, 0.85),
@@ -2516,10 +3333,10 @@ class StrategyGenerator:
             max(self.temperature, 0.75),
             min(self.temperature, 0.25),
         ]
-        while len(temperatures) < self.SEARCH_ATTEMPTS:
+        while len(temperatures) < search_attempts:
             temperatures.append(temperatures[-1])
-        budgets = budgets[: self.SEARCH_ATTEMPTS]
-        temperatures = temperatures[: self.SEARCH_ATTEMPTS]
+        budgets = budgets[:search_attempts]
+        temperatures = temperatures[:search_attempts]
 
         last_error: str | None = None
         current_system = system_prompt

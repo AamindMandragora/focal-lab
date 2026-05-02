@@ -1631,7 +1631,7 @@ def _special_function_body(name: str, current_class: str | None) -> list[str] | 
             "(forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) &&",
             "(forall i, j :: 0 <= i < |Tokens| && 0 <= j < |Tokens| && i != j ==> Tokens[i] != Tokens[j]) &&",
             "(forall token: Token :: token in Tokens ==> (exists i :: 0 <= i < |Ids| && Tokens[i] == token)) &&",
-            "(forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)",
+            "(forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1000000000.0 && Logits[i] >= -1000000000.0)",
         ]
     if name == "TokenToIdRecursive":
         return [

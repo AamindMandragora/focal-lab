@@ -108,8 +108,12 @@ def test_gsm_prompt_contains_worked_reasoning_example():
     assert "<<48 + x_1 + 0>>" in prompt
     assert "Reasoning checklist for the current problem" in prompt
     assert "changing rates over time" in prompt
+    assert "repeated growth" in prompt
     assert "discounts" in prompt
+    assert "total-cost questions" in prompt
     assert "budget questions about friends" in prompt
+    assert "one-line finality check" in prompt
+    assert "not just <intermediate quantity>" in prompt
     assert "Do not copy a worked-example expression" in prompt
     assert "may interleave plain-text reasoning" in prompt
     assert "Prefer a complete arithmetic expression" in prompt

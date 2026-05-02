@@ -1,237 +1,194 @@
-# Verified Agent Synthesis Helper Surface
+# VerifiedAgentSynthesis API Reference (Standalone)
 
-This file documents the public helper surface for generated CSD strategy bodies.
+This document describes the complete public API exposed by
+`generation/csd/VerifiedAgentSynthesis.py`, organized by logical subsystem.
 
-The library provides **orthogonal primitives** that strategies compose freely.
-No step function hardcodes delimiter policy or assumes a particular strategy
-shape (CRANE, IterGen, rollback-repair, etc.).  The strategy decides:
+## Data Types And Constants
 
-- **when** to emit delimiters (via `AppendLeftDelimiter` / `AppendRightDelimiter`)
-- **how hard** to constrain (unconstrained → soft penalty → top-k → hard mask)
-- **what local state** to maintain (counters, checkpoints, penalty schedules)
+- `Token = str`
+- `Prefix = list[Token]`
+- `Id = int`
+- `Logit = float`
+- `MODULE_NAME = "VerifiedDecoderAgent"`
+- `LeftDelimiter = "<<"`
+- `RightDelimiter = ">>"`
+- `SpacedLeftDelimiter = " <<"`
+- `SpacedRightDelimiter = " >>"`
 
-All answers must be wrapped in `<< ... >>` for evaluator extraction.
+## Specification Metadata
 
-## Core Types
+### `DafnySpec` (dataclass)
+- Holds formal metadata attached to functions/methods:
+  `kind`, `reads`, `modifies`, `requires`, `ensures`, `decreases`, `axiom`, `extern`.
 
-| Name | Meaning |
-|------|---------|
-| `Token` | `str` token emitted by the LM. |
-| `Prefix` | `list[Token]`; the generated token prefix. |
-| `LeftDelimiter` | `"<<"`; structural open token. |
-| `RightDelimiter` | `">>"`; structural close token. |
-| `SpacedLeftDelimiter` | `" <<"`; tokenizer variant. |
-| `SpacedRightDelimiter` | `" >>"`; tokenizer variant. |
+### `dafny_spec(...)`
+- Decorator factory that attaches a `DafnySpec` object to decorated callables.
 
-## Grammar State Queries
+## Top-Level Utility Predicates
 
-These route all parser queries through `LongestValidSuffix(generated)` so
-strategies never need to call `parser.*` directly.
+### `Contains(s: str, sub: str) -> bool`
+- String containment predicate.
 
-| Helper | Returns |
-|--------|---------|
-| `LongestValidSuffix(generated)` | Longest suffix of `generated` that is a valid parser prefix. |
-| `CanConstrain(generated)` | `True` when the grammar suffix is incomplete (more tokens needed). |
-| `IsComplete(generated)` | `True` when the grammar suffix is a complete parse. |
-| `IsDead(generated)` | `True` when the grammar suffix cannot be extended or completed. |
-| `ValidContinuationCount(generated)` | Number of grammar-valid next tokens. `1` = forced move, `0` = complete or dead. |
-| `ParserDistanceToComplete(generated)` | Lower bound on tokens needed to reach a complete parse. |
-| `MinStepsToComplete(generated)` | Alias for `ParserDistanceToComplete`. |
+### `PrefixContains(p: Prefix, t: Token) -> bool`
+- Token containment predicate over a prefix.
 
-## Delimiter Predicates
+### `DelimitedAnswerValidForParser(parser: Parser, prefix: Prefix) -> bool`
+- Checks whether `prefix` contains a balanced delimited segment and that extracted content is parser-valid.
 
-Thin wrappers that handle both spaced and unspaced delimiter variants.
+## `LM` Class (Language Model Wrapper)
 
-| Helper | Returns |
-|--------|---------|
-| `IsLeftDelimiterToken(token)` | `True` for `<<` and ` <<`. |
-| `IsRightDelimiterToken(token)` | `True` for `>>` and ` >>`. |
-| `EndsWithLeftDelimiter(generated)` | `True` when the last emitted token opened a span. |
-| `EndsWithRightDelimiter(generated)` | `True` when the last emitted token closed a span. |
-| `ContainsLeftDelimiter(generated)` | `True` when any left delimiter appears in `generated`. |
-| `ContainsRightDelimiter(generated)` | `True` when any right delimiter appears in `generated`. |
+### Construction And Invariants
+- `__init__()`
+- `ValidTokensIdsLogits() -> bool`
+- `ValidTokensIdsLogitsAlways() -> None`
 
-## Primitive Step Functions
+### Id/Token/Logit Mapping
+- `IdToToken(id: Id) -> Token`
+- `TokenToId(token: Token) -> Id`
+- `TokenToIdRecursive(token: Token, offset: int) -> Id`
+- `IdToLogit(id: Id) -> Logit`
+- `TokenToLogit(token: Token) -> Logit`
+- `TokensToLogits(tokens: Prefix) -> list[Logit]`
+- `IdsToLogits(ids: list[Id]) -> list[Logit]`
 
-Each does **exactly one thing**: generate logits, apply one shaping policy,
-choose.  All return `(nextToken, stepsLeft - 1)`.
+### Hard Masking
+- `MaskToken(token: Token) -> None`
+- `MaskTokens(tokens: Prefix) -> None`
+- `MaskTokensExcept(tokens: Prefix) -> None`
+- `IsMasked(token: Token) -> bool`
+- `HasUnmaskedToken() -> bool`
 
-| Step | Constraint | Use when |
-|------|-----------|----------|
-| `UnconstrainedStep(prompt, generated, stepsLeft)` | None | Free-form reasoning, any phase. |
-| `ConstrainedStep(prompt, generated, stepsLeft)` | Hard grammar mask | Inside a constrained span, grammar must be enforced. Requires `CanConstrain(generated)`. |
-| `SoftConstrainedStep(prompt, generated, penalty, stepsLeft)` | Grammar-invalid tokens biased by `-penalty` | Graduated constraint; LM can override grammar if confident enough. |
-| `TopKConstrainedStep(prompt, generated, k, stepsLeft)` | Top-k filter then grammar mask | "Confident AND grammar-valid" selection. |
-| `ForcedTokenStep(prompt, generated, token, stepsLeft)` | Returns `token` directly | Emitting delimiters, structural tokens, separators. |
+### Logit Shaping
+- `BiasToken(token: Token, delta: Logit) -> None`
+- `BiasTokens(tokens: Prefix, delta: Logit) -> None`
+- `ScaleToken(token: Token, factor: Logit) -> None`
+- `ScaleTokens(tokens: Prefix, factor: Logit) -> None`
+- `ClampLogits(low: Logit, high: Logit) -> None`
 
-**Key difference from old API:** `UnconstrainedStep` does not mask delimiters.
-The strategy controls delimiter flow explicitly.  If you want to prevent
-accidental delimiter emission during free-form text, call `MaskAllDelimiters`
-after `GenerateLogits`, or use the logit shaping composites below.
+### Filtering And Sampling
+- `TopKFilter(k: int) -> None`
+- `GenerateLogits(input: Prefix) -> None`
+- `ChooseNextToken() -> Token`
 
-## Logit Shaping Composites
+## `Parser` Class (Grammar Oracle)
 
-Call these **after** `lm.GenerateLogits(...)` and **before**
-`lm.ChooseNextToken()` to layer multiple shaping policies in one step.
-They compose freely in any order.
+### Prefix Validity And Completeness
+- `IsValidPrefix(prefix: Prefix) -> bool`
+- `EmptyPrefixIsValid() -> None`
+- `IsCompletePrefix(prefix: Prefix) -> bool`
+- `IsDeadPrefix(prefix: Prefix) -> bool`
 
-| Helper | Effect |
-|--------|--------|
-| `SoftConstrainToGrammar(prefix, penalty)` | Bias grammar-invalid tokens by `-penalty`.  Grammar-valid tokens untouched. |
-| `IntersectWithGrammar(prefix)` | Hard-mask everything not grammar-valid.  Grammar-valid tokens untouched. |
-| `BiasForCompletion(prefix, bonus)` | Bias tokens that would complete the grammar by `+bonus`. |
-| `MaskAllDelimiters(generated)` | Mask all four delimiter variants (`<<`, `>>`, ` <<`, ` >>`). |
-| `MaskRightDelimiters(generated)` | Mask right delimiters only; left delimiters remain choosable. |
-| `MaskLeftDelimiters(generated)` | Mask left delimiters only; right delimiters remain choosable. |
-| `BiasLeftDelimiters(bias)` | Bias left delimiter variants by `+bias`. |
-| `BiasRightDelimiters(bias)` | Bias right delimiter variants by `+bias`. |
+### Next-Token Semantics
+- `ValidNextToken(prefix: Prefix, token: Token) -> bool`
+- `ValidNextTokens(prefix: Prefix) -> Prefix`
+- `ValidContinuationCount(prefix: Prefix) -> int`
+- `ParserDistanceToComplete(prefix: Prefix) -> int`
 
-### Example: Custom Step with Composed Shaping
+## `Delimiter` Class (Delimited-Window Utilities)
 
-```python
-# Generate logits, soft-constrain to grammar, bias completion, mask right delimiters
-lm.GenerateLogits(prompt + generated)
-helpers.SoftConstrainToGrammar(generated, 10.0)
-helpers.BiasForCompletion(generated, 3.0)
-helpers.MaskRightDelimiters(generated)
-next_token = lm.ChooseNextToken()
-generated = generated + [next_token]
-stepsLeft = stepsLeft - 1
-```
+### Construction
+- `__init__(left: Token, right: Token)`
 
-## Append Wrappers
+### Window Indices
+- `LastLeftDelimiterIndex(prefix: Prefix) -> int`
+- `FirstRightDelimiterIndex(content: Prefix) -> int`
 
-Convenience methods that call a step function and append the result.
-Avoid stale-budget and forgotten-append mistakes.
+### Content Extraction
+- `GetDelimitedContent(prefix: Prefix) -> Prefix`
+- `InsideDelimitedWindow(prefix: Prefix) -> bool`
 
-| Helper | Wraps |
-|--------|-------|
-| `AppendUnconstrainedStep(prompt, prefix, stepsLeft)` | `UnconstrainedStep` |
-| `AppendConstrainedStep(prompt, prefix, stepsLeft)` | `ConstrainedStep` |
-| `AppendSoftConstrainedStep(prompt, prefix, penalty, stepsLeft)` | `SoftConstrainedStep` |
-| `AppendTopKConstrainedStep(prompt, prefix, k, stepsLeft)` | `TopKConstrainedStep` |
-| `AppendForcedToken(prefix, token, stepsLeft)` | `ForcedTokenStep` |
-| `AppendLeftDelimiter(prefix, stepsLeft)` | `ForcedTokenStep` with `LeftDelimiter` |
-| `AppendRightDelimiter(prefix, stepsLeft)` | `ForcedTokenStep` with `RightDelimiter` |
+### Delimiter Lemmas And Transition Helpers
+- `NoFirstRightDelimiterIndexMeansNoRight(content: Prefix) -> None`
+- `InsideDelimitedWindowNoRight(prefix: Prefix) -> None`
+- `GetDelimitedContentAppend(prefix: Prefix, next: Token) -> None`
+- `AppendLeftEntersWindow(prefix: Prefix) -> None`
+- `FirstRightDelimiterAppendRight(content: Prefix) -> None`
+- `LastLeftDelimiterAppendNonLeft(prefix: Prefix, tok: Token) -> None`
+- `AppendRightExitsWindow(prefix: Prefix) -> None`
 
-## Checkpoint Utilities
+## `CSDHelpers` Class (Strategy Building Blocks)
 
-Lightweight local recovery without full rollback loops.
+### Construction
+- `__init__(lm: LM, parser: Parser)`
 
-| Helper | Purpose |
-|--------|---------|
-| `Checkpoint(generated)` | Save a snapshot of the current prefix. |
-| `RestoreCheckpoint(checkpoint)` | Restore exactly the saved prefix. |
-| `RestoreIfDead(generated, checkpoint)` | Return `checkpoint` only when the grammar suffix is dead; otherwise keep `generated`. |
+### Core Proof/Consistency Lemmas
+- `AllValidNextTokensInLM(content: Prefix) -> None`
+- `ValidNextTokensInLMAfterStep(content: Prefix, next: Token) -> None`
 
-## Budget Utilities
+### Suffix Alignment
+- `LongestValidSuffix(prefix: Prefix) -> Prefix`
+- `LongestValidSuffixAppend(prefix: Prefix, next: Token) -> None`
+- `LongestValidSuffixIsValid(prefix: Prefix) -> None`
+- `LongestValidSuffixNotDead(prefix: Prefix) -> None`
 
-| Helper | Purpose |
-|--------|---------|
-| `HasBudget(stepsLeft, needed)` | Pure predicate: `stepsLeft >= needed`. |
-| `MinStepsToComplete(prefix)` | Lower bound on steps needed to complete the grammar suffix. |
+### Grammar State Wrappers
+- `CanConstrain(prefix: Prefix) -> bool`
+- `IsComplete(prefix: Prefix) -> bool`
+- `IsDead(prefix: Prefix) -> bool`
+- `ValidContinuationCount(prefix: Prefix) -> int`
+- `ParserDistanceToComplete(prefix: Prefix) -> int`
 
-## LM-Level Primitives
+### Delimiter Predicates
+- `IsLeftDelimiterToken(token: Token) -> bool`
+- `IsRightDelimiterToken(token: Token) -> bool`
+- `EndsWithLeftDelimiter(prefix: Prefix) -> bool`
+- `EndsWithRightDelimiter(prefix: Prefix) -> bool`
+- `ContainsLeftDelimiter(prefix: Prefix) -> bool`
+- `ContainsRightDelimiter(prefix: Prefix) -> bool`
 
-Available on `helpers.lm` when strategies need direct logit control beyond
-the composites above.
+### Primitive Step Methods (Token + Budget Delta)
+- `UnconstrainedStep(prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]`
+- `UnconstrainedAllowLeftDelimiterStep(prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]`
+- `UnconstrainedBiasLeftDelimiterStep(prompt: Prefix, generated: Prefix, bias: Logit, stepsLeft: int) -> tuple[Token, int]`
+- `UnconstrainedNudgeLeftDelimiterStep(prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]`
+- `ConstrainedStep(prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]`
+- `ConstrainedOrRightDelimiterStep(prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]`
+- `SoftConstrainedStep(prompt: Prefix, generated: Prefix, penalty: Logit, stepsLeft: int) -> tuple[Token, int]`
+- `TopKConstrainedStep(prompt: Prefix, generated: Prefix, k: int, stepsLeft: int) -> tuple[Token, int]`
+- `ForcedTokenStep(prompt: Prefix, generated: Prefix, token: Token, stepsLeft: int) -> tuple[Token, int]`
 
-| Method | Effect |
-|--------|--------|
-| `lm.GenerateLogits(input)` | Populate logits for next-token prediction on `input`. |
-| `lm.ChooseNextToken()` | Return highest-logit unmasked token. |
-| `lm.MaskToken(token)` | Set one token's logit to `-1e9`. |
-| `lm.MaskTokens(tokens)` | Mask a list of tokens. |
-| `lm.MaskTokensExcept(tokens)` | Mask everything except allowlist. |
-| `lm.BiasToken(token, delta)` | Add `delta` to one token's logit (clamped to `[-1e9, 1e9]`). |
-| `lm.BiasTokens(tokens, delta)` | Bias a list of tokens. |
-| `lm.ScaleToken(token, factor)` | Multiply one token's logit by `factor` (clamped, `factor != 0`). |
-| `lm.ScaleTokens(tokens, factor)` | Scale a list of tokens. |
-| `lm.ClampLogits(low, high)` | Clip all logits to `[low, high]`. |
-| `lm.TopKFilter(k)` | Mask everything except the `k` highest-logit tokens. |
-| `lm.IsMasked(token)` | Check if a token is masked. |
-| `lm.HasUnmaskedToken()` | Check if any token is still selectable. |
+### Logit-Shaping Composites
+- `SoftConstrainToGrammar(prefix: Prefix, penalty: Logit) -> None`
+- `IntersectWithGrammar(prefix: Prefix) -> None`
+- `BiasForCompletion(prefix: Prefix, bonus: Logit) -> None`
+- `MaskAllDelimiters(generated: Prefix) -> None`
+- `MaskRightDelimiters(generated: Prefix) -> None`
+- `BiasLeftDelimiters(bias: Logit) -> None`
+- `BiasRightDelimiters(bias: Logit) -> None`
+- `MaskLeftDelimiters(generated: Prefix) -> None`
 
-## Example Strategy Skeletons
+### Append Wrappers (Prefix + Budget Delta)
+- `AppendUnconstrainedStep(prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendUnconstrainedAllowLeftDelimiterStep(prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendUnconstrainedNudgeLeftDelimiterStep(prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendConstrainedStep(prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendConstrainedOrRightDelimiterStep(prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendSoftConstrainedStep(prompt: Prefix, prefix: Prefix, penalty: Logit, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendTopKConstrainedStep(prompt: Prefix, prefix: Prefix, k: int, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendForcedToken(prefix: Prefix, token: Token, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendLeftDelimiter(prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
+- `AppendRightDelimiter(prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]`
 
-### CRANE-like (delimiter-switched)
+### Span-State Compatibility Helpers
+- `ValidTokenCount(prefix: Prefix) -> int`
+- `OpenConstrainedSpan(prefix: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]`
+- `CloseConstrainedSpan(prefix: Prefix, currentConstrained: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]`
+- `AppendConstrainedToken(prefix: Prefix, currentConstrained: Prefix, token: Token) -> tuple[Prefix, bool, Prefix]`
+- `GroupBoostedConstrainedStep(prompt: Prefix, stablePrefix: Prefix, currentConstrained: Prefix, validTokenGroups: list[list[Token]], bonus: Logit, stepsLeft: int) -> tuple[Token, int]`
+- `PenalizedConstrainedStep(prompt: Prefix, stablePrefix: Prefix, currentConstrained: Prefix, penaltyTokens: Prefix, penalty: Logit, stepsLeft: int) -> tuple[Token, int]`
 
-```python
-# Free-form reasoning, then open a constrained span
-while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
-    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-# Constrained span
-while stepsLeft > 0 and helpers.CanConstrain(generated):
-    generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
-# Close
-generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-```
+### Recovery And Budget Utilities
+- `Checkpoint(prefix: Prefix) -> Prefix`
+- `RestoreCheckpoint(checkpoint: Prefix) -> Prefix`
+- `RestoreIfDead(prefix: Prefix, checkpoint: Prefix) -> Prefix`
+- `HasBudget(stepsLeft: int, needed: int) -> bool`
+- `MinStepsToComplete(prefix: Prefix) -> int`
 
-### Graduated constraint (novel)
+## Exported Public Surface (`__all__`)
 
-```python
-penalty = 1.0
-while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
-    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-while stepsLeft > 0 and helpers.CanConstrain(generated):
-    generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, penalty, stepsLeft)
-    penalty = penalty + 2.0  # increasing constraint pressure
-generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-```
-
-### Budget-aware with completion bias (novel)
-
-```python
-while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
-    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-while stepsLeft > 0 and helpers.CanConstrain(generated):
-    if helpers.HasBudget(stepsLeft, helpers.MinStepsToComplete(generated) + 2):
-        generated, stepsLeft = helpers.AppendSoftConstrainedStep(prompt, generated, 5.0, stepsLeft)
-    else:
-        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
-generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-```
-
-### Multi-pass custom shaping (novel)
-
-```python
-while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
-    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-while stepsLeft > 0 and helpers.CanConstrain(generated):
-    lm.GenerateLogits(prompt + generated)
-    helpers.SoftConstrainToGrammar(generated, 8.0)
-    helpers.BiasForCompletion(generated, 3.0)
-    helpers.MaskLeftDelimiters(generated)
-    next_token = lm.ChooseNextToken()
-    generated = generated + [next_token]
-    stepsLeft = stepsLeft - 1
-generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-```
-
-### Checkpoint-based recovery (novel)
-
-```python
-while stepsLeft > 0 and not helpers.EndsWithLeftDelimiter(generated):
-    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
-checkpoint = helpers.Checkpoint(generated)
-attempts = 0
-while stepsLeft > 0 and helpers.CanConstrain(generated) and attempts < 3:
-    generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
-    if helpers.IsDead(generated):
-        generated = helpers.RestoreCheckpoint(checkpoint)
-        attempts = attempts + 1
-generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
-```
-
-## Required Loop Invariants
-
-Every decoding loop needs:
-
-```python
-# invariant helpers.lm == lm
-# invariant helpers.parser == parser
-# invariant lm.ValidTokensIdsLogits()
-# invariant 0 <= stepsLeft <= maxSteps
-# invariant |generated| + stepsLeft <= maxSteps
-# decreases stepsLeft
-```
+- `MODULE_NAME`
+- `Token`, `Prefix`, `Id`, `Logit`
+- `DafnySpec`, `dafny_spec`
+- `Contains`, `PrefixContains`, `DelimitedAnswerValidForParser`
+- `LeftDelimiter`, `RightDelimiter`, `SpacedLeftDelimiter`, `SpacedRightDelimiter`
+- `LM`, `Parser`, `Delimiter`, `CSDHelpers`

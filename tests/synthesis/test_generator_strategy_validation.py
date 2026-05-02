@@ -1,6 +1,55 @@
+import ast
+
 from generation.generator import StrategyGenerator
 from generation.generator import StrategyGenerationError
 from generation.generator import _auto_select_device
+
+
+def test_structural_issue_skips_forced_delimiter_requirement_in_natural_mode(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+inside_span = False
+closed_spans = 0
+constrained_steps = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if inside_span:
+        if helpers.EndsWithRightDelimiter(generated):
+            inside_span = False
+            closed_spans = closed_spans + 1
+            break
+        if helpers.IsComplete(generated) or helpers.CanConstrain(generated):
+            next_token, stepsLeft = helpers.ConstrainedStep(prompt, generated, stepsLeft)
+            generated = generated + [next_token]
+            constrained_steps = constrained_steps + 1
+            if helpers.IsRightDelimiterToken(next_token):
+                inside_span = False
+                closed_spans = closed_spans + 1
+                break
+        else:
+            break
+    else:
+        next_token, stepsLeft = helpers.UnconstrainedStep(prompt, generated, stepsLeft)
+        generated = generated + [next_token]
+        if helpers.IsLeftDelimiterToken(next_token):
+            inside_span = True
+            phase = "answer"
+        else:
+            phase = "reason"
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None or "must emit both LeftDelimiter and RightDelimiter" not in issue
 
 
 def test_auto_select_device_uses_cpu_when_cuda_gpus_are_too_full(monkeypatch):
@@ -1910,3 +1959,715 @@ while stepsLeft > 0 and phase < 3:
     assert issue is not None
     assert "once `helpers.EndsWithRightDelimiter(generated)` is true" in issue
     assert "terminate immediately" in issue
+
+
+def test_structural_issue_rejects_budget_only_opening():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+opened = False
+closed_spans = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if not opened and stepsLeft <= 3:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        opened = True
+    elif opened and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    elif opened and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        closed_spans = closed_spans + 1
+        break
+    else:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "based only on remaining token budget" in issue
+
+
+def test_structural_issue_allows_budget_open_when_gated_by_intent_state():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+inside_span = False
+final_ready = 1
+closed_spans = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if not inside_span and final_ready == 1 and closed_spans == 0 and stepsLeft <= 3:
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        inside_span = True
+    elif inside_span and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    elif inside_span and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        closed_spans = closed_spans + 1
+        break
+    else:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_autofix_rewrites_complete_branch_append_constrained_step_to_close():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = 0
+inside_span = True
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if inside_span and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    else:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "helpers.AppendRightDelimiter(generated, stepsLeft)" in fixed
+    assert "helpers.AppendConstrainedStep(prompt, generated, stepsLeft)" not in fixed
+
+
+def test_autofix_trims_truncated_tail_until_parseable():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "reason":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    elif helpers.ValidContinuationCount(generated) <=
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+    wrapped = "def _strategy():\n" + "\n".join(f"    {line}" for line in fixed.splitlines())
+    ast.parse(wrapped)
+    assert "helpers.ValidContinuationCount(generated) <=" not in fixed
+
+
+def test_autofix_rewrites_mixed_complete_or_canconstrain_guard_to_canconstrain():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+inside_span = True
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if inside_span and (helpers.IsComplete(generated) or helpers.CanConstrain(generated)):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    else:
+        break
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "helpers.AppendConstrainedStep(prompt, generated, stepsLeft)" in fixed
+    assert "helpers.IsComplete(generated) or helpers.CanConstrain(generated)" not in fixed
+    assert "helpers.CanConstrain(generated)" in fixed
+
+
+def test_autofix_uses_snapshot_guard_instead_of_forcing_else_break():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "reason":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    else:
+        phase = "done"
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "else:" in fixed
+    assert "phase = \"done\"" in fixed
+    assert "stepsLeftBeforeIteration = stepsLeft" in fixed
+    assert "if stepsLeft >= stepsLeftBeforeIteration:" in fixed
+    assert "phase = \"done\"\n        break" not in fixed
+
+
+def test_autofix_rewrites_continue_to_break():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "reason":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        continue
+    else:
+        break
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "continue" not in fixed
+    assert "break" in fixed
+
+
+def test_autofix_rewrites_stepsleft_only_append_assignment():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "reason":
+        stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    else:
+        break
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "\n        stepsLeft = helpers.AppendUnconstrainedStep" not in fixed
+    assert "generated, stepsLeft = helpers.AppendUnconstrainedStep" in fixed
+
+
+def test_structural_issue_rejects_dangling_if_chain_without_fallback():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "open"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "open":
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = "answer"
+    elif phase == "answer" and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        phase = "close"
+    elif phase == "close" and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "top-level `if/elif` chains must have an explicit final `else`" in issue
+
+
+def test_structural_issue_rejects_dangling_if_chain_with_trailing_top_level_break():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "open"
+closed_spans = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "open":
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = "answer"
+    elif phase == "answer" and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        phase = "close"
+    elif phase == "close" and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        closed_spans = closed_spans + 1
+    break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "bare top-level `break`" in issue
+
+
+def test_structural_issue_rejects_top_level_break_in_decoding_loop():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "open"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "open":
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = "answer"
+    elif phase == "answer" and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+        phase = "close"
+    elif phase == "close" and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        phase = "done"
+    break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "bare top-level `break`" in issue
+
+
+def test_structural_issue_allows_dangling_if_chain_with_step_snapshot_guard():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "open"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if phase == "open":
+        generated, stepsLeft = helpers.AppendLeftDelimiter(generated, stepsLeft)
+        phase = "answer"
+    elif phase == "answer" and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+    elif phase == "answer" and helpers.IsComplete(generated):
+        generated, stepsLeft = helpers.AppendRightDelimiter(generated, stepsLeft)
+        break
+    elif phase == "answer":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is None
+
+
+def test_autofix_inserts_decreases_guard_for_stepsleft_loop():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "reason":
+        phase = "answer"
+    elif phase == "answer":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "stepsLeftBeforeIteration = stepsLeft" in fixed
+    assert "if stepsLeft >= stepsLeftBeforeIteration:" in fixed
+
+
+def test_autofix_does_not_duplicate_decreases_guard_when_present():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if phase == "reason":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert fixed.count("stepsLeftBeforeIteration = stepsLeft") == 1
+    assert fixed.count("if stepsLeft >= stepsLeftBeforeIteration:") == 1
+
+
+def test_autofix_adds_else_break_for_dangling_if_chain():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "open"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    if phase == "open":
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        phase = "answer"
+    elif phase == "answer" and helpers.CanConstrain(generated):
+        generated, stepsLeft = helpers.AppendConstrainedStep(prompt, generated, stepsLeft)
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "else:" in fixed
+    assert "\n        break" in fixed
+    wrapped = "def _strategy():\n" + "\n".join(f"    {line}" for line in fixed.splitlines())
+    ast.parse(wrapped)
+
+
+def test_autofix_rewrites_suffix_string_cue_scan_patterns():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    suffix = "".join(helpers.LongestValidSuffix(generated)).lower()
+    if ("final" in suffix) or ("answer" in suffix):
+        phase = "done"
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert '".join(helpers.LongestValidSuffix(generated)).lower()' not in fixed
+    assert "in suffix" not in fixed
+    assert "if False:" in fixed
+
+
+def test_autofix_does_not_add_else_break_to_snapshot_guard():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0:
+    generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    fixed = generator._autofix_python_strategy(strategy)
+
+    assert "if stepsLeft >= stepsLeftBeforeIteration:\n        break\n    else:" not in fixed
+
+
+def test_structural_issue_rejects_natural_phase_break_before_opening_helper(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+closed_spans = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and closed_spans == 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if phase == "reason":
+        if helpers.EndsWithRightDelimiter(generated):
+            closed_spans = closed_spans + 1
+            break
+        elif helpers.EndsWithLeftDelimiter(generated):
+            phase = "span"
+            break
+        elif helpers.IsComplete(generated):
+            phase = "open"
+            break
+        else:
+            generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithLeftDelimiter(generated):
+                phase = "span"
+    elif phase == "open":
+        if helpers.EndsWithLeftDelimiter(generated):
+            phase = "span"
+        else:
+            generated, stepsLeft = helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithLeftDelimiter(generated):
+                phase = "span"
+    elif phase == "span":
+        if helpers.EndsWithRightDelimiter(generated):
+            closed_spans = closed_spans + 1
+            break
+        elif helpers.IsComplete(generated) or helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithRightDelimiter(generated):
+                closed_spans = closed_spans + 1
+                break
+        else:
+            break
+    else:
+        break
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "immediately `break`" in issue
+
+
+def test_structural_issue_rejects_early_parser_readiness_final_ready(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "setup"
+in_span = False
+closed_spans = 0
+setup_steps = 0
+nudge_steps = 0
+answer_ready = False
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and closed_spans == 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if in_span:
+        if helpers.EndsWithRightDelimiter(generated):
+            closed_spans = closed_spans + 1
+            in_span = False
+            break
+        elif helpers.IsComplete(generated) or helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithRightDelimiter(generated):
+                closed_spans = closed_spans + 1
+                in_span = False
+                break
+        else:
+            break
+    elif phase == "setup":
+        if not answer_ready:
+            if setup_steps >= 20 and helpers.ValidContinuationCount(generated) > 0 and helpers.ParserDistanceToComplete(generated) <= 1:
+                answer_ready = True
+        if answer_ready:
+            phase = "nudge"
+            generated, stepsLeft = helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+            nudge_steps = nudge_steps + 1
+            if helpers.EndsWithLeftDelimiter(generated):
+                in_span = True
+                phase = "span"
+        else:
+            generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+            setup_steps = setup_steps + 1
+            if helpers.EndsWithLeftDelimiter(generated):
+                in_span = True
+                phase = "span"
+    elif phase == "nudge":
+        generated, stepsLeft = helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+        nudge_steps = nudge_steps + 1
+        if helpers.EndsWithLeftDelimiter(generated):
+            in_span = True
+            phase = "span"
+    else:
+        break
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "parser-distance or valid-continuation" in issue
+
+
+def test_structural_issue_rejects_mid_counter_answer_ready(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+in_span = False
+closed_spans = 0
+reason_steps = 0
+answer_ready = False
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and closed_spans == 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if in_span:
+        if helpers.EndsWithRightDelimiter(generated):
+            in_span = False
+            closed_spans = closed_spans + 1
+            break
+        elif helpers.IsComplete(generated) or helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithRightDelimiter(generated):
+                in_span = False
+                closed_spans = closed_spans + 1
+                break
+        else:
+            break
+    elif answer_ready:
+        generated, stepsLeft = helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+        if helpers.EndsWithLeftDelimiter(generated):
+            in_span = True
+            phase = "span"
+    else:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reason_steps = reason_steps + 1
+        if reason_steps >= 24:
+            answer_ready = True
+            phase = "answer"
+        if helpers.EndsWithLeftDelimiter(generated):
+            in_span = True
+            phase = "span"
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "forty-plus" in issue
+
+
+def test_structural_issue_rejects_mid_counter_nudge(monkeypatch):
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    monkeypatch.setenv("CSD_REQUIRE_NATURAL_DELIMITERS", "1")
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+phase = "reason"
+in_span = False
+closed_spans = 0
+reason_steps = 0
+nudge_steps = 0
+# invariant helpers.lm == lm
+# invariant helpers.parser == parser
+# invariant lm.ValidTokensIdsLogits()
+# invariant 0 <= stepsLeft <= maxSteps
+# invariant |generated| + stepsLeft <= maxSteps
+# decreases stepsLeft
+while stepsLeft > 0 and closed_spans == 0:
+    stepsLeftBeforeIteration = stepsLeft
+    if in_span:
+        if helpers.EndsWithRightDelimiter(generated):
+            in_span = False
+            closed_spans = closed_spans + 1
+            break
+        elif helpers.IsComplete(generated) or helpers.CanConstrain(generated):
+            generated, stepsLeft = helpers.AppendConstrainedOrRightDelimiterStep(prompt, generated, stepsLeft)
+            if helpers.EndsWithRightDelimiter(generated):
+                in_span = False
+                closed_spans = closed_spans + 1
+                break
+        else:
+            break
+    elif reason_steps >= 24:
+        generated, stepsLeft = helpers.AppendUnconstrainedNudgeLeftDelimiterStep(prompt, generated, stepsLeft)
+        nudge_steps = nudge_steps + 1
+        if helpers.EndsWithLeftDelimiter(generated):
+            in_span = True
+            phase = "span"
+    else:
+        generated, stepsLeft = helpers.AppendUnconstrainedStep(prompt, generated, stepsLeft)
+        reason_steps = reason_steps + 1
+        if helpers.EndsWithLeftDelimiter(generated):
+            in_span = True
+            phase = "span"
+    if stepsLeft >= stepsLeftBeforeIteration:
+        break
+"""
+
+    issue = generator._structural_issue(strategy)
+
+    assert issue is not None
+    assert "roughly forty-plus" in issue

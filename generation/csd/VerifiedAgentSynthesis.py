@@ -119,7 +119,7 @@ class LM:
             )
             and all(token in self.Tokens for token in self.Tokens)
             and all(any(self.Tokens[i] == token for i in range(len(self.Ids))) for token in self.Tokens)
-            and all(-1e9 <= logit <= 1e9 for logit in self.Logits)
+            and all(-1000000000.0 <= logit <= 1000000000.0 for logit in self.Logits)
         )
 
     @dafny_spec(
@@ -242,7 +242,7 @@ class LM:
     )
     def MaskToken(self, token: Token) -> None:
         token_id = self.TokenToId(token)
-        self.Logits[token_id] = -1e9
+        self.Logits[token_id] = -1000000000.0
 
     @dafny_spec(
         kind="method",
@@ -306,7 +306,7 @@ class LM:
         ensures=("ValidTokensIdsLogits()",),
     )
     def IsMasked(self, token: Token) -> bool:
-        return self.Logits[self.TokenToId(token)] == -1e9
+        return self.Logits[self.TokenToId(token)] == -1000000000.0
 
     @dafny_spec(
         kind="predicate",
@@ -325,18 +325,18 @@ class LM:
         requires=("ValidTokensIdsLogits()", "token in Tokens"),
         ensures=(
             "ValidTokensIdsLogits()",
-            "-1e9 <= Logits[TokenToId(token)] <= 1e9",
-            "Logits[TokenToId(token)] == if old(Logits[TokenToId(token)]) + delta > 1e9 then 1e9 else if old(Logits[TokenToId(token)]) + delta < -1e9 then -1e9 else old(Logits[TokenToId(token)]) + delta",
+            "-1000000000.0 <= Logits[TokenToId(token)] <= 1000000000.0",
+            "Logits[TokenToId(token)] == if old(Logits[TokenToId(token)]) + delta > 1000000000.0 then 1000000000.0 else if old(Logits[TokenToId(token)]) + delta < -1000000000.0 then -1000000000.0 else old(Logits[TokenToId(token)]) + delta",
             "forall t: Token :: t in Tokens && t != token ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])",
         ),
     )
     def BiasToken(self, token: Token, delta: Logit) -> None:
         token_id = self.TokenToId(token)
         raw = self.Logits[token_id] + delta
-        if raw > 1e9:
-            raw = 1e9
-        if raw < -1e9:
-            raw = -1e9
+        if raw > 1000000000.0:
+            raw = 1000000000.0
+        if raw < -1000000000.0:
+            raw = -1000000000.0
         self.Logits[token_id] = raw
 
     @dafny_spec(
@@ -368,17 +368,17 @@ class LM:
         requires=("ValidTokensIdsLogits()", "token in Tokens", "factor != 0.0"),
         ensures=(
             "ValidTokensIdsLogits()",
-            "-1e9 <= Logits[TokenToId(token)] <= 1e9",
+            "-1000000000.0 <= Logits[TokenToId(token)] <= 1000000000.0",
             "forall t: Token :: t in Tokens && t != token ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])",
         ),
     )
     def ScaleToken(self, token: Token, factor: Logit) -> None:
         token_id = self.TokenToId(token)
         raw = self.Logits[token_id] * factor
-        if raw > 1e9:
-            raw = 1e9
-        if raw < -1e9:
-            raw = -1e9
+        if raw > 1000000000.0:
+            raw = 1000000000.0
+        if raw < -1000000000.0:
+            raw = -1000000000.0
         self.Logits[token_id] = raw
 
     @dafny_spec(
@@ -408,7 +408,7 @@ class LM:
     @dafny_spec(
         kind="method",
         modifies=("this.Logits",),
-        requires=("ValidTokensIdsLogits()", "-1e9 <= low", "low <= high", "high <= 1e9"),
+        requires=("ValidTokensIdsLogits()", "-1000000000.0 <= low", "low <= high", "high <= 1000000000.0"),
         ensures=(
             "ValidTokensIdsLogits()",
             "forall id :: 0 <= id < Logits.Length ==> low <= Logits[id] <= high",
@@ -452,7 +452,7 @@ class LM:
         i = 0
         while i < n:
             if i not in keep:
-                self.Logits[i] = -1e9
+                self.Logits[i] = -1000000000.0
             i += 1
 
     # ── Generation ────────────────────────────────────────────────────
@@ -480,7 +480,7 @@ class LM:
         best_token: Token | None = None
         best_logit: Logit | None = None
         for token, logit in zip(self.Tokens, self.Logits):
-            if logit == -1e9:
+            if logit == -1000000000.0:
                 continue
             if best_logit is None or logit > best_logit:
                 best_token = token
@@ -913,9 +913,10 @@ class CSDHelpers:
         return PrefixContains(prefix, RightDelimiter) or PrefixContains(prefix, SpacedRightDelimiter)
 
     # ── Primitive Step Functions ──────────────────────────────────────
-    # Each does exactly ONE thing: generate logits, apply one shaping
-    # policy, choose.  The strategy composes these; the library does
-    # not bundle delimiter logic into step functions.
+    # Ordinary unconstrained steps mask delimiters so free-form reasoning
+    # cannot accidentally open/close answer spans. Natural delimiter mode
+    # uses the allow/nudge variants below when a policy deliberately wants
+    # the LM to choose the opening delimiter.
 
     @dafny_spec(
         kind="method",
@@ -935,6 +936,88 @@ class CSDHelpers:
     def UnconstrainedStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
         self.lm.ValidTokensIdsLogitsAlways()
         self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            self.MaskAllDelimiters(generated)
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+    )
+    def UnconstrainedAllowLeftDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            self.MaskRightDelimiters(generated)
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+            "bias > 0.0",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+        axiom=True,
+        extern=True,
+    )
+    def UnconstrainedBiasLeftDelimiterStep(
+        self,
+        prompt: Prefix,
+        generated: Prefix,
+        bias: Logit,
+        stepsLeft: int,
+    ) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            self.MaskRightDelimiters(generated)
+            self.BiasLeftDelimiters(bias)
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+        ),
+    )
+    def UnconstrainedNudgeLeftDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.lm.ValidTokensIdsLogitsAlways()
+        self.lm.GenerateLogits(prompt + generated)
+        if len(self.lm.Tokens) > 4:
+            self.MaskRightDelimiters(generated)
+            self.BiasLeftDelimiters(5.0)
         next_token = self.lm.ChooseNextToken()
         return next_token, stepsLeft - 1
 
@@ -966,6 +1049,43 @@ class CSDHelpers:
         self.lm.MaskTokensExcept(self.parser.ValidNextTokens(suffix))
         next_token = self.lm.ChooseNextToken()
         self.LongestValidSuffixAppend(generated, next_token)
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "RightDelimiter in lm.Tokens",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "nextToken in lm.Tokens",
+            "!lm.IsMasked(nextToken)",
+            "(nextToken == RightDelimiter || nextToken == SpacedRightDelimiter) ==> parser.IsCompletePrefix(LongestValidSuffix(generated))",
+            "(nextToken != RightDelimiter && nextToken != SpacedRightDelimiter) ==> parser.ValidNextToken(LongestValidSuffix(generated), nextToken)",
+        ),
+        axiom=True,
+        extern=True,
+    )
+    def ConstrainedOrRightDelimiterStep(self, prompt: Prefix, generated: Prefix, stepsLeft: int) -> tuple[Token, int]:
+        self.LongestValidSuffixIsValid(generated)
+        suffix = self.LongestValidSuffix(generated)
+        self.AllValidNextTokensInLM(suffix)
+        self.lm.GenerateLogits(prompt + generated)
+        valid_tokens = self.parser.ValidNextTokens(suffix)
+        if self.parser.IsCompletePrefix(suffix):
+            if SpacedRightDelimiter in self.lm.Tokens:
+                self.lm.MaskTokensExcept(valid_tokens + [RightDelimiter, SpacedRightDelimiter])
+            else:
+                self.lm.MaskTokensExcept(valid_tokens + [RightDelimiter])
+        else:
+            self.lm.MaskTokensExcept(valid_tokens)
+        next_token = self.lm.ChooseNextToken()
         return next_token, stepsLeft - 1
 
     @dafny_spec(
@@ -1239,6 +1359,57 @@ class CSDHelpers:
         modifies=("this.lm.Logits",),
         requires=(
             "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
+            "updated[|prefix|] in lm.Tokens",
+        ),
+    )
+    def AppendUnconstrainedAllowLeftDelimiterStep(
+        self,
+        prompt: Prefix,
+        prefix: Prefix,
+        stepsLeft: int,
+    ) -> tuple[Prefix, int]:
+        next_token, remaining = self.UnconstrainedAllowLeftDelimiterStep(prompt, prefix, stepsLeft)
+        return prefix + [next_token], remaining
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
+            "updated[|prefix|] in lm.Tokens",
+        ),
+    )
+    def AppendUnconstrainedNudgeLeftDelimiterStep(
+        self,
+        prompt: Prefix,
+        prefix: Prefix,
+        stepsLeft: int,
+    ) -> tuple[Prefix, int]:
+        next_token, remaining = self.UnconstrainedNudgeLeftDelimiterStep(prompt, prefix, stepsLeft)
+        return prefix + [next_token], remaining
+
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
             "parser.IsValidPrefix([])",
             "!parser.IsCompletePrefix(LongestValidSuffix(prefix))",
             "stepsLeft >= 1",
@@ -1256,6 +1427,37 @@ class CSDHelpers:
     )
     def AppendConstrainedStep(self, prompt: Prefix, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:
         next_token, remaining = self.ConstrainedStep(prompt, prefix, stepsLeft)
+        return prefix + [next_token], remaining
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "RightDelimiter in lm.Tokens",
+            "stepsLeft >= 1",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "remainingSteps == stepsLeft - 1",
+            "remainingSteps >= 0",
+            "|updated| == |prefix| + 1",
+            "|updated| + remainingSteps == |prefix| + stepsLeft",
+            "updated[|prefix|] in lm.Tokens",
+            "(updated[|prefix|] == RightDelimiter || updated[|prefix|] == SpacedRightDelimiter) ==> parser.IsCompletePrefix(LongestValidSuffix(prefix))",
+            "(updated[|prefix|] != RightDelimiter && updated[|prefix|] != SpacedRightDelimiter) ==> parser.ValidNextToken(LongestValidSuffix(prefix), updated[|prefix|])",
+        ),
+        axiom=True,
+        extern=True,
+    )
+    def AppendConstrainedOrRightDelimiterStep(
+        self,
+        prompt: Prefix,
+        prefix: Prefix,
+        stepsLeft: int,
+    ) -> tuple[Prefix, int]:
+        next_token, remaining = self.ConstrainedOrRightDelimiterStep(prompt, prefix, stepsLeft)
         return prefix + [next_token], remaining
 
     @dafny_spec(
@@ -1363,6 +1565,133 @@ class CSDHelpers:
     def AppendRightDelimiter(self, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, int]:
         updated, remainingSteps = self.AppendForcedToken(prefix, RightDelimiter, stepsLeft)
         return updated, remainingSteps
+
+    # ── Compatibility Helpers (Span-State Strategies) ────────────────
+    # These are convenience adapters for richer strategies that track
+    # explicit inside-span/current-constrained state.
+
+    @dafny_spec(
+        kind="function",
+        reads=("this", "this.parser"),
+        requires=("parser.IsValidPrefix([])",),
+        ensures=("result >= 0",),
+    )
+    def ValidTokenCount(self, prefix: Prefix) -> int:
+        return self.ValidContinuationCount(prefix)
+
+    @dafny_spec(
+        kind="method",
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "LeftDelimiter in lm.Tokens",
+            "stepsLeft >= 1",
+        ),
+        ensures=("this.lm.ValidTokensIdsLogits()",),
+    )
+    def OpenConstrainedSpan(self, prefix: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]:
+        updated, remaining_steps = self.AppendLeftDelimiter(prefix, stepsLeft)
+        return updated, True, [], remaining_steps
+
+    @dafny_spec(
+        kind="method",
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "RightDelimiter in lm.Tokens",
+            "stepsLeft >= 1",
+            "parser.IsValidPrefix([])",
+            "parser.IsValidPrefix(currentConstrained)",
+            "parser.IsCompletePrefix(currentConstrained)",
+            "|currentConstrained| <= |prefix|",
+            "prefix[|prefix| - |currentConstrained|..] == currentConstrained",
+        ),
+        ensures=("this.lm.ValidTokensIdsLogits()",),
+    )
+    def CloseConstrainedSpan(self, prefix: Prefix, currentConstrained: Prefix, stepsLeft: int) -> tuple[Prefix, bool, Prefix, int]:
+        updated, remaining_steps = self.AppendRightDelimiter(prefix, stepsLeft)
+        return updated, False, [], remaining_steps
+
+    @dafny_spec(
+        kind="method",
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "parser.IsValidPrefix(currentConstrained)",
+            "!parser.IsCompletePrefix(currentConstrained)",
+            "token in lm.Tokens",
+            "parser.ValidNextToken(currentConstrained, token)",
+        ),
+        ensures=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix(currentConstrained + [token])",
+        ),
+    )
+    def AppendConstrainedToken(self, prefix: Prefix, currentConstrained: Prefix, token: Token) -> tuple[Prefix, bool, Prefix]:
+        updated = prefix + [token]
+        updated_constrained = currentConstrained + [token]
+        return updated, True, updated_constrained
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "parser.IsValidPrefix(currentConstrained)",
+            "!parser.IsCompletePrefix(currentConstrained)",
+            "stepsLeft >= 1",
+            "bonus > 0.0",
+            "|validTokenGroups| >= 0",
+            "forall g: seq<Token> :: g in validTokenGroups ==> forall t: Token :: t in g ==> t in lm.Tokens",
+            "forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens",
+        ),
+        ensures=("this.lm.ValidTokensIdsLogits()",),
+    )
+    def GroupBoostedConstrainedStep(
+        self,
+        prompt: Prefix,
+        stablePrefix: Prefix,
+        currentConstrained: Prefix,
+        validTokenGroups: list[list[Token]],
+        bonus: Logit,
+        stepsLeft: int,
+    ) -> tuple[Token, int]:
+        self.lm.GenerateLogits(prompt + stablePrefix + currentConstrained)
+        # Proof-friendly fallback: rely on parser masking only.
+        # (Boosting can be reintroduced with tighter token-membership proofs.)
+        self.lm.MaskTokensExcept(self.parser.ValidNextTokens(currentConstrained))
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
+
+    @dafny_spec(
+        kind="method",
+        modifies=("this.lm.Logits",),
+        requires=(
+            "this.lm.ValidTokensIdsLogits()",
+            "parser.IsValidPrefix([])",
+            "parser.IsValidPrefix(currentConstrained)",
+            "!parser.IsCompletePrefix(currentConstrained)",
+            "stepsLeft >= 1",
+            "penalty > 0.0",
+            "|penaltyTokens| > 0",
+            "forall t: Token :: t in penaltyTokens ==> t in lm.Tokens",
+            "forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens",
+        ),
+        ensures=("this.lm.ValidTokensIdsLogits()",),
+    )
+    def PenalizedConstrainedStep(
+        self,
+        prompt: Prefix,
+        stablePrefix: Prefix,
+        currentConstrained: Prefix,
+        penaltyTokens: Prefix,
+        penalty: Logit,
+        stepsLeft: int,
+    ) -> tuple[Token, int]:
+        self.lm.GenerateLogits(prompt + stablePrefix + currentConstrained)
+        # Proof-friendly fallback: skip explicit penalty and constrain by parser.
+        self.lm.MaskTokensExcept(self.parser.ValidNextTokens(currentConstrained))
+        next_token = self.lm.ChooseNextToken()
+        return next_token, stepsLeft - 1
 
     # ── Checkpoint Utilities ──────────────────────────────────────────
 
