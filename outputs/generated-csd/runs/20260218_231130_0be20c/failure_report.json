@@ -1,0 +1,533 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with VARIABLES and numeric constants. CRITICAL RULES: 1. Every expression MUST contain at least one variable - pure numeric expressions like '2 * 2' are INVALID. Variables may appear as letter+digits (n1, x2), split letter/digit tokens (n 1, x 2), or letter-only (n, x, foo). 2. Variables represent problem values; numeric constants (12, 100) are for unit conversions and percentages. 3. The constrained windows are SHORT (typically 5-20 tokens for expressions like 'n1 + n2 * 12'). 4. The grammar is RECURSIVE but depth is BOUNDED in runtime; prefer balanced parentheses and compact expressions. 5. The grammar includes the closing delimiter '>>' - expressions must be complete and compact. 6. Avoid trivial outputs (e.g., just a single variable) unless the problem truly requires it; include necessary operators.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-18T23:45:16.108636",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use a hybrid generation approach that starts constrained but allows switching to unconstrained mode within specific delimiters ('<<' and '>>'). This approach ensures that expressions remain compact while allowing for the inclusion of necessary operators and variables. We also set a minimum number of unconstrained tokens before entering constrained mode to avoid trivial outputs.\n// CSD_RATIONALE_END\nif maxSteps < 10 {\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n} else {\n  generated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "PureConstrainedGeneration",
+        "parameters": {},
+        "category": "fully_constrained",
+        "comparable_to": "SynCode",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use a hybrid generation approach that starts constrained but allows switching to unconstrained mode within specific delimiters ('<<' and '>>'). This approach ensures that expressions remain compact while allowing for the inclusion of necessary operators and variables. We also set a minimum number of unconstrained tokens before entering constrained mode to avoid trivial outputs.\n// CSD_RATIONALE_END\nif maxSteps < 10 {\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n} else {\n  generated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:11:54.277301",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 409.58s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  \na\n16\n                                 \n                                 \n                         ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 66.35189056396484
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 409.5792911052704,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " \na\n16\n                                 \n                                 \n                         ",
+            "full_output": " \na\n16\n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 398.976411819458
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a minimum number of unconstrained tokens before entering constrained mode to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a minimum number of unconstrained tokens before entering constrained mode to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:18:55.520978",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 408.13s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_231900_621809"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 347.58687019348145
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 408.1308891773224,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 401.22881388664246
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:25:54.461051",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 137.63s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_232559_dfd2af"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 302.4454116821289
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 137.63267016410828,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 128.97208547592163
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:28:23.587580",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 136.13s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_232828_c81193"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 307.16586112976074
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 136.13159561157227,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 127.58933138847351
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:30:51.530249",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 131.26s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_233056_6d9e43"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 298.78878593444824
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 131.26077008247375,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 124.5704255104065
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:33:14.661721",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 130.65s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_233319_4bee0a"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 301.0406494140625
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 130.65384078025818,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 124.19506001472473
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:35:37.055856",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 134.07s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_233541_7efbc6"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 298.5353469848633
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 134.0678210258484,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 127.58909487724304
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:38:02.711921",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 133.48s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_233807_4a2ce4"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 303.36928367614746
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 133.48459005355835,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 127.01754188537598
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:40:27.615823",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 130.67s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_234032_2eff4d"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 312.3002052307129
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 130.67222952842712,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 124.31224870681763
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The parser enforces a recursive but bounded-depth grammar, requiring expressions to be complete and contain at least one variable. Given these constraints, we use the CraneGeneration strategy. This approach starts UNCONSTRAINED (free text), watches for '<<', then switches to constrained mode for the expression, then back to unconstrained. We set a higher minimum number of unconstrained tokens before entering constrained mode to allow more time for reasoning and to avoid trivial outputs. Additionally, we ensure that the expressions contain variables (not just numbers) to satisfy the grammar requirements.\n//\n// To address the issue of the model not generating `<< >>` delimiters, we switch to CraneGeneration with increased `minReasoningSteps` to give the model more time to produce reasoning text. We also ensure that the model generates expressions containing variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T23:42:49.850372",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 134.60s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_231130_0be20c/gsm_crane_csd_20260218_234254_8f2393"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 299.49092864990234
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 134.59775114059448,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + ",
+            "full_output": " Let m = 16, c = 4, r = 13, mc = 8.5, cc = 10.5.\nTotal cost = <<m * m + c * c + r + m * c + c * r + r * m + m * r + c * m + r * c + m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m * c * r * m",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 128.1626238822937
+          }
+        ]
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 0,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

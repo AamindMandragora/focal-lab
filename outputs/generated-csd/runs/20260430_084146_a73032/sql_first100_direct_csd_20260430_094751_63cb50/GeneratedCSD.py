@@ -1,0 +1,105 @@
+import sys
+from typing import Callable, Any, TypeVar, NamedTuple
+from math import floor
+from itertools import count
+
+import module_ as module_
+import _dafny as _dafny
+import System_ as System_
+import VerifiedDecoderAgent as VerifiedDecoderAgent
+
+# Module: GeneratedCSD
+
+class default__:
+    def  __init__(self):
+        pass
+
+    @staticmethod
+    def MyCSDStrategy(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        d_0_helpers_: VerifiedDecoderAgent.CSDHelpers
+        nw0_ = VerifiedDecoderAgent.CSDHelpers()
+        nw0_.ctor__()
+        d_0_helpers_ = nw0_
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        generated = generatedPrefix
+        cost = 0
+        if insideConstrained:
+            insideConstrainedOut = True
+            currentConstrainedOut = currentConstrained
+        elif True:
+            insideConstrainedOut = True
+            currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])
+        d_1_steps_: int
+        d_1_steps_ = 0
+        d_2_startedDirect_: bool
+        d_2_startedDirect_ = insideConstrained
+        with _dafny.label("0"):
+            while (d_1_steps_) < (maxSteps):
+                with _dafny.c_label("0"):
+                    if not(d_2_startedDirect_):
+                        if ((len(generated)) > (0)) and (VerifiedDecoderAgent.default__.Contains((generated)[(len(generated)) - (1)], _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<")))):
+                            currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])
+                        elif True:
+                            generated = (generated) + (_dafny.SeqWithoutIsStrInference([]))
+                        d_2_startedDirect_ = True
+                        d_1_steps_ = (d_1_steps_) + (1)
+                    elif True:
+                        d_3_dead_: bool
+                        out0_: bool
+                        out0_ = (d_0_helpers_).DeadEndDetection(parser, currentConstrainedOut, 1)
+                        d_3_dead_ = out0_
+                        if d_3_dead_:
+                            d_4_repaired_: _dafny.Seq
+                            out1_: _dafny.Seq
+                            out1_ = VerifiedDecoderAgent.CSDHelpers.RollbackToValidPrefix(parser, currentConstrainedOut)
+                            d_4_repaired_ = out1_
+                            generated = _dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - ((len(currentConstrainedOut)) - (len(d_4_repaired_))):])
+                            currentConstrainedOut = d_4_repaired_
+                            d_1_steps_ = (d_1_steps_) + (1)
+                        elif True:
+                            (lm).GenerateLogits((prompt) + (currentConstrainedOut))
+                            if (len(validTokenGroups)) > (0):
+                                (d_0_helpers_).BoostValidGroups(lm, parser, currentConstrainedOut, validTokenGroups, _dafny.BigRational('2e0'))
+                            d_5_isComplete_: bool
+                            d_5_isComplete_ = (parser).IsCompletePrefix(currentConstrainedOut)
+                            if d_5_isComplete_:
+                                (d_0_helpers_).PenalizeTokenLogits(lm, _dafny.SeqWithoutIsStrInference([eosToken]), _dafny.BigRational('5e-1'))
+                            elif True:
+                                (d_0_helpers_).PenalizeTokenLogits(lm, _dafny.SeqWithoutIsStrInference([eosToken]), _dafny.BigRational('1e2'))
+                            (lm).MaskValidNextAndEos(parser, currentConstrainedOut, eosToken)
+                            d_6_next_: _dafny.Seq
+                            out2_: _dafny.Seq
+                            out2_ = (lm).ChooseNextToken()
+                            d_6_next_ = out2_
+                            (d_0_helpers_).cost = (d_0_helpers_.cost) + (1)
+                            d_1_steps_ = (d_1_steps_) + (1)
+                            if (d_6_next_) == (eosToken):
+                                raise _dafny.Break("0")
+                            elif True:
+                                d_7_generated2_: _dafny.Seq
+                                d_8_inside2_: bool
+                                d_9_current2_: _dafny.Seq
+                                out3_: _dafny.Seq
+                                out4_: bool
+                                out5_: _dafny.Seq
+                                out3_, out4_, out5_ = (d_0_helpers_).AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, d_6_next_)
+                                d_7_generated2_ = out3_
+                                d_8_inside2_ = out4_
+                                d_9_current2_ = out5_
+                                generated = d_7_generated2_
+                                insideConstrainedOut = True
+                                currentConstrainedOut = d_9_current2_
+                    pass
+            pass
+        cost = d_1_steps_
+        if ((maxSteps) > (0)) and ((cost) == (0)):
+            cost = 1
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+

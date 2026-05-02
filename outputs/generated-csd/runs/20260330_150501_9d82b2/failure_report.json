@@ -1,0 +1,269 @@
+{
+  "task_description": "Generate a strategy for first-order logic reasoning problems where premises and conclusions are expressed in natural language and the answer is True, False, or Unknown.",
+  "total_attempts": 10,
+  "timestamp": "2026-03-30T15:08:31.600268",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach for first-order logic reasoning problems.\n// In the unconstrained phase, it generates tokens without grammar constraints until it encounters \"<<\".\n// Upon encountering \"<<\", it switches to the constrained phase and continues generating tokens according to the given grammar until it reaches \">>\" or completes the sentence.\n// If \">>\" is encountered during the constrained phase, it switches back to the unconstrained phase.\n// The strategy aims to find a valid logical conclusion or determine if it's unknown within the given token limit.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach for first-order logic reasoning problems.\n// In the unconstrained phase, it generates tokens without grammar constraints until it encounters \"<<\".\n// Upon encountering \"<<\", it switches to the constrained phase and continues generating tokens according to the given grammar until it reaches \">>\" or completes the sentence.\n// If \">>\" is encountered during the constrained phase, it switches back to the unconstrained phase.\n// The strategy aims to find a valid logical conclusion or determine if it's unknown within the given token limit.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T15:05:51.326923",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "load_folio() got an unexpected keyword argument 'limit'",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260330_150501_9d82b2/folio_nonCRANE_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 82,
+        "cost": 83,
+        "execution_time_ms": 20.825624465942383
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 0.01035451889038086,
+        "error": "load_folio() got an unexpected keyword argument 'limit'",
+        "sample_outputs": []
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between two phases: unconstrained and constrained.\n// Initially, tokens are generated unconstrained until \"<<\" is encountered.\n// Upon finding \"<<\", the strategy switches to constrained mode and continues\n// generating tokens according to the grammar rules until \">>\" is reached or\n// the maximum number of steps is exceeded.\n// If \">>\" is found during the constrained phase, the strategy switches back to\n// unconstrained mode. This allows the model to explore multiple potential\n// conclusions before making a decision based on the grammar rules.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between two phases: unconstrained and constrained.\n// Initially, tokens are generated unconstrained until \"<<\" is encountered.\n// Upon finding \"<<\", the strategy switches to constrained mode and continues\n// generating tokens according to the grammar rules until \">>\" is reached or\n// the maximum number of steps is exceeded.\n// If \">>\" is found during the constrained phase, the strategy switches back to\n// unconstrained mode. This allows the model to explore multiple potential\n// conclusions before making a decision based on the grammar rules.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T15:06:13.540457",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "load_folio() got an unexpected keyword argument 'limit'",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260330_150501_9d82b2/folio_nonCRANE_csd_20260330_150618_120dbb"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 22,
+        "cost": 23,
+        "execution_time_ms": 6.18433952331543
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 2.1696090698242188e-05,
+        "error": "load_folio() got an unexpected keyword argument 'limit'",
+        "sample_outputs": []
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next, \">>\") { insideConstrained := false; }\n      } else {\n        // If the model;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next, \">>\") { insideConstrained := false; }\n      } else {\n        // If the model;"
+      },
+      "timestamp": "2026-03-30T15:06:32.628539",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 69: rbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;"
+      },
+      "timestamp": "2026-03-30T15:06:47.564910",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 2 error(s):\n  - Line 64: invalid UnaryExpression\n  - Line 65: lbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;"
+      },
+      "timestamp": "2026-03-30T15:07:02.381273",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 2 error(s):\n  - Line 64: invalid UnaryExpression\n  - Line 65: lbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a greedy approach with a confidence gate. It generates tokens unconstrained until it encounters \"<<\".\n// Upon finding \"<<\", it enters a constrained phase where it only selects tokens that have a higher likelihood compared to the previous token.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach aims to balance exploration and exploitation by favoring more likely tokens in the constrained phase.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar lastGeneratedToken: Token := \"\";\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    lastGeneratedToken := next;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n        lastGeneratedToken := next;\n        if Contains(next,;"
+      },
+      "timestamp": "2026-03-30T15:07:17.137920",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 2 error(s):\n  - Line 64: invalid UnaryExpression\n  - Line 65: lbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n      } else {\n        // If the constrained step did not find a valid token, exit the constrained phase\n        insideConstrained := false;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n      } else {\n        // If the constrained step did not find a valid token, exit the constrained phase\n        insideConstrained := false;"
+      },
+      "timestamp": "2026-03-30T15:07:33.284903",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 68: rbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n      } else {\n        // If the constrained step did not find a valid token, exit the constrained phase\n        insideConstrained := false;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n      var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      if wasConstrained {\n        generated := generated + [next];\n        currentConstrained := currentConstrained + [next];\n        steps := steps + 1;\n      } else {\n        // If the constrained step did not find a valid token, exit the constrained phase\n        insideConstrained := false;"
+      },
+      "timestamp": "2026-03-30T15:07:47.695604",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 68: rbrace expected",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n    var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if wasConstrained {\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n    } else {\n      // If the constrained step did not find a valid token, exit the constrained phase\n      insideConstrained := false;\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n    var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if wasConstrained {\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n    } else {\n      // If the constrained step did not find a valid token, exit the constrained phase\n      insideConstrained := false;\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T15:08:01.840507",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 54: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n    var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if wasConstrained {\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n    } else {\n      // If the constrained step did not find a valid token, exit the constrained phase\n      insideConstrained := false;\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy alternates between unconstrained and constrained generations.\n// In the unconstrained phase, it generates tokens without grammar constraints until encountering \"<<\".\n// Upon finding \"<<\", it switches to the constrained phase where it only selects tokens that are grammar-valid.\n// The constrained phase continues until it finds \">>\" or reaches the maximum number of steps. If \">>\" is found, it exits the constrained phase.\n// This approach balances exploration and exploitation by allowing free-form generation initially and refining with grammar constraints later.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE: choose HOW to generate the next unconstrained token\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE: choose HOW to generate the next constrained token\n    var next, wasConstrained := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if wasConstrained {\n      generated := generated + [next];\n      currentConstrained := currentConstrained + [next];\n      steps := steps + 1;\n    } else {\n      // If the constrained step did not find a valid token, exit the constrained phase\n      insideConstrained := false;\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T15:08:16.843683",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 54: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 8,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

@@ -1,0 +1,626 @@
+{
+  "task_description": "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.",
+  "total_attempts": 15,
+  "timestamp": "2026-04-01T20:01:01.867234",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        generated := generated + [next];\n        steps := steps + 1;\n        if isValid {\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        generated := generated + [next];\n        steps := steps + 1;\n        if isValid {\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:54:58.916364",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(67,35): Error: value does not satisfy the subset constraints of 'nat'\n   |\n67 |             openCount := openCount - 1;\n   |                                    ^\n\n\nDafny program verifier finished with 1 verified, 1 error",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:55:16.605370",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(34,25): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n34 |   invariant helpers.cost == steps\n   |                          ^^\n\nGeneratedCSD.dfy(66,35): Error: value does not satisfy the subset constraints of 'nat'\n   |\n66 |             openCount := openCount - 1;\n   |                                    ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:55:33.852117",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(34,25): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n34 |   invariant helpers.cost == steps\n   |                          ^^\n\nGeneratedCSD.dfy(64,35): Error: value does not satisfy the subset constraints of 'nat'\n   |\n64 |             openCount := openCount - 1;\n   |                                    ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:55:51.041446",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(34,25): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n34 |   invariant helpers.cost == steps\n   |                          ^^\n\nGeneratedCSD.dfy(64,35): Error: value does not satisfy the subset constraints of 'nat'\n   |\n64 |             openCount := openCount - 1;\n   |                                    ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy follows a two-phase approach: an initial unconstrained phase to explore potential solutions,\n// followed by a constrained phase where each token is strictly validated against the problem's grammar.\n// During the unconstrained phase, we penalize \">>\" to encourage exploring longer chains before encountering \"<<\".\n// In the constrained phase, we use soft constrained sampling to balance exploration and exploitation.\n// We also track the number of open \"<<\" and \">>\" tokens to manage the constrained window effectively.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\nvar openCount: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true;\n      currentConstrained := [];\n      openCount := openCount + 1;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n      if narrow {\n        insideConstrained := false;\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n          currentConstrained := currentConstrained + [next];\n          if Contains(next, \">>\") { \n            insideConstrained := false;\n            openCount := openCount - 1;\n          } else if Contains(next, \"<<\") {\n            openCount := openCount + 1;\n          }\n        } else {\n          insideConstrained := false;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:56:07.799822",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(34,25): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n34 |   invariant helpers.cost == steps\n   |                          ^^\n\nGeneratedCSD.dfy(64,35): Error: value does not satisfy the subset constraints of 'nat'\n   |\n64 |             openCount := openCount - 1;\n   |                                    ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a combination of unconstrained and constrained phases to solve math word problems step-by-step.\n// In the unconstrained phase, the model is allowed to generate any token, and \">>\" is penalized to encourage longer chains.\n// When \"<<\" is encountered, the model enters a constrained phase where it must generate tokens according to the grammar rules.\n// The constrained phase continues until the problem is solved or the maximum number of steps is reached.\n// The strategy ensures that each arithmetic computation is enclosed within \"<< >>\" delimiters.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    }\n  } else {\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n    if parser.IsCompletePrefix(currentConstrained) || narrow {\n      insideConstrained := false;\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n      generated := generated + [next];\n      steps := steps + 1;\n      if isValid {\n        currentConstrained := currentConstrained + [next];\n        if next == \">>\" { insideConstrained := false; }\n      } else {\n        insideConstrained := false;\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a combination of unconstrained and constrained phases to solve math word problems step-by-step.\n// In the unconstrained phase, the model is allowed to generate any token, and \">>\" is penalized to encourage longer chains.\n// When \"<<\" is encountered, the model enters a constrained phase where it must generate tokens according to the grammar rules.\n// The constrained phase continues until the problem is solved or the maximum number of steps is reached.\n// The strategy ensures that each arithmetic computation is enclosed within \"<< >>\" delimiters.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\">>\"], 5.0);\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    }\n  } else {\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 2);\n    if parser.IsCompletePrefix(currentConstrained) || narrow {\n      insideConstrained := false;\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 6.0);\n      generated := generated + [next];\n      steps := steps + 1;\n      if isValid {\n        currentConstrained := currentConstrained + [next];\n        if next == \">>\" { insideConstrained := false; }\n      } else {\n        insideConstrained := false;\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:56:24.121786",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 20.0% (2/10)\n  Format Rate: 100.0%\n  Syntax Rate: 82.4%\n  Total Time: 81.79s\n\nSample Failures:\n\n  Example 1:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nF\n\n  Example 2:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - \n\n  Example 3:\n    Question: Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. A...\n    Expected: 525\n    Got:  Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260401_195433_6d0130/gsm_new_tools_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 37,
+        "cost": 38,
+        "execution_time_ms": 15.106678009033203
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.2,
+        "format_rate": 1.0,
+        "syntax_rate": 0.8235294117647058,
+        "num_examples": 10,
+        "num_correct": 2,
+        "total_time_seconds": 81.79262018203735,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": "191",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = <<a * m>>\nCrayon total = <<b * c>>\nTotal spent = <<a * m + b * c + r>>\nThe answer is a * m + b * c + r.",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 78,
+            "time_seconds": 5.580032110214233
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nF",
+            "full_output": " Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nFirst 20 seconds = <<r>>\nNext 20 seconds = <<r2>>\nNext 20 seconds = <<r3>>\nFinal 20 seconds = <<r4>>\nTotal popped = <<r + r2 + r3 + r4>>\nResidual heat = <<r4 / 4>>\nTotal popped = <<r + r2 + r3 + r4 + r",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 10.937480926513672
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - ",
+            "full_output": " Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - s) / (w + s) + 1>>\nAdditional plants needed = <<Total plants needed - f>>\nCost = <<Additional plants needed * c>>\nThe answer is Additional plants needed * c.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 88,
+            "time_seconds": 5.564637184143066
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+            "full_output": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/20)>>  # 15 kg at full price, 5 kg at 1/4 off\nTotal keychains cost = <<n * k>>\nTotal spent = <<Total saltwater taffy cost + s + Total keychains cost>>\nMoney left = <<1300 - Total spent>>\nThe answer is 1300 - Total spent.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 134,
+            "time_seconds": 9.469292640686035
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": "402",
+            "full_output": " Let d = 12, c = 85, ch = 113, a = 4, b = 5, c = 3.\nDonut cost = <<a * d>>\nMini cupcake cost = <<b * c>>\nMini cheesecake cost = <<c * ch>>\nTotal cost = <<a * d + b * c + c * ch>>\nThe answer is a * d + b * c + c * ch.\n\nQ: A school is organizing a field trip and needs to rent buses. Each bus can carry 40 students and costs $250 to rent. If the school needs to transport 240 students, how much will it cost to rent the buses?\nA",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 150,
+            "time_seconds": 9.414225578308105
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": "18",
+            "full_output": " Let c = 13, u = 5, t = 36.\nPlates in Chen's package = <<t - c - u>>\nThe answer is t - c - u.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 41,
+            "time_seconds": 2.6435320377349854
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": "480",
+            "full_output": " Let b = 11, k = 27, f = 29, s = f + 12.\nBrownie total = <<f * b>>\nKiwi pie total = <<s * k>>\nTotal earned = <<f * b + s * k>>\nThe answer is f * b + s * k.\n\nQ: A school has 1200 students. 40% of them are girls. How many girls are there?\nA: Let s = 1200, g = 0.40.\nNumber of girls = <<s * g>>\nThe answer is s * g.\n\nQ: A recipe calls for 3 cups of flour and 2 cups of sugar. If",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 9.831343650817871
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": "760",
+            "full_output": " Let f = 2, p = 40, h = 11 - 2 = 9.\nFirst paid hour = <<p>>\nRemaining hours = <<h - f>>\nCost of remaining hours = <<(h - f) * 2 * p>>\nTotal cost = <<p + (h - f) * 2 * p>>\nThe answer is p + (h - f) * 2 * p.\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 9.382842063903809
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": "49",
+            "full_output": " Let t = 121, c = 16, p = 56.\nTime spent so far = <<c + p>>\nTime remaining = <<t - (c + p)>>\nThe answer is t - (c + p).",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 52,
+            "time_seconds": 3.05094313621521
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": "19",
+            "full_output": " Let b = 300, c = 10, d = 5, e = 15, f = x.\nTotal cost = <<c + d + e * f>>\nNumber of friends = <<(b - c - d) / e>>\nThe answer is (b - c - d) / e.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 69,
+            "time_seconds": 4.149394273757935
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    } else {\n      generated := generated + [next];\n      steps := steps + 1;\n    }\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if next == \">>\" {\n      insideConstrained := false;\n    } else {\n      generated := generated + [next];\n      steps := steps + 1;\n      if isValid {\n        currentConstrained := currentConstrained + [next];\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    } else {\n      generated := generated + [next];\n      steps := steps + 1;\n    }\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    if next == \">>\" {\n      insideConstrained := false;\n    } else {\n      generated := generated + [next];\n      steps := steps + 1;\n      if isValid {\n        currentConstrained := currentConstrained + [next];\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:01.091445",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(44,48): Error: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)\n   |\n44 |     var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n   |                                                 ^\n\n1 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, generated);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, generated);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:10.038620",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(36,48): Error: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)\n   |\n36 |     var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, generated);\n   |                                                 ^\n\nGeneratedCSD.dfy(40,6): Error: unresolved identifier: currentConstrained\n   |\n40 |       currentConstrained := currentConstrained + [next];\n   |       ^^^^^^^^^^^^^^^^^^\n\nGeneratedCSD.dfy(40,28): Error: unresolved identifier: currentConstrained\n   |\n40 |       currentConstrained := currentConstrained + [next];\n   |                             ^^^^^^^^^^^^^^^^^^\n\n3 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach to solve arithmetic problems. Initially, it generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:19.930504",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(37,48): Error: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)\n   |\n37 |     var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n   |                                                 ^\n\n1 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:29.266732",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(37,48): Error: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)\n   |\n37 |     var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n   |                                                 ^\n\n1 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 11,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates tokens unconstrainedly until encountering \"<<\". Upon entering the constrained phase, it ensures each token adheres to grammar rules and is part of a valid arithmetic expression. The constrained phase continues until the expression is complete or the maximum steps are exceeded. This approach ensures that the generated expressions are syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps, if Contains(helpers.PrefixToString(generated), \"<<\") then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == \"<<\" {\n    generated := generated + [next];\n    steps := steps + 1;\n  } else {\n    var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n    if isValid {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:38.517263",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(37,48): Error: the method returns 1 value but is assigned to 2 variables (all return values must be assigned)\n   |\n37 |     var next, isValid := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n   |                                                 ^\n\n1 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 12,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach:\n// 1. Unconstrained phase: Generate tokens without grammar constraint until \"<<\" is encountered.\n// 2. Constrained phase: Enforce grammar constraints until \">>\" is encountered.\n// During the constrained phase, we use ConfidenceGatedStep to ensure that the model does not deviate from the correct path.\n// If the model samples a token that is not grammar-valid, we exit the constrained phase immediately.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      steps := steps + 1;\n      if wasConstrained {\n        currentConstrained := currentConstrained + [next];\n        if next == \">>\" { insideConstrained := false; }\n      } else {\n        insideConstrained := false;\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-phase approach:\n// 1. Unconstrained phase: Generate tokens without grammar constraint until \"<<\" is encountered.\n// 2. Constrained phase: Enforce grammar constraints until \">>\" is encountered.\n// During the constrained phase, we use ConfidenceGatedStep to ensure that the model does not deviate from the correct path.\n// If the model samples a token that is not grammar-valid, we exit the constrained phase immediately.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar insideConstrained: bool := false;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    steps := steps + 1;\n    if next == \"<<\" {\n      insideConstrained := true;\n      currentConstrained := [];\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      generated := generated + [next];\n      steps := steps + 1;\n      if wasConstrained {\n        currentConstrained := currentConstrained + [next];\n        if next == \">>\" { insideConstrained := false; }\n      } else {\n        insideConstrained := false;\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T19:58:51.439139",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 20.0% (2/10)\n  Format Rate: 100.0%\n  Syntax Rate: 82.4%\n  Total Time: 74.46s\n\nSample Failures:\n\n  Example 1:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nF\n\n  Example 2:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - \n\n  Example 3:\n    Question: Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. A...\n    Expected: 525\n    Got:  Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260401_195433_6d0130/gsm_new_tools_csd_20260401_195856_764e01"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 21,
+        "cost": 22,
+        "execution_time_ms": 8.414268493652344
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.2,
+        "format_rate": 1.0,
+        "syntax_rate": 0.8235294117647058,
+        "num_examples": 10,
+        "num_correct": 2,
+        "total_time_seconds": 74.46437287330627,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": "191",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = <<a * m>>\nCrayon total = <<b * c>>\nTotal spent = <<a * m + b * c + r>>\nThe answer is a * m + b * c + r.",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 78,
+            "time_seconds": 4.289825677871704
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nF",
+            "full_output": " Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nFirst 20 seconds = <<r>>\nNext 20 seconds = <<r2>>\nNext 20 seconds = <<r3>>\nFinal 20 seconds = <<r4>>\nTotal popped = <<r + r2 + r3 + r4>>\nResidual heat = <<r4 / 4>>\nTotal popped = <<r + r2 + r3 + r4 + r",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 9.825309991836548
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - ",
+            "full_output": " Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>>\nTotal plants needed = <<(l - s) / (w + s) + 1>>\nAdditional plants needed = <<Total plants needed - f>>\nCost = <<Additional plants needed * c>>\nThe answer is Additional plants needed * c.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 88,
+            "time_seconds": 4.915933609008789
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+            "full_output": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/20)>>  # 15 kg at full price, 5 kg at 1/4 off\nTotal keychains cost = <<n * k>>\nTotal spent = <<Total saltwater taffy cost + s + Total keychains cost>>\nMoney left = <<1300 - Total spent>>\nThe answer is 1300 - Total spent.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 134,
+            "time_seconds": 8.122471809387207
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": "402",
+            "full_output": " Let d = 12, c = 85, ch = 113, a = 4, b = 5, c = 3.\nDonut cost = <<a * d>>\nMini cupcake cost = <<b * c>>\nMini cheesecake cost = <<c * ch>>\nTotal cost = <<a * d + b * c + c * ch>>\nThe answer is a * d + b * c + c * ch.\n\nQ: A school is organizing a field trip and needs to rent buses. Each bus can carry 40 students and costs $250 to rent. If the school needs to transport 240 students, how much will it cost to rent the buses?\nA",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.5,
+            "token_count": 150,
+            "time_seconds": 8.74035906791687
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": "18",
+            "full_output": " Let c = 13, u = 5, t = 36.\nPlates in Chen's package = <<t - c - u>>\nThe answer is t - c - u.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 41,
+            "time_seconds": 2.4039082527160645
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": "480",
+            "full_output": " Let b = 11, k = 27, f = 29, s = f + 12.\nBrownie total = <<f * b>>\nKiwi pie total = <<s * k>>\nTotal earned = <<f * b + s * k>>\nThe answer is f * b + s * k.\n\nQ: A school has 1200 students. 40% of them are girls. How many girls are there?\nA: Let s = 1200, g = 0.40.\nNumber of girls = <<s * g>>\nThe answer is s * g.\n\nQ: A recipe calls for 3 cups of flour and 2 cups of sugar. If",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 9.287183046340942
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": "760",
+            "full_output": " Let f = 2, p = 40, h = 11 - 2 = 9.\nFirst paid hour = <<p>>\nRemaining hours = <<h - f>>\nCost of remaining hours = <<(h - f) * 2 * p>>\nTotal cost = <<p + (h - f) * 2 * p>>\nThe answer is p + (h - f) * 2 * p.\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\n<|im_start|>\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns\ns",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 8.837678670883179
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": "49",
+            "full_output": " Let t = 121, c = 16, p = 56.\nTime spent so far = <<c + p>>\nTime remaining = <<t - (c + p)>>\nThe answer is t - (c + p).",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 52,
+            "time_seconds": 2.921267509460449
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": "19",
+            "full_output": " Let b = 300, c = 10, d = 5, e = 15, f = x.\nTotal cost = <<c + d + e * f>>\nNumber of friends = <<(b - c - d) / e>>\nThe answer is (b - c - d) / e.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 69,
+            "time_seconds": 4.151101589202881
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 13,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a single-pass approach with confidence gating:\n// 1. Generate tokens unconstrained until \"<<\" is encountered.\n// 2. Switch to constrained mode, using ConfidenceGatedStep to enforce grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or reaches \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if wasConstrained {\n      currentConstrained := currentConstrained + [next];\n\n      while steps < maxSteps\n        invariant 0 <= steps <= maxSteps\n        invariant |generated| == steps\n        invariant helpers.cost == steps\n        invariant lm.ValidTokensIdsLogits()\n        invariant parser.IsValidPrefix(currentConstrained)\n        decreases maxSteps - steps\n      {{\n        var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n        generated := generated + [next];\n        steps := steps + 1;\n\n        if next == \">>\" || !wasConstrained {\n          break;\n        }\n\n        currentConstrained := currentConstrained + [next];\n      }}\n\n    } else {\n      break;\n    }\n  }\n}\n\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a single-pass approach with confidence gating:\n// 1. Generate tokens unconstrained until \"<<\" is encountered.\n// 2. Switch to constrained mode, using ConfidenceGatedStep to enforce grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or reaches \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if wasConstrained {\n      currentConstrained := currentConstrained + [next];\n\n      while steps < maxSteps\n        invariant 0 <= steps <= maxSteps\n        invariant |generated| == steps\n        invariant helpers.cost == steps\n        invariant lm.ValidTokensIdsLogits()\n        invariant parser.IsValidPrefix(currentConstrained)\n        decreases maxSteps - steps\n      {{\n        var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n        generated := generated + [next];\n        steps := steps + 1;\n\n        if next == \">>\" || !wasConstrained {\n          break;\n        }\n\n        currentConstrained := currentConstrained + [next];\n      }}\n\n    } else {\n      break;\n    }\n  }\n}\n\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T20:00:23.358769",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(15,2): Error: a postcondition could not be proved on this return path\n   |\n15 |   {\n   |   ^\n\nGeneratedCSD.dfy(12,24): Related location: this is the postcondition that could not be proved\n   |\n12 |     ensures |generated| <= maxSteps\n   |                         ^^\n\nGeneratedCSD.dfy(42,59): Error: a precondition for this call could not be proved\n   |\n42 |     var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n   |                                                            ^\n\nVerifiedAgentSynthesis.dfy(613,15): Related location: this is the precondition that could not be proved\n    |\n613 |       requires !parser.IsCompletePrefix(constrainedPrefix)\n    |                ^\n\nGeneratedCSD.dfy(50,29): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n50 |         invariant 0 <= steps <= maxSteps\n   |                              ^^\n\nGeneratedCSD.dfy(57,63): Error: a precondition for this call could not be proved\n   |\n57 |         var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n   |                                                                ^\n\nVerifiedAgentSynthesis.dfy(613,15): Related location: this is the precondition that could not be proved\n    |\n613 |       requires !parser.IsCompletePrefix(constrainedPrefix)\n    |                ^\n\n\nDafny program verifier finished with 1 verified, 4 errors",
+      "verification": {
+        "success": false,
+        "error_count": 4
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 14,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-pass approach:\n// 1. Unconstrained generation until encountering \"<<\".\n// 2. Switch to constrained mode, using ConfidenceGatedStep to ensure grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or encounters \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar insideConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    insideConstrained := true;\n  }\n\n  if insideConstrained {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if next == \">>\" || !wasConstrained {\n      insideConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\n\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-pass approach:\n// 1. Unconstrained generation until encountering \"<<\".\n// 2. Switch to constrained mode, using ConfidenceGatedStep to ensure grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or encounters \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar insideConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    insideConstrained := true;\n  }\n\n  if insideConstrained {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if next == \">>\" || !wasConstrained {\n      insideConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\n\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T20:00:36.499502",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(30,23): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n30 |   invariant 0 <= steps <= maxSteps\n   |                        ^^\n\nGeneratedCSD.dfy(47,59): Error: a precondition for this call could not be proved\n   |\n47 |     var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n   |                                                            ^\n\nVerifiedAgentSynthesis.dfy(613,15): Related location: this is the precondition that could not be proved\n    |\n613 |       requires !parser.IsCompletePrefix(constrainedPrefix)\n    |                ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 15,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-pass approach:\n// 1. Unconstrained generation until encountering \"<<\".\n// 2. Switch to constrained mode, using ConfidenceGatedStep to ensure grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or encounters \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar insideConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    insideConstrained := true;\n  }\n\n  if insideConstrained {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if next == \">>\" || !wasConstrained {\n      insideConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\n\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy uses a two-pass approach:\n// 1. Unconstrained generation until encountering \"<<\".\n// 2. Switch to constrained mode, using ConfidenceGatedStep to ensure grammar validity.\n// 3. Exit constrained mode if the model samples an invalid token or encounters \">>\".\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar insideConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  if next == eosToken { break; }\n  generated := generated + [next];\n  steps := steps + 1;\n\n  if next == \"<<\" {\n    insideConstrained := true;\n  }\n\n  if insideConstrained {\n    var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n    generated := generated + [next];\n    steps := steps + 1;\n\n    if next == \">>\" || !wasConstrained {\n      insideConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n  }\n}\n\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-01T20:00:49.084004",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(30,23): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n30 |   invariant 0 <= steps <= maxSteps\n   |                        ^^\n\nGeneratedCSD.dfy(47,59): Error: a precondition for this call could not be proved\n   |\n47 |     var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n   |                                                            ^\n\nVerifiedAgentSynthesis.dfy(613,15): Related location: this is the precondition that could not be proved\n    |\n613 |       requires !parser.IsCompletePrefix(constrainedPrefix)\n    |                ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 13,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": [
+      {
+        "error": "Type error",
+        "count": 5
+      }
+    ]
+  }
+}

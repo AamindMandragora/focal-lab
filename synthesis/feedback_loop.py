@@ -120,6 +120,9 @@ class SynthesisAttempt:
     runtime_result: Optional[RuntimeResult] = None
     eval_result: Optional[EvaluationResult] = None
 
+    # Which attempt this one was refined from (None for the initial generation)
+    refined_from_attempt: Optional[int] = None
+
     # Failure information
     failed_at: Optional[FailureStage] = None
     error_summary: str = ""
@@ -372,6 +375,167 @@ class SynthesisPipeline:
             lines.append(line)
         return "\n".join(lines)
 
+    @staticmethod
+    def _summarize_strategy_structure(strategy_code: str) -> str:
+        """Build a concise structural summary of a strategy from its helper calls."""
+        import re as _re
+        helpers_used = []
+        helper_names = [
+            "UnconstrainedStep", "UnconstrainedChunk",
+            "ConstrainedStep", "AdaptiveConstrainedStep",
+            "PenalizedConstrainedStep", "GroupBoostedConstrainedStep",
+            "OpenConstrainedSpan", "CloseConstrainedSpan",
+            "RollbackToBoundary", "RollbackConstrainedSpan", "RollbackToValidPrefix",
+            "CraneGeneration", "PureConstrainedGeneration",
+            "TryUnconstrainedThenConstrained",
+            "IntersectTokenSets", "FlattenTokenGroups",
+        ]
+        for name in helper_names:
+            if _re.search(r'\b' + name + r'\b', strategy_code):
+                helpers_used.append(name)
+
+        unconstrained_mode = "none"
+        if "UnconstrainedChunk" in helpers_used:
+            unconstrained_mode = "UnconstrainedChunk (batched)"
+        elif "UnconstrainedStep" in helpers_used:
+            unconstrained_mode = "UnconstrainedStep (token-by-token)"
+
+        constrained_mode = "none"
+        for h in ["AdaptiveConstrainedStep", "GroupBoostedConstrainedStep",
+                   "PenalizedConstrainedStep", "ConstrainedStep"]:
+            if h in helpers_used:
+                constrained_mode = h
+                break
+
+        has_open = "OpenConstrainedSpan" in helpers_used
+        has_close = "CloseConstrainedSpan" in helpers_used
+        has_rollback = any(h.startswith("Rollback") for h in helpers_used)
+        has_crane = "CraneGeneration" in helpers_used
+
+        checks_delimiter = bool(_re.search(r'==.*"<<"', strategy_code) or
+                                _re.search(r'Contains\(.*"<<"', strategy_code))
+
+        parts = []
+        if has_crane:
+            parts.append("CraneGeneration (one-shot)")
+        else:
+            parts.append(f"unconstrained={unconstrained_mode}")
+            if checks_delimiter:
+                parts.append("delimiter-triggered << entry")
+            elif has_open:
+                parts.append("forced OpenConstrainedSpan")
+            parts.append(f"constrained={constrained_mode}")
+            if has_close:
+                parts.append("explicit close on IsCompletePrefix")
+            if has_rollback:
+                rollbacks = [h for h in helpers_used if h.startswith("Rollback")]
+                parts.append(f"rollback={'+'.join(rollbacks)}")
+            if "IntersectTokenSets" in helpers_used or "FlattenTokenGroups" in helpers_used:
+                parts.append("uses token groups")
+
+        return "; ".join(parts)
+
+    @staticmethod
+    def _compute_strategy_diff(old_code: str, new_code: str) -> str:
+        """Compute a concise unified diff between two strategy codes, excluding
+        comment-only and blank-line changes."""
+        import difflib
+        old_lines = [l for l in old_code.splitlines() if l.strip() and not l.strip().startswith("//")]
+        new_lines = [l for l in new_code.splitlines() if l.strip() and not l.strip().startswith("//")]
+        diff = list(difflib.unified_diff(old_lines, new_lines, lineterm="", n=1))
+        if not diff:
+            return "(no code changes — only comments/rationale changed)"
+        # Skip the --- / +++ header lines
+        return "\n".join(diff[2:])
+
+    def _get_evaluation_history_summary(self, attempts: list[SynthesisAttempt]) -> str:
+        """Chronological summary of all attempts — both evaluated and
+        verification-failed — so the model sees the full timeline including
+        approaches that were tried but couldn't pass Dafny."""
+        relevant = [
+            a for a in attempts
+            if a.eval_result is not None or a.failed_at == FailureStage.VERIFICATION
+        ]
+        if not relevant:
+            return ""
+
+        eval_by_num = {a.attempt_number: a for a in attempts if a.eval_result is not None}
+
+        lines = []
+        best_acc = 0.0
+        best_attempt = None
+        for a in relevant:
+            if a.failed_at == FailureStage.VERIFICATION:
+                rationale = extract_rationale(a.strategy_code)
+                rationale_text = rationale.rationale.strip() if rationale.has_markers else "(no rationale)"
+                error_short = (a.error_summary or "unknown error")[:200]
+                lines.append(f"--- Attempt {a.attempt_number}: VERIFICATION FAILED ---")
+                lines.append(f"Approach: {rationale_text}")
+                lines.append(f"Error: {error_short}")
+                lines.append("")
+                continue
+
+            r = a.eval_result
+            acc = r.accuracy
+            syntax = f"{r.syntax_rate:.1%}"
+            n = r.num_examples
+
+            base = eval_by_num.get(a.refined_from_attempt) if a.refined_from_attempt else None
+
+            rationale = extract_rationale(a.strategy_code)
+            rationale_text = rationale.rationale.strip() if rationale.has_markers else None
+
+            if base is None:
+                lines.append(f"--- Attempt {a.attempt_number}: accuracy={acc:.1%} syntax={syntax} (n={n}) ---")
+                lines.append("```dafny")
+                lines.append(a.strategy_code)
+                lines.append("```")
+            else:
+                base_acc = base.eval_result.accuracy
+                delta = acc - base_acc
+                delta_str = f"+{delta:.1%}" if delta >= 0 else f"{delta:.1%}"
+                outcome = "IMPROVED" if delta > 0 else ("REGRESSED" if delta < 0 else "NO CHANGE")
+
+                lines.append(f"--- Attempt {a.attempt_number}: accuracy={acc:.1%} syntax={syntax} ({outcome}, {delta_str} from attempt {base.attempt_number}) ---")
+                if rationale_text:
+                    lines.append(f"Approach: {rationale_text}")
+                diff = self._compute_strategy_diff(base.strategy_code, a.strategy_code)
+                lines.append(f"Changes from attempt {base.attempt_number}:")
+                lines.append("```diff")
+                lines.append(diff)
+                lines.append("```")
+                if outcome == "REGRESSED":
+                    lines.append(f"^^^ WARNING: this change caused a regression. DO NOT repeat it.")
+
+            if acc > best_acc:
+                best_acc = acc
+                best_attempt = a.attempt_number
+            lines.append("")
+        if best_attempt is not None:
+            lines.append(f"*** Best so far: attempt {best_attempt} ({best_acc:.1%} accuracy)")
+
+        regressed = []
+        for a in relevant:
+            if a.eval_result is None:
+                continue
+            base = eval_by_num.get(a.refined_from_attempt) if a.refined_from_attempt else None
+            if base is None:
+                continue
+            delta = a.eval_result.accuracy - base.eval_result.accuracy
+            if delta < 0:
+                rationale = extract_rationale(a.strategy_code)
+                summary = rationale.rationale.strip() if rationale.has_markers else "(no rationale)"
+                summary_oneline = " ".join(summary.split())[:200]
+                regressed.append(
+                    f"  - Attempt {a.attempt_number} ({delta:+.1%}): {summary_oneline}"
+                )
+        if regressed:
+            lines.append("")
+            lines.append("Approaches that caused regressions — DO NOT retry these or similar ideas:")
+            lines.extend(regressed)
+
+        return "\n".join(lines)
+
     def synthesize(
         self,
         task_description: str,
@@ -397,7 +561,14 @@ class SynthesisPipeline:
 
         # Create runner if not already provided
         if self.runner is None:
-            runner = StrategyRunner(parser_mode="permissive")
+            grammar_source = None
+            if self.evaluator.dataset_name in ("spider", "gsm_symbolic", "folio"):
+                grammars_dir = Path(__file__).parent.parent / "grammars"
+                grammar_map = {"spider": "sql.lark", "gsm_symbolic": "gsm.lark", "folio": "folio.lark"}
+                grammar_path = grammars_dir / grammar_map[self.evaluator.dataset_name]
+                if grammar_path.exists():
+                    grammar_source = str(grammar_path)
+            runner = StrategyRunner(parser_mode="permissive", grammar_source=grammar_source)
         else:
             runner = self.runner
 
@@ -429,6 +600,11 @@ class SynthesisPipeline:
         # counter so that a restart resets it.
         last_restart_index = 0
 
+        best_eval_accuracy = 0.0
+        best_eval_strategy = None
+        best_eval_attempt_num = None
+        derived_from_attempt = None  # attempt number the current strategy was derived from
+
         for iteration in range(self.max_iterations):
             attempt_num = iteration + 1
             print(f"\n{'='*60}")
@@ -445,6 +621,7 @@ class SynthesisPipeline:
                 strategy_code=strategy_code,
                 full_dafny_code=full_code,
                 timestamp=datetime.now().isoformat(),
+                refined_from_attempt=derived_from_attempt,
             )
 
             # Stage 0: Proof-sketch critique — DISABLED.
@@ -478,9 +655,14 @@ class SynthesisPipeline:
                         break
 
                 if consecutive_same >= 2:
-                    # After 3+ identical errors, abandon refinement and start fresh
-                    print(f"  Stuck on same error for {consecutive_same + 1} attempts — restarting with fresh generation...")
-                    strategy_code = self.generator.generate_initial(task_description)
+                    if best_eval_strategy is not None:
+                        print(f"  Stuck on same error for {consecutive_same + 1} attempts — falling back to best evaluated strategy ({best_eval_accuracy:.1%})...")
+                        strategy_code = best_eval_strategy
+                        derived_from_attempt = best_eval_attempt_num
+                    else:
+                        print(f"  Stuck on same error for {consecutive_same + 1} attempts — restarting with fresh generation...")
+                        strategy_code = self.generator.generate_initial(task_description)
+                        derived_from_attempt = None
                     last_restart_index = len(attempts)
                     continue
 
@@ -498,11 +680,20 @@ class SynthesisPipeline:
                         break
 
                 if consecutive_verif_failures >= 3:
-                    print(
-                        f"  {consecutive_verif_failures} consecutive verification failures "
-                        f"since last restart — restarting with fresh generation..."
-                    )
-                    strategy_code = self.generator.generate_initial(task_description)
+                    if best_eval_strategy is not None:
+                        print(
+                            f"  {consecutive_verif_failures} consecutive verification failures "
+                            f"since last restart — falling back to best evaluated strategy ({best_eval_accuracy:.1%})..."
+                        )
+                        strategy_code = best_eval_strategy
+                        derived_from_attempt = best_eval_attempt_num
+                    else:
+                        print(
+                            f"  {consecutive_verif_failures} consecutive verification failures "
+                            f"since last restart — restarting with fresh generation..."
+                        )
+                        strategy_code = self.generator.generate_initial(task_description)
+                        derived_from_attempt = None
                     last_restart_index = len(attempts)
                     continue
 
@@ -518,6 +709,7 @@ class SynthesisPipeline:
                     structured_feedback,
                     error_history,
                 )
+                derived_from_attempt = attempt_num
                 continue
 
             print("  ✓ Verification passed")
@@ -538,6 +730,7 @@ class SynthesisPipeline:
                 strategy_code = self.generator.refine_after_compilation_error(
                     strategy_code, compilation_result.get_error_summary()
                 )
+                derived_from_attempt = attempt_num
                 continue
 
             print(f"  ✓ Compiled to {compilation_result.output_dir}")
@@ -552,6 +745,7 @@ class SynthesisPipeline:
                     strategy_code,
                     "Compilation succeeded but no Python module was generated",
                 )
+                derived_from_attempt = attempt_num
                 continue
 
             if self.evaluator.dataset_name != "gsm_symbolic":
@@ -561,7 +755,7 @@ class SynthesisPipeline:
                 attempt.runtime_result = runtime_result
 
                 if not runtime_result.success:
-                    print(f"  ✗ Runtime error: {runtime_result.error_type}")
+                    print(f"  ✗ Runtime error: {runtime_result.error_type}: {runtime_result.error_message}")
                     attempt.failed_at = FailureStage.RUNTIME
                     attempt.error_summary = runtime_result.get_error_summary()
                     attempts.append(attempt)
@@ -570,6 +764,7 @@ class SynthesisPipeline:
                     strategy_code = self.generator.refine_after_runtime_error(
                         strategy_code, runtime_result.get_error_summary()
                     )
+                    derived_from_attempt = attempt_num
                     continue
 
                 print(f"  ✓ Execution successful ({runtime_result.execution_time_ms:.1f}ms)")
@@ -623,8 +818,9 @@ class SynthesisPipeline:
 
                 print("  Refining based on evaluation error...")
                 strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code, eval_result.get_feedback_summary()
+                    strategy_code, eval_result.get_feedback_summary(), task_description=task_description
                 )
+                derived_from_attempt = attempt_num
                 continue
 
             # Check if evaluation meets thresholds
@@ -636,11 +832,6 @@ class SynthesisPipeline:
             ):
                 print(f"  ✗ Evaluation below threshold:")
                 print(f"    Accuracy: {eval_result.accuracy:.1%} (min: {self.min_accuracy:.1%})")
-                print(
-                    "    Contains << >>: "
-                    f"{'yes' if eval_result.contains_delimiters else 'no'} "
-                    f"(required: {'yes' if self.require_delimiters else 'no'})"
-                )
                 print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
                 if self.eval_max_seconds_per_example is not None:
                     print(
@@ -656,7 +847,6 @@ class SynthesisPipeline:
                     "Required thresholds:\n"
                     f"  Accuracy: {self.min_accuracy:.1%}\n"
                     f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
-                    f"  Contains << >>: {'required' if self.require_delimiters else 'optional'}\n"
                     + (
                         f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
                         if self.eval_max_seconds_per_example is not None
@@ -665,14 +855,31 @@ class SynthesisPipeline:
                     + "\n"
                     + eval_result.get_feedback_summary()
                 )
+                eval_history = self._get_evaluation_history_summary(attempts)
+                if eval_history:
+                    threshold_feedback += "\n\nPrior evaluation attempts:\n" + eval_history
+                print(threshold_feedback)
+                print("--- END FEEDBACK ---")
+
+                if eval_result.accuracy > best_eval_accuracy:
+                    best_eval_accuracy = eval_result.accuracy
+                    best_eval_strategy = strategy_code
+                    best_eval_attempt_num = attempt_num
+
+                refine_from = best_eval_strategy if best_eval_strategy else strategy_code
+                refine_from_accuracy = best_eval_accuracy if best_eval_strategy else eval_result.accuracy
                 strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code, threshold_feedback
+                    refine_from, threshold_feedback, task_description=task_description,
+                    best_strategy=best_eval_strategy or "",
+                    best_accuracy=best_eval_accuracy,
+                    current_accuracy=refine_from_accuracy,
+                    min_accuracy=self.min_accuracy,
                 )
+                derived_from_attempt = best_eval_attempt_num if best_eval_strategy else attempt_num
                 continue
 
             print(f"  ✓ Evaluation passed:")
             print(f"    Accuracy: {eval_result.accuracy:.1%}")
-            print(f"    Contains << >>: {'yes' if eval_result.contains_delimiters else 'no'}")
             print(f"    Syntax: {eval_result.syntax_rate:.1%}")
 
             # Success!

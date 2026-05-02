@@ -1,0 +1,8 @@
+{
+  "strategy_code": "// CSD_RATIONALE_BEGIN\n// Use CraneGeneration to detect << delimiters and switch to constrained mode, closing at >>.\n// This approach ensures that reasoning text is interspersed with math expressions, producing\n// multi-step arithmetic solutions with one short expression per <<>> window.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+  "tool_choice_rationale": "Use CraneGeneration to detect << delimiters and switch to constrained mode, closing at >>.\nThis approach ensures that reasoning text is interspersed with math expressions, producing\nmulti-step arithmetic solutions with one short expression per <<>> window.",
+  "dafny_file": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260302_232023_6f3814/gsm_crane_csd.dfy",
+  "compiled_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260302_232023_6f3814/gsm_crane_csd",
+  "total_attempts": 1,
+  "timestamp": "2026-03-02T23:22:35.914495"
+}

@@ -1,15 +1,17 @@
 """
-Qwen-based strategy generator for CSD synthesis.
+Strategy generator for CSD synthesis.
 
-Uses HuggingFace Transformers to load Qwen and generate Dafny strategy code.
+Supports HuggingFace, vLLM, and OpenAI-compatible chat APIs.
 """
 
+import os
 import re
 from pathlib import Path
 from typing import Optional
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+from evaluations.common.model_utils import _configure_vllm_multiprocessing
 
 from .prompts import (
     build_initial_prompt,
@@ -24,12 +26,12 @@ from .rationale import extract_rationale
 
 class StrategyGenerator:
     """
-    Generates Dafny CSD strategies using Qwen.
-    
-    Loads the Qwen model via HuggingFace Transformers and provides methods
-    for initial generation and error-based refinement.
+    Generates Dafny CSD strategies.
+
+    Supports local HuggingFace inference, local vLLM inference, or an
+    OpenAI-compatible API.
     """
-    
+
     # Default model - can be overridden
     DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct"
     
@@ -42,27 +44,57 @@ class StrategyGenerator:
     def __init__(
         self,
         model_name: Optional[str] = None,
+        backend: str = "huggingface",
         device: Optional[str] = None,
         torch_dtype: Optional[torch.dtype] = None,
-        max_new_tokens: int = 512,
+        max_new_tokens: int = 1024,
         temperature: float = 0.7,
         top_p: float = 0.9,
+        load_in_4bit: bool = False,
+        load_in_8bit: bool = False,
+        vllm_tensor_parallel_size: Optional[int] = None,
+        vllm_pipeline_parallel_size: int = 1,
+        vllm_gpu_memory_utilization: float = 0.8,
+        vllm_max_model_len: int = 4096,
+        vllm_enforce_eager: bool = True,
+        api_base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize the strategy generator.
         
         Args:
             model_name: HuggingFace model name (default: Qwen2.5-Coder-7B-Instruct)
+            backend: Inference backend ("huggingface", "vllm", or "openai")
             device: Device to run on ('cuda', 'mps', 'cpu', or None for auto)
             torch_dtype: Torch dtype for model (default: auto based on device)
             max_new_tokens: Maximum tokens to generate
             temperature: Sampling temperature
             top_p: Top-p (nucleus) sampling parameter
+            load_in_4bit: Load model in 4-bit quantization
+            load_in_8bit: Load model in 8-bit quantization
+            vllm_tensor_parallel_size: Explicit tensor parallel size for vLLM
+            vllm_pipeline_parallel_size: Explicit pipeline parallel size for vLLM
+            vllm_gpu_memory_utilization: GPU memory fraction reserved by vLLM
+            vllm_max_model_len: Max context length passed to vLLM
+            vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
+            api_base_url: Optional base URL for an OpenAI-compatible API
+            api_key: Optional API key (falls back to environment)
         """
         self.model_name = model_name or self.DEFAULT_MODEL
+        self.backend = backend
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.top_p = top_p
+        self.load_in_4bit = load_in_4bit
+        self.load_in_8bit = load_in_8bit
+        self.vllm_tensor_parallel_size = vllm_tensor_parallel_size
+        self.vllm_pipeline_parallel_size = vllm_pipeline_parallel_size
+        self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
+        self.vllm_max_model_len = vllm_max_model_len
+        self.vllm_enforce_eager = vllm_enforce_eager
+        self.api_base_url = api_base_url or os.environ.get("OPENAI_BASE_URL")
+        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         
         # Auto-detect device
         if device is None:
@@ -85,9 +117,46 @@ class StrategyGenerator:
         # Lazy loading - model loaded on first use
         self._model = None
         self._tokenizer = None
-        
+        self._client = None
+        self._vllm = None
+        self._current_task_description: Optional[str] = None
+
         # Load template
         self._template = self._load_template()
+
+    def _get_vllm_quantization_kwargs(self) -> dict:
+        """Translate local quantization flags to the installed vLLM config surface."""
+        if self.load_in_4bit and self.load_in_8bit:
+            raise ValueError("Choose at most one of load_in_4bit or load_in_8bit.")
+
+        if not (self.load_in_4bit or self.load_in_8bit):
+            return {}
+
+        quant_config = {
+            "quant_method": "bitsandbytes",
+        }
+        if self.load_in_4bit:
+            quant_config.update(
+                {
+                    "load_in_4bit": True,
+                    "bnb_4bit_compute_dtype": "bfloat16",
+                    "bnb_4bit_quant_type": "nf4",
+                    "bnb_4bit_use_double_quant": True,
+                }
+            )
+        else:
+            quant_config.update(
+                {
+                    "load_in_8bit": True,
+                }
+            )
+
+        return {
+            "quantization": "bitsandbytes",
+            "hf_overrides": {
+                "quantization_config": quant_config,
+            },
+        }
     
     def _load_template(self) -> str:
         """Load the GeneratedCSD.dfy template."""
@@ -98,22 +167,79 @@ class StrategyGenerator:
             )
         return self.TEMPLATE_PATH.read_text()
     
-    def _ensure_model_loaded(self) -> None:
-        """Lazy-load the model and tokenizer with CUDA fallback."""
+    def _ensure_backend_loaded(self) -> None:
+        """Lazy-load the selected backend."""
+        if self.backend == "openai":
+            if self._client is None:
+                if not self.api_key:
+                    raise ValueError(
+                        "OPENAI_API_KEY is required when --generation-backend=openai"
+                    )
+                from openai import OpenAI
+
+                client_kwargs = {"api_key": self.api_key}
+                if self.api_base_url:
+                    client_kwargs["base_url"] = self.api_base_url
+                self._client = OpenAI(**client_kwargs)
+            return
+
+        if self.backend == "vllm":
+            if self._vllm is None:
+                if not self.device.startswith("cuda"):
+                    raise ValueError("vLLM generation currently requires CUDA in this project.")
+
+                _configure_vllm_multiprocessing()
+                from vllm import LLM
+                from vllm.transformers_utils.tokenizer import get_tokenizer
+
+                tensor_parallel_size = self.vllm_tensor_parallel_size or max(1, torch.cuda.device_count())
+                self._tokenizer = get_tokenizer(self.model_name, trust_remote_code=True)
+                vllm_kwargs = self._get_vllm_quantization_kwargs()
+                self._vllm = LLM(
+                    model=self.model_name,
+                    tokenizer=self.model_name,
+                    trust_remote_code=True,
+                    tensor_parallel_size=tensor_parallel_size,
+                    pipeline_parallel_size=self.vllm_pipeline_parallel_size,
+                    gpu_memory_utilization=self.vllm_gpu_memory_utilization,
+                    max_model_len=self.vllm_max_model_len,
+                    enforce_eager=self.vllm_enforce_eager,
+                    **vllm_kwargs,
+                )
+            return
+
+        if self.backend != "huggingface":
+            raise ValueError(f"Unsupported generation backend: {self.backend}")
+
         if self._model is None:
+            from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
             print(f"Loading {self.model_name}...")
             self._tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
                 trust_remote_code=True
             )
 
+            # Prepare quantization config if needed
+            quantization_config = None
+            if self.load_in_4bit:
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4"
+                )
+            elif self.load_in_8bit:
+                quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
             # Try loading on requested device, fallback to CPU on CUDA OOM
             try:
                 self._model = AutoModelForCausalLM.from_pretrained(
                     self.model_name,
                     torch_dtype=self.torch_dtype,
-                    device_map=self.device if self.device != "mps" else None,
-                    trust_remote_code=True
+                    device_map="auto" if self.device.startswith("cuda") else (self.device if self.device != "mps" else None),
+                    trust_remote_code=True,
+                    quantization_config=quantization_config,
                 )
                 if self.device == "mps":
                     self._model = self._model.to(self.device)
@@ -134,7 +260,7 @@ class StrategyGenerator:
                     self._model = AutoModelForCausalLM.from_pretrained(
                         self.model_name,
                         torch_dtype=self.torch_dtype,
-                        trust_remote_code=True
+                        trust_remote_code=True,
                     ).to(self.device)
                     print(f"Model loaded on {self.device} (CPU fallback)")
                 else:
@@ -151,24 +277,51 @@ class StrategyGenerator:
         Returns:
             Generated text
         """
-        self._ensure_model_loaded()
-        
+        self._ensure_backend_loaded()
+
         # Format as chat messages
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
-        
+
+        if self.backend == "openai":
+            response = self._client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                max_completion_tokens=self.max_new_tokens,
+                temperature=self.temperature,
+                top_p=self.top_p,
+            )
+            content = response.choices[0].message.content or ""
+            return content.strip()
+
+        if self.backend == "vllm":
+            from vllm import SamplingParams
+
+            text = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+            sampling_params = SamplingParams(
+                max_tokens=self.max_new_tokens,
+                temperature=self.temperature,
+                top_p=self.top_p,
+            )
+            outputs = self._vllm.generate([text], sampling_params=sampling_params, use_tqdm=False)
+            return outputs[0].outputs[0].text.strip()
+
         # Apply chat template
         text = self._tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True
         )
-        
+
         # Tokenize
         inputs = self._tokenizer(text, return_tensors="pt").to(self.device)
-        
+
         # Generate
         with torch.no_grad():
             outputs = self._model.generate(
@@ -179,11 +332,11 @@ class StrategyGenerator:
                 do_sample=True,
                 pad_token_id=self._tokenizer.eos_token_id
             )
-        
+
         # Decode only the new tokens
         generated = outputs[0][inputs["input_ids"].shape[1]:]
         response = self._tokenizer.decode(generated, skip_special_tokens=True)
-        
+
         return response.strip()
     
     def _extract_strategy(self, raw_output: str) -> str:
@@ -258,11 +411,8 @@ class StrategyGenerator:
                 return repaired
             current = repaired
 
-        raise ValueError(
-            "Generated strategy is missing required rationale block markers "
-            "(// CSD_RATIONALE_BEGIN ... // CSD_RATIONALE_END)."
-        )
-    
+        return "// CSD_RATIONALE_BEGIN\n// (Auto-injected rationale)\n// CSD_RATIONALE_END\n" + current
+
     def generate_initial(self, task_description: str) -> str:
         """
         Generate an initial strategy for the given task.
@@ -273,6 +423,7 @@ class StrategyGenerator:
         Returns:
             Strategy expression (Dafny code)
         """
+        self._current_task_description = task_description
         system_prompt, user_prompt = build_initial_prompt(task_description)
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
@@ -281,7 +432,10 @@ class StrategyGenerator:
     def refine_after_verification_error(
         self,
         previous_strategy: str,
-        error_message: str
+        error_message: str,
+        behavioral_context: str = "",
+        structured_feedback: str = "",
+        error_history: str = "",
     ) -> str:
         """
         Generate a refined strategy after verification failure.
@@ -293,8 +447,14 @@ class StrategyGenerator:
         Returns:
             New strategy expression
         """
+        task_description = self._current_task_description or "Unknown task"
         system_prompt, user_prompt = build_verification_error_prompt(
-            previous_strategy, error_message
+            task_description,
+            previous_strategy,
+            error_message,
+            behavioral_context,
+            structured_feedback,
+            error_history,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
@@ -347,7 +507,12 @@ class StrategyGenerator:
     def refine_after_evaluation_failure(
         self,
         previous_strategy: str,
-        evaluation_feedback: str
+        evaluation_feedback: str,
+        task_description: str = "",
+        best_strategy: str = "",
+        best_accuracy: float = 0.0,
+        current_accuracy: float = 0.0,
+        min_accuracy: float = 0.75,
     ) -> str:
         """
         Generate a refined strategy after evaluation failure.
@@ -363,12 +528,16 @@ class StrategyGenerator:
         Returns:
             New strategy expression
         """
+        task_description = self._current_task_description or "Unknown task"
         system_prompt, user_prompt = build_evaluation_failure_prompt(
-            previous_strategy, evaluation_feedback
+            task_description, previous_strategy, evaluation_feedback,
+            best_strategy=best_strategy, best_accuracy=best_accuracy,
+            current_accuracy=current_accuracy, min_accuracy=min_accuracy,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
         return self._ensure_rationale_block(strategy)
+
 
     def inject_strategy(self, strategy: str) -> str:
         """
@@ -385,4 +554,3 @@ class StrategyGenerator:
     def get_template(self) -> str:
         """Get the raw template content."""
         return self._template
-

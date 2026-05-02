@@ -1,0 +1,467 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with VARIABLES and numeric constants. CRITICAL RULES: 1. Every expression MUST contain at least one variable - pure numeric expressions like '2 * 2' are INVALID. Variables may appear as letter+digits (n1, x2), split letter/digit tokens (n 1, x 2), or letter-only (n, x, foo). 2. Variables represent problem values; numeric constants (12, 100) are for unit conversions and percentages. 3. The constrained windows are SHORT (typically 5-20 tokens for expressions like 'n1 + n2 * 12'). 4. The grammar is RECURSIVE but depth is BOUNDED in runtime; prefer balanced parentheses and compact expressions. 5. The grammar includes the closing delimiter '>>' - expressions must be complete and compact. 6. Avoid trivial outputs (e.g., just a single variable) unless the problem truly requires it; include necessary operators.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-18T01:43:38.732477",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For generating short symbolic mathematical expressions, we need to balance between ensuring the expression is valid according to the grammar and avoiding trivial outputs. Given that the grammar is recursive but bounded in depth, and considering that every expression must contain at least one variable, we opt for a speculative generation approach. This allows us to explore multiple candidate expressions without getting stuck in invalid states while ensuring that the expressions remain concise and meaningful.\n// CSD_RATIONALE_END\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 2);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "SpeculativeGeneration",
+        "parameters": {
+          "window_size": 2
+        },
+        "category": "speculative",
+        "comparable_to": "SpecDec-like",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For generating short symbolic mathematical expressions, we need to balance between ensuring the expression is valid according to the grammar and avoiding trivial outputs. Given that the grammar is recursive but bounded in depth, and considering that every expression must contain at least one variable, we opt for a speculative generation approach. This allows us to explore multiple candidate expressions without getting stuck in invalid states while ensuring that the expressions remain concise and meaningful.\n// CSD_RATIONALE_END\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 2);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:39:28.281589",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 23.06s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  \n16 * 8 + 4 * 10 + 13\n* 16 * 8 + 4 * 10 + 13\n* 128 + 40 + 13\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 22,
+        "cost": 22,
+        "execution_time_ms": 73.02451133728027
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 23.055150985717773,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " \n16 * 8 + 4 * 10 + 13\n* 16 * 8 + 4 * 10 + 13\n* 128 + 40 + 13\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* ",
+            "full_output": " \n16 * 8 + 4 * 10 + 13\n* 16 * 8 + 4 * 10 + 13\n* 128 + 40 + 13\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 181\n* 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.768711566925049
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// To address the issues encountered, we switch to the CraneGeneration strategy. This strategy allows the model to generate free-form text initially, watch for the `<<` delimiter, then switch to constrained generation for the expression inside the delimiters. After the expression is completed, it switches back to unconstrained mode. We also increase `minReasoningSteps` to ensure the model has enough context to generate meaningful reasoning text before encountering `<<`. Additionally, we adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// To address the issues encountered, we switch to the CraneGeneration strategy. This strategy allows the model to generate free-form text initially, watch for the `<<` delimiter, then switch to constrained generation for the expression inside the delimiters. After the expression is completed, it switches back to unconstrained mode. We also increase `minReasoningSteps` to ensure the model has enough context to generate meaningful reasoning text before encountering `<<`. Additionally, we adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:40:00.588020",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 34.34s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014005_ac873a"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 290.90094566345215
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 34.34141993522644,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+            "full_output": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 26.22871208190918
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:40:44.121342",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 9.05s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014048_480669"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 288.0263328552246
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 9.053269386291504,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:41:02.178999",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.29s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014106_d8c4b1"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 385.4641914367676
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.290122985839844,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:41:18.618015",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.12s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014123_b05830"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 379.8832893371582
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.116703271865845,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n//\n// Additionally, we need to ensure that the generated expressions contain variables, as the grammar enforces this. We can increase `minReasoningSteps` further to give the model more time to produce reasoning text that includes variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 30, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy did not work because it started in constrained mode, preventing the model from generating free text. We need to use CraneGeneration to start in unconstrained mode, allowing the model to generate initial reasoning text before switching to constrained mode for the expression inside `<< >>`. We increase `minReasoningSteps` to ensure the model has enough context to produce meaningful reasoning text before encountering `<<`. We also adjust `maxSteps` to allow more time for the model to produce a complete and accurate response.\n//\n// Additionally, we need to ensure that the generated expressions contain variables, as the grammar enforces this. We can increase `minReasoningSteps` further to give the model more time to produce reasoning text that includes variables.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 30, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:41:36.284194",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.23s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014140_dcafa5"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 379.5056343078613
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.226189136505127,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too high, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to reduce `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too high, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to reduce `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:41:54.702449",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 30.86s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014159_ebc9d0"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 387.04705238342285
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 30.85514187812805,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+            "full_output": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 24.077537298202515
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:42:37.019356",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 29.93s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_013912_4b195f/gsm_crane_csd_20260218_014241_da2b0a"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 291.92090034484863
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 29.926697969436646,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 100000000000000000",
+            "full_output": " Mohammed bought 16 markers at \ufffd8.5 each.\nTotal cost of markers = <<16 * 85/100 * 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 23.49618887901306
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n//\n// To improve accuracy, we will increase `minReasoningSteps` to 20, allowing the model more time to produce meaningful reasoning text. We will also increase `maxSteps` to 50 to provide more computational resources.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 50, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n//\n// To improve accuracy, we will increase `minReasoningSteps` to 20, allowing the model more time to produce meaningful reasoning text. We will also increase `maxSteps` to 50 to provide more computational resources.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 50, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:43:19.347882",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n//\n// To improve accuracy, we will increase `minReasoningSteps` to 20, allowing the model more time to produce meaningful reasoning text. We will also increase `maxSteps` to 50 to provide more computational resources.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 50, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// The previous strategy used CraneGeneration with minReasoningSteps set too low, causing the model to produce insufficient reasoning text before encountering `<<`. This resulted in low accuracy and format rate. We need to increase `minReasoningSteps` to allow the model more time to produce meaningful reasoning text. Additionally, we will increase `maxSteps` to provide more computational resources for the model to generate a complete and accurate response. We will also ensure that the model generates expressions containing variables as required by the grammar.\n//\n// The strategy must handle CRANE-style `<< expr >>` generation correctly, which means we cannot use constrained-only strategies like PureConstrainedGeneration. Instead, we will use CraneGeneration, which starts in unconstrained mode, allows the model to generate initial reasoning text, then switches to constrained mode for the expression, and finally switches back to unconstrained mode.\n//\n// To improve accuracy, we will increase `minReasoningSteps` to 20, allowing the model more time to produce meaningful reasoning text. We will also increase `maxSteps` to 50 to provide more computational resources.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 50, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T01:43:29.049167",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 2,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

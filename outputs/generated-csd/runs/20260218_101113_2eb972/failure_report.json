@@ -1,0 +1,533 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with VARIABLES and numeric constants. CRITICAL RULES: 1. Every expression MUST contain at least one variable - pure numeric expressions like '2 * 2' are INVALID. Variables may appear as letter+digits (n1, x2), split letter/digit tokens (n 1, x 2), or letter-only (n, x, foo). 2. Variables represent problem values; numeric constants (12, 100) are for unit conversions and percentages. 3. The constrained windows are SHORT (typically 5-20 tokens for expressions like 'n1 + n2 * 12'). 4. The grammar is RECURSIVE but depth is BOUNDED in runtime; prefer balanced parentheses and compact expressions. 5. The grammar includes the closing delimiter '>>' - expressions must be complete and compact. 6. Avoid trivial outputs (e.g., just a single variable) unless the problem truly requires it; include necessary operators.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-18T10:16:49.358392",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 5 to ensure that the initial segment is sufficiently long to potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 5 to ensure that the initial segment is sufficiently long to potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:11:29.877743",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 26.20s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 306.0610294342041
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 26.202791690826416,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 16.732679843902588
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:12:07.502853",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 24.92s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101212_39fb70"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 313.3196830749512
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 24.91596221923828,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 16.66333508491516
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 15 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 15 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:12:43.799774",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 22.49s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101248_b5821f"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 292.3901081085205
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 22.485037565231323,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 14.153831720352173
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:13:16.335867",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 21.45s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101320_4dcbd2"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 316.5557384490967
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 21.449438095092773,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 12.702724695205688
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 20 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 20 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:13:47.650148",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 16.89s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101352_c4d5ca"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 296.464204788208
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 16.890917778015137,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answer is m * 8.5 + c * 10.5 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>> cm\u00b2\nThe answer is l * w cm\u00b2.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.172065734863281
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 5 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 5 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:14:15.855712",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 19.89s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101420_f72a0a"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 357.54942893981934
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 19.89247965812683,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.295506954193115
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:14:47.132982",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 19.87s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101451_d0d596"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 295.7267761230469
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 19.873149156570435,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.270790338516235
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 15 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 15 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:15:18.408316",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 19.88s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101523_31f482"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 309.13805961608887
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 19.876661777496338,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.314625024795532
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 20 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 20 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:15:49.584220",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 16.84s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101554_9a5e94"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 307.86943435668945
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 16.836981296539307,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8.5 + c * 10.5 + r * 13>>\nThe answer is m * 8.5 + c * 10.5 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>> cm\u00b2\nThe answer is l * w cm\u00b2.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.256386995315552
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions.\n// Given that the grammar enforces a strict arithmetic expression grammar with variables and numeric constants,\n// and that every expression must contain at least one variable, we can use a CRANE-style generation approach.\n// This approach starts with free-form text and switches to constrained mode when the model generates '<<'.\n// The constrained mode ensures that the expression adheres to the grammar rules and is complete.\n// We set minReasoningSteps to 10 to allow the model more time to reason and potentially include a variable.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T10:16:17.826078",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 100.0%\n  Syntax Rate: 100.0%\n  Total Time: 20.29s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_101113_2eb972/gsm_crane_csd_20260218_101622_15a281"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 293.7469482421875
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 1.0,
+        "syntax_rate": 1.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 20.288028955459595,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer ",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13>>.\nThe answer is m * 8 + c * 10 + r * 13.\n\nQ: A rectangle has a length of 12 cm and a width of 8 cm. What is the area of the rectangle?\nA: Let l = length, w = width.\nArea = <<l * w>>.\nThe answer is l * w.\n\nQ: A car travels at a speed of 60 km/h. How far will it travel in 3 hours?\nA: Let s = speed, t = time.\nDistance = <<",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.292673826217651
+          }
+        ]
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 0,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

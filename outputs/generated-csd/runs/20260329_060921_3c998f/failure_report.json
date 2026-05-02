@@ -1,0 +1,216 @@
+{
+  "task_description": "Generate a math reasoning strategy for GSM-Symbolic: the model should generate free-form reasoning text, then produce arithmetic expressions inside << >> delimiters. The expressions must contain variables (not just numbers). Use per-token logit manipulation to prevent premature >> closing on short expressions.",
+  "total_attempts": 5,
+  "timestamp": "2026-03-29T06:41:27.085331",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates free-form reasoning text and arithmetic expressions within << >> delimiters.\n// It uses per-token logit manipulation to prevent premature >> closing on short expressions.\n// During the unconstrained phase, it penalizes the opening delimiter << to encourage reasoning.\n// In the constrained phase, it penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE (RAW pattern):\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Delay expressions\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // PenalizedConstrainedStep: penalize >> then hard-mask, same guarantees as ConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates free-form reasoning text and arithmetic expressions within << >> delimiters.\n// It uses per-token logit manipulation to prevent premature >> closing on short expressions.\n// During the unconstrained phase, it penalizes the opening delimiter << to encourage reasoning.\n// In the constrained phase, it penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE (RAW pattern):\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Delay expressions\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // PenalizedConstrainedStep: penalize >> then hard-mask, same guarantees as ConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-29T06:09:47.769562",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 598.68s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260329_060921_3c998f/gsm_pertoken_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 98,
+        "cost": 99,
+        "execution_time_ms": 20.2333927154541
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 598.6844396591187,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 150,
+            "time_seconds": 588.8630998134613
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy ensures that the model generates well-formed expressions within << >> delimiters.\n// It starts in the UNCONSTRAINED phase, penalizing the opening delimiter << to encourage reasoning.\n// Once << is detected, it enters the CONSTRAINED phase and penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions and maintaining better format and accuracy.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Normal constrained step once expression is long enough\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy ensures that the model generates well-formed expressions within << >> delimiters.\n// It starts in the UNCONSTRAINED phase, penalizing the opening delimiter << to encourage reasoning.\n// Once << is detected, it enters the CONSTRAINED phase and penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions and maintaining better format and accuracy.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Normal constrained step once expression is long enough\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-29T06:20:09.409648",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 590.07s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260329_060921_3c998f/gsm_pertoken_csd_20260329_062015_7c876b"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 69,
+        "cost": 70,
+        "execution_time_ms": 15.123367309570312
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 590.0722351074219,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 150,
+            "time_seconds": 579.972772359848
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy ensures that the model generates well-formed expressions within << >> delimiters.\n// It starts in the UNCONSTRAINED phase, penalizing the opening delimiter << to encourage reasoning.\n// Once << is detected, it enters the CONSTRAINED phase and penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions and maintaining better format and accuracy.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Normal constrained step once expression is long enough\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy ensures that the model generates well-formed expressions within << >> delimiters.\n// It starts in the UNCONSTRAINED phase, penalizing the opening delimiter << to encourage reasoning.\n// Once << is detected, it enters the CONSTRAINED phase and penalizes the closing delimiter >> when expressions are short,\n// ensuring that the expression continues until it reaches a reasonable length.\n// This approach improves upon CRANE by preventing premature closure of expressions and maintaining better format and accuracy.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token ::\n    t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Normal constrained step once expression is long enough\n        next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-29T06:30:22.396372",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 606.25s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260329_060921_3c998f/gsm_pertoken_csd_20260329_063028_b79001"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 69,
+        "cost": 70,
+        "execution_time_ms": 14.569997787475586
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 606.2487990856171,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = << \nA-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 150,
+            "time_seconds": 597.0124037265778
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Start in UNCONSTRAINED mode and penalize << to encourage reasoning before expressions.\n// When << is detected, switch to CONSTRAINED mode and penalize >> when expressions are short to ensure they continue.\n// Use ConfidenceGatedStep to avoid forcing bad completions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Use ConfidenceGatedStep to avoid forcing bad completions\n        next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Start in UNCONSTRAINED mode and penalize << to encourage reasoning before expressions.\n// When << is detected, switch to CONSTRAINED mode and penalize >> when expressions are short to ensure they continue.\n// Use ConfidenceGatedStep to avoid forcing bad completions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Use ConfidenceGatedStep to avoid forcing bad completions\n        next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-29T06:40:51.129312",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 63: unresolved identifier: wasConstrained",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Start in UNCONSTRAINED mode and penalize << to encourage reasoning before expressions.\n// When << is detected, switch to CONSTRAINED mode and penalize >> when expressions are short to ensure they continue.\n// Use ConfidenceGatedStep to avoid forcing bad completions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Use ConfidenceGatedStep to avoid forcing bad completions\n        next := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Start in UNCONSTRAINED mode and penalize << to encourage reasoning before expressions.\n// When << is detected, switch to CONSTRAINED mode and penalize >> when expressions are short to ensure they continue.\n// Use ConfidenceGatedStep to avoid forcing bad completions.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps := 0;\nvar insideConstrained := false;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant insideConstrained ==> forall t: Token :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens\n  invariant helpers.cost == steps\n  decreases maxSteps - steps, if insideConstrained then 1 else 0\n{\n  if !insideConstrained {\n    // UNCONSTRAINED PHASE \u2014 RAW pattern:\n    lm.GenerateLogits(prompt + generated);\n    if steps < 10 {\n      helpers.PenalizeTokenLogits(lm, [\"<<\"], 8.0);  // Encourage reasoning before expressions\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    if next == eosToken { break; }\n    generated := generated + [next]; steps := steps + 1;\n    if Contains(next, \"<<\") {\n      insideConstrained := true; currentConstrained := [];\n      CSDHelpers.RollbackPreservesTokenInvariant(lm, parser, []);\n    }\n  } else {\n    // CONSTRAINED PHASE:\n    var narrow := helpers.DeadEndDetection(parser, currentConstrained, 3);\n    if narrow || parser.IsCompletePrefix(currentConstrained) {\n      insideConstrained := false;\n    } else {\n      var next;\n      if |currentConstrained| < 5 {\n        // Penalize >> when expression is short \u2014 use PenalizedConstrainedStep\n        next := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, [\">>\"], 3.0);\n      } else {\n        // Use ConfidenceGatedStep to avoid forcing bad completions\n        next := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);\n      }\n      generated := generated + [next]; currentConstrained := currentConstrained + [next]; steps := steps + 1;\n      if Contains(next, \">>\") { insideConstrained := false; }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-29T06:41:09.756340",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 63: the method returns 2 values but is assigned to 1 variable (all return values must be assigned)",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 2,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

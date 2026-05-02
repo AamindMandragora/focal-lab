@@ -1,0 +1,233 @@
+{
+  "task_description": "Generate a strategy for solving math word problems involving arithmetic operations on symbolic quantities.",
+  "total_attempts": 10,
+  "timestamp": "2026-03-30T05:17:01.767053",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:15:22.031237",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:15:31.966106",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:15:42.036436",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 16: a postcondition could not be proved on this return path\n  - Line 31: variable 'generated', which is subject to definite-assignment rules, might be uninitialized here\n  - Line 49: out-parameter 'generated', which is subject to definite-assignment rules, might be uninitialized at this return point",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:15:52.024449",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 16: a postcondition could not be proved on this return path\n  - Line 31: variable 'generated', which is subject to definite-assignment rules, might be uninitialized here\n  - Line 49: out-parameter 'generated', which is subject to definite-assignment rules, might be uninitialized at this return point",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:02.108290",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:11.996890",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 16: a postcondition could not be proved on this return path\n  - Line 31: variable 'generated', which is subject to definite-assignment rules, might be uninitialized here\n  - Line 49: out-parameter 'generated', which is subject to definite-assignment rules, might be uninitialized at this return point",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:21.990862",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:32.064044",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\ngenerated := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:42.059585",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This constrained decoding strategy generates a solution to math word problems involving arithmetic operations on symbolic quantities. It starts with an unconstrained step, then refines the solution using constrained steps based on the problem's grammar rules until the end-of-sentence token is reached or the maximum number of steps is exceeded.\n// CSD_RATIONALE_END\n\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  decreases maxSteps - steps\n{\n  // Initial unconstrained step to get started\n  var next := helpers.UnconstrainedStep(lm, prompt, generated);\n  \n  // Check if the next token is the end-of-sentence token\n  if next == eosToken {\n    break;\n  }\n  \n  // Add the next token to the generated sequence\n  generated := generated + [next];\n  \n  // Update the current constrained prefix\n  currentConstrained := currentConstrained + [next];\n  \n  // Increment the step counter\n  steps := steps + 1;\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-03-30T05:16:51.715983",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 16: a postcondition could not be proved on this return path\n  - Line 31: variable 'generated', which is subject to definite-assignment rules, might be uninitialized here\n  - Line 49: out-parameter 'generated', which is subject to definite-assignment rules, might be uninitialized at this return point",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 10,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

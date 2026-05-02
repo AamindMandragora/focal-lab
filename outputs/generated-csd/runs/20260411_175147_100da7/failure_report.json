@@ -1,0 +1,146 @@
+{
+  "task_description": "Generate a CSD to process inputs from the dataset gsm_symbolic. Your goal is to maximize accuracy on the arithmetic reasoning task while ensuring valid expressions inside << and >> delimiters. The baseline CRANE strategy achieves 30% accuracy with 100% format and syntax rate; aim to beat this baseline.",
+  "total_attempts": 5,
+  "timestamp": "2026-04-11T17:53:27.262786",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n  // This strategy tracks only two pieces of generation state: the full generated prefix\n  // and a parser-constrained subprefix for content that appears between << and >>.\n  // It uses unconstrained decoding outside delimiters so the model can freely produce\n  // normal answer text, and switches to constrained decoding only while inside a << >>\n  // region. This keeps the verifier-friendly parser state minimal and valid at all times.\n  // For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n  // symbolic spans; by constraining only inside delimiters, the method aims to maintain\n  // valid expression structure there without overconstraining the surrounding output.\n  // CSD_RATIONALE_END\n  var helpers := new CSDHelpers();\n  generated := [];\n  var steps: nat := 0;\n  var currentConstrained: Prefix := [];\n  var inConstrained: bool := false;\n\n  while steps < maxSteps\n    invariant 0 <= steps <= maxSteps\n    invariant |generated| == steps\n    invariant helpers.cost == steps\n    invariant lm.ValidTokensIdsLogits()\n    invariant !inConstrained ==> currentConstrained == []\n    invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n    invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n    decreases maxSteps - steps\n  {\n    if inConstrained {\n      var next := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 0.5, eosToken);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      } else {\n        currentConstrained := currentConstrained + [next];\n      }\n      steps := steps + 1;\n    } else {\n      var next := helpers.UnconstrainedStep(lm, prompt, generated);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \"<<\" {\n        currentConstrained := [];\n        inConstrained := true;\n      }\n      steps := steps + 1;\n    }\n  }\n  cost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n  // This strategy tracks only two pieces of generation state: the full generated prefix\n  // and a parser-constrained subprefix for content that appears between << and >>.\n  // It uses unconstrained decoding outside delimiters so the model can freely produce\n  // normal answer text, and switches to constrained decoding only while inside a << >>\n  // region. This keeps the verifier-friendly parser state minimal and valid at all times.\n  // For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n  // symbolic spans; by constraining only inside delimiters, the method aims to maintain\n  // valid expression structure there without overconstraining the surrounding output.\n  // CSD_RATIONALE_END\n  var helpers := new CSDHelpers();\n  generated := [];\n  var steps: nat := 0;\n  var currentConstrained: Prefix := [];\n  var inConstrained: bool := false;\n\n  while steps < maxSteps\n    invariant 0 <= steps <= maxSteps\n    invariant |generated| == steps\n    invariant helpers.cost == steps\n    invariant lm.ValidTokensIdsLogits()\n    invariant !inConstrained ==> currentConstrained == []\n    invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n    invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n    decreases maxSteps - steps\n  {\n    if inConstrained {\n      var next := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 0.5, eosToken);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      } else {\n        currentConstrained := currentConstrained + [next];\n      }\n      steps := steps + 1;\n    } else {\n      var next := helpers.UnconstrainedStep(lm, prompt, generated);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \"<<\" {\n        currentConstrained := [];\n        inConstrained := true;\n      }\n      steps := steps + 1;\n    }\n  }\n  cost := helpers.cost;"
+      },
+      "timestamp": "2026-04-11T17:51:55.576190",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(28,6): Error: Duplicate local-variable name: helpers\n   |\n28 |   var helpers := new CSDHelpers();\n   |       ^^^^^^^\n\n1 resolution/type errors detected in GeneratedCSD.dfy",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 0.5, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 0.5, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-11T17:52:01.371899",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(40,30): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n40 |   invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n   |                               ^\n\nGeneratedCSD.dfy(44,45): Error: a precondition for this call could not be proved\n   |\n44 |     var next := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 0.5, eosToken);\n   |                                              ^\n\nVerifiedAgentSynthesis.dfy(766,15): Related location: this is the precondition that could not be proved\n    |\n766 |       requires forall t :: t in generated ==> t in lm.Tokens\n    |                ^^^^^^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes an unprovable completeness invariant and uses a constrained helper\n// with simpler preconditions, while adding the token-membership invariant needed by the\n// helper precondition on generated.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant forall t :: t in generated ==> t in lm.Tokens\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes an unprovable completeness invariant and uses a constrained helper\n// with simpler preconditions, while adding the token-membership invariant needed by the\n// helper precondition on generated.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant forall t :: t in generated ==> t in lm.Tokens\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-11T17:52:09.423690",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(43,12): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n43 |   invariant forall t :: t in generated ==> t in lm.Tokens\n   |             ^^^^^^\n\nGeneratedCSD.dfy(47,39): Error: a precondition for this call could not be proved\n   |\n47 |     var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n   |                                        ^\n\nVerifiedAgentSynthesis.dfy(305,15): Related location: this is the precondition that could not be proved\n    |\n305 |       requires !parser.IsCompletePrefix(generated)\n    |                ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes the unprovable token-membership invariant and strengthens the\n// constrained-branch invariant to include the helper precondition that the current\n// constrained prefix is not complete.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes the unprovable token-membership invariant and strengthens the\n// constrained-branch invariant to include the helper precondition that the current\n// constrained prefix is not complete.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \">>\" {\n      currentConstrained := [];\n      inConstrained := false;\n    } else {\n      currentConstrained := currentConstrained + [next];\n    }\n    steps := steps + 1;\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-11T17:52:18.326181",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(43,30): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n43 |   invariant inConstrained ==> !parser.IsCompletePrefix(currentConstrained)\n   |                               ^\n\n\nDafny program verifier finished with 1 verified, 1 error",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes the unprovable completeness invariant from the loop and instead\n// checks parser completeness immediately before any constrained helper call, falling\n// back to unconstrained decoding if the constrained prefix is already complete.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var isComplete := parser.IsCompletePrefix(currentConstrained);\n    if isComplete {\n      var next := helpers.UnconstrainedStep(lm, prompt, generated);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      }\n      steps := steps + 1;\n    } else {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      } else {\n        currentConstrained := currentConstrained + [next];\n      }\n      steps := steps + 1;\n    }\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy tracks only two pieces of generation state: the full generated prefix\n// and a parser-constrained subprefix for content that appears between << and >>.\n// It uses unconstrained decoding outside delimiters so the model can freely produce\n// normal answer text, and switches to constrained decoding only while inside a << >>\n// region. This keeps the verifier-friendly parser state minimal and valid at all times.\n// For gsm_symbolic, arithmetic reasoning often benefits from preserving well-formed\n// symbolic spans; by constraining only inside delimiters, the method aims to maintain\n// valid expression structure there without overconstraining the surrounding output.\n// The repair removes the unprovable completeness invariant from the loop and instead\n// checks parser completeness immediately before any constrained helper call, falling\n// back to unconstrained decoding if the constrained prefix is already complete.\n// CSD_RATIONALE_END\ngenerated := [];\nvar steps: nat := 0;\nvar currentConstrained: Prefix := [];\nvar inConstrained: bool := false;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant |generated| == steps\n  invariant helpers.cost == steps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !inConstrained ==> currentConstrained == []\n  invariant inConstrained ==> parser.IsValidPrefix(currentConstrained)\n  decreases maxSteps - steps\n{\n  if inConstrained {\n    var isComplete := parser.IsCompletePrefix(currentConstrained);\n    if isComplete {\n      var next := helpers.UnconstrainedStep(lm, prompt, generated);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      }\n      steps := steps + 1;\n    } else {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);\n      if next == eosToken { break; }\n      generated := generated + [next];\n      if next == \">>\" {\n        currentConstrained := [];\n        inConstrained := false;\n      } else {\n        currentConstrained := currentConstrained + [next];\n      }\n      steps := steps + 1;\n    }\n  } else {\n    var next := helpers.UnconstrainedStep(lm, prompt, generated);\n    if next == eosToken { break; }\n    generated := generated + [next];\n    if next == \"<<\" {\n      currentConstrained := [];\n      inConstrained := true;\n    }\n    steps := steps + 1;\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-11T17:52:26.793777",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Engine core initialization failed. See root cause above. Failed core proc(s): {}",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260411_175147_100da7/gpt54_openai_vllm_full"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 28,
+        "cost": 29,
+        "execution_time_ms": 11.892318725585938
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 46.25238609313965,
+        "error": "Engine core initialization failed. See root cause above. Failed core proc(s): {}",
+        "sample_outputs": []
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 4,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": [
+      {
+        "error": "Type error",
+        "count": 1
+      }
+    ]
+  }
+}

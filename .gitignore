@@ -1,4 +1,14 @@
 dafny-lang/dafny/*
-cache
-__pycache__
+cache/
+**/__pycache__/
+*.pyc
 dafny/obj/*
+*.bak.*
+=4.56.0
+logs/
+**/_dafny/
+**/System_/
+**/success_report.json
+**/failure_report.json
+outputs/generated-csd/runs/held_out_eval/*.json
+outputs/generated-csd/runs/*.json

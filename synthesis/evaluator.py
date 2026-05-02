@@ -8,6 +8,56 @@ to enable feedback-driven refinement based on actual performance metrics.
 from __future__ import annotations
 
 import re
+from collections import Counter
+
+# SQL keyword set for failure-preview anonymization. Identifiers outside this
+# set are replaced with <id>; numbers with <num>; string literals with <str>.
+# Punctuation and the keywords themselves pass through verbatim. The result
+# preserves structural shape (SELECT-FROM-WHERE etc.) without leaking
+# synthesis-sample schema/identifier text.
+_SQL_KEYWORDS = {
+    "SELECT","FROM","WHERE","JOIN","INNER","LEFT","RIGHT","FULL","OUTER","CROSS","ON","AS",
+    "GROUP","BY","HAVING","ORDER","ASC","DESC","LIMIT","OFFSET","UNION","INTERSECT","EXCEPT",
+    "ALL","DISTINCT","AND","OR","NOT","IN","IS","NULL","LIKE","BETWEEN","EXISTS",
+    "COUNT","SUM","AVG","MIN","MAX","CASE","WHEN","THEN","ELSE","END","CAST","INT","REAL","TEXT",
+    "TRUE","FALSE",
+}
+import re as _re
+
+def _anonymize_sql_preview(s: str) -> str:
+    """Replace identifiers/numbers/strings with placeholders, keep keywords + punctuation."""
+    if not s:
+        return s
+    out_parts = []
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch.isspace():
+            out_parts.append(ch)
+            i += 1
+            continue
+        if ch == "'":
+            # consume string literal
+            j = s.find("'", i + 1)
+            j = j + 1 if j >= 0 else len(s)
+            out_parts.append("<str>")
+            i = j
+            continue
+        if ch.isdigit() or (ch == "." and i + 1 < len(s) and s[i + 1].isdigit()):
+            m = _re.match(r"\d+(?:\.\d+)?", s[i:])
+            out_parts.append("<num>")
+            i += m.end() if m else 1
+            continue
+        if ch.isalpha() or ch == "_":
+            m = _re.match(r"[A-Za-z_][A-Za-z0-9_]*", s[i:])
+            tok = m.group(0) if m else ch
+            out_parts.append(tok if tok.upper() in _SQL_KEYWORDS else "<id>")
+            i += m.end() if m else 1
+            continue
+        out_parts.append(ch)
+        i += 1
+    return "".join(out_parts)
+
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -23,11 +73,12 @@ class EvaluationResult:
     """
     success: bool
     accuracy: float  # 0.0 to 1.0
-    format_rate: float  # 0.0 to 1.0
+    contains_delimiters: bool
     syntax_rate: float  # 0.0 to 1.0
     num_examples: int
     num_correct: int
     total_time_seconds: float
+    max_sample_time_seconds: float = 0.0
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
     sample_outputs: List[Dict[str, Any]] = field(default_factory=list)
@@ -38,53 +89,280 @@ class EvaluationResult:
     def meets_threshold(
         self,
         min_accuracy: float = 0.0,
-        min_format_rate: float = 0.0,
         min_syntax_rate: float = 0.0,
+        require_delimiters: bool = True,
+        max_seconds_per_example: Optional[float] = None,
     ) -> bool:
-        """Check if ALL individual examples meet the specified thresholds."""
+        """Check if aggregate metrics meet the specified thresholds."""
         if not self.sample_outputs:
             return False
-        for sample in self.sample_outputs:
-            ex_accuracy = 1.0 if sample.get("is_correct", False) else 0.0
-            ex_format = 1.0 if sample.get("is_valid_format", False) else 0.0
-            ex_syntax = sample.get("syntax_rate", 0.0)
-            if ex_accuracy < min_accuracy or ex_format < min_format_rate or ex_syntax < min_syntax_rate:
-                return False
-        return True
+        runtime_ok = True
+        if max_seconds_per_example is not None:
+            runtime_ok = self.max_sample_time_seconds <= max_seconds_per_example
+        return (
+            runtime_ok
+            and self.accuracy >= min_accuracy
+            and self.syntax_rate >= min_syntax_rate
+        )
 
     def get_feedback_summary(self) -> str:
         """Generate a summary for feedback to the generator."""
         lines = [
             f"Evaluation Results ({self.num_examples} examples):",
             f"  Accuracy: {self.accuracy:.1%} ({self.num_correct}/{self.num_examples})",
-            f"  Format Rate: {self.format_rate:.1%}",
             f"  Syntax Rate: {self.syntax_rate:.1%}",
             f"  Total Time: {self.total_time_seconds:.2f}s",
+            f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
 
+        # Token count distribution
+        token_counts = [s.get("token_count", 0) for s in self.sample_outputs if s.get("token_count") is not None]
+        if token_counts:
+            token_counts_sorted = sorted(token_counts)
+            n_tc = len(token_counts_sorted)
+            lines.append(f"\nToken Count Distribution ({n_tc} examples):")
+            lines.append(f"  min={token_counts_sorted[0]}, median={token_counts_sorted[n_tc//2]}, max={token_counts_sorted[-1]}")
+            n_short = sum(1 for t in token_counts if t < 10)
+            n_max = sum(1 for t in token_counts if t >= 400)
+            if n_short:
+                lines.append(f"  Very short (<10 tokens): {n_short} examples")
+            if n_max:
+                lines.append(f"  Hit max steps (>=400 tokens): {n_max} examples")
+
+        # Full helper traces: one successful example and one failed example
+        traced = [s for s in self.sample_outputs if s.get("helper_trace")]
+        correct_traced = [s for s in traced if s.get("is_correct")]
+        failed_traced = [s for s in traced if not s.get("is_correct")]
+
+        trace_examples: list[tuple[str, dict]] = []
+        if correct_traced:
+            trace_examples.append(("correct", correct_traced[len(correct_traced) // 2]))
+        if failed_traced:
+            trace_examples.append(("failed", failed_traced[0]))
+
+        if trace_examples:
+            lines.append("\nFull Helper Traces:")
+            for label, sample in trace_examples:
+                trace = sample.get("helper_trace", [])
+                tc = sample.get("token_count", "?")
+                actual = (sample.get("actual") or "(empty)").strip()[:200]
+                expected = (sample.get("expected") or "(empty)").strip()[:200]
+                lines.append(f"  [{label}, {tc} tokens] expected={expected} actual={actual}")
+                lines.append(f"    full call sequence ({len(trace)} events):")
+                for event in trace:
+                    h = event.get("helper", "unknown")
+                    detail = event.get("detail", "")
+                    detail_str = f": {detail}" if detail else ""
+                    lines.append(f"    {h}{detail_str}")
+
+        # Failure mode categories removed — the model gets raw traces and
+        # failed examples, which is enough signal without pre-digesting the
+        # diagnosis.
+
         if self.sample_outputs:
-            lines.append("\nSample Failures:")
-            failures = [s for s in self.sample_outputs if not s.get("is_correct", False)]
-            for i, sample in enumerate(failures[:3]):  # Show up to 3 failures
-                lines.append(f"\n  Example {i+1}:")
-                lines.append(f"    Question: {sample.get('question', 'N/A')[:100]}...")
-                lines.append(f"    Expected: {sample.get('expected', 'N/A')}")
-                lines.append(f"    Got: {sample.get('actual', 'N/A')}")
-                if sample.get("error"):
-                    lines.append(f"    Error: {sample.get('error')}")
+            n_runtime_exceeded = sum(
+                1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
+            )
+            error_types: dict[str, int] = {}
+            for s in self.sample_outputs:
+                err = s.get("error")
+                if err:
+                    etype = (str(err).split(":", 1)[0] or "Exception").strip()
+                    error_types[etype] = error_types.get(etype, 0) + 1
+            extras = []
+            if n_runtime_exceeded:
+                extras.append(
+                    f"  Runtime budget exceeded on {n_runtime_exceeded} example(s)."
+                )
+            for etype, count in sorted(error_types.items(), key=lambda kv: (-kv[1], kv[0])):
+                extras.append(f"  Exceptions ({etype}): {count}")
+            if extras:
+                lines.append("\nAggregate Failure Stats:")
+                lines.extend(extras)
+
+            failed = [s for s in self.sample_outputs if not s.get("is_correct", False) and not s.get("error")]
+            if failed:
+                show = failed[:5]
+                lines.append(f"\nFailed Examples ({len(failed)} total, showing {len(show)}):")
+                for idx, s in enumerate(show, 1):
+                    actual = (s.get("actual") or "(empty)").strip()[:200]
+                    expected = (s.get("expected") or "(empty)").strip()[:200]
+                    tc = s.get("token_count", "?")
+                    lines.append(f"  [{idx}] tokens={tc}")
+                    lines.append(f"      expected: {expected}")
+                    lines.append(f"      actual:   {actual}")
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _format_trace_event(event: Dict[str, Any]) -> str:
+        helper = event.get("helper", "unknown")
+        detail = event.get("detail") or ""
+        before = event.get("cost_before")
+        after = event.get("cost_after")
+        cost_part = ""
+        if before is not None or after is not None:
+            cost_part = f" [cost {before}->{after}]"
+        return f"{helper}: {detail}{cost_part}".strip()
+
+    def get_behavioral_context_summary(self, max_examples: int = 1, max_trace_events: int = 12) -> str:
+        traced_examples = [s for s in self.sample_outputs if s.get("helper_trace")]
+        if not traced_examples:
+            return ""
+
+        lines = ["Recent evaluated behavior from the most recent compiled/evaluated attempt:"]
+        for idx, sample in enumerate(traced_examples[:max_examples]):
+            trace = sample.get("helper_trace") or []
+            counts = Counter(event.get("helper", "unknown") for event in trace)
+            lines.append(f"Example {idx + 1}:")
+            lines.append(
+                f"  Token count: {sample.get('token_count', 'N/A')} | "
+                f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
+                f"Syntax rate: {sample.get('syntax_rate', 0.0):.1%}"
+            )
+            if counts:
+                counts_summary = ", ".join(
+                    f"{name}={count}" for name, count in counts.most_common(8)
+                )
+                lines.append(f"  Helper call counts: {counts_summary}")
+            tail = trace[-max_trace_events:]
+            if tail:
+                lines.append("  Helper trace tail:")
+                for event in tail:
+                    lines.append(f"    - {self._format_trace_event(event)}")
+
+        return "\n".join(lines)
+
+    def _summarize_failure_modes(self) -> List[Tuple[str, int, str]]:
+        """Classify the most common observable evaluation failure patterns."""
+        counters: Dict[str, int] = {}
+        details: Dict[str, str] = {}
+
+        for sample in self.sample_outputs:
+            error = sample.get("error")
+            full_output = sample.get("full_output") or ""
+            actual = sample.get("actual") or ""
+            contains_delimiters = sample.get("contains_delimiters", False)
+            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
+            visible_delimiters = sample.get("visible_delimiters", contains_delimiters)
+            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
+            syntax_rate = float(sample.get("syntax_rate", 0.0))
+            matched = False
+
+            if error:
+                key = "runtime_or_generation_error"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = f"(first error: {str(error)[:120]})"
+                continue
+
+            if sample.get("runtime_budget_exceeded"):
+                key = "too_slow"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(generation exceeded the per-example runtime budget)"
+                matched = True
+
+            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
+                key = "unterminated_constrained_segment"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(opened `<<` but did not close `>>`)"
+                matched = True
+
+            if uses_hidden_chunks:
+                if not used_constrained_chunk:
+                    key = "missing_constrained_chunk"
+                    counters[key] = counters.get(key, 0) + 1
+                    if key not in details:
+                        details[key] = "(no internal parser-governed chunk was used)"
+                    matched = True
+            elif not contains_delimiters and "<<" not in full_output:
+                key = "missing_constrained_segment"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(no `<< >>` segment detected)"
+                matched = True
+
+            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
+                key = "premature_or_unmatched_closure"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(generated `>>` without a matching opening `<<`)"
+                matched = True
+
+            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
+                key = "malformed_constrained_content"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(delimiters present, but constrained content failed syntax checks)"
+                matched = True
+
+            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
+                key = "entered_constrained_mode_too_early"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(output entered `<<` almost immediately after the prompt continuation began)"
+                matched = True
+
+            if self._has_repetition_loop(full_output):
+                key = "repetition_loop"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(local token pattern repeated in output)"
+                matched = True
+
+            if not actual:
+                key = "answer_extraction_failed"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(no extractable final answer)"
+                matched = True
+
+            if not matched and not sample.get("is_correct", False):
+                key = "other_observed_failure"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = "(incorrect output — see failed examples below)"
+
+        ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
+        return [(mode, count, details.get(mode, "")) for mode, count in ranked[:4]]
+
+    def _looks_like_early_constrained_entry(self, output: str) -> bool:
+        """Heuristic: flags outputs that open a constrained segment almost immediately."""
+        if "<<" not in output:
+            return False
+        prefix = output.split("<<", 1)[0].strip()
+        if not prefix:
+            return True
+        return len(prefix.split()) <= 4
+
+    def _has_repetition_loop(self, output: str) -> bool:
+        """Detect short repeated local patterns that often indicate degenerate decoding."""
+        tokens = output.split()
+        if len(tokens) < 6:
+            return False
+        for width in (1, 2, 3):
+            for start in range(0, len(tokens) - 3 * width + 1):
+                chunk = tokens[start:start + width]
+                if (
+                    tokens[start + width:start + 2 * width] == chunk
+                    and tokens[start + 2 * width:start + 3 * width] == chunk
+                ):
+                    return True
+        return False
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
             "success": self.success,
             "accuracy": self.accuracy,
-            "format_rate": self.format_rate,
+            "contains_delimiters": self.contains_delimiters,
             "syntax_rate": self.syntax_rate,
             "num_examples": self.num_examples,
             "num_correct": self.num_correct,
             "total_time_seconds": self.total_time_seconds,
+            "max_sample_time_seconds": self.max_sample_time_seconds,
             "error": self.error,
             "sample_outputs": self.sample_outputs,
         }
@@ -102,9 +380,21 @@ class Evaluator:
         self,
         dataset_name: str = "gsm_symbolic",
         model_name: str = "Qwen/Qwen2.5-0.5B-Instruct",
+        backend: str = "huggingface",
         device: str = "cuda",
         sample_size: int = 10,
         max_steps: int = 150,
+        load_in_4bit: bool = False,
+        load_in_8bit: bool = False,
+        vllm_tensor_parallel_size: Optional[int] = None,
+        vllm_pipeline_parallel_size: int = 1,
+        vllm_gpu_memory_utilization: float = 0.8,
+        vllm_max_model_len: int = 4096,
+        vllm_enforce_eager: bool = True,
+        sample_seed: Optional[int] = None,
+        random_sample: bool = True,
+        max_seconds_per_example: Optional[float] = None,
+        step_token_budget: int = 1,
     ):
         """
         Initialize the evaluator.
@@ -112,20 +402,53 @@ class Evaluator:
         Args:
             dataset_name: Dataset to evaluate on ("gsm_symbolic" or "folio")
             model_name: HuggingFace model for generation
+            backend: Runtime LM backend ("huggingface" or "vllm")
             device: Device to run on ("cuda", "mps", "cpu")
             sample_size: Number of examples to evaluate on
             max_steps: Maximum generation steps per example
+            load_in_4bit: Whether to load model in 4-bit quantization
+            load_in_8bit: Whether to load model in 8-bit quantization
+            vllm_tensor_parallel_size: Explicit tensor parallel size for vLLM
+            vllm_pipeline_parallel_size: Explicit pipeline parallel size for vLLM
+            vllm_gpu_memory_utilization: GPU memory fraction reserved by vLLM
+            vllm_max_model_len: Max context length passed to vLLM
+            vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
+            sample_seed: Optional RNG seed for reproducible dataset sampling
+            max_seconds_per_example: Optional runtime budget per example in seconds
         """
+        if backend not in {"huggingface", "vllm"}:
+            raise NotImplementedError(
+                "Evaluation backend must be 'huggingface' or 'vllm'. "
+                "Hosted API backends are not supported by the current CSD runtime because "
+                "the generated Dafny strategy needs direct token logits, masking, and tokenizer access."
+            )
+
         self.dataset_name = dataset_name
         self.model_name = model_name
+        self.backend = backend
         self.device = device
         self.sample_size = sample_size
         self.max_steps = max_steps
+        self.load_in_4bit = load_in_4bit
+        self.load_in_8bit = load_in_8bit
+        self.vllm_tensor_parallel_size = vllm_tensor_parallel_size
+        self.vllm_pipeline_parallel_size = vllm_pipeline_parallel_size
+        self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
+        self.vllm_max_model_len = vllm_max_model_len
+        self.vllm_enforce_eager = vllm_enforce_eager
+        self.sample_seed = sample_seed
+        self.random_sample = random_sample
+        self.max_seconds_per_example = max_seconds_per_example
+        self.step_token_budget = step_token_budget
 
         # Lazy-loaded components
         self._dataset = None
         self._env = None
+        self._env_cache_key: Optional[tuple[Any, ...]] = None
         self._grammar_file = None
+        self._base_grammar_text: Optional[str] = None
+        self._dynamic_parser_factory_cache: Dict[Tuple[str, ...], Any] = {}
+        self._syntax_parser_cache: Dict[Tuple[str, ...], Any] = {}
 
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
@@ -135,9 +458,217 @@ class Evaluator:
                 self._grammar_file = grammars_dir / "gsm.lark"
             elif self.dataset_name == "folio":
                 self._grammar_file = grammars_dir / "folio.lark"
+            elif self.dataset_name == "spider":
+                self._grammar_file = grammars_dir / "sql.lark"
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
+
+    def _get_grammar_text(self) -> str:
+        """Load and cache the active grammar text."""
+        if self._base_grammar_text is None:
+            self._base_grammar_text = self._get_grammar_file().read_text()
+        return self._base_grammar_text
+
+    def _get_gsm_allowed_variables(self, example: dict) -> List[str]:
+        """Return the numeric variable names allowed for one GSM example."""
+        if self.dataset_name != "gsm_symbolic":
+            return []
+
+        from evaluations.gsm_symbolic.grammar import extract_variables_from_mapping
+
+        variable_types = example.get("variable_types") or {}
+        if not isinstance(variable_types, dict):
+            return []
+        return extract_variables_from_mapping(variable_types)
+
+    def _build_gsm_dynamic_parser(self, env: Dict[str, Any], example: dict):
+        """Create a per-example GSM parser restricted to CRANE's allowed variables."""
+        if self.dataset_name != "gsm_symbolic":
+            return None
+
+        allowed_variables = self._get_gsm_allowed_variables(example)
+        if not allowed_variables:
+            return None
+
+        from evaluations.common.parser_utils import create_lark_dafny_parser
+        from evaluations.gsm_symbolic.grammar import build_dynamic_grammar
+
+        cache_key = tuple(sorted(allowed_variables))
+        parser_factory = self._dynamic_parser_factory_cache.get(cache_key)
+        if parser_factory is None:
+            grammar_text = build_dynamic_grammar(self._get_grammar_text(), list(cache_key))
+            parser_factory = create_lark_dafny_parser(
+                grammar_text,
+                env["VerifiedDecoderAgent"],
+                env["_dafny"],
+                start="csd_start",
+                tokenizer=env["tokenizer"],
+            )
+            self._dynamic_parser_factory_cache[cache_key] = parser_factory
+
+        return parser_factory(env["lm"]._Tokens)
+
+    def _build_spider_valid_token_groups(self, env: Dict[str, Any], example: dict) -> list:
+        """
+        Build per-example token groups for Spider. The outer list is one group
+        per logical schema unit: index 0 holds the table-name group, indices
+        1..N hold the column groups for each table (in sorted-table order).
+        Tokens within a group are BPE-token strings produced by tokenizing each
+        identifier in common case/space variants. Empty list if no schema.
+        """
+        if self.dataset_name != "spider":
+            return []
+        try:
+            from evaluations.sql_spider.grammar import parse_db_info
+            schema = parse_db_info(example.get("db_info", ""))
+        except Exception:
+            return []
+        if not schema:
+            return []
+        tok = env.get("tokenizer")
+        if tok is None:
+            return []
+
+        def _tokens_for(ident: str) -> list:
+            bag = set()
+            for variant in (ident, " " + ident, ident.lower(), " " + ident.lower(),
+                            ident.upper(), " " + ident.upper()):
+                try:
+                    ids = tok.encode(variant, add_special_tokens=False)
+                except Exception:
+                    continue
+                for tid in ids:
+                    try:
+                        bag.add(tok.decode([tid]))
+                    except Exception:
+                        pass
+            return sorted(bag)
+
+        groups: list = []
+        sorted_tables = sorted(schema.keys())
+        table_group = []
+        for tbl in sorted_tables:
+            table_group.extend(_tokens_for(tbl))
+        groups.append(sorted(set(table_group)))
+        for tbl in sorted_tables:
+            col_bag = []
+            for col in schema[tbl]:
+                col_bag.extend(_tokens_for(col))
+            groups.append(sorted(set(col_bag)))
+        return groups
+
+    def _build_spider_dynamic_parser(self, env: Dict[str, Any], example: dict):
+        """
+        Return a SQL parser for CRANE/CSD generation on Spider.
+
+        Historically this narrowed the grammar per-example to the schema's
+        exact tables/columns. That was correct but catastrophically slow:
+        every unseen schema triggers a fresh syncode DFA mask store build
+        (O(vocab_size × grammar_states), 15-30 min per schema). Across 50
+        Spider examples × many iterations that's hours of rebuild time.
+
+        itergen's faster design uses a single base SQL grammar (cached
+        mask store) and enforces schema-awareness by runtime backtracking
+        in the iterator. We do the same here: return None so run_crane_csd
+        falls back to building a single parser from the base grammar_file,
+        whose DFA mask store is built once and cached forever.
+
+        Schema correctness is still measured: _exec_match_spider executes
+        the predicted query against the SQLite database and compares to
+        the gold query's rows, so invalid column/table references are
+        caught at scoring time regardless of the grammar used for decode.
+        """
+        return None
+
+    def _extract_answer_spider(self, output: str) -> Optional[str]:
+        """Extract a SQL query: take the raw output up to the first blank line.
+
+        We no longer require <<...>> delimiters for Spider — the entire output
+        is the SQL query. If <<...>> happens to be present (legacy from the
+        old contract or strategy-imposed), we still strip them so the SQL
+        executes cleanly against SQLite.
+        """
+        if not output:
+            return None
+        raw = output.split("\n\n")[0]
+        cleaned = raw.replace("\n", " ").replace("\r", " ").strip()
+        # Strip stray legacy delimiters anywhere they appear.
+        cleaned = cleaned.replace("<<", " ").replace(">>", " ")
+        cleaned = " ".join(cleaned.split()).rstrip(";").strip()
+        return cleaned or None
+
+    def _exec_match_spider(
+        self,
+        pred_sql: Optional[str],
+        gold_sql: Optional[str],
+        example: dict,
+    ) -> bool:
+        """
+        Cheap per-example execution-match for the synthesis feedback loop.
+
+        Executes pred and gold on the example's SQLite database and compares
+        result sets (order-insensitive). Not as thorough as Spider's official
+        evaluator, but fast enough for per-iteration scoring. The CLI still
+        calls the full Spider evaluator at batch time.
+        """
+        if not pred_sql or not gold_sql:
+            return False
+
+        import sqlite3
+        from evaluations.sql_spider.dataset import default_db_dir
+
+        db_id = example.get("db_id", "")
+        if not db_id:
+            return False
+        db_path = default_db_dir() / db_id / f"{db_id}.sqlite"
+        if not db_path.exists():
+            return False
+
+        def _run(sql: str):
+            try:
+                con = sqlite3.connect(str(db_path))
+                con.text_factory = lambda b: b.decode("utf-8", errors="ignore")
+                cur = con.cursor()
+                cur.execute(sql)
+                rows = cur.fetchall()
+                con.close()
+                return rows
+            except Exception:
+                return None
+
+        pred_rows = _run(pred_sql)
+        gold_rows = _run(gold_sql)
+        if pred_rows is None or gold_rows is None:
+            return False
+
+        # Order-insensitive bag comparison (matches Spider's default behavior
+        # unless the gold query has ORDER BY; we keep it simple here).
+        try:
+            return sorted(map(tuple, pred_rows)) == sorted(map(tuple, gold_rows))
+        except TypeError:
+            return list(map(tuple, pred_rows)) == list(map(tuple, gold_rows))
+
+    def _get_syntax_parser(self, example: Optional[dict] = None):
+        """Create or reuse a syntax parser for one example's allowed variables."""
+        from lark import Lark
+
+        if self.dataset_name != "gsm_symbolic" or example is None:
+            return Lark(self._get_grammar_text(), start="start", parser="lalr")
+
+        allowed_variables = self._get_gsm_allowed_variables(example)
+        if not allowed_variables:
+            return Lark(self._get_grammar_text(), start="start", parser="lalr")
+
+        from evaluations.gsm_symbolic.grammar import build_dynamic_grammar
+
+        cache_key = tuple(sorted(allowed_variables))
+        parser = self._syntax_parser_cache.get(cache_key)
+        if parser is None:
+            grammar_text = build_dynamic_grammar(self._get_grammar_text(), list(cache_key))
+            parser = Lark(grammar_text, start="start", parser="lalr")
+            self._syntax_parser_cache[cache_key] = parser
+        return parser
 
     def _load_dataset_sample(self) -> list:
         """Load a sample of the dataset for evaluation."""
@@ -150,15 +681,25 @@ class Evaluator:
                 config="main",
                 split="test",
                 limit=self.sample_size,
-                random_sample=True,
+                random_sample=self.random_sample,
+                seed=self.sample_seed if self.random_sample else None,
             )
             self._dataset = list(ds)
         elif self.dataset_name == "folio":
             from evaluations.folio.dataset import load_folio
             ds = load_folio(
                 split="validation",
+                num_samples=self.sample_size,
+                seed=42,
+            )
+            self._dataset = list(ds)
+        elif self.dataset_name == "spider":
+            from evaluations.sql_spider.dataset import load_spider
+            ds = load_spider(
+                source="auto",
                 limit=self.sample_size,
-                random_sample=True,
+                random_sample=self.random_sample,
+                seed=self.sample_seed if self.random_sample else None,
             )
             self._dataset = list(ds)
         else:
@@ -180,21 +721,110 @@ class Evaluator:
         if run_dir.name == "generated_csd":
             run_dir = run_dir.parent
 
+        env_cache_key = (
+            str(run_dir.resolve()),
+            self.dataset_name,
+            self.model_name,
+            self.backend,
+            self.device,
+            self.load_in_4bit,
+            self.load_in_8bit,
+            self.vllm_tensor_parallel_size,
+            self.vllm_pipeline_parallel_size,
+            self.vllm_gpu_memory_utilization,
+            self.vllm_max_model_len,
+            self.vllm_enforce_eager,
+        )
+        if self._env is not None and self._env_cache_key == env_cache_key:
+            return self._env
+
         if self.dataset_name == "gsm_symbolic":
             from evaluations.gsm_symbolic.environment import setup_dafny_environment
+        elif self.dataset_name == "spider":
+            from evaluations.sql_spider.environment import setup_dafny_environment
         else:
             from evaluations.folio.environment import setup_dafny_environment
 
-        return setup_dafny_environment(
-            run_dir=run_dir,
-            model_name=self.model_name,
-            device=self.device,
-            grammar_file=self._get_grammar_file(),
-        )
+        def _make_env(gpu_memory_utilization: float) -> Dict[str, Any]:
+            return setup_dafny_environment(
+                run_dir=run_dir,
+                model_name=self.model_name,
+                backend=self.backend,
+                device=self.device,
+                grammar_file=self._get_grammar_file(),
+                load_in_4bit=self.load_in_4bit,
+                load_in_8bit=self.load_in_8bit,
+                vllm_tensor_parallel_size=self.vllm_tensor_parallel_size,
+                vllm_pipeline_parallel_size=self.vllm_pipeline_parallel_size,
+                vllm_gpu_memory_utilization=gpu_memory_utilization,
+                vllm_max_model_len=self.vllm_max_model_len,
+                vllm_enforce_eager=self.vllm_enforce_eager,
+            )
+
+        if self.backend != "vllm":
+            return _make_env(self.vllm_gpu_memory_utilization)
+
+        util_candidates: List[float] = []
+        for candidate in [
+            self.vllm_gpu_memory_utilization,
+            0.55,
+            0.5,
+            0.45,
+            0.4,
+        ]:
+            if candidate <= self.vllm_gpu_memory_utilization and candidate not in util_candidates:
+                util_candidates.append(candidate)
+
+        last_error: Exception | None = None
+        for util in util_candidates:
+            try:
+                if util != self.vllm_gpu_memory_utilization:
+                    print(
+                        f"Retrying vLLM evaluator startup with lower "
+                        f"gpu_memory_utilization={util:.2f}"
+                    )
+                env = _make_env(util)
+                self._env = env
+                self._env_cache_key = env_cache_key
+                return env
+            except Exception as exc:
+                last_error = exc
+                message = str(exc)
+                startup_memory_error = (
+                    "desired GPU memory utilization" in message
+                    or "Free memory on device" in message
+                    or "Engine core initialization failed" in message
+                )
+                if not startup_memory_error or util == util_candidates[-1]:
+                    raise
+
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Failed to initialize evaluation environment.")
 
     def _extract_constrained_content(self, output: str) -> List[str]:
         """Extract content within << >> delimiters."""
         return re.findall(r"<<\s*([^<>]+?)\s*>>", output)
+
+    def _truncate_gsm_output(self, output: str) -> str:
+        """Trim obvious prompt restarts so scoring focuses on the first answer block."""
+        cut_points: List[int] = []
+        for marker in [
+            "\nAssistant:",
+            "\n\nAssistant:",
+            "\nQ:",
+            "\n\nQ:",
+            "\nSolve the question above.",
+            "\n\nSolve the question above.",
+        ]:
+            idx = output.find(marker)
+            if idx > 0:
+                cut_points.append(idx)
+
+        if not cut_points:
+            return output
+
+        return output[:min(cut_points)].rstrip()
 
     def _parse_variable_assignments(self, text: str) -> dict:
         """Parse variable assignments from text like 'a = 5', 'n1 = 72.5', etc."""
@@ -206,6 +836,21 @@ class Evaluator:
                 assignments[var_name] = float(match.group(2))
             except ValueError:
                 pass
+        return assignments
+
+    def _parse_symbolic_assignments(self, text: str) -> dict[str, str]:
+        """Parse simple symbolic assignments like 'x = 2 * y' or 'y = 1/10'."""
+        assignments: dict[str, str] = {}
+        pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^,\n;]+)"
+        for match in re.finditer(pattern, text):
+            var_name = match.group(1)
+            expr = match.group(2).strip()
+            if expr.endswith(".") and len(expr) >= 2 and expr[-2].isdigit():
+                expr = expr
+            else:
+                expr = expr.rstrip(".").strip()
+            if expr:
+                assignments[var_name] = expr
         return assignments
 
     def _safe_eval_arithmetic(self, expr: str) -> Optional[float]:
@@ -253,9 +898,93 @@ class Evaluator:
             return None
         return self._safe_eval_arithmetic(substituted)
 
+    def _resolve_symbolic_assignments(self, text: str) -> dict[str, float]:
+        """Resolve assignment chains like 'x = 2 * y, y = 14' into numeric values."""
+        raw_assignments = self._parse_symbolic_assignments(text)
+        resolved: dict[str, float] = {}
+
+        def resolve(name: str, stack: set[str]) -> Optional[float]:
+            if name in resolved:
+                return resolved[name]
+            if name in stack:
+                return None
+
+            expr = raw_assignments.get(name)
+            if expr is None:
+                return None
+
+            stack = set(stack)
+            stack.add(name)
+            substituted = expr
+            var_names = set(re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", expr))
+            for dep in sorted(var_names, key=len, reverse=True):
+                if dep == name:
+                    continue
+                dep_value = resolve(dep, stack)
+                if dep_value is None:
+                    continue
+                substituted = re.sub(r"\b" + re.escape(dep) + r"\b", str(dep_value), substituted)
+
+            if re.search(r"[a-zA-Z_]", substituted):
+                return None
+
+            value = self._safe_eval_arithmetic(substituted)
+            if value is None:
+                return None
+            resolved[name] = value
+            return value
+
+        for var_name in list(raw_assignments.keys()):
+            resolve(var_name, set())
+
+        return resolved
+
+    def _extract_answer_expression_gsm(self, output: str) -> Optional[str]:
+        """Extract the expression after 'The answer is ...' if present."""
+        match = re.search(
+            r"The answer is\s+(.+?)(?:\.\s*$|\n|$)",
+            output,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if not match:
+            return None
+        expr = match.group(1).strip()
+        return expr.rstrip(".").strip() or None
+
+    def _evaluate_gsm_expression(self, expr: str, output: str) -> Optional[str]:
+        """Evaluate a GSM expression using resolved variable assignments when needed."""
+        if not expr:
+            return None
+
+        if not re.search(r"[a-zA-Z_]", expr):
+            result = self._safe_eval_arithmetic(expr)
+            if result is not None:
+                val = int(result) if result == int(result) else result
+                return str(val)
+
+        var_values = self._resolve_symbolic_assignments(output)
+        if not var_values:
+            var_values = self._parse_variable_assignments(output)
+
+        if var_values:
+            result = self._evaluate_symbolic_expression(expr, var_values)
+            if result is not None:
+                val = int(result) if result == int(result) else result
+                return str(val)
+
+        return None
+
     def _extract_answer_gsm(self, output: str) -> Optional[str]:
         """Extract numeric answer from GSM-Symbolic output within << >> delimiters."""
-        matches = self._extract_constrained_content(output)
+        truncated_output = self._truncate_gsm_output(output)
+
+        answer_expr = self._extract_answer_expression_gsm(truncated_output)
+        if answer_expr is not None:
+            answer = self._evaluate_gsm_expression(answer_expr, truncated_output)
+            if answer is not None:
+                return answer
+
+        matches = self._extract_constrained_content(truncated_output)
         if not matches:
             return None
 
@@ -269,15 +998,15 @@ class Evaluator:
                 return num_match.group()
 
         # Case 2: purely numeric expression — evaluate directly (e.g. "5 + 3")
-        if not re.search(r'[a-zA-Z_]', last_match):
-            result = self._safe_eval_arithmetic(last_match)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
+        answer = self._evaluate_gsm_expression(last_match, truncated_output)
+        if answer is not None:
+            return answer
 
         # Case 3: symbolic expression — parse variable assignments from surrounding text
         # and substitute in (e.g. "a + b" with "a = 5, b = 3" defined earlier)
-        var_values = self._parse_variable_assignments(output)
+        var_values = self._resolve_symbolic_assignments(truncated_output)
+        if not var_values:
+            var_values = self._parse_variable_assignments(truncated_output)
         if var_values:
             result = self._evaluate_symbolic_expression(last_match, var_values)
             if result is not None:
@@ -385,46 +1114,125 @@ class Evaluator:
             if match:
                 return match.group(1)
             return answer_str
+        elif self.dataset_name == "spider":
+            return (example.get("query") or "").strip()
         else:
+            if hasattr(example, "label"):
+                return example.label
             return example.get("label", "Unknown")
 
     def _format_prompt(self, example: dict) -> str:
         """Format a dataset example as a prompt."""
         if self.dataset_name == "gsm_symbolic":
             question = example.get("question", "")
+            allowed_variables = self._get_gsm_allowed_variables(example)
+            symbolic_template = example.get("question_parsed", "")
+
+            variable_guidance = ""
+            if allowed_variables:
+                variable_guidance = (
+                    "Use only these symbolic quantity names when you define variables and write << >> expressions: "
+                    f"{', '.join(allowed_variables)}. Do not invent new variable names outside this set.\n"
+                )
+            template_guidance = ""
+            if symbolic_template:
+                template_guidance = (
+                    "Symbolic template for the allowed variables: "
+                    f"{symbolic_template}\n"
+                )
+
             return (
                 "Solve the following math problem step by step. "
-                "Assign a single-letter variable to each quantity and state its numeric value. "
+                "Define variables for each quantity and state their numeric values. "
+                "Use the provided symbolic quantity names when they are supplied. "
+                "You may use descriptive identifiers with letters, digits, and underscores, "
+                "and must reuse those same variable names inside << >> expressions. "
                 "Write each computation step as a SHORT expression inside << >> delimiters — "
-                "one step per << >> window, closing >> before starting the next step.\n\n"
-                "Example:\n"
-                "Q: A store sells pens for $3 each and notebooks for $8 each. "
+                "one step per << >> window, closing >> before starting the next step. "
+                "Once you have written the final answer, stop immediately. Do not continue with extra explanation, confirmation, code fences, or another answer block.\n\n"
+                "Example response format:\n"
+                "Problem: A store sells pens for $3 each and notebooks for $8 each. "
                 "Bob buys 4 pens and 2 notebooks. How much does he spend?\n"
-                "A: Let p = 3, n = 8, a = 4, b = 2.\n"
+                "Response:\n"
+                "Let p = 3, n = 8, a = 4, b = 2.\n"
                 "Pen total = <<a * p>>\n"
                 "Notebook total = <<b * n>>\n"
                 "Total spent = <<a * p + b * n>>\n"
                 "The answer is a * p + b * n.\n\n"
-                f"Q: {question}\nA:"
+                f"Problem: {question}\n"
+                f"{variable_guidance}"
+                f"{template_guidance}"
+                "Response:\n"
+            )
+        elif self.dataset_name == "spider":
+            db_id = example.get("db_id", "")
+            db_info = example.get("db_info", "")
+            question = example.get("question", "")
+            return (
+                "You are given a database schema and a question. "
+                "Write a SINGLE SQL query answering the question, using ONLY the tables and columns in the schema. "
+                "Emit the SQL on a single line. Stop after the query — no explanation, no code fences.\n\n"
+                "Example:\n"
+                "db_id: concert_singer\n"
+                "db_info: # singer ( singer_id , name , country , age )\n"
+                "question: How many singers do we have?\n"
+                "SQL: SELECT count(*) FROM singer\n\n"
+                f"db_id: {db_id}\n"
+                f"db_info: {db_info}\n"
+                f"question: {question}\n"
+                "SQL: "
             )
         else:
-            premises = example.get("premises", [])
-            conclusion = example.get("conclusion", "")
-            premises_str = "\n".join(f"- {p}" for p in premises)
-            return f"Given the following premises:\n{premises_str}\n\nDetermine if the following conclusion is True, False, or Unknown:\n{conclusion}\n\nAnswer:"
+            # FOLIOExample is a dataclass — access via attribute or .get() for dict fallback
+            if hasattr(example, "premises"):
+                premises_raw = example.premises
+                conclusion = example.conclusion
+            else:
+                premises_raw = example.get("premises", "")
+                conclusion = example.get("conclusion", "")
+            premises_str = premises_raw if isinstance(premises_raw, str) else "\n".join(f"- {p}" for p in premises_raw)
+            return (
+                "Translate each premise and the conclusion into first-order logic (FOL), "
+                "then determine if the conclusion is True, False, or Unknown.\n\n"
+                "FOL syntax rules:\n"
+                "  - Predicates: UppercaseName(arg), e.g. Dog(x), Mammal(fido)\n"
+                "  - Variables: single lowercase letter (x, y, z)\n"
+                "  - Constants: lowercase 2+ chars (fido, alice, bob)\n"
+                "  - Quantifiers: {forall} x, {exists} x\n"
+                "  - Connectives: {and}, {or}, {not}, {implies}, {iff}\n\n"
+                "Wrap EACH FOL formula in << >> delimiters. "
+                "Write one << >> per premise, then one << >> for the conclusion. "
+                "Then state True, False, or Unknown.\n\n"
+                "Example:\n"
+                "Premises:\n"
+                "- All dogs are mammals.\n"
+                "- Fido is a dog.\n\n"
+                "Conclusion: Fido is a mammal.\n\n"
+                "Answer:\n"
+                "<<{forall} x (Dog(x) {implies} Mammal(x))>>\n"
+                "<<Dog(fido)>>\n"
+                "<<Mammal(fido)>>\n"
+                "True\n\n"
+                f"Premises:\n{premises_str}\n\n"
+                f"Conclusion: {conclusion}\n\n"
+                "Answer:"
+            )
 
-    def _check_format_validity(self, output: str) -> bool:
-        """Check if the output has valid format with << >> delimiters."""
+    def _contains_delimiters(self, output: str) -> bool:
+        """Check if the output contains at least one non-empty << >> segment."""
         return "<<" in output and ">>" in output
 
-    def _check_syntax_validity(self, output: str) -> Tuple[bool, List[Tuple[str, bool]]]:
+    def _check_syntax_validity(
+        self,
+        output: str,
+        example: Optional[dict] = None,
+    ) -> Tuple[bool, List[Tuple[str, bool]]]:
         """
         Check if constrained segments have valid syntax.
 
         Returns:
             Tuple of (all_valid, list of (segment, is_valid) tuples)
         """
-        from lark import Lark
         from lark.exceptions import LarkError
 
         segments: List[Tuple[str, bool]] = []
@@ -433,9 +1241,8 @@ class Evaluator:
         if not matches:
             return True, []
 
-        grammar_text = self._get_grammar_file().read_text()
         try:
-            parser = Lark(grammar_text, start="start", parser="lalr")
+            parser = self._get_syntax_parser(example)
             for match in matches:
                 try:
                     parser.parse(match.strip())
@@ -478,65 +1285,127 @@ class Evaluator:
 
             if self.dataset_name == "gsm_symbolic":
                 from evaluations.gsm_symbolic.generation import run_crane_csd
+            elif self.dataset_name == "spider":
+                from evaluations.sql_spider.generation import run_crane_csd
             else:
                 from evaluations.folio.generation import run_crane_csd
 
             num_correct = 0
-            num_valid_format = 0
-            num_valid_syntax = 0
-            total_segments = 0
+            all_examples_contain_delimiters = True
+            num_examples_syntax_pass = 0
 
             for i, example in enumerate(dataset):
+                print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
+                example_start = time.time()
                 prompt = self._format_prompt(example)
                 expected = self._get_expected_answer(example)
 
                 try:
-                    output_text, token_count, gen_time, _ = run_crane_csd(
+                    print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
+                    valid_token_groups = (
+                        self._build_spider_valid_token_groups(env, example)
+                        if self.dataset_name == "spider"
+                        else []
+                    )
+                    output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
                         env=env,
                         prompt_text=prompt,
                         max_steps=self.max_steps,
+                        step_token_budget=self.step_token_budget,
                         grammar_file=self._get_grammar_file(),
+                        dynamic_parser=(
+                            self._build_gsm_dynamic_parser(env, example)
+                            if self.dataset_name == "gsm_symbolic"
+                            else self._build_spider_dynamic_parser(env, example)
+                            if self.dataset_name == "spider"
+                            else None
+                        ),
+                        valid_token_groups=valid_token_groups,
+                    )
+                    example_time = time.time() - example_start
+                    print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
+
+                    scored_output = (
+                        self._truncate_gsm_output(output_text)
+                        if self.dataset_name == "gsm_symbolic"
+                        else output_text
                     )
 
                     if self.dataset_name == "gsm_symbolic":
-                        actual = self._extract_answer_gsm(output_text)
+                        actual = self._extract_answer_gsm(scored_output)
+                    elif self.dataset_name == "spider":
+                        actual = self._extract_answer_spider(scored_output)
                     else:
-                        actual = self._extract_answer_folio(output_text, example=example)
+                        actual = self._extract_answer_folio(scored_output, example=example)
 
-                    is_correct = self._answers_match(actual, expected)
+                    if self.dataset_name == "spider":
+                        is_correct = self._exec_match_spider(actual, expected, example)
+                    else:
+                        is_correct = self._answers_match(actual, expected)
                     if is_correct:
                         num_correct += 1
 
-                    is_valid_format = self._check_format_validity(output_text)
-                    if is_valid_format:
-                        num_valid_format += 1
+                    visible_delimiters = self._contains_delimiters(scored_output)
+                    used_hidden_chunk = bool(constrained_segments) or any(
+                        event.get("helper") in {"AppendConstrainedToken", "ConstrainedStep", "CloseConstrainedSpan"}
+                        for event in (helper_trace or [])
+                    )
+                    contains_delimiters = (
+                        used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
+                    )
+                    all_examples_contain_delimiters = (
+                        all_examples_contain_delimiters and contains_delimiters
+                    )
 
-                    all_valid_syntax, segments = self._check_syntax_validity(output_text)
-                    total_segments += len(segments)
-                    example_valid_segs = sum(1 for _, v in segments if v)
-                    num_valid_syntax += example_valid_segs
-                    example_syntax_rate = example_valid_segs / len(segments) if segments else 0.0
+                    all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
+                    # Per-example syntax pass:
+                    # - GSM/FOLIO: visible <<...>> chunks must exist and parse.
+                    # - Spider: chunks are internal/hidden; visible delimiter tokens are not
+                    #   part of the answer contract, so count parser-governed chunk usage.
+                    if self.dataset_name == "spider":
+                        example_syntax_pass = used_hidden_chunk
+                    else:
+                        example_syntax_pass = bool(segments) and all_valid_syntax
+                    num_examples_syntax_pass += int(example_syntax_pass)
+                    example_syntax_rate = 1.0 if example_syntax_pass else 0.0
 
+                    if hasattr(example, "conclusion"):
+                        q_str = (example.premises + " | " + example.conclusion)[:200]
+                    else:
+                        q_str = example.get("question", str(example.get("premises", "")))[:200]
                     sample_outputs.append({
-                        "question": example.get("question", str(example.get("premises", "")))[:200],
+                        "question": q_str,
                         "expected": expected,
                         "actual": actual or output_text[:100],
                         "full_output": output_text,
+                        "scored_output": scored_output,
                         "is_correct": is_correct,
-                        "is_valid_format": is_valid_format,
-                        "is_syntax_valid": all_valid_syntax,
+                        "contains_delimiters": contains_delimiters,
+                        "visible_delimiters": visible_delimiters,
+                        "used_constrained_chunk": used_hidden_chunk,
+                        "uses_hidden_chunks": self.dataset_name == "spider",
+                        "is_syntax_valid": example_syntax_pass,
                         "syntax_rate": example_syntax_rate,
                         "token_count": token_count,
                         "time_seconds": gen_time,
+                        "runtime_budget_exceeded": (
+                            self.max_seconds_per_example is not None
+                            and gen_time > self.max_seconds_per_example
+                        ),
+                        "helper_trace": helper_trace,
                     })
 
                 except Exception as e:
+                    if hasattr(example, "conclusion"):
+                        q_str = (example.premises + " | " + example.conclusion)[:200]
+                    else:
+                        q_str = example.get("question", str(example.get("premises", "")))[:200]
                     sample_outputs.append({
-                        "question": example.get("question", str(example.get("premises", "")))[:200],
+                        "question": q_str,
                         "expected": expected,
                         "actual": None,
                         "is_correct": False,
-                        "is_valid_format": False,
+                        "contains_delimiters": False,
                         "is_syntax_valid": False,
                         "syntax_rate": 0.0,
                         "error": str(e),
@@ -544,15 +1413,17 @@ class Evaluator:
 
             total_time = time.time() - start_time
             num_examples = len(dataset)
+            max_sample_time = max((float(sample.get("time_seconds", 0.0)) for sample in sample_outputs), default=0.0)
 
             return EvaluationResult(
                 success=True,
                 accuracy=num_correct / max(1, num_examples),
-                format_rate=num_valid_format / max(1, num_examples),
-                syntax_rate=num_valid_syntax / total_segments if total_segments > 0 else 0.0,
+                contains_delimiters=all_examples_contain_delimiters,
+                syntax_rate=num_examples_syntax_pass / max(1, num_examples),
                 num_examples=num_examples,
                 num_correct=num_correct,
                 total_time_seconds=total_time,
+                max_sample_time_seconds=max_sample_time,
                 sample_outputs=sample_outputs,
             )
 
@@ -560,7 +1431,7 @@ class Evaluator:
             return EvaluationResult(
                 success=False,
                 accuracy=0.0,
-                format_rate=0.0,
+                contains_delimiters=False,
                 syntax_rate=0.0,
                 num_examples=0,
                 num_correct=0,

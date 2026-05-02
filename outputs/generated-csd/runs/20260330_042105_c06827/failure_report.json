@@ -1,0 +1,123 @@
+{
+  "task_description": "Generate a strategy for solving math word problems involving arithmetic operations on symbolic quantities.",
+  "total_attempts": 5,
+  "timestamp": "2026-03-30T04:22:21.594880",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy aims to solve math word problems involving arithmetic operations on symbolic quantities.\n// It uses a combination of constrained steps and soft constrained steps to guide the generation process towards a valid solution.\n// The strategy starts with an unconstrained step to generate initial tokens, then refines them using constrained steps.\n// If the current token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// If the problem is deemed unsolvable due to dead-end detection, the strategy backtracks to the last valid state.\n// The goal is to produce a valid mathematical expression within the given maximum steps.\n// CSD_RATIONALE_END\n\nwhile |generated| < maxSteps {\n    if |generated| == 0 {\n        var next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n    } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy aims to solve math word problems involving arithmetic operations on symbolic quantities.\n// It uses a combination of constrained steps and soft constrained steps to guide the generation process towards a valid solution.\n// The strategy starts with an unconstrained step to generate initial tokens, then refines them using constrained steps.\n// If the current token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// If the problem is deemed unsolvable due to dead-end detection, the strategy backtracks to the last valid state.\n// The goal is to produce a valid mathematical expression within the given maximum steps.\n// CSD_RATIONALE_END\n\nwhile |generated| < maxSteps {\n    if |generated| == 0 {\n        var next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n    } else {\n        var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;"
+      },
+      "timestamp": "2026-03-30T04:21:25.399278",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 4 error(s):\n  - Line 33: unresolved identifier: _\n  - Line 36: unresolved identifier: next\n  - Line 39: expression is not allowed to invoke a method (DeadEndDetection)\n  - Line 39: method call is not allowed to be used in an expression context (DeadEndDetection)",
+      "verification": {
+        "success": false,
+        "error_count": 4
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy aims to solve math word problems involving arithmetic operations on symbolic quantities.\n// It uses a combination of constrained steps and soft constrained steps to guide the generation process towards a valid solution.\n// The strategy starts with an unconstrained step to generate initial tokens, then refines them using constrained steps.\n// If the current token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// If the problem is deemed unsolvable due to dead-end detection, the strategy backtracks to the last valid state.\n// The goal is to produce a valid mathematical expression within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy aims to solve math word problems involving arithmetic operations on symbolic quantities.\n// It uses a combination of constrained steps and soft constrained steps to guide the generation process towards a valid solution.\n// The strategy starts with an unconstrained step to generate initial tokens, then refines them using constrained steps.\n// If the current token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// If the problem is deemed unsolvable due to dead-end detection, the strategy backtracks to the last valid state.\n// The goal is to produce a valid mathematical expression within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;"
+      },
+      "timestamp": "2026-03-30T04:21:37.339520",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 37: unresolved identifier: _\n  - Line 44: expression is not allowed to invoke a method (DeadEndDetection)\n  - Line 44: method call is not allowed to be used in an expression context (DeadEndDetection)",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;"
+      },
+      "timestamp": "2026-03-30T04:21:47.864440",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 35: unresolved identifier: _\n  - Line 42: expression is not allowed to invoke a method (DeadEndDetection)\n  - Line 42: method call is not allowed to be used in an expression context (DeadEndDetection)",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, generated);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n}\n\nif helpers.DeadEndDetection(parser, generated, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;"
+      },
+      "timestamp": "2026-03-30T04:21:58.569213",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 35: unresolved identifier: _\n  - Line 42: expression is not allowed to invoke a method (DeadEndDetection)\n  - Line 42: method call is not allowed to be used in an expression context (DeadEndDetection)",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\nvar currentConstrained := prompt;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n    currentConstrained := currentConstrained + [next];  // Update the constrained prefix\n}\n\nif helpers.DeadEndDetection(parser, currentConstrained, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// This strategy generates a valid sequence of tokens by starting with an unconstrained step and refining it with constrained steps.\n// If a token does not lead to a valid grammar continuation, a confidence-gated step is taken.\n// The strategy includes mechanisms to handle dead-end conditions and backtrack to the last valid state.\n// The goal is to produce a valid sequence within the given maximum steps.\n// CSD_RATIONALE_END\n\nvar steps := 0;\nvar currentConstrained := prompt;\n\nwhile |generated| < maxSteps {\n    var next, isValid : bool;\n    if steps == 0 {\n        next := helpers.UnconstrainedStep(lm, prompt, generated);  // Start with an unconstrained step\n        isValid := true;  // Assume the first step is valid\n    } else {\n        next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, 1.0);  // Softly constrain the next token\n        if !isValid {\n            next, _ := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained);  // Use confidence gating if necessary\n        }\n    }\n    generated := generated + [next];  // Append the new token to the generated sequence\n    steps := steps + 1;  // Increment the step counter\n    currentConstrained := currentConstrained + [next];  // Update the constrained prefix\n}\n\nif helpers.DeadEndDetection(parser, currentConstrained, 1) {  // Check for dead-end conditions\n    generated := helpers.RollbackToValidPrefix(parser, generated);  // Rollback to the last valid state\n}\n\ncost := helpers.cost;  // Assign the total cost;"
+      },
+      "timestamp": "2026-03-30T04:22:10.133781",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 3 error(s):\n  - Line 36: unresolved identifier: _\n  - Line 44: expression is not allowed to invoke a method (DeadEndDetection)\n  - Line 44: method call is not allowed to be used in an expression context (DeadEndDetection)",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 5,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

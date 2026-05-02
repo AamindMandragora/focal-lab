@@ -1,0 +1,2052 @@
+{
+  "strategy_code": "// CSD_RATIONALE_BEGIN\n// This strategy preserves valid constrained spans while generating GSM-symbolic style\n// reasoning. Outside a span, it samples mostly unconstrained text but lightly boosts\n// the opening delimiter token \"<<\" so symbolic names can be introduced. Inside a\n// span, it uses parser-guided constrained decoding only over valid continuations,\n// with stricter decoding when the valid continuation set is narrow. A constrained\n// span is closed only in a branch already guarded by parser.IsCompletePrefix on the\n// current constrained contents. EOS is always terminal. To avoid unverifiable token-\n// membership preconditions, the strategy does not use helper calls that require\n// proving ad hoc token lists are in lm.Tokens.\n// CSD_RATIONALE_END\ngenerated := generatedPrefix;\ninsideConstrainedOut := insideConstrained;\ncurrentConstrainedOut := currentConstrained;\ncost := 0;\n\nvar steps := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant !insideConstrainedOut ==> currentConstrainedOut == []\n  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)\n  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|\n  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut\n  invariant |generated| <= |generatedPrefix| + steps\n  invariant cost == 0\n  decreases maxSteps - steps\n{\n  if !insideConstrainedOut {\n    lm.GenerateLogits(prompt + generated);\n    helpers.BoostTokenLogits(lm, [\"<<\"], 2.0);\n    if |generated| > 0 {\n      var lastTok := generated[|generated| - 1];\n      if Contains(lastTok, \"=\") ||\n         Contains(lastTok, \"answer\") || Contains(lastTok, \"Answer\") ||\n         Contains(lastTok, \"final\") || Contains(lastTok, \"Final\") ||\n         Contains(lastTok, \"quantity\") || Contains(lastTok, \"Quantity\") ||\n         Contains(lastTok, \"symbol\") || Contains(lastTok, \"Symbol\") {\n        helpers.BoostTokenLogits(lm, [\"<<\"], 8.0);\n      }\n    }\n    var next := lm.ChooseNextTokenUnconstrained();\n    helpers.cost := helpers.cost + 1;\n    steps := steps + 1;\n    if next == eosToken {\n      // EOS is terminal\n    } else {\n      generated := generated + [next];\n      if next == \"<<\" {\n        insideConstrainedOut := true;\n        currentConstrainedOut := [];\n      }\n    }\n    if next == eosToken {\n      steps := maxSteps;\n    }\n  } else {\n    if parser.IsCompletePrefix(currentConstrainedOut) {\n      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(\n        lm, parser, generated, currentConstrainedOut\n      );\n      generated := closedGenerated;\n      insideConstrainedOut := closedInside;\n      currentConstrainedOut := closedCurrent;\n      steps := steps + 1;\n    } else {\n      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];\n      var constrainedPrompt := prompt + stablePrefix;\n      var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);\n      if validCount <= 2 {\n        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);\n        steps := steps + 1;\n        if next == eosToken {\n          steps := maxSteps;\n        } else {\n          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(\n            lm, parser, generated, currentConstrainedOut, next\n          );\n          generated := appendedGenerated;\n          insideConstrainedOut := appendedInside;\n          currentConstrainedOut := appendedCurrent;\n        }\n      } else {\n        var next, isValid := helpers.SoftConstrainedStep(\n          lm, parser, constrainedPrompt, currentConstrainedOut, 3.0, eosToken\n        );\n        steps := steps + 1;\n        if next == eosToken {\n          steps := maxSteps;\n        } else {\n          if isValid {\n            var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(\n              lm, parser, generated, currentConstrainedOut, next\n            );\n            generated := appendedGenerated2;\n            insideConstrainedOut := appendedInside2;\n            currentConstrainedOut := appendedCurrent2;\n          } else {\n            var repairedGenerated, repairedCurrent := helpers.RollbackConstrainedSpan(\n              parser, stablePrefix, generated, currentConstrainedOut\n            );\n            generated := repairedGenerated;\n            currentConstrainedOut := repairedCurrent;\n            insideConstrainedOut := true;\n          }\n        }\n      }\n    }\n  }\n}\n\ncost := steps;",
+  "tool_choice_rationale": "This strategy preserves valid constrained spans while generating GSM-symbolic style\nreasoning. Outside a span, it samples mostly unconstrained text but lightly boosts\nthe opening delimiter token \"<<\" so symbolic names can be introduced. Inside a\nspan, it uses parser-guided constrained decoding only over valid continuations,\nwith stricter decoding when the valid continuation set is narrow. A constrained\nspan is closed only in a branch already guarded by parser.IsCompletePrefix on the\ncurrent constrained contents. EOS is always terminal. To avoid unverifiable token-\nmembership preconditions, the strategy does not use helper calls that require\nproving ad hoc token lists are in lm.Tokens.",
+  "dafny_file": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260419_222650_72b093/gsm_probe_prompt_rollback_problem_response_150_synth2048.dfy",
+  "compiled_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260419_222650_72b093/gsm_probe_prompt_rollback_problem_response_150_synth2048",
+  "total_attempts": 2,
+  "timestamp": "2026-04-19T22:34:30.473102",
+  "evaluation_result": {
+    "success": true,
+    "accuracy": 1.0,
+    "contains_delimiters": true,
+    "syntax_rate": 1.0,
+    "num_examples": 1,
+    "num_correct": 1,
+    "total_time_seconds": 421.32914662361145,
+    "error": null,
+    "sample_outputs": [
+      {
+        "question": "James and Fatima have 78 minutes to walk to the park together. It takes them 24 minutes to get to the corner where the library is. It takes them another 14 minutes to get to the cinema. How much longe",
+        "expected": "40",
+        "actual": "40",
+        "full_output": "Let n1 = 78, n2 = 78, t = 78, loc1 = park, loc2 = library, loc3 = cinema, t1 = 24, t2 = 14.\nTime used = <<t1 + t2>>\nTime remaining = <<t - (t1 + t2)>>\nThe answer is <<t - (t1 + t2)>>.",
+        "scored_output": "Let n1 = 78, n2 = 78, t = 78, loc1 = park, loc2 = library, loc3 = cinema, t1 = 24, t2 = 14.\nTime used = <<t1 + t2>>\nTime remaining = <<t - (t1 + t2)>>\nThe answer is <<t - (t1 + t2)>>.",
+        "is_correct": true,
+        "contains_delimiters": true,
+        "is_syntax_valid": true,
+        "syntax_rate": 1.0,
+        "token_count": 88,
+        "time_seconds": 278.65632677078247,
+        "helper_trace": [
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 0,
+            "cost_after": 0,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 1,
+            "cost_after": 1,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 2,
+            "cost_after": 2,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 3,
+            "cost_after": 3,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 4,
+            "cost_after": 4,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 4,
+            "cost_after": 4,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 5,
+            "cost_after": 5,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 6,
+            "cost_after": 6,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 7,
+            "cost_after": 7,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 8,
+            "cost_after": 8,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 9,
+            "cost_after": 9,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 10,
+            "cost_after": 10,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 11,
+            "cost_after": 11,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 11,
+            "cost_after": 11,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 12,
+            "cost_after": 12,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 13,
+            "cost_after": 13,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 14,
+            "cost_after": 14,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 15,
+            "cost_after": 15,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 16,
+            "cost_after": 16,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 17,
+            "cost_after": 17,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 17,
+            "cost_after": 17,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 18,
+            "cost_after": 18,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 19,
+            "cost_after": 19,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 20,
+            "cost_after": 20,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 21,
+            "cost_after": 21,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 22,
+            "cost_after": 22,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 23,
+            "cost_after": 23,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 24,
+            "cost_after": 24,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 24,
+            "cost_after": 24,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 25,
+            "cost_after": 25,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 26,
+            "cost_after": 26,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 27,
+            "cost_after": 27,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 28,
+            "cost_after": 28,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 29,
+            "cost_after": 29,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 29,
+            "cost_after": 29,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 30,
+            "cost_after": 30,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 31,
+            "cost_after": 31,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 32,
+            "cost_after": 32,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 33,
+            "cost_after": 33,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 34,
+            "cost_after": 34,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 34,
+            "cost_after": 34,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 35,
+            "cost_after": 35,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 36,
+            "cost_after": 36,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 37,
+            "cost_after": 37,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 38,
+            "cost_after": 38,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 39,
+            "cost_after": 39,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 39,
+            "cost_after": 39,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 40,
+            "cost_after": 40,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 41,
+            "cost_after": 41,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 42,
+            "cost_after": 42,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 43,
+            "cost_after": 43,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 44,
+            "cost_after": 44,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 45,
+            "cost_after": 45,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 46,
+            "cost_after": 46,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 46,
+            "cost_after": 46,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 47,
+            "cost_after": 47,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 48,
+            "cost_after": 48,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 49,
+            "cost_after": 49,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 50,
+            "cost_after": 50,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 51,
+            "cost_after": 51,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 52,
+            "cost_after": 52,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 53,
+            "cost_after": 53,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 53,
+            "cost_after": 53,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 54,
+            "cost_after": 54,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 55,
+            "cost_after": 55,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 56,
+            "cost_after": 56,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 57,
+            "cost_after": 57,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 58,
+            "cost_after": 58,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 59,
+            "cost_after": 59,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 60,
+            "cost_after": 60,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 61,
+            "cost_after": 61,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 62,
+            "cost_after": 62,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 63,
+            "cost_after": 63,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 63,
+            "cost_after": 63,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 64,
+            "cost_after": 64,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 65,
+            "cost_after": 65,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 66,
+            "cost_after": 66,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 67,
+            "cost_after": 67,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 68,
+            "cost_after": 68,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 69,
+            "cost_after": 69,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 70,
+            "cost_after": 70,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 71,
+            "cost_after": 71,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 72,
+            "cost_after": 72,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 73,
+            "cost_after": 73,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 74,
+            "cost_after": 74,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 75,
+            "cost_after": 75,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 76,
+            "cost_after": 76,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 76,
+            "cost_after": 76,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "8",
+            "detail": "tokens=['<<'], amount=8"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 77,
+            "cost_after": 77,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 78,
+            "cost_after": 78,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 79,
+            "cost_after": 79,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 80,
+            "cost_after": 80,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 81,
+            "cost_after": 81,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 82,
+            "cost_after": 82,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 83,
+            "cost_after": 83,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 84,
+            "cost_after": 84,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 85,
+            "cost_after": 85,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 86,
+            "cost_after": 86,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 87,
+            "cost_after": 87,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          },
+          {
+            "helper": "BoostTokenLogits",
+            "cost_before": 88,
+            "cost_after": 88,
+            "tokens": [
+              "<<"
+            ],
+            "amount": "2",
+            "detail": "tokens=['<<'], amount=2"
+          }
+        ]
+      }
+    ]
+  },
+  "sample_outputs": [
+    {
+      "question": "James and Fatima have 78 minutes to walk to the park together. It takes them 24 minutes to get to the corner where the library is. It takes them another 14 minutes to get to the cinema. How much longe",
+      "expected": "40",
+      "actual": "40",
+      "full_output": "Let n1 = 78, n2 = 78, t = 78, loc1 = park, loc2 = library, loc3 = cinema, t1 = 24, t2 = 14.\nTime used = <<t1 + t2>>\nTime remaining = <<t - (t1 + t2)>>\nThe answer is <<t - (t1 + t2)>>.",
+      "scored_output": "Let n1 = 78, n2 = 78, t = 78, loc1 = park, loc2 = library, loc3 = cinema, t1 = 24, t2 = 14.\nTime used = <<t1 + t2>>\nTime remaining = <<t - (t1 + t2)>>\nThe answer is <<t - (t1 + t2)>>.",
+      "is_correct": true,
+      "contains_delimiters": true,
+      "is_syntax_valid": true,
+      "syntax_rate": 1.0,
+      "token_count": 88,
+      "time_seconds": 278.65632677078247,
+      "helper_trace": [
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 0,
+          "cost_after": 0,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 1,
+          "cost_after": 1,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 2,
+          "cost_after": 2,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 3,
+          "cost_after": 3,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 4,
+          "cost_after": 4,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 4,
+          "cost_after": 4,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 5,
+          "cost_after": 5,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 6,
+          "cost_after": 6,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 7,
+          "cost_after": 7,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 8,
+          "cost_after": 8,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 9,
+          "cost_after": 9,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 10,
+          "cost_after": 10,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 11,
+          "cost_after": 11,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 11,
+          "cost_after": 11,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 12,
+          "cost_after": 12,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 13,
+          "cost_after": 13,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 14,
+          "cost_after": 14,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 15,
+          "cost_after": 15,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 16,
+          "cost_after": 16,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 17,
+          "cost_after": 17,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 17,
+          "cost_after": 17,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 18,
+          "cost_after": 18,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 19,
+          "cost_after": 19,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 20,
+          "cost_after": 20,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 21,
+          "cost_after": 21,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 22,
+          "cost_after": 22,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 23,
+          "cost_after": 23,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 24,
+          "cost_after": 24,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 24,
+          "cost_after": 24,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 25,
+          "cost_after": 25,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 26,
+          "cost_after": 26,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 27,
+          "cost_after": 27,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 28,
+          "cost_after": 28,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 29,
+          "cost_after": 29,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 29,
+          "cost_after": 29,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 30,
+          "cost_after": 30,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 31,
+          "cost_after": 31,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 32,
+          "cost_after": 32,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 33,
+          "cost_after": 33,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 34,
+          "cost_after": 34,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 34,
+          "cost_after": 34,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 35,
+          "cost_after": 35,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 36,
+          "cost_after": 36,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 37,
+          "cost_after": 37,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 38,
+          "cost_after": 38,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 39,
+          "cost_after": 39,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 39,
+          "cost_after": 39,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 40,
+          "cost_after": 40,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 41,
+          "cost_after": 41,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 42,
+          "cost_after": 42,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 43,
+          "cost_after": 43,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 44,
+          "cost_after": 44,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 45,
+          "cost_after": 45,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 46,
+          "cost_after": 46,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 46,
+          "cost_after": 46,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 47,
+          "cost_after": 47,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 48,
+          "cost_after": 48,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 49,
+          "cost_after": 49,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 50,
+          "cost_after": 50,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 51,
+          "cost_after": 51,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 52,
+          "cost_after": 52,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 53,
+          "cost_after": 53,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 53,
+          "cost_after": 53,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 54,
+          "cost_after": 54,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 55,
+          "cost_after": 55,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 56,
+          "cost_after": 56,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 57,
+          "cost_after": 57,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 58,
+          "cost_after": 58,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 59,
+          "cost_after": 59,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 60,
+          "cost_after": 60,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 61,
+          "cost_after": 61,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 62,
+          "cost_after": 62,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 63,
+          "cost_after": 63,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 63,
+          "cost_after": 63,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 64,
+          "cost_after": 64,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 65,
+          "cost_after": 65,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 66,
+          "cost_after": 66,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 67,
+          "cost_after": 67,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 68,
+          "cost_after": 68,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 69,
+          "cost_after": 69,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 70,
+          "cost_after": 70,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 71,
+          "cost_after": 71,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 72,
+          "cost_after": 72,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 73,
+          "cost_after": 73,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 74,
+          "cost_after": 74,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 75,
+          "cost_after": 75,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 76,
+          "cost_after": 76,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 76,
+          "cost_after": 76,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "8",
+          "detail": "tokens=['<<'], amount=8"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 77,
+          "cost_after": 77,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 78,
+          "cost_after": 78,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 79,
+          "cost_after": 79,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 80,
+          "cost_after": 80,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 81,
+          "cost_after": 81,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 82,
+          "cost_after": 82,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 83,
+          "cost_after": 83,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 84,
+          "cost_after": 84,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 85,
+          "cost_after": 85,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 86,
+          "cost_after": 86,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 87,
+          "cost_after": 87,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        },
+        {
+          "helper": "BoostTokenLogits",
+          "cost_before": 88,
+          "cost_after": 88,
+          "tokens": [
+            "<<"
+          ],
+          "amount": "2",
+          "detail": "tokens=['<<'], amount=2"
+        }
+      ]
+    }
+  ]
+}

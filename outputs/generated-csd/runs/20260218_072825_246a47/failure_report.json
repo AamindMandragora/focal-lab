@@ -1,0 +1,519 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with VARIABLES and numeric constants. CRITICAL RULES: 1. Every expression MUST contain at least one variable - pure numeric expressions like '2 * 2' are INVALID. Variables may appear as letter+digits (n1, x2), split letter/digit tokens (n 1, x 2), or letter-only (n, x, foo). 2. Variables represent problem values; numeric constants (12, 100) are for unit conversions and percentages. 3. The constrained windows are SHORT (typically 5-20 tokens for expressions like 'n1 + n2 * 12'). 4. The grammar is RECURSIVE but depth is BOUNDED in runtime; prefer balanced parentheses and compact expressions. 5. The grammar includes the closing delimiter '>>' - expressions must be complete and compact. 6. Avoid trivial outputs (e.g., just a single variable) unless the problem truly requires it; include necessary operators.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-18T07:35:13.689978",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 5 unconstrained tokens before switching to constrained mode to avoid trivial outputs.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 5 unconstrained tokens before switching to constrained mode to avoid trivial outputs.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:28:40.336178",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 81.85s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 313.8585090637207
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 81.85104203224182,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 * 10 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 72.27019810676575
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 10 unconstrained tokens before switching to constrained mode to allow for meaningful reasoning and ensure the expression is fully developed.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 10 unconstrained tokens before switching to constrained mode to allow for meaningful reasoning and ensure the expression is fully developed.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:30:12.076655",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 80.63s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073016_7680bf"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 292.2074794769287
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 80.63421487808228,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 * 10 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 72.32441830635071
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 15 unconstrained tokens before switching to constrained mode to allow for meaningful reasoning and ensure the expression is fully developed. Additionally, we increase the maximum number of steps to accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar. The key constraints are that every expression must contain at least one variable, use balanced parentheses, and be compact. Given these requirements, a CRANE-style generation approach is suitable. It starts unconstrained, allows for initial free-form text, and switches to constrained mode when encountering \"<<\", ensuring that the expression is completed and valid according to the grammar. We set a minimum of 15 unconstrained tokens before switching to constrained mode to allow for meaningful reasoning and ensure the expression is fully developed. Additionally, we increase the maximum number of steps to accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:31:42.945444",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 80.81s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073147_7573c5"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 295.6840991973877
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 80.80795001983643,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 *",
+            "full_output": " Let m = markers, c = crayons, r = bond paper.\nTotal cost = <<m * 8 + c * 10 + r * 13 + 8 * 10 + 4 * 10 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * 13 + 4 * 13 + 13 * 13 + 8 * ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 72.55083441734314
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:33:12.986402",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 9.35s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073317_9f5c50"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 294.1148281097412
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 9.345707893371582,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:33:31.369712",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.75s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073335_3c71af"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 383.4075927734375
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.754006862640381,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 30 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 30, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 30 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 30, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:33:48.193730",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.24s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073352_278006"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 400.5115032196045
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.236301898956299,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:34:04.466607",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.29s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073409_744e61"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 390.5365467071533
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.2884297370910645,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:34:20.864890",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.32s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073429_78cbb6"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 390.4588222503662
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.322118520736694,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 20 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:34:40.976955",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.20s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073445_0b43e4"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 386.45124435424805
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.2049360275268555,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// GSM-Symbolic reasoning requires generating short symbolic mathematical expressions with embedded reasoning windows (`<< >>`). The CRANE-style generation approach is appropriate here because it starts unconstrained, allowing for initial free-form text, then switches to constrained mode when encountering `<<`, ensuring the expression is completed and valid according to the grammar. To improve the quality of the generated expressions, we will increase the minimum number of unconstrained tokens to 25 and adjust the maximum steps to better accommodate longer expressions.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 25, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-18T07:34:57.320140",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.27s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: list index out of range",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260218_072825_246a47/gsm_crane_csd_20260218_073501_6352e7"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 391.26014709472656
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 7.2655510902404785,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "error": "list index out of range"
+          }
+        ]
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 0,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

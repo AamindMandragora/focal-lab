@@ -36,7 +36,7 @@ def run_crane_csd(
     debug_delimiters: bool = False,
     dynamic_parser=None,
     debug_csd: bool = False,
-) -> Tuple[str, int, float, List[Tuple[str, bool]]]:
+) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
 
@@ -65,12 +65,27 @@ def run_crane_csd(
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     eos_token_dafny = _dafny.Seq(eos_token_str)
+    generated_prefix = _dafny.SeqWithoutIsStrInference([])
+    current_constrained = _dafny.SeqWithoutIsStrInference([])
+
+    trace_state = env.get("csd_trace")
+    if isinstance(trace_state, dict):
+        trace_state["events"] = []
 
     result = GeneratedCSD.default__.MyCSDStrategy(
-        lm, parser, _dafny.SeqWithoutIsStrInference([]), max_steps, eos_token_dafny
+        lm,
+        parser,
+        _dafny.SeqWithoutIsStrInference([]),
+        generated_prefix,
+        False,
+        current_constrained,
+        max_steps,
+        eos_token_dafny,
     )
 
-    if isinstance(result, tuple):
+    if isinstance(result, tuple) and len(result) == 4:
+        csd_output, _inside_constrained, _current_constrained, total_cost = result
+    elif isinstance(result, tuple):
         csd_output, total_cost = result
     else:
         csd_output = result
@@ -81,11 +96,12 @@ def run_crane_csd(
     execution_time = time.time() - start_time
 
     constrained_segments: List[Tuple[str, bool]] = []
+    helper_trace = list(trace_state.get("events", [])) if isinstance(trace_state, dict) else []
 
     if debug_delimiters or debug_csd:
         print(f"  [DEBUG] Generation finished in {execution_time:.2f}s. Cost: {total_cost}. Tokens: {len(result_tokens)}")
 
-    return output_text, len(result_tokens), execution_time, constrained_segments
+    return output_text, len(result_tokens), execution_time, constrained_segments, helper_trace
 
 
 def run_unconstrained(

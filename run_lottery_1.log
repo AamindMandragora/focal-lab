@@ -1,0 +1,1990 @@
+2026-04-22 08:57:01.992432: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-04-22 08:57:02.011361: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1776848222.033699 2497568 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1776848222.040140 2497568 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1776848222.055000 2497568 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848222.055026 2497568 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848222.055028 2497568 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848222.055031 2497568 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-04-22 08:57:02.059537: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: gsm_symbolic
+  Generation model: gpt-5.4
+  Evaluation model: Qwen/Qwen2.5-Coder-14B-Instruct
+Generating initial strategy for: Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.
+
+============================================================
+Attempt 1/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// Strategy for step-by-step math solutions with arithmetic fenced by << >>.
+// The state tracks the full generated text in `generated`, whether we are
+// currently inside a constrained arithmetic span in `insideConstrainedOut`, and
+// the contents of that active span in `currentConstrainedOut`. Outside a span,
+// generation is mostly free, but if "<<" is already competitive with the
+// current argmax we proactively open a constrained span so arithmetic is more
+// likely to be emitted in the required delimiters. Inside a span, we inspect
+// parser-valid next-token options: if the active prefix is complete we close
+// with ">>"; otherwise we prefer a valid argmax token when available, and fall
+// back to constrained decoding when the unconstrained argmax would violate the
+// arithmetic parser. This tracked state lets us maintain that the constrained
+// suffix of `generated` always matches `currentConstrainedOut`, so parser-based
+// validity checks apply exactly to the text between delimiters.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branch, either we append a normal token
+//   and remain outside (implication vacuous), or we append "<<" and set
+//   currentConstrainedOut := [], which is a valid prefix by precondition. In
+//   the complete-prefix branch, CloseConstrainedSpan resets to outside, so the
+//   implication is vacuous. In the inside-span argmax-valid branch, we call
+//   AppendConstrainedToken only after IsTokenValidNext returned true, so the
+//   new constrained prefix remains valid. In the fallback constrained-step
+//   branch, if EOS is returned we break without changing state; otherwise
+//   ConstrainedStep supplies a parser-valid next token, and AppendConstrainedToken
+//   preserves validity.
+// suffix: Outside-span branches either leave insideConstrainedOut false, or
+//   after appending "<<" set currentConstrainedOut := [], whose length-0 suffix
+//   matches generated. CloseConstrainedSpan appends the closing delimiter and
+//   resets currentConstrainedOut := [], so the implication holds. Both
+//   AppendConstrainedToken branches append the same token to `generated` and to
+//   `currentConstrainedOut`, preserving the suffix equality.
+// cost: In the unconstrained raw-sampling branch we manually bump
+//   helpers.cost by 1 and also increment steps by 1. CloseConstrainedSpan bumps
+//   helpers.cost internally and we increment steps once. In the inside-span
+//   argmax-valid branch we only use queries plus AppendConstrainedToken, which
+//   does not bump helpers.cost, and then increment steps by 1, so
+//   helpers.cost <= steps still holds. In the fallback branch, ConstrainedStep
+//   bumps helpers.cost by 1 and we increment steps by 1; the subsequent append
+//   is non-bumping.
+// progress: In the unconstrained branch we append at most one token to
+//   generated. In the complete-prefix branch we append exactly the closing
+//   delimiter token once. In the inside-span argmax-valid and fallback branches
+//   we append at most one constrained token. Since steps increases by exactly 1
+//   in every non-breaking iteration, |generated| <= |generatedPrefix| + steps
+//   is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant cost == 0
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    var next := lm.ChooseNextTokenUnconstrained();
+    helpers.cost := helpers.cost + 1;
+    steps := steps + 1;
+
+    if next == eosToken {
+      break;
+    } else if openLogit >= argmaxLogit - 2.0 && next != "<<" && !Contains(next, "<<") {
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      generated := generated + [next];
+      if next == "<<" {
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+
+      if argmax != eosToken && argmaxValid {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critic disabled — going straight to Dafny verification
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3/synth_lottery_1
+
+[3/4] Skipping toy runtime check for GSM-Symbolic...
+
+[4/4] Evaluating on dataset sample...
+Loading GSM-Symbolic dataset (config=main, split=test (limit=10) (random sample) (seed=123))...
+Loaded 10 examples
+Loading model: Qwen/Qwen2.5-Coder-14B-Instruct on cuda with vLLM...
+INFO 04-22 08:57:07 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-Coder-14B-Instruct', 'trust_remote_code': True, 'max_model_len': 8192, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.85, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen2.5-Coder-14B-Instruct'}
+INFO 04-22 08:57:07 [model.py:549] Resolved architecture: Qwen2ForCausalLM
+INFO 04-22 08:57:07 [model.py:1678] Using max model len 8192
+INFO 04-22 08:57:07 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 04-22 08:57:07 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 04-22 08:57:07 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 04-22 08:57:07 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 04-22 08:57:08 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 04-22 08:57:08 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant
+2026-04-22 08:57:14.865703: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1776848234.888642 2500364 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1776848234.895323 2500364 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1776848234.910399 2500364 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848234.910422 2500364 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848234.910425 2500364 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1776848234.910427 2500364 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+(EngineCore pid=2500364) INFO 04-22 08:57:18 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen2.5-Coder-14B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-Coder-14B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=8192, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-Coder-14B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=2500364) INFO 04-22 08:57:20 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:55345 backend=nccl
+(EngineCore pid=2500364) INFO 04-22 08:57:20 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=2500364) INFO 04-22 08:57:21 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-Coder-14B-Instruct...
+(EngineCore pid=2500364) INFO 04-22 08:57:21 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=2500364) INFO 04-22 08:57:21 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:   0% Completed | 0/6 [00:00<?, ?it/s]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:  17% Completed | 1/6 [00:01<00:06,  1.37s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:  33% Completed | 2/6 [00:02<00:05,  1.45s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:  50% Completed | 3/6 [00:04<00:04,  1.49s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:  67% Completed | 4/6 [00:05<00:03,  1.52s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards:  83% Completed | 5/6 [00:07<00:01,  1.52s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards: 100% Completed | 6/6 [00:08<00:00,  1.49s/it]
+(EngineCore pid=2500364) Loading safetensors checkpoint shards: 100% Completed | 6/6 [00:08<00:00,  1.49s/it]
+(EngineCore pid=2500364) 
+(EngineCore pid=2500364) INFO 04-22 08:57:31 [default_loader.py:384] Loading weights took 9.09 seconds
+(EngineCore pid=2500364) INFO 04-22 08:57:32 [gpu_model_runner.py:4820] Model loading took 27.57 GiB memory and 9.802877 seconds
+(EngineCore pid=2500364) INFO 04-22 08:57:35 [gpu_worker.py:436] Available KV cache memory: 4.93 GiB
+(EngineCore pid=2500364) INFO 04-22 08:57:35 [kv_cache_utils.py:1319] GPU KV cache size: 26,928 tokens
+(EngineCore pid=2500364) INFO 04-22 08:57:35 [kv_cache_utils.py:1324] Maximum concurrency for 8,192 tokens per request: 3.29x
+(EngineCore pid=2500364) INFO 04-22 08:57:35 [core.py:283] init engine (profile, create kv cache, warmup model) took 3.61 seconds
+(EngineCore pid=2500364) INFO 04-22 08:57:36 [vllm.py:790] Asynchronous scheduling is enabled.
+(EngineCore pid=2500364) WARNING 04-22 08:57:36 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=2500364) WARNING 04-22 08:57:36 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=2500364) INFO 04-22 08:57:36 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=2500364) INFO 04-22 08:57:36 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant
+  [EVAL] Processing example 1/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #10, prefix length: 9
+[TIMING] after 10 GenerateLogits calls total=2.30s
+  GenerateLogits.total              1.07s  ( 46.5%)  calls=9     avg= 118.66ms
+  GenerateLogits.engine_generate    1.06s  ( 46.0%)  calls=10    avg= 105.66ms
+  ChooseNextTokenUnconstrained      0.11s  (  4.9%)  calls=9     avg=  12.44ms
+  GenerateLogits.finalize_from_dict    0.06s  (  2.4%)  calls=10    avg=   5.52ms
+  ChooseNextToken                   0.00s  (  0.2%)  calls=9     avg=   0.52ms
+  LogitsProxy.__getitem__           0.00s  (  0.1%)  calls=18    avg=   0.07ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=10    avg=   0.03ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=10    avg=   0.02ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=10    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #20, prefix length: 19
+[TIMING] after 20 GenerateLogits calls total=3.08s
+  GenerateLogits.total              1.46s  ( 47.4%)  calls=19    avg=  76.77ms
+  GenerateLogits.engine_generate    1.42s  ( 46.3%)  calls=20    avg=  71.14ms
+  ChooseNextTokenUnconstrained      0.12s  (  3.8%)  calls=19    avg=   6.16ms
+  GenerateLogits.finalize_from_dict    0.07s  (  2.2%)  calls=20    avg=   3.37ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=19    avg=   0.30ms
+  LogitsProxy.__getitem__           0.00s  (  0.1%)  calls=38    avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=20    avg=   0.04ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=20    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=20    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #30, prefix length: 29
+[TIMING] after 30 GenerateLogits calls total=3.79s
+  GenerateLogits.total              1.81s  ( 47.8%)  calls=29    avg=  62.47ms
+  GenerateLogits.engine_generate    1.76s  ( 46.6%)  calls=30    avg=  58.83ms
+  ChooseNextTokenUnconstrained      0.12s  (  3.2%)  calls=29    avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.08s  (  2.1%)  calls=30    avg=   2.62ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=29    avg=   0.23ms
+  LogitsProxy.__getitem__           0.00s  (  0.1%)  calls=58    avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=30    avg=   0.05ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=30    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=30    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #40, prefix length: 39
+[TIMING] after 40 GenerateLogits calls total=4.50s
+  GenerateLogits.total              2.16s  ( 48.1%)  calls=39    avg=  55.50ms
+  GenerateLogits.engine_generate    2.11s  ( 46.8%)  calls=40    avg=  52.65ms
+  ChooseNextTokenUnconstrained      0.13s  (  2.8%)  calls=39    avg=   3.23ms
+  GenerateLogits.finalize_from_dict    0.09s  (  1.9%)  calls=40    avg=   2.18ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=39    avg=   0.19ms
+  LogitsProxy.__getitem__           0.00s  (  0.1%)  calls=78    avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=40    avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=40    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=40    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #50, prefix length: 49
+[TIMING] after 50 GenerateLogits calls total=5.24s
+  GenerateLogits.total              2.53s  ( 48.3%)  calls=49    avg=  51.65ms
+  GenerateLogits.engine_generate    2.46s  ( 47.0%)  calls=50    avg=  49.21ms
+  ChooseNextTokenUnconstrained      0.13s  (  2.5%)  calls=49    avg=   2.67ms
+  GenerateLogits.finalize_from_dict    0.10s  (  1.9%)  calls=50    avg=   1.96ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=49    avg=   0.17ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=98    avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=50    avg=   0.07ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=50    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=50    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #60, prefix length: 59
+[TIMING] after 60 GenerateLogits calls total=5.99s
+  GenerateLogits.total              2.90s  ( 48.5%)  calls=59    avg=  49.20ms
+  GenerateLogits.engine_generate    2.82s  ( 47.1%)  calls=60    avg=  47.01ms
+  ChooseNextTokenUnconstrained      0.14s  (  2.3%)  calls=59    avg=   2.30ms
+  GenerateLogits.finalize_from_dict    0.11s  (  1.8%)  calls=60    avg=   1.82ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=59    avg=   0.16ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=118   avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=60    avg=   0.08ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=60    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=60    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #70, prefix length: 69
+[TIMING] after 70 GenerateLogits calls total=6.74s
+  GenerateLogits.total              3.27s  ( 48.5%)  calls=69    avg=  47.38ms
+  GenerateLogits.engine_generate    3.18s  ( 47.2%)  calls=70    avg=  45.43ms
+  ChooseNextTokenUnconstrained      0.14s  (  2.1%)  calls=69    avg=   2.04ms
+  GenerateLogits.finalize_from_dict    0.12s  (  1.8%)  calls=70    avg=   1.73ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=69    avg=   0.15ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=138   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=70    avg=   0.09ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=70    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=70    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #80, prefix length: 79
+[TIMING] after 80 GenerateLogits calls total=7.50s
+  GenerateLogits.total              3.65s  ( 48.7%)  calls=79    avg=  46.21ms
+  GenerateLogits.engine_generate    3.54s  ( 47.2%)  calls=80    avg=  44.22ms
+  ChooseNextTokenUnconstrained      0.15s  (  1.9%)  calls=79    avg=   1.85ms
+  GenerateLogits.finalize_from_dict    0.13s  (  1.8%)  calls=80    avg=   1.67ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=79    avg=   0.14ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=158   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=80    avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=80    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=80    avg=   0.00ms
+[STEP_BREAKDOWN] wall=7.65s  lm_callbacks=7.91s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=7.91s
+  GenerateLogits.total              3.87s  ( 48.9%)  calls=85    avg=  45.53ms
+  GenerateLogits.engine_generate    3.72s  ( 47.0%)  calls=85    avg=  43.71ms
+  ChooseNextTokenUnconstrained      0.15s  (  1.9%)  calls=85    avg=   1.75ms
+  GenerateLogits.finalize_from_dict    0.14s  (  1.8%)  calls=85    avg=   1.64ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=85    avg=   0.14ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=170   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=85    avg=   0.12ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=85    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=85    avg=   0.00ms
+  [EVAL]   Generated 84 tokens in 8.92s
+  [EVAL] Processing example 2/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #90, prefix length: 4
+[TIMING] after 90 GenerateLogits calls total=8.27s
+  GenerateLogits.total              4.03s  ( 48.8%)  calls=89    avg=  45.34ms
+  GenerateLogits.engine_generate    3.91s  ( 47.2%)  calls=90    avg=  43.42ms
+  ChooseNextTokenUnconstrained      0.15s  (  1.8%)  calls=89    avg=   1.70ms
+  GenerateLogits.finalize_from_dict    0.15s  (  1.8%)  calls=90    avg=   1.61ms
+  ChooseNextToken                   0.01s  (  0.2%)  calls=89    avg=   0.14ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=178   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=90    avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=90    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=90    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #100, prefix length: 14
+[TIMING] after 100 GenerateLogits calls total=8.99s
+  GenerateLogits.total              4.39s  ( 48.8%)  calls=99    avg=  44.35ms
+  GenerateLogits.engine_generate    4.25s  ( 47.3%)  calls=100   avg=  42.52ms
+  GenerateLogits.finalize_from_dict    0.16s  (  1.7%)  calls=100   avg=   1.56ms
+  ChooseNextTokenUnconstrained      0.16s  (  1.7%)  calls=99    avg=   1.57ms
+  ChooseNextToken                   0.01s  (  0.1%)  calls=99    avg=   0.13ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=198   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=100   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=100   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=100   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #110, prefix length: 24
+[TIMING] after 110 GenerateLogits calls total=9.74s
+  GenerateLogits.total              4.76s  ( 48.8%)  calls=109   avg=  43.63ms
+  GenerateLogits.engine_generate    4.61s  ( 47.4%)  calls=110   avg=  41.93ms
+  GenerateLogits.finalize_from_dict    0.17s  (  1.7%)  calls=110   avg=   1.53ms
+  ChooseNextTokenUnconstrained      0.16s  (  1.6%)  calls=109   avg=   1.47ms
+  ChooseNextToken                   0.01s  (  0.1%)  calls=109   avg=   0.13ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=218   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=110   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=110   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=110   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #120, prefix length: 34
+[TIMING] after 120 GenerateLogits calls total=10.48s
+  GenerateLogits.total              5.13s  ( 48.9%)  calls=119   avg=  43.11ms
+  GenerateLogits.engine_generate    4.96s  ( 47.3%)  calls=120   avg=  41.36ms
+  GenerateLogits.finalize_from_dict    0.18s  (  1.7%)  calls=120   avg=   1.50ms
+  ChooseNextTokenUnconstrained      0.16s  (  1.6%)  calls=119   avg=   1.38ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=119   avg=   0.13ms
+  LogitsProxy.__getitem__           0.01s  (  0.1%)  calls=238   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=120   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=120   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=120   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #130, prefix length: 44
+[TIMING] after 130 GenerateLogits calls total=11.22s
+  GenerateLogits.total              5.50s  ( 49.0%)  calls=129   avg=  42.60ms
+  GenerateLogits.engine_generate    5.32s  ( 47.4%)  calls=130   avg=  40.90ms
+  GenerateLogits.finalize_from_dict    0.19s  (  1.7%)  calls=130   avg=   1.46ms
+  ChooseNextTokenUnconstrained      0.17s  (  1.5%)  calls=129   avg=   1.31ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=129   avg=   0.13ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=258   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=130   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=130   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=130   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #140, prefix length: 54
+[TIMING] after 140 GenerateLogits calls total=11.95s
+  GenerateLogits.total              5.86s  ( 49.0%)  calls=139   avg=  42.13ms
+  GenerateLogits.engine_generate    5.67s  ( 47.4%)  calls=140   avg=  40.47ms
+  GenerateLogits.finalize_from_dict    0.20s  (  1.7%)  calls=140   avg=   1.43ms
+  ChooseNextTokenUnconstrained      0.17s  (  1.5%)  calls=139   avg=   1.25ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=139   avg=   0.12ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=278   avg=   0.06ms
+  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=140   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=140   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=140   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #150, prefix length: 64
+[TIMING] after 150 GenerateLogits calls total=12.69s
+  GenerateLogits.total              6.22s  ( 49.0%)  calls=149   avg=  41.78ms
+  GenerateLogits.engine_generate    6.02s  ( 47.5%)  calls=150   avg=  40.17ms
+  GenerateLogits.finalize_from_dict    0.21s  (  1.7%)  calls=150   avg=   1.40ms
+  ChooseNextTokenUnconstrained      0.18s  (  1.4%)  calls=149   avg=   1.20ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=149   avg=   0.12ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=298   avg=   0.06ms
+  GenerateLogits.prefix_text        0.02s  (  0.1%)  calls=150   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=150   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=150   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #160, prefix length: 74
+[TIMING] after 160 GenerateLogits calls total=13.45s
+  GenerateLogits.total              6.60s  ( 49.1%)  calls=159   avg=  41.51ms
+  GenerateLogits.engine_generate    6.39s  ( 47.5%)  calls=160   avg=  39.91ms
+  GenerateLogits.finalize_from_dict    0.22s  (  1.6%)  calls=160   avg=   1.38ms
+  ChooseNextTokenUnconstrained      0.18s  (  1.4%)  calls=159   avg=   1.15ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=159   avg=   0.12ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=318   avg=   0.06ms
+  GenerateLogits.prefix_text        0.02s  (  0.1%)  calls=160   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=160   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=160   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #170, prefix length: 84
+[TIMING] after 170 GenerateLogits calls total=14.17s
+  GenerateLogits.total              6.96s  ( 49.1%)  calls=169   avg=  41.16ms
+  GenerateLogits.engine_generate    6.73s  ( 47.5%)  calls=170   avg=  39.59ms
+  GenerateLogits.finalize_from_dict    0.23s  (  1.6%)  calls=170   avg=   1.35ms
+  ChooseNextTokenUnconstrained      0.19s  (  1.3%)  calls=169   avg=   1.11ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=169   avg=   0.12ms
+  GenerateLogits.prefix_text        0.02s  (  0.1%)  calls=170   avg=   0.11ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=338   avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=170   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=170   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #180, prefix length: 94
+[TIMING] after 180 GenerateLogits calls total=14.95s
+  GenerateLogits.total              7.34s  ( 49.1%)  calls=179   avg=  41.03ms
+  GenerateLogits.engine_generate    7.11s  ( 47.5%)  calls=180   avg=  39.48ms
+  GenerateLogits.finalize_from_dict    0.24s  (  1.6%)  calls=180   avg=   1.33ms
+  ChooseNextTokenUnconstrained      0.19s  (  1.3%)  calls=179   avg=   1.07ms
+  GenerateLogits.prefix_text        0.02s  (  0.1%)  calls=180   avg=   0.12ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=179   avg=   0.12ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=358   avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=180   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=180   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #190, prefix length: 104
+[TIMING] after 190 GenerateLogits calls total=15.72s
+  GenerateLogits.total              7.72s  ( 49.1%)  calls=189   avg=  40.86ms
+  GenerateLogits.engine_generate    7.48s  ( 47.6%)  calls=190   avg=  39.36ms
+  GenerateLogits.finalize_from_dict    0.25s  (  1.6%)  calls=190   avg=   1.33ms
+  ChooseNextTokenUnconstrained      0.20s  (  1.3%)  calls=189   avg=   1.04ms
+  GenerateLogits.prefix_text        0.02s  (  0.2%)  calls=190   avg=   0.13ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=189   avg=   0.11ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=378   avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=190   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=190   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #200, prefix length: 114
+[TIMING] after 200 GenerateLogits calls total=16.52s
+  GenerateLogits.total              8.12s  ( 49.2%)  calls=199   avg=  40.82ms
+  GenerateLogits.engine_generate    7.86s  ( 47.5%)  calls=200   avg=  39.28ms
+  GenerateLogits.finalize_from_dict    0.26s  (  1.6%)  calls=200   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.20s  (  1.2%)  calls=199   avg=   1.02ms
+  GenerateLogits.prefix_text        0.03s  (  0.2%)  calls=200   avg=   0.14ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=199   avg=   0.11ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=398   avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=200   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=200   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #210, prefix length: 124
+[TIMING] after 210 GenerateLogits calls total=17.39s
+  GenerateLogits.total              8.55s  ( 49.2%)  calls=209   avg=  40.92ms
+  GenerateLogits.engine_generate    8.27s  ( 47.6%)  calls=210   avg=  39.39ms
+  GenerateLogits.finalize_from_dict    0.28s  (  1.6%)  calls=210   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.21s  (  1.2%)  calls=209   avg=   0.99ms
+  GenerateLogits.prefix_text        0.03s  (  0.2%)  calls=210   avg=   0.15ms
+  ChooseNextToken                   0.02s  (  0.1%)  calls=209   avg=   0.11ms
+  LogitsProxy.__getitem__           0.02s  (  0.1%)  calls=418   avg=   0.06ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=210   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=210   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #220, prefix length: 134
+[TIMING] after 220 GenerateLogits calls total=18.28s
+  GenerateLogits.total              8.99s  ( 49.2%)  calls=219   avg=  41.06ms
+  GenerateLogits.engine_generate    8.69s  ( 47.6%)  calls=220   avg=  39.51ms
+  GenerateLogits.finalize_from_dict    0.29s  (  1.6%)  calls=220   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.21s  (  1.2%)  calls=219   avg=   0.97ms
+  GenerateLogits.prefix_text        0.04s  (  0.2%)  calls=220   avg=   0.16ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=438   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=219   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=220   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=220   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #230, prefix length: 144
+[TIMING] after 230 GenerateLogits calls total=19.14s
+  GenerateLogits.total              9.42s  ( 49.2%)  calls=229   avg=  41.14ms
+  GenerateLogits.engine_generate    9.10s  ( 47.5%)  calls=230   avg=  39.58ms
+  GenerateLogits.finalize_from_dict    0.30s  (  1.6%)  calls=230   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.22s  (  1.1%)  calls=229   avg=   0.95ms
+  GenerateLogits.prefix_text        0.04s  (  0.2%)  calls=230   avg=   0.17ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=458   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=229   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=230   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=230   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #240, prefix length: 154
+[TIMING] after 240 GenerateLogits calls total=20.00s
+  GenerateLogits.total              9.85s  ( 49.2%)  calls=239   avg=  41.21ms
+  GenerateLogits.engine_generate    9.51s  ( 47.5%)  calls=240   avg=  39.62ms
+  GenerateLogits.finalize_from_dict    0.32s  (  1.6%)  calls=240   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.22s  (  1.1%)  calls=239   avg=   0.92ms
+  GenerateLogits.prefix_text        0.04s  (  0.2%)  calls=240   avg=   0.18ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=478   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=239   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=240   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=240   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #250, prefix length: 164
+[TIMING] after 250 GenerateLogits calls total=20.87s
+  GenerateLogits.total             10.28s  ( 49.2%)  calls=249   avg=  41.28ms
+  GenerateLogits.engine_generate    9.92s  ( 47.5%)  calls=250   avg=  39.69ms
+  GenerateLogits.finalize_from_dict    0.33s  (  1.6%)  calls=250   avg=   1.32ms
+  ChooseNextTokenUnconstrained      0.23s  (  1.1%)  calls=249   avg=   0.91ms
+  GenerateLogits.prefix_text        0.05s  (  0.2%)  calls=250   avg=   0.19ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=498   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=249   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=250   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=250   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #260, prefix length: 174
+[TIMING] after 260 GenerateLogits calls total=21.72s
+  GenerateLogits.total             10.70s  ( 49.3%)  calls=259   avg=  41.32ms
+  GenerateLogits.engine_generate   10.33s  ( 47.6%)  calls=260   avg=  39.72ms
+  GenerateLogits.finalize_from_dict    0.34s  (  1.6%)  calls=260   avg=   1.31ms
+  ChooseNextTokenUnconstrained      0.23s  (  1.1%)  calls=259   avg=   0.89ms
+  GenerateLogits.prefix_text        0.05s  (  0.2%)  calls=260   avg=   0.20ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=518   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=259   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=260   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=260   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #270, prefix length: 184
+[TIMING] after 270 GenerateLogits calls total=22.59s
+  GenerateLogits.total             11.13s  ( 49.3%)  calls=269   avg=  41.38ms
+  GenerateLogits.engine_generate   10.74s  ( 47.5%)  calls=270   avg=  39.77ms
+  GenerateLogits.finalize_from_dict    0.35s  (  1.6%)  calls=270   avg=   1.31ms
+  ChooseNextTokenUnconstrained      0.23s  (  1.0%)  calls=269   avg=   0.87ms
+  GenerateLogits.prefix_text        0.06s  (  0.3%)  calls=270   avg=   0.22ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=538   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=269   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=270   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=270   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #280, prefix length: 194
+[TIMING] after 280 GenerateLogits calls total=23.41s
+  GenerateLogits.total             11.54s  ( 49.3%)  calls=279   avg=  41.36ms
+  GenerateLogits.engine_generate   11.12s  ( 47.5%)  calls=280   avg=  39.73ms
+  GenerateLogits.finalize_from_dict    0.37s  (  1.6%)  calls=280   avg=   1.31ms
+  ChooseNextTokenUnconstrained      0.24s  (  1.0%)  calls=279   avg=   0.86ms
+  GenerateLogits.prefix_text        0.06s  (  0.3%)  calls=280   avg=   0.23ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=558   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=279   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=280   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=280   avg=   0.00ms
+[STEP_BREAKDOWN] wall=13.86s  lm_callbacks=23.85s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=23.85s
+  GenerateLogits.total             11.78s  ( 49.4%)  calls=285   avg=  41.33ms
+  GenerateLogits.engine_generate   11.32s  ( 47.5%)  calls=285   avg=  39.71ms
+  GenerateLogits.finalize_from_dict    0.37s  (  1.6%)  calls=285   avg=   1.31ms
+  ChooseNextTokenUnconstrained      0.24s  (  1.0%)  calls=285   avg=   0.85ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=285   avg=   0.23ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=570   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=285   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=285   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=285   avg=   0.00ms
+  [EVAL]   Generated 200 tokens in 14.63s
+  [EVAL] Processing example 3/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #290, prefix length: 4
+[TIMING] after 290 GenerateLogits calls total=24.29s
+  GenerateLogits.total             11.98s  ( 49.3%)  calls=289   avg=  41.44ms
+  GenerateLogits.engine_generate   11.55s  ( 47.5%)  calls=290   avg=  39.82ms
+  GenerateLogits.finalize_from_dict    0.38s  (  1.6%)  calls=290   avg=   1.31ms
+  ChooseNextTokenUnconstrained      0.25s  (  1.0%)  calls=289   avg=   0.85ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=290   avg=   0.23ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=578   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=289   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=290   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=290   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #300, prefix length: 14
+[TIMING] after 300 GenerateLogits calls total=25.06s
+  GenerateLogits.total             12.36s  ( 49.3%)  calls=299   avg=  41.34ms
+  GenerateLogits.engine_generate   11.92s  ( 47.5%)  calls=300   avg=  39.72ms
+  GenerateLogits.finalize_from_dict    0.39s  (  1.6%)  calls=300   avg=   1.30ms
+  ChooseNextTokenUnconstrained      0.25s  (  1.0%)  calls=299   avg=   0.84ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=300   avg=   0.22ms
+  LogitsProxy.__getitem__           0.03s  (  0.1%)  calls=598   avg=   0.06ms
+  ChooseNextToken                   0.03s  (  0.1%)  calls=299   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=300   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=300   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #310, prefix length: 24
+[TIMING] after 310 GenerateLogits calls total=25.82s
+  GenerateLogits.total             12.74s  ( 49.3%)  calls=309   avg=  41.21ms
+  GenerateLogits.engine_generate   12.28s  ( 47.6%)  calls=310   avg=  39.61ms
+  GenerateLogits.finalize_from_dict    0.40s  (  1.6%)  calls=310   avg=   1.30ms
+  ChooseNextTokenUnconstrained      0.26s  (  1.0%)  calls=309   avg=   0.83ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=310   avg=   0.22ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=618   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=309   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=310   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=310   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #320, prefix length: 34
+[TIMING] after 320 GenerateLogits calls total=26.59s
+  GenerateLogits.total             13.11s  ( 49.3%)  calls=319   avg=  41.10ms
+  GenerateLogits.engine_generate   12.64s  ( 47.6%)  calls=320   avg=  39.52ms
+  GenerateLogits.finalize_from_dict    0.42s  (  1.6%)  calls=320   avg=   1.30ms
+  ChooseNextTokenUnconstrained      0.26s  (  1.0%)  calls=319   avg=   0.82ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=320   avg=   0.21ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=638   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=319   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=320   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=320   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #330, prefix length: 44
+[TIMING] after 330 GenerateLogits calls total=27.30s
+  GenerateLogits.total             13.47s  ( 49.3%)  calls=329   avg=  40.94ms
+  GenerateLogits.engine_generate   12.98s  ( 47.6%)  calls=330   avg=  39.33ms
+  GenerateLogits.finalize_from_dict    0.42s  (  1.6%)  calls=330   avg=   1.29ms
+  ChooseNextTokenUnconstrained      0.27s  (  1.0%)  calls=329   avg=   0.81ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=330   avg=   0.21ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=658   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=329   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=330   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=330   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #340, prefix length: 54
+[TIMING] after 340 GenerateLogits calls total=27.93s
+  GenerateLogits.total             13.78s  ( 49.3%)  calls=339   avg=  40.66ms
+  GenerateLogits.engine_generate   13.29s  ( 47.6%)  calls=340   avg=  39.08ms
+  GenerateLogits.finalize_from_dict    0.43s  (  1.5%)  calls=340   avg=   1.27ms
+  ChooseNextTokenUnconstrained      0.27s  (  1.0%)  calls=339   avg=   0.80ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=340   avg=   0.21ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=678   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=339   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=340   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=340   avg=   0.00ms
+[STEP_BREAKDOWN] wall=3.57s  lm_callbacks=28.21s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=28.21s
+  GenerateLogits.total             13.94s  ( 49.4%)  calls=344   avg=  40.52ms
+  GenerateLogits.engine_generate   13.41s  ( 47.5%)  calls=344   avg=  38.97ms
+  GenerateLogits.finalize_from_dict    0.43s  (  1.5%)  calls=344   avg=   1.26ms
+  ChooseNextTokenUnconstrained      0.27s  (  1.0%)  calls=344   avg=   0.80ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=344   avg=   0.21ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=688   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=344   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=344   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=344   avg=   0.00ms
+  [EVAL]   Generated 58 tokens in 5.02s
+  [EVAL] Processing example 4/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #350, prefix length: 5
+[TIMING] after 350 GenerateLogits calls total=28.58s
+  GenerateLogits.total             14.10s  ( 49.4%)  calls=349   avg=  40.41ms
+  GenerateLogits.engine_generate   13.60s  ( 47.6%)  calls=350   avg=  38.85ms
+  GenerateLogits.finalize_from_dict    0.44s  (  1.5%)  calls=350   avg=   1.25ms
+  ChooseNextTokenUnconstrained      0.28s  (  1.0%)  calls=349   avg=   0.79ms
+  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=350   avg=   0.20ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=698   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=349   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=350   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=350   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #360, prefix length: 15
+[TIMING] after 360 GenerateLogits calls total=29.19s
+  GenerateLogits.total             14.41s  ( 49.4%)  calls=359   avg=  40.13ms
+  GenerateLogits.engine_generate   13.89s  ( 47.6%)  calls=360   avg=  38.59ms
+  GenerateLogits.finalize_from_dict    0.45s  (  1.5%)  calls=360   avg=   1.24ms
+  ChooseNextTokenUnconstrained      0.28s  (  1.0%)  calls=359   avg=   0.78ms
+  GenerateLogits.prefix_text        0.07s  (  0.2%)  calls=360   avg=   0.20ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=718   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=359   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=360   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=360   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #370, prefix length: 25
+[TIMING] after 370 GenerateLogits calls total=29.83s
+  GenerateLogits.total             14.72s  ( 49.4%)  calls=369   avg=  39.90ms
+  GenerateLogits.engine_generate   14.20s  ( 47.6%)  calls=370   avg=  38.38ms
+  GenerateLogits.finalize_from_dict    0.45s  (  1.5%)  calls=370   avg=   1.22ms
+  ChooseNextTokenUnconstrained      0.29s  (  1.0%)  calls=369   avg=   0.77ms
+  GenerateLogits.prefix_text        0.07s  (  0.2%)  calls=370   avg=   0.20ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=738   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=369   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=370   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=370   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #380, prefix length: 35
+[TIMING] after 380 GenerateLogits calls total=30.44s
+  GenerateLogits.total             15.03s  ( 49.4%)  calls=379   avg=  39.65ms
+  GenerateLogits.engine_generate   14.50s  ( 47.6%)  calls=380   avg=  38.15ms
+  GenerateLogits.finalize_from_dict    0.46s  (  1.5%)  calls=380   avg=   1.21ms
+  ChooseNextTokenUnconstrained      0.29s  (  1.0%)  calls=379   avg=   0.77ms
+  GenerateLogits.prefix_text        0.07s  (  0.2%)  calls=380   avg=   0.19ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=758   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=379   avg=   0.11ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=380   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=380   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #390, prefix length: 45
+[TIMING] after 390 GenerateLogits calls total=31.06s
+  GenerateLogits.total             15.34s  ( 49.4%)  calls=389   avg=  39.42ms
+  GenerateLogits.engine_generate   14.80s  ( 47.6%)  calls=390   avg=  37.94ms
+  GenerateLogits.finalize_from_dict    0.47s  (  1.5%)  calls=390   avg=   1.19ms
+  ChooseNextTokenUnconstrained      0.29s  (  0.9%)  calls=389   avg=   0.76ms
+  GenerateLogits.prefix_text        0.07s  (  0.2%)  calls=390   avg=   0.19ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=778   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=389   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=390   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=390   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #400, prefix length: 55
+[TIMING] after 400 GenerateLogits calls total=31.74s
+  GenerateLogits.total             15.67s  ( 49.4%)  calls=399   avg=  39.27ms
+  GenerateLogits.engine_generate   15.12s  ( 47.7%)  calls=400   avg=  37.81ms
+  GenerateLogits.finalize_from_dict    0.47s  (  1.5%)  calls=400   avg=   1.19ms
+  ChooseNextTokenUnconstrained      0.30s  (  0.9%)  calls=399   avg=   0.75ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=400   avg=   0.19ms
+  LogitsProxy.__getitem__           0.04s  (  0.1%)  calls=798   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=399   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=400   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=400   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #410, prefix length: 65
+[TIMING] after 410 GenerateLogits calls total=32.50s
+  GenerateLogits.total             16.05s  ( 49.4%)  calls=409   avg=  39.23ms
+  GenerateLogits.engine_generate   15.49s  ( 47.7%)  calls=410   avg=  37.78ms
+  GenerateLogits.finalize_from_dict    0.49s  (  1.5%)  calls=410   avg=   1.19ms
+  ChooseNextTokenUnconstrained      0.30s  (  0.9%)  calls=409   avg=   0.74ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=410   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=818   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=409   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=410   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=410   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #420, prefix length: 75
+[TIMING] after 420 GenerateLogits calls total=33.23s
+  GenerateLogits.total             16.41s  ( 49.4%)  calls=419   avg=  39.16ms
+  GenerateLogits.engine_generate   15.83s  ( 47.7%)  calls=420   avg=  37.70ms
+  GenerateLogits.finalize_from_dict    0.50s  (  1.5%)  calls=420   avg=   1.18ms
+  ChooseNextTokenUnconstrained      0.31s  (  0.9%)  calls=419   avg=   0.74ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=420   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=838   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=419   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=420   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=420   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #430, prefix length: 85
+[TIMING] after 430 GenerateLogits calls total=33.92s
+  GenerateLogits.total             16.75s  ( 49.4%)  calls=429   avg=  39.05ms
+  GenerateLogits.engine_generate   16.17s  ( 47.7%)  calls=430   avg=  37.60ms
+  GenerateLogits.finalize_from_dict    0.51s  (  1.5%)  calls=430   avg=   1.18ms
+  ChooseNextTokenUnconstrained      0.31s  (  0.9%)  calls=429   avg=   0.73ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=430   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=858   avg=   0.06ms
+  ChooseNextToken                   0.04s  (  0.1%)  calls=429   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=430   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=430   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #440, prefix length: 95
+[TIMING] after 440 GenerateLogits calls total=34.66s
+  GenerateLogits.total             17.12s  ( 49.4%)  calls=439   avg=  38.99ms
+  GenerateLogits.engine_generate   16.52s  ( 47.7%)  calls=440   avg=  37.55ms
+  GenerateLogits.finalize_from_dict    0.52s  (  1.5%)  calls=440   avg=   1.18ms
+  ChooseNextTokenUnconstrained      0.32s  (  0.9%)  calls=439   avg=   0.72ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=440   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=878   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=439   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=440   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=440   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #450, prefix length: 105
+[TIMING] after 450 GenerateLogits calls total=35.39s
+  GenerateLogits.total             17.48s  ( 49.4%)  calls=449   avg=  38.93ms
+  GenerateLogits.engine_generate   16.87s  ( 47.7%)  calls=450   avg=  37.49ms
+  GenerateLogits.finalize_from_dict    0.53s  (  1.5%)  calls=450   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.32s  (  0.9%)  calls=449   avg=   0.72ms
+  GenerateLogits.prefix_text        0.08s  (  0.2%)  calls=450   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=898   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=449   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=450   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=450   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #460, prefix length: 115
+[TIMING] after 460 GenerateLogits calls total=36.10s
+  GenerateLogits.total             17.83s  ( 49.4%)  calls=459   avg=  38.85ms
+  GenerateLogits.engine_generate   17.21s  ( 47.7%)  calls=460   avg=  37.41ms
+  GenerateLogits.finalize_from_dict    0.54s  (  1.5%)  calls=460   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.33s  (  0.9%)  calls=459   avg=   0.71ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=460   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=918   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=459   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=460   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=460   avg=   0.00ms
+[STEP_BREAKDOWN] wall=6.63s  lm_callbacks=36.65s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=36.65s
+  GenerateLogits.total             18.12s  ( 49.4%)  calls=467   avg=  38.80ms
+  GenerateLogits.engine_generate   17.45s  ( 47.6%)  calls=467   avg=  37.37ms
+  GenerateLogits.finalize_from_dict    0.55s  (  1.5%)  calls=467   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.33s  (  0.9%)  calls=467   avg=   0.71ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=467   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=934   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=467   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=467   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=467   avg=   0.00ms
+  [EVAL]   Generated 122 tokens in 7.40s
+  [EVAL] Processing example 5/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #470, prefix length: 2
+[TIMING] after 470 GenerateLogits calls total=36.87s
+  GenerateLogits.total             18.21s  ( 49.4%)  calls=469   avg=  38.83ms
+  GenerateLogits.engine_generate   17.58s  ( 47.7%)  calls=470   avg=  37.40ms
+  GenerateLogits.finalize_from_dict    0.55s  (  1.5%)  calls=470   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.33s  (  0.9%)  calls=469   avg=   0.71ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=470   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=938   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=469   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=470   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=470   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #480, prefix length: 12
+[TIMING] after 480 GenerateLogits calls total=37.61s
+  GenerateLogits.total             18.58s  ( 49.4%)  calls=479   avg=  38.79ms
+  GenerateLogits.engine_generate   17.93s  ( 47.7%)  calls=480   avg=  37.35ms
+  GenerateLogits.finalize_from_dict    0.56s  (  1.5%)  calls=480   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.34s  (  0.9%)  calls=479   avg=   0.70ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=480   avg=   0.19ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=958   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=479   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=480   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=480   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #490, prefix length: 22
+[TIMING] after 490 GenerateLogits calls total=38.38s
+  GenerateLogits.total             18.96s  ( 49.4%)  calls=489   avg=  38.77ms
+  GenerateLogits.engine_generate   18.29s  ( 47.7%)  calls=490   avg=  37.34ms
+  GenerateLogits.finalize_from_dict    0.57s  (  1.5%)  calls=490   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.34s  (  0.9%)  calls=489   avg=   0.70ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=490   avg=   0.18ms
+  LogitsProxy.__getitem__           0.05s  (  0.1%)  calls=978   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=489   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=490   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=490   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #500, prefix length: 32
+[TIMING] after 500 GenerateLogits calls total=39.12s
+  GenerateLogits.total             19.32s  ( 49.4%)  calls=499   avg=  38.73ms
+  GenerateLogits.engine_generate   18.65s  ( 47.7%)  calls=500   avg=  37.31ms
+  GenerateLogits.finalize_from_dict    0.58s  (  1.5%)  calls=500   avg=   1.17ms
+  ChooseNextTokenUnconstrained      0.35s  (  0.9%)  calls=499   avg=   0.69ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=500   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=998   avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=499   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=500   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=500   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #510, prefix length: 42
+[TIMING] after 510 GenerateLogits calls total=39.88s
+  GenerateLogits.total             19.70s  ( 49.4%)  calls=509   avg=  38.71ms
+  GenerateLogits.engine_generate   19.01s  ( 47.7%)  calls=510   avg=  37.28ms
+  GenerateLogits.finalize_from_dict    0.59s  (  1.5%)  calls=510   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.35s  (  0.9%)  calls=509   avg=   0.69ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=510   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1018  avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=509   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=510   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=510   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #520, prefix length: 52
+[TIMING] after 520 GenerateLogits calls total=40.63s
+  GenerateLogits.total             20.07s  ( 49.4%)  calls=519   avg=  38.68ms
+  GenerateLogits.engine_generate   19.37s  ( 47.7%)  calls=520   avg=  37.26ms
+  GenerateLogits.finalize_from_dict    0.60s  (  1.5%)  calls=520   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.35s  (  0.9%)  calls=519   avg=   0.68ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=520   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1038  avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=519   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=520   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=520   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #530, prefix length: 62
+[TIMING] after 530 GenerateLogits calls total=41.39s
+  GenerateLogits.total             20.45s  ( 49.4%)  calls=529   avg=  38.66ms
+  GenerateLogits.engine_generate   19.74s  ( 47.7%)  calls=530   avg=  37.25ms
+  GenerateLogits.finalize_from_dict    0.61s  (  1.5%)  calls=530   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.36s  (  0.9%)  calls=529   avg=   0.68ms
+  GenerateLogits.prefix_text        0.09s  (  0.2%)  calls=530   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1058  avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=529   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=530   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=530   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #540, prefix length: 72
+[TIMING] after 540 GenerateLogits calls total=42.14s
+  GenerateLogits.total             20.82s  ( 49.4%)  calls=539   avg=  38.63ms
+  GenerateLogits.engine_generate   20.10s  ( 47.7%)  calls=540   avg=  37.23ms
+  GenerateLogits.finalize_from_dict    0.63s  (  1.5%)  calls=540   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.36s  (  0.9%)  calls=539   avg=   0.68ms
+  GenerateLogits.prefix_text        0.10s  (  0.2%)  calls=540   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1078  avg=   0.06ms
+  ChooseNextToken                   0.05s  (  0.1%)  calls=539   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=540   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=540   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #550, prefix length: 82
+[TIMING] after 550 GenerateLogits calls total=42.89s
+  GenerateLogits.total             21.19s  ( 49.4%)  calls=549   avg=  38.60ms
+  GenerateLogits.engine_generate   20.46s  ( 47.7%)  calls=550   avg=  37.19ms
+  GenerateLogits.finalize_from_dict    0.64s  (  1.5%)  calls=550   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.37s  (  0.9%)  calls=549   avg=   0.67ms
+  GenerateLogits.prefix_text        0.10s  (  0.2%)  calls=550   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1098  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=549   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=550   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=550   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #560, prefix length: 92
+[TIMING] after 560 GenerateLogits calls total=43.66s
+  GenerateLogits.total             21.58s  ( 49.4%)  calls=559   avg=  38.60ms
+  GenerateLogits.engine_generate   20.82s  ( 47.7%)  calls=560   avg=  37.18ms
+  GenerateLogits.finalize_from_dict    0.65s  (  1.5%)  calls=560   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.37s  (  0.9%)  calls=559   avg=   0.67ms
+  GenerateLogits.prefix_text        0.10s  (  0.2%)  calls=560   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1118  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=559   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=560   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=560   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #570, prefix length: 102
+[TIMING] after 570 GenerateLogits calls total=44.42s
+  GenerateLogits.total             21.95s  ( 49.4%)  calls=569   avg=  38.58ms
+  GenerateLogits.engine_generate   21.18s  ( 47.7%)  calls=570   avg=  37.17ms
+  GenerateLogits.finalize_from_dict    0.66s  (  1.5%)  calls=570   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.38s  (  0.9%)  calls=569   avg=   0.67ms
+  GenerateLogits.prefix_text        0.10s  (  0.2%)  calls=570   avg=   0.18ms
+  LogitsProxy.__getitem__           0.06s  (  0.1%)  calls=1138  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=569   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.0%)  calls=570   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=570   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #580, prefix length: 112
+[TIMING] after 580 GenerateLogits calls total=45.18s
+  GenerateLogits.total             22.33s  ( 49.4%)  calls=579   avg=  38.57ms
+  GenerateLogits.engine_generate   21.55s  ( 47.7%)  calls=580   avg=  37.15ms
+  GenerateLogits.finalize_from_dict    0.67s  (  1.5%)  calls=580   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.38s  (  0.9%)  calls=579   avg=   0.66ms
+  GenerateLogits.prefix_text        0.11s  (  0.2%)  calls=580   avg=   0.18ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1158  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=579   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=580   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=580   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #590, prefix length: 122
+[TIMING] after 590 GenerateLogits calls total=45.96s
+  GenerateLogits.total             22.72s  ( 49.4%)  calls=589   avg=  38.57ms
+  GenerateLogits.engine_generate   21.92s  ( 47.7%)  calls=590   avg=  37.15ms
+  GenerateLogits.finalize_from_dict    0.68s  (  1.5%)  calls=590   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.39s  (  0.8%)  calls=589   avg=   0.66ms
+  GenerateLogits.prefix_text        0.11s  (  0.2%)  calls=590   avg=   0.19ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1178  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=589   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=590   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=590   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #600, prefix length: 132
+[TIMING] after 600 GenerateLogits calls total=46.69s
+  GenerateLogits.total             23.08s  ( 49.4%)  calls=599   avg=  38.53ms
+  GenerateLogits.engine_generate   22.27s  ( 47.7%)  calls=600   avg=  37.11ms
+  GenerateLogits.finalize_from_dict    0.69s  (  1.5%)  calls=600   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.39s  (  0.8%)  calls=599   avg=   0.66ms
+  GenerateLogits.prefix_text        0.11s  (  0.2%)  calls=600   avg=   0.19ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1198  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=599   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=600   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=600   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #610, prefix length: 142
+[TIMING] after 610 GenerateLogits calls total=47.44s
+  GenerateLogits.total             23.45s  ( 49.4%)  calls=609   avg=  38.51ms
+  GenerateLogits.engine_generate   22.62s  ( 47.7%)  calls=610   avg=  37.08ms
+  GenerateLogits.finalize_from_dict    0.71s  (  1.5%)  calls=610   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.40s  (  0.8%)  calls=609   avg=   0.65ms
+  GenerateLogits.prefix_text        0.12s  (  0.2%)  calls=610   avg=   0.19ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1218  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=609   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=610   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=610   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #620, prefix length: 152
+[TIMING] after 620 GenerateLogits calls total=48.22s
+  GenerateLogits.total             23.83s  ( 49.4%)  calls=619   avg=  38.50ms
+  GenerateLogits.engine_generate   22.99s  ( 47.7%)  calls=620   avg=  37.09ms
+  GenerateLogits.finalize_from_dict    0.72s  (  1.5%)  calls=620   avg=   1.16ms
+  ChooseNextTokenUnconstrained      0.40s  (  0.8%)  calls=619   avg=   0.65ms
+  GenerateLogits.prefix_text        0.12s  (  0.3%)  calls=620   avg=   0.20ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1238  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=619   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=620   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=620   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #630, prefix length: 162
+[TIMING] after 630 GenerateLogits calls total=48.98s
+  GenerateLogits.total             24.21s  ( 49.4%)  calls=629   avg=  38.50ms
+  GenerateLogits.engine_generate   23.36s  ( 47.7%)  calls=630   avg=  37.07ms
+  GenerateLogits.finalize_from_dict    0.73s  (  1.5%)  calls=630   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.41s  (  0.8%)  calls=629   avg=   0.65ms
+  GenerateLogits.prefix_text        0.13s  (  0.3%)  calls=630   avg=   0.20ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1258  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=629   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=630   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=630   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #640, prefix length: 172
+[TIMING] after 640 GenerateLogits calls total=49.75s
+  GenerateLogits.total             24.60s  ( 49.4%)  calls=639   avg=  38.50ms
+  GenerateLogits.engine_generate   23.72s  ( 47.7%)  calls=640   avg=  37.07ms
+  GenerateLogits.finalize_from_dict    0.74s  (  1.5%)  calls=640   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.41s  (  0.8%)  calls=639   avg=   0.65ms
+  GenerateLogits.prefix_text        0.13s  (  0.3%)  calls=640   avg=   0.20ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1278  avg=   0.06ms
+  ChooseNextToken                   0.06s  (  0.1%)  calls=639   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=640   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=640   avg=   0.00ms
+[STEP_BREAKDOWN] wall=13.41s  lm_callbacks=50.47s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=50.47s
+  GenerateLogits.total             24.97s  ( 49.5%)  calls=649   avg=  38.48ms
+  GenerateLogits.engine_generate   24.04s  ( 47.6%)  calls=649   avg=  37.05ms
+  GenerateLogits.finalize_from_dict    0.75s  (  1.5%)  calls=649   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.42s  (  0.8%)  calls=649   avg=   0.64ms
+  GenerateLogits.prefix_text        0.13s  (  0.3%)  calls=649   avg=   0.21ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1298  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=649   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=649   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=649   avg=   0.00ms
+  [EVAL]   Generated 181 tokens in 13.92s
+  [EVAL] Processing example 6/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #650, prefix length: 0
+[TIMING] after 650 GenerateLogits calls total=50.54s
+  GenerateLogits.total             24.97s  ( 49.4%)  calls=649   avg=  38.48ms
+  GenerateLogits.engine_generate   24.12s  ( 47.7%)  calls=650   avg=  37.10ms
+  GenerateLogits.finalize_from_dict    0.75s  (  1.5%)  calls=650   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.42s  (  0.8%)  calls=649   avg=   0.64ms
+  GenerateLogits.prefix_text        0.13s  (  0.3%)  calls=650   avg=   0.21ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1298  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=649   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=650   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=650   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #660, prefix length: 10
+[TIMING] after 660 GenerateLogits calls total=51.38s
+  GenerateLogits.total             25.40s  ( 49.4%)  calls=659   avg=  38.55ms
+  GenerateLogits.engine_generate   24.50s  ( 47.7%)  calls=660   avg=  37.12ms
+  GenerateLogits.finalize_from_dict    0.76s  (  1.5%)  calls=660   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.42s  (  0.8%)  calls=659   avg=   0.64ms
+  GenerateLogits.prefix_text        0.13s  (  0.3%)  calls=660   avg=   0.20ms
+  LogitsProxy.__getitem__           0.07s  (  0.1%)  calls=1318  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=659   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=660   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=660   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #670, prefix length: 20
+[TIMING] after 670 GenerateLogits calls total=52.10s
+  GenerateLogits.total             25.76s  ( 49.4%)  calls=669   avg=  38.51ms
+  GenerateLogits.engine_generate   24.84s  ( 47.7%)  calls=670   avg=  37.08ms
+  GenerateLogits.finalize_from_dict    0.77s  (  1.5%)  calls=670   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.43s  (  0.8%)  calls=669   avg=   0.64ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=670   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1338  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=669   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=670   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=670   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #680, prefix length: 30
+[TIMING] after 680 GenerateLogits calls total=52.80s
+  GenerateLogits.total             26.11s  ( 49.5%)  calls=679   avg=  38.45ms
+  GenerateLogits.engine_generate   25.18s  ( 47.7%)  calls=680   avg=  37.03ms
+  GenerateLogits.finalize_from_dict    0.78s  (  1.5%)  calls=680   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.43s  (  0.8%)  calls=679   avg=   0.64ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=680   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1358  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=679   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=680   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=680   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #690, prefix length: 40
+[TIMING] after 690 GenerateLogits calls total=53.58s
+  GenerateLogits.total             26.49s  ( 49.4%)  calls=689   avg=  38.45ms
+  GenerateLogits.engine_generate   25.56s  ( 47.7%)  calls=690   avg=  37.04ms
+  GenerateLogits.finalize_from_dict    0.79s  (  1.5%)  calls=690   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.44s  (  0.8%)  calls=689   avg=   0.63ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=690   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1378  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=689   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=690   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=690   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #700, prefix length: 50
+[TIMING] after 700 GenerateLogits calls total=54.31s
+  GenerateLogits.total             26.86s  ( 49.5%)  calls=699   avg=  38.43ms
+  GenerateLogits.engine_generate   25.90s  ( 47.7%)  calls=700   avg=  37.01ms
+  GenerateLogits.finalize_from_dict    0.80s  (  1.5%)  calls=700   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.44s  (  0.8%)  calls=699   avg=   0.63ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=700   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1398  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=699   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=700   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=700   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #710, prefix length: 60
+[TIMING] after 710 GenerateLogits calls total=55.06s
+  GenerateLogits.total             27.23s  ( 49.5%)  calls=709   avg=  38.40ms
+  GenerateLogits.engine_generate   26.26s  ( 47.7%)  calls=710   avg=  36.98ms
+  GenerateLogits.finalize_from_dict    0.81s  (  1.5%)  calls=710   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.45s  (  0.8%)  calls=709   avg=   0.63ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=710   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1418  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=709   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=710   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=710   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #720, prefix length: 70
+[TIMING] after 720 GenerateLogits calls total=55.80s
+  GenerateLogits.total             27.60s  ( 49.5%)  calls=719   avg=  38.38ms
+  GenerateLogits.engine_generate   26.61s  ( 47.7%)  calls=720   avg=  36.96ms
+  GenerateLogits.finalize_from_dict    0.83s  (  1.5%)  calls=720   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.45s  (  0.8%)  calls=719   avg=   0.63ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=720   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1438  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=719   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=720   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=720   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #730, prefix length: 80
+[TIMING] after 730 GenerateLogits calls total=56.57s
+  GenerateLogits.total             27.98s  ( 49.5%)  calls=729   avg=  38.38ms
+  GenerateLogits.engine_generate   26.98s  ( 47.7%)  calls=730   avg=  36.96ms
+  GenerateLogits.finalize_from_dict    0.84s  (  1.5%)  calls=730   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.46s  (  0.8%)  calls=729   avg=   0.62ms
+  GenerateLogits.prefix_text        0.14s  (  0.3%)  calls=730   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1458  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=729   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=730   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=730   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #740, prefix length: 90
+[TIMING] after 740 GenerateLogits calls total=57.33s
+  GenerateLogits.total             28.35s  ( 49.5%)  calls=739   avg=  38.37ms
+  GenerateLogits.engine_generate   27.34s  ( 47.7%)  calls=740   avg=  36.95ms
+  GenerateLogits.finalize_from_dict    0.85s  (  1.5%)  calls=740   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.46s  (  0.8%)  calls=739   avg=   0.62ms
+  GenerateLogits.prefix_text        0.15s  (  0.3%)  calls=740   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1478  avg=   0.06ms
+  ChooseNextToken                   0.07s  (  0.1%)  calls=739   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=740   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=740   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #750, prefix length: 100
+[TIMING] after 750 GenerateLogits calls total=58.09s
+  GenerateLogits.total             28.73s  ( 49.5%)  calls=749   avg=  38.36ms
+  GenerateLogits.engine_generate   27.70s  ( 47.7%)  calls=750   avg=  36.94ms
+  GenerateLogits.finalize_from_dict    0.86s  (  1.5%)  calls=750   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.46s  (  0.8%)  calls=749   avg=   0.62ms
+  GenerateLogits.prefix_text        0.15s  (  0.3%)  calls=750   avg=   0.20ms
+  LogitsProxy.__getitem__           0.08s  (  0.1%)  calls=1498  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=749   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=750   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=750   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #760, prefix length: 110
+[TIMING] after 760 GenerateLogits calls total=58.84s
+  GenerateLogits.total             29.11s  ( 49.5%)  calls=759   avg=  38.35ms
+  GenerateLogits.engine_generate   28.06s  ( 47.7%)  calls=760   avg=  36.92ms
+  GenerateLogits.finalize_from_dict    0.87s  (  1.5%)  calls=760   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.47s  (  0.8%)  calls=759   avg=   0.62ms
+  GenerateLogits.prefix_text        0.15s  (  0.3%)  calls=760   avg=   0.20ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1518  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=759   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=760   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=760   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #770, prefix length: 120
+[TIMING] after 770 GenerateLogits calls total=59.62s
+  GenerateLogits.total             29.49s  ( 49.5%)  calls=769   avg=  38.35ms
+  GenerateLogits.engine_generate   28.43s  ( 47.7%)  calls=770   avg=  36.93ms
+  GenerateLogits.finalize_from_dict    0.88s  (  1.5%)  calls=770   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.47s  (  0.8%)  calls=769   avg=   0.62ms
+  GenerateLogits.prefix_text        0.15s  (  0.3%)  calls=770   avg=   0.20ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1538  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=769   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=770   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=770   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #780, prefix length: 130
+[TIMING] after 780 GenerateLogits calls total=60.40s
+  GenerateLogits.total             29.88s  ( 49.5%)  calls=779   avg=  38.35ms
+  GenerateLogits.engine_generate   28.81s  ( 47.7%)  calls=780   avg=  36.93ms
+  GenerateLogits.finalize_from_dict    0.89s  (  1.5%)  calls=780   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.48s  (  0.8%)  calls=779   avg=   0.61ms
+  GenerateLogits.prefix_text        0.16s  (  0.3%)  calls=780   avg=   0.20ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1558  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=779   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=780   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=780   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #790, prefix length: 140
+[TIMING] after 790 GenerateLogits calls total=61.16s
+  GenerateLogits.total             30.26s  ( 49.5%)  calls=789   avg=  38.35ms
+  GenerateLogits.engine_generate   29.17s  ( 47.7%)  calls=790   avg=  36.93ms
+  GenerateLogits.finalize_from_dict    0.90s  (  1.5%)  calls=790   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.48s  (  0.8%)  calls=789   avg=   0.61ms
+  GenerateLogits.prefix_text        0.16s  (  0.3%)  calls=790   avg=   0.20ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1578  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=789   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=790   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=790   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #800, prefix length: 150
+[TIMING] after 800 GenerateLogits calls total=61.95s
+  GenerateLogits.total             30.64s  ( 49.5%)  calls=799   avg=  38.35ms
+  GenerateLogits.engine_generate   29.55s  ( 47.7%)  calls=800   avg=  36.94ms
+  GenerateLogits.finalize_from_dict    0.91s  (  1.5%)  calls=800   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.49s  (  0.8%)  calls=799   avg=   0.61ms
+  GenerateLogits.prefix_text        0.17s  (  0.3%)  calls=800   avg=   0.21ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1598  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=799   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=800   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=800   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #810, prefix length: 160
+[TIMING] after 810 GenerateLogits calls total=62.80s
+  GenerateLogits.total             31.07s  ( 49.5%)  calls=809   avg=  38.40ms
+  GenerateLogits.engine_generate   29.96s  ( 47.7%)  calls=810   avg=  36.99ms
+  GenerateLogits.finalize_from_dict    0.92s  (  1.5%)  calls=810   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.49s  (  0.8%)  calls=809   avg=   0.61ms
+  GenerateLogits.prefix_text        0.17s  (  0.3%)  calls=810   avg=   0.21ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1618  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=809   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=810   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=810   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #820, prefix length: 170
+[TIMING] after 820 GenerateLogits calls total=63.69s
+  GenerateLogits.total             31.50s  ( 49.5%)  calls=819   avg=  38.47ms
+  GenerateLogits.engine_generate   30.38s  ( 47.7%)  calls=820   avg=  37.05ms
+  GenerateLogits.finalize_from_dict    0.94s  (  1.5%)  calls=820   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.50s  (  0.8%)  calls=819   avg=   0.61ms
+  GenerateLogits.prefix_text        0.17s  (  0.3%)  calls=820   avg=   0.21ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1638  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=819   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=820   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=820   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #830, prefix length: 180
+[TIMING] after 830 GenerateLogits calls total=64.47s
+  GenerateLogits.total             31.90s  ( 49.5%)  calls=829   avg=  38.47ms
+  GenerateLogits.engine_generate   30.74s  ( 47.7%)  calls=830   avg=  37.04ms
+  GenerateLogits.finalize_from_dict    0.95s  (  1.5%)  calls=830   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.50s  (  0.8%)  calls=829   avg=   0.61ms
+  GenerateLogits.prefix_text        0.18s  (  0.3%)  calls=830   avg=   0.22ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1658  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=829   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=830   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=830   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #840, prefix length: 190
+[TIMING] after 840 GenerateLogits calls total=65.24s
+  GenerateLogits.total             32.28s  ( 49.5%)  calls=839   avg=  38.48ms
+  GenerateLogits.engine_generate   31.11s  ( 47.7%)  calls=840   avg=  37.04ms
+  GenerateLogits.finalize_from_dict    0.96s  (  1.5%)  calls=840   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.51s  (  0.8%)  calls=839   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=840   avg=   0.22ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1678  avg=   0.06ms
+  ChooseNextToken                   0.08s  (  0.1%)  calls=839   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=840   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=840   avg=   0.00ms
+[STEP_BREAKDOWN] wall=12.36s  lm_callbacks=65.98s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=65.98s
+  GenerateLogits.total             32.67s  ( 49.5%)  calls=849   avg=  38.48ms
+  GenerateLogits.engine_generate   31.45s  ( 47.7%)  calls=849   avg=  37.04ms
+  GenerateLogits.finalize_from_dict    0.97s  (  1.5%)  calls=849   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.51s  (  0.8%)  calls=849   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=849   avg=   0.22ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1698  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=849   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=849   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=849   avg=   0.00ms
+  [EVAL]   Generated 200 tokens in 13.77s
+  [EVAL] Processing example 7/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #850, prefix length: 0
+[TIMING] after 850 GenerateLogits calls total=66.03s
+  GenerateLogits.total             32.67s  ( 49.5%)  calls=849   avg=  38.48ms
+  GenerateLogits.engine_generate   31.49s  ( 47.7%)  calls=850   avg=  37.05ms
+  GenerateLogits.finalize_from_dict    0.97s  (  1.5%)  calls=850   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.51s  (  0.8%)  calls=849   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=850   avg=   0.22ms
+  LogitsProxy.__getitem__           0.09s  (  0.1%)  calls=1698  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=849   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=850   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=850   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #860, prefix length: 10
+[TIMING] after 860 GenerateLogits calls total=66.82s
+  GenerateLogits.total             33.06s  ( 49.5%)  calls=859   avg=  38.48ms
+  GenerateLogits.engine_generate   31.86s  ( 47.7%)  calls=860   avg=  37.05ms
+  GenerateLogits.finalize_from_dict    0.98s  (  1.5%)  calls=860   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.52s  (  0.8%)  calls=859   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=860   avg=   0.22ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1718  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=859   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=860   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=860   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #870, prefix length: 20
+[TIMING] after 870 GenerateLogits calls total=67.57s
+  GenerateLogits.total             33.43s  ( 49.5%)  calls=869   avg=  38.47ms
+  GenerateLogits.engine_generate   32.22s  ( 47.7%)  calls=870   avg=  37.04ms
+  GenerateLogits.finalize_from_dict    0.99s  (  1.5%)  calls=870   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.52s  (  0.8%)  calls=869   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=870   avg=   0.22ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1738  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=869   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=870   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=870   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #880, prefix length: 30
+[TIMING] after 880 GenerateLogits calls total=68.34s
+  GenerateLogits.total             33.81s  ( 49.5%)  calls=879   avg=  38.47ms
+  GenerateLogits.engine_generate   32.59s  ( 47.7%)  calls=880   avg=  37.03ms
+  GenerateLogits.finalize_from_dict    1.01s  (  1.5%)  calls=880   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.53s  (  0.8%)  calls=879   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=880   avg=   0.22ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1758  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=879   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=880   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=880   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #890, prefix length: 40
+[TIMING] after 890 GenerateLogits calls total=69.06s
+  GenerateLogits.total             34.17s  ( 49.5%)  calls=889   avg=  38.44ms
+  GenerateLogits.engine_generate   32.94s  ( 47.7%)  calls=890   avg=  37.01ms
+  GenerateLogits.finalize_from_dict    1.02s  (  1.5%)  calls=890   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.53s  (  0.8%)  calls=889   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=890   avg=   0.22ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1778  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=889   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=890   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=890   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #900, prefix length: 50
+[TIMING] after 900 GenerateLogits calls total=69.80s
+  GenerateLogits.total             34.54s  ( 49.5%)  calls=899   avg=  38.42ms
+  GenerateLogits.engine_generate   33.29s  ( 47.7%)  calls=900   avg=  36.99ms
+  GenerateLogits.finalize_from_dict    1.03s  (  1.5%)  calls=900   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.54s  (  0.8%)  calls=899   avg=   0.60ms
+  GenerateLogits.prefix_text        0.19s  (  0.3%)  calls=900   avg=   0.22ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1798  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=899   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=900   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=900   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #910, prefix length: 60
+[TIMING] after 910 GenerateLogits calls total=70.54s
+  GenerateLogits.total             34.91s  ( 49.5%)  calls=909   avg=  38.40ms
+  GenerateLogits.engine_generate   33.64s  ( 47.7%)  calls=910   avg=  36.96ms
+  GenerateLogits.finalize_from_dict    1.04s  (  1.5%)  calls=910   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.54s  (  0.8%)  calls=909   avg=   0.59ms
+  GenerateLogits.prefix_text        0.20s  (  0.3%)  calls=910   avg=   0.21ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1818  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=909   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=910   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=910   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #920, prefix length: 70
+[TIMING] after 920 GenerateLogits calls total=71.26s
+  GenerateLogits.total             35.27s  ( 49.5%)  calls=919   avg=  38.37ms
+  GenerateLogits.engine_generate   33.98s  ( 47.7%)  calls=920   avg=  36.94ms
+  GenerateLogits.finalize_from_dict    1.05s  (  1.5%)  calls=920   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.54s  (  0.8%)  calls=919   avg=   0.59ms
+  GenerateLogits.prefix_text        0.20s  (  0.3%)  calls=920   avg=   0.21ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1838  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=919   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=920   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=920   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #930, prefix length: 80
+[TIMING] after 930 GenerateLogits calls total=71.99s
+  GenerateLogits.total             35.63s  ( 49.5%)  calls=929   avg=  38.35ms
+  GenerateLogits.engine_generate   34.33s  ( 47.7%)  calls=930   avg=  36.92ms
+  GenerateLogits.finalize_from_dict    1.06s  (  1.5%)  calls=930   avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.55s  (  0.8%)  calls=929   avg=   0.59ms
+  GenerateLogits.prefix_text        0.20s  (  0.3%)  calls=930   avg=   0.21ms
+  LogitsProxy.__getitem__           0.10s  (  0.1%)  calls=1858  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=929   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=930   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=930   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #940, prefix length: 90
+[TIMING] after 940 GenerateLogits calls total=72.74s
+  GenerateLogits.total             35.99s  ( 49.5%)  calls=939   avg=  38.33ms
+  GenerateLogits.engine_generate   34.69s  ( 47.7%)  calls=940   avg=  36.90ms
+  GenerateLogits.finalize_from_dict    1.08s  (  1.5%)  calls=940   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.55s  (  0.8%)  calls=939   avg=   0.59ms
+  GenerateLogits.prefix_text        0.20s  (  0.3%)  calls=940   avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1878  avg=   0.06ms
+  ChooseNextToken                   0.09s  (  0.1%)  calls=939   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=940   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=940   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #950, prefix length: 100
+[TIMING] after 950 GenerateLogits calls total=73.53s
+  GenerateLogits.total             36.39s  ( 49.5%)  calls=949   avg=  38.35ms
+  GenerateLogits.engine_generate   35.06s  ( 47.7%)  calls=950   avg=  36.91ms
+  GenerateLogits.finalize_from_dict    1.09s  (  1.5%)  calls=950   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.56s  (  0.8%)  calls=949   avg=   0.59ms
+  GenerateLogits.prefix_text        0.20s  (  0.3%)  calls=950   avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1898  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=949   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=950   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=950   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #960, prefix length: 110
+[TIMING] after 960 GenerateLogits calls total=74.27s
+  GenerateLogits.total             36.76s  ( 49.5%)  calls=959   avg=  38.33ms
+  GenerateLogits.engine_generate   35.42s  ( 47.7%)  calls=960   avg=  36.89ms
+  GenerateLogits.finalize_from_dict    1.10s  (  1.5%)  calls=960   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.56s  (  0.8%)  calls=959   avg=   0.59ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=960   avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1918  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=959   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.0%)  calls=960   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=960   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #970, prefix length: 120
+[TIMING] after 970 GenerateLogits calls total=75.02s
+  GenerateLogits.total             37.13s  ( 49.5%)  calls=969   avg=  38.32ms
+  GenerateLogits.engine_generate   35.77s  ( 47.7%)  calls=970   avg=  36.88ms
+  GenerateLogits.finalize_from_dict    1.11s  (  1.5%)  calls=970   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.57s  (  0.8%)  calls=969   avg=   0.59ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=970   avg=   0.22ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1938  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=969   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=970   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=970   avg=   0.00ms
+[STEP_BREAKDOWN] wall=7.97s  lm_callbacks=75.43s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=75.43s
+  GenerateLogits.total             37.35s  ( 49.5%)  calls=975   avg=  38.31ms
+  GenerateLogits.engine_generate   35.95s  ( 47.7%)  calls=975   avg=  36.87ms
+  GenerateLogits.finalize_from_dict    1.12s  (  1.5%)  calls=975   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.57s  (  0.8%)  calls=975   avg=   0.59ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=975   avg=   0.22ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1950  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=975   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=975   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=975   avg=   0.00ms
+  [EVAL]   Generated 125 tokens in 8.77s
+  [EVAL] Processing example 8/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #980, prefix length: 4
+[TIMING] after 980 GenerateLogits calls total=75.79s
+  GenerateLogits.total             37.51s  ( 49.5%)  calls=979   avg=  38.31ms
+  GenerateLogits.engine_generate   36.14s  ( 47.7%)  calls=980   avg=  36.88ms
+  GenerateLogits.finalize_from_dict    1.12s  (  1.5%)  calls=980   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.57s  (  0.8%)  calls=979   avg=   0.59ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=980   avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1958  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=979   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=980   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=980   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #990, prefix length: 14
+[TIMING] after 990 GenerateLogits calls total=76.50s
+  GenerateLogits.total             37.86s  ( 49.5%)  calls=989   avg=  38.28ms
+  GenerateLogits.engine_generate   36.48s  ( 47.7%)  calls=990   avg=  36.85ms
+  GenerateLogits.finalize_from_dict    1.13s  (  1.5%)  calls=990   avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.58s  (  0.8%)  calls=989   avg=   0.58ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=990   avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1978  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=989   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=990   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=990   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1000, prefix length: 24
+[TIMING] after 1000 GenerateLogits calls total=77.23s
+  GenerateLogits.total             38.22s  ( 49.5%)  calls=999   avg=  38.26ms
+  GenerateLogits.engine_generate   36.83s  ( 47.7%)  calls=1000  avg=  36.83ms
+  GenerateLogits.finalize_from_dict    1.15s  (  1.5%)  calls=1000  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.58s  (  0.8%)  calls=999   avg=   0.58ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=1000  avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=1998  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=999   avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1000  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1000  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1010, prefix length: 34
+[TIMING] after 1010 GenerateLogits calls total=78.00s
+  GenerateLogits.total             38.60s  ( 49.5%)  calls=1009  avg=  38.26ms
+  GenerateLogits.engine_generate   37.19s  ( 47.7%)  calls=1010  avg=  36.83ms
+  GenerateLogits.finalize_from_dict    1.16s  (  1.5%)  calls=1010  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.59s  (  0.8%)  calls=1009  avg=   0.58ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=1010  avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=2018  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=1009  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1010  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1010  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1020, prefix length: 44
+[TIMING] after 1020 GenerateLogits calls total=78.71s
+  GenerateLogits.total             38.96s  ( 49.5%)  calls=1019  avg=  38.23ms
+  GenerateLogits.engine_generate   37.54s  ( 47.7%)  calls=1020  avg=  36.80ms
+  GenerateLogits.finalize_from_dict    1.17s  (  1.5%)  calls=1020  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.59s  (  0.8%)  calls=1019  avg=   0.58ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=1020  avg=   0.21ms
+  LogitsProxy.__getitem__           0.11s  (  0.1%)  calls=2038  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=1019  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1020  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1020  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1030, prefix length: 54
+[TIMING] after 1030 GenerateLogits calls total=79.45s
+  GenerateLogits.total             39.32s  ( 49.5%)  calls=1029  avg=  38.21ms
+  GenerateLogits.engine_generate   37.89s  ( 47.7%)  calls=1030  avg=  36.79ms
+  GenerateLogits.finalize_from_dict    1.18s  (  1.5%)  calls=1030  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.60s  (  0.8%)  calls=1029  avg=   0.58ms
+  GenerateLogits.prefix_text        0.21s  (  0.3%)  calls=1030  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2058  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=1029  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1030  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1030  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1040, prefix length: 64
+[TIMING] after 1040 GenerateLogits calls total=80.19s
+  GenerateLogits.total             39.69s  ( 49.5%)  calls=1039  avg=  38.20ms
+  GenerateLogits.engine_generate   38.24s  ( 47.7%)  calls=1040  avg=  36.77ms
+  GenerateLogits.finalize_from_dict    1.19s  (  1.5%)  calls=1040  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.60s  (  0.7%)  calls=1039  avg=   0.58ms
+  GenerateLogits.prefix_text        0.22s  (  0.3%)  calls=1040  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2078  avg=   0.06ms
+  ChooseNextToken                   0.10s  (  0.1%)  calls=1039  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1040  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1040  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1050, prefix length: 74
+[TIMING] after 1050 GenerateLogits calls total=80.94s
+  GenerateLogits.total             40.06s  ( 49.5%)  calls=1049  avg=  38.19ms
+  GenerateLogits.engine_generate   38.60s  ( 47.7%)  calls=1050  avg=  36.76ms
+  GenerateLogits.finalize_from_dict    1.20s  (  1.5%)  calls=1050  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.61s  (  0.7%)  calls=1049  avg=   0.58ms
+  GenerateLogits.prefix_text        0.22s  (  0.3%)  calls=1050  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2098  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1049  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1050  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1050  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1060, prefix length: 84
+[TIMING] after 1060 GenerateLogits calls total=81.67s
+  GenerateLogits.total             40.42s  ( 49.5%)  calls=1059  avg=  38.17ms
+  GenerateLogits.engine_generate   38.95s  ( 47.7%)  calls=1060  avg=  36.74ms
+  GenerateLogits.finalize_from_dict    1.21s  (  1.5%)  calls=1060  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.61s  (  0.7%)  calls=1059  avg=   0.58ms
+  GenerateLogits.prefix_text        0.22s  (  0.3%)  calls=1060  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2118  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1059  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1060  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1060  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1070, prefix length: 94
+[TIMING] after 1070 GenerateLogits calls total=82.42s
+  GenerateLogits.total             40.80s  ( 49.5%)  calls=1069  avg=  38.16ms
+  GenerateLogits.engine_generate   39.31s  ( 47.7%)  calls=1070  avg=  36.73ms
+  GenerateLogits.finalize_from_dict    1.22s  (  1.5%)  calls=1070  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.61s  (  0.7%)  calls=1069  avg=   0.57ms
+  GenerateLogits.prefix_text        0.22s  (  0.3%)  calls=1070  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2138  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1069  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1070  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1070  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1080, prefix length: 104
+[TIMING] after 1080 GenerateLogits calls total=83.15s
+  GenerateLogits.total             41.16s  ( 49.5%)  calls=1079  avg=  38.14ms
+  GenerateLogits.engine_generate   39.65s  ( 47.7%)  calls=1080  avg=  36.72ms
+  GenerateLogits.finalize_from_dict    1.24s  (  1.5%)  calls=1080  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.62s  (  0.7%)  calls=1079  avg=   0.57ms
+  GenerateLogits.prefix_text        0.22s  (  0.3%)  calls=1080  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2158  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1079  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1080  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1080  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1090, prefix length: 114
+[TIMING] after 1090 GenerateLogits calls total=83.87s
+  GenerateLogits.total             41.52s  ( 49.5%)  calls=1089  avg=  38.12ms
+  GenerateLogits.engine_generate   40.00s  ( 47.7%)  calls=1090  avg=  36.70ms
+  GenerateLogits.finalize_from_dict    1.25s  (  1.5%)  calls=1090  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.62s  (  0.7%)  calls=1089  avg=   0.57ms
+  GenerateLogits.prefix_text        0.23s  (  0.3%)  calls=1090  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2178  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1089  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1090  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1090  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1100, prefix length: 124
+[TIMING] after 1100 GenerateLogits calls total=84.62s
+  GenerateLogits.total             41.89s  ( 49.5%)  calls=1099  avg=  38.11ms
+  GenerateLogits.engine_generate   40.35s  ( 47.7%)  calls=1100  avg=  36.69ms
+  GenerateLogits.finalize_from_dict    1.26s  (  1.5%)  calls=1100  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.63s  (  0.7%)  calls=1099  avg=   0.57ms
+  GenerateLogits.prefix_text        0.23s  (  0.3%)  calls=1100  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2198  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1099  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1100  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1100  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1110, prefix length: 134
+[TIMING] after 1110 GenerateLogits calls total=85.37s
+  GenerateLogits.total             42.26s  ( 49.5%)  calls=1109  avg=  38.10ms
+  GenerateLogits.engine_generate   40.71s  ( 47.7%)  calls=1110  avg=  36.67ms
+  GenerateLogits.finalize_from_dict    1.27s  (  1.5%)  calls=1110  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.63s  (  0.7%)  calls=1109  avg=   0.57ms
+  GenerateLogits.prefix_text        0.23s  (  0.3%)  calls=1110  avg=   0.21ms
+  LogitsProxy.__getitem__           0.12s  (  0.1%)  calls=2218  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1109  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1110  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1110  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1120, prefix length: 144
+[TIMING] after 1120 GenerateLogits calls total=86.13s
+  GenerateLogits.total             42.64s  ( 49.5%)  calls=1119  avg=  38.10ms
+  GenerateLogits.engine_generate   41.07s  ( 47.7%)  calls=1120  avg=  36.67ms
+  GenerateLogits.finalize_from_dict    1.28s  (  1.5%)  calls=1120  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.64s  (  0.7%)  calls=1119  avg=   0.57ms
+  GenerateLogits.prefix_text        0.24s  (  0.3%)  calls=1120  avg=   0.21ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2238  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1119  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1120  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1120  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1130, prefix length: 154
+[TIMING] after 1130 GenerateLogits calls total=86.91s
+  GenerateLogits.total             43.02s  ( 49.5%)  calls=1129  avg=  38.10ms
+  GenerateLogits.engine_generate   41.44s  ( 47.7%)  calls=1130  avg=  36.67ms
+  GenerateLogits.finalize_from_dict    1.29s  (  1.5%)  calls=1130  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.64s  (  0.7%)  calls=1129  avg=   0.57ms
+  GenerateLogits.prefix_text        0.24s  (  0.3%)  calls=1130  avg=   0.21ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2258  avg=   0.06ms
+  ChooseNextToken                   0.11s  (  0.1%)  calls=1129  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1130  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1130  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1140, prefix length: 164
+[TIMING] after 1140 GenerateLogits calls total=87.69s
+  GenerateLogits.total             43.41s  ( 49.5%)  calls=1139  avg=  38.11ms
+  GenerateLogits.engine_generate   41.81s  ( 47.7%)  calls=1140  avg=  36.68ms
+  GenerateLogits.finalize_from_dict    1.31s  (  1.5%)  calls=1140  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.65s  (  0.7%)  calls=1139  avg=   0.57ms
+  GenerateLogits.prefix_text        0.25s  (  0.3%)  calls=1140  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2278  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1139  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1140  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1140  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1150, prefix length: 174
+[TIMING] after 1150 GenerateLogits calls total=88.50s
+  GenerateLogits.total             43.81s  ( 49.5%)  calls=1149  avg=  38.13ms
+  GenerateLogits.engine_generate   42.19s  ( 47.7%)  calls=1150  avg=  36.69ms
+  GenerateLogits.finalize_from_dict    1.32s  (  1.5%)  calls=1150  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.65s  (  0.7%)  calls=1149  avg=   0.57ms
+  GenerateLogits.prefix_text        0.25s  (  0.3%)  calls=1150  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2298  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1149  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1150  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1150  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1160, prefix length: 184
+[TIMING] after 1160 GenerateLogits calls total=89.30s
+  GenerateLogits.total             44.21s  ( 49.5%)  calls=1159  avg=  38.14ms
+  GenerateLogits.engine_generate   42.57s  ( 47.7%)  calls=1160  avg=  36.70ms
+  GenerateLogits.finalize_from_dict    1.33s  (  1.5%)  calls=1160  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.66s  (  0.7%)  calls=1159  avg=   0.57ms
+  GenerateLogits.prefix_text        0.25s  (  0.3%)  calls=1160  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2318  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1159  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1160  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1160  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1170, prefix length: 194
+[TIMING] after 1170 GenerateLogits calls total=90.08s
+  GenerateLogits.total             44.59s  ( 49.5%)  calls=1169  avg=  38.14ms
+  GenerateLogits.engine_generate   42.94s  ( 47.7%)  calls=1170  avg=  36.70ms
+  GenerateLogits.finalize_from_dict    1.34s  (  1.5%)  calls=1170  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.66s  (  0.7%)  calls=1169  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1170  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2338  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1169  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1170  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1170  avg=   0.00ms
+[STEP_BREAKDOWN] wall=13.91s  lm_callbacks=90.51s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=90.51s
+  GenerateLogits.total             44.82s  ( 49.5%)  calls=1175  avg=  38.15ms
+  GenerateLogits.engine_generate   43.13s  ( 47.6%)  calls=1175  avg=  36.70ms
+  GenerateLogits.finalize_from_dict    1.35s  (  1.5%)  calls=1175  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.67s  (  0.7%)  calls=1175  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1175  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2350  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1175  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1175  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1175  avg=   0.00ms
+  [EVAL]   Generated 200 tokens in 14.63s
+  [EVAL] Processing example 9/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #1180, prefix length: 4
+[TIMING] after 1180 GenerateLogits calls total=90.87s
+  GenerateLogits.total             44.99s  ( 49.5%)  calls=1179  avg=  38.16ms
+  GenerateLogits.engine_generate   43.32s  ( 47.7%)  calls=1180  avg=  36.71ms
+  GenerateLogits.finalize_from_dict    1.35s  (  1.5%)  calls=1180  avg=   1.15ms
+  ChooseNextTokenUnconstrained      0.67s  (  0.7%)  calls=1179  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1180  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2358  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1179  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1180  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1180  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1190, prefix length: 14
+[TIMING] after 1190 GenerateLogits calls total=91.56s
+  GenerateLogits.total             45.32s  ( 49.5%)  calls=1189  avg=  38.12ms
+  GenerateLogits.engine_generate   43.65s  ( 47.7%)  calls=1190  avg=  36.68ms
+  GenerateLogits.finalize_from_dict    1.36s  (  1.5%)  calls=1190  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.67s  (  0.7%)  calls=1189  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1190  avg=   0.22ms
+  LogitsProxy.__getitem__           0.13s  (  0.1%)  calls=2378  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1189  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1190  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1190  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1200, prefix length: 24
+[TIMING] after 1200 GenerateLogits calls total=92.27s
+  GenerateLogits.total             45.68s  ( 49.5%)  calls=1199  avg=  38.10ms
+  GenerateLogits.engine_generate   43.99s  ( 47.7%)  calls=1200  avg=  36.66ms
+  GenerateLogits.finalize_from_dict    1.37s  (  1.5%)  calls=1200  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.68s  (  0.7%)  calls=1199  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1200  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2398  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1199  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1200  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1200  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1210, prefix length: 34
+[TIMING] after 1210 GenerateLogits calls total=93.00s
+  GenerateLogits.total             46.04s  ( 49.5%)  calls=1209  avg=  38.08ms
+  GenerateLogits.engine_generate   44.34s  ( 47.7%)  calls=1210  avg=  36.64ms
+  GenerateLogits.finalize_from_dict    1.38s  (  1.5%)  calls=1210  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.68s  (  0.7%)  calls=1209  avg=   0.57ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1210  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2418  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1209  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1210  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1210  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1220, prefix length: 44
+[TIMING] after 1220 GenerateLogits calls total=93.75s
+  GenerateLogits.total             46.41s  ( 49.5%)  calls=1219  avg=  38.07ms
+  GenerateLogits.engine_generate   44.70s  ( 47.7%)  calls=1220  avg=  36.64ms
+  GenerateLogits.finalize_from_dict    1.40s  (  1.5%)  calls=1220  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.69s  (  0.7%)  calls=1219  avg=   0.56ms
+  GenerateLogits.prefix_text        0.26s  (  0.3%)  calls=1220  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2438  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1219  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1220  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1220  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1230, prefix length: 54
+[TIMING] after 1230 GenerateLogits calls total=94.46s
+  GenerateLogits.total             46.77s  ( 49.5%)  calls=1229  avg=  38.05ms
+  GenerateLogits.engine_generate   45.04s  ( 47.7%)  calls=1230  avg=  36.62ms
+  GenerateLogits.finalize_from_dict    1.40s  (  1.5%)  calls=1230  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.69s  (  0.7%)  calls=1229  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1230  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2458  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1229  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1230  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1230  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1240, prefix length: 64
+[TIMING] after 1240 GenerateLogits calls total=95.21s
+  GenerateLogits.total             47.13s  ( 49.5%)  calls=1239  avg=  38.04ms
+  GenerateLogits.engine_generate   45.40s  ( 47.7%)  calls=1240  avg=  36.61ms
+  GenerateLogits.finalize_from_dict    1.41s  (  1.5%)  calls=1240  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.70s  (  0.7%)  calls=1239  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1240  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2478  avg=   0.06ms
+  ChooseNextToken                   0.12s  (  0.1%)  calls=1239  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1240  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1240  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1250, prefix length: 74
+[TIMING] after 1250 GenerateLogits calls total=95.95s
+  GenerateLogits.total             47.50s  ( 49.5%)  calls=1249  avg=  38.03ms
+  GenerateLogits.engine_generate   45.75s  ( 47.7%)  calls=1250  avg=  36.60ms
+  GenerateLogits.finalize_from_dict    1.43s  (  1.5%)  calls=1250  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.70s  (  0.7%)  calls=1249  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1250  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2498  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1249  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1250  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1250  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1260, prefix length: 84
+[TIMING] after 1260 GenerateLogits calls total=96.65s
+  GenerateLogits.total             47.85s  ( 49.5%)  calls=1259  avg=  38.01ms
+  GenerateLogits.engine_generate   46.09s  ( 47.7%)  calls=1260  avg=  36.58ms
+  GenerateLogits.finalize_from_dict    1.43s  (  1.5%)  calls=1260  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.71s  (  0.7%)  calls=1259  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1260  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2518  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1259  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1260  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1260  avg=   0.00ms
+[STEP_BREAKDOWN] wall=5.46s  lm_callbacks=96.89s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=96.89s
+  GenerateLogits.total             47.99s  ( 49.5%)  calls=1263  avg=  37.99ms
+  GenerateLogits.engine_generate   46.19s  ( 47.7%)  calls=1263  avg=  36.57ms
+  GenerateLogits.finalize_from_dict    1.44s  (  1.5%)  calls=1263  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.71s  (  0.7%)  calls=1263  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1263  avg=   0.22ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2526  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1263  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1263  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1263  avg=   0.00ms
+  [EVAL]   Generated 87 tokens in 6.24s
+  [EVAL] Processing example 10/10...
+  [EVAL]   Running CSD strategy (max_steps=200)...
+    [PROGRESS] GenerateLogits call #1270, prefix length: 6
+[TIMING] after 1270 GenerateLogits calls total=97.38s
+  GenerateLogits.total             48.21s  ( 49.5%)  calls=1269  avg=  37.99ms
+  GenerateLogits.engine_generate   46.44s  ( 47.7%)  calls=1270  avg=  36.57ms
+  GenerateLogits.finalize_from_dict    1.44s  (  1.5%)  calls=1270  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.71s  (  0.7%)  calls=1269  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1270  avg=   0.21ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2538  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1269  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1270  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1270  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1280, prefix length: 16
+[TIMING] after 1280 GenerateLogits calls total=98.08s
+  GenerateLogits.total             48.56s  ( 49.5%)  calls=1279  avg=  37.97ms
+  GenerateLogits.engine_generate   46.77s  ( 47.7%)  calls=1280  avg=  36.54ms
+  GenerateLogits.finalize_from_dict    1.45s  (  1.5%)  calls=1280  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.72s  (  0.7%)  calls=1279  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1280  avg=   0.21ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2558  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1279  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1280  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1280  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1290, prefix length: 26
+[TIMING] after 1290 GenerateLogits calls total=98.80s
+  GenerateLogits.total             48.92s  ( 49.5%)  calls=1289  avg=  37.95ms
+  GenerateLogits.engine_generate   47.12s  ( 47.7%)  calls=1290  avg=  36.53ms
+  GenerateLogits.finalize_from_dict    1.46s  (  1.5%)  calls=1290  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.72s  (  0.7%)  calls=1289  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1290  avg=   0.21ms
+  LogitsProxy.__getitem__           0.14s  (  0.1%)  calls=2578  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1289  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1290  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1290  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1300, prefix length: 36
+[TIMING] after 1300 GenerateLogits calls total=99.55s
+  GenerateLogits.total             49.29s  ( 49.5%)  calls=1299  avg=  37.94ms
+  GenerateLogits.engine_generate   47.48s  ( 47.7%)  calls=1300  avg=  36.52ms
+  GenerateLogits.finalize_from_dict    1.47s  (  1.5%)  calls=1300  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.73s  (  0.7%)  calls=1299  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1300  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2598  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1299  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1300  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1300  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1310, prefix length: 46
+[TIMING] after 1310 GenerateLogits calls total=100.33s
+  GenerateLogits.total             49.67s  ( 49.5%)  calls=1309  avg=  37.95ms
+  GenerateLogits.engine_generate   47.85s  ( 47.7%)  calls=1310  avg=  36.53ms
+  GenerateLogits.finalize_from_dict    1.48s  (  1.5%)  calls=1310  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.73s  (  0.7%)  calls=1309  avg=   0.56ms
+  GenerateLogits.prefix_text        0.27s  (  0.3%)  calls=1310  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2618  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1309  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1310  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1310  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1320, prefix length: 56
+[TIMING] after 1320 GenerateLogits calls total=101.13s
+  GenerateLogits.total             50.06s  ( 49.5%)  calls=1319  avg=  37.96ms
+  GenerateLogits.engine_generate   48.24s  ( 47.7%)  calls=1320  avg=  36.54ms
+  GenerateLogits.finalize_from_dict    1.50s  (  1.5%)  calls=1320  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.74s  (  0.7%)  calls=1319  avg=   0.56ms
+  GenerateLogits.prefix_text        0.28s  (  0.3%)  calls=1320  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2638  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1319  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1320  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1320  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1330, prefix length: 66
+[TIMING] after 1330 GenerateLogits calls total=101.93s
+  GenerateLogits.total             50.46s  ( 49.5%)  calls=1329  avg=  37.97ms
+  GenerateLogits.engine_generate   48.62s  ( 47.7%)  calls=1330  avg=  36.56ms
+  GenerateLogits.finalize_from_dict    1.51s  (  1.5%)  calls=1330  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.74s  (  0.7%)  calls=1329  avg=   0.56ms
+  GenerateLogits.prefix_text        0.28s  (  0.3%)  calls=1330  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2658  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1329  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1330  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1330  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1340, prefix length: 76
+[TIMING] after 1340 GenerateLogits calls total=102.75s
+  GenerateLogits.total             50.87s  ( 49.5%)  calls=1339  avg=  37.99ms
+  GenerateLogits.engine_generate   49.01s  ( 47.7%)  calls=1340  avg=  36.58ms
+  GenerateLogits.finalize_from_dict    1.52s  (  1.5%)  calls=1340  avg=   1.13ms
+  ChooseNextTokenUnconstrained      0.75s  (  0.7%)  calls=1339  avg=   0.56ms
+  GenerateLogits.prefix_text        0.28s  (  0.3%)  calls=1340  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2678  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1339  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1340  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1340  avg=   0.00ms
+    [PROGRESS] GenerateLogits call #1350, prefix length: 86
+[TIMING] after 1350 GenerateLogits calls total=103.58s
+  GenerateLogits.total             51.28s  ( 49.5%)  calls=1349  avg=  38.01ms
+  GenerateLogits.engine_generate   49.41s  ( 47.7%)  calls=1350  avg=  36.60ms
+  GenerateLogits.finalize_from_dict    1.53s  (  1.5%)  calls=1350  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.75s  (  0.7%)  calls=1349  avg=   0.56ms
+  GenerateLogits.prefix_text        0.28s  (  0.3%)  calls=1350  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2698  avg=   0.06ms
+  ChooseNextToken                   0.13s  (  0.1%)  calls=1349  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1350  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1350  avg=   0.00ms
+[STEP_BREAKDOWN] wall=7.82s  lm_callbacks=103.69s  parser_callbacks=0.00s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=103.69s
+  GenerateLogits.total             51.36s  ( 49.5%)  calls=1351  avg=  38.01ms
+  GenerateLogits.engine_generate   49.44s  ( 47.7%)  calls=1351  avg=  36.60ms
+  GenerateLogits.finalize_from_dict    1.53s  (  1.5%)  calls=1351  avg=   1.14ms
+  ChooseNextTokenUnconstrained      0.75s  (  0.7%)  calls=1351  avg=   0.56ms
+  GenerateLogits.prefix_text        0.28s  (  0.3%)  calls=1351  avg=   0.21ms
+  LogitsProxy.__getitem__           0.15s  (  0.1%)  calls=2702  avg=   0.06ms
+  ChooseNextToken                   0.14s  (  0.1%)  calls=1351  avg=   0.10ms
+  GenerateLogits.sampling_params_construct    0.03s  (  0.0%)  calls=1351  avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1351  avg=   0.00ms
+  [EVAL]   Generated 87 tokens in 8.64s
+  ✓ Evaluation passed:
+    Accuracy: 90.0%
+    Contains << >>: yes
+    Syntax: 81.2%
+
+============================================================
+SUCCESS after 1 attempt(s)
+Total time: 170841.3ms
+============================================================
+Strategy saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3/synth_lottery_1.dfy
+Success report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3/success_report.json
+Latest run link updated: /home/aadivyar/csd-generation/outputs/generated-csd/runs/latest
+
+============================================================
+SYNTHESIS COMPLETE
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// Strategy for step-by-step math solutions with arithmetic fenced by << >>.
+// The state tracks the full generated text in `generated`, whether we are
+// currently inside a constrained arithmetic span in `insideConstrainedOut`, and
+// the contents of that active span in `currentConstrainedOut`. Outside a span,
+// generation is mostly free, but if "<<" is already competitive with the
+// current argmax we proactively open a constrained span so arithmetic is more
+// likely to be emitted in the required delimiters. Inside a span, we inspect
+// parser-valid next-token options: if the active prefix is complete we close
+// with ">>"; otherwise we prefer a valid argmax token when available, and fall
+// back to constrained decoding when the unconstrained argmax would violate the
+// arithmetic parser. This tracked state lets us maintain that the constrained
+// suffix of `generated` always matches `currentConstrainedOut`, so parser-based
+// validity checks apply exactly to the text between delimiters.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branch, either we append a normal token
+//   and remain outside (implication vacuous), or we append "<<" and set
+//   currentConstrainedOut := [], which is a valid prefix by precondition. In
+//   the complete-prefix branch, CloseConstrainedSpan resets to outside, so the
+//   implication is vacuous. In the inside-span argmax-valid branch, we call
+//   AppendConstrainedToken only after IsTokenValidNext returned true, so the
+//   new constrained prefix remains valid. In the fallback constrained-step
+//   branch, if EOS is returned we break without changing state; otherwise
+//   ConstrainedStep supplies a parser-valid next token, and AppendConstrainedToken
+//   preserves validity.
+// suffix: Outside-span branches either leave insideConstrainedOut false, or
+//   after appending "<<" set currentConstrainedOut := [], whose length-0 suffix
+//   matches generated. CloseConstrainedSpan appends the closing delimiter and
+//   resets currentConstrainedOut := [], so the implication holds. Both
+//   AppendConstrainedToken branches append the same token to `generated` and to
+//   `currentConstrainedOut`, preserving the suffix equality.
+// cost: In the unconstrained raw-sampling branch we manually bump
+//   helpers.cost by 1 and also increment steps by 1. CloseConstrainedSpan bumps
+//   helpers.cost internally and we increment steps once. In the inside-span
+//   argmax-valid branch we only use queries plus AppendConstrainedToken, which
+//   does not bump helpers.cost, and then increment steps by 1, so
+//   helpers.cost <= steps still holds. In the fallback branch, ConstrainedStep
+//   bumps helpers.cost by 1 and we increment steps by 1; the subsequent append
+//   is non-bumping.
+// progress: In the unconstrained branch we append at most one token to
+//   generated. In the complete-prefix branch we append exactly the closing
+//   delimiter token once. In the inside-span argmax-valid and fallback branches
+//   we append at most one constrained token. Since steps increases by exactly 1
+//   in every non-breaking iteration, |generated| <= |generatedPrefix| + steps
+//   is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant cost == 0
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    var next := lm.ChooseNextTokenUnconstrained();
+    helpers.cost := helpers.cost + 1;
+    steps := steps + 1;
+
+    if next == eosToken {
+      break;
+    } else if openLogit >= argmaxLogit - 2.0 && next != "<<" && !Contains(next, "<<") {
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      generated := generated + [next];
+      if next == "<<" {
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+
+      if argmax != eosToken && argmaxValid {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+Compiled module: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3/synth_lottery_1/GeneratedCSD.py
+Output directory: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3/synth_lottery_1
+Run directory: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260422_085632_b2c7e3
+Total attempts: 1
+Total time: 170841.3ms
+(EngineCore pid=2500364) INFO 04-22 08:59:23 [core.py:1210] Shutdown initiated (timeout=0)
+(EngineCore pid=2500364) INFO 04-22 08:59:23 [core.py:1233] Shutdown complete
+[rank0]:[W422 08:59:23.235678029 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+ERROR 04-22 08:59:23 [core_client.py:667] Engine core proc EngineCore died unexpectedly, shutting down client.

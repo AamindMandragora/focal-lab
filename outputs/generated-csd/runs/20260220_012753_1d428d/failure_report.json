@@ -1,0 +1,765 @@
+{
+  "task_description": "Generate short symbolic mathematical expressions for GSM-Symbolic reasoning. The parser enforces a strict arithmetic expression grammar with VARIABLES and numeric constants. CRITICAL RULES: 1. Every expression MUST contain at least one variable - pure numeric expressions like '2 * 2' are INVALID.     Variables may appear as letter+digits (n1, x2), split letter/digit tokens (n 1, x 2), or letter-only (n, x, foo). 2. Variables represent problem values; numeric constants (12, 100) are for unit conversions and percentages. 3. The constrained windows are SHORT (typically 5-20 tokens for expressions like 'n1 + n2 * 12'). 4. The grammar is RECURSIVE but depth is BOUNDED in runtime; prefer balanced parentheses and compact expressions. 5. The grammar includes the closing delimiter '>>' - expressions must be complete and compact. 6. Avoid trivial outputs (e.g., just a single variable) unless the problem truly requires it; include necessary operators.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-20T01:54:49.789741",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 5, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:28:08.462927",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.49s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 305.830717086792
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 7.493040323257446,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:28:25.834673",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 20.0% (2/10)\n  Format Rate: 80.0%\n  Syntax Rate: 100.0%\n  Total Time: 1487.78s\n\nSample Failures:\n\n  Example 1:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got: 30\n\n  Example 2:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got: -157.5263157894737\n\n  Example 3:\n    Question: Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. A...\n    Expected: 525\n    Got:  Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd_20260220_012830_3cf1d3"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 306.4742088317871
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.2,
+        "format_rate": 0.8,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 2,
+        "total_time_seconds": 1487.7828500270844,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": "191",
+            "full_output": " Let m = 8.5, c = 10.5, r = 13, a = 16, b = 4.\nMarker total = <<a * m>> \nCrayon total = <<b * c>> \nTotal spent = <<a * m + b * c + r>> \nThe answer is a * m + b * c + r.",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 81,
+            "time_seconds": 146.67615175247192
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": "30",
+            "full_output": " Let r = 30, t1 = 20, t2 = 20, t3 = 20, t4 = 20, r2 = 2 * r, r3 = 4 * r, r4 = r3 / 2, r5 = r4 / 4.\nFirst 20 seconds = <<r * t1 / t1>> = <<r * 1>> = <<r>> = <<30 * 1 * 1 / 20 * 20 * 20 * 20 * 20 * 20 * 20 * 20 * 20 * 20 * 20 *",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 215.41500043869019
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": "-157.5263157894737",
+            "full_output": " Let l = 195, w = 4, s = 15, f = 12, c = 14.\nPlant spacing = <<w + s>> meters.\nTotal plants needed = <<(l - s) / (w + s) + 1>>.\nAdditional plants needed = <<(l - s) / (w + s) + 1 - f>>.\nCost of additional plants = <<(l - s) / (w + s) + 1 - f * c>>.\nThe answer is (l - s) / (w + s) + 1 - f * c.\n```\nQ: A library has 120 books. Each book has ",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 150,
+            "time_seconds": 180.7256019115448
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/2",
+            "full_output": " Let t = 20, d = 22, s = 11.5, k = 20.5, n = 17.\nTotal saltwater taffy cost = <<d * t * (15/20 + 5/20 * 0) / 15 * 15 * 20 / 15 * 15 * 20 / 15 * 15 * 20 / 15 * 15 * 20 / 15 * 15 * 20 / 15 * 15 * 20 / 15 * 15 * 20 / ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 150,
+            "time_seconds": 231.16166973114014
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": "432",
+            "full_output": " Let d = 12, c = 85, ch = 113, a = 4, b = 5, c = 3.\nDonut cost = <<a * d * c>> \nMini cupcake cost = <<b * d * c>> \nMini cheesecake cost = <<c * d * c>> \nTotal cost = <<a * d * c + b * d * c + c * d * c>> \nThe answer is a * d * c + b * d * c + c * d * c.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 117,
+            "time_seconds": 134.61663365364075
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": "18",
+            "full_output": " Let c = 13, u = 5, t = 36.\nPlates in Chen's package = <<t - c - u>>.\nThe answer is t - c - u.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 42,
+            "time_seconds": 49.041301250457764
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " Let b = 11, k = 27, f = 29, s = f + 12.\nBrownie total = <<f * b + s * b>>.\nKiwi pie total = <<f * k",
+            "full_output": " Let b = 11, k = 27, f = 29, s = f + 12.\nBrownie total = <<f * b + s * b>>.\nKiwi pie total = <<f * k + s * k>>.\nTotal earned = <<f * b + s * b + f * k + s * k>>.\nThe answer is f * b + s * b + f * k + s * k.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 96,
+            "time_seconds": 109.35805654525757
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Let f = 2, p = 40, h = 11 - 2 = 9.\nFirst paid hour = <<p * 1 * (h - f) * (h - f + 1) / 2 * (h - f +",
+            "full_output": " Let f = 2, p = 40, h = 11 - 2 = 9.\nFirst paid hour = <<p * 1 * (h - f) * (h - f + 1) / 2 * (h - f + 2) / 3 * (h - f + 3) / 4 * (h - f + 4) / 5 * (h - f + 5) / 6 * (h - f + 6) / 7 * (h - f + 7) / 8 * (h - f + 8) / 9 * (h - f + 9) / 10 * (",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 150,
+            "time_seconds": 276.3865988254547
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": "49",
+            "full_output": " Let t = 121, c = 16, p = 56.\nTime spent so far = <<c + p>>.\nTime remaining = <<t - (c + p)>>.\nThe answer is t - (c + p).",
+            "is_correct": true,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 54,
+            "time_seconds": 60.22685527801514
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": "19",
+            "full_output": " Let b = 300, c = 10, d = 5, e = 15, f = x.\nTotal cost = <<c + d + e * f>>.\nNumber of friends = <<(b - c - d) / e>>.\nThe answer is (b - c - d) / e.",
+            "is_correct": false,
+            "is_valid_format": true,
+            "is_syntax_valid": true,
+            "syntax_rate": 1.0,
+            "token_count": 71,
+            "time_seconds": 77.9980685710907
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 200, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, 200, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:53:24.142333",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 15, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:53:31.582613",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.64s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd_20260220_015336_ccdbaa"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 292.4492359161377
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 7.639797210693359,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 20, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:53:49.329932",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 0.0%\n  Total Time: 7.40s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got: None\n    Error: CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd_20260220_015353_76117f"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 296.13637924194336
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 7.395337820053101,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": null,
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": false,
+            "syntax_rate": 0.0,
+            "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n"
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:54:07.018795",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\n// Use a CRANE-style generation approach with increased maxSteps and minReasoningSteps\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\n// Use a CRANE-style generation approach with increased maxSteps and minReasoningSteps\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:54:15.142768",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\n// Use a CRANE-style generation approach with increased maxSteps and minReasoningSteps\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short, compact arithmetic expressions that contain at least one variable.\n// We will use a CRANE-style generation approach, starting unconstrained and switching to constrained mode when the model generates '<<'.\n// This allows us to generate initial free-form text while ensuring that the final expression is structurally valid according to the grammar.\n// The strategy aims to produce balanced expressions with appropriate use of parentheses and minimal redundant tokens.\n// We will increase minReasoningSteps to allow the model more time to reason and ensure the generation contains variables.\n// We will also adjust the maxSteps to give the model more room to produce a complete and accurate response.\n// CSD_RATIONALE_END\n\n// Use a CRANE-style generation approach with increased maxSteps and minReasoningSteps\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps * 2, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:54:23.208043",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we will use a hybrid generation approach. This approach starts in constrained mode and transitions to unconstrained mode when the model generates '<<'. After exiting the '<<' region, it switches back to constrained mode. This allows for the generation of structured text with embedded expressions.\n// CSD_RATIONALE_END\n\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we will use a hybrid generation approach. This approach starts in constrained mode and transitions to unconstrained mode when the model generates '<<'. After exiting the '<<' region, it switches back to constrained mode. This allows for the generation of structured text with embedded expressions.\n// CSD_RATIONALE_END\n\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:54:28.428291",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd_20260220_015433_764e06"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 63.77577781677246
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 1.8607702255249023,
+        "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+        "sample_outputs": []
+      }
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we will use the CraneGeneration strategy. This approach starts in unconstrained mode and transitions to constrained mode when the model generates '<<'. After exiting the '<<' region, it switches back to unconstrained mode. This allows for the generation of structured text with embedded expressions.\n// We set minReasoningSteps to 10 to ensure the model has enough context before generating a reasoning window.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we will use the CraneGeneration strategy. This approach starts in unconstrained mode and transitions to constrained mode when the model generates '<<'. After exiting the '<<' region, it switches back to unconstrained mode. This allows for the generation of structured text with embedded expressions.\n// We set minReasoningSteps to 10 to ensure the model has enough context before generating a reasoning window.\n// CSD_RATIONALE_END\n\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-20T01:54:39.100689",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_012753_1d428d/gsm_crane_csd_20260220_015443_512655"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 293.9715385437012
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 1.7711355686187744,
+        "error": "CUDA error: out of memory\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+        "sample_outputs": []
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 4,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}

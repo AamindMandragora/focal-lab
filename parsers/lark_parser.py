@@ -120,6 +120,10 @@ class LarkGrammarParser:
             return True
         except Exception:
             return False
+            
+    def parse(self, text: str):
+        """Parse text and return the AST."""
+        return self._parser.parse(text)
     
     def get_valid_next_tokens(self, text: str, vocabulary: list[str]) -> list[str]:
         """

@@ -37,8 +37,8 @@ csd_start: expr ">>"
 // ============================================================================
 
 // This will be dynamically replaced to restrict to specific variable names
-// Example: VARIABLE: "m" | "p" | "c" | "n"
-VARIABLE: /[a-zA-Z]/
+// Example: VARIABLE: "m" | "p" | "total_cost" | "brokerage_fee"
+VARIABLE: /[a-zA-Z_][a-zA-Z0-9_]*/
 
 %import common.WS
 %ignore WS

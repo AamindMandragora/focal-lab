@@ -39,6 +39,17 @@ def _truncate(text: str, limit: int = 80) -> str:
 
 
 def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_before: Any, cost_after: Any) -> Dict[str, Any]:
+    # Helper for token redaction: keep universal delimiters/EOS verbatim
+    # (they're not synthesis-sample-specific and the strategy code already
+    # references them), redact everything else (schema/identifier content).
+    UNIVERSAL_TOKENS = {"<<", ">>", "EOS", "<EOS>", "<eos>"}
+    def _safe_token(raw):
+        try:
+            t = _truncate(_dafny_token_to_str(raw))
+        except Exception:
+            return "<redacted>"
+        return t if t in UNIVERSAL_TOKENS else "<redacted>"
+
     event: Dict[str, Any] = {
         "helper": name,
         "cost_before": cost_before,
@@ -46,7 +57,8 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
     }
 
     if name in {"UnconstrainedStep", "ConstrainedStep", "PenalizedConstrainedStep", "BoostedConstrainedStep", "RepetitionPenaltyStep", "TemperatureConstrainedStep"}:
-        token = _truncate(_dafny_token_to_str(result))
+        # Keep delimiter tokens verbatim; redact other tokens (synthesis-sample-leaky).
+        token = _safe_token(result)
         event["token"] = token
         event["detail"] = f"token={token}"
         return event
@@ -66,8 +78,8 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         return event
 
     if name == "SoftConstrainedStep":
-        token = _truncate(_dafny_token_to_str(result[0])) if isinstance(result, tuple) and len(result) == 2 else _truncate(str(result))
         is_valid = bool(result[1]) if isinstance(result, tuple) and len(result) == 2 else False
+        token = _safe_token(result[0]) if isinstance(result, tuple) and len(result) == 2 else _safe_token(result)
         event["token"] = token
         event["is_valid"] = is_valid
         event["detail"] = f"token={token}, is_valid={is_valid}"
@@ -80,8 +92,8 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         return event
 
     if name == "AppendConstrainedToken":
-        token = _truncate(_dafny_token_to_str(args[-1])) if args else ""
         current_len = _safe_len(result[2]) if isinstance(result, tuple) and len(result) >= 3 else None
+        token = _safe_token(args[-1]) if args else "<redacted>"
         event["token"] = token
         event["current_len"] = current_len
         event["detail"] = f"append {token}, current_len={current_len}"
@@ -104,7 +116,10 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         return event
 
     if name in {"BoostTokenLogits", "PenalizeTokenLogits"}:
-        tokens = [_truncate(_dafny_token_to_str(t)) for t in args[1]] if len(args) >= 2 else []
+        # Strategy chose these tokens; conservatively keep universals,
+        # redact others to prevent strategy from passing through sampled
+        # tokens.
+        tokens = [_safe_token(t) for t in args[1]] if len(args) >= 2 else []
         amount = args[2] if len(args) >= 3 else None
         event["tokens"] = tokens
         event["amount"] = str(amount)
@@ -114,20 +129,18 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
     if name == "TopValidCandidates":
         k = args[-2] if len(args) >= 2 else None
         candidate_count = _safe_len(result)
-        preview: list[str] = []
-        try:
-            for i in range(min(3, len(result))):
-                preview.append(_truncate(_dafny_token_to_str(result[i])))
-        except Exception:
-            pass
+        # Preview redacted: candidate tokens depend on parser state which
+        # depends on synthesis-sample content.
         event["k_requested"] = str(k)
         event["candidate_count"] = candidate_count
-        event["preview"] = preview
-        event["detail"] = f"k={k}, got={candidate_count}, preview={preview}"
+        event["detail"] = f"k={k}, got={candidate_count}"
         return event
 
     if name == "IsTokenValidNext":
-        token = _truncate(_dafny_token_to_str(args[-1])) if args else ""
+        # Strategy chose this token; gpt-5.4 already sees it in the strategy
+        # code. Still apply _safe_token to be conservative (in case the
+        # strategy passes a sampled token here, which would leak).
+        token = _safe_token(args[-1]) if args else "<redacted>"
         event["token"] = token
         event["is_valid"] = bool(result)
         event["detail"] = f"token={token}, valid={bool(result)}"
@@ -140,7 +153,8 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         return event
 
     if name == "ChooseNextTokenUnconstrained":
-        token = _truncate(_dafny_token_to_str(result)) if result is not None else ""
+        # Keep delimiter tokens verbatim; redact schema/identifier tokens.
+        token = _safe_token(result)
         event["token"] = token
         event["detail"] = f"sampled token={token}"
         return event
@@ -196,7 +210,272 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
         # O(vocab_size).
         return lm.ChooseNextToken()
 
-    helpers_cls.GetHighestLogitToken = _fast_get_highest_logit_token
+    def _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
+        """Vectorized top-K over parser-valid + EOS tokens.
+
+        The Dafny-compiled version (a) calls GenerateLogits, (b) walks
+        parser.ValidNextTokens(prefix) in Python while doing two
+        lm.Logits[i] proxy reads per iteration, then (c) re-walks the pool
+        K times to find each successive max. With per-element GPU syncs
+        and the vocab-sized valid pool seen in SQL, that's hundreds of
+        GPU round-trips per call and dominates wall time.
+
+        This shim does the same thing in one masked_fill + one topk:
+          1. Refresh logits (matches the original side effect).
+          2. Build the parser-valid + EOS boolean mask (subset over the
+             constrained vocab) using the same _parser_full_mask path
+             MaskValidNextAndEos uses.
+          3. masked_fill the cached _logits_tensor with -inf for invalid.
+          4. torch.topk(masked_logits, k) -> indices.
+          5. Map indices back to Dafny tokens via lm._Tokens.
+          6. Bump self.cost by 1, matching the original Dafny postcondition.
+        """
+        import torch as _torch
+        import _dafny
+
+        # 1) Refresh logits (matches original Dafny semantics)
+        lm.GenerateLogits(prompt + prefix)
+
+        # 2) Build valid-token boolean mask (subset over constrained vocab)
+        full_mask = lm._parser_full_mask(parser, prefix)
+        if full_mask.numel() == len(lm._token_ids):
+            subset_mask = full_mask.to(dtype=_torch.bool, device=lm._logits_tensor.device)
+        else:
+            full_mask = lm._expand_full_mask(full_mask)
+            subset_mask = lm._subset_mask_from_full_mask(full_mask)
+
+        # 3) Add EOS to mask
+        eos_indices = lm._token_indices_for_token(eosToken)
+        if eos_indices:
+            subset_mask[eos_indices] = True
+
+        # 4) Cost bump (matches original)
+        self.cost = self.cost + 1
+
+        valid_count = int(subset_mask.sum().item())
+        if valid_count == 0:
+            # Pathological: no valid tokens at all. Match original fallback
+            # behaviour which returns a singleton with eosToken.
+            return _dafny.SeqWithoutIsStrInference([eosToken])
+
+        # 5) topk over masked logits in one GPU op
+        masked = lm._logits_tensor.masked_fill(~subset_mask, -float('inf'))
+        k = int(maxCandidates) if int(maxCandidates) < valid_count else valid_count
+        _, topk_idx = _torch.topk(masked, k)
+
+        # 6) Map indices back to Dafny tokens
+        idx_list = topk_idx.cpu().tolist()
+        chosen = [lm._Tokens[int(i)] for i in idx_list]
+        return _dafny.SeqWithoutIsStrInference(chosen)
+
+    def _fast_boost_token_logits(self, lm, tokens, amount):
+        """Vectorized boost. The Dafny-compiled version loops in Python
+        with two GPU syncs per token (read+write through _LogitsProxy).
+        For a typical strategy that boosts 1-5 tokens per step, this
+        adds tens of unnecessary GPU round-trips per emitted token.
+        """
+        import torch as _torch
+        if tokens is None or len(tokens) == 0:
+            return
+        indices = []
+        for i in range(len(tokens)):
+            idx_list = lm._token_indices_for_token(tokens[i])
+            if idx_list:
+                indices.extend(idx_list)
+        if not indices:
+            return
+        idx_t = _torch.tensor(indices, device=lm._logits_tensor.device, dtype=_torch.long)
+        amount_f = float(amount)
+        lm._logits_tensor[idx_t] = _torch.clamp(
+            lm._logits_tensor[idx_t] + amount_f, min=-1e9, max=1e9
+        )
+        if lm._full_logits is not None:
+            full_ids = lm._token_ids_tensor[idx_t].to(lm._full_logits.device)
+            lm._full_logits[full_ids] = _torch.clamp(
+                lm._full_logits[full_ids] + amount_f, min=-1e9, max=1e9
+            )
+        lm.Logits.update_tensors(lm._logits_tensor, lm._full_logits)
+        lm._logits_dirty = True
+
+    def _fast_penalize_token_logits(self, lm, tokens, amount):
+        """Vectorized penalize. Same shape as boost, opposite sign."""
+        import torch as _torch
+        if tokens is None or len(tokens) == 0:
+            return
+        indices = []
+        for i in range(len(tokens)):
+            idx_list = lm._token_indices_for_token(tokens[i])
+            if idx_list:
+                indices.extend(idx_list)
+        if not indices:
+            return
+        idx_t = _torch.tensor(indices, device=lm._logits_tensor.device, dtype=_torch.long)
+        amount_f = float(amount)
+        lm._logits_tensor[idx_t] = _torch.clamp(
+            lm._logits_tensor[idx_t] - amount_f, min=-1e9, max=1e9
+        )
+        if lm._full_logits is not None:
+            full_ids = lm._token_ids_tensor[idx_t].to(lm._full_logits.device)
+            lm._full_logits[full_ids] = _torch.clamp(
+                lm._full_logits[full_ids] - amount_f, min=-1e9, max=1e9
+            )
+        lm.Logits.update_tensors(lm._logits_tensor, lm._full_logits)
+        lm._logits_dirty = True
+
+    def _fast_scale_all_logits(self, lm, scalar):
+        """Vectorized scale. Replaces a Python while-loop over the entire
+        constrained vocab with a single tensor multiply."""
+        import torch as _torch
+        scalar_f = float(scalar)
+        lm._logits_tensor.mul_(scalar_f)
+        lm._logits_tensor.clamp_(min=-1e9, max=1e9)
+        if lm._full_logits is not None:
+            lm._full_logits.mul_(scalar_f)
+            lm._full_logits.clamp_(min=-1e9, max=1e9)
+        lm.Logits.update_tensors(lm._logits_tensor, lm._full_logits)
+        lm._logits_dirty = True
+
+    # Preserve the originals so the fastpath can fall back when the LM
+    # isn't a _TensorizedLMBase subclass (e.g. runner.py's TestLM smoke-test).
+    _orig_get_highest = helpers_cls.GetHighestLogitToken
+    _orig_top_valid = helpers_cls.TopValidCandidates
+    _orig_boost = helpers_cls.BoostTokenLogits
+    _orig_penalize = helpers_cls.PenalizeTokenLogits
+    _orig_scale = helpers_cls.ScaleAllLogits
+
+    def _ghl_with_fallback(self, lm):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_get_highest(self, lm)
+        return _fast_get_highest_logit_token(self, lm)
+
+    def _tvc_with_fallback(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_top_valid(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
+        return _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
+
+    def _boost_with_fallback(self, lm, tokens, amount):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_boost(self, lm, tokens, amount)
+        return _fast_boost_token_logits(self, lm, tokens, amount)
+
+    def _penalize_with_fallback(self, lm, tokens, amount):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_penalize(self, lm, tokens, amount)
+        return _fast_penalize_token_logits(self, lm, tokens, amount)
+
+    def _scale_with_fallback(self, lm, scalar):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_scale(self, lm, scalar)
+        return _fast_scale_all_logits(self, lm, scalar)
+
+    helpers_cls.GetHighestLogitToken = _ghl_with_fallback
+    helpers_cls.TopValidCandidates = _tvc_with_fallback
+    helpers_cls.BoostTokenLogits = _boost_with_fallback
+    helpers_cls.PenalizeTokenLogits = _penalize_with_fallback
+    helpers_cls.ScaleAllLogits = _scale_with_fallback
+
+    # ---- Pure-Dafny helpers: O(N*M) Python-list scans -> O(N+M) Python-set ops.
+    # The Dafny-compiled bodies use `t in seq` which is a linear scan over the
+    # right-hand seq each call. Strategies that pass `lm.Tokens` (~150K) as the
+    # right-hand side melt down at O(|left| * 150K) ops per generation step.
+    import _dafny
+
+    def _seq_to_str(tok):
+        try:
+            return "".join(tok[i] for i in range(len(tok)))
+        except Exception:
+            return str(tok)
+
+    def _fast_intersect_token_sets(a, b):
+        b_set = set()
+        for i in range(len(b)):
+            b_set.add(_seq_to_str(b[i]))
+        out = []
+        seen_a = set()
+        for i in range(len(a)):
+            t = a[i]
+            s = _seq_to_str(t)
+            if s in b_set and s not in seen_a:
+                seen_a.add(s)
+                out.append(t)
+        return _dafny.SeqWithoutIsStrInference(out)
+
+    def _fast_subtract_token_sets(a, b):
+        b_set = set()
+        for i in range(len(b)):
+            b_set.add(_seq_to_str(b[i]))
+        out = []
+        for i in range(len(a)):
+            t = a[i]
+            if _seq_to_str(t) not in b_set:
+                out.append(t)
+        return _dafny.SeqWithoutIsStrInference(out)
+
+    def _fast_flatten_token_groups(groups):
+        flat = []
+        for i in range(len(groups)):
+            g = groups[i]
+            for j in range(len(g)):
+                flat.append(g[j])
+        return _dafny.SeqWithoutIsStrInference(flat)
+
+    def _fast_group_containing(groups, tok):
+        target = _seq_to_str(tok)
+        for i in range(len(groups)):
+            g = groups[i]
+            for j in range(len(g)):
+                if _seq_to_str(g[j]) == target:
+                    return i
+        return -1
+
+    def _fast_rollback_to_boundary(parser, currentConstrained, boundaryToken):
+        # Walk back in Python to find the last occurrence of boundaryToken in
+        # currentConstrained, then return the prefix up to (and including) it.
+        # This avoids the Dafny-compiled token-equality loop overhead.
+        bt_str = _seq_to_str(boundaryToken)
+        cc_len = len(currentConstrained)
+        idx = cc_len
+        while idx > 0 and _seq_to_str(currentConstrained[idx - 1]) != bt_str:
+            idx -= 1
+        sliced = _dafny.SeqWithoutIsStrInference(
+            [currentConstrained[i] for i in range(idx)]
+        )
+        # Common case: every prefix of a parser-valid prefix is itself parser-
+        # valid in the LR-style grammars we use, so one IsValidPrefix check
+        # short-circuits RollbackToValidPrefix's per-token trim loop.
+        if parser.IsValidPrefix(sliced) and not parser.IsDeadPrefix(sliced):
+            return sliced
+        # Fallback: full trim loop entered from `sliced` (already a strict
+        # suffix-trimmed prefix of currentConstrained).
+        repaired = sliced
+        while not parser.IsValidPrefix(repaired) or parser.IsDeadPrefix(repaired):
+            repaired = _dafny.SeqWithoutIsStrInference(
+                [repaired[i] for i in range(len(repaired) - 1)]
+            )
+        return repaired
+
+    def _fast_rollback_to_valid_prefix(parser, generated):
+        # Short-circuit: if `generated` is already valid, no trimming needed.
+        if parser.IsValidPrefix(generated) and not parser.IsDeadPrefix(generated):
+            return generated
+        # Fall back to per-token trim, but build the slice via Python list
+        # ops rather than per-iteration Dafny seq slicing.
+        repaired_list = [generated[i] for i in range(len(generated))]
+        repaired = generated
+        while not parser.IsValidPrefix(repaired) or parser.IsDeadPrefix(repaired):
+            if not repaired_list:
+                break
+            repaired_list.pop()
+            repaired = _dafny.SeqWithoutIsStrInference(list(repaired_list))
+        return repaired
+
+    helpers_cls.IntersectTokenSets = staticmethod(_fast_intersect_token_sets)
+    helpers_cls.SubtractTokenSets = staticmethod(_fast_subtract_token_sets)
+    helpers_cls.FlattenTokenGroups = staticmethod(_fast_flatten_token_groups)
+    helpers_cls.GroupContaining = staticmethod(_fast_group_containing)
+    helpers_cls.RollbackToBoundary = staticmethod(_fast_rollback_to_boundary)
+    helpers_cls.RollbackToValidPrefix = staticmethod(_fast_rollback_to_valid_prefix)
+
     helpers_cls._fastpath_patched = True
 
 

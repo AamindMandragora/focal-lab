@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 def dafny_seq_to_str(seq) -> str:
@@ -35,7 +35,11 @@ def run_crane_csd(
     grammar_file: Path,
     debug_delimiters: bool = False,
     dynamic_parser=None,
-) -> Tuple[str, int, float, List[Tuple[str, bool]]]:
+    start_inside_constrained: bool = False,
+    step_token_budget: int = 1,
+    valid_tokens: Optional[List[str]] = None,
+    valid_token_groups: Optional[List[List[str]]] = None,
+) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
 
@@ -49,6 +53,10 @@ def run_crane_csd(
         grammar_file: Path to grammar file for post-hoc segment validation
         debug_delimiters: Whether to print debug output
         dynamic_parser: Optional per-question parser
+        start_inside_constrained: Begin with an internal constrained chunk
+            already active. This is useful for tasks like Spider where the
+            answer is parser-governed from the first token but chunk boundaries
+            should not be serialized as visible delimiters.
 
     Returns:
         Tuple of (output_text, token_count, time_seconds, constrained_segments)
@@ -63,12 +71,71 @@ def run_crane_csd(
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     eos_token_dafny = _dafny.Seq(eos_token_str)
+    generated_prefix = _dafny.SeqWithoutIsStrInference([])
+    current_constrained = _dafny.SeqWithoutIsStrInference([])
 
-    result = GeneratedCSD.default__.MyCSDStrategy(
-        lm, parser, _dafny.SeqWithoutIsStrInference([]), max_steps, eos_token_dafny
+    trace_state = env.get("csd_trace")
+    if isinstance(trace_state, dict):
+        trace_state["events"] = []
+
+    # Resolve the runtime token-context input. Callers may supply either
+    # `valid_token_groups` (nested, one inner list per group) or the legacy flat
+    # `valid_tokens`. We build both shapes so we can dispatch to whichever shape
+    # the compiled strategy was written against.
+    if valid_token_groups is not None:
+        _vt_groups = valid_token_groups
+        _vt_flat = [t for g in valid_token_groups for t in g]
+    else:
+        _vt_flat = valid_tokens or []
+        _vt_groups = [_vt_flat] if _vt_flat else []
+
+    _valid_tokens_dafny = _dafny.SeqWithoutIsStrInference(
+        [_dafny.Seq(t) for t in _vt_flat]
+    )
+    _valid_token_groups_dafny = _dafny.SeqWithoutIsStrInference(
+        [_dafny.SeqWithoutIsStrInference([_dafny.Seq(t) for t in g]) for g in _vt_groups]
     )
 
-    if isinstance(result, tuple):
+    # Detect strategy signature by parameter name where possible. The compiled
+    # Dafny method exposes its original parameter names via inspect.signature,
+    # so we can choose between the grouped and flat token-context shapes
+    # without breaking strategies compiled against the older flat signature.
+    import inspect
+    _sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
+    _param_names = list(_sig.parameters.keys())
+    _n_params = len(_param_names)
+    if "validTokenGroups" in _param_names:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, _valid_token_groups_dafny, eos_token_dafny,
+        )
+    elif "validTokens" in _param_names or _n_params >= 10:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, _valid_tokens_dafny, eos_token_dafny,
+        )
+    elif _n_params >= 9:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, step_token_budget, eos_token_dafny,
+        )
+    else:
+        # Legacy strategy compiled without stepTokenBudget parameter.
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            start_inside_constrained, current_constrained,
+            max_steps, eos_token_dafny,
+        )
+
+    final_inside_constrained = False
+    final_current_constrained = _dafny.SeqWithoutIsStrInference([])
+
+    if isinstance(result, tuple) and len(result) == 4:
+        csd_output, final_inside_constrained, final_current_constrained, total_cost = result
+    elif isinstance(result, tuple):
         csd_output, total_cost = result
     else:
         csd_output = result
@@ -79,11 +146,51 @@ def run_crane_csd(
     execution_time = time.time() - start_time
 
     constrained_segments: List[Tuple[str, bool]] = []
+    helper_trace = list(trace_state.get("events", [])) if isinstance(trace_state, dict) else []
+
+    final_chunk_tokens = [
+        dafny_seq_to_str(final_current_constrained[i])
+        for i in range(len(final_current_constrained))
+    ]
+    final_chunk = "".join(final_chunk_tokens)
+    hidden_chunk_used = start_inside_constrained and (
+        bool(final_chunk)
+        or any(
+            event.get("helper") in {"AppendConstrainedToken", "ConstrainedStep", "CloseConstrainedSpan"}
+            for event in helper_trace
+        )
+    )
+    if hidden_chunk_used:
+        # Hidden constrained chunks are real parser-governed chunks even though
+        # no << / >> boundary tokens are rendered into user-visible output.
+        constrained_segments.append((final_chunk or output_text, True))
 
     if debug_delimiters:
         print(f"  [DEBUG] Generation finished in {execution_time:.2f}s. Cost: {total_cost}. Tokens: {len(result_tokens)}")
 
-    return output_text, len(result_tokens), execution_time, constrained_segments
+    # Per-example timing dump: what fraction of wall time went to Python callbacks
+    # (LM + parser) vs Dafny-internal work. If callbacks sum << execution_time,
+    # the bottleneck is inside the generated Dafny strategy (not our Python code).
+    try:
+        from evaluations.common.model_utils import _TIMINGS, _print_timings_breakdown
+        from evaluations.common.parser_utils import _PARSER_TIMINGS, print_parser_timings
+
+        lm_total = sum(t for t, _ in _TIMINGS.values())
+        parser_total = sum(t for t, _ in _PARSER_TIMINGS.values())
+        callbacks_total = lm_total + parser_total
+        dafny_internal = max(execution_time - callbacks_total, 0.0)
+        print(
+            f"[STEP_BREAKDOWN] wall={execution_time:.2f}s  lm_callbacks={lm_total:.2f}s  "
+            f"parser_callbacks={parser_total:.2f}s  dafny_internal={dafny_internal:.2f}s  "
+            f"({100*dafny_internal/max(execution_time,1e-6):.1f}% in dafny/uninstrumented)",
+            flush=True,
+        )
+        _print_timings_breakdown(header="end_of_example (cumulative)")
+        print_parser_timings(header="end_of_example (cumulative)")
+    except Exception as _dbg_err:
+        print(f"[STEP_BREAKDOWN] error printing timings: {_dbg_err}", flush=True)
+
+    return output_text, len(result_tokens), execution_time, constrained_segments, helper_trace
 
 
 def run_unconstrained(

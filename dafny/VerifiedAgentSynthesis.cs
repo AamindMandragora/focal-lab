@@ -9,11 +9,19 @@ using System;
 using System.Numerics;
 using System.Collections;
 [assembly: DafnyAssembly.DafnySourceAttribute(@"// dafny 4.11.0.0
-// Command Line Options: /home/advayth2/projects/verified-agent-synthesis/dafny/VerifiedAgentSynthesis.dfy
+// Command-line arguments: build dafny/VerifiedAgentSynthesis.dfy
 // VerifiedAgentSynthesis.dfy
 
 
 module VerifiedDecoderAgent {
+  function Contains(s: string, sub: string): bool
+    decreases s, sub
+  {
+    exists i: int, j: int {:trigger s[i .. j]} :: 
+      0 <= i <= j <= |s| &&
+      s[i .. j] == sub
+  }
+
   type Token = string
 
   type Prefix = seq<Token>
@@ -254,6 +262,10 @@ module VerifiedDecoderAgent {
       ensures token in Tokens
       ensures !IsMasked(token)
       ensures ValidTokensIdsLogits()
+
+    method {:extern} {:axiom} ChooseNextTokenUnconstrained() returns (token: Token)
+      ensures token in Tokens
+      ensures ValidTokensIdsLogits()
   }
 
   class Parser {
@@ -284,6 +296,9 @@ module VerifiedDecoderAgent {
       ensures forall t: seq<char> {:trigger [t]} {:trigger t in ValidNextTokens(prefix)} :: t in ValidNextTokens(prefix) ==> IsValidPrefix(prefix + [t])
       ensures IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0
       decreases prefix
+
+    method {:extern} {:axiom} ParseG(input: string) returns (isSuccess: bool)
+      decreases input
   }
 
   class CSDHelpers {
@@ -299,35 +314,93 @@ module VerifiedDecoderAgent {
         returns (next: Token)
       requires lm.ValidTokensIdsLogits()
       modifies lm.Logits, this
-      ensures next in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures cost == old(cost) + 1
       decreases lm, prompt, generated
     {
       lm.GenerateLogits(prompt + generated);
-      next := lm.ChooseNextToken();
+      next := lm.ChooseNextTokenUnconstrained();
       cost := cost + 1;
     }
 
-    method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix)
+    method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix, eosToken: Token)
         returns (next: Token)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
       requires !parser.IsCompletePrefix(generated)
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
+      requires eosToken in lm.Tokens
       modifies lm.Logits, this
       ensures lm.ValidTokensIdsLogits()
-      ensures forall t: Token {:trigger parser.ValidNextToken(generated, t)} {:trigger lm.IsMasked(t)} {:trigger t in lm.Tokens} :: t in lm.Tokens ==> lm.IsMasked(t) || parser.ValidNextToken(generated, t)
-      ensures parser.ValidNextToken(generated, next)
-      ensures !lm.IsMasked(next)
-      ensures forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated + [next])} :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
+      ensures next in lm.Tokens
+      ensures next == eosToken || parser.ValidNextToken(generated, next)
+      ensures next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated + [next])} :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
       ensures cost == old(cost) + 1
-      decreases lm, parser, prompt, generated
+      decreases lm, parser, prompt, generated, eosToken
     {
       lm.GenerateLogits(prompt + generated);
-      lm.MaskTokensExcept(parser.ValidNextTokens(generated));
+      RollbackPreservesTokenInvariant(lm, parser, generated);
+      var validWithEos := parser.ValidNextTokens(generated) + [eosToken];
+      lm.MaskTokensExcept(validWithEos);
       next := lm.ChooseNextToken();
-      ConstrainedStepNextValid(lm, parser, generated, next);
+      if next != eosToken {
+        ConstrainedStepNextValid(lm, parser, generated, next);
+      }
+      cost := cost + 1;
+    }
+
+    method PenalizedConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, tokensToPenalize: seq<Token>, penaltyAmount: real, eosToken: Token)
+        returns (next: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(constrainedPrefix)
+      requires !parser.IsCompletePrefix(constrainedPrefix)
+      requires forall t: seq<char> {:trigger t in lm.Tokens} {:trigger t in tokensToPenalize} :: t in tokensToPenalize ==> t in lm.Tokens
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures next == eosToken || parser.ValidNextToken(constrainedPrefix, next)
+      ensures next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(constrainedPrefix + [next])} :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, constrainedPrefix, tokensToPenalize, penaltyAmount, eosToken
+    {
+      lm.GenerateLogits(prompt + constrainedPrefix);
+      PenalizeTokenLogits(lm, tokensToPenalize, penaltyAmount);
+      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      var validWithEos := parser.ValidNextTokens(constrainedPrefix) + [eosToken];
+      lm.MaskTokensExcept(validWithEos);
+      next := lm.ChooseNextToken();
+      if next != eosToken {
+        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+      }
+      cost := cost + 1;
+    }
+
+    method BoostedConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, tokensToBoost: seq<Token>, boostAmount: real, eosToken: Token)
+        returns (next: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(constrainedPrefix)
+      requires !parser.IsCompletePrefix(constrainedPrefix)
+      requires forall t: seq<char> {:trigger t in lm.Tokens} {:trigger t in tokensToBoost} :: t in tokensToBoost ==> t in lm.Tokens
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures next == eosToken || parser.ValidNextToken(constrainedPrefix, next)
+      ensures next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(constrainedPrefix + [next])} :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, constrainedPrefix, tokensToBoost, boostAmount, eosToken
+    {
+      lm.GenerateLogits(prompt + constrainedPrefix);
+      BoostTokenLogits(lm, tokensToBoost, boostAmount);
+      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      var validWithEos := parser.ValidNextTokens(constrainedPrefix) + [eosToken];
+      lm.MaskTokensExcept(validWithEos);
+      next := lm.ChooseNextToken();
+      if next != eosToken {
+        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+      }
       cost := cost + 1;
     }
 
@@ -364,31 +437,37 @@ module VerifiedDecoderAgent {
       ensures forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated + [next])} :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
       decreases lm, parser, generated, next
 
-    method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
+    method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, eosToken: Token)
+        returns (generated: Prefix, terminatedByEos: bool)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
+      requires eosToken in lm.Tokens
       modifies lm.Logits, this
       ensures lm.ValidTokensIdsLogits()
       ensures |generated| <= maxSteps
       ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost == old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps
+      ensures terminatedByEos ==> cost == old(cost) + |generated| + 1
+      ensures !terminatedByEos ==> cost == old(cost) + |generated|
+      decreases lm, parser, prompt, maxSteps, eosToken
     {
       generated := [];
       var steps := 0;
+      terminatedByEos := false;
       while steps < maxSteps && !parser.IsCompletePrefix(generated)
         invariant 0 <= steps <= maxSteps
         invariant lm.ValidTokensIdsLogits()
         invariant steps == |generated|
         invariant parser.IsValidPrefix(generated)
-        invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
         invariant cost == old(cost) + steps
+        invariant !terminatedByEos
         decreases maxSteps - steps
       {
-        var next := ConstrainedStep(lm, parser, prompt, generated);
+        var next := ConstrainedStep(lm, parser, prompt, generated, eosToken);
+        if next == eosToken {
+          steps := steps + 1;
+          terminatedByEos := true;
+          break;
+        }
         generated := generated + [next];
         steps := steps + 1;
       }
@@ -410,391 +489,11 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method TryUnconstrainedThenConstrained(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, unconstrainedSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires unconstrainedSteps <= maxSteps
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures cost >= old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps, unconstrainedSteps
-    {
-      var unconstrained := UnconstrainedGeneration(lm, prompt, maxSteps);
-      assert cost == old(cost) + maxSteps;
-      var validPrefix := RollbackToValidPrefix(parser, unconstrained);
-      if parser.IsCompletePrefix(validPrefix) {
-        generated := validPrefix;
-      } else {
-        var remainingSteps := maxSteps - |validPrefix|;
-        generated := validPrefix;
-        var steps := |validPrefix|;
-        RollbackPreservesTokenInvariant(lm, parser, validPrefix);
-        while steps < maxSteps && !parser.IsCompletePrefix(generated)
-          invariant |validPrefix| <= steps <= maxSteps
-          invariant lm.ValidTokensIdsLogits()
-          invariant steps == |generated|
-          invariant parser.IsValidPrefix(generated)
-          invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-          invariant cost >= old(cost) + steps
-          decreases maxSteps - steps
-        {
-          var next := ConstrainedStep(lm, parser, prompt, generated);
-          generated := generated + [next];
-          steps := steps + 1;
-        }
-      }
-    }
-
     static lemma {:axiom} RollbackPreservesTokenInvariant(lm: LM, parser: Parser, prefix: Prefix)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       ensures forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(prefix)} :: t in parser.ValidNextTokens(prefix) ==> t in lm.Tokens
       decreases lm, parser, prefix
-
-    method CompletePrefix(lm: LM, parser: Parser, prompt: Prefix, partial: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(partial)
-      requires |partial| <= maxSteps
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures |generated| >= |partial|
-      ensures generated[..|partial|] == partial
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost == old(cost) + |generated| - |partial|
-      decreases lm, parser, prompt, partial, maxSteps
-    {
-      generated := partial;
-      var steps := |partial|;
-      RollbackPreservesTokenInvariant(lm, parser, partial);
-      while steps < maxSteps && !parser.IsCompletePrefix(generated)
-        invariant |partial| <= steps <= maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant steps == |generated|
-        invariant parser.IsValidPrefix(generated)
-        invariant generated[..|partial|] == partial
-        invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-        invariant cost == old(cost) + steps - |partial|
-        decreases maxSteps - steps
-      {
-        var next := ConstrainedStep(lm, parser, prompt, generated);
-        generated := generated + [next];
-        steps := steps + 1;
-      }
-    }
-
-    method UnconstrainedWithCompletion(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost >= old(cost) + maxSteps
-      decreases lm, parser, prompt, maxSteps
-    {
-      var unconstrained := UnconstrainedGeneration(lm, prompt, maxSteps);
-      var validPrefix := RollbackToValidPrefix(parser, unconstrained);
-      if parser.IsCompletePrefix(validPrefix) {
-        generated := validPrefix;
-      } else {
-        var remainingSteps := maxSteps - |validPrefix|;
-        generated := validPrefix;
-        var steps := |validPrefix|;
-        RollbackPreservesTokenInvariant(lm, parser, validPrefix);
-        while steps < maxSteps && !parser.IsCompletePrefix(generated)
-          invariant |validPrefix| <= steps <= maxSteps
-          invariant lm.ValidTokensIdsLogits()
-          invariant steps == |generated|
-          invariant parser.IsValidPrefix(generated)
-          invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-          invariant cost >= old(cost) + maxSteps
-          decreases maxSteps - steps
-        {
-          var next := ConstrainedStep(lm, parser, prompt, generated);
-          generated := generated + [next];
-          steps := steps + 1;
-        }
-      }
-    }
-
-    method HybridGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires ""<<"" in lm.Tokens && "">>"" in lm.Tokens
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures old(cost) + |generated| <= cost <= old(cost) + 2 * maxSteps
-      decreases lm, parser, prompt, maxSteps
-    {
-      generated := [];
-      var totalSteps := 0;
-      var insideHybrid := false;
-      while totalSteps < maxSteps && !parser.IsCompletePrefix(generated) && |generated| < maxSteps
-        invariant 0 <= totalSteps <= maxSteps
-        invariant |generated| <= totalSteps
-        invariant |generated| <= maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant !insideHybrid ==> parser.IsValidPrefix(generated)
-        invariant !insideHybrid ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-        invariant old(cost) + |generated| <= cost <= old(cost) + totalSteps
-        decreases maxSteps - totalSteps
-      {
-        if !insideHybrid {
-          var next := ConstrainedStep(lm, parser, prompt, generated);
-          generated := generated + [next];
-          totalSteps := totalSteps + 1;
-          if next == ""<<"" {
-            insideHybrid := true;
-          }
-        } else {
-          var next := UnconstrainedStep(lm, prompt, generated);
-          generated := generated + [next];
-          totalSteps := totalSteps + 1;
-          if next == "">>"" {
-            if parser.IsValidPrefix(generated) {
-              insideHybrid := false;
-              RollbackPreservesTokenInvariant(lm, parser, generated);
-            } else {
-              generated := RollbackToValidPrefix(parser, generated);
-              insideHybrid := false;
-              RollbackPreservesTokenInvariant(lm, parser, generated);
-            }
-          }
-        }
-      }
-      if insideHybrid {
-        generated := RollbackToValidPrefix(parser, generated);
-        insideHybrid := false;
-        RollbackPreservesTokenInvariant(lm, parser, generated);
-      }
-      var stepsBeforeFinal := totalSteps;
-      var lengthBeforeFinal := |generated|;
-      while |generated| < maxSteps && !parser.IsCompletePrefix(generated)
-        invariant |generated| <= maxSteps
-        invariant stepsBeforeFinal <= totalSteps <= stepsBeforeFinal + |generated| - lengthBeforeFinal
-        invariant totalSteps <= 2 * maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant parser.IsValidPrefix(generated)
-        invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-        invariant old(cost) + |generated| <= cost <= old(cost) + totalSteps
-        decreases maxSteps - |generated|
-      {
-        var next := ConstrainedStep(lm, parser, prompt, generated);
-        generated := generated + [next];
-        totalSteps := totalSteps + 1;
-      }
-    }
-
-    method SpeculativeGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, speculativeWindow: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires speculativeWindow > 0
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost >= old(cost)
-      decreases lm, parser, prompt, maxSteps, speculativeWindow
-    {
-      generated := [];
-      var steps := 0;
-      while steps < maxSteps && !parser.IsCompletePrefix(generated)
-        invariant 0 <= steps <= maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant steps == |generated|
-        invariant parser.IsValidPrefix(generated)
-        invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-        invariant cost >= old(cost)
-        decreases maxSteps - steps
-      {
-        var speculateSteps := if steps + speculativeWindow <= maxSteps then speculativeWindow else maxSteps - steps;
-        var speculated := UnconstrainedGeneration(lm, prompt + generated, speculateSteps);
-        var validCount := 0;
-        var tempPrefix := generated;
-        while validCount < |speculated| && parser.IsValidPrefix(tempPrefix + [speculated[validCount]])
-          invariant 0 <= validCount <= |speculated|
-          invariant parser.IsValidPrefix(tempPrefix)
-          invariant tempPrefix == generated + speculated[..validCount]
-          decreases |speculated| - validCount
-        {
-          tempPrefix := tempPrefix + [speculated[validCount]];
-          validCount := validCount + 1;
-        }
-        if validCount > 0 {
-          generated := tempPrefix;
-          steps := steps + validCount;
-          RollbackPreservesTokenInvariant(lm, parser, generated);
-        } else {
-          var next := ConstrainedStep(lm, parser, prompt, generated);
-          generated := generated + [next];
-          steps := steps + 1;
-        }
-      }
-    }
-
-    method PureConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost == old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps
-    {
-      generated := ConstrainedGeneration(lm, parser, prompt, maxSteps);
-    }
-
-    method GenerateWithReasonableLength(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, reasonableLength: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires reasonableLength > 0
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures parser.IsCompletePrefix(generated) && |generated| <= reasonableLength ==> |generated| <= reasonableLength
-      ensures cost == old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps, reasonableLength
-    {
-      generated := [];
-      var steps := 0;
-      while steps < maxSteps && !parser.IsCompletePrefix(generated)
-        invariant 0 <= steps <= maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant steps == |generated|
-        invariant parser.IsValidPrefix(generated)
-        invariant forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(generated)} :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps
-      {
-        var next := ConstrainedStep(lm, parser, prompt, generated);
-        generated := generated + [next];
-        steps := steps + 1;
-        if parser.IsCompletePrefix(generated) && |generated| <= reasonableLength {
-          break;
-        }
-      }
-    }
-
-    method GenerateUntilFirstComplete(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost == old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps
-    {
-      generated := ConstrainedGeneration(lm, parser, prompt, maxSteps);
-    }
-
-    static method SelectBestCandidate(candidates: seq<Prefix>, parser: Parser, preferShorter: bool)
-        returns (best: Prefix)
-      requires |candidates| > 0
-      requires forall c: Prefix {:trigger parser.IsValidPrefix(c)} {:trigger c in candidates} :: c in candidates ==> parser.IsValidPrefix(c)
-      ensures best in candidates
-      decreases candidates, parser, preferShorter
-    {
-      var result := candidates[0];
-      var bestScore := if preferShorter && parser.IsCompletePrefix(result) then -|result| else -1000;
-      var i := 1;
-      while i < |candidates|
-        invariant 0 <= i <= |candidates|
-        invariant result in candidates
-        decreases |candidates| - i
-      {
-        var candidate := candidates[i];
-        var score := if preferShorter && parser.IsCompletePrefix(candidate) then -|candidate| else -1000;
-        if score > bestScore || (score == bestScore && preferShorter && parser.IsCompletePrefix(candidate) && |candidate| < |result|) {
-          result := candidate;
-          bestScore := score;
-        }
-        i := i + 1;
-      }
-      best := result;
-    }
-
-    method GenerateAndSelectBest(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, numCandidates: nat, preferShorter: bool)
-        returns (generated: Prefix)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires numCandidates > 0
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures parser.IsValidPrefix(generated)
-      ensures |generated| == maxSteps || parser.IsCompletePrefix(generated)
-      ensures cost >= old(cost)
-      decreases lm, parser, prompt, maxSteps, numCandidates, preferShorter
-    {
-      var firstCandidate: Prefix;
-      firstCandidate := ConstrainedGeneration(lm, parser, prompt, maxSteps);
-      var candidates: seq<Prefix> := [firstCandidate];
-      var i := 1;
-      while i < numCandidates
-        invariant 1 <= i <= numCandidates
-        invariant |candidates| == i
-        invariant lm.ValidTokensIdsLogits()
-        invariant forall c: Prefix {:trigger parser.IsCompletePrefix(c)} {:trigger parser.IsValidPrefix(c)} {:trigger |c|} {:trigger c in candidates} :: (c in candidates ==> |c| <= maxSteps) && (c in candidates ==> parser.IsValidPrefix(c)) && (c in candidates ==> parser.IsCompletePrefix(c) || |c| == maxSteps)
-        invariant cost >= old(cost)
-        decreases numCandidates - i
-      {
-        var candidate: Prefix;
-        candidate := ConstrainedGeneration(lm, parser, prompt, maxSteps);
-        candidates := candidates + [candidate];
-        i := i + 1;
-      }
-      var best: Prefix;
-      best := SelectBestCandidate(candidates, parser, preferShorter);
-      generated := best;
-    }
-
-    method GenerateReasoningAndAnswer(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
-        returns (generated: Prefix, reasoning: string)
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
-      requires ""<<"" in lm.Tokens && "">>"" in lm.Tokens
-      modifies lm.Logits, this
-      ensures lm.ValidTokensIdsLogits()
-      ensures parser.IsValidPrefix(generated)
-      ensures reasoning != """" ==> exists pre: seq<char>, post: seq<char> {:trigger pre + ""<<"" + reasoning + "">>"" + post} :: PrefixToString(generated) == pre + ""<<"" + reasoning + "">>"" + post
-      ensures cost >= old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps
-    {
-      generated := HybridGeneration(lm, parser, prompt, maxSteps);
-      reasoning := ExtractContentBetweenDelimiters(PrefixToString(generated), ""<<"", "">>"");
-    }
 
     static function PrefixToString(p: Prefix): string
       decreases p
@@ -816,17 +515,293 @@ module VerifiedDecoderAgent {
       ensures content != """" ==> exists pre: seq<char>, post: seq<char> {:trigger pre + startDelim + content + endDelim + post} :: input == pre + startDelim + content + endDelim + post
       decreases input, startDelim, endDelim
 
-    method CraneGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat)
+    method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
+      requires lm.ValidTokensIdsLogits()
+      requires forall t: seq<char> {:trigger t in lm.Tokens} {:trigger t in tokens} :: t in tokens ==> t in lm.Tokens
+      requires amount >= 0.0 && amount <= 100000000.0
+      modifies lm.Logits
+      ensures lm.ValidTokensIdsLogits()
+      ensures forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in tokens} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in tokens) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+      decreases lm, tokens, amount
+    {
+      var i := 0;
+      while i < |tokens|
+        invariant 0 <= i <= |tokens|
+        invariant lm.ValidTokensIdsLogits()
+        invariant forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in tokens[..i]} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in tokens[..i]) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+        decreases |tokens| - i
+      {
+        var id := lm.TokenToId(tokens[i]);
+        var newVal := lm.Logits[id] + amount;
+        if newVal > 1000000000.0 {
+          newVal := 1000000000.0;
+        }
+        lm.Logits[id] := newVal;
+        i := i + 1;
+      }
+    }
+
+    method PenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
+      requires lm.ValidTokensIdsLogits()
+      requires forall t: seq<char> {:trigger t in lm.Tokens} {:trigger t in tokens} :: t in tokens ==> t in lm.Tokens
+      requires amount >= 0.0 && amount <= 100000000.0
+      modifies lm.Logits
+      ensures lm.ValidTokensIdsLogits()
+      ensures forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in tokens} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in tokens) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+      decreases lm, tokens, amount
+    {
+      var i := 0;
+      while i < |tokens|
+        invariant 0 <= i <= |tokens|
+        invariant lm.ValidTokensIdsLogits()
+        invariant forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in tokens[..i]} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in tokens[..i]) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+        decreases |tokens| - i
+      {
+        var id := lm.TokenToId(tokens[i]);
+        var newVal := lm.Logits[id] - amount;
+        if newVal < -1000000000.0 {
+          newVal := -1000000000.0;
+        }
+        lm.Logits[id] := newVal;
+        i := i + 1;
+      }
+    }
+
+    method GetHighestLogitToken(lm: LM) returns (token: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires |lm.Tokens| > 0
+      ensures lm.ValidTokensIdsLogits()
+      ensures token in lm.Tokens
+      decreases lm
+    {
+      var bestIdx := 0;
+      var i := 1;
+      while i < |lm.Tokens|
+        invariant 1 <= i <= |lm.Tokens|
+        invariant 0 <= bestIdx < |lm.Tokens|
+        invariant lm.ValidTokensIdsLogits()
+        decreases |lm.Tokens| - i
+      {
+        if lm.Logits[i] > lm.Logits[bestIdx] {
+          bestIdx := i;
+        }
+        i := i + 1;
+      }
+      token := lm.IdToToken(bestIdx);
+    }
+
+    method DeadEndDetection(parser: Parser, prefix: Prefix, minValidCount: nat)
+        returns (isNarrow: bool)
+      requires parser.IsValidPrefix(prefix)
+      ensures isNarrow <==> |parser.ValidNextTokens(prefix)| < minValidCount
+      decreases parser, prefix, minValidCount
+    {
+      var validTokens := parser.ValidNextTokens(prefix);
+      isNarrow := |validTokens| < minValidCount;
+    }
+
+    method SoftConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, boostAmount: real, eosToken: Token)
+        returns (next: Token, isValid: bool)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(constrainedPrefix)
+      requires !parser.IsCompletePrefix(constrainedPrefix)
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures isValid <==> next == eosToken || parser.IsValidPrefix(constrainedPrefix + [next])
+      ensures isValid && next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(constrainedPrefix + [next])} :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, constrainedPrefix, boostAmount, eosToken
+    {
+      lm.GenerateLogits(prompt + constrainedPrefix);
+      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      var validTokens := parser.ValidNextTokens(constrainedPrefix);
+      BoostTokenLogits(lm, validTokens, boostAmount);
+      BoostTokenLogits(lm, [eosToken], boostAmount);
+      next := lm.ChooseNextTokenUnconstrained();
+      cost := cost + 1;
+      isValid := next == eosToken || parser.IsValidPrefix(constrainedPrefix + [next]);
+      if isValid && next != eosToken {
+        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+      }
+    }
+
+    method ConfidenceGatedStep(lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, eosToken: Token)
+        returns (next: Token, wasConstrained: bool)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(constrainedPrefix)
+      requires !parser.IsCompletePrefix(constrainedPrefix)
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures next == eosToken || (wasConstrained ==> parser.IsValidPrefix(constrainedPrefix + [next]))
+      ensures next != eosToken && wasConstrained ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(constrainedPrefix + [next])} :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, constrainedPrefix, eosToken
+    {
+      lm.GenerateLogits(prompt + constrainedPrefix);
+      var topToken := GetHighestLogitToken(lm);
+      if topToken == eosToken {
+        next := lm.ChooseNextTokenUnconstrained();
+        wasConstrained := false;
+      } else if parser.IsValidPrefix(constrainedPrefix + [topToken]) {
+        next := lm.ChooseNextTokenUnconstrained();
+        wasConstrained := false;
+      } else {
+        RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+        var validWithEos := parser.ValidNextTokens(constrainedPrefix) + [eosToken];
+        lm.MaskTokensExcept(validWithEos);
+        next := lm.ChooseNextToken();
+        wasConstrained := true;
+        if next != eosToken {
+          RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix + [next]);
+        }
+      }
+      cost := cost + 1;
+    }
+
+    static function CountSubstring(s: string, sub: string): nat
+      requires |sub| > 0
+      decreases |s|
+    {
+      if |s| < |sub| then
+        0
+      else if s[..|sub|] == sub then
+        1 + CountSubstring(s[|sub|..], sub)
+      else
+        CountSubstring(s[1..], sub)
+    }
+
+    method GetTokenLogit(lm: LM, token: Token) returns (logit: real)
+      requires lm.ValidTokensIdsLogits()
+      requires token in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures logit == lm.Logits[lm.TokenToId(token)]
+      decreases lm, token
+    {
+      logit := lm.Logits[lm.TokenToId(token)];
+    }
+
+    method ScaleAllLogits(lm: LM, scalar: real)
+      requires lm.ValidTokensIdsLogits()
+      requires scalar > 0.0 && scalar <= 100000000.0
+      modifies lm.Logits
+      ensures lm.ValidTokensIdsLogits()
+      ensures forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in lm.Tokens) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+      decreases lm, scalar
+    {
+      var i := 0;
+      while i < |lm.Tokens|
+        invariant 0 <= i <= |lm.Tokens|
+        invariant lm.ValidTokensIdsLogits()
+        invariant forall t: Token {:trigger old(lm.TokenToId(t))} {:trigger lm.TokenToId(t)} {:trigger t in lm.Tokens[..i]} {:trigger t in lm.Tokens} :: t in lm.Tokens && !(t in lm.Tokens[..i]) ==> lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
+        decreases |lm.Tokens| - i
+      {
+        var id := lm.TokenToId(lm.Tokens[i]);
+        var newVal := lm.Logits[id] * scalar;
+        if newVal > 1000000000.0 {
+          newVal := 1000000000.0;
+        }
+        if newVal < -1000000000.0 {
+          newVal := -1000000000.0;
+        }
+        lm.Logits[id] := newVal;
+        i := i + 1;
+      }
+    }
+
+    method ValidTokenCount(parser: Parser, prefix: Prefix) returns (count: nat)
+      requires parser.IsValidPrefix(prefix)
+      ensures count == |parser.ValidNextTokens(prefix)|
+      decreases parser, prefix
+    {
+      var validTokens := parser.ValidNextTokens(prefix);
+      count := |validTokens|;
+    }
+
+    method IsTokenValidNext(parser: Parser, prefix: Prefix, token: Token)
+        returns (isValid: bool)
+      requires parser.IsValidPrefix(prefix)
+      ensures isValid <==> token in parser.ValidNextTokens(prefix)
+      decreases parser, prefix, token
+    {
+      var validTokens := parser.ValidNextTokens(prefix);
+      isValid := token in validTokens;
+    }
+
+    method RepetitionPenaltyStep(lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, generated: Prefix, penaltyAmount: real, eosToken: Token)
+        returns (next: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(prefix)
+      requires !parser.IsCompletePrefix(prefix)
+      requires forall t: seq<char> {:trigger t in lm.Tokens} {:trigger t in generated} :: t in generated ==> t in lm.Tokens
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures next == eosToken || parser.ValidNextToken(prefix, next)
+      ensures next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(prefix + [next])} :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, prefix, generated, penaltyAmount, eosToken
+    {
+      lm.GenerateLogits(prompt + prefix);
+      PenalizeTokenLogits(lm, generated, penaltyAmount);
+      RollbackPreservesTokenInvariant(lm, parser, prefix);
+      var validWithEos := parser.ValidNextTokens(prefix) + [eosToken];
+      lm.MaskTokensExcept(validWithEos);
+      next := lm.ChooseNextToken();
+      if next != eosToken {
+        ConstrainedStepNextValid(lm, parser, prefix, next);
+      }
+      cost := cost + 1;
+    }
+
+    method TemperatureConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, temperature: real, eosToken: Token)
+        returns (next: Token)
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(prefix)
+      requires !parser.IsCompletePrefix(prefix)
+      requires temperature >= 0.00000001 && temperature <= 100000000.0
+      requires eosToken in lm.Tokens
+      modifies lm.Logits, this
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures next == eosToken || parser.ValidNextToken(prefix, next)
+      ensures next != eosToken ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(prefix + [next])} :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens
+      ensures cost == old(cost) + 1
+      decreases lm, parser, prompt, prefix, temperature, eosToken
+    {
+      lm.GenerateLogits(prompt + prefix);
+      var scalar := 1.0 / temperature;
+      if scalar > 100000000.0 {
+        scalar := 100000000.0;
+      }
+      ScaleAllLogits(lm, scalar);
+      RollbackPreservesTokenInvariant(lm, parser, prefix);
+      var validWithEos := parser.ValidNextTokens(prefix) + [eosToken];
+      lm.MaskTokensExcept(validWithEos);
+      next := lm.ChooseNextToken();
+      if next != eosToken {
+        ConstrainedStepNextValid(lm, parser, prefix, next);
+      }
+      cost := cost + 1;
+    }
+
+    method CraneGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, minReasoningSteps: nat, eosToken: Token)
         returns (generated: Prefix)
       requires lm.ValidTokensIdsLogits()
       requires ""<<"" in lm.Tokens && "">>"" in lm.Tokens
+      requires eosToken in lm.Tokens
       requires parser.IsValidPrefix([])
-      requires forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens([])} :: t in parser.ValidNextTokens([]) ==> t in lm.Tokens
       modifies lm.Logits, this
       ensures lm.ValidTokensIdsLogits()
       ensures |generated| <= maxSteps
-      ensures cost == old(cost) + |generated|
-      decreases lm, parser, prompt, maxSteps
+      ensures cost <= old(cost) + maxSteps
+      decreases lm, parser, prompt, maxSteps, minReasoningSteps, eosToken
     {
       generated := [];
       var steps := 0;
@@ -838,28 +813,50 @@ module VerifiedDecoderAgent {
         invariant |currentConstrained| <= |generated|
         invariant lm.ValidTokensIdsLogits()
         invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)
-        invariant insideConstrained ==> forall t: Token {:trigger t in lm.Tokens} {:trigger t in parser.ValidNextTokens(currentConstrained)} :: t in parser.ValidNextTokens(currentConstrained) ==> t in lm.Tokens
         invariant cost == old(cost) + steps
         decreases maxSteps - steps, if insideConstrained then 1 else 0
       {
         if !insideConstrained {
-          var next := UnconstrainedStep(lm, prompt, generated);
-          generated := generated + [next];
-          steps := steps + 1;
-          if next == ""<<"" {
-            insideConstrained := true;
-            currentConstrained := [];
-            RollbackPreservesTokenInvariant(lm, parser, []);
+          if steps < minReasoningSteps {
+            lm.GenerateLogits(prompt + generated);
+            var next := lm.ChooseNextTokenUnconstrained();
+            if next == eosToken {
+              break;
+            }
+            if Contains(next, ""<<"") {
+              lm.MaskToken(""<<"");
+              next := lm.ChooseNextToken();
+            }
+            generated := generated + [next];
+            steps := steps + 1;
+            cost := cost + 1;
+          } else {
+            var next := UnconstrainedStep(lm, prompt, generated);
+            if next == eosToken {
+              break;
+            }
+            generated := generated + [next];
+            steps := steps + 1;
+            if Contains(next, ""<<"") {
+              insideConstrained := true;
+              currentConstrained := [];
+              RollbackPreservesTokenInvariant(lm, parser, []);
+            }
           }
         } else {
           if parser.IsCompletePrefix(currentConstrained) {
             insideConstrained := false;
           } else {
-            var next := ConstrainedStep(lm, parser, prompt + generated[..|generated| - |currentConstrained|], currentConstrained);
+            var next := ConstrainedStep(lm, parser, prompt + generated[..|generated| - |currentConstrained|], currentConstrained, eosToken);
+            if next == eosToken {
+              generated := generated + [next];
+              steps := steps + 1;
+              break;
+            }
             generated := generated + [next];
             currentConstrained := currentConstrained + [next];
             steps := steps + 1;
-            if next == "">>"" {
+            if Contains(next, "">>"") {
               insideConstrained := false;
             }
           }
@@ -6548,6 +6545,18 @@ internal static class FuncExtensions {
 // end of class FuncExtensions
 namespace VerifiedDecoderAgent {
 
+  public partial class __default {
+    public static bool Contains(Dafny.ISequence<Dafny.Rune> s, Dafny.ISequence<Dafny.Rune> sub)
+    {
+      return Dafny.Helpers.Id<Func<Dafny.ISequence<Dafny.Rune>, Dafny.ISequence<Dafny.Rune>, bool>>((_0_s, _1_sub) => Dafny.Helpers.Quantifier<BigInteger>(Dafny.Helpers.IntegerRange(BigInteger.Zero, ((new BigInteger((_0_s).Count)) + (BigInteger.One)) + (BigInteger.One)), false, (((_exists_var_0) => {
+        BigInteger _2_i = (BigInteger)_exists_var_0;
+        return Dafny.Helpers.Quantifier<BigInteger>(Dafny.Helpers.IntegerRange(_2_i, (new BigInteger((_0_s).Count)) + (BigInteger.One)), false, (((_exists_var_1) => {
+          BigInteger _3_j = (BigInteger)_exists_var_1;
+          return ((((_2_i).Sign != -1) && ((_2_i) <= (_3_j))) && ((_3_j) <= (new BigInteger((_0_s).Count)))) && (((_0_s).Subsequence(_2_i, _3_j)).Equals(_1_sub));
+        })));
+      }))))(s, sub);
+    }
+  }
 
   public partial class LM {
     public Dafny.BigRational[] Logits {get; set;} = new Dafny.BigRational[0];
@@ -6714,16 +6723,46 @@ namespace VerifiedDecoderAgent {
       Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
       (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, generated));
       Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (lm).ChooseNextTokenUnconstrained();
+      next = _out0;
+      (this).cost = (this.cost) + (BigInteger.One);
+      return next;
+    }
+    public Dafny.ISequence<Dafny.Rune> ConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated, Dafny.ISequence<Dafny.Rune> eosToken)
+    {
+      Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, generated));
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validWithEos;
+      _0_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(generated), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+      (lm).MaskTokensExcept(_0_validWithEos);
+      Dafny.ISequence<Dafny.Rune> _out0;
       _out0 = (lm).ChooseNextToken();
       next = _out0;
       (this).cost = (this.cost) + (BigInteger.One);
       return next;
     }
-    public Dafny.ISequence<Dafny.Rune> ConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated)
+    public Dafny.ISequence<Dafny.Rune> PenalizedConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> constrainedPrefix, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> tokensToPenalize, Dafny.BigRational penaltyAmount, Dafny.ISequence<Dafny.Rune> eosToken)
     {
       Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
-      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, generated));
-      (lm).MaskTokensExcept((parser).ValidNextTokens(generated));
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, constrainedPrefix));
+      (this).PenalizeTokenLogits(lm, tokensToPenalize, penaltyAmount);
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validWithEos;
+      _0_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(constrainedPrefix), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+      (lm).MaskTokensExcept(_0_validWithEos);
+      Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (lm).ChooseNextToken();
+      next = _out0;
+      (this).cost = (this.cost) + (BigInteger.One);
+      return next;
+    }
+    public Dafny.ISequence<Dafny.Rune> BoostedConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> constrainedPrefix, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> tokensToBoost, Dafny.BigRational boostAmount, Dafny.ISequence<Dafny.Rune> eosToken)
+    {
+      Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, constrainedPrefix));
+      (this).BoostTokenLogits(lm, tokensToBoost, boostAmount);
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validWithEos;
+      _0_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(constrainedPrefix), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+      (lm).MaskTokensExcept(_0_validWithEos);
       Dafny.ISequence<Dafny.Rune> _out0;
       _out0 = (lm).ChooseNextToken();
       next = _out0;
@@ -6746,21 +6785,29 @@ namespace VerifiedDecoderAgent {
       }
       return generated;
     }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> ConstrainedGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
+    public void ConstrainedGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, Dafny.ISequence<Dafny.Rune> eosToken, out Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated, out bool terminatedByEos)
     {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
+      generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
+      terminatedByEos = false;
       generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
       BigInteger _0_steps;
       _0_steps = BigInteger.Zero;
+      terminatedByEos = false;
       while (((_0_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
         Dafny.ISequence<Dafny.Rune> _1_next;
         Dafny.ISequence<Dafny.Rune> _out0;
-        _out0 = (this).ConstrainedStep(lm, parser, prompt, generated);
+        _out0 = (this).ConstrainedStep(lm, parser, prompt, generated, eosToken);
         _1_next = _out0;
+        if ((_1_next).Equals(eosToken)) {
+          _0_steps = (_0_steps) + (BigInteger.One);
+          terminatedByEos = true;
+          goto after_0;
+        }
         generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_1_next));
         _0_steps = (_0_steps) + (BigInteger.One);
+      continue_0: ;
       }
-      return generated;
+    after_0: ;
     }
     public static Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> RollbackToValidPrefix(VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated)
     {
@@ -6770,282 +6817,6 @@ namespace VerifiedDecoderAgent {
         repaired = (repaired).Take((new BigInteger((repaired).Count)) - (BigInteger.One));
       }
       return repaired;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> TryUnconstrainedThenConstrained(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, BigInteger unconstrainedSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_unconstrained;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).UnconstrainedGeneration(lm, prompt, maxSteps);
-      _0_unconstrained = _out0;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _1_validPrefix;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out1;
-      _out1 = VerifiedDecoderAgent.CSDHelpers.RollbackToValidPrefix(parser, _0_unconstrained);
-      _1_validPrefix = _out1;
-      if ((parser).IsCompletePrefix(_1_validPrefix)) {
-        generated = _1_validPrefix;
-      } else {
-        BigInteger _2_remainingSteps;
-        _2_remainingSteps = (maxSteps) - (new BigInteger((_1_validPrefix).Count));
-        generated = _1_validPrefix;
-        BigInteger _3_steps;
-        _3_steps = new BigInteger((_1_validPrefix).Count);
-        while (((_3_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-          Dafny.ISequence<Dafny.Rune> _4_next;
-          Dafny.ISequence<Dafny.Rune> _out2;
-          _out2 = (this).ConstrainedStep(lm, parser, prompt, generated);
-          _4_next = _out2;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_4_next));
-          _3_steps = (_3_steps) + (BigInteger.One);
-        }
-      }
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> CompletePrefix(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> @partial, BigInteger maxSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      generated = @partial;
-      BigInteger _0_steps;
-      _0_steps = new BigInteger((@partial).Count);
-      while (((_0_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-        Dafny.ISequence<Dafny.Rune> _1_next;
-        Dafny.ISequence<Dafny.Rune> _out0;
-        _out0 = (this).ConstrainedStep(lm, parser, prompt, generated);
-        _1_next = _out0;
-        generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_1_next));
-        _0_steps = (_0_steps) + (BigInteger.One);
-      }
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> UnconstrainedWithCompletion(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_unconstrained;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).UnconstrainedGeneration(lm, prompt, maxSteps);
-      _0_unconstrained = _out0;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _1_validPrefix;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out1;
-      _out1 = VerifiedDecoderAgent.CSDHelpers.RollbackToValidPrefix(parser, _0_unconstrained);
-      _1_validPrefix = _out1;
-      if ((parser).IsCompletePrefix(_1_validPrefix)) {
-        generated = _1_validPrefix;
-      } else {
-        BigInteger _2_remainingSteps;
-        _2_remainingSteps = (maxSteps) - (new BigInteger((_1_validPrefix).Count));
-        generated = _1_validPrefix;
-        BigInteger _3_steps;
-        _3_steps = new BigInteger((_1_validPrefix).Count);
-        while (((_3_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-          Dafny.ISequence<Dafny.Rune> _4_next;
-          Dafny.ISequence<Dafny.Rune> _out2;
-          _out2 = (this).ConstrainedStep(lm, parser, prompt, generated);
-          _4_next = _out2;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_4_next));
-          _3_steps = (_3_steps) + (BigInteger.One);
-        }
-      }
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> HybridGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
-      BigInteger _0_totalSteps;
-      _0_totalSteps = BigInteger.Zero;
-      bool _1_insideHybrid;
-      _1_insideHybrid = false;
-      while ((((_0_totalSteps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) && ((new BigInteger((generated).Count)) < (maxSteps))) {
-        if (!(_1_insideHybrid)) {
-          Dafny.ISequence<Dafny.Rune> _2_next;
-          Dafny.ISequence<Dafny.Rune> _out0;
-          _out0 = (this).ConstrainedStep(lm, parser, prompt, generated);
-          _2_next = _out0;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_2_next));
-          _0_totalSteps = (_0_totalSteps) + (BigInteger.One);
-          if ((_2_next).Equals(Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"))) {
-            _1_insideHybrid = true;
-          }
-        } else {
-          Dafny.ISequence<Dafny.Rune> _3_next;
-          Dafny.ISequence<Dafny.Rune> _out1;
-          _out1 = (this).UnconstrainedStep(lm, prompt, generated);
-          _3_next = _out1;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_3_next));
-          _0_totalSteps = (_0_totalSteps) + (BigInteger.One);
-          if ((_3_next).Equals(Dafny.Sequence<Dafny.Rune>.UnicodeFromString(">>"))) {
-            if ((parser).IsValidPrefix(generated)) {
-              _1_insideHybrid = false;
-            } else {
-              Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out2;
-              _out2 = VerifiedDecoderAgent.CSDHelpers.RollbackToValidPrefix(parser, generated);
-              generated = _out2;
-              _1_insideHybrid = false;
-            }
-          }
-        }
-      }
-      if (_1_insideHybrid) {
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out3;
-        _out3 = VerifiedDecoderAgent.CSDHelpers.RollbackToValidPrefix(parser, generated);
-        generated = _out3;
-        _1_insideHybrid = false;
-      }
-      BigInteger _4_stepsBeforeFinal;
-      _4_stepsBeforeFinal = _0_totalSteps;
-      BigInteger _5_lengthBeforeFinal;
-      _5_lengthBeforeFinal = new BigInteger((generated).Count);
-      while (((new BigInteger((generated).Count)) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-        Dafny.ISequence<Dafny.Rune> _6_next;
-        Dafny.ISequence<Dafny.Rune> _out4;
-        _out4 = (this).ConstrainedStep(lm, parser, prompt, generated);
-        _6_next = _out4;
-        generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_6_next));
-        _0_totalSteps = (_0_totalSteps) + (BigInteger.One);
-      }
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> SpeculativeGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, BigInteger speculativeWindow)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
-      BigInteger _0_steps;
-      _0_steps = BigInteger.Zero;
-      while (((_0_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-        BigInteger _1_speculateSteps;
-        if (((_0_steps) + (speculativeWindow)) <= (maxSteps)) {
-          _1_speculateSteps = speculativeWindow;
-        } else {
-          _1_speculateSteps = (maxSteps) - (_0_steps);
-        }
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _2_speculated;
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-        _out0 = (this).UnconstrainedGeneration(lm, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, generated), _1_speculateSteps);
-        _2_speculated = _out0;
-        BigInteger _3_validCount;
-        _3_validCount = BigInteger.Zero;
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _4_tempPrefix;
-        _4_tempPrefix = generated;
-        while (((_3_validCount) < (new BigInteger((_2_speculated).Count))) && ((parser).IsValidPrefix(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(_4_tempPrefix, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements((_2_speculated).Select(_3_validCount)))))) {
-          _4_tempPrefix = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(_4_tempPrefix, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements((_2_speculated).Select(_3_validCount)));
-          _3_validCount = (_3_validCount) + (BigInteger.One);
-        }
-        if ((_3_validCount).Sign == 1) {
-          generated = _4_tempPrefix;
-          _0_steps = (_0_steps) + (_3_validCount);
-        } else {
-          Dafny.ISequence<Dafny.Rune> _5_next;
-          Dafny.ISequence<Dafny.Rune> _out1;
-          _out1 = (this).ConstrainedStep(lm, parser, prompt, generated);
-          _5_next = _out1;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_5_next));
-          _0_steps = (_0_steps) + (BigInteger.One);
-        }
-      }
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> PureConstrainedGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).ConstrainedGeneration(lm, parser, prompt, maxSteps);
-      generated = _out0;
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> GenerateWithReasonableLength(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, BigInteger reasonableLength)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
-      BigInteger _0_steps;
-      _0_steps = BigInteger.Zero;
-      while (((_0_steps) < (maxSteps)) && (!((parser).IsCompletePrefix(generated)))) {
-        Dafny.ISequence<Dafny.Rune> _1_next;
-        Dafny.ISequence<Dafny.Rune> _out0;
-        _out0 = (this).ConstrainedStep(lm, parser, prompt, generated);
-        _1_next = _out0;
-        generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_1_next));
-        _0_steps = (_0_steps) + (BigInteger.One);
-        if (((parser).IsCompletePrefix(generated)) && ((new BigInteger((generated).Count)) <= (reasonableLength))) {
-          goto after_0;
-        }
-      continue_0: ;
-      }
-    after_0: ;
-      return generated;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> GenerateUntilFirstComplete(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).ConstrainedGeneration(lm, parser, prompt, maxSteps);
-      generated = _out0;
-      return generated;
-    }
-    public static Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> SelectBestCandidate(Dafny.ISequence<Dafny.ISequence<Dafny.ISequence<Dafny.Rune>>> candidates, VerifiedDecoderAgent.Parser parser, bool preferShorter)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> best = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_result;
-      _0_result = (candidates).Select(BigInteger.Zero);
-      BigInteger _1_bestScore;
-      if ((preferShorter) && ((parser).IsCompletePrefix(_0_result))) {
-        _1_bestScore = (BigInteger.Zero) - (new BigInteger((_0_result).Count));
-      } else {
-        _1_bestScore = new BigInteger(-1000);
-      }
-      BigInteger _2_i;
-      _2_i = BigInteger.One;
-      while ((_2_i) < (new BigInteger((candidates).Count))) {
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _3_candidate;
-        _3_candidate = (candidates).Select(_2_i);
-        BigInteger _4_score;
-        if ((preferShorter) && ((parser).IsCompletePrefix(_3_candidate))) {
-          _4_score = (BigInteger.Zero) - (new BigInteger((_3_candidate).Count));
-        } else {
-          _4_score = new BigInteger(-1000);
-        }
-        if (((_4_score) > (_1_bestScore)) || (((((_4_score) == (_1_bestScore)) && (preferShorter)) && ((parser).IsCompletePrefix(_3_candidate))) && ((new BigInteger((_3_candidate).Count)) < (new BigInteger((_0_result).Count))))) {
-          _0_result = _3_candidate;
-          _1_bestScore = _4_score;
-        }
-        _2_i = (_2_i) + (BigInteger.One);
-      }
-      best = _0_result;
-      return best;
-    }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> GenerateAndSelectBest(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, BigInteger numCandidates, bool preferShorter)
-    {
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_firstCandidate = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).ConstrainedGeneration(lm, parser, prompt, maxSteps);
-      _0_firstCandidate = _out0;
-      Dafny.ISequence<Dafny.ISequence<Dafny.ISequence<Dafny.Rune>>> _1_candidates;
-      _1_candidates = Dafny.Sequence<Dafny.ISequence<Dafny.ISequence<Dafny.Rune>>>.FromElements(_0_firstCandidate);
-      BigInteger _2_i;
-      _2_i = BigInteger.One;
-      while ((_2_i) < (numCandidates)) {
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _3_candidate = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out1;
-        _out1 = (this).ConstrainedGeneration(lm, parser, prompt, maxSteps);
-        _3_candidate = _out1;
-        _1_candidates = Dafny.Sequence<Dafny.ISequence<Dafny.ISequence<Dafny.Rune>>>.Concat(_1_candidates, Dafny.Sequence<Dafny.ISequence<Dafny.ISequence<Dafny.Rune>>>.FromElements(_3_candidate));
-        _2_i = (_2_i) + (BigInteger.One);
-      }
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _4_best = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out2;
-      _out2 = VerifiedDecoderAgent.CSDHelpers.SelectBestCandidate(_1_candidates, parser, preferShorter);
-      _4_best = _out2;
-      generated = _4_best;
-      return generated;
-    }
-    public void GenerateReasoningAndAnswer(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, out Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated, out Dafny.ISequence<Dafny.Rune> reasoning)
-    {
-      generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
-      reasoning = Dafny.Sequence<Dafny.Rune>.Empty;
-      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _out0;
-      _out0 = (this).HybridGeneration(lm, parser, prompt, maxSteps);
-      generated = _out0;
-      reasoning = VerifiedDecoderAgent.CSDHelpers.ExtractContentBetweenDelimiters(VerifiedDecoderAgent.CSDHelpers.PrefixToString(generated), Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"), Dafny.Sequence<Dafny.Rune>.UnicodeFromString(">>"));
     }
     public static Dafny.ISequence<Dafny.Rune> PrefixToString(Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> p) {
       Dafny.ISequence<Dafny.Rune> _0___accumulator = Dafny.Sequence<Dafny.Rune>.FromElements();
@@ -7063,7 +6834,206 @@ namespace VerifiedDecoderAgent {
     {
       return VerifiedDecoderAgent.CSDHelpers.ExtractContentExtern(input, startDelim, endDelim);
     }
-    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> CraneGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps)
+    public void BoostTokenLogits(VerifiedDecoderAgent.LM lm, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> tokens, Dafny.BigRational amount)
+    {
+      BigInteger _0_i;
+      _0_i = BigInteger.Zero;
+      while ((_0_i) < (new BigInteger((tokens).Count))) {
+        BigInteger _1_id;
+        _1_id = (lm).TokenToId((tokens).Select(_0_i));
+        Dafny.BigRational _2_newVal;
+        _2_newVal = ((lm.Logits)[(int)(_1_id)]) + (amount);
+        if ((_2_newVal) > (new Dafny.BigRational(BigInteger.Parse("1000000000"), BigInteger.One))) {
+          _2_newVal = new Dafny.BigRational(BigInteger.Parse("1000000000"), BigInteger.One);
+        }
+        Dafny.BigRational[] _arr0 = lm.Logits;
+        _arr0[(int)((_1_id))] = _2_newVal;
+        _0_i = (_0_i) + (BigInteger.One);
+      }
+    }
+    public void PenalizeTokenLogits(VerifiedDecoderAgent.LM lm, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> tokens, Dafny.BigRational amount)
+    {
+      BigInteger _0_i;
+      _0_i = BigInteger.Zero;
+      while ((_0_i) < (new BigInteger((tokens).Count))) {
+        BigInteger _1_id;
+        _1_id = (lm).TokenToId((tokens).Select(_0_i));
+        Dafny.BigRational _2_newVal;
+        _2_newVal = ((lm.Logits)[(int)(_1_id)]) - (amount);
+        if ((_2_newVal) < (new Dafny.BigRational(BigInteger.Parse("-1000000000"), BigInteger.One))) {
+          _2_newVal = new Dafny.BigRational(BigInteger.Parse("-1000000000"), BigInteger.One);
+        }
+        Dafny.BigRational[] _arr0 = lm.Logits;
+        _arr0[(int)((_1_id))] = _2_newVal;
+        _0_i = (_0_i) + (BigInteger.One);
+      }
+    }
+    public Dafny.ISequence<Dafny.Rune> GetHighestLogitToken(VerifiedDecoderAgent.LM lm)
+    {
+      Dafny.ISequence<Dafny.Rune> token = Dafny.Sequence<Dafny.Rune>.Empty;
+      BigInteger _0_bestIdx;
+      _0_bestIdx = BigInteger.Zero;
+      BigInteger _1_i;
+      _1_i = BigInteger.One;
+      while ((_1_i) < (new BigInteger(((lm).Tokens).Count))) {
+        if (((lm.Logits)[(int)(_1_i)]) > ((lm.Logits)[(int)(_0_bestIdx)])) {
+          _0_bestIdx = _1_i;
+        }
+        _1_i = (_1_i) + (BigInteger.One);
+      }
+      token = (lm).IdToToken(_0_bestIdx);
+      return token;
+    }
+    public bool DeadEndDetection(VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prefix, BigInteger minValidCount)
+    {
+      bool isNarrow = false;
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validTokens;
+      _0_validTokens = (parser).ValidNextTokens(prefix);
+      isNarrow = (new BigInteger((_0_validTokens).Count)) < (minValidCount);
+      return isNarrow;
+    }
+    public void SoftConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> constrainedPrefix, Dafny.BigRational boostAmount, Dafny.ISequence<Dafny.Rune> eosToken, out Dafny.ISequence<Dafny.Rune> next, out bool isValid)
+    {
+      next = Dafny.Sequence<Dafny.Rune>.Empty;
+      isValid = false;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, constrainedPrefix));
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validTokens;
+      _0_validTokens = (parser).ValidNextTokens(constrainedPrefix);
+      (this).BoostTokenLogits(lm, _0_validTokens, boostAmount);
+      (this).BoostTokenLogits(lm, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken), boostAmount);
+      Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (lm).ChooseNextTokenUnconstrained();
+      next = _out0;
+      (this).cost = (this.cost) + (BigInteger.One);
+      isValid = ((next).Equals(eosToken)) || ((parser).IsValidPrefix(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(constrainedPrefix, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(next))));
+    }
+    public void ConfidenceGatedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> constrainedPrefix, Dafny.ISequence<Dafny.Rune> eosToken, out Dafny.ISequence<Dafny.Rune> next, out bool wasConstrained)
+    {
+      next = Dafny.Sequence<Dafny.Rune>.Empty;
+      wasConstrained = false;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, constrainedPrefix));
+      Dafny.ISequence<Dafny.Rune> _0_topToken;
+      Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (this).GetHighestLogitToken(lm);
+      _0_topToken = _out0;
+      if ((_0_topToken).Equals(eosToken)) {
+        Dafny.ISequence<Dafny.Rune> _out1;
+        _out1 = (lm).ChooseNextTokenUnconstrained();
+        next = _out1;
+        wasConstrained = false;
+      } else if ((parser).IsValidPrefix(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(constrainedPrefix, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_0_topToken)))) {
+        Dafny.ISequence<Dafny.Rune> _out2;
+        _out2 = (lm).ChooseNextTokenUnconstrained();
+        next = _out2;
+        wasConstrained = false;
+      } else {
+        Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _1_validWithEos;
+        _1_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(constrainedPrefix), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+        (lm).MaskTokensExcept(_1_validWithEos);
+        Dafny.ISequence<Dafny.Rune> _out3;
+        _out3 = (lm).ChooseNextToken();
+        next = _out3;
+        wasConstrained = true;
+      }
+      (this).cost = (this.cost) + (BigInteger.One);
+    }
+    public static BigInteger CountSubstring(Dafny.ISequence<Dafny.Rune> s, Dafny.ISequence<Dafny.Rune> sub)
+    {
+      BigInteger _0___accumulator = BigInteger.Zero;
+    TAIL_CALL_START: ;
+      if ((new BigInteger((s).Count)) < (new BigInteger((sub).Count))) {
+        return (BigInteger.Zero) + (_0___accumulator);
+      } else if (((s).Take(new BigInteger((sub).Count))).Equals(sub)) {
+        _0___accumulator = (_0___accumulator) + (BigInteger.One);
+        Dafny.ISequence<Dafny.Rune> _in0 = (s).Drop(new BigInteger((sub).Count));
+        Dafny.ISequence<Dafny.Rune> _in1 = sub;
+        s = _in0;
+        sub = _in1;
+        goto TAIL_CALL_START;
+      } else {
+        Dafny.ISequence<Dafny.Rune> _in2 = (s).Drop(BigInteger.One);
+        Dafny.ISequence<Dafny.Rune> _in3 = sub;
+        s = _in2;
+        sub = _in3;
+        goto TAIL_CALL_START;
+      }
+    }
+    public Dafny.BigRational GetTokenLogit(VerifiedDecoderAgent.LM lm, Dafny.ISequence<Dafny.Rune> token)
+    {
+      Dafny.BigRational logit = Dafny.BigRational.ZERO;
+      logit = (lm.Logits)[(int)((lm).TokenToId(token))];
+      return logit;
+    }
+    public void ScaleAllLogits(VerifiedDecoderAgent.LM lm, Dafny.BigRational scalar)
+    {
+      BigInteger _0_i;
+      _0_i = BigInteger.Zero;
+      while ((_0_i) < (new BigInteger(((lm).Tokens).Count))) {
+        BigInteger _1_id;
+        _1_id = (lm).TokenToId(((lm).Tokens).Select(_0_i));
+        Dafny.BigRational _2_newVal;
+        _2_newVal = ((lm.Logits)[(int)(_1_id)]) * (scalar);
+        if ((_2_newVal) > (new Dafny.BigRational(BigInteger.Parse("1000000000"), BigInteger.One))) {
+          _2_newVal = new Dafny.BigRational(BigInteger.Parse("1000000000"), BigInteger.One);
+        }
+        if ((_2_newVal) < (new Dafny.BigRational(BigInteger.Parse("-1000000000"), BigInteger.One))) {
+          _2_newVal = new Dafny.BigRational(BigInteger.Parse("-1000000000"), BigInteger.One);
+        }
+        Dafny.BigRational[] _arr0 = lm.Logits;
+        _arr0[(int)((_1_id))] = _2_newVal;
+        _0_i = (_0_i) + (BigInteger.One);
+      }
+    }
+    public BigInteger ValidTokenCount(VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prefix)
+    {
+      BigInteger count = BigInteger.Zero;
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validTokens;
+      _0_validTokens = (parser).ValidNextTokens(prefix);
+      count = new BigInteger((_0_validTokens).Count);
+      return count;
+    }
+    public bool IsTokenValidNext(VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prefix, Dafny.ISequence<Dafny.Rune> token)
+    {
+      bool isValid = false;
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validTokens;
+      _0_validTokens = (parser).ValidNextTokens(prefix);
+      isValid = (_0_validTokens).Contains(token);
+      return isValid;
+    }
+    public Dafny.ISequence<Dafny.Rune> RepetitionPenaltyStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prefix, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated, Dafny.BigRational penaltyAmount, Dafny.ISequence<Dafny.Rune> eosToken)
+    {
+      Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, prefix));
+      (this).PenalizeTokenLogits(lm, generated, penaltyAmount);
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _0_validWithEos;
+      _0_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(prefix), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+      (lm).MaskTokensExcept(_0_validWithEos);
+      Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (lm).ChooseNextToken();
+      next = _out0;
+      (this).cost = (this.cost) + (BigInteger.One);
+      return next;
+    }
+    public Dafny.ISequence<Dafny.Rune> TemperatureConstrainedStep(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prefix, Dafny.BigRational temperature, Dafny.ISequence<Dafny.Rune> eosToken)
+    {
+      Dafny.ISequence<Dafny.Rune> next = Dafny.Sequence<Dafny.Rune>.Empty;
+      (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, prefix));
+      Dafny.BigRational _0_scalar;
+      _0_scalar = (new Dafny.BigRational(BigInteger.Parse("1"), BigInteger.One)) / (temperature);
+      if ((_0_scalar) > (new Dafny.BigRational(BigInteger.Parse("100000000"), BigInteger.One))) {
+        _0_scalar = new Dafny.BigRational(BigInteger.Parse("100000000"), BigInteger.One);
+      }
+      (this).ScaleAllLogits(lm, _0_scalar);
+      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> _1_validWithEos;
+      _1_validWithEos = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat((parser).ValidNextTokens(prefix), Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(eosToken));
+      (lm).MaskTokensExcept(_1_validWithEos);
+      Dafny.ISequence<Dafny.Rune> _out0;
+      _out0 = (lm).ChooseNextToken();
+      next = _out0;
+      (this).cost = (this.cost) + (BigInteger.One);
+      return next;
+    }
+    public Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> CraneGeneration(VerifiedDecoderAgent.LM lm, VerifiedDecoderAgent.Parser parser, Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> prompt, BigInteger maxSteps, BigInteger minReasoningSteps, Dafny.ISequence<Dafny.Rune> eosToken)
     {
       Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Empty;
       generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
@@ -7075,33 +7045,63 @@ namespace VerifiedDecoderAgent {
       _2_currentConstrained = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
       while ((_0_steps) < (maxSteps)) {
         if (!(_1_insideConstrained)) {
-          Dafny.ISequence<Dafny.Rune> _3_next;
-          Dafny.ISequence<Dafny.Rune> _out0;
-          _out0 = (this).UnconstrainedStep(lm, prompt, generated);
-          _3_next = _out0;
-          generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_3_next));
-          _0_steps = (_0_steps) + (BigInteger.One);
-          if ((_3_next).Equals(Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"))) {
-            _1_insideConstrained = true;
-            _2_currentConstrained = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
+          if ((_0_steps) < (minReasoningSteps)) {
+            (lm).GenerateLogits(Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, generated));
+            Dafny.ISequence<Dafny.Rune> _3_next;
+            Dafny.ISequence<Dafny.Rune> _out0;
+            _out0 = (lm).ChooseNextTokenUnconstrained();
+            _3_next = _out0;
+            if ((_3_next).Equals(eosToken)) {
+              goto after_0;
+            }
+            if (VerifiedDecoderAgent.__default.Contains(_3_next, Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"))) {
+              (lm).MaskToken(Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"));
+              Dafny.ISequence<Dafny.Rune> _out1;
+              _out1 = (lm).ChooseNextToken();
+              _3_next = _out1;
+            }
+            generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_3_next));
+            _0_steps = (_0_steps) + (BigInteger.One);
+            (this).cost = (this.cost) + (BigInteger.One);
+          } else {
+            Dafny.ISequence<Dafny.Rune> _4_next;
+            Dafny.ISequence<Dafny.Rune> _out2;
+            _out2 = (this).UnconstrainedStep(lm, prompt, generated);
+            _4_next = _out2;
+            if ((_4_next).Equals(eosToken)) {
+              goto after_0;
+            }
+            generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_4_next));
+            _0_steps = (_0_steps) + (BigInteger.One);
+            if (VerifiedDecoderAgent.__default.Contains(_4_next, Dafny.Sequence<Dafny.Rune>.UnicodeFromString("<<"))) {
+              _1_insideConstrained = true;
+              _2_currentConstrained = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements();
+            }
           }
         } else {
           if ((parser).IsCompletePrefix(_2_currentConstrained)) {
             _1_insideConstrained = false;
           } else {
-            Dafny.ISequence<Dafny.Rune> _4_next;
-            Dafny.ISequence<Dafny.Rune> _out1;
-            _out1 = (this).ConstrainedStep(lm, parser, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, (generated).Take((new BigInteger((generated).Count)) - (new BigInteger((_2_currentConstrained).Count)))), _2_currentConstrained);
-            _4_next = _out1;
-            generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_4_next));
-            _2_currentConstrained = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(_2_currentConstrained, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_4_next));
+            Dafny.ISequence<Dafny.Rune> _5_next;
+            Dafny.ISequence<Dafny.Rune> _out3;
+            _out3 = (this).ConstrainedStep(lm, parser, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(prompt, (generated).Take((new BigInteger((generated).Count)) - (new BigInteger((_2_currentConstrained).Count)))), _2_currentConstrained, eosToken);
+            _5_next = _out3;
+            if ((_5_next).Equals(eosToken)) {
+              generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_5_next));
+              _0_steps = (_0_steps) + (BigInteger.One);
+              goto after_0;
+            }
+            generated = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(generated, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_5_next));
+            _2_currentConstrained = Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.Concat(_2_currentConstrained, Dafny.Sequence<Dafny.ISequence<Dafny.Rune>>.FromElements(_5_next));
             _0_steps = (_0_steps) + (BigInteger.One);
-            if ((_4_next).Equals(Dafny.Sequence<Dafny.Rune>.UnicodeFromString(">>"))) {
+            if (VerifiedDecoderAgent.__default.Contains(_5_next, Dafny.Sequence<Dafny.Rune>.UnicodeFromString(">>"))) {
               _1_insideConstrained = false;
             }
           }
         }
+      continue_0: ;
       }
+    after_0: ;
       return generated;
     }
   }

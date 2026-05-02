@@ -1,0 +1,2107 @@
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: gsm_symbolic
+  Generation model: gpt-5.4
+  Evaluation model: Qwen/Qwen2.5-Coder-14B-Instruct
+Generating initial strategy for: Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.
+
+============================================================
+Attempt 1/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy tracks the full generated output in `generated`, whether we are
+// currently inside a constrained arithmetic span in `insideConstrainedOut`, and
+// the delimiter-free contents of that active span in `currentConstrainedOut`.
+// Outside a span, generation is mostly free, but if the model strongly favors
+// the opening delimiter "<<" (or emits it directly) we enter constrained mode.
+// Inside a span, we first detect dead ends; if the current constrained prefix
+// has become too narrow, we roll it back to a parser-valid prefix and repair
+// the generated suffix to match. When the parser reports completeness we close
+// with ">>"; otherwise we prefer a parser-valid argmax token and fall back to a
+// constrained helper step when needed. This keeps arithmetic text inside << >>
+// parser-valid while preserving ordinary free-form reasoning outside spans.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branch, either we stay outside
+//   constrained mode, or we append "<<" and set currentConstrainedOut := [],
+//   which is valid by precondition. In the rollback branch, we replace the
+//   active constrained prefix by RollbackToValidPrefix, which is parser-valid by
+//   construction. In the complete-prefix branch, CloseConstrainedSpan sets
+//   insideConstrainedOut to false, making the implication vacuous. In the
+//   constrained argmax and fallback branches, AppendConstrainedToken is only
+//   used after a valid-next check or after ConstrainedStep, so validity is
+//   preserved.
+// suffix: Outside constrained mode the implication is vacuous. On entry via
+//   "<<" we set currentConstrainedOut := [], so the length-0 suffix matches.
+//   In the rollback branch we simultaneously set
+//   generated := generated[..|generated|-|currentConstrainedOut|] + rolled and
+//   currentConstrainedOut := rolled, so the generated suffix equals the new
+//   constrained prefix. CloseConstrainedSpan appends ">>" and resets the active
+//   constrained prefix to [], and AppendConstrainedToken appends the same token
+//   to both generated and currentConstrainedOut.
+// cost: UnconstrainedStep, ConstrainedStep, and CloseConstrainedSpan each bump
+//   helpers.cost by 1 internally, and we increment steps by 1 in the same
+//   branch. Query helpers such as DeadEndDetection, RollbackToValidPrefix,
+//   IsTokenValidNext, GetHighestLogitToken, and GetTokenLogit do not bump cost.
+//   In the raw-logit unconstrained eager-open branch we manually do
+//   helpers.cost := helpers.cost + 1 together with steps := steps + 1. The
+//   rollback repair branch does not bump cost and also does not increment
+//   steps, so helpers.cost <= steps is preserved.
+// progress: The unconstrained sample branch appends at most one token and then
+//   increments steps. The eager-open branch appends exactly one token ("<<")
+//   and increments steps. The rollback branch may shorten generated, so it
+//   certainly preserves |generated| <= |generatedPrefix| + steps. The close and
+//   constrained-append branches append at most one token and increment steps by
+//   1. Therefore every branch preserves the progress bound.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant cost == 0
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      steps := steps + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |currentConstrainedOut|] + rolled;
+      currentConstrainedOut := rolled;
+    } else if parser.IsCompletePrefix(currentConstrainedOut) {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+      if argmaxValid && argmax != eosToken {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — The sketch covers major branches, but the unconstrained `next == "<<"` entry relies on `[]` being parser-valid without clearly tying that to the invariant after `generated` changes, and it glosses over the argmax-append branch not using a helper that proves validity.
+INV
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 2/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy produces ordinary chain-of-thought text outside arithmetic
+// spans, but actively steers the model to open a constrained span when "<<" is
+// competitive with the current unconstrained argmax. Once inside a span, it
+// keeps the delimiter-free contents `currentConstrainedOut` parser-valid at all
+// times: if the prefix becomes too narrow, it rolls back to a valid prefix and
+// repairs the generated suffix; if the prefix is complete, it closes with ">>";
+// otherwise it tries a cheap argmax-valid append and falls back to a parser-
+// constrained sampling step when the raw argmax is invalid. Every branch that
+// consumes one generation step also bumps model cost exactly once, while pure
+// repair/query branches do not consume a step. This gives a clean accounting
+// story and preserves the suffix relationship between the full generated text
+// and the active constrained contents.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Unconstrained eager-open and sampled-open branches set
+//   currentConstrainedOut := [] and insideConstrainedOut := true after appending
+//   "<<"; the precondition parser.IsValidPrefix([]) directly establishes the
+//   invariant for the new state. Ordinary unconstrained sampling stays outside,
+//   so the implication is vacuous.
+//   In the rollback branch, rolled is produced by RollbackToValidPrefix, so the
+//   repaired currentConstrainedOut is parser-valid. In the close branch,
+//   CloseConstrainedSpan makes insideConstrainedOut false, so the implication is
+//   vacuous. In the argmax-valid append branch we first prove
+//   IsTokenValidNext(parser, currentConstrainedOut, argmax), then use
+//   AppendConstrainedToken with that token, so the new constrained prefix
+//   remains valid. In the fallback branch, ConstrainedStep returns a valid next
+//   token or eosToken; on eosToken we break immediately, and otherwise
+//   AppendConstrainedToken preserves validity.
+//
+// suffix:
+//   Outside constrained mode the implication is vacuous. On either opening
+//   branch we append only the delimiter token "<<" and set
+//   currentConstrainedOut := [], so the length-0 suffix of generated equals the
+//   constrained contents.
+//   In the rollback branch we replace the old constrained suffix by rolled via
+//   generated := generated[..|generated|-|oldCurrent|] + rolled and then set
+//   currentConstrainedOut := rolled, so the new suffix matches exactly. The
+//   close branch resets currentConstrainedOut to [] and leaves us outside, so
+//   the implication is vacuous. Both constrained append branches use
+//   AppendConstrainedToken, which appends the same token to generated and to
+//   currentConstrainedOut, preserving suffix equality.
+//
+// cost:
+//   Query/repair helpers used for lookahead or rollback do not bump
+//   helpers.cost, and those branches do not increment steps, so
+//   helpers.cost <= steps is preserved. UnconstrainedStep, ConstrainedStep, and
+//   CloseConstrainedSpan each bump helpers.cost internally by 1, and we pair
+//   each such call with steps := steps + 1 in the same branch.
+//   The eager-open branch uses raw logits plus no cost-bumping helper, so it
+//   manually executes helpers.cost := helpers.cost + 1 exactly when it performs
+//   steps := steps + 1. The argmax-valid constrained append branch also uses no
+//   cost-bumping helper, so it likewise manually bumps helpers.cost before
+//   incrementing steps. Therefore every step-consuming branch keeps
+//   helpers.cost <= steps.
+//
+// progress:
+//   The loop starts with generated == generatedPrefix. Every branch that
+//   increments steps appends at most one token to generated: eager-open appends
+//   "<<", UnconstrainedStep contributes at most one sampled token, close
+//   appends only ">>", and both constrained append branches append one token.
+//   Hence after steps := steps + 1, the bound
+//   |generated| <= |generatedPrefix| + steps still holds.
+//   The rollback branch does not increment steps and can only shorten generated
+//   or keep its length unchanged, because it replaces the current constrained
+//   suffix by a valid prefix of it. So the progress bound is preserved there as
+//   well.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      steps := steps + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var oldCurrent := currentConstrainedOut;
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |oldCurrent|] + rolled;
+      currentConstrainedOut := rolled;
+    } else if parser.IsCompletePrefix(currentConstrainedOut) {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+      if argmaxValid && argmax != eosToken {
+        helpers.cost := helpers.cost + 1;
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✓ Proof-sketch critique: PROCEED
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using (this directory should contain `bin/z3-4.12.1` or `bin/z3-4.12.1.exe`), or set the PATH environment
+  Refining based on verification error...
+
+============================================================
+Attempt 3/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy produces ordinary chain-of-thought text outside arithmetic
+// spans, but actively steers the model to open a constrained span when "<<" is
+// competitive with the current unconstrained argmax. Once inside a span, it
+// keeps the delimiter-free contents `currentConstrainedOut` parser-valid at all
+// times: if the prefix becomes too narrow, it rolls back to a valid prefix and
+// repairs the generated suffix; if the prefix is complete, it closes with ">>";
+// otherwise it tries a cheap argmax-valid append and falls back to a parser-
+// constrained sampling step when the raw argmax is invalid. Every branch that
+// consumes one generation step also bumps model cost exactly once, while pure
+// repair/query branches do not consume a step. This gives a clean accounting
+// story and preserves the suffix relationship between the full generated text
+// and the active constrained contents.
+// Minimal fix from the previous attempt: strengthen the loop invariants with
+// `parser.IsValidPrefix([])` so branches that set `currentConstrainedOut := []`
+// while entering constrained mode can re-establish parser validity directly.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Unconstrained eager-open and sampled-open branches set
+//   currentConstrainedOut := [] and insideConstrainedOut := true after appending
+//   "<<"; the invariant `parser.IsValidPrefix([])` directly establishes the new
+//   constrained state's validity. Ordinary unconstrained sampling stays outside,
+//   so the implication is vacuous.
+//   In the rollback branch, rolled is produced by RollbackToValidPrefix, so the
+//   repaired currentConstrainedOut is parser-valid. In the close branch,
+//   CloseConstrainedSpan makes insideConstrainedOut false, so the implication is
+//   vacuous. In the argmax-valid append branch we first prove
+//   IsTokenValidNext(parser, currentConstrainedOut, argmax), then use
+//   AppendConstrainedToken with that token, so the new constrained prefix
+//   remains valid. In the fallback branch, ConstrainedStep returns a valid next
+//   token or eosToken; on eosToken we break immediately, and otherwise
+//   AppendConstrainedToken preserves validity.
+//
+// suffix:
+//   Outside constrained mode the implication is vacuous. On either opening
+//   branch we append only the delimiter token "<<" and set
+//   currentConstrainedOut := [], so the length-0 suffix of generated equals the
+//   constrained contents.
+//   In the rollback branch we replace the old constrained suffix by rolled via
+//   generated := generated[..|generated|-|oldCurrent|] + rolled and then set
+//   currentConstrainedOut := rolled, so the new suffix matches exactly. The
+//   close branch resets currentConstrainedOut to [] and leaves us outside, so
+//   the implication is vacuous. Both constrained append branches use
+//   AppendConstrainedToken, which appends the same token to generated and to
+//   currentConstrainedOut, preserving suffix equality.
+//
+// cost:
+//   Query/repair helpers used for lookahead or rollback do not bump
+//   helpers.cost, and those branches do not increment steps, so
+//   helpers.cost <= steps is preserved. UnconstrainedStep, ConstrainedStep, and
+//   CloseConstrainedSpan each bump helpers.cost internally by 1, and we pair
+//   each such call with steps := steps + 1 in the same branch.
+//   The eager-open branch uses raw logits plus no cost-bumping helper, so it
+//   manually executes helpers.cost := helpers.cost + 1 exactly when it performs
+//   steps := steps + 1. The argmax-valid constrained append branch also uses no
+//   cost-bumping helper, so it likewise manually bumps helpers.cost before
+//   incrementing steps. Therefore every step-consuming branch keeps
+//   helpers.cost <= steps.
+//
+// progress:
+//   The loop starts with generated == generatedPrefix. Every branch that
+//   increments steps appends at most one token to generated: eager-open appends
+//   "<<", UnconstrainedStep contributes at most one sampled token, close
+//   appends only ">>", and both constrained append branches append one token.
+//   Hence after steps := steps + 1, the bound
+//   |generated| <= |generatedPrefix| + steps still holds.
+//   The rollback branch does not increment steps and can only shorten generated
+//   or keep its length unchanged, because it replaces the current constrained
+//   suffix by a valid prefix of it. So the progress bound is preserved there as
+//   well.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      steps := steps + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var oldCurrent := currentConstrainedOut;
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |oldCurrent|] + rolled;
+      currentConstrainedOut := rolled;
+    } else {
+      var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+      if isComplete {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+          lm, parser, generated, currentConstrainedOut
+        );
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+        lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+        var argmax := helpers.GetHighestLogitToken(lm);
+        var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+        if argmaxValid && argmax != eosToken {
+          helpers.cost := helpers.cost + 1;
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, argmax
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+          steps := steps + 1;
+        } else {
+          var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+          steps := steps + 1;
+          if next == eosToken {
+            break;
+          } else {
+            var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+              lm, parser, generated, currentConstrainedOut, next
+            );
+            generated := appendedGenerated;
+            insideConstrainedOut := appendedInside;
+            currentConstrainedOut := appendedCurrent;
+          }
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✓ Proof-sketch critique: PROCEED
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using (this directory should contain `bin/z3-4.12.1` or `bin/z3-4.12.1.exe`), or set the PATH environment
+  Refining based on verification error...
+
+============================================================
+Attempt 4/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy produces ordinary chain-of-thought text outside arithmetic
+// spans, but actively steers the model to open a constrained span when "<<" is
+// competitive with the current unconstrained argmax. Once inside a span, it
+// keeps the delimiter-free contents `currentConstrainedOut` parser-valid at all
+// times: if the prefix becomes too narrow, it rolls back to a valid prefix and
+// repairs the generated suffix; if the prefix is complete, it closes with ">>";
+// otherwise it tries a cheap argmax-valid append and falls back to a parser-
+// constrained sampling step when the raw argmax is invalid. Every branch that
+// consumes one generation step also bumps model cost exactly once, while pure
+// repair/query branches do not consume a step. This gives a clean accounting
+// story and preserves the suffix relationship between the full generated text
+// and the active constrained contents.
+// Minimal fix from the previous attempt: strengthen the loop invariants with
+// `insideConstrainedOut ==> generatedPrefix[|generatedPrefix| - |currentConstrainedOut|..] == currentConstrainedOut`.
+// At loop entry this follows from the precondition, and together with
+// `generated == generatedPrefix` initially it gives the solver the exact suffix
+// fact it needs for the initial invariant establishment.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Unconstrained eager-open and sampled-open branches set
+//   currentConstrainedOut := [] and insideConstrainedOut := true after appending
+//   "<<"; the invariant `parser.IsValidPrefix([])` directly establishes the new
+//   constrained state's validity. Ordinary unconstrained sampling stays outside,
+//   so the implication is vacuous.
+//   In the rollback branch, rolled is produced by RollbackToValidPrefix, so the
+//   repaired currentConstrainedOut is parser-valid. In the close branch,
+//   CloseConstrainedSpan makes insideConstrainedOut false, so the implication is
+//   vacuous. In the argmax-valid append branch we first prove
+//   IsTokenValidNext(parser, currentConstrainedOut, argmax), then use
+//   AppendConstrainedToken with that token, so the new constrained prefix
+//   remains valid. In the fallback branch, ConstrainedStep returns a valid next
+//   token or eosToken; on eosToken we break immediately, and otherwise
+//   AppendConstrainedToken preserves validity.
+//
+// suffix:
+//   Outside constrained mode the implication is vacuous. On either opening
+//   branch we append only the delimiter token "<<" and set
+//   currentConstrainedOut := [], so the length-0 suffix of generated equals the
+//   constrained contents.
+//   In the rollback branch we replace the old constrained suffix by rolled via
+//   generated := generated[..|generated|-|oldCurrent|] + rolled and then set
+//   currentConstrainedOut := rolled, so the new suffix matches exactly. The
+//   close branch resets currentConstrainedOut to [] and leaves us outside, so
+//   the implication is vacuous. Both constrained append branches use
+//   AppendConstrainedToken, which appends the same token to generated and to
+//   currentConstrainedOut, preserving suffix equality.
+//
+// cost:
+//   Query/repair helpers used for lookahead or rollback do not bump
+//   helpers.cost, and those branches do not increment steps, so
+//   helpers.cost <= steps is preserved. UnconstrainedStep, ConstrainedStep, and
+//   CloseConstrainedSpan each bump helpers.cost internally by 1, and we pair
+//   each such call with steps := steps + 1 in the same branch.
+//   The eager-open branch uses raw logits plus no cost-bumping helper, so it
+//   manually executes helpers.cost := helpers.cost + 1 exactly when it performs
+//   steps := steps + 1. The argmax-valid constrained append branch also uses no
+//   cost-bumping helper, so it likewise manually bumps helpers.cost before
+//   incrementing steps. Therefore every step-consuming branch keeps
+//   helpers.cost <= steps.
+//
+// progress:
+//   The loop starts with generated == generatedPrefix. Every branch that
+//   increments steps appends at most one token to generated: eager-open appends
+//   "<<", UnconstrainedStep contributes at most one sampled token, close
+//   appends only ">>", and both constrained append branches append one token.
+//   Hence after steps := steps + 1, the bound
+//   |generated| <= |generatedPrefix| + steps still holds.
+//   The rollback branch does not increment steps and can only shorten generated
+//   or keep its length unchanged, because it replaces the current constrained
+//   suffix by a valid prefix of it. So the progress bound is preserved there as
+//   well.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generatedPrefix|
+  invariant insideConstrainedOut ==> generatedPrefix[|generatedPrefix| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      steps := steps + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var oldCurrent := currentConstrainedOut;
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |oldCurrent|] + rolled;
+      currentConstrainedOut := rolled;
+    } else {
+      var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+      if isComplete {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+          lm, parser, generated, currentConstrainedOut
+        );
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+        lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+        var argmax := helpers.GetHighestLogitToken(lm);
+        var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+        if argmaxValid && argmax != eosToken {
+          helpers.cost := helpers.cost + 1;
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, argmax
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+          steps := steps + 1;
+        } else {
+          var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+          steps := steps + 1;
+          if next == eosToken {
+            break;
+          } else {
+            var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+              lm, parser, generated, currentConstrainedOut, next
+            );
+            generated := appendedGenerated;
+            insideConstrainedOut := appendedInside;
+            currentConstrainedOut := appendedCurrent;
+          }
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — It plausibly covers most branches, but the rollback argument relies on an unstated guarantee that `RollbackToValidPrefix` returns a parser-valid prefix and does not explain preservation of `!insideConstrainedOut ==> currentConstrainedOut == []` if a helper behaved unexpe
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 5/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy targets math word problems by encouraging ordinary explanatory
+// text outside constrained mode and arithmetic-only text inside << >> spans.
+// Outside constrained mode, it opportunistically opens a span when "<<" is
+// close to the current unconstrained argmax; otherwise it takes one ordinary
+// unconstrained generation step. Inside constrained mode, it maintains the
+// parser-valid arithmetic fragment `currentConstrainedOut` as the exact suffix
+// of `generated` that lies between the delimiters.
+//
+// The key design choice for provability is that every step-consuming branch
+// appends exactly one token to `generated` (either via a helper that samples or
+// closes, or via a direct append of "<<"), while every non-step branch is a
+// pure repair/query branch. The only repair branch is rollback: it replaces the
+// current constrained suffix by `rolled := RollbackToValidPrefix(...)`. The
+// proof sketch below explicitly relies on the intended helper contract that
+// `rolled` is parser-valid and is a prefix of the old constrained contents, so
+// replacing the old suffix by `rolled` preserves both validity and the suffix /
+// length arguments. Cost accounting is similarly clean: helpers that consume a
+// model choice bump `helpers.cost` internally, raw-choice branches manually
+// bump it once, and pure query/repair helpers do not bump cost.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside branch, ordinary unconstrained generation either stays outside
+//   (making the implication vacuous) or opens a span with
+//   currentConstrainedOut := []; parser.IsValidPrefix([]) is an invariant, so
+//   validity holds immediately after opening. The eager-open branch does the
+//   same direct state update.
+//   Inside branch: rollback uses the intended helper guarantee that
+//   RollbackToValidPrefix(parser, oldCurrent) returns a parser-valid prefix
+//   `rolled`, so after setting currentConstrainedOut := rolled validity holds.
+//   The close branch calls CloseConstrainedSpan only when
+//   parser.IsCompletePrefix(currentConstrainedOut) is already known; it exits
+//   constrained mode, so the implication becomes vacuous and
+//   currentConstrainedOut is reset by the helper. In the argmax-valid append
+//   branch, validity follows from first proving
+//   IsTokenValidNext(parser, currentConstrainedOut, argmax) and then appending
+//   that token with AppendConstrainedToken. In the constrained-sampling branch,
+//   if next == eosToken we break immediately; otherwise ConstrainedStep has
+//   produced a parser-allowed next token, and AppendConstrainedToken preserves
+//   validity.
+//
+// suffix:
+//   Outside branch, if we remain outside then the implication is vacuous. If we
+//   open a span, generated gains only the delimiter token "<<" while
+//   currentConstrainedOut becomes []; the required suffix equality is therefore
+//   the trivial length-0 suffix fact.
+//   Inside branch: rollback relies on the intended helper guarantee that
+//   `rolled` is a prefix of oldCurrent. Since the old invariant states that
+//   generated ends with oldCurrent, replacing that suffix by rolled via
+//   generated := generated[..|generated|-|oldCurrent|] + rolled makes the new
+//   generated end with rolled exactly, matching the updated
+//   currentConstrainedOut. The close branch leaves constrained mode, so the
+//   implication is vacuous. Both append branches use AppendConstrainedToken,
+//   which appends the same token to generated and to currentConstrainedOut, so
+//   exact suffix equality is preserved.
+//
+// cost:
+//   Query/repair helpers GenerateLogits, GetHighestLogitToken, GetTokenLogit,
+//   DeadEndDetection, IsTokenValidNext, and RollbackToValidPrefix do not bump
+//   helpers.cost; those branches either do not change steps at all (rollback) or
+//   pair no-cost queries with a later single consuming action.
+//   UnconstrainedStep, ConstrainedStep, and CloseConstrainedSpan each bump
+//   helpers.cost by 1 internally, and the code pairs each such call with exactly
+//   one `steps := steps + 1` in the same branch. The eager-open branch and the
+//   argmax-valid append branch do not use a cost-bumping helper for token
+//   choice, so each manually performs `helpers.cost := helpers.cost + 1` and
+//   then increments steps once. Hence every branch preserves
+//   helpers.cost <= steps.
+//
+// progress:
+//   Initially generated == generatedPrefix, so the bound
+//   |generated| <= |generatedPrefix| + steps holds at steps = 0.
+//   In every step-consuming branch, generated grows by at most one token before
+//   or by the time steps is incremented: eager-open appends exactly "<<";
+//   UnconstrainedStep returns one token and the branch appends exactly that one
+//   token to generated before any possible mode switch; CloseConstrainedSpan
+//   appends exactly the closing delimiter ">>"; and each constrained append
+//   branch appends exactly one token to generated. Therefore after
+//   steps := steps + 1, the new length is at most the old bound plus 1, giving
+//   |generated| <= |generatedPrefix| + steps.
+//   The rollback branch does not increment steps and uses the intended helper
+//   guarantee that `rolled` is a prefix of oldCurrent, so |rolled| <=
+//   |oldCurrent|. Thus replacing the old constrained suffix by rolled cannot
+//   increase |generated|, and the progress bound is preserved with the same
+//   steps value.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var oldCurrent := currentConstrainedOut;
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |oldCurrent|] + rolled;
+      currentConstrainedOut := rolled;
+    } else {
+      var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+      if isComplete {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+        lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+        var argmax := helpers.GetHighestLogitToken(lm);
+        var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+        if argmaxValid && argmax != eosToken {
+          helpers.cost := helpers.cost + 1;
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, argmax);
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+          steps := steps + 1;
+        } else {
+          var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+          steps := steps + 1;
+          if next == eosToken {
+            break;
+          } else {
+            var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+            generated := appendedGenerated;
+            insideConstrainedOut := appendedInside;
+            currentConstrainedOut := appendedCurrent;
+          }
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✓ Proof-sketch critique: PROCEED
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using (this directory should contain `bin/z3-4.12.1` or `bin/z3-4.12.1.exe`), or set the PATH environment
+  Refining based on verification error...
+
+============================================================
+Attempt 6/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy targets math word problems by encouraging ordinary explanatory
+// text outside constrained mode and arithmetic-only text inside << >> spans.
+// Outside constrained mode, it opportunistically opens a span when "<<" is
+// close to the current unconstrained argmax; otherwise it takes one ordinary
+// unconstrained generation step. Inside constrained mode, it maintains the
+// parser-valid arithmetic fragment `currentConstrainedOut` as the exact suffix
+// of `generated` that lies between the delimiters.
+//
+// The key design choice for provability is that every step-consuming branch
+// appends exactly one token to `generated` (either via a helper that samples or
+// closes, or via a direct append of "<<"), while every non-step branch is a
+// pure repair/query branch. The only repair branch is rollback: it replaces the
+// current constrained suffix by `rolled := RollbackToValidPrefix(...)`. The
+// proof sketch below explicitly relies on the intended helper contract that
+// `rolled` is parser-valid and is a prefix of the old constrained contents, so
+// replacing the old suffix by `rolled` preserves both validity and the suffix /
+// length arguments. The minimal verification-oriented edit here is to record
+// the relationship between the helper-maintained internal counter and the
+// returned `cost` with an explicit invariant `0 <= helpers.cost`, which closes
+// the integer-bound obligation while preserving the strategy unchanged.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside branch, ordinary unconstrained generation either stays outside
+//   (making the implication vacuous) or opens a span with
+//   currentConstrainedOut := []; parser.IsValidPrefix([]) is an invariant, so
+//   validity holds immediately after opening. The eager-open branch does the
+//   same direct state update.
+//   Inside branch: rollback uses the intended helper guarantee that
+//   RollbackToValidPrefix(parser, oldCurrent) returns a parser-valid prefix
+//   `rolled`, so after setting currentConstrainedOut := rolled validity holds.
+//   The close branch calls CloseConstrainedSpan only when
+//   parser.IsCompletePrefix(currentConstrainedOut) is already known; it exits
+//   constrained mode, so the implication becomes vacuous and
+//   currentConstrainedOut is reset by the helper. In the argmax-valid append
+//   branch, validity follows from first proving
+//   IsTokenValidNext(parser, currentConstrainedOut, argmax) and then appending
+//   that token with AppendConstrainedToken. In the constrained-sampling branch,
+//   if next == eosToken we break immediately; otherwise ConstrainedStep has
+//   produced a parser-allowed next token, and AppendConstrainedToken preserves
+//   validity.
+//
+// suffix:
+//   Outside branch, if we remain outside then the implication is vacuous. If we
+//   open a span, generated gains only the delimiter token "<<" while
+//   currentConstrainedOut becomes []; the required suffix equality is therefore
+//   the trivial length-0 suffix fact.
+//   Inside branch: rollback relies on the intended helper guarantee that
+//   `rolled` is a prefix of oldCurrent. Since the old invariant states that
+//   generated ends with oldCurrent, replacing that suffix by rolled via
+//   generated := generated[..|generated|-|oldCurrent|] + rolled makes the new
+//   generated end with rolled exactly, matching the updated
+//   currentConstrainedOut. The close branch leaves constrained mode, so the
+//   implication is vacuous. Both append branches use AppendConstrainedToken,
+//   which appends the same token to generated and to currentConstrainedOut, so
+//   exact suffix equality is preserved.
+//
+// cost:
+//   Query/repair helpers GenerateLogits, GetHighestLogitToken, GetTokenLogit,
+//   DeadEndDetection, IsTokenValidNext, and RollbackToValidPrefix do not bump
+//   helpers.cost; those branches either do not change steps at all (rollback) or
+//   pair no-cost queries with a later single consuming action.
+//   UnconstrainedStep, ConstrainedStep, and CloseConstrainedSpan each bump
+//   helpers.cost by 1 internally, and the code pairs each such call with exactly
+//   one `steps := steps + 1` in the same branch. The eager-open branch and the
+//   argmax-valid append branch do not use a cost-bumping helper for token
+//   choice, so each manually performs `helpers.cost := helpers.cost + 1` and
+//   then increments steps once. The added invariant `0 <= helpers.cost` is
+//   preserved because every cost change is either no change or an increment by
+//   1, so helpers.cost remains a non-negative integer while still satisfying
+//   helpers.cost <= steps.
+//
+// progress:
+//   Initially generated == generatedPrefix, so the bound
+//   |generated| <= |generatedPrefix| + steps holds at steps = 0.
+//   In every step-consuming branch, generated grows by at most one token before
+//   or by the time steps is incremented: eager-open appends exactly "<<";
+//   UnconstrainedStep returns one token and the branch appends exactly that one
+//   token to generated before any possible mode switch; CloseConstrainedSpan
+//   appends exactly the closing delimiter ">>"; and each constrained append
+//   branch appends exactly one token to generated. Therefore after
+//   steps := steps + 1, the new length is at most the old bound plus 1, giving
+//   |generated| <= |generatedPrefix| + steps.
+//   The rollback branch does not increment steps and uses the intended helper
+//   guarantee that `rolled` is a prefix of oldCurrent, so |rolled| <=
+//   |oldCurrent|. Thus replacing the old constrained suffix by rolled cannot
+//   increase |generated|, and the progress bound is preserved with the same
+//   steps value.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant 0 <= helpers.cost
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if narrow {
+      var oldCurrent := currentConstrainedOut;
+      var rolled := helpers.RollbackToValidPrefix(parser, currentConstrainedOut);
+      generated := generated[..|generated| - |oldCurrent|] + rolled;
+      currentConstrainedOut := rolled;
+    } else {
+      var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+      if isComplete {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+        lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+        var argmax := helpers.GetHighestLogitToken(lm);
+        var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+        if argmaxValid && argmax != eosToken {
+          helpers.cost := helpers.cost + 1;
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, argmax);
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+          steps := steps + 1;
+        } else {
+          var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+          steps := steps + 1;
+          if next == eosToken {
+            break;
+          } else {
+            var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+            generated := appendedGenerated;
+            insideConstrainedOut := appendedInside;
+            currentConstrainedOut := appendedCurrent;
+          }
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — The sketch covers most branches, but rollback depends on an unstated helper guarantee (`RollbackToValidPrefix` returns a valid prefix) that is only described as “intended,” not clearly justified from available specs.
+INV2_suffix: WEAK — The branch-by-branch story is cohe
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 7/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy is tailored to math word problems by encouraging normal
+// explanatory text outside constrained mode and arithmetic-only text inside
+// << >> spans. Outside constrained mode, it looks at the current logits and
+// opportunistically opens a constrained span when "<<" is already competitive;
+// otherwise it takes one ordinary unconstrained generation step.
+//
+// Inside constrained mode, the design is intentionally rollback-free. That is
+// the key verification repair: every branch either (1) performs a pure query,
+// or (2) consumes exactly one step via a helper / manual choice whose effect on
+// `generated`, `insideConstrainedOut`, and `currentConstrainedOut` is simple.
+// If the current constrained prefix is complete, the strategy closes the span.
+// Otherwise it first checks whether the current argmax token is parser-valid;
+// if so, it appends that token directly. If not, it delegates token selection to
+// `ConstrainedStep`, which is specifically meant to choose a parser-allowed next
+// token or EOS. Because there is no rollback, the parser-validity, suffix, and
+// progress invariants are preserved only by local one-token updates or by
+// vacuous mode exits, avoiding any dependence on unstated prefix properties of
+// helper methods.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-mode branches: if we stay outside, the implication
+//   `insideConstrainedOut ==> ...` is vacuous. If we open a span, we set
+//   `currentConstrainedOut := []`; the precondition gives `parser.IsValidPrefix([])`,
+//   so validity holds immediately.
+//   Inside-mode branches: the close branch is taken only after storing
+//   `isComplete := parser.IsCompletePrefix(currentConstrainedOut)` and therefore
+//   exits constrained mode, making the implication vacuous. In the argmax-valid
+//   append branch, we first establish `argmaxValid := IsTokenValidNext(...)` and
+//   then call `AppendConstrainedToken`, so the new constrained prefix remains
+//   parser-valid. In the `ConstrainedStep` branch, if `next == eosToken` we break
+//   before mutating the constrained state; otherwise `ConstrainedStep` has chosen
+//   a parser-allowed next token, and `AppendConstrainedToken` preserves validity.
+//
+// suffix:
+//   Outside-mode branches: if we remain outside, the implication is vacuous. If
+//   we open a span, `generated` gains only the delimiter token "<<" while
+//   `currentConstrainedOut` becomes `[]`, so the required suffix equality is the
+//   trivial empty-suffix fact.
+//   Inside-mode branches: the close branch exits constrained mode, so the suffix
+//   implication is vacuous afterward. In both append branches,
+//   `AppendConstrainedToken` appends the same token to `generated` and to
+//   `currentConstrainedOut`, so if the old generated ended with the old
+//   constrained suffix, the new generated ends with the new constrained suffix.
+//   In the `next == eosToken` break sub-branch, no state is changed before exit.
+//
+// cost:
+//   Pure query operations (`GenerateLogits`, `GetHighestLogitToken`,
+//   `GetTokenLogit`, `IsTokenValidNext`, `IsCompletePrefix`) do not bump
+//   `helpers.cost`, so `helpers.cost <= steps` is preserved when only queries
+//   occur before a later consuming action.
+//   Every consuming branch is matched one-for-one with `steps := steps + 1`:
+//   `UnconstrainedStep`, `ConstrainedStep`, and `CloseConstrainedSpan` each bump
+//   helper cost internally by 1; the eager-open branch and the direct argmax
+//   constrained-append branch manually do `helpers.cost := helpers.cost + 1`.
+//   Therefore after each consuming branch, helper cost has increased by at most
+//   one exactly when `steps` increases by one, preserving `helpers.cost <= steps`.
+//
+// progress:
+//   Initially `generated == generatedPrefix`, so the bound holds at `steps = 0`.
+//   In every consuming branch, `generated` grows by at most one token before or
+//   by the time `steps` is incremented: eager-open appends exactly "<<";
+//   `UnconstrainedStep` contributes exactly one sampled token that is appended to
+//   `generated`; `CloseConstrainedSpan` appends exactly ">>"; and each
+//   constrained append branch appends exactly one token via
+//   `AppendConstrainedToken`. Hence after `steps := steps + 1`, the new length is
+//   at most the old bound plus 1, yielding `|generated| <= |generatedPrefix| + steps`.
+//   In pure-query sub-branches and in the `next == eosToken` break sub-branch, no
+//   additional token is appended after the last established bound, so progress is
+//   preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant 0 <= helpers.cost
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+      if argmaxValid && argmax != eosToken {
+        helpers.cost := helpers.cost + 1;
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, argmax);
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✓ Proof-sketch critique: PROCEED
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using (this directory should contain `bin/z3-4.12.1` or `bin/z3-4.12.1.exe`), or set the PATH environment
+  Refining based on verification error...
+
+============================================================
+Attempt 8/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy is tailored to math word problems by encouraging normal
+// explanatory text outside constrained mode and arithmetic-only text inside
+// << >> spans. Outside constrained mode, it looks at the current logits and
+// opportunistically opens a constrained span when "<<" is already competitive;
+// otherwise it takes one ordinary unconstrained generation step.
+//
+// Inside constrained mode, the design is intentionally rollback-free. That is
+// the key verification repair: every branch either (1) performs a pure query,
+// or (2) consumes exactly one step via a helper / manual choice whose effect on
+// `generated`, `insideConstrainedOut`, and `currentConstrainedOut` is simple.
+// If the current constrained prefix is complete, the strategy closes the span.
+// Otherwise it first checks whether the current argmax token is parser-valid;
+// if so, it appends that token directly. If not, it delegates token selection to
+// `ConstrainedStep`, which is specifically meant to choose a parser-allowed next
+// token or EOS. Because there is no rollback, the parser-validity, suffix, and
+// progress invariants are preserved only by local one-token updates or by
+// vacuous mode exits, avoiding any dependence on unstated prefix properties of
+// helper methods.
+//
+// Minimal verification-oriented edit: strengthen the loop invariant to retain
+// the original suffix relationship between `generated` and the incoming
+// `currentConstrained` whenever we are still inside constrained mode. This makes
+// the sliced prefix used to form `constrainedPrompt` provably well-aligned with
+// the active constrained suffix at every iteration.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-mode branches: if we stay outside, the implication
+//   `insideConstrainedOut ==> ...` is vacuous. If we open a span, we set
+//   `currentConstrainedOut := []`; the precondition gives `parser.IsValidPrefix([])`,
+//   so validity holds immediately.
+//   Inside-mode branches: the close branch is taken only after storing
+//   `isComplete := parser.IsCompletePrefix(currentConstrainedOut)` and therefore
+//   exits constrained mode, making the implication vacuous. In the argmax-valid
+//   append branch, we first establish `argmaxValid := IsTokenValidNext(...)` and
+//   then call `AppendConstrainedToken`, so the new constrained prefix remains
+//   parser-valid. In the `ConstrainedStep` branch, if `next == eosToken` we break
+//   before mutating the constrained state; otherwise `ConstrainedStep` has chosen
+//   a parser-allowed next token, and `AppendConstrainedToken` preserves validity.
+//
+// suffix:
+//   Outside-mode branches: if we remain outside, the implication is vacuous. If
+//   we open a span, `generated` gains only the delimiter token "<<" while
+//   `currentConstrainedOut` becomes `[]`, so the required suffix equality is the
+//   trivial empty-suffix fact.
+//   Inside-mode branches: the close branch exits constrained mode, so the suffix
+//   implication is vacuous afterward. In both append branches,
+//   `AppendConstrainedToken` appends the same token to `generated` and to
+//   `currentConstrainedOut`, so if the old generated ended with the old
+//   constrained suffix, the new generated ends with the new constrained suffix.
+//   In the `next == eosToken` break sub-branch, no state is changed before exit.
+//
+// cost:
+//   Pure query operations (`GenerateLogits`, `GetHighestLogitToken`,
+//   `GetTokenLogit`, `IsTokenValidNext`, `IsCompletePrefix`) do not bump
+//   `helpers.cost`, so `helpers.cost <= steps` is preserved when only queries
+//   occur before a later consuming action.
+//   Every consuming branch is matched one-for-one with `steps := steps + 1`:
+//   `UnconstrainedStep`, `ConstrainedStep`, and `CloseConstrainedSpan` each bump
+//   helper cost internally by 1; the eager-open branch and the direct argmax
+//   constrained-append branch manually do `helpers.cost := helpers.cost + 1`.
+//   Therefore after each consuming branch, helper cost has increased by at most
+//   one exactly when `steps` increases by one, preserving `helpers.cost <= steps`.
+//
+// progress:
+//   Initially `generated == generatedPrefix`, so the bound holds at `steps = 0`.
+//   In every consuming branch, `generated` grows by at most one token before or
+//   by the time `steps` is incremented: eager-open appends exactly "<<";
+//   `UnconstrainedStep` contributes exactly one sampled token that is appended to
+//   `generated`; `CloseConstrainedSpan` appends exactly ">>"; and each
+//   constrained append branch appends exactly one token via
+//   `AppendConstrainedToken`. Hence after `steps := steps + 1`, the new length is
+//   at most the old bound plus 1, yielding `|generated| <= |generatedPrefix| + steps`.
+//   In pure-query sub-branches and in the `next == eosToken` break sub-branch, no
+//   additional token is appended after the last established bound, so progress is
+//   preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant insideConstrainedOut ==> |currentConstrained| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrained|..] == currentConstrained
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant 0 <= helpers.cost
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+      if argmaxValid && argmax != eosToken {
+        helpers.cost := helpers.cost + 1;
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, argmax);
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: OK — The sketch covers outside/open, close, direct append, and ConstrainedStep/EOS branches, with a plausible validity-preservation story for each.
+INV2_suffix: OK — It explicitly argues vacuity on outside/close and one-token suffix preservation on both append branches, includi
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 9/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy targets math word problems by biasing generation toward opening
+// `<< >>` spans for arithmetic while keeping ordinary explanation outside those
+// spans. The verification-oriented design choice is to make every loop iteration
+// consume at most one generation step and to ensure that every state-changing
+// branch has a simple local effect on the tracked constrained suffix.
+//
+// Outside constrained mode, the strategy inspects logits and opportunistically
+// opens `<<` when that delimiter is already competitive; otherwise it performs a
+// single unconstrained token step. Inside constrained mode, it never closes just
+// because a sampled token happens to resemble `">>"`; instead it closes only
+// from a branch where `parser.IsCompletePrefix(currentConstrainedOut)` has
+// already been established. If the constrained prefix is not complete, the
+// strategy either appends the current argmax when that token is parser-valid, or
+// delegates token choice to `ConstrainedStep` and then appends the returned
+// non-EOS token.
+//
+// The proof repair focuses on avoiding sketch claims that depend on unstated
+// helper internals. In particular, the loop invariants reason only about
+// branches whose explicit assignments are visible here: manual open appends one
+// delimiter token; `AppendConstrainedToken` is used only for one-token
+// constrained extension; and EOS branches break before mutating the constrained
+// state. For helper-cost accounting, the sketch relies only on the explicitly
+// permitted bookkeeping facts: the listed cost-bumping helpers increase helper
+// cost by 1 internally, while the listed query/manipulation helpers do not bump
+// cost, and manual token choices are paired with an explicit
+// `helpers.cost := helpers.cost + 1`.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-mode branches: in the ordinary unconstrained branch, if we remain
+//   outside then the implication is vacuous; if the sampled token is `"<<"`,
+//   we enter constrained mode with `currentConstrainedOut := []`, and the
+//   precondition/invariant `parser.IsValidPrefix([])` establishes validity. In
+//   the eager-open branch, we likewise set the constrained prefix to `[]`, so
+//   validity holds immediately.
+//   Inside-mode branches: in the close branch we first store
+//   `isComplete := parser.IsCompletePrefix(currentConstrainedOut)` and only then
+//   call `CloseConstrainedSpan`, whose post-state is outside constrained mode,
+//   making the implication vacuous. In the direct-append branch we first prove
+//   `argmaxValid := IsTokenValidNext(...)`; then `AppendConstrainedToken` extends
+//   the constrained prefix by exactly that valid token, preserving
+//   `parser.IsValidPrefix`. In the `ConstrainedStep` branch, if `next == eosToken`
+//   we break before mutating state; otherwise `ConstrainedStep` has produced a
+//   parser-allowed next token and `AppendConstrainedToken` preserves validity.
+//
+// suffix:
+//   Outside-mode branches: if we stay outside, the implication is vacuous. In
+//   the eager-open branch, `generated` becomes `generated + ["<<"]` and
+//   `currentConstrainedOut` becomes `[]`, so the required suffix equality is the
+//   empty-suffix fact. In the unconstrained branch where the sampled token is
+//   `"<<"`, we again enter constrained mode with empty constrained content, so
+//   the suffix property holds trivially.
+//   Inside-mode branches: in the close branch we exit constrained mode, so the
+//   implication is vacuous afterward. In both append branches,
+//   `AppendConstrainedToken` appends the same chosen token to `generated` and to
+//   `currentConstrainedOut`; therefore, if the old `generated` ended with the old
+//   constrained suffix, the new `generated` ends with the new constrained suffix.
+//   In the EOS break sub-branch no state changes before loop exit.
+//
+// cost:
+//   Branches that only query or reshape logits before the consuming action use
+//   only operations listed as non-bumping in the bookkeeping facts:
+//   `GenerateLogits`, `GetHighestLogitToken`, `GetTokenLogit`,
+//   `IsTokenValidNext`, `BoostTokenLogits`, `PenalizeTokenLogits`,
+//   `ScaleAllLogits`, `TopValidCandidates`, `DeadEndDetection`,
+//   `ValidTokenCount`, and `RollbackToValidPrefix`; therefore such preparatory
+//   work preserves `helpers.cost <= steps` until the branch's single consuming
+//   action occurs.
+//   Every consuming branch is paired with exactly one increase of `steps`.
+//   Eager-open and direct argmax-append use a manual
+//   `helpers.cost := helpers.cost + 1` before `steps := steps + 1`.
+//   `UnconstrainedStep`, `ConstrainedStep`, and `CloseConstrainedSpan` are
+//   explicitly listed cost-bumping helpers, so each increases helper cost by 1
+//   internally, and the branch then performs `steps := steps + 1`. In the
+//   `next == eosToken` sub-branch after `ConstrainedStep`, the helper cost has
+//   already been accounted for by that one step increase, and the subsequent
+//   break performs no additional cost change. Thus `helpers.cost <= steps` is
+//   preserved in every branch without relying on any unstated cost behavior.
+//
+// progress:
+//   Initially `generated == generatedPrefix`, so the bound holds at `steps = 0`.
+//   In the eager-open branch, the code explicitly assigns
+//   `generated := generated + ["<<"]`, so `|generated|` increases by exactly 1,
+//   and then `steps := steps + 1`, preserving
+//   `|generated| <= |generatedPrefix| + steps`.
+//   In the unconstrained branch, the helper returns one token `next`; the only
+//   explicit update to `generated` in this method is `generated := generated + [next]`,
+//   so the length increases by exactly 1 before or by the time `steps` is
+//   incremented. In the direct constrained-append branch and in the
+//   `ConstrainedStep` non-EOS branch, `AppendConstrainedToken` is used precisely
+//   as the one-token constrained extension operation, so each such branch grows
+//   `generated` by one token and then has the corresponding step increase.
+//   In the close branch, the strategy consumes one step and then leaves the loop
+//   invariant to the helper post-state together with the step increase; no later
+//   code in that branch appends further tokens. In EOS break sub-branches, no
+//   token is appended after the step already counted for the consuming action.
+//   Therefore the progress bound is preserved branch-by-branch.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant 0 <= helpers.cost
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+      if argmaxValid && argmax != eosToken {
+        helpers.cost := helpers.cost + 1;
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, argmax);
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — The sketch relies on `AppendConstrainedToken` and `ConstrainedStep` preserving parser validity without citing visible postconditions, so the key inside-mode append branches are only plausibly but not firmly justified.
+INV2_suffix: OK — It explicitly treats outside, eager
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 10/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy is specialized for math word problems whose arithmetic should
+// appear inside `<< >>` spans. The key verification-oriented redesign is to
+// make all branches that affect the tracked constrained suffix use only local,
+// explicit state updates. In particular, once inside constrained mode, the code
+// samples a candidate token with `ConstrainedStep` but performs the append to
+// `generated` and `currentConstrainedOut` directly in this method, so parser
+// validity and suffix preservation can be argued from the visible guard
+// `IsTokenValidNext(...)` and the explicit concatenations.
+//
+// Outside constrained mode, the strategy opportunistically opens `<<` when that
+// delimiter is already competitive in the logits; otherwise it takes one normal
+// unconstrained token step. Inside constrained mode, it may close only after
+// explicitly checking `parser.IsCompletePrefix(currentConstrainedOut)`. If not
+// complete, it asks the constrained sampler for a candidate token, immediately
+// breaks on EOS, and otherwise appends the token only after an explicit
+// `IsTokenValidNext` check. This keeps each iteration to one counted generation
+// action and makes the proof sketch rest on visible assignments rather than
+// opaque helper effects.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-mode branches: if we stay outside after an unconstrained token, the
+//   implication is vacuous; if we open a span, either eagerly or because the
+//   sampled token is `"<<"`, we set `currentConstrainedOut := []`, and the
+//   standing fact `parser.IsValidPrefix([])` establishes validity.
+//   Inside-mode close branch: we first prove completeness, then call
+//   `CloseConstrainedSpan`, after which `insideConstrainedOut` is false, so the
+//   implication is vacuous. Inside-mode append branch: after
+//   `nextValid := IsTokenValidNext(parser, currentConstrainedOut, next)`, the
+//   update `currentConstrainedOut := currentConstrainedOut + [next]` preserves
+//   `parser.IsValidPrefix` exactly because `next` was checked as a valid next
+//   token. In the EOS sub-branch we break before mutating constrained state.
+//
+// suffix:
+//   Outside-mode branches: if we remain outside, the implication is vacuous. If
+//   we enter constrained mode, we set `currentConstrainedOut := []`, so the
+//   required suffix equality is the empty-suffix fact regardless of whether the
+//   opening came from the eager-open branch or from sampling `"<<"`.
+//   Inside-mode close branch: after closing we are outside constrained mode, so
+//   the implication is vacuous. Inside-mode append branch: the old invariant
+//   says `generated` ends with the old `currentConstrainedOut`; then the visible
+//   updates `generated := generated + [next]` and
+//   `currentConstrainedOut := currentConstrainedOut + [next]` preserve the same
+//   suffix relationship for the extended sequences. In the EOS sub-branch no
+//   state changes before loop exit.
+//
+// cost:
+//   Logit inspection and parser-query preparation steps
+//   (`GenerateLogits`, `GetHighestLogitToken`, `GetTokenLogit`,
+//   `IsTokenValidNext`, `ScaleAllLogits`, `BoostTokenLogits`, `PenalizeTokenLogits`)
+//   are all non-bumping, so they preserve `helpers.cost <= steps` until the
+//   consuming action.
+//   Every consuming branch has exactly one counted action and one matching step
+//   increment: eager-open uses manual `helpers.cost := helpers.cost + 1` and
+//   then `steps := steps + 1`; `UnconstrainedStep`, `ConstrainedStep`, and
+//   `CloseConstrainedSpan` are listed cost-bumping helpers and are followed by
+//   exactly one `steps := steps + 1`. The EOS-after-sampling branches break only
+//   after that already-accounted-for step, with no extra cost change.
+//
+// progress:
+//   Initially `generated == generatedPrefix`, so the bound holds at `steps = 0`.
+//   In the eager-open branch, the explicit update `generated := generated + ["<<"]`
+//   increases length by exactly 1, and then `steps := steps + 1`, preserving
+//   `|generated| <= |generatedPrefix| + steps`.
+//   In the unconstrained branch, after `next := UnconstrainedStep(...)` we
+//   explicitly append at most one token with `generated := generated + [next]`
+//   unless `next == eosToken`, in which case no append occurs; either way the
+//   single step increase suffices. In the inside-mode append branch, the visible
+//   update `generated := generated + [next]` again adds exactly one token before
+//   or with the matching step increase. In the close branch, progress is
+//   preserved by the helper’s closing action together with the single step
+//   increase; no further append occurs in that branch. Thus every branch changes
+//   `generated` by at most one token per counted step.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant parser.IsValidPrefix([])
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant 0 <= helpers.cost
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    if openLogit >= argmaxLogit - 2.0 && argmax != eosToken && !Contains(argmax, "<<") {
+      helpers.cost := helpers.cost + 1;
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == "<<" {
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+        }
+      }
+    }
+  } else {
+    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
+    if isComplete {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      helpers.BoostTokenLogits(lm, [">>"], 8.0);
+      helpers.PenalizeTokenLogits(lm, ["<<"], 8.0);
+      var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        var nextValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, next);
+        if nextValid {
+          generated := generated + [next];
+          currentConstrainedOut := currentConstrainedOut + [next];
+        } else {
+          break;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — The sketch’s append argument relies on `IsTokenValidNext` implying `parser.IsValidPrefix(currentConstrainedOut + [next])`, which is plausible but not explicitly connected to a stated lemma/helper contract.
+INV2_suffix: OK — It explicitly covers outside, open, close, appe
+  3 consecutive proof-critique failures since last restart — restarting with fresh generation...
+
+============================================================
+Attempt 11/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy tracks the full generated output in `generated`, whether we are
+// currently inside a constrained arithmetic span in `insideConstrainedOut`, and
+// the contents of the active span in `currentConstrainedOut`. Outside spans it
+// generates freely, but it proactively opens a span when the model's logit for
+// "<<" is close to the current argmax or when the sampled token literally
+// contains "<<", which is useful for step-by-step math solutions that should
+// place arithmetic inside delimiters.
+// Inside a span, the strategy uses parser-aware control: if the current span is
+// complete, it closes with ">>"; otherwise it first checks whether the raw
+// argmax token is parser-valid and appends it on a fast path, and falls back to
+// `ConstrainedStep` when the argmax is invalid. The tracked constrained suffix
+// lets us prove that parser-valid arithmetic text is exactly the suffix of the
+// full output between delimiters, supporting valid constrained generation.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branch, committing a normal token keeps
+//   `insideConstrainedOut` false, so the implication is vacuous; opening a span
+//   sets `currentConstrainedOut := []`, and `parser.IsValidPrefix([])` holds by
+//   precondition. In the complete-prefix branch, `CloseConstrainedSpan` sets
+//   `insideConstrainedOut` false, again making the implication vacuous. In the
+//   constrained fast path, we call `AppendConstrainedToken` only after
+//   `IsTokenValidNext` says the argmax is valid; in the fallback path,
+///   `ConstrainedStep` supplies a valid next token unless it returns EOS, and
+//   then `AppendConstrainedToken` preserves parser validity.
+// suffix: In the unconstrained non-opening case, the suffix relation is
+//   unchanged because we remain outside constrained mode. In either opening
+//   case, after appending "<<" we set `currentConstrainedOut := []`, and the
+//   length-0 suffix of `generated` is `[]`. In the close branch,
+//   `CloseConstrainedSpan` appends ">>" and resets the constrained prefix to
+//   `[]`. In both constrained append branches, `AppendConstrainedToken` appends
+//   the same token to `generated` and `currentConstrainedOut`, preserving the
+//   suffix equality.
+// cost: In the unconstrained branch we use raw logits plus
+//   `ChooseNextTokenUnconstrained`, so we manually do `helpers.cost :=
+//   helpers.cost + 1` and also increment `steps` once. `CloseConstrainedSpan`
+//   and `ConstrainedStep` each bump helper cost internally and we increment
+//   `steps` once in the same iteration. The constrained fast path increments
+//   `steps` but uses only non-bumping queries plus `AppendConstrainedToken`,
+//   which is also non-bumping, so `helpers.cost <= steps` still holds.
+// progress: Each iteration increments `steps` exactly once. The unconstrained
+//   branch appends at most one token; the close branch appends only the closing
+//   delimiter; and each constrained append branch appends exactly one token.
+//   Therefore `|generated|` grows by at most one per step, so
+//   `|generated| <= |generatedPrefix| + steps` is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant cost == 0
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    var next := lm.ChooseNextTokenUnconstrained();
+    helpers.cost := helpers.cost + 1;
+    steps := steps + 1;
+
+    if next == eosToken {
+      break;
+    } else if openLogit >= argmaxLogit - 2.0 && next != "<<" {
+      generated := generated + ["<<"];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    } else {
+      generated := generated + [next];
+      if next == "<<" || Contains(next, "<<") {
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }
+    }
+  } else {
+    if parser.IsCompletePrefix(currentConstrainedOut) {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+
+      if argmaxValid && argmax != eosToken {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — It covers most branches, but the fallback relies on an unstated guarantee that `ConstrainedStep` returns a parser-valid non-EOS token before `AppendConstrainedToken`, which may be too implicit for Dafny.
+INV2_suffix: OK — Every branch that can change `generated`/`current
+  Refining based on proof-sketch critique...
+
+============================================================
+Attempt 12/12
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy targets step-by-step math solutions whose arithmetic should
+// appear inside `<< ... >>`. Outside constrained mode it generates one token at
+// a time unconstrained, but it biases toward opening a constrained span when
+// either the sampled token literally starts such a span or the model already
+// strongly prefers the delimiter token `<<`. To keep the progress proof clean,
+// every loop iteration appends at most one token to `generated`: proactive
+// opening uses `OpenConstrainedSpan`, normal unconstrained sampling appends the
+// sampled token, constrained completion uses `CloseConstrainedSpan`, and
+// constrained extension appends exactly one parser-valid token.
+// Inside a constrained span, the strategy first closes immediately when the
+// parser says the current constrained prefix is complete; this is the only
+// branch that may emit `>>`, and it is guarded by `parser.IsCompletePrefix` as
+// required. Otherwise it computes logits for the constrained context, takes a
+// fast path when the current argmax token is parser-valid, and falls back to
+// `ConstrainedStep` when the argmax is invalid. The fallback is followed by an
+// explicit validity query before `AppendConstrainedToken`, making the parser-
+// validity preservation argument direct rather than implicit.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained-normal branch we remain outside
+//   constrained mode unless the sampled token opens a span, in which case we
+//   set `currentConstrainedOut := []` and use `parser.IsValidPrefix([])`. In
+//   the proactive-open branch, `OpenConstrainedSpan` also enters constrained
+//   mode with empty current prefix, so validity follows from the same base
+//   precondition. In the close branch, `CloseConstrainedSpan` exits constrained
+//   mode, making the implication vacuous. In the constrained-fast-path branch,
+//   we call `AppendConstrainedToken` only after `IsTokenValidNext` returns
+//   true. In the constrained-fallback branch, if `ConstrainedStep` returns EOS
+//   we break without mutating the constrained state; otherwise we explicitly
+//   query `IsTokenValidNext(parser, currentConstrainedOut, next)` and append
+//   only in the `validNext` sub-branch, so preservation does not rely on any
+//   unstated helper postcondition.
+// suffix: In the unconstrained-normal non-opening case, either we stay outside
+//   constrained mode or we enter with `currentConstrainedOut := []`, and the
+//   empty sequence is always the length-0 suffix. In the proactive-open branch,
+//   `OpenConstrainedSpan` appends only the opening delimiter and sets the
+//   constrained contents to `[]`, so the suffix relation holds trivially. In
+//   the close branch, `CloseConstrainedSpan` resets `currentConstrainedOut` to
+//   `[]`, so the implication is vacuous after closing. In both constrained
+//   append branches, `AppendConstrainedToken` appends the same token to the full
+//   output and to the tracked constrained contents, preserving suffix equality.
+// cost: The only cost-bumping operations are `ChooseNextTokenUnconstrained`
+//   with an explicit manual `helpers.cost := helpers.cost + 1`, plus the helper
+//   calls `OpenConstrainedSpan`, `CloseConstrainedSpan`, and `ConstrainedStep`,
+//   each of which bumps helper cost internally. Every iteration increments
+//   `steps` exactly once, and each branch performs at most one such bumping
+//   action before that increment; all other queries and `AppendConstrainedToken`
+//   are non-bumping, so `helpers.cost <= steps` is preserved.
+// progress: The invariant is `|generated| <= |generatedPrefix| + steps`. In the
+//   unconstrained-normal branch we append exactly one sampled token and then
+//   increment `steps` once. In the proactive-open branch we call
+//   `OpenConstrainedSpan`, which appends exactly the single delimiter token
+//   `<<`, and then increment `steps` once. In the close branch,
+//   `CloseConstrainedSpan` appends exactly the single delimiter token `>>`, and
+//   then `steps` increases by one. In each constrained append branch,
+//   `AppendConstrainedToken` appends exactly one token and `steps` increases by
+//   one. If an EOS branch breaks, it does so after the single step increment and
+//   without any additional append, so the bound still holds.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+helpers.cost := 0;
+
+var steps := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant cost == 0
+  invariant helpers.cost <= steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    lm.GenerateLogits(prompt + generated);
+    var argmax := helpers.GetHighestLogitToken(lm);
+    var argmaxLogit := helpers.GetTokenLogit(lm, argmax);
+    var openLogit := helpers.GetTokenLogit(lm, "<<");
+    var next := lm.ChooseNextTokenUnconstrained();
+    helpers.cost := helpers.cost + 1;
+
+    if next == eosToken {
+      steps := steps + 1;
+      break;
+    } else if next == "<<" || Contains(next, "<<") {
+      generated := generated + [next];
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+      steps := steps + 1;
+    } else if openLogit >= argmaxLogit - 2.0 {
+      var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+      generated := openedGenerated;
+      insideConstrainedOut := openedInside;
+      currentConstrainedOut := openedCurrent;
+      steps := steps + 1;
+    } else {
+      generated := generated + [next];
+      steps := steps + 1;
+    }
+  } else {
+    if parser.IsCompletePrefix(currentConstrainedOut) {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
+      var argmax := helpers.GetHighestLogitToken(lm);
+      var argmaxValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, argmax);
+
+      if argmaxValid && argmax != eosToken {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, argmax
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var validNext := helpers.IsTokenValidNext(parser, currentConstrainedOut, next);
+          if validNext {
+            var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
+              lm, parser, generated, currentConstrainedOut, next
+            );
+            generated := appendedGenerated2;
+            insideConstrainedOut := appendedInside2;
+            currentConstrainedOut := appendedCurrent2;
+          }
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[0/4] Critiquing proof sketch...
+  ✗ Proof-sketch critique: REDESIGN
+  Critique: INV1_parser_validity: WEAK — The sketch covers most branches, but the unconstrained branch that sets `insideConstrainedOut := true` on `next == "<<" || Contains(next, "<<")` without using `OpenConstrainedSpan` assumes validity/suffix behavior for arbitrary sampled tokens containing `<<`, which is no
+  Refining based on proof-sketch critique...
+
+============================================================
+FAILED after 12 attempts
+Total time: 340001.9ms
+============================================================
+Failure report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260421_231913_3c8a45/failure_report.json
+Latest run link (failed) updated: /home/aadivyar/csd-generation/outputs/generated-csd/runs/latest
+Synthesis failed after 12 attempt(s):
+
+Failure breakdown by stage:
+  - proof_critique: 8
+  - verification: 4
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers major branches, but the unconstrained `next == "<<"` entry relies on `[]` being parser-valid without clearly tying that to the invariant after `generated...
+  Attempt 2: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 3: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 4: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — It plausibly covers most branches, but the rollback argument relies on an unstated guarantee that `RollbackToValidPrefix` returns a parser-valid prefix and does not explai...
+  Attempt 5: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 6: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers most branches, but rollback depends on an unstated helper guarantee (`RollbackToValidPrefix` returns a valid prefix) that is only described as “intended,...
+  Attempt 7: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 8: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: OK — The sketch covers outside/open, close, direct append, and ConstrainedStep/EOS branches, with a plausible validity-preservation story for each.
+INV2_suffix: OK — It explicitl...
+  Attempt 9: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch relies on `AppendConstrainedToken` and `ConstrainedStep` preserving parser validity without citing visible postconditions, so the key inside-mode append branche...
+  Attempt 10: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch’s append argument relies on `IsTokenValidNext` implying `parser.IsValidPrefix(currentConstrainedOut + [next])`, which is plausible but not explicitly connected ...
+  Attempt 11: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — It covers most branches, but the fallback relies on an unstated guarantee that `ConstrainedStep` returns a parser-valid non-EOS token before `AppendConstrainedToken`, whic...
+  Attempt 12: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers most branches, but the unconstrained branch that sets `insideConstrainedOut := true` on `next == "<<" || Contains(next, "<<")` without using `OpenConstra...
+
+Full report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260421_231913_3c8a45/failure_report.json
+
+============================================================
+SYNTHESIS FAILED
+============================================================
+Synthesis failed after 12 attempt(s):
+
+Failure breakdown by stage:
+  - proof_critique: 8
+  - verification: 4
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers major branches, but the unconstrained `next == "<<"` entry relies on `[]` being parser-valid without clearly tying that to the invariant after `generated...
+  Attempt 2: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 3: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 4: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — It plausibly covers most branches, but the rollback argument relies on an unstated guarantee that `RollbackToValidPrefix` returns a parser-valid prefix and does not explai...
+  Attempt 5: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 6: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers most branches, but rollback depends on an unstated helper guarantee (`RollbackToValidPrefix` returns a valid prefix) that is only described as “intended,...
+  Attempt 7: ✗ Failed at verification
+    Error: CLI: Error: Z3 is not found. Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using...
+  Attempt 8: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: OK — The sketch covers outside/open, close, direct append, and ConstrainedStep/EOS branches, with a plausible validity-preservation story for each.
+INV2_suffix: OK — It explicitl...
+  Attempt 9: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch relies on `AppendConstrainedToken` and `ConstrainedStep` preserving parser validity without citing visible postconditions, so the key inside-mode append branche...
+  Attempt 10: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch’s append argument relies on `IsTokenValidNext` implying `parser.IsValidPrefix(currentConstrainedOut + [next])`, which is plausible but not explicitly connected ...
+  Attempt 11: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — It covers most branches, but the fallback relies on an unstated guarantee that `ConstrainedStep` returns a parser-valid non-EOS token before `AppendConstrainedToken`, whic...
+  Attempt 12: ✗ Failed at proof_critique
+    Error: INV1_parser_validity: WEAK — The sketch covers most branches, but the unconstrained branch that sets `insideConstrainedOut := true` on `next == "<<" || Contains(next, "<<")` without using `OpenConstra...
+
+Full report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260421_231913_3c8a45/failure_report.json

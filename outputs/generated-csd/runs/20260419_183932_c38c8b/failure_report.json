@@ -1,0 +1,111 @@
+{
+  "task_description": "Generate a constrained decoding strategy for GSM-Symbolic math reasoning that uses the symbolic quantity names defined in the question, maintains valid << >> constrained spans, and stops cleanly on EOS.",
+  "total_attempts": 3,
+  "timestamp": "2026-04-19T18:41:34.329536",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Minimal no-op strategy preserving state because the provided content fragment\n  // is incomplete and cannot be soundly expanded into executable logit logic.\n  // We initialize outputs, perform no generation, and return zero cost.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  cost := 0;\n}",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Minimal no-op strategy preserving state because the provided content fragment\n  // is incomplete and cannot be soundly expanded into executable logit logic.\n  // We initialize outputs, perform no generation, and return zero cost.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  cost := 0;\n}"
+      },
+      "timestamp": "2026-04-19T18:39:50.748069",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(39,2): Error: a postcondition could not be proved on this return path\n   |\n39 |   {\n   |   ^\n\nGeneratedCSD.dfy(36,54): Related location: this is the postcondition that could not be proved\n   |\n36 |             insideConstrainedOut != insideConstrained ||\n   |                                                       ^^\n\n\nDafny program verifier finished with 1 verified, 1 error",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Perform at most one verified generation step when maxSteps > 0, which is\n  // enough to satisfy the progress postcondition. In unconstrained mode, bias\n  // toward opening a constrained span or stopping cleanly with EOS. In\n  // constrained mode, generate one parser-valid token and close the span only\n  // when the parser already recognizes the constrained prefix as complete.\n  // This preserves delimiter/state invariants and makes EOS terminal.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  var steps := 0;\n\n  if maxSteps > 0 {\n    if insideConstrainedOut {\n      var completeNow := parser.IsCompletePrefix(currentConstrainedOut);\n      if completeNow {\n        generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);\n        steps := 1;\n      } else {\n        var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrainedOut, eosToken);\n        if next == eosToken {\n          steps := 1;\n        } else {\n          generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);\n          steps := 1;\n        }\n      }\n    } else {\n      lm.GenerateLogits(prompt + generated);\n      var recentHasAnswerCue := false;\n      if 0 < |generated| {\n        if generated[|generated| - 1] == \">>\" {\n          recentHasAnswerCue := true;\n        }\n      }\n      if 1 < |generated| {\n        if generated[|generated| - 2] == \">>\" {\n          recentHasAnswerCue := true;\n        }\n      }\n      if recentHasAnswerCue {\n        helpers.BoostTokenLogits(lm, [eosToken], 100.0);\n      } else {\n        helpers.BoostTokenLogits(lm, [\"<<\"], 8.0);\n        helpers.BoostTokenLogits(lm, [eosToken], 3.0);\n      }\n      var next := lm.ChooseNextTokenUnconstrained();\n      helpers.cost := helpers.cost + 1;\n      if next == eosToken {\n        steps := 1;\n      } else {\n        if next == \"<<\" {\n          generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);\n          steps := 1;\n        } else {\n          generated := generated + [next];\n          steps := 1;\n        }\n      }\n    }\n  }\n\n  cost := steps;\n}",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Perform at most one verified generation step when maxSteps > 0, which is\n  // enough to satisfy the progress postcondition. In unconstrained mode, bias\n  // toward opening a constrained span or stopping cleanly with EOS. In\n  // constrained mode, generate one parser-valid token and close the span only\n  // when the parser already recognizes the constrained prefix as complete.\n  // This preserves delimiter/state invariants and makes EOS terminal.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  var steps := 0;\n\n  if maxSteps > 0 {\n    if insideConstrainedOut {\n      var completeNow := parser.IsCompletePrefix(currentConstrainedOut);\n      if completeNow {\n        generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);\n        steps := 1;\n      } else {\n        var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrainedOut, eosToken);\n        if next == eosToken {\n          steps := 1;\n        } else {\n          generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);\n          steps := 1;\n        }\n      }\n    } else {\n      lm.GenerateLogits(prompt + generated);\n      var recentHasAnswerCue := false;\n      if 0 < |generated| {\n        if generated[|generated| - 1] == \">>\" {\n          recentHasAnswerCue := true;\n        }\n      }\n      if 1 < |generated| {\n        if generated[|generated| - 2] == \">>\" {\n          recentHasAnswerCue := true;\n        }\n      }\n      if recentHasAnswerCue {\n        helpers.BoostTokenLogits(lm, [eosToken], 100.0);\n      } else {\n        helpers.BoostTokenLogits(lm, [\"<<\"], 8.0);\n        helpers.BoostTokenLogits(lm, [eosToken], 3.0);\n      }\n      var next := lm.ChooseNextTokenUnconstrained();\n      helpers.cost := helpers.cost + 1;\n      if next == eosToken {\n        steps := 1;\n      } else {\n        if next == \"<<\" {\n          generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);\n          steps := 1;\n        } else {\n          generated := generated + [next];\n          steps := 1;\n        }\n      }\n    }\n  }\n\n  cost := steps;\n}"
+      },
+      "timestamp": "2026-04-19T18:40:00.184537",
+      "succeeded": false,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (1 examples):\n  Accuracy: 0.0% (0/1)\n  Contains << >>: no\n  Syntax Rate: 0.0%\n  Total Time: 57.38s\n\nPrimary Failure Modes:\n  - entered_constrained_mode_too_early: 1 example(s) (output entered `<<` almost immediately after the prompt continuation began)\n  - unterminated_constrained_segment: 1 example(s) (opened `<<` but did not close `>>`)\n\nSample Failures:\n\n  Example 1:\n    Question: Sophia went to the bakery and bought various types of pastries. She bought 1 dozen donuts which cost...\n    Expected: 686\n    Got: <<",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260419_183932_c38c8b/gsm_probe_recent_answer_stop_v2_150_synth2048"
+      },
+      "runtime": null,
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "contains_delimiters": false,
+        "syntax_rate": 0.0,
+        "num_examples": 1,
+        "num_correct": 0,
+        "total_time_seconds": 57.37786626815796,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Sophia went to the bakery and bought various types of pastries. She bought 1 dozen donuts which cost $18 per dozen, 6 dozen mini cupcakes which cost $74 per dozen, and 2 dozen mini cheesecakes for $11",
+            "expected": "686",
+            "actual": "<<",
+            "full_output": "<<",
+            "scored_output": "<<",
+            "is_correct": false,
+            "contains_delimiters": false,
+            "is_syntax_valid": true,
+            "syntax_rate": 0.0,
+            "token_count": 1,
+            "time_seconds": 3.840611219406128
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Revised to avoid opening a constrained span too early and to reduce the\n  // chance of leaving it unterminated. The strategy now spends most steps in\n  // unconstrained mode, lightly biasing against \"<<\" until there is some\n  // generated context. Once a constrained span is active, it stays parser-valid,\n  // prefers symbolic/math-friendly tokens, and closes immediately once the\n  // parser reports completeness. After a recent \">>\", EOS is strongly boosted so\n  // answer completion becomes terminal and trailing continuation is suppressed.\n  // This directly addresses the prior failures: immediate \"<<\" generation and\n  // outputs ending with an open constrained segment.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  var steps := 0;\n\n  while steps < maxSteps\n    invariant 0 <= steps <= maxSteps\n    invariant |generated| <= |generatedPrefix| + steps\n    invariant !insideConstrainedOut ==> currentConstrainedOut == []\n    invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)\n    decreases maxSteps - steps\n  {\n    if insideConstrainedOut {\n      var completeNow := parser.IsCompletePrefix(currentConstrainedOut);\n      if completeNow {\n        generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);\n        steps := steps + 1;\n      } else {\n        var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);\n        if narrow {\n          var stablePrefix := generated[..|generated| - |currentConstrainedOut|];\n          generated, currentConstrainedOut := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrainedOut);\n          insideConstrainedOut := true;\n          steps := steps + 1;\n        } else {\n          var next := helpers.BoostedConstrainedStep(\n            lm, parser, prompt, currentConstrainedOut,\n            [\"x\", \"y\", \"z\", \"a\", \"b\", \"c\", \"n\", \"m\", \"total\", \"cost\", \"price\", \"number\", \"amount\", \"=\", \"+\", \"-\", \"*\", \"/\", \"(\", \")\", \"[\", \"]\", \"{\", \"}\", \",\", \".\", \"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\"],\n            3.0, eosToken);\n          if next == eosToken {\n            steps := steps + 1;\n            break;\n          } else {\n            generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);\n            steps := steps + 1;\n          }\n        }\n      }\n    } else {\n      lm.GenerateLogits(prompt + generated);\n\n      var recentlyClosed := false;\n      if 0 < |generated| {\n        if generated[|generated| - 1] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n      if 1 < |generated| {\n        if generated[|generated| - 2] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n      if 2 < |generated| {\n        if generated[|generated| - 3] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n\n      if recentlyClosed {\n        helpers.BoostTokenLogits(lm, [eosToken], 100.0);\n        helpers.PenalizeTokenLogits(lm, [\"<<\", \"Q:\", \"A:\", \"Question\", \"Answer\"], 20.0);\n      } else {\n        if |generated| < 8 {\n          helpers.PenalizeTokenLogits(lm, [\"<<\"], 12.0);\n        } else {\n          helpers.BoostTokenLogits(lm, [\"<<\"], 2.0);\n        }\n        helpers.BoostTokenLogits(lm, [eosToken], 1.0);\n        helpers.PenalizeTokenLogits(lm, [\"Q:\", \"A:\", \"Question\", \"Answer\", \"```\"], 8.0);\n      }\n\n      var next := lm.ChooseNextTokenUnconstrained();\n      helpers.cost := helpers.cost + 1;\n      steps := steps + 1;\n\n      if next == eosToken {\n        break;\n      } else {\n        if next == \"<<\" {\n          if |generated| < 8 {\n            generated := generated + [next];\n          } else {\n            generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);\n          }\n        } else {\n          generated := generated + [next];\n        }\n      }\n    }\n  }\n\n  cost := steps;\n}",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "{\n  // CSD_RATIONALE_BEGIN\n  // Revised to avoid opening a constrained span too early and to reduce the\n  // chance of leaving it unterminated. The strategy now spends most steps in\n  // unconstrained mode, lightly biasing against \"<<\" until there is some\n  // generated context. Once a constrained span is active, it stays parser-valid,\n  // prefers symbolic/math-friendly tokens, and closes immediately once the\n  // parser reports completeness. After a recent \">>\", EOS is strongly boosted so\n  // answer completion becomes terminal and trailing continuation is suppressed.\n  // This directly addresses the prior failures: immediate \"<<\" generation and\n  // outputs ending with an open constrained segment.\n  // CSD_RATIONALE_END\n  generated := generatedPrefix;\n  insideConstrainedOut := insideConstrained;\n  currentConstrainedOut := currentConstrained;\n  var steps := 0;\n\n  while steps < maxSteps\n    invariant 0 <= steps <= maxSteps\n    invariant |generated| <= |generatedPrefix| + steps\n    invariant !insideConstrainedOut ==> currentConstrainedOut == []\n    invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)\n    decreases maxSteps - steps\n  {\n    if insideConstrainedOut {\n      var completeNow := parser.IsCompletePrefix(currentConstrainedOut);\n      if completeNow {\n        generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);\n        steps := steps + 1;\n      } else {\n        var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);\n        if narrow {\n          var stablePrefix := generated[..|generated| - |currentConstrainedOut|];\n          generated, currentConstrainedOut := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrainedOut);\n          insideConstrainedOut := true;\n          steps := steps + 1;\n        } else {\n          var next := helpers.BoostedConstrainedStep(\n            lm, parser, prompt, currentConstrainedOut,\n            [\"x\", \"y\", \"z\", \"a\", \"b\", \"c\", \"n\", \"m\", \"total\", \"cost\", \"price\", \"number\", \"amount\", \"=\", \"+\", \"-\", \"*\", \"/\", \"(\", \")\", \"[\", \"]\", \"{\", \"}\", \",\", \".\", \"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\"],\n            3.0, eosToken);\n          if next == eosToken {\n            steps := steps + 1;\n            break;\n          } else {\n            generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);\n            steps := steps + 1;\n          }\n        }\n      }\n    } else {\n      lm.GenerateLogits(prompt + generated);\n\n      var recentlyClosed := false;\n      if 0 < |generated| {\n        if generated[|generated| - 1] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n      if 1 < |generated| {\n        if generated[|generated| - 2] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n      if 2 < |generated| {\n        if generated[|generated| - 3] == \">>\" {\n          recentlyClosed := true;\n        }\n      }\n\n      if recentlyClosed {\n        helpers.BoostTokenLogits(lm, [eosToken], 100.0);\n        helpers.PenalizeTokenLogits(lm, [\"<<\", \"Q:\", \"A:\", \"Question\", \"Answer\"], 20.0);\n      } else {\n        if |generated| < 8 {\n          helpers.PenalizeTokenLogits(lm, [\"<<\"], 12.0);\n        } else {\n          helpers.BoostTokenLogits(lm, [\"<<\"], 2.0);\n        }\n        helpers.BoostTokenLogits(lm, [eosToken], 1.0);\n        helpers.PenalizeTokenLogits(lm, [\"Q:\", \"A:\", \"Question\", \"Answer\", \"```\"], 8.0);\n      }\n\n      var next := lm.ChooseNextTokenUnconstrained();\n      helpers.cost := helpers.cost + 1;\n      steps := steps + 1;\n\n      if next == eosToken {\n        break;\n      } else {\n        if next == \"<<\" {\n          if |generated| < 8 {\n            generated := generated + [next];\n          } else {\n            generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);\n          }\n        } else {\n          generated := generated + [next];\n        }\n      }\n    }\n  }\n\n  cost := steps;\n}"
+      },
+      "timestamp": "2026-04-19T18:41:20.570708",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(39,2): Error: a postcondition could not be proved on this return path\n   |\n39 |   {\n   |   ^\n\nGeneratedCSD.dfy(30,35): Related location: this is the postcondition that could not be proved\n   |\n30 |     ensures lm.ValidTokensIdsLogits()\n   |                                    ^\n\nVerifiedAgentSynthesis.dfy(23,7): Related location: this proposition could not be proved\n   |\n23 |       (forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)\n   |        ^^^^^^\n\nGeneratedCSD.dfy(68,94): Error: a precondition for this call could not be proved\n   |\n68 |         generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);\n   |                                                                                               ^\n\nVerifiedAgentSynthesis.dfy(372,36): Related location: this is the precondition that could not be proved\n    |\n372 |       requires |currentConstrained| <= |generated|\n    |                                     ^^\n\nGeneratedCSD.dfy(92,23): Error: a precondition for this call could not be proved\n   |\n92 |       lm.GenerateLogits(prompt + generated);\n   |                        ^\n\nVerifiedAgentSynthesis.dfy(220,35): Related location: this is the precondition that could not be proved\n    |\n220 |       requires ValidTokensIdsLogits()\n    |                                    ^\n\nVerifiedAgentSynthesis.dfy(23,7): Related location: this proposition could not be proved\n   |\n23 |       (forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)\n   |        ^^^^^^\n\nGeneratedCSD.dfy(113,35): Error: a precondition for this call could not be proved\n    |\n113 |         helpers.PenalizeTokenLogits(lm, [\"<<\", \"Q:\", \"A:\", \"Question\", \"Answer\"], 20.0);\n    |                                    ^\n\nVerifiedAgentSynthesis.dfy(645,15): Related location: this is the precondition that could not be proved\n    |\n645 |       requires forall t :: t in tokens ==> t in lm.Tokens\n    |                ^^^^^^\n\nGeneratedCSD.dfy(121,35): Error: a precondition for this call could not be proved\n    |\n121 |         helpers.PenalizeTokenLogits(lm, [\"Q:\", \"A:\", \"Question\", \"Answer\", \"```\"], 8.0);\n    |                                    ^\n\nVerifiedAgentSynthesis.dfy(645,15): Related location: this is the precondition that could not be proved\n    |\n645 |       requires forall t :: t in tokens ==> t in lm.Tokens\n    |                ^^^^^^\n\n\nDafny program verifier finished with 1 verified, 5 errors",
+      "verification": {
+        "success": false,
+        "error_count": 5
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 2,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": [
+      {
+        "error": "Type error",
+        "count": 1
+      }
+    ]
+  }
+}

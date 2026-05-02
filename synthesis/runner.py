@@ -44,20 +44,25 @@ class StrategyRunner:
     """
     Executes compiled Dafny strategies in Python.
 
-    Loads the generated Python module and executes the strategy with test inputs.
+    Loads the generated Python module and executes the strategy against
+    the SAME grammar the real evaluator will use. Pass `grammar_source`
+    (a .lark path or grammar string) so the smoke test exercises the
+    real Parser externs, not a stub.
 
-    Supports two parser modes:
-    - "permissive": Accepts all tokens (for testing compilation)
-    - "json": Uses real JSON prefix validation
+    parser_mode="json" still routes to the JSON parser for JSON runs.
     """
 
     def __init__(
         self,
         max_steps: int = 100,
-        parser_mode: ParserMode = "permissive"
+        parser_mode: ParserMode = "permissive",
+        grammar_source: Optional[str] = None,
+        grammar_start: str = "start",
     ):
         self.max_steps = max_steps
         self.parser_mode = parser_mode
+        self.grammar_source = grammar_source
+        self.grammar_start = grammar_start
     
     def _load_compiled_module(self, module_path: Path) -> Any:
         """
@@ -86,6 +91,19 @@ class StrategyRunner:
         spec.loader.exec_module(module)
         
         return module
+
+    @staticmethod
+    def _dafny_token_to_str(token: Any) -> str:
+        """Convert a Dafny string/seq token to a Python string."""
+        if isinstance(token, str):
+            return token
+        try:
+            return ''.join(token)
+        except TypeError:
+            try:
+                return ''.join(token[i] for i in range(len(token)))
+            except (TypeError, AttributeError, IndexError):
+                return str(token)
     
     def _create_dafny_test_environment(self, module_dir: Path) -> tuple[Any, Any, Any, int]:
         """
@@ -174,17 +192,70 @@ class StrategyRunner:
                 return self._Tokens[best_idx]
 
             def ChooseNextTokenUnconstrained(self):
-                """Extern: Choose highest logit token regardless of masking."""
-                best_idx = 0
-                best_logit = _dafny.BigRational('-1e10')
-                
-                for i in range(self.Logits.length(0)):
-                    if self.Logits[i] > best_logit:
-                        best_logit = self.Logits[i]
-                        best_idx = i
-                
-                return self._Tokens[best_idx]
-            
+                """Extern: Sample from unconstrained logits."""
+                import math
+                import random
+
+                logits = [self._bigrational_to_float(self.Logits[i]) for i in range(self.Logits.length(0))]
+                max_logit = max(logits)
+                exp_vals = [math.exp(x - max_logit) for x in logits]
+                total = sum(exp_vals)
+                if total <= 0.0:
+                    best_idx = max(range(len(logits)), key=lambda i: logits[i])
+                    return self._Tokens[best_idx]
+
+                r = random.random() * total
+                accum = 0.0
+                for i, weight in enumerate(exp_vals):
+                    accum += weight
+                    if accum >= r:
+                        return self._Tokens[i]
+                return self._Tokens[len(exp_vals) - 1]
+
+            def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
+                """Extern: Greedy-sample up to maxNewTokens from the full vocab.
+
+                Stops early if we emit openSpanToken or eosToken. Matches the
+                real HF wrapper's return shape: (chunk, stoppedOnOpenSpan,
+                stoppedOnEos, stepsUsed).
+                """
+                import _dafny
+                chunk_tokens = []
+                stopped_on_open = False
+                stopped_on_eos = False
+                steps_used = 0
+                open_str = self._dafny_seq_to_str(openSpanToken) if hasattr(self, '_dafny_seq_to_str') else str(openSpanToken)
+                eos_str = self._dafny_seq_to_str(eosToken) if hasattr(self, '_dafny_seq_to_str') else str(eosToken)
+                cursor_prefix = input_prefix
+                for _ in range(int(maxNewTokens)):
+                    self.GenerateLogits(cursor_prefix)
+                    nxt = self.ChooseNextTokenUnconstrained()
+                    steps_used += 1
+                    nxt_str = ''.join(nxt) if hasattr(nxt, '__iter__') and not isinstance(nxt, str) else str(nxt)
+                    if nxt_str == eos_str:
+                        stopped_on_eos = True
+                        break
+                    chunk_tokens.append(nxt)
+                    cursor_prefix = _dafny.SeqWithoutIsStrInference(list(cursor_prefix) + [nxt])
+                    if nxt_str == open_str:
+                        stopped_on_open = True
+                        break
+                return (
+                    _dafny.SeqWithoutIsStrInference(chunk_tokens),
+                    stopped_on_open,
+                    stopped_on_eos,
+                    steps_used,
+                )
+
+            def _dafny_seq_to_str(self, seq):
+                try:
+                    return ''.join(seq)
+                except TypeError:
+                    try:
+                        return ''.join(seq[i] for i in range(len(seq)))
+                    except Exception:
+                        return str(seq)
+
             def MaskTokensExcept(self, valid_tokens):
                 """Extern: Mask all tokens except those in valid_tokens.
 
@@ -204,6 +275,23 @@ class StrategyRunner:
                     if i not in valid_indices:
                         self.Logits[i] = masked_val
 
+            def MaskValidNextAndEos(self, parser, prefix, eosToken):
+                valid_tokens = parser.ValidNextTokens(prefix)
+                combined = list(valid_tokens) + [eosToken]
+                self.MaskTokensExcept(combined)
+
+            def BoostValidNextAndEos(self, parser, prefix, amount, eosToken):
+                boost = _dafny.BigRational(str(amount))
+                valid_tokens = list(parser.ValidNextTokens(prefix)) + [eosToken]
+                seen = set()
+                for tok in valid_tokens:
+                    s = str(tok) if not isinstance(tok, str) else tok
+                    if s in seen:
+                        continue
+                    seen.add(s)
+                    for idx in self._token_str_to_indices.get(s, []):
+                        self.Logits[idx] = self.Logits[idx] + boost
+
             def HasEOSToken(self):
                 """Extern: Check if LM has an EOS token."""
                 return True
@@ -212,35 +300,6 @@ class StrategyRunner:
                 """Get the EOS token for the LM."""
                 import _dafny
                 return _dafny.SeqWithoutIsStrInference("<EOS>")
-        
-        # Create a Dafny-compatible Parser with extern implementations
-        class TestParser(VerifiedDecoderAgent.Parser):
-            def __init__(self, lm_tokens):
-                super().__init__()
-                self._lm_tokens = lm_tokens
-                self._step_count = 0
-                import _dafny
-                self._eos_token = _dafny.SeqWithoutIsStrInference("<EOS>")
-            
-            def IsValidPrefix(self, prefix):
-                """Extern: Always valid for testing."""
-                return True
-            
-            def IsCompletePrefix(self, prefix):
-                """Extern: Complete after some tokens or if ends with EOS."""
-                if len(prefix) == 0:
-                    return False
-                # Check if last token is EOS
-                last = prefix[len(prefix) - 1] if hasattr(prefix, '__getitem__') else list(prefix)[-1]
-                if last == self._eos_token:
-                    return True
-                # Also complete after 10 steps for testing
-                self._step_count += 1
-                return self._step_count > 10
-            
-            def ValidNextTokens(self, prefix):
-                """Extern: Return all LM tokens as valid."""
-                return self._lm_tokens
         
         # Create a JSON-aware parser
         class JsonParser(VerifiedDecoderAgent.Parser):
@@ -302,18 +361,42 @@ class StrategyRunner:
                         valid.append(token)
                 
                 return _dafny.SeqWithoutIsStrInference(valid)
+            
+            def ParseG(self, input_str: str) -> bool:
+                """Extern: Parse JSON string using the grammar."""
+                try:
+                    self._parser.parse(input_str)
+                    return True
+                except Exception:
+                    return False
         
         # Create instances based on parser mode
         is_json_mode = self.parser_mode == "json"
         lm = TestLM(json_mode=is_json_mode)
-        
+
         if is_json_mode:
             parser = JsonParser(lm._Tokens)
             prompt = _dafny.SeqWithoutIsStrInference([])  # Empty prompt for JSON
-        else:
-            parser = TestParser(lm._Tokens)
-            # Prompt must be a sequence of Dafny strings
+        elif self.grammar_source is not None:
+            # Smoke-test against the REAL grammar parser (no DFA mask store:
+            # tokenizer=None → brute-force path is correct and cheap for the
+            # tiny TestLM vocabulary).
+            from synthesis.parser_utils import create_lark_dafny_parser
+            ParserCls = create_lark_dafny_parser(
+                self.grammar_source,
+                VerifiedDecoderAgent,
+                _dafny,
+                start=self.grammar_start,
+                tokenizer=None,
+            )
+            parser = ParserCls(lm._Tokens)
             prompt = _dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference("<START>")])
+        else:
+            raise ValueError(
+                "StrategyRunner: no grammar_source provided and parser_mode != 'json'. "
+                "Pass grammar_source (path or grammar string) so the smoke test can "
+                "exercise the real Parser externs."
+            )
         
         return lm, parser, prompt, self.max_steps
     
@@ -378,12 +461,35 @@ class StrategyRunner:
             # Call the strategy method directly - it performs constrained decoding
             # and returns (generated sequence, cost)
             
-            # Check signature of MyCSDStrategy to handle different template versions
-            # Some versions expect (lm, parser, prompt, maxSteps)
-            # Others expect (lm, parser, prompt, maxSteps, eosToken)
+            # Check signature of MyCSDStrategy to handle different template versions.
             sig = inspect.signature(csd_strategy_method)
-            if len(sig.parameters) >= 5:
-                # Get EOS token from LM
+            params = sig.parameters
+            if "generatedPrefix" in params and "insideConstrained" in params and "currentConstrained" in params and "eosToken" in params:
+                import _dafny
+                eos_token = lm.get_eos_token()
+                generated_prefix = _dafny.SeqWithoutIsStrInference([])
+                current_constrained = _dafny.SeqWithoutIsStrInference([])
+                call_args = [
+                    lm,
+                    parser,
+                    test_prompt,
+                    generated_prefix,
+                    False,
+                    current_constrained,
+                    max_steps,
+                ]
+                if "stepTokenBudget" in params:
+                    call_args.append(8)
+                if "validTokenGroups" in params:
+                    call_args.append(_dafny.SeqWithoutIsStrInference([]))
+                call_args.append(eos_token)
+                result = csd_strategy_method(*call_args)
+            elif "currentPrefix" in params and "eosToken" in params:
+                import _dafny
+                eos_token = lm.get_eos_token()
+                current_prefix = _dafny.SeqWithoutIsStrInference([])
+                result = csd_strategy_method(lm, parser, test_prompt, current_prefix, max_steps, eos_token)
+            elif "eosToken" in params:
                 eos_token = lm.get_eos_token()
                 result = csd_strategy_method(lm, parser, test_prompt, max_steps, eos_token)
             else:
@@ -391,7 +497,9 @@ class StrategyRunner:
             
             # Dafny returns a tuple (output, cost) for methods with multiple returns
             # MyCSDStrategy is now defined as: returns (generated: Prefix, cost: int)
-            if isinstance(result, tuple) and len(result) == 2:
+            if isinstance(result, tuple) and len(result) == 4:
+                output, _inside_constrained, _current_constrained, cost = result
+            elif isinstance(result, tuple) and len(result) == 2:
                 output, cost = result
             elif isinstance(result, tuple) and len(result) > 0:
                 output = result[0]
@@ -400,9 +508,12 @@ class StrategyRunner:
                 output = result
                 cost = 0
             
-            # Convert Dafny sequence to Python list for output
-            if hasattr(output, '__iter__'):
-                output = list(output)
+            # Convert Dafny sequence to a Python list of strings for downstream checks.
+            if output is not None:
+                if hasattr(output, '__iter__'):
+                    output = [self._dafny_token_to_str(t) for t in output]
+                elif hasattr(output, '__len__') and hasattr(output, '__getitem__'):
+                    output = [self._dafny_token_to_str(output[i]) for i in range(len(output))]
             
             execution_time = (time.time() - start_time) * 1000
             
@@ -428,4 +539,3 @@ class StrategyRunner:
                 execution_time_ms=execution_time
             )
     
-

@@ -1,0 +1,205 @@
+{
+  "task_description": "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.",
+  "total_attempts": 8,
+  "timestamp": "2026-04-12T20:34:06.972410",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Tracks a single parser-valid working prefix `current` that is always kept equal\n// to the returned `generated` prefix. On each step it inspects the number of valid\n// next tokens: when the grammar frontier is narrow it uses fully constrained decoding,\n// and when the frontier is wider it uses a softly constrained step that still checks\n// whether the chosen token is grammar-valid. This state is sufficient for the task\n// because the parser enforces the required structured output format, including the\n// << >> arithmetic delimiters, while the loop only appends tokens that preserve a\n// valid prefix and stops early on EOS or parser completion.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nvar current := currentPrefix;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(current)\n  invariant generated == current\n  invariant exists suffix: Prefix :: current == currentPrefix + suffix\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(current) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, current);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, current, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        current := current + [next];\n        generated := current;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, current, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          current := current + [next];\n          generated := current;\n          steps := steps + 1;\n        } else {\n          var repaired := helpers.RollbackToValidPrefix(parser, current);\n          current := repaired;\n          generated := repaired;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Tracks a single parser-valid working prefix `current` that is always kept equal\n// to the returned `generated` prefix. On each step it inspects the number of valid\n// next tokens: when the grammar frontier is narrow it uses fully constrained decoding,\n// and when the frontier is wider it uses a softly constrained step that still checks\n// whether the chosen token is grammar-valid. This state is sufficient for the task\n// because the parser enforces the required structured output format, including the\n// << >> arithmetic delimiters, while the loop only appends tokens that preserve a\n// valid prefix and stops early on EOS or parser completion.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nvar current := currentPrefix;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(current)\n  invariant generated == current\n  invariant exists suffix: Prefix :: current == currentPrefix + suffix\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(current) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, current);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, current, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        current := current + [next];\n        generated := current;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, current, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          current := current + [next];\n          generated := current;\n          steps := steps + 1;\n        } else {\n          var repaired := helpers.RollbackToValidPrefix(parser, current);\n          current := repaired;\n          generated := repaired;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:32:50.194958",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(18,2): Error: a postcondition could not be proved on this return path\n   |\n18 |   {\n   |   ^\n\nGeneratedCSD.dfy(15,24): Related location: this is the postcondition that could not be proved\n   |\n15 |     ensures |generated| <= |currentPrefix| + maxSteps\n   |                         ^^\n\nGeneratedCSD.dfy(34,0): Error: decreases expression might not decrease\n   |\n34 | while steps < maxSteps\n   | ^^^^^\n\nGeneratedCSD.dfy(39,12): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n39 |   invariant exists suffix: Prefix :: current == currentPrefix + suffix\n   |             ^^^^^^\n\nGeneratedCSD.dfy(39,12): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n39 |   invariant exists suffix: Prefix :: current == currentPrefix + suffix\n   |             ^^^^^^\n\nGeneratedCSD.dfy(66,55): Error: a precondition for this call could not be proved\n   |\n66 |           var repaired := helpers.RollbackToValidPrefix(parser, current);\n   |                                                        ^\n\nVerifiedAgentSynthesis.dfy(461,35): Related location: this is the precondition that could not be proved\n    |\n461 |       requires parser.IsValidPrefix([])\n    |                                    ^\n\n\nDafny program verifier finished with 1 verified, 5 errors",
+      "verification": {
+        "success": false,
+        "error_count": 5
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Maintains `generated` directly as the single parser-valid working prefix, always as\n// an extension of `currentPrefix`. To make the length bound explicit for Dafny, the\n// loop tracks a ghost-free step counter `steps` together with the invariant\n// `|generated| == |currentPrefix| + steps`; thus every token append increments both\n// length and step count in lockstep, and every non-appending branch breaks instead of\n// looping. This also makes the decreases proof straightforward because every\n// non-breaking iteration increments `steps`. The strategy uses constrained decoding on\n// narrow frontiers and soft-constrained decoding otherwise, stopping on EOS or parser\n// completion before appending EOS.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant |generated| == |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Maintains `generated` directly as the single parser-valid working prefix, always as\n// an extension of `currentPrefix`. To make the length bound explicit for Dafny, the\n// loop tracks a ghost-free step counter `steps` together with the invariant\n// `|generated| == |currentPrefix| + steps`; thus every token append increments both\n// length and step count in lockstep, and every non-appending branch breaks instead of\n// looping. This also makes the decreases proof straightforward because every\n// non-breaking iteration increments `steps`. The strategy uses constrained decoding on\n// narrow frontiers and soft-constrained decoding otherwise, stopping on EOS or parser\n// completion before appending EOS.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant |generated| == |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:32:59.852270",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(39,12): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n39 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\nGeneratedCSD.dfy(39,12): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n39 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Maintains `generated` as the single parser-valid working prefix, initialized to\n// `currentPrefix`. To make the extension property explicit for Dafny, the loop tracks\n// a concrete suffix sequence `suffix` such that `generated == currentPrefix + suffix`.\n// This directly establishes the existential postcondition and avoids relying on Dafny\n// to infer existence from append updates. The loop also tracks `steps` with\n// `|suffix| == steps`, so every append updates both in lockstep and yields the final\n// length bound. Decoding uses constrained decoding on narrow frontiers and\n// soft-constrained decoding otherwise, stopping on EOS or parser completion before\n// appending EOS.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        suffix := suffix + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          suffix := suffix + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Maintains `generated` as the single parser-valid working prefix, initialized to\n// `currentPrefix`. To make the extension property explicit for Dafny, the loop tracks\n// a concrete suffix sequence `suffix` such that `generated == currentPrefix + suffix`.\n// This directly establishes the existential postcondition and avoids relying on Dafny\n// to infer existence from append updates. The loop also tracks `steps` with\n// `|suffix| == steps`, so every append updates both in lockstep and yields the final\n// length bound. Decoding uses constrained decoding on narrow frontiers and\n// soft-constrained decoding otherwise, stopping on EOS or parser completion before\n// appending EOS.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        suffix := suffix + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          suffix := suffix + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:08.605421",
+      "succeeded": false,
+      "failed_at": "runtime",
+      "error_summary": "Runtime error: NameError: name '_dafny' is not defined\n\nTraceback:\nTraceback (most recent call last):\n  File \"/home/aadivyar/csd-generation/synthesis/runner.py\", line 398, in run\n    current_prefix = _dafny.SeqWithoutIsStrInference([])\n                     ^^^^^^\nNameError: name '_dafny' is not defined\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260412_203243_c08470/gsm_gpt54_retry_40acc_recursive_examples_v3"
+      },
+      "runtime": {
+        "success": false,
+        "output_length": 0,
+        "cost": 0,
+        "execution_time_ms": 4.2266845703125
+      },
+      "evaluation": null
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Use only simple sequence updates and helper calls, avoiding constructions that may\n// trigger backend-specific empty-sequence runtime issues. The strategy keeps\n// `generated` as the parser-valid current prefix, initialized from `currentPrefix`,\n// and never appends EOS. It performs at most `maxSteps` decoding steps, preferring\n// fully constrained decoding when the valid frontier is small and otherwise using a\n// soft-constrained step. If soft-constrained decoding proposes an invalid token, the\n// strategy stops early while preserving validity.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Use only simple sequence updates and helper calls, avoiding constructions that may\n// trigger backend-specific empty-sequence runtime issues. The strategy keeps\n// `generated` as the parser-valid current prefix, initialized from `currentPrefix`,\n// and never appends EOS. It performs at most `maxSteps` decoding steps, preferring\n// fully constrained decoding when the valid frontier is small and otherwise using a\n// soft-constrained step. If soft-constrained decoding proposes an invalid token, the\n// strategy stops early while preserving validity.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:19.817932",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(18,2): Error: a postcondition could not be proved on this return path\n   |\n18 |   {\n   |   ^\n\nGeneratedCSD.dfy(15,24): Related location: this is the postcondition that could not be proved\n   |\n15 |     ensures |generated| <= |currentPrefix| + maxSteps\n   |                         ^^\n\nGeneratedCSD.dfy(38,12): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n38 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\nGeneratedCSD.dfy(38,12): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n38 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\n\nDafny program verifier finished with 1 verified, 3 errors",
+      "verification": {
+        "success": false,
+        "error_count": 3
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Keep the prior simple bounded decoding structure, but make the suffix witness\n// explicit so Dafny can prove both prefix-extension and length bounds. The variable\n// `suffix` tracks exactly the tokens appended after `currentPrefix`, with\n// `generated == currentPrefix + suffix` as a loop invariant. Since each successful\n// step appends one token to both `generated` and `suffix`, Dafny can derive\n// `|generated| == |currentPrefix| + |suffix|` and, together with `|suffix| <= steps`,\n// prove `|generated| <= |currentPrefix| + maxSteps`.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        suffix := suffix + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          suffix := suffix + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Keep the prior simple bounded decoding structure, but make the suffix witness\n// explicit so Dafny can prove both prefix-extension and length bounds. The variable\n// `suffix` tracks exactly the tokens appended after `currentPrefix`, with\n// `generated == currentPrefix + suffix` as a loop invariant. Since each successful\n// step appends one token to both `generated` and `suffix`, Dafny can derive\n// `|generated| == |currentPrefix| + |suffix|` and, together with `|suffix| <= steps`,\n// prove `|generated| <= |currentPrefix| + maxSteps`.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        suffix := suffix + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          suffix := suffix + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:28.556606",
+      "succeeded": false,
+      "failed_at": "runtime",
+      "error_summary": "Runtime error: NameError: name '_dafny' is not defined\n\nTraceback:\nTraceback (most recent call last):\n  File \"/home/aadivyar/csd-generation/synthesis/runner.py\", line 398, in run\n    current_prefix = _dafny.SeqWithoutIsStrInference([])\n                     ^^^^^^\nNameError: name '_dafny' is not defined\n",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260412_203243_c08470/gsm_gpt54_retry_40acc_recursive_examples_v3_20260412_203334_c85007"
+      },
+      "runtime": {
+        "success": false,
+        "output_length": 0,
+        "cost": 0,
+        "execution_time_ms": 1.203775405883789
+      },
+      "evaluation": null
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Avoid constructing explicit empty sequence literals in local variables, since the\n// Python backend in this environment mishandles some generated sequence setup paths.\n// Instead, maintain only `generated` and a numeric step counter. Each iteration either\n// stops or appends exactly one non-EOS token to `generated`, so `generated` always\n// remains a valid extension of `currentPrefix`, the total length increase is bounded by\n// `steps`, and helper-managed cost is bounded by the number of iterations.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Avoid constructing explicit empty sequence literals in local variables, since the\n// Python backend in this environment mishandles some generated sequence setup paths.\n// Instead, maintain only `generated` and a numeric step counter. Each iteration either\n// stops or appends exactly one non-EOS token to `generated`, so `generated` always\n// remains a valid extension of `currentPrefix`, the total length increase is bounded by\n// `steps`, and helper-managed cost is bounded by the number of iterations.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        generated := generated + [next];\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          generated := generated + [next];\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:39.878363",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(37,12): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n37 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\nGeneratedCSD.dfy(37,12): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n37 |   invariant exists suffix: Prefix :: generated == currentPrefix + suffix\n   |             ^^^^^^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Keep an explicit `suffix` variable such that `generated == currentPrefix + suffix`.\n// This makes the extension property easy to prove both on loop entry and after each\n// append. The loop only appends one non-EOS token at a time to both `suffix` and\n// `generated`, preserving parser validity and the length/cost bounds.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        suffix := suffix + [next];\n        generated := currentPrefix + suffix;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          suffix := suffix + [next];\n          generated := currentPrefix + suffix;\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Keep an explicit `suffix` variable such that `generated == currentPrefix + suffix`.\n// This makes the extension property easy to prove both on loop entry and after each\n// append. The loop only appends one non-EOS token at a time to both `suffix` and\n// `generated`, preserving parser validity and the length/cost bounds.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(generated)\n  invariant generated == currentPrefix + suffix\n  invariant |suffix| == steps\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        suffix := suffix + [next];\n        generated := currentPrefix + suffix;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          suffix := suffix + [next];\n          generated := currentPrefix + suffix;\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:48.474814",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(35,32): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n35 |   invariant parser.IsValidPrefix(generated)\n   |                                 ^\n\n\nDafny program verifier finished with 1 verified, 1 error",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// Keep an explicit `suffix` variable such that `generated == currentPrefix + suffix`.\n// To make parser-validity preservation explicit, also track `parser.IsValidPrefix(currentPrefix + suffix)`\n// as a loop invariant and re-establish `generated` from that expression after each append.\n// The loop only appends tokens returned by constrained helpers; EOS is checked before append.\n// This makes the proof that `parser.IsValidPrefix(generated)` is maintained direct via\n// `generated == currentPrefix + suffix`.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentPrefix + suffix)\n  invariant generated == currentPrefix + suffix\n  invariant parser.IsValidPrefix(generated)\n  invariant |suffix| == steps\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        suffix := suffix + [next];\n        generated := currentPrefix + suffix;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          suffix := suffix + [next];\n          generated := currentPrefix + suffix;\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// Keep an explicit `suffix` variable such that `generated == currentPrefix + suffix`.\n// To make parser-validity preservation explicit, also track `parser.IsValidPrefix(currentPrefix + suffix)`\n// as a loop invariant and re-establish `generated` from that expression after each append.\n// The loop only appends tokens returned by constrained helpers; EOS is checked before append.\n// This makes the proof that `parser.IsValidPrefix(generated)` is maintained direct via\n// `generated == currentPrefix + suffix`.\n// CSD_RATIONALE_END\ngenerated := currentPrefix;\nhelpers.cost := 0;\ncost := 0;\nvar steps: nat := 0;\nvar suffix: Prefix := [];\n\nwhile steps < maxSteps\n  invariant 0 <= steps <= maxSteps\n  invariant lm.ValidTokensIdsLogits()\n  invariant parser.IsValidPrefix(currentPrefix + suffix)\n  invariant generated == currentPrefix + suffix\n  invariant parser.IsValidPrefix(generated)\n  invariant |suffix| == steps\n  invariant |generated| <= |currentPrefix| + steps\n  invariant helpers.cost <= steps\n  decreases maxSteps - steps\n{\n  if parser.IsCompletePrefix(generated) {\n    break;\n  } else {\n    var validCount := helpers.ValidTokenCount(parser, generated);\n    if validCount <= 4 {\n      var next := helpers.ConstrainedStep(lm, parser, prompt, generated, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        suffix := suffix + [next];\n        generated := currentPrefix + suffix;\n        steps := steps + 1;\n      }\n    } else {\n      var next, isValid := helpers.SoftConstrainedStep(lm, parser, prompt, generated, 3.0, eosToken);\n      if next == eosToken {\n        break;\n      } else {\n        if isValid {\n          suffix := suffix + [next];\n          generated := currentPrefix + suffix;\n          steps := steps + 1;\n        } else {\n          break;\n        }\n      }\n    }\n  }\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-04-12T20:33:57.409429",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "GeneratedCSD.dfy(37,32): Error: this loop invariant could not be proved on entry\n Related message: loop invariant violation\n   |\n37 |   invariant parser.IsValidPrefix(currentPrefix + suffix)\n   |                                 ^\n\nGeneratedCSD.dfy(37,32): Error: this invariant could not be proved to be maintained by the loop\n Related message: loop invariant violation\n   |\n37 |   invariant parser.IsValidPrefix(currentPrefix + suffix)\n   |                                 ^\n\n\nDafny program verifier finished with 1 verified, 2 errors",
+      "verification": {
+        "success": false,
+        "error_count": 2
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 6,
+    "compilation_failures": 0,
+    "runtime_failures": 2,
+    "common_errors": []
+  }
+}

@@ -1,0 +1,1164 @@
+{
+  "task_description": "Math word problem solving where the model reasons in natural language and writes arithmetic expressions inside << >> delimiters. The parser validates expression syntax automatically.",
+  "total_attempts": 10,
+  "timestamp": "2026-02-16T10:42:19.655881",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// CSD_RATIONALE_END\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// CSD_RATIONALE_END\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T09:59:06.837800",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 422.22s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 66.741943359375
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 422.21865367889404,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 19.97486639022827
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 21.79565405845642
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 78.59933638572693
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                 \n                                 \n                          ",
+            "full_output": " 1000\n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 20.344096899032593
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 33.376619815826416
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 68.97301292419434
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 38.397183895111084
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 71.1113486289978
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 36.92314100265503
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 22.94018816947937
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 2,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including accurate arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// Given the poor performance, we will increase the number of steps and adjust the speculative window size to allow more time for the model to reason.\n// CSD_RATIONALE_END\ngenerated := helpers.TryUnconstrainedThenConstrained(lm, parser, prompt, maxSteps, 5);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "TryUnconstrainedThenConstrained",
+        "parameters": {
+          "unconstrained_steps": 5
+        },
+        "category": "optimistic_with_fallback",
+        "comparable_to": "IterGen-like",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including accurate arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// Given the poor performance, we will increase the number of steps and adjust the speculative window size to allow more time for the model to reason.\n// CSD_RATIONALE_END\ngenerated := helpers.TryUnconstrainedThenConstrained(lm, parser, prompt, maxSteps, 5);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:06:20.579623",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 25: a precondition for this call could not be proved",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 3,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including accurate arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// Given the poor performance, we will increase the number of steps and adjust the speculative window size to allow more time for the model to reason.\n// CSD_RATIONALE_END\nif maxSteps < 5 {\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n} else {\n  generated := helpers.TryUnconstrainedThenConstrained(lm, parser, prompt, maxSteps, 5);\n}\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "PureConstrainedGeneration",
+        "parameters": {},
+        "category": "fully_constrained",
+        "comparable_to": "SynCode",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we want the model to reason naturally while including accurate arithmetic expressions in << >> delimiters.\n// The parser validates expression syntax automatically. To balance creativity with validation, we use a hybrid approach.\n// This allows the model to generate freely while occasionally trying an unconstrained token when likely safe.\n// We also ensure that the final generated prefix is valid and complete.\n// Given the poor performance, we will increase the number of steps and adjust the speculative window size to allow more time for the model to reason.\n// CSD_RATIONALE_END\nif maxSteps < 5 {\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n} else {\n  generated := helpers.TryUnconstrainedThenConstrained(lm, parser, prompt, maxSteps, 5);\n}\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:06:31.173424",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "CUDA out of memory. Tried to allocate 130.00 MiB. GPU 3 has a total capacity of 39.39 GiB of which 378.38 MiB is free. Process 2020394 has 10.48 GiB memory in use. Process 2710867 has 10.48 GiB memory in use. Process 3825654 has 2.56 GiB memory in use. Including non-PyTorch memory, this process has 6.91 GiB memory in use. Process 4187162 has 6.40 GiB memory in use. Process 4189477 has 2.07 GiB memory in use. Of the allocated memory 6.37 GiB is allocated by PyTorch, and 50.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_100636_34b722"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 100,
+        "cost": 100,
+        "execution_time_ms": 298.9485263824463
+      },
+      "evaluation": {
+        "success": false,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 0.0,
+        "num_examples": 0,
+        "num_correct": 0,
+        "total_time_seconds": 7.81699013710022,
+        "error": "CUDA out of memory. Tried to allocate 130.00 MiB. GPU 3 has a total capacity of 39.39 GiB of which 378.38 MiB is free. Process 2020394 has 10.48 GiB memory in use. Process 2710867 has 10.48 GiB memory in use. Process 3825654 has 2.56 GiB memory in use. Including non-PyTorch memory, this process has 6.91 GiB memory in use. Process 4187162 has 6.40 GiB memory in use. Process 4189477 has 2.07 GiB memory in use. Of the allocated memory 6.37 GiB is allocated by PyTorch, and 50.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+        "sample_outputs": []
+      }
+    },
+    {
+      "attempt_number": 4,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we aim to strike a balance between natural reasoning and accurate arithmetic expressions within << >> delimiters.\n// The hybrid approach is suitable here as it allows for flexible text generation combined with constrained segments.\n// We will increase the maximum steps significantly and consider a larger speculative window to provide ample time for the model to reason and produce valid output.\n// This strategy should help improve both format and accuracy while maintaining robustness.\n// CSD_RATIONALE_END\ngenerated := helpers.HybridGeneration(lm, parser, prompt, 20);\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "HybridGeneration",
+        "parameters": {
+          "interval": 20
+        },
+        "category": "interleaved",
+        "comparable_to": "Novel",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we aim to strike a balance between natural reasoning and accurate arithmetic expressions within << >> delimiters.\n// The hybrid approach is suitable here as it allows for flexible text generation combined with constrained segments.\n// We will increase the maximum steps significantly and consider a larger speculative window to provide ample time for the model to reason and produce valid output.\n// This strategy should help improve both format and accuracy while maintaining robustness.\n// CSD_RATIONALE_END\ngenerated := helpers.HybridGeneration(lm, parser, prompt, 20);\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:06:48.517313",
+      "succeeded": false,
+      "failed_at": "verification",
+      "error_summary": "Verification failed with 1 error(s):\n  - Line 16: a postcondition could not be proved on this return path",
+      "verification": {
+        "success": false,
+        "error_count": 1
+      },
+      "compilation": null,
+      "runtime": null,
+      "evaluation": null
+    },
+    {
+      "attempt_number": 5,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we aim to strike a balance between natural reasoning and accurate arithmetic expressions within << >> delimiters.\n// The hybrid approach is suitable here as it allows for flexible text generation combined with constrained segments.\n// We will increase the maximum steps significantly and consider a larger speculative window to provide ample time for the model to reason and produce valid output.\n// This strategy should help improve both format and accuracy while maintaining robustness.\n// CSD_RATIONALE_END\n\n// Check if maxSteps is large enough to support speculative generation\nif maxSteps >= 5 {\n  // Use hybrid generation with a speculative window of 5\n  generated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n} else {\n  // Fallback to pure constrained generation if maxSteps is too small\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n}\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "PureConstrainedGeneration",
+        "parameters": {},
+        "category": "fully_constrained",
+        "comparable_to": "SynCode",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we aim to strike a balance between natural reasoning and accurate arithmetic expressions within << >> delimiters.\n// The hybrid approach is suitable here as it allows for flexible text generation combined with constrained segments.\n// We will increase the maximum steps significantly and consider a larger speculative window to provide ample time for the model to reason and produce valid output.\n// This strategy should help improve both format and accuracy while maintaining robustness.\n// CSD_RATIONALE_END\n\n// Check if maxSteps is large enough to support speculative generation\nif maxSteps >= 5 {\n  // Use hybrid generation with a speculative window of 5\n  generated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n} else {\n  // Fallback to pure constrained generation if maxSteps is too small\n  generated := helpers.PureConstrainedGeneration(lm, parser, prompt, maxSteps);\n}\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:06:58.417685",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 471.05s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_100704_d628b1"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 116.06931686401367
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 471.0499997138977,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 25.9994957447052
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 27.955931425094604
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 103.62540745735168
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                 \n                                 \n                          ",
+            "full_output": " 1000\n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 32.24460434913635
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 38.47387886047363
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 74.00161910057068
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 39.42028737068176
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 68.0310001373291
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 31.088769912719727
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 19.150301694869995
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 6,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need to balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll try a more speculative approach with a smaller speculative window initially.\n// This will allow the model more time to reason while still being able to backtrack if necessary.\n// We will also increase the maximum steps slightly to ensure sufficient computational resources.\n// CSD_RATIONALE_END\n\n// Use speculative generation with a smaller speculative window and increased maxSteps\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 3);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "SpeculativeGeneration",
+        "parameters": {
+          "window_size": 3
+        },
+        "category": "speculative",
+        "comparable_to": "SpecDec-like",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need to balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll try a more speculative approach with a smaller speculative window initially.\n// This will allow the model more time to reason while still being able to backtrack if necessary.\n// We will also increase the maximum steps slightly to ensure sufficient computational resources.\n// CSD_RATIONALE_END\n\n// Use speculative generation with a smaller speculative window and increased maxSteps\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 3);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:15:00.072098",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 203.48s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_101504_cb8fcc"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 33,
+        "cost": 33,
+        "execution_time_ms": 102.49471664428711
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 203.48313403129578,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 16.293882369995117
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.064924001693726
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 9.95607590675354
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                  \n                                  \n                        ",
+            "full_output": " 1000\n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 17.513590574264526
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                      \n                                      \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 34.24777436256409
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.328336000442505
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 41.016979932785034
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 11.661688566207886
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 20.64347267150879
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 19.50039577484131
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 7,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a hybrid generation approach. This will allow the model more time to reason while still validating and rolling back incorrect segments within << >> delimiters.\n// We will increase the maximum steps significantly to ensure sufficient computational resources.\n// CSD_RATIONALE_END\n\n// Use hybrid generation to allow reasoning text with validated constraints in << >> delimiters\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a hybrid generation approach. This will allow the model more time to reason while still validating and rolling back incorrect segments within << >> delimiters.\n// We will increase the maximum steps significantly to ensure sufficient computational resources.\n// CSD_RATIONALE_END\n\n// Use hybrid generation to allow reasoning text with validated constraints in << >> delimiters\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:18:33.868268",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 449.07s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_101841_de44c8"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 67.15750694274902
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 449.07329773902893,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 24.2455096244812
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 24.836158990859985
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 91.34788513183594
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                 \n                                 \n                          ",
+            "full_output": " 1000\n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 23.174744129180908
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 37.02636170387268
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 72.49480628967285
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 42.70745229721069
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 69.51963233947754
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 31.64918613433838
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 19.11811923980713
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 8,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a speculative generation approach. This will allow the model more time to reason and generate the constrained content within << >> delimiters.\n// We will increase the speculative window size to give the model more opportunities to produce correct arithmetic expressions.\n// CSD_RATIONALE_END\n\n// Use speculative generation to allow reasoning text with speculative generation of constrained content in << >> delimiters\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 5);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "SpeculativeGeneration",
+        "parameters": {
+          "window_size": 5
+        },
+        "category": "speculative",
+        "comparable_to": "SpecDec-like",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a speculative generation approach. This will allow the model more time to reason and generate the constrained content within << >> delimiters.\n// We will increase the speculative window size to give the model more opportunities to produce correct arithmetic expressions.\n// CSD_RATIONALE_END\n\n// Use speculative generation to allow reasoning text with speculative generation of constrained content in << >> delimiters\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 5);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:26:14.949959",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 236.77s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_102619_999c67"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 55,
+        "cost": 55,
+        "execution_time_ms": 170.90511322021484
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 236.77483654022217,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 20.373682975769043
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 14.377549171447754
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.697164297103882
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                  \n                                  \n                        ",
+            "full_output": " 1000\n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 22.966817617416382
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                      \n                                      \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 42.33651638031006
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.54937744140625
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 46.79164671897888
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 11.80066180229187
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 25.073751211166382
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 23.0680091381073
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 9,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a hybrid generation approach. This will allow the model more time to reason and generate the constrained content within << >> delimiters.\n// The hybrid generation strategy ensures that content outside << >> is flexible while validating the content inside.\n// We will increase the maximum steps to ensure the model has enough time to produce a valid response.\n// CSD_RATIONALE_END\n\n// Use hybrid generation to allow reasoning text with validation of constrained content in << >> delimiters\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "Unknown",
+        "parameters": {},
+        "category": "unknown",
+        "comparable_to": "N/A",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we need a balance between allowing natural reasoning and ensuring accurate arithmetic expressions within << >> delimiters.\n// Given the poor performance, we'll use a hybrid generation approach. This will allow the model more time to reason and generate the constrained content within << >> delimiters.\n// The hybrid generation strategy ensures that content outside << >> is flexible while validating the content inside.\n// We will increase the maximum steps to ensure the model has enough time to produce a valid response.\n// CSD_RATIONALE_END\n\n// Use hybrid generation to allow reasoning text with validation of constrained content in << >> delimiters\ngenerated := helpers.HybridGeneration(lm, parser, prompt, maxSteps);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:30:23.430334",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 435.89s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_103030_07ee13"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 11,
+        "cost": 11,
+        "execution_time_ms": 58.73250961303711
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 435.89210176467896,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 23.57161593437195
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 20.897356510162354
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 84.56328201293945
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                 \n                                 \n                          ",
+            "full_output": " 1000\n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 18.57429838180542
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 33.70678782463074
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 80.9623532295227
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n                 \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 47.951761960983276
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 65.57855105400085
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 30.517914533615112
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 18.154181957244873
+          }
+        ]
+      }
+    },
+    {
+      "attempt_number": 10,
+      "strategy_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we observe low accuracy and format rate. To improve, we switch to a speculative generation strategy with a larger speculative window.\n// This will give the model more time to reason and potentially produce a valid answer before reverting to less constrained generation.\n// The speculative generation ensures that the model explores more possibilities before committing to a constrained segment.\n// We increase the speculative window size to 5 to allow more flexibility in the initial stages.\n// CSD_RATIONALE_END\n\n// Use speculative generation with a larger window to allow more flexibility initially\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 5);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;",
+      "strategy_analysis": {
+        "strategy_name": "SpeculativeGeneration",
+        "parameters": {
+          "window_size": 5
+        },
+        "category": "speculative",
+        "comparable_to": "SpecDec-like",
+        "raw_code": "// CSD_RATIONALE_BEGIN\n// For math word problems, we observe low accuracy and format rate. To improve, we switch to a speculative generation strategy with a larger speculative window.\n// This will give the model more time to reason and potentially produce a valid answer before reverting to less constrained generation.\n// The speculative generation ensures that the model explores more possibilities before committing to a constrained segment.\n// We increase the speculative window size to 5 to allow more flexibility in the initial stages.\n// CSD_RATIONALE_END\n\n// Use speculative generation with a larger window to allow more flexibility initially\ngenerated := helpers.SpeculativeGeneration(lm, parser, prompt, maxSteps, 5);\n\n// Set the cost based on the number of steps taken\ncost := helpers.cost;"
+      },
+      "timestamp": "2026-02-16T10:37:51.261787",
+      "succeeded": true,
+      "failed_at": "evaluation",
+      "error_summary": "Evaluation Results (10 examples):\n  Accuracy: 0.0% (0/10)\n  Format Rate: 0.0%\n  Syntax Rate: 100.0%\n  Total Time: 257.27s\n\nSample Failures:\n\n  Example 1:\n    Question: Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons whic...\n    Expected: 191\n    Got:  210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n  Example 2:\n    Question: Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start poppin...\n    Expected: 285\n    Got:  180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n  Example 3:\n    Question: Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's fl...\n    Expected: 14\n    Got:  12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+      "verification": {
+        "success": true,
+        "error_count": 0
+      },
+      "compilation": {
+        "success": true,
+        "output_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260216_095851_b7afe1/gsm_crane_csd_20260216_103756_95c8d2"
+      },
+      "runtime": {
+        "success": true,
+        "output_length": 55,
+        "cost": 55,
+        "execution_time_ms": 159.8186492919922
+      },
+      "evaluation": {
+        "success": true,
+        "accuracy": 0.0,
+        "format_rate": 0.0,
+        "syntax_rate": 1.0,
+        "num_examples": 10,
+        "num_correct": 0,
+        "total_time_seconds": 257.2723710536957,
+        "error": null,
+        "sample_outputs": [
+          {
+            "question": "Mohammed went to buy some school supplies. He bought 16 markers which cost \u20ba8.5 each, 4 crayons which cost \u20ba10.5 each, and a rim of bond paper which cost \u20ba13. How much did Mohammed spend on everything",
+            "expected": "191",
+            "actual": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         ",
+            "full_output": " 210\n                  \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n         \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 19.693565607070923
+          },
+          {
+            "question": "Gabriel is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 30 pop in the first 20 seconds of cooking, then 2 times that amount in the next 20 seconds",
+            "expected": "285",
+            "actual": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          ",
+            "full_output": " 180\n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n          \n\n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 14.320064067840576
+          },
+          {
+            "question": "Mia has a flower bed that is 195 meters long. Mia wants to fill her flower bed with plants. Mia's flowers grow 4 meters wide so she needs to leave 15.0 meters between every plant. Mia already owns 12 ",
+            "expected": "14",
+            "actual": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 *",
+            "full_output": " 12 * 14 * 12 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 14 * 1",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 10.817386865615845
+          },
+          {
+            "question": "Valeria went to the boardwalk for vacation. Her parents gave her \u20ac1300 to buy whatever she wanted. At the gift shop, saltwater taffy was on sale for \"Buy 15 kilograms at \u20ac20 per kilogram, get 5 kilogr",
+            "expected": "525",
+            "actual": " 1000\n                                  \n                                  \n                        ",
+            "full_output": " 1000\n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                  \n                                ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 22.801575183868408
+          },
+          {
+            "question": "Uma went to the bakery and bought various types of pastries. She bought 4 dozen donuts which cost $12 per dozen, 5 dozen mini cupcakes which cost $85 per dozen, and 3 dozen mini cheesecakes for $113 p",
+            "expected": "812",
+            "actual": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                           ",
+            "full_output": " 12 * 4 + 85 * 5 + 113 * 3\n                                             \n                                      \n                                      \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n                                         \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 46.475120067596436
+          },
+          {
+            "question": "Chen was preparing for a baby shower at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic plates, so she bought a new package of plates. Later, her husban",
+            "expected": "28",
+            "actual": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n",
+            "full_output": " 21\n\n* 21\n* 22\n* 23\n* 24\n* 25\n* 26\n* 27\n* 28\n* 29\n* 30\n* 31\n* 32\n* 33\n* 34\n* 35\n* 36\n* 37\n* 38\n* 39\n* 40\n* 41\n* 42\n* 43\n* 44\n* 45\n* 46\n* 47\n* 48\n* 49\n*",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 11.179198980331421
+          },
+          {
+            "question": "Oscar is selling brownie and kiwi pie for a fundraiser. On Friday, he sold 29 boxes of brownie and 12 fewer boxes of kiwi pie, than on Saturday. On Saturday, he sold 11 more boxes of brownies than on ",
+            "expected": "1839",
+            "actual": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                            ",
+            "full_output": " 29 * 11 + 17 * 27 + 11 * 11 + 26 * 27\n\n                                                              \n                  \n\n         \n\n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n                                                                  \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 56.41825819015503
+          },
+          {
+            "question": "Qasim hires a limousine from 2 PM to 11 PM. He gets 2 hours free. The first paid hour is \u20a340 and each hour after that is twice the cost. How much did he pay?",
+            "expected": "520",
+            "actual": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- ",
+            "full_output": " Q1\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 360\n\n- 200\n- 240\n- 280\n- 320\n- 3",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 13.506979703903198
+          },
+          {
+            "question": "Santiago and Arjun have 121 minutes to walk to the cinema together. It takes them 16 minutes to get to the corner where the mall is. It takes them another 56 minutes to get to the park. How much longe",
+            "expected": "49",
+            "actual": " 121 - (16 + 56) \n                                 \n                                 \n              ",
+            "full_output": " 121 - (16 + 56) \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n                                 \n",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 30.73099112510681
+          },
+          {
+            "question": "Mei's aunt said that she had \u20a3300 budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of bowling, have \u20a35 in game room tokens, and get to ride the bum",
+            "expected": "4",
+            "actual": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n",
+            "full_output": " 5\n\n              \n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      \n\n\n      ",
+            "is_correct": false,
+            "is_valid_format": false,
+            "is_syntax_valid": true,
+            "token_count": 150,
+            "time_seconds": 22.79925036430359
+          }
+        ]
+      }
+    }
+  ],
+  "failure_patterns": {
+    "verification_failures": 2,
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "common_errors": []
+  }
+}
