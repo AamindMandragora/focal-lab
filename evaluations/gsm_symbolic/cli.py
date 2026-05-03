@@ -109,6 +109,12 @@ def main():
         )
 
         dynamic_parser = None
+        variable_types = example.get("variable_types") or {}
+        allowed_variables = (
+            extract_variables_from_mapping(variable_types)
+            if isinstance(variable_types, dict)
+            else []
+        )
         if allowed_variables:
             cache_key = tuple(sorted(allowed_variables))
             parser_factory = parser_factory_cache.get(cache_key)

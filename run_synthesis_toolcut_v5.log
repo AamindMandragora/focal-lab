@@ -1,469 +1,0 @@
-2026-04-21 22:32:25.626995: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-04-21 22:32:25.647338: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1776810745.671363  421650 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1776810745.678261  421650 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1776810745.695098  421650 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810745.695123  421650 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810745.695126  421650 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810745.695129  421650 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-04-21 22:32:25.699981: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-Initializing synthesis pipeline...
-Setting up evaluator for dataset: gsm_symbolic
-  Generation model: gpt-5.4
-  Evaluation model: Qwen/Qwen2.5-Coder-14B-Instruct
-Generating initial strategy for: Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.
-
-============================================================
-Attempt 1/12
-============================================================
-Strategy: // CSD_RATIONALE_BEGIN
-// This strategy tracks the full generated answer in `generated`, whether we are
-// currently inside an arithmetic-computation span in `insideConstrainedOut`, and
-// the contents of that active span in `currentConstrainedOut`. Outside a span,
-// it generates freely but slightly boosts the opening delimiter token "<<" when
-// the sampled token text appears arithmetic-related (digits or operator-like),
-// encouraging step-by-step computations to be wrapped in delimiters. Inside a
-// span, it uses parser-aware constrained decoding: if the current constrained
-// prefix is complete, it closes with ">>"; otherwise it prefers parser-valid
-// continuations via `ConstrainedStep` and appends only parser-valid tokens.
-// This tracked state ensures that constrained text is always a parser-valid
-// prefix and remains synchronized with the suffix of the full generated output.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the unconstrained branch, if we do not enter a span then
-//   `insideConstrainedOut` stays false, so the implication is vacuous. If we do
-//   enter a span, we append "<<" and set `currentConstrainedOut := []`, which is
-//   a valid prefix by precondition. In the complete-prefix branch,
-//   `CloseConstrainedSpan` sets `insideConstrainedOut` to false, so the
-//   implication is vacuous. In the active constrained branch, `ConstrainedStep`
-//   is used to obtain a valid next token (or EOS, which breaks), and
-//   `AppendConstrainedToken` preserves parser validity.
-// suffix: In the unconstrained non-entry case, constrained state is unchanged
-//   and false, so the implication is vacuous. In the entry case, after appending
-//   "<<" we set `currentConstrainedOut := []`, and the length-0 suffix of
-//   `generated` equals `[]`. In the complete-prefix branch,
-//   `CloseConstrainedSpan` appends ">>" and resets the constrained prefix to [],
-//   so the suffix property holds trivially. In the constrained append branch,
-//   `AppendConstrainedToken` appends the same token to both `generated` and
-//   `currentConstrainedOut`, preserving suffix equality.
-// cost: In the unconstrained branch we use raw sampling with
-//   `ChooseNextTokenUnconstrained`, so we manually increment `helpers.cost` once
-//   and also increment `steps` once. In the complete-prefix branch,
-//   `CloseConstrainedSpan` bumps helper cost once and we increment `steps` once.
-//   In the constrained branch, `ConstrainedStep` bumps helper cost once and we
-//   increment `steps` once; `AppendConstrainedToken` is non-bumping. Therefore
-//   `helpers.cost <= steps` is preserved in every branch.
-// progress: In the unconstrained branch we append at most one token to
-//   `generated`; entering a span still appends only the single token "<<". In
-//   the complete-prefix branch we append exactly one token, ">>". In the
-//   constrained branch we append at most one token via `AppendConstrainedToken`.
-//   Since `steps` increases by 1 in every non-break iteration, we maintain
-//   `|generated| <= |generatedPrefix| + steps`.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps := 0;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
-  invariant |generated| <= |generatedPrefix| + steps
-  invariant cost == 0
-  invariant helpers.cost <= steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    lm.GenerateLogits(prompt + generated);
-    var top := helpers.GetHighestLogitToken(lm);
-    if Contains(top, "<<") {
-      helpers.BoostTokenLogits(lm, ["<<"], 8.0);
-    }
-    var next := lm.ChooseNextTokenUnconstrained();
-    helpers.cost := helpers.cost + 1;
-    steps := steps + 1;
-    if next == eosToken {
-      break;
-    } else if next == "<<" {
-      generated := generated + [next];
-      insideConstrainedOut := true;
-      currentConstrainedOut := [];
-    } else {
-      generated := generated + [next];
-    }
-  } else {
-    if parser.IsCompletePrefix(currentConstrainedOut) {
-      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-        lm, parser, generated, currentConstrainedOut
-      );
-      generated := closedGenerated;
-      insideConstrainedOut := closedInside;
-      currentConstrainedOut := closedCurrent;
-      steps := steps + 1;
-    } else {
-      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
-      var narrow := helpers.DeadEndDetection(parser, currentConstrainedOut, 2);
-      if narrow {
-        lm.GenerateLogits(constrainedPrompt + currentConstrainedOut);
-        helpers.ScaleAllLogits(lm, 0.5);
-      }
-      var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
-      steps := steps + 1;
-      if next == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, next
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[0/4] Critiquing proof sketch...
-  ✓ Proof-sketch critique: PROCEED
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260421_223148_37455d/synth_toolcut_v5
-
-[3/4] Skipping toy runtime check for GSM-Symbolic...
-
-[4/4] Evaluating on dataset sample...
-Loading GSM-Symbolic dataset (config=main, split=test (limit=5) (random sample) (seed=123))...
-Loaded 5 examples
-Loading model: Qwen/Qwen2.5-Coder-14B-Instruct on cuda with vLLM...
-INFO 04-21 22:32:31 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-Coder-14B-Instruct', 'trust_remote_code': True, 'max_model_len': 4096, 'tensor_parallel_size': 2, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.55, 'max_logprobs': -1, 'disable_log_stats': True, 'model': 'Qwen/Qwen2.5-Coder-14B-Instruct'}
-INFO 04-21 22:32:31 [model.py:549] Resolved architecture: Qwen2ForCausalLM
-INFO 04-21 22:32:31 [model.py:1678] Using max model len 4096
-INFO 04-21 22:32:31 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
-INFO 04-21 22:32:31 [vllm.py:790] Asynchronous scheduling is enabled.
-2026-04-21 22:32:39.154004: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1776810759.178892  425605 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1776810759.186063  425605 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1776810759.202586  425605 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810759.202616  425605 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810759.202619  425605 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810759.202622  425605 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-(EngineCore pid=425605) INFO 04-21 22:32:42 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen2.5-Coder-14B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-Coder-14B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4096, download_dir=None, load_format=auto, tensor_parallel_size=2, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-Coder-14B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
-(EngineCore pid=425605) WARNING 04-21 22:32:42 [multiproc_executor.py:1014] Reducing Torch parallelism from 24 threads to 1 to avoid unnecessary CPU contention. Set OMP_NUM_THREADS in the external environment to tune this value as needed.
-(EngineCore pid=425605) INFO 04-21 22:32:42 [multiproc_executor.py:134] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=172.22.224.216 (local), world_size=2, local_world_size=2
-2026-04-21 22:32:47.364653: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-2026-04-21 22:32:47.386059: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1776810767.388695  426302 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1776810767.395846  426302 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1776810767.410044  426301 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-W0000 00:00:1776810767.411832  426302 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.411855  426302 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.411857  426302 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.411860  426302 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-E0000 00:00:1776810767.416898  426301 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1776810767.432702  426301 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.432735  426301 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.432738  426301 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1776810767.432741  426301 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-(Worker pid=426301) INFO 04-21 22:32:53 [parallel_state.py:1400] world_size=2 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:59275 backend=nccl
-(Worker pid=426302) INFO 04-21 22:32:54 [parallel_state.py:1400] world_size=2 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:59275 backend=nccl
-(Worker pid=426301) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
-(Worker pid=426302) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
-(Worker pid=426301) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
-(Worker pid=426302) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
-(Worker pid=426301) INFO 04-21 22:32:54 [pynccl.py:111] vLLM is using nccl==2.27.5
-(Worker pid=426301) WARNING 04-21 22:32:55 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
-(Worker pid=426302) WARNING 04-21 22:32:55 [symm_mem.py:66] SymmMemCommunicator: Device capability 8.0 not supported, communicator is not available.
-(Worker pid=426301) INFO 04-21 22:32:55 [parallel_state.py:1716] rank 0 in world size 2 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
-(Worker_TP0 pid=426301) INFO 04-21 22:32:55 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-Coder-14B-Instruct...
-(Worker_TP0 pid=426301) INFO 04-21 22:32:56 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
-(Worker_TP0 pid=426301) INFO 04-21 22:32:56 [flash_attn.py:596] Using FlashAttention version 2
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:   0% Completed | 0/6 [00:00<?, ?it/s]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:  17% Completed | 1/6 [00:01<00:07,  1.49s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:  33% Completed | 2/6 [00:02<00:05,  1.48s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:  50% Completed | 3/6 [00:04<00:04,  1.52s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:  67% Completed | 4/6 [00:05<00:02,  1.44s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards:  83% Completed | 5/6 [00:07<00:01,  1.40s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards: 100% Completed | 6/6 [00:08<00:00,  1.30s/it]
-(Worker_TP0 pid=426301) Loading safetensors checkpoint shards: 100% Completed | 6/6 [00:08<00:00,  1.38s/it]
-(Worker_TP0 pid=426301) 
-(Worker_TP0 pid=426301) INFO 04-21 22:33:05 [default_loader.py:384] Loading weights took 8.38 seconds
-(Worker_TP0 pid=426301) INFO 04-21 22:33:06 [gpu_model_runner.py:4820] Model loading took 13.93 GiB memory and 9.201165 seconds
-(Worker_TP0 pid=426301) INFO 04-21 22:33:11 [backends.py:1051] Using cache directory: /home/aadivyar/.cache/vllm/torch_compile_cache/8cd9793821/rank_0_0/backbone for vLLM's torch.compile
-(Worker_TP0 pid=426301) INFO 04-21 22:33:11 [backends.py:1111] Dynamo bytecode transform time: 4.99 s
-(Worker_TP1 pid=426302) INFO 04-21 22:33:14 [decorators.py:303] Directly load AOT compilation from path /home/aadivyar/.cache/vllm/torch_compile_cache/torch_aot_compile/545681d6d5c8159d112abd96823581d924ce704cccd892edc8715a489e63d1f5/rank_1_0/model
-(Worker_TP0 pid=426301) INFO 04-21 22:33:14 [backends.py:285] Directly load the compiled graph(s) for compile range (1, 8192) from the cache, took 1.853 s
-(Worker_TP0 pid=426301) INFO 04-21 22:33:14 [decorators.py:303] Directly load AOT compilation from path /home/aadivyar/.cache/vllm/torch_compile_cache/torch_aot_compile/545681d6d5c8159d112abd96823581d924ce704cccd892edc8715a489e63d1f5/rank_0_0/model
-(Worker_TP0 pid=426301) INFO 04-21 22:33:14 [monitor.py:48] torch.compile took 7.90 s in total
-(Worker_TP0 pid=426301) INFO 04-21 22:33:17 [monitor.py:76] Initial profiling/warmup run took 2.48 s
-(Worker_TP1 pid=426302) INFO 04-21 22:33:18 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=512
-(Worker_TP1 pid=426302) INFO 04-21 22:33:18 [gpu_model_runner.py:5876] Profiling CUDA graph memory: PIECEWISE=51 (largest=512), FULL=35 (largest=256)
-(Worker_TP0 pid=426301) INFO 04-21 22:33:18 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=512
-(Worker_TP0 pid=426301) INFO 04-21 22:33:18 [gpu_model_runner.py:5876] Profiling CUDA graph memory: PIECEWISE=51 (largest=512), FULL=35 (largest=256)
-(Worker_TP1 pid=426302) INFO 04-21 22:33:18 [custom_all_reduce.py:216] Registering 388 cuda graph addresses
-(Worker_TP0 pid=426301) INFO 04-21 22:33:18 [custom_all_reduce.py:216] Registering 388 cuda graph addresses
-(Worker_TP0 pid=426301) INFO 04-21 22:33:19 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.67 GiB total
-(Worker_TP1 pid=426302) INFO 04-21 22:33:19 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.67 GiB total
-(Worker_TP0 pid=426301) INFO 04-21 22:33:20 [gpu_worker.py:436] Available KV cache memory: 7.04 GiB
-(Worker_TP0 pid=426301) INFO 04-21 22:33:20 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.5500 to 0.5670 to maintain the same effective KV cache size.
-(Worker_TP1 pid=426302) INFO 04-21 22:33:20 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.5500 to 0.5670 to maintain the same effective KV cache size.
-(EngineCore pid=425605) INFO 04-21 22:33:20 [kv_cache_utils.py:1319] GPU KV cache size: 76,896 tokens
-(EngineCore pid=425605) INFO 04-21 22:33:20 [kv_cache_utils.py:1324] Maximum concurrency for 4,096 tokens per request: 18.77x
-(Worker_TP0 pid=426301) Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/51 [00:00<?, ?it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   2%|▏         | 1/51 [00:00<00:05,  8.94it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   4%|▍         | 2/51 [00:00<00:05,  9.41it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   6%|▌         | 3/51 [00:00<00:05,  9.52it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  10%|▉         | 5/51 [00:00<00:04,  9.86it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  12%|█▏        | 6/51 [00:00<00:04,  9.76it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  16%|█▌        | 8/51 [00:00<00:04,  9.40it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  20%|█▉        | 10/51 [00:01<00:04, 10.25it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  24%|██▎       | 12/51 [00:01<00:03, 10.10it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  27%|██▋       | 14/51 [00:01<00:03, 10.68it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  31%|███▏      | 16/51 [00:01<00:03, 10.86it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  35%|███▌      | 18/51 [00:01<00:03, 10.92it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  39%|███▉      | 20/51 [00:01<00:02, 10.89it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  43%|████▎     | 22/51 [00:02<00:02, 11.06it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  47%|████▋     | 24/51 [00:02<00:02, 11.65it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  51%|█████     | 26/51 [00:02<00:02, 11.80it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  55%|█████▍    | 28/51 [00:02<00:01, 12.20it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  59%|█████▉    | 30/51 [00:02<00:01, 12.49it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  63%|██████▎   | 32/51 [00:02<00:01, 12.79it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  67%|██████▋   | 34/51 [00:03<00:01,  8.73it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  71%|███████   | 36/51 [00:03<00:01,  9.38it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  75%|███████▍  | 38/51 [00:03<00:01, 10.20it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  78%|███████▊  | 40/51 [00:03<00:01, 10.79it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  82%|████████▏ | 42/51 [00:03<00:00, 11.32it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  86%|████████▋ | 44/51 [00:04<00:00, 11.68it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  90%|█████████ | 46/51 [00:04<00:00, 11.64it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  94%|█████████▍| 48/51 [00:04<00:00, 11.88it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  98%|█████████▊| 50/51 [00:04<00:00, 11.60it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 51/51 [00:04<00:00, 10.90it/s]
-(Worker_TP0 pid=426301) Capturing CUDA graphs (decode, FULL):   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graphs (decode, FULL):   6%|▌         | 2/35 [00:00<00:02, 12.65it/s]Capturing CUDA graphs (decode, FULL):  11%|█▏        | 4/35 [00:00<00:02, 12.72it/s]Capturing CUDA graphs (decode, FULL):  17%|█▋        | 6/35 [00:00<00:02, 13.03it/s]Capturing CUDA graphs (decode, FULL):  23%|██▎       | 8/35 [00:00<00:02, 13.37it/s]Capturing CUDA graphs (decode, FULL):  29%|██▊       | 10/35 [00:00<00:01, 13.53it/s]Capturing CUDA graphs (decode, FULL):  34%|███▍      | 12/35 [00:00<00:01, 13.61it/s]Capturing CUDA graphs (decode, FULL):  40%|████      | 14/35 [00:01<00:01, 13.36it/s]Capturing CUDA graphs (decode, FULL):  46%|████▌     | 16/35 [00:01<00:01, 13.04it/s]Capturing CUDA graphs (decode, FULL):  51%|█████▏    | 18/35 [00:01<00:01, 13.13it/s]Capturing CUDA graphs (decode, FULL):  57%|█████▋    | 20/35 [00:01<00:01, 13.22it/s]Capturing CUDA graphs (decode, FULL):  63%|██████▎   | 22/35 [00:01<00:00, 13.14it/s]Capturing CUDA graphs (decode, FULL):  69%|██████▊   | 24/35 [00:01<00:00, 13.15it/s](Worker_TP1 pid=426302) INFO 04-21 22:33:27 [custom_all_reduce.py:216] Registering 8342 cuda graph addresses
-Capturing CUDA graphs (decode, FULL):  74%|███████▍  | 26/35 [00:01<00:00, 13.32it/s]Capturing CUDA graphs (decode, FULL):  80%|████████  | 28/35 [00:02<00:00, 12.61it/s]Capturing CUDA graphs (decode, FULL):  86%|████████▌ | 30/35 [00:02<00:00, 11.10it/s]Capturing CUDA graphs (decode, FULL):  91%|█████████▏| 32/35 [00:02<00:00, 11.83it/s]Capturing CUDA graphs (decode, FULL):  97%|█████████▋| 34/35 [00:02<00:00, 12.23it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 35/35 [00:02<00:00, 12.77it/s]
-(Worker_TP0 pid=426301) INFO 04-21 22:33:28 [custom_all_reduce.py:216] Registering 8342 cuda graph addresses
-(Worker_TP1 pid=426302) INFO 04-21 22:33:28 [gpu_worker.py:597] CUDA graph pool memory: 0.67 GiB (actual), 0.67 GiB (estimated), difference: 0.0 GiB (0.3%).
-(Worker_TP0 pid=426301) INFO 04-21 22:33:28 [gpu_model_runner.py:6046] Graph capturing finished in 9 secs, took 0.67 GiB
-(Worker_TP0 pid=426301) INFO 04-21 22:33:28 [gpu_worker.py:597] CUDA graph pool memory: 0.67 GiB (actual), 0.67 GiB (estimated), difference: 0.0 GiB (0.3%).
-(EngineCore pid=425605) INFO 04-21 22:33:28 [core.py:283] init engine (profile, create kv cache, warmup model) took 22.42 seconds
-(EngineCore pid=425605) INFO 04-21 22:33:31 [vllm.py:790] Asynchronous scheduling is enabled.
-  [EVAL] Processing example 1/5...
-  [EVAL]   Running CSD strategy (max_steps=150)...
-    [PROGRESS] GenerateLogits call #10, prefix length: 9
-[TIMING] after 10 GenerateLogits calls total=1.49s
-  GenerateLogits.total              0.73s  ( 48.7%)  calls=9     avg=  80.79ms
-  GenerateLogits.engine_generate    0.71s  ( 47.8%)  calls=10    avg=  71.44ms
-  GenerateLogits.finalize_from_dict    0.05s  (  3.4%)  calls=10    avg=   5.11ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=10    avg=   0.08ms
-  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=10    avg=   0.05ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=10    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #20, prefix length: 19
-[TIMING] after 20 GenerateLogits calls total=2.33s
-  GenerateLogits.total              1.14s  ( 49.0%)  calls=19    avg=  60.21ms
-  GenerateLogits.engine_generate    1.12s  ( 48.1%)  calls=20    avg=  56.12ms
-  GenerateLogits.finalize_from_dict    0.06s  (  2.7%)  calls=20    avg=   3.16ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=20    avg=   0.10ms
-  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=20    avg=   0.08ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=20    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #30, prefix length: 29
-[TIMING] after 30 GenerateLogits calls total=3.13s
-  GenerateLogits.total              1.55s  ( 49.4%)  calls=29    avg=  53.33ms
-  GenerateLogits.engine_generate    1.50s  ( 47.9%)  calls=30    avg=  49.94ms
-  GenerateLogits.finalize_from_dict    0.08s  (  2.5%)  calls=30    avg=   2.62ms
-  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=30    avg=   0.10ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=30    avg=   0.10ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=30    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #40, prefix length: 39
-[TIMING] after 40 GenerateLogits calls total=3.89s
-  GenerateLogits.total              1.93s  ( 49.6%)  calls=39    avg=  49.45ms
-  GenerateLogits.engine_generate    1.86s  ( 47.9%)  calls=40    avg=  46.56ms
-  GenerateLogits.finalize_from_dict    0.09s  (  2.4%)  calls=40    avg=   2.31ms
-  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=40    avg=   0.11ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=40    avg=   0.09ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=40    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #50, prefix length: 49
-[TIMING] after 50 GenerateLogits calls total=4.58s
-  GenerateLogits.total              2.27s  ( 49.6%)  calls=49    avg=  46.40ms
-  GenerateLogits.engine_generate    2.19s  ( 47.9%)  calls=50    avg=  43.89ms
-  GenerateLogits.finalize_from_dict    0.10s  (  2.3%)  calls=50    avg=   2.09ms
-  GenerateLogits.prefix_text        0.01s  (  0.1%)  calls=50    avg=   0.12ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=50    avg=   0.08ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=50    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #60, prefix length: 59
-[TIMING] after 60 GenerateLogits calls total=5.33s
-  GenerateLogits.total              2.65s  ( 49.7%)  calls=59    avg=  44.90ms
-  GenerateLogits.engine_generate    2.55s  ( 47.8%)  calls=60    avg=  42.52ms
-  GenerateLogits.finalize_from_dict    0.12s  (  2.2%)  calls=60    avg=   2.00ms
-  GenerateLogits.prefix_text        0.01s  (  0.2%)  calls=60    avg=   0.14ms
-  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=60    avg=   0.08ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=60    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #70, prefix length: 69
-[TIMING] after 70 GenerateLogits calls total=6.03s
-  GenerateLogits.total              3.00s  ( 49.8%)  calls=69    avg=  43.44ms
-  GenerateLogits.engine_generate    2.88s  ( 47.8%)  calls=70    avg=  41.15ms
-  GenerateLogits.finalize_from_dict    0.13s  (  2.2%)  calls=70    avg=   1.87ms
-  GenerateLogits.prefix_text        0.01s  (  0.2%)  calls=70    avg=   0.15ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=70    avg=   0.08ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=70    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #80, prefix length: 79
-[TIMING] after 80 GenerateLogits calls total=6.70s
-  GenerateLogits.total              3.33s  ( 49.8%)  calls=79    avg=  42.19ms
-  GenerateLogits.engine_generate    3.20s  ( 47.8%)  calls=80    avg=  40.03ms
-  GenerateLogits.finalize_from_dict    0.14s  (  2.1%)  calls=80    avg=   1.78ms
-  GenerateLogits.prefix_text        0.01s  (  0.2%)  calls=80    avg=   0.16ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=80    avg=   0.07ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=80    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #90, prefix length: 89
-[TIMING] after 90 GenerateLogits calls total=7.42s
-  GenerateLogits.total              3.69s  ( 49.8%)  calls=89    avg=  41.52ms
-  GenerateLogits.engine_generate    3.55s  ( 47.8%)  calls=90    avg=  39.45ms
-  GenerateLogits.finalize_from_dict    0.16s  (  2.1%)  calls=90    avg=   1.73ms
-  GenerateLogits.prefix_text        0.02s  (  0.2%)  calls=90    avg=   0.17ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=90    avg=   0.07ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=90    avg=   0.00ms
-    [PROGRESS] GenerateLogits call #100, prefix length: 99
-[TIMING] after 100 GenerateLogits calls total=8.13s
-  GenerateLogits.total              4.05s  ( 49.8%)  calls=99    avg=  40.93ms
-  GenerateLogits.engine_generate    3.89s  ( 47.8%)  calls=100   avg=  38.87ms
-  GenerateLogits.finalize_from_dict    0.17s  (  2.1%)  calls=100   avg=   1.70ms
-  GenerateLogits.prefix_text        0.02s  (  0.2%)  calls=100   avg=   0.18ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=100   avg=   0.07ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=100   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #110, prefix length: 109
-[TIMING] after 110 GenerateLogits calls total=8.85s
-  GenerateLogits.total              4.41s  ( 49.9%)  calls=109   avg=  40.47ms
-  GenerateLogits.engine_generate    4.23s  ( 47.8%)  calls=110   avg=  38.42ms
-  GenerateLogits.finalize_from_dict    0.18s  (  2.1%)  calls=110   avg=   1.66ms
-  GenerateLogits.prefix_text        0.02s  (  0.2%)  calls=110   avg=   0.19ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=110   avg=   0.07ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=110   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #120, prefix length: 119
-[TIMING] after 120 GenerateLogits calls total=9.57s
-  GenerateLogits.total              4.77s  ( 49.9%)  calls=119   avg=  40.10ms
-  GenerateLogits.engine_generate    4.57s  ( 47.8%)  calls=120   avg=  38.10ms
-  GenerateLogits.finalize_from_dict    0.20s  (  2.0%)  calls=120   avg=   1.63ms
-  GenerateLogits.prefix_text        0.02s  (  0.3%)  calls=120   avg=   0.21ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=120   avg=   0.07ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=120   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #130, prefix length: 129
-[TIMING] after 130 GenerateLogits calls total=10.26s
-  GenerateLogits.total              5.12s  ( 49.9%)  calls=129   avg=  39.67ms
-  GenerateLogits.engine_generate    4.90s  ( 47.7%)  calls=130   avg=  37.68ms
-  GenerateLogits.finalize_from_dict    0.21s  (  2.0%)  calls=130   avg=   1.59ms
-  GenerateLogits.prefix_text        0.03s  (  0.3%)  calls=130   avg=   0.22ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=130   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=130   avg=   0.00ms
-  [EVAL]   Generated 138 tokens in 865.11s
-  [EVAL] Processing example 2/5...
-  [EVAL]   Running CSD strategy (max_steps=150)...
-    [PROGRESS] GenerateLogits call #140, prefix length: 0
-[TIMING] after 140 GenerateLogits calls total=10.99s
-  GenerateLogits.total              5.46s  ( 49.7%)  calls=139   avg=  39.28ms
-  GenerateLogits.engine_generate    5.27s  ( 47.9%)  calls=140   avg=  37.63ms
-  GenerateLogits.finalize_from_dict    0.22s  (  2.0%)  calls=140   avg=   1.57ms
-  GenerateLogits.prefix_text        0.03s  (  0.3%)  calls=140   avg=   0.23ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=140   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=140   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #150, prefix length: 10
-[TIMING] after 150 GenerateLogits calls total=11.76s
-  GenerateLogits.total              5.87s  ( 49.9%)  calls=149   avg=  39.37ms
-  GenerateLogits.engine_generate    5.61s  ( 47.8%)  calls=150   avg=  37.42ms
-  GenerateLogits.finalize_from_dict    0.23s  (  2.0%)  calls=150   avg=   1.56ms
-  GenerateLogits.prefix_text        0.03s  (  0.3%)  calls=150   avg=   0.22ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=150   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=150   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #160, prefix length: 20
-[TIMING] after 160 GenerateLogits calls total=12.43s
-  GenerateLogits.total              6.20s  ( 49.9%)  calls=159   avg=  39.01ms
-  GenerateLogits.engine_generate    5.94s  ( 47.8%)  calls=160   avg=  37.12ms
-  GenerateLogits.finalize_from_dict    0.24s  (  2.0%)  calls=160   avg=   1.53ms
-  GenerateLogits.prefix_text        0.03s  (  0.3%)  calls=160   avg=   0.21ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=160   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=160   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #170, prefix length: 30
-[TIMING] after 170 GenerateLogits calls total=13.11s
-  GenerateLogits.total              6.54s  ( 49.9%)  calls=169   avg=  38.71ms
-  GenerateLogits.engine_generate    6.27s  ( 47.8%)  calls=170   avg=  36.85ms
-  GenerateLogits.finalize_from_dict    0.26s  (  1.9%)  calls=170   avg=   1.50ms
-  GenerateLogits.prefix_text        0.03s  (  0.3%)  calls=170   avg=   0.20ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=170   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=170   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #180, prefix length: 40
-[TIMING] after 180 GenerateLogits calls total=13.78s
-  GenerateLogits.total              6.88s  ( 49.9%)  calls=179   avg=  38.43ms
-  GenerateLogits.engine_generate    6.59s  ( 47.8%)  calls=180   avg=  36.59ms
-  GenerateLogits.finalize_from_dict    0.26s  (  1.9%)  calls=180   avg=   1.47ms
-  GenerateLogits.prefix_text        0.04s  (  0.3%)  calls=180   avg=   0.20ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=180   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=180   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #190, prefix length: 50
-[TIMING] after 190 GenerateLogits calls total=14.47s
-  GenerateLogits.total              7.22s  ( 49.9%)  calls=189   avg=  38.20ms
-  GenerateLogits.engine_generate    6.92s  ( 47.8%)  calls=190   avg=  36.42ms
-  GenerateLogits.finalize_from_dict    0.28s  (  1.9%)  calls=190   avg=   1.46ms
-  GenerateLogits.prefix_text        0.04s  (  0.3%)  calls=190   avg=   0.19ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=190   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=190   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #200, prefix length: 60
-[TIMING] after 200 GenerateLogits calls total=15.17s
-  GenerateLogits.total              7.57s  ( 49.9%)  calls=199   avg=  38.06ms
-  GenerateLogits.engine_generate    7.25s  ( 47.8%)  calls=200   avg=  36.26ms
-  GenerateLogits.finalize_from_dict    0.29s  (  1.9%)  calls=200   avg=   1.45ms
-  GenerateLogits.prefix_text        0.04s  (  0.3%)  calls=200   avg=   0.19ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=200   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=200   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #210, prefix length: 70
-[TIMING] after 210 GenerateLogits calls total=15.89s
-  GenerateLogits.total              7.93s  ( 49.9%)  calls=209   avg=  37.95ms
-  GenerateLogits.engine_generate    7.60s  ( 47.8%)  calls=210   avg=  36.18ms
-  GenerateLogits.finalize_from_dict    0.30s  (  1.9%)  calls=210   avg=   1.44ms
-  GenerateLogits.prefix_text        0.04s  (  0.3%)  calls=210   avg=   0.20ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=210   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=210   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #220, prefix length: 80
-[TIMING] after 220 GenerateLogits calls total=16.58s
-  GenerateLogits.total              8.28s  ( 49.9%)  calls=219   avg=  37.79ms
-  GenerateLogits.engine_generate    7.93s  ( 47.8%)  calls=220   avg=  36.04ms
-  GenerateLogits.finalize_from_dict    0.32s  (  1.9%)  calls=220   avg=   1.44ms
-  GenerateLogits.prefix_text        0.04s  (  0.3%)  calls=220   avg=   0.20ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=220   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=220   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #230, prefix length: 90
-[TIMING] after 230 GenerateLogits calls total=17.29s
-  GenerateLogits.total              8.63s  ( 49.9%)  calls=229   avg=  37.70ms
-  GenerateLogits.engine_generate    8.26s  ( 47.8%)  calls=230   avg=  35.93ms
-  GenerateLogits.finalize_from_dict    0.33s  (  1.9%)  calls=230   avg=   1.43ms
-  GenerateLogits.prefix_text        0.05s  (  0.3%)  calls=230   avg=   0.20ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=230   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=230   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #240, prefix length: 100
-[TIMING] after 240 GenerateLogits calls total=17.99s
-  GenerateLogits.total              8.98s  ( 49.9%)  calls=239   avg=  37.59ms
-  GenerateLogits.engine_generate    8.60s  ( 47.8%)  calls=240   avg=  35.83ms
-  GenerateLogits.finalize_from_dict    0.34s  (  1.9%)  calls=240   avg=   1.43ms
-  GenerateLogits.prefix_text        0.05s  (  0.3%)  calls=240   avg=   0.21ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=240   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=240   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #250, prefix length: 110
-[TIMING] after 250 GenerateLogits calls total=18.67s
-  GenerateLogits.total              9.33s  ( 50.0%)  calls=249   avg=  37.46ms
-  GenerateLogits.engine_generate    8.92s  ( 47.8%)  calls=250   avg=  35.69ms
-  GenerateLogits.finalize_from_dict    0.35s  (  1.9%)  calls=250   avg=   1.42ms
-  GenerateLogits.prefix_text        0.05s  (  0.3%)  calls=250   avg=   0.21ms
-  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=250   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=250   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #260, prefix length: 120
-[TIMING] after 260 GenerateLogits calls total=19.41s
-  GenerateLogits.total              9.70s  ( 50.0%)  calls=259   avg=  37.44ms
-  GenerateLogits.engine_generate    9.27s  ( 47.8%)  calls=260   avg=  35.66ms
-  GenerateLogits.finalize_from_dict    0.37s  (  1.9%)  calls=260   avg=   1.41ms
-  GenerateLogits.prefix_text        0.06s  (  0.3%)  calls=260   avg=   0.22ms
-  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=260   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=260   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #270, prefix length: 130
-[TIMING] after 270 GenerateLogits calls total=20.14s
-  GenerateLogits.total             10.06s  ( 50.0%)  calls=269   avg=  37.39ms
-  GenerateLogits.engine_generate    9.62s  ( 47.8%)  calls=270   avg=  35.62ms
-  GenerateLogits.finalize_from_dict    0.38s  (  1.9%)  calls=270   avg=   1.41ms
-  GenerateLogits.prefix_text        0.06s  (  0.3%)  calls=270   avg=   0.23ms
-  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=270   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=270   avg=   0.00ms
-    [PROGRESS] GenerateLogits call #280, prefix length: 140
-[TIMING] after 280 GenerateLogits calls total=20.84s
-  GenerateLogits.total             10.41s  ( 50.0%)  calls=279   avg=  37.32ms
-  GenerateLogits.engine_generate    9.95s  ( 47.8%)  calls=280   avg=  35.54ms
-  GenerateLogits.finalize_from_dict    0.39s  (  1.9%)  calls=280   avg=   1.41ms
-  GenerateLogits.prefix_text        0.07s  (  0.3%)  calls=280   avg=   0.24ms
-  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=280   avg=   0.06ms
-  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=280   avg=   0.00ms
-(Worker_TP1 pid=426302) WARNING 04-21 23:02:58 [multiproc_executor.py:871] WorkerProc was terminated
-(Worker_TP0 pid=426301) WARNING 04-21 23:02:58 [multiproc_executor.py:871] WorkerProc was terminated
-(EngineCore pid=425605) INFO 04-21 23:02:58 [core.py:1210] Shutdown initiated (timeout=0)
-(EngineCore pid=425605) INFO 04-21 23:02:58 [core.py:1233] Shutdown complete
-(Worker_TP0 pid=426301) INFO 04-21 23:02:58 [multiproc_executor.py:764] Parent process exited, terminating worker queues

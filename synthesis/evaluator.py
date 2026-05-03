@@ -7,8 +7,10 @@ to enable feedback-driven refinement based on actual performance metrics.
 
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter
+from decimal import Decimal, InvalidOperation
 
 # SQL keyword set for failure-preview anonymization. Identifiers outside this
 # set are replaced with <id>; numbers with <num>; string literals with <str>.
@@ -73,11 +75,12 @@ class EvaluationResult:
     """
     success: bool
     accuracy: float  # 0.0 to 1.0
-    contains_delimiters: bool
     syntax_rate: float  # 0.0 to 1.0
     num_examples: int
     num_correct: int
     total_time_seconds: float
+    contains_delimiters: bool = False
+    format_rate: Optional[float] = None
     max_sample_time_seconds: float = 0.0
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
@@ -89,6 +92,7 @@ class EvaluationResult:
     def meets_threshold(
         self,
         min_accuracy: float = 0.0,
+        min_format_rate: float = 0.0,
         min_syntax_rate: float = 0.0,
         require_delimiters: bool = True,
         max_seconds_per_example: Optional[float] = None,
@@ -99,10 +103,15 @@ class EvaluationResult:
         runtime_ok = True
         if max_seconds_per_example is not None:
             runtime_ok = self.max_sample_time_seconds <= max_seconds_per_example
+        format_rate = self.format_rate
+        if format_rate is None:
+            format_rate = 1.0 if self.contains_delimiters else 0.0
         return (
             runtime_ok
             and self.accuracy >= min_accuracy
+            and format_rate >= min_format_rate
             and self.syntax_rate >= min_syntax_rate
+            and (not require_delimiters or self.contains_delimiters or format_rate > 0.0)
         )
 
     def get_feedback_summary(self) -> str:
@@ -110,6 +119,7 @@ class EvaluationResult:
         lines = [
             f"Evaluation Results ({self.num_examples} examples):",
             f"  Accuracy: {self.accuracy:.1%} ({self.num_correct}/{self.num_examples})",
+            f"  Format Rate: {self._format_rate_value():.1%}",
             f"  Syntax Rate: {self.syntax_rate:.1%}",
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
@@ -193,6 +203,11 @@ class EvaluationResult:
                     lines.append(f"      actual:   {actual}")
 
         return "\n".join(lines)
+
+    def _format_rate_value(self) -> float:
+        if self.format_rate is not None:
+            return self.format_rate
+        return 1.0 if self.contains_delimiters else 0.0
 
     @staticmethod
     def _format_trace_event(event: Dict[str, Any]) -> str:
@@ -357,6 +372,7 @@ class EvaluationResult:
         return {
             "success": self.success,
             "accuracy": self.accuracy,
+            "format_rate": self._format_rate_value(),
             "contains_delimiters": self.contains_delimiters,
             "syntax_rate": self.syntax_rate,
             "num_examples": self.num_examples,
@@ -372,8 +388,8 @@ class Evaluator:
     """
     Evaluates synthesized CSD strategies on dataset samples.
 
-    Supports both GSM-Symbolic and FOLIO datasets with their respective
-    evaluation metrics and syntax validation.
+    Supports GSM-Symbolic, Spider, SMILES, and legacy FOLIO datasets with
+    their respective evaluation metrics and syntax validation.
     """
 
     def __init__(
@@ -400,7 +416,7 @@ class Evaluator:
         Initialize the evaluator.
 
         Args:
-            dataset_name: Dataset to evaluate on ("gsm_symbolic" or "folio")
+            dataset_name: Dataset to evaluate on
             model_name: HuggingFace model for generation
             backend: Runtime LM backend ("huggingface" or "vllm")
             device: Device to run on ("cuda", "mps", "cpu")
@@ -450,16 +466,26 @@ class Evaluator:
         self._dynamic_parser_factory_cache: Dict[Tuple[str, ...], Any] = {}
         self._syntax_parser_cache: Dict[Tuple[str, ...], Any] = {}
 
+    @staticmethod
+    def _example_field(example: Any, key: str, default: Any = None) -> Any:
+        if hasattr(example, key):
+            return getattr(example, key)
+        if hasattr(example, "get") and callable(getattr(example, "get")):
+            return example.get(key, default)
+        return default
+
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
         if self._grammar_file is None:
             grammars_dir = Path(__file__).parent.parent / "grammars"
             if self.dataset_name == "gsm_symbolic":
                 self._grammar_file = grammars_dir / "gsm.lark"
-            elif self.dataset_name == "folio":
-                self._grammar_file = grammars_dir / "folio.lark"
             elif self.dataset_name == "spider":
                 self._grammar_file = grammars_dir / "sql.lark"
+            elif self.dataset_name == "smiles":
+                self._grammar_file = grammars_dir / "smiles.lark"
+            elif self.dataset_name == "folio":
+                self._grammar_file = grammars_dir / "folio.lark"
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
@@ -685,14 +711,6 @@ class Evaluator:
                 seed=self.sample_seed if self.random_sample else None,
             )
             self._dataset = list(ds)
-        elif self.dataset_name == "folio":
-            from evaluations.folio.dataset import load_folio
-            ds = load_folio(
-                split="validation",
-                num_samples=self.sample_size,
-                seed=42,
-            )
-            self._dataset = list(ds)
         elif self.dataset_name == "spider":
             from evaluations.sql_spider.dataset import load_spider
             ds = load_spider(
@@ -700,6 +718,23 @@ class Evaluator:
                 limit=self.sample_size,
                 random_sample=self.random_sample,
                 seed=self.sample_seed if self.random_sample else None,
+            )
+            self._dataset = list(ds)
+        elif self.dataset_name == "smiles":
+            from evaluations.smiles.dataset import load_smiles
+            ds = load_smiles(
+                split="test",
+                limit=self.sample_size,
+                random_sample=self.random_sample,
+                seed=self.sample_seed if self.random_sample else 42,
+            )
+            self._dataset = list(ds)
+        elif self.dataset_name == "folio":
+            from evaluations.folio.dataset import load_folio
+            ds = load_folio(
+                split="validation",
+                num_samples=self.sample_size,
+                seed=42,
             )
             self._dataset = list(ds)
         else:
@@ -742,6 +777,8 @@ class Evaluator:
             from evaluations.gsm_symbolic.environment import setup_dafny_environment
         elif self.dataset_name == "spider":
             from evaluations.sql_spider.environment import setup_dafny_environment
+        elif self.dataset_name == "smiles":
+            from evaluations.smiles.environment import setup_dafny_environment
         else:
             from evaluations.folio.environment import setup_dafny_environment
 
@@ -1015,6 +1052,77 @@ class Evaluator:
 
         return None
 
+    @staticmethod
+    def _looks_like_smiles(text: str) -> bool:
+        candidate = text.strip()
+        if not candidate or " " in candidate or len(candidate) > 256:
+            return False
+        return bool(re.fullmatch(r"[A-Za-z0-9@+\-\[\]\(\)=#$\\/%.]+", candidate))
+
+    @staticmethod
+    def _canonicalize_smiles(text: str) -> Optional[str]:
+        if not Evaluator._looks_like_smiles(text):
+            return None
+        try:
+            from rdkit import Chem
+        except Exception:
+            return None
+        try:
+            mol = Chem.MolFromSmiles(text.strip())
+        except Exception:
+            return None
+        if mol is None:
+            return None
+        try:
+            return Chem.MolToSmiles(mol, canonical=True)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _split_smiles_items(text: str) -> list[str]:
+        raw = re.split(r"\s*(?:\||;|,)\s*", text.strip())
+        return [item for item in raw if item]
+
+    def _normalize_smiles_text(self, text: Optional[str]) -> Optional[str]:
+        if text is None:
+            return None
+
+        value = str(text).strip()
+        if not value:
+            return None
+
+        if value.startswith(("'", '"')) and value.endswith(("'", '"')) and len(value) >= 2:
+            value = value[1:-1].strip()
+
+        canonical_smiles = self._canonicalize_smiles(value)
+        if canonical_smiles is not None:
+            return f"smiles:{canonical_smiles}"
+
+        try:
+            numeric = Decimal(value)
+            if numeric == numeric.to_integral_value():
+                return f"number:{int(numeric)}"
+            return f"number:{format(numeric.normalize(), 'f')}"
+        except InvalidOperation:
+            pass
+
+        try:
+            parsed_json = json.loads(value)
+        except Exception:
+            parsed_json = None
+        if parsed_json is not None:
+            return json.dumps(parsed_json, sort_keys=True, ensure_ascii=True)
+
+        collapsed = re.sub(r"\s+", " ", value).strip()
+        return collapsed.casefold()
+
+    def _extract_answer_smiles(self, output: str) -> Optional[str]:
+        """Extract the final chemistry answer from the last constrained span."""
+        matches = self._extract_constrained_content(output)
+        if not matches:
+            return None
+        return matches[-1].strip()
+
     def _fol_keyword_to_unicode(self, text: str) -> str:
         """Convert {keyword} FOL syntax from grammar to Unicode symbols for Prover9."""
         replacements = {
@@ -1093,10 +1201,33 @@ class Evaluator:
             return "Unknown"
         return None
 
-    def _answers_match(self, actual: Optional[str], expected: str) -> bool:
-        """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
+    def _answers_match(
+        self,
+        actual: Optional[str],
+        expected: str,
+        example: Optional[Any] = None,
+    ) -> bool:
+        """Check if actual and expected answers match."""
         if actual is None:
             return False
+        if self.dataset_name == "gsm_symbolic":
+            try:
+                return Decimal(str(actual).strip()) == Decimal(str(expected).strip())
+            except InvalidOperation:
+                return str(actual).strip() == str(expected).strip()
+        if self.dataset_name == "smiles":
+            norm_actual = self._normalize_smiles_text(actual)
+            norm_expected = self._normalize_smiles_text(expected)
+            if norm_actual is None or norm_expected is None:
+                return False
+            matching_strategy = (
+                str(self._example_field(example, "matching_strategy", "") or "").strip().lower()
+            )
+            if any(marker in matching_strategy for marker in ("set", "unordered", "bag")):
+                return set(self._split_smiles_items(norm_actual)) == set(
+                    self._split_smiles_items(norm_expected)
+                )
+            return norm_actual == norm_expected
         a = str(actual).strip().lower()
         e = str(expected).strip().lower()
         # Normalize "uncertain" and "unknown" to be equivalent
@@ -1115,7 +1246,9 @@ class Evaluator:
                 return match.group(1)
             return answer_str
         elif self.dataset_name == "spider":
-            return (example.get("query") or "").strip()
+            return str(self._example_field(example, "query", "") or "").strip()
+        elif self.dataset_name == "smiles":
+            return str(self._example_field(example, "answer", "") or "").strip()
         else:
             if hasattr(example, "label"):
                 return example.label
@@ -1181,6 +1314,21 @@ class Evaluator:
                 f"db_info: {db_info}\n"
                 f"question: {question}\n"
                 "SQL: "
+            )
+        elif self.dataset_name == "smiles":
+            question = str(self._example_field(example, "question", "") or "")
+            task = str(
+                self._example_field(example, "task", "")
+                or self._example_field(example, "config", "")
+                or "smiles"
+            )
+            return (
+                "You are solving a constrained molecular generation problem.\n"
+                "Give the final answer only inside one << >> span.\n"
+                "Inside << >>, emit only the requested answer string on one line, with no label or explanation.\n\n"
+                f"Task group: {task}\n"
+                f"Problem:\n{question}\n\n"
+                "Final answer:"
             )
         else:
             # FOLIOExample is a dataclass — access via attribute or .get() for dict fallback
@@ -1287,11 +1435,14 @@ class Evaluator:
                 from evaluations.gsm_symbolic.generation import run_crane_csd
             elif self.dataset_name == "spider":
                 from evaluations.sql_spider.generation import run_crane_csd
+            elif self.dataset_name == "smiles":
+                from evaluations.smiles.generation import run_crane_csd
             else:
                 from evaluations.folio.generation import run_crane_csd
 
             num_correct = 0
             all_examples_contain_delimiters = True
+            num_examples_with_delimiters = 0
             num_examples_syntax_pass = 0
 
             for i, example in enumerate(dataset):
@@ -1335,13 +1486,15 @@ class Evaluator:
                         actual = self._extract_answer_gsm(scored_output)
                     elif self.dataset_name == "spider":
                         actual = self._extract_answer_spider(scored_output)
+                    elif self.dataset_name == "smiles":
+                        actual = self._extract_answer_smiles(scored_output)
                     else:
                         actual = self._extract_answer_folio(scored_output, example=example)
 
                     if self.dataset_name == "spider":
                         is_correct = self._exec_match_spider(actual, expected, example)
                     else:
-                        is_correct = self._answers_match(actual, expected)
+                        is_correct = self._answers_match(actual, expected, example=example)
                     if is_correct:
                         num_correct += 1
 
@@ -1353,6 +1506,7 @@ class Evaluator:
                     contains_delimiters = (
                         used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
                     )
+                    num_examples_with_delimiters += int(contains_delimiters)
                     all_examples_contain_delimiters = (
                         all_examples_contain_delimiters and contains_delimiters
                     )
@@ -1372,7 +1526,13 @@ class Evaluator:
                     if hasattr(example, "conclusion"):
                         q_str = (example.premises + " | " + example.conclusion)[:200]
                     else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                        q_str = str(
+                            self._example_field(
+                                example,
+                                "question",
+                                self._example_field(example, "premises", ""),
+                            )
+                        )[:200]
                     sample_outputs.append({
                         "question": q_str,
                         "expected": expected,
@@ -1399,7 +1559,13 @@ class Evaluator:
                     if hasattr(example, "conclusion"):
                         q_str = (example.premises + " | " + example.conclusion)[:200]
                     else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                        q_str = str(
+                            self._example_field(
+                                example,
+                                "question",
+                                self._example_field(example, "premises", ""),
+                            )
+                        )[:200]
                     sample_outputs.append({
                         "question": q_str,
                         "expected": expected,
@@ -1418,6 +1584,7 @@ class Evaluator:
             return EvaluationResult(
                 success=True,
                 accuracy=num_correct / max(1, num_examples),
+                format_rate=num_examples_with_delimiters / max(1, num_examples),
                 contains_delimiters=all_examples_contain_delimiters,
                 syntax_rate=num_examples_syntax_pass / max(1, num_examples),
                 num_examples=num_examples,
@@ -1431,6 +1598,7 @@ class Evaluator:
             return EvaluationResult(
                 success=False,
                 accuracy=0.0,
+                format_rate=0.0,
                 contains_delimiters=False,
                 syntax_rate=0.0,
                 num_examples=0,
