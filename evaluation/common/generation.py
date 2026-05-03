@@ -2,7 +2,7 @@
 Shared generation methods for CSD evaluation.
 
 Provides dafny_seq_to_str, run_crane_csd, and run_unconstrained used by
-both gsm_symbolic and folio evaluations. Delegates to the Dafny-verified
+benchmark evaluations. Delegates to the Dafny-verified
 CSD strategy.
 """
 

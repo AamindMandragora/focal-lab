@@ -1,8 +1,51 @@
 import ast
 
+import pytest
+
 from generation.generator import StrategyGenerator
 from generation.generator import StrategyGenerationError
 from generation.generator import _auto_select_device
+
+
+def test_ensure_nontrivial_strategy_accepts_non_house_style_body_for_gpt54():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    generator.model_name = "gpt-5.4"
+    generator.strategy_language = "python"
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+# CSD_PROOF_SKETCH_BEGIN
+# test
+# CSD_PROOF_SKETCH_END
+phase = 0
+generated = generated + ["free"]
+"""
+
+    strict_issue = generator._structural_issue(strategy)
+    accepted = generator._ensure_nontrivial_strategy(strategy, max_repairs=0)
+
+    assert "while loop" in strict_issue
+    assert accepted == strategy
+    assert generator.last_structure_validation_summary["style_validation_enforced"] is False
+    assert generator.last_structure_validation_summary["exploration_first_generation"] is True
+
+
+def test_ensure_nontrivial_strategy_keeps_strict_style_gate_for_non_gpt54():
+    generator = StrategyGenerator.__new__(StrategyGenerator)
+    generator.model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
+    generator.strategy_language = "python"
+    strategy = """# CSD_RATIONALE_BEGIN
+# test
+# CSD_RATIONALE_END
+# CSD_PROOF_SKETCH_BEGIN
+# test
+# CSD_PROOF_SKETCH_END
+phase = 0
+generated = generated + ["free"]
+"""
+
+    with pytest.raises(ValueError, match="structurally invalid"):
+        generator._ensure_nontrivial_strategy(strategy, max_repairs=0)
 
 
 def test_structural_issue_skips_forced_delimiter_requirement_in_natural_mode(monkeypatch):

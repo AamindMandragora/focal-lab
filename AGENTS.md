@@ -134,7 +134,7 @@ The GSM grammar in [utils/grammars/gsm.lark](/home/advayth2/projects/verified-ag
 | [verification/dafny_runner.py](/home/advayth2/projects/verified-agent-synthesis/verification/dafny_runner.py) | **Verification** | Shared Dafny workspace setup; prepares temp directory with Python sources and transpiled Dafny, checks Dafny availability |
 | [synthesis/feedback_loop.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/feedback_loop.py) | **Synthesis** | Main orchestration loop: generate → verify → run original Python → evaluate → repair/refine until thresholds met; handles error-based repair and refinement feedback |
 | [synthesis/runner.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/runner.py) | **Synthesis** | Python runtime executor for generated strategies; injects stubs (LM, Parser), captures output and errors, supports permissive and real parsing modes |
-| [synthesis/presets.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/presets.py) | **Synthesis** | Dataset and model preset definitions (gsm_symbolic, folio, pddl, sygus_slia) with default task descriptions and evaluation thresholds |
+| [synthesis/presets.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/presets.py) | **Synthesis** | Dataset and model preset definitions (gsm_symbolic, spider, chem_cot_bench) with default task descriptions and evaluation thresholds |
 | [synthesis/cli/run_synthesis.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/cli/run_synthesis.py) | **Synthesis** | Main CLI entrypoint for end-to-end synthesis with feedback loop; configurable iterations, model, dataset, thresholds |
 | [synthesis/cli/generate_csd.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/cli/generate_csd.py) | **Synthesis** | Preset-driven CSD generator wrapper; delegates to run_synthesis.py with dataset-specific defaults |
 | [synthesis/cli/evaluate_existing_run.py](/home/advayth2/projects/verified-agent-synthesis/synthesis/cli/evaluate_existing_run.py) | **Synthesis** | Re-evaluator for existing synthesis runs; loads `GeneratedCSD.py` and runs fresh evaluation without re-generating |
@@ -150,17 +150,9 @@ The GSM grammar in [utils/grammars/gsm.lark](/home/advayth2/projects/verified-ag
 | [evaluation/gsm_symbolic/grammar.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/gsm_symbolic/grammar.py) | **Evaluation** | Dynamic grammar builder for GSM-Symbolic; constructs variable-aware arithmetic expression grammar from problem context |
 | [evaluation/gsm_symbolic/metrics.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/gsm_symbolic/metrics.py) | **Evaluation** | GSM-Symbolic metrics; extracts numeric answers from constrained segments, compares to gold |
 | [evaluation/gsm_symbolic/generation.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/gsm_symbolic/generation.py) | **Evaluation** | GSM-specific CSD execution wrapper around common generation methods |
-| [evaluation/folio/dataset.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/dataset.py) | **Evaluation** | FOLIO dataset loader from HuggingFace (yale-nlp/FOLIO); first-order logic reasoning task |
-| [evaluation/folio/grammar.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/grammar.py) | **Evaluation** | FOLIO grammar for first-order logic; defines valid FOL formula syntax |
-| [evaluation/folio/metrics.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/metrics.py) | **Evaluation** | FOLIO metrics; parses FOL conclusions, sends to Prover9, compares symbolic results |
-| [evaluation/folio/generation.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/generation.py) | **Evaluation** | FOLIO-specific CSD execution and conclusion extraction |
-| [evaluation/folio/fol_utils.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/fol_utils.py) | **Evaluation** | FOL formula utilities; segmentation, extraction, validation |
-| [evaluation/folio/environment.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/folio/environment.py) | **Evaluation** | FOLIO-specific environment setup |
-| [evaluation/pddl/dataset.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/pddl/dataset.py) | **Evaluation** | PDDL dataset loader; sequential planning task dataset |
-| [evaluation/sygus_slia/dataset.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/sygus_slia/dataset.py) | **Evaluation** | SyGuS-SLIA dataset loader; string manipulation synthesis task |
+| [evaluation/spider/dataset.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/spider/dataset.py) | **Evaluation** | Spider dataset loader from HuggingFace; normalizes text-to-SQL questions, gold SQL, database id, and schema text |
+| [evaluation/chem_cot_bench/dataset.py](/home/advayth2/projects/verified-agent-synthesis/evaluation/chem_cot_bench/dataset.py) | **Evaluation** | Chem-CoT-Bench dataset loader from HuggingFace; normalizes chemistry benchmark prompts and answer strings across benchmark groups |
 | [utils/parsers/lark_parser.py](/home/advayth2/projects/verified-agent-synthesis/utils/parsers/lark_parser.py) | **Utils** | Grammar-agnostic Lark-based parser for any grammar file; implements IsValidPrefix, IsCompletePrefix, ValidNextTokens |
-| [utils/symbolic_solvers/fol_solver/fol_parser.py](/home/advayth2/projects/verified-agent-synthesis/utils/symbolic_solvers/fol_solver/fol_parser.py) | **Utils** | FOL formula parser using NLTK CFG; parses text FOL to tree, handles quantifiers and operators |
-| [utils/symbolic_solvers/fol_solver/prover9_solver.py](/home/advayth2/projects/verified-agent-synthesis/utils/symbolic_solvers/fol_solver/prover9_solver.py) | **Utils** | Prover9 solver integration; runs Prover9 with FOL premises/conclusion, captures proof results |
 | [run_synthesis.py](/home/advayth2/projects/verified-agent-synthesis/run_synthesis.py) | **Root** | Thin wrapper delegating to synthesis/cli/run_synthesis.py (compatibility entrypoint) |
 
 ## Module Map
@@ -218,17 +210,17 @@ Evaluates generated CSDs on benchmark datasets and reports metrics for feedback.
 - `common/parser_utils.py`: Factory for Lark-based parsers matching VerifiedDecoderAgent.Parser interface
 - `common/generation.py`: CSD executor (run_crane_csd) that bridges Dafny Seq and Python lists
 - `common/run_artifacts.py`: Utilities for locating run directories and GeneratedCSD.py
-- Dataset-specific modules (gsm_symbolic/, folio/, pddl/, sygus_slia/): dataset loaders, grammar builders, metrics extractors
+- Dataset-specific modules (gsm_symbolic/, spider/, chem_cot_bench/): dataset loaders, grammar builders, and answer normalizers
 
 **Dataset specifics**:
-- **gsm_symbolic**: Dynamic grammar from problem variables; extracts rightmost number from final <<...>>
-- **folio**: FOL grammar; segments output on '$', sends conclusion to Prover9, compares proof result to gold label
-- **pddl** and **sygus_slia**: Planned/extensible (stubs present)
+- **gsm_symbolic**: Dynamic grammar from problem variables; extracts the evaluated value from the final <<...>> span
+- **spider**: SQL grammar plus prompt/schema token augmentation; canonicalizes a few common near-miss queries before exact-match scoring
+- **chem_cot_bench**: Compact chemistry-answer grammar plus normalized answer matching for numbers, text labels, JSON-like outputs, and SMILES when RDKit is available
 
 **Gotchas**:
 - Legacy compiled modules use Dafny.Seq which is NOT iterable; active native evaluation uses Python lists
 - Parser modes: "permissive" (all tokens valid) vs "real" (Lark grammar validation); synthesis uses permissive
-- Grammar files (.lark) are per-dataset; gsm.lark is variable-aware, folio.lark is FOL formula syntax
+- Grammar files (.lark) are per-dataset; `gsm.lark` is variable-aware arithmetic, `sql.lark` covers Spider SQL, and `chem_cot_bench.lark` keeps chemistry answers inside a compact single-line span
 - Evaluation sample size is separate from synthesis iteration counts; preset thresholds vary by dataset
 
 ### synthesis/
@@ -248,7 +240,7 @@ End-to-end orchestration and CLI entrypoints for the entire loop.
 **Gotchas**:
 - Error repair strategies in feedback_loop.py are heuristic-based (regex replacements); if repair fails, loop moves to next iteration
 - Runtime errors from stubs are caught and reported; strategy may still be evaluated if error is recoverable
-- Preset thresholds vary; gsm_symbolic typically needs min_accuracy 0.3+, folio needs 0.5+
+- Preset thresholds vary; gsm_symbolic uses strict format/syntax thresholds, while spider and chem_cot_bench allow broader answer spaces with lighter accuracy thresholds
 - Max iterations defaults to 5-10; iteration budget is the main loop termination criterion
 
 ### utils/
@@ -256,8 +248,7 @@ Stage-agnostic utilities for grammar parsing and symbolic solving.
 
 **Modules**:
 - `parsers/lark_parser.py`: Generic Lark-based parser for any .lark grammar; implements prefix validation
-- `symbolic_solvers/fol_solver/`: FOL parsing (NLTK CFG) and Prover9 integration for FOLIO evaluation
-- `grammars/`: Grammar files (json.lark, python.lark, sql.lark, gsm.lark, folio.lark, etc.)
+- `grammars/`: Grammar files (json.lark, python.lark, sql.lark, gsm.lark, chem_cot_bench.lark, etc.)
 
 **Gotchas**:
 - Lark parser uses LALR for speed; some grammars may need tweaks for LALR compatibility

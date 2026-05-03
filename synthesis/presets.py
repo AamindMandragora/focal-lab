@@ -181,64 +181,6 @@ DATASET_PRESETS = {
         eval_sample_size=10,
         eval_max_steps=300,
     ),
-    "folio": SynthesisPreset(
-        dataset="folio",
-        output_name="folio_csd",
-        task_description=(
-            "Generate first-order logic formulas for FOLIO reasoning. The parser "
-            "enforces a strict FOL grammar with quantifiers, predicates, constants, "
-            "and logical connectives. CRITICAL RULES: "
-            "1. Quantifiers use {forall} and {exists} with single lowercase "
-            "variables. "
-            "2. Predicates are uppercase/camel-case and constants are lowercase. "
-            "3. Use simple well-typed formulas over overly deep nesting. "
-            "4. Parentheses must stay balanced and formulas must be complete. "
-            "5. The final constrained segment should contain the answer-bearing "
-            "formula only."
-        ),
-        min_accuracy=0.5,
-        min_format_rate=0.8,
-        min_syntax_rate=0.8,
-        eval_sample_size=10,
-        eval_max_steps=1500,
-    ),
-    "pddl": SynthesisPreset(
-        dataset="pddl",
-        output_name="pddl_csd",
-        task_description=(
-            "Generate a PDDL planning strategy for Blocks World problems. The "
-            "grammar enforces a strict sequence of actions: (pick-up X), "
-            "(put-down X), (stack X Y), (unstack X Y). CRITICAL RULES: "
-            "1. The constrained answer contains only actions. "
-            "2. Actions must satisfy their preconditions. "
-            "3. Plans are evaluated by simulation and should achieve the stated "
-            "goal. "
-            "4. Prefer short correct plans over verbose ones."
-        ),
-        min_accuracy=0.3,
-        min_format_rate=0.5,
-        min_syntax_rate=0.5,
-        eval_sample_size=5,
-        eval_max_steps=128,
-    ),
-    "sygus_slia": SynthesisPreset(
-        dataset="sygus_slia",
-        output_name="sygus_slia_csd",
-        task_description=(
-            "Generate a string-manipulation strategy for SyGuS SLIA problems. "
-            "The grammar enforces a strict S-expression format using SLIA string "
-            "operations and integer arithmetic. CRITICAL RULES: "
-            "1. The constrained answer is a single complete S-expression. "
-            "2. Variables are bare identifiers and string literals are quoted. "
-            "3. Integer arguments must be valid integer expressions. "
-            "4. Prefer compact correct expressions over unnecessary nesting."
-        ),
-        min_accuracy=0.3,
-        min_format_rate=0.5,
-        min_syntax_rate=0.5,
-        eval_sample_size=5,
-        eval_max_steps=256,
-    ),
     "spider": SynthesisPreset(
         dataset="spider",
         output_name="spider_sql_csd",
@@ -264,6 +206,29 @@ DATASET_PRESETS = {
         min_syntax_rate=0.8,
         eval_sample_size=5,
         eval_max_steps=512,
+    ),
+    "chem_cot_bench": SynthesisPreset(
+        dataset="chem_cot_bench",
+        output_name="chem_cot_bench_csd",
+        task_description=(
+            "Generate chemistry benchmark answers for Chem-CoT-Bench. The parser "
+            "enforces a compact single-line chemistry answer span. CRITICAL RULES: "
+            "1. The final constrained segment is a single answer inside << >>. "
+            "2. Keep prose outside the constrained segment; inside << >> emit only "
+            "the answer string the task requests. "
+            "3. If the task asks for a SMILES string, emit only the SMILES string. "
+            "4. If the task asks for a number, class label, reagent, catalyst, "
+            "solvent, or condition, emit only that answer text with no explanation. "
+            "5. Do not add markdown, bullet points, JSON wrappers, or redundant "
+            "labels inside the final constrained segment. "
+            "6. Prefer one deliberate final answer span rather than many short "
+            "scratch spans."
+        ),
+        min_accuracy=0.2,
+        min_format_rate=0.8,
+        min_syntax_rate=0.8,
+        eval_sample_size=5,
+        eval_max_steps=384,
     ),
 }
 

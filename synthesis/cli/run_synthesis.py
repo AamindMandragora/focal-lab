@@ -12,8 +12,8 @@ Usage:
     python run_synthesis.py --task "..." --dataset gsm_symbolic \\
         --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
 
-    python run_synthesis.py --task "..." --dataset folio \\
-        --min-accuracy 0.5 --min-format-rate 0.8 --min-syntax-rate 0.7
+    python run_synthesis.py --task "..." --dataset chem_cot_bench \\
+        --min-accuracy 0.2 --min-format-rate 0.8 --min-syntax-rate 0.8
 """
 
 import argparse
@@ -31,17 +31,13 @@ Examples:
   python run_synthesis.py --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
 
-  # FOLIO
-  python run_synthesis.py --task "Generate FOL reasoning strategy" \\
-      --dataset folio --min-accuracy 0.5 --min-format-rate 0.8 --min-syntax-rate 0.7
+  # Spider text-to-SQL
+  python run_synthesis.py --task "Generate SQL reasoning strategy" \\
+      --dataset spider --min-accuracy 0.2 --min-format-rate 0.8 --min-syntax-rate 0.8
 
-  # SyGuS SLIA (string manipulation synthesis)
-  python run_synthesis.py --task "Generate string manipulation strategy" \\
-      --dataset sygus_slia --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
-
-  # PDDL Blocks World (sequential planning)
-  python run_synthesis.py --task "Generate a PDDL planning strategy" \\
-      --dataset pddl --min-accuracy 0.3 --min-format-rate 0.5 --min-syntax-rate 0.5
+  # Chem-CoT-Bench
+  python run_synthesis.py --task "Generate chemistry reasoning strategy" \\
+      --dataset chem_cot_bench --min-accuracy 0.2 --min-format-rate 0.8 --min-syntax-rate 0.8
 
   # With more iterations and custom eval sample size
   python run_synthesis.py --task "..." --dataset gsm_symbolic \\
@@ -143,7 +139,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "folio", "sygus_slia", "pddl", "spider"],
+        choices=["gsm_symbolic", "spider", "chem_cot_bench"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -186,8 +182,8 @@ Examples:
     parser.add_argument(
         "--eval-vocab-size",
         type=int,
-        default=3000,
-        help="Vocabulary size for evaluation (default: 3000)"
+        default=0,
+        help="Vocabulary size for evaluation; use 0 for the full tokenizer vocabulary (default)"
     )
 
     parser.add_argument(
@@ -247,7 +243,7 @@ Examples:
         dataset_name=args.dataset,
         model_name=args.eval_model,
         device=selected_device,
-        vocab_size=args.eval_vocab_size,
+        vocab_size=args.eval_vocab_size if args.eval_vocab_size > 0 else None,
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         load_in_4bit=args.eval_4bit,

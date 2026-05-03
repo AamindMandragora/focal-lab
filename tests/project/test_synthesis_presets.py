@@ -22,6 +22,14 @@ def test_get_synthesis_preset_returns_spider_defaults():
     assert "Spider text-to-SQL" in preset.task_description
 
 
+def test_get_synthesis_preset_returns_chem_cot_bench_defaults():
+    preset = get_synthesis_preset("chem_cot_bench")
+
+    assert preset.output_name == "chem_cot_bench_csd"
+    assert preset.eval_max_steps == 384
+    assert "Chem-CoT-Bench" in preset.task_description
+
+
 def test_resolve_model_name_defaults_to_gpt54_generation():
     assert resolve_model_name() == "gpt-5.4"
 

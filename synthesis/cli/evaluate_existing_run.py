@@ -30,8 +30,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--dataset",
-        default="folio",
-        choices=("folio", "gsm_symbolic", "pddl", "sygus_slia", "spider"),
+        default="gsm_symbolic",
+        choices=("gsm_symbolic", "spider", "chem_cot_bench"),
         help="Dataset evaluator to use.",
     )
     parser.add_argument(
@@ -59,8 +59,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--vocab-size",
         type=int,
-        default=3000,
-        help="Evaluation vocabulary size.",
+        default=0,
+        help="Evaluation vocabulary size. Use 0 for the full tokenizer vocabulary (default).",
     )
     parser.add_argument(
         "--4bit",
@@ -90,7 +90,7 @@ def main() -> int:
         dataset_name=args.dataset,
         model_name=args.model,
         device=args.device,
-        vocab_size=args.vocab_size,
+        vocab_size=args.vocab_size if args.vocab_size > 0 else None,
         sample_size=args.sample_size,
         max_steps=args.max_steps,
         load_in_4bit=args.load_in_4bit,

@@ -16,11 +16,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 # Set precision before any torch operations to avoid TensorFloat32 warning
 torch.set_float32_matmul_precision('high')
 
-# FOL (FOLIO) grammar keywords as single tokens so ValidNextTokens can extend formulas (e.g. Pred(x) + "{and}")
-FOL_KEYWORD_TOKENS = [
-    "{forall}", "{exists}", "{and}", "{or}", "{not}", "{implies}", "{iff}", "{xor}",
-]
-
 # GSM delimiter strings to add explicitly to the vocabulary.
 # The Qwen tokenizer produces ' <<' (id 1115, with leading space) for << in context,
 # and '>>' (id 2452) for >>. We ensure both ' <<' and ' >>' are in vocab, plus '>>'
@@ -348,6 +343,17 @@ def get_max_input_length(model, tokenizer) -> int:
     return max_len or 4096
 
 
+def _resolve_token_ids(tokenizer, vocab_size: int | None, token_ids=None) -> list[int]:
+    """Resolve the constrained vocabulary, defaulting to the full tokenizer."""
+    if token_ids is not None:
+        return list(token_ids)
+
+    full_vocab_size = len(tokenizer)
+    if vocab_size is None or vocab_size <= 0:
+        return list(range(full_vocab_size))
+    return list(range(min(vocab_size, full_vocab_size)))
+
+
 def _device_map_for_selected_device(device: str):
     """Return a HuggingFace device_map that honors the selected CUDA device."""
     if os.environ.get("CSD_EVAL_DEVICE_MAP_AUTO", "").strip().lower() in {"1", "true", "yes", "on"}:
@@ -360,14 +366,13 @@ def _device_map_for_selected_device(device: str):
 def create_huggingface_lm(
     model_name: str,
     device: str,
-    vocab_size: int,
+    vocab_size: int | None,
     VerifiedDecoderAgent,
     _dafny,
     token_ids=None,
     extra_token_strings: list[str] | None = None,
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
-    add_fol_keyword_tokens: bool = False,
     add_gsm_delimiter_tokens: bool = False,
 ):
     """
@@ -376,7 +381,7 @@ def create_huggingface_lm(
     Args:
         model_name: HuggingFace model identifier
         device: Device to use ("cuda", "cpu", etc.)
-        vocab_size: Size of constrained vocabulary
+        vocab_size: Size of constrained vocabulary. `None` or <= 0 uses the full tokenizer.
         VerifiedDecoderAgent: Imported Dafny module for LM interface
         _dafny: Dafny runtime module
         token_ids: Optional list of token IDs for constrained vocabulary
@@ -392,12 +397,6 @@ def create_huggingface_lm(
     
     print(f"Loading model: {model_name} on {device}... ({prec_str})")
     tokenizer = _load_tokenizer(model_name, trust_remote_code=True)
-
-    # Add FOL keywords as single tokens so "{and}", "{or}" etc. are one token (ValidNextTokens can then extend formulas)
-    if add_fol_keyword_tokens:
-        added = tokenizer.add_tokens(FOL_KEYWORD_TOKENS, special_tokens=False)
-        if added:
-            print(f"  Added {added} FOL keyword token(s) for single-token formula extension.")
 
     if device.startswith("cuda"):
         kwargs = {
@@ -433,18 +432,8 @@ def create_huggingface_lm(
 
     model.eval()
 
-    # Resize embeddings if we added FOL tokens
-    if add_fol_keyword_tokens and len(tokenizer) != model.get_input_embeddings().weight.shape[0]:
-        model.resize_token_embeddings(len(tokenizer))
-
-    if token_ids is None:
-        token_ids = list(range(vocab_size))
-        if add_fol_keyword_tokens:
-            # Include new FOL keyword IDs so they appear in _Tokens and can be chosen by ValidNextTokens
-            for t in FOL_KEYWORD_TOKENS:
-                tid = tokenizer.convert_tokens_to_ids(t)
-                if tid != tokenizer.unk_token_id and tid not in token_ids:
-                    token_ids.append(tid)
+    token_ids = _resolve_token_ids(tokenizer, vocab_size, token_ids=token_ids)
+    if token_ids:
         if add_gsm_delimiter_tokens:
             # Add GSM delimiter tokens: ' <<' (id≈1115) is likely already in default 2000-token vocab,
             # but ' >>' and '>>' (id≈2452) are typically outside. Add whichever encode as single tokens.
@@ -806,7 +795,7 @@ def create_huggingface_lm(
 def create_huggingface_lm_native(
     model_name: str,
     device: str,
-    vocab_size: int,
+    vocab_size: int | None,
     VerifiedAgentSynthesis,
     token_ids=None,
     extra_token_strings: list[str] | None = None,
@@ -859,8 +848,8 @@ def create_huggingface_lm_native(
 
     model.eval()
 
-    if token_ids is None:
-        token_ids = list(range(vocab_size))
+    token_ids = _resolve_token_ids(tokenizer, vocab_size, token_ids=token_ids)
+    if token_ids:
         if add_gsm_delimiter_tokens:
             existing_ids = set(token_ids)
             for s in GSM_DELIMITER_STRINGS:
@@ -900,6 +889,7 @@ def create_huggingface_lm_native(
             self.Logits = [0.0] * len(tokens)
             self._Tokens = self.Tokens  # alias for evaluator compat
             self._token_ids = token_ids
+            self._token_index = {token: i for i, token in enumerate(tokens)}
             self._input_device = input_device
             self._max_input_len = max_input_len
             self.tokenizer = tokenizer
@@ -943,6 +933,75 @@ def create_huggingface_lm_native(
 
         def ValidTokensIdsLogitsAlways(self) -> None:
             assert self.ValidTokensIdsLogits()
+
+        def TokenToId(self, token: str) -> int:
+            return self._token_index[token]
+
+        def IdToToken(self, id: int) -> str:
+            return self.Tokens[id]
+
+        def IdToLogit(self, id: int) -> float:
+            return self.Logits[id]
+
+        def TokenToLogit(self, token: str) -> float:
+            return self.Logits[self._token_index[token]]
+
+        def MaskToken(self, token: str) -> None:
+            self.Logits[self._token_index[token]] = -1e9
+
+        def MaskTokens(self, tokens_to_mask: list[str]) -> None:
+            for token in tokens_to_mask:
+                idx = self._token_index.get(token)
+                if idx is not None:
+                    self.Logits[idx] = -1e9
+
+        def BiasToken(self, token: str, delta: float) -> None:
+            idx = self._token_index[token]
+            raw = self.Logits[idx] + delta
+            if raw > 1e9:
+                raw = 1e9
+            elif raw < -1e9:
+                raw = -1e9
+            self.Logits[idx] = raw
+
+        def BiasTokens(self, tokens_to_bias: list[str], delta: float) -> None:
+            for token in tokens_to_bias:
+                idx = self._token_index.get(token)
+                if idx is None:
+                    continue
+                raw = self.Logits[idx] + delta
+                if raw > 1e9:
+                    raw = 1e9
+                elif raw < -1e9:
+                    raw = -1e9
+                self.Logits[idx] = raw
+
+        def ScaleToken(self, token: str, factor: float) -> None:
+            idx = self._token_index[token]
+            raw = self.Logits[idx] * factor
+            if raw > 1e9:
+                raw = 1e9
+            elif raw < -1e9:
+                raw = -1e9
+            self.Logits[idx] = raw
+
+        def ScaleTokens(self, tokens_to_scale: list[str], factor: float) -> None:
+            for token in tokens_to_scale:
+                idx = self._token_index.get(token)
+                if idx is None:
+                    continue
+                raw = self.Logits[idx] * factor
+                if raw > 1e9:
+                    raw = 1e9
+                elif raw < -1e9:
+                    raw = -1e9
+                self.Logits[idx] = raw
+
+        def IsMasked(self, token: str) -> bool:
+            return self.Logits[self._token_index[token]] <= -1e8
+
+        def HasUnmaskedToken(self) -> bool:
+            return any(v > -1e8 for v in self.Logits)
 
         def ResetForNewExample(self) -> None:
             """Clear per-example transient LM state between evaluations."""
@@ -1067,11 +1126,15 @@ def create_huggingface_lm_native(
             return _decode_single_token(tokenizer, best_idx)
 
         def MaskTokensExcept(self, valid_tokens: list) -> None:
-            valid_set = set(str(t) for t in valid_tokens)
+            valid_indices = {
+                self._token_index[str(token)]
+                for token in valid_tokens
+                if str(token) in self._token_index
+            }
             if os.environ.get("CSD_DISALLOW_CONSTRAINED_WHITESPACE", "").strip().lower() in {"1", "true", "yes", "on"}:
-                non_ws = {tok for tok in valid_set if str(tok).strip() != ""}
+                non_ws = {idx for idx in valid_indices if self.Tokens[idx].strip() != ""}
                 if non_ws:
-                    valid_set = non_ws
+                    valid_indices = non_ws
             if self._first_token_choice:
                 self._first_token_choice = False
                 eos_str = (
@@ -1085,11 +1148,11 @@ def create_huggingface_lm_native(
                 forbid = {"", eos_str}
                 if not allow_leading_delimiter:
                     forbid |= set(HuggingFaceLMNative._FORBID_FIRST_STRINGS)
-                reduced = valid_set - forbid
+                reduced = {idx for idx in valid_indices if self.Tokens[idx] not in forbid}
                 if reduced:
-                    valid_set = reduced
+                    valid_indices = reduced
             for i in range(len(self.Logits)):
-                if self.Tokens[i] not in valid_set:
+                if i not in valid_indices:
                     self.Logits[i] = -1e9
 
     return HuggingFaceLMNative()

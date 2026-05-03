@@ -17,17 +17,40 @@ from evaluation.common.environment import (
 )
 
 
+def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
+    """Replace the compiled helper's Python vocab scan with tensor-backed argmax.
+
+    The compiled Dafny helper walks `lm.Logits[i]` in Python to find the argmax.
+    Under our HuggingFace-backed evaluation LM that means a huge number of Python
+    scalar reads for large vocabularies. Delegating to `lm.ChooseNextToken()`
+    preserves the helper's postcondition while avoiding the scan.
+    """
+    helpers_cls = getattr(VerifiedDecoderAgent, "CSDHelpers", None)
+    if helpers_cls is None or getattr(helpers_cls, "_fastpath_patched", False):
+        return
+
+    original = getattr(helpers_cls, "GetHighestLogitToken", None)
+    if original is None:
+        return
+
+    def _fast_get_highest_logit_token(self, lm):
+        return lm.ChooseNextToken()
+
+    helpers_cls.GetHighestLogitToken = _fast_get_highest_logit_token
+    helpers_cls._fastpath_patched = True
+
+
 def setup_dafny_environment(
     run_dir: Path,
     model_name: str,
     device: str,
-    vocab_size: int,
+    vocab_size: int | None,
     grammar_file: Path,
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
 ) -> Dict[str, Any]:
     """Setup Dafny environment with GSM grammar start rule and optional quantization."""
-    return _setup_dafny_environment(
+    env = _setup_dafny_environment(
         run_dir=run_dir,
         model_name=model_name,
         device=device,
@@ -38,6 +61,8 @@ def setup_dafny_environment(
         load_in_8bit=load_in_8bit,
         add_gsm_delimiter_tokens=True,
     )
+    _attach_helper_fastpath(env["VerifiedDecoderAgent"])
+    return env
 
 
 __all__ = [

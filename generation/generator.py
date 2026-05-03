@@ -732,6 +732,126 @@ class StrategyGenerator:
             normalized[k] = f"{indent}# {stripped}"
         return "\n".join(normalized)
 
+    def _exploration_first_generation_enabled(self) -> bool:
+        """
+        Allow GPT-5.4 Python runs to explore beyond the house-style validator.
+
+        This keeps the stricter structural validator available for other models
+        and for explicit opt-ins, while making the default GPT-5.4 path block
+        only genuinely unusable bodies before verification/runtime.
+        """
+        env_override = os.environ.get("CSD_EXPLORATION_FIRST_GENERATION")
+        if env_override is not None:
+            return env_override.strip().lower() in {"1", "true", "yes", "on"}
+
+        strategy_language = getattr(self, "strategy_language", "python")
+        if not isinstance(strategy_language, str) or strategy_language != "python":
+            return False
+
+        model_name = getattr(self, "model_name", "")
+        if not isinstance(model_name, str):
+            return False
+        return model_name.strip().lower() == "gpt-5.4"
+
+    def _minimal_python_issue(self, strategy_body: str) -> str | None:
+        """
+        Minimal gate for exploration-first generation.
+
+        We still reject bodies that are not usable Python method bodies at all,
+        but we no longer reject candidates just because they do not match the
+        preferred control-flow/helper pattern.
+        """
+        body = self._body_without_rationale(strategy_body)
+        executable_lines = [
+            line for line in body.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        if not executable_lines:
+            return "The body has no executable Python statements after the rationale block."
+
+        try:
+            wrapped = "def _strategy():\n" + textwrap.indent(body, "    ")
+            ast.parse(wrapped)
+        except SyntaxError as exc:
+            return f"The body is not valid Python: {exc.msg}."
+
+        return None
+
+    def _ensure_minimally_valid_python_strategy(self, strategy_body: str, *, max_repairs: int = 2) -> str:
+        """
+        Exploration-first validation path.
+
+        For GPT-5.4 Python generation we do not want the house-style validator to
+        ban novel strategies before verification has a chance to evaluate them.
+        """
+        current = strategy_body
+        trace: list[dict[str, object]] = []
+        self.last_structure_repair_trace = trace
+        self.last_structure_validation_summary = {}
+
+        for repair_round in range(1, max_repairs + 1):
+            issue = self._minimal_python_issue(current)
+            if issue is None:
+                self.last_structure_validation_summary = {
+                    "structural_repairs": len(trace),
+                    "autofix_passes": 0,
+                    "autofix_changed": False,
+                    "style_validation_enforced": False,
+                    "exploration_first_generation": True,
+                }
+                return current
+
+            repair_record: dict[str, object] = {
+                "round": repair_round,
+                "input_strategy_length": len(current),
+                "input_strategy": self._diagnostic_excerpt(current),
+                "issue": issue,
+            }
+            system_prompt, user_prompt = build_structure_repair_prompt(
+                current,
+                issue,
+                strategy_language=self.strategy_language,
+            )
+            repaired_raw = self._generate_text(system_prompt, user_prompt)
+            repaired = self._extract_strategy(repaired_raw)
+            repair_record.update(
+                {
+                    "repair_raw_output_empty": repaired_raw == "",
+                    "repair_raw_output_length": len(repaired_raw),
+                    "repair_raw_output": self._diagnostic_excerpt(repaired_raw),
+                    "repair_extracted_strategy_empty": repaired == "",
+                    "repair_extracted_strategy_length": len(repaired),
+                    "repair_extracted_strategy": self._diagnostic_excerpt(repaired),
+                }
+            )
+            trace.append(repair_record)
+            current = self._ensure_rationale_block(repaired)
+
+        issue = self._minimal_python_issue(current)
+        if issue is None:
+            self.last_structure_validation_summary = {
+                "structural_repairs": len(trace),
+                "autofix_passes": 0,
+                "autofix_changed": False,
+                "style_validation_enforced": False,
+                "exploration_first_generation": True,
+            }
+            return current
+
+        trace.append(
+            {
+                "round": max_repairs + 1,
+                "input_strategy_length": len(current),
+                "input_strategy": self._diagnostic_excerpt(current),
+                "issue": issue,
+                "terminal": True,
+            }
+        )
+        raise ValueError(
+            "Generated strategy is not a usable Python body yet. "
+            f"Last issue: {issue}"
+        )
+
     def _autofix_python_strategy(self, strategy_body: str) -> str:
         lines = strategy_body.splitlines()
         fixed: list[str] = []
@@ -3383,6 +3503,12 @@ class StrategyGenerator:
         return None
 
     def _ensure_nontrivial_strategy(self, strategy_body: str, *, max_repairs: int = 2) -> str:
+        if self._exploration_first_generation_enabled():
+            return self._ensure_minimally_valid_python_strategy(
+                strategy_body,
+                max_repairs=max_repairs,
+            )
+
         current = strategy_body
         trace: list[dict[str, object]] = []
         self.last_structure_repair_trace = trace
@@ -3401,6 +3527,8 @@ class StrategyGenerator:
                         "structural_repairs": len(trace),
                         "autofix_passes": autofix_passes,
                         "autofix_changed": autofix_changed,
+                        "style_validation_enforced": True,
+                        "exploration_first_generation": False,
                     }
                     return fixed
                 current = fixed
@@ -3447,6 +3575,8 @@ class StrategyGenerator:
                     "structural_repairs": len(trace),
                     "autofix_passes": autofix_passes,
                     "autofix_changed": autofix_changed,
+                    "style_validation_enforced": True,
+                    "exploration_first_generation": False,
                 }
                 return fixed
             issue = final_issue
@@ -3736,7 +3866,7 @@ class StrategyGenerator:
         if valid_candidates:
             best_rank, best_strategy = max(valid_candidates, key=lambda item: item[0])
             print(
-                "  Selected the strongest structurally valid candidate "
+                "  Selected the strongest accepted candidate "
                 f"(stability={best_rank[0]}, novelty={best_rank[1]})."
             )
             return best_strategy
@@ -3744,12 +3874,13 @@ class StrategyGenerator:
         detail = last_error or "invalid model output"
         raise StrategyGenerationError(f"{failure_context}: {detail}")
     
-    def generate_initial(self, task_description: str) -> str:
+    def generate_initial(self, task_description: str, additional_context: str = "") -> str:
         """
         Generate an initial strategy for the given task.
         
         Args:
             task_description: Description of what the strategy should accomplish
+            additional_context: Extra run-local context to append to the prompt
 
         Returns:
             Strategy body (Python code)
@@ -3757,6 +3888,7 @@ class StrategyGenerator:
         system_prompt, user_prompt = build_initial_prompt(
             task_description,
             strategy_language=self.strategy_language,
+            additional_context=additional_context,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3767,7 +3899,10 @@ class StrategyGenerator:
     def refine_after_verification_error(
         self,
         previous_strategy: str,
-        error_message: str
+        error_message: str,
+        behavioral_context: str = "",
+        structured_feedback: str = "",
+        error_history: str = "",
     ) -> str:
         """
         Generate a refined strategy after verification failure.
@@ -3779,10 +3914,16 @@ class StrategyGenerator:
         Returns:
             New strategy body
         """
+        strategy_language = getattr(self, "strategy_language", "python")
+        if not isinstance(strategy_language, str):
+            strategy_language = "python"
         system_prompt, user_prompt = build_verification_error_prompt(
             previous_strategy,
             error_message,
-            strategy_language=self.strategy_language,
+            strategy_language=strategy_language,
+            behavioral_context=behavioral_context,
+            structured_feedback=structured_feedback,
+            error_history=error_history,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3805,10 +3946,13 @@ class StrategyGenerator:
         Returns:
             New strategy body
         """
+        strategy_language = getattr(self, "strategy_language", "python")
+        if not isinstance(strategy_language, str):
+            strategy_language = "python"
         system_prompt, user_prompt = build_runtime_error_prompt(
             previous_strategy,
             error_traceback,
-            strategy_language=self.strategy_language,
+            strategy_language=strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3831,10 +3975,13 @@ class StrategyGenerator:
         Returns:
             New strategy body
         """
+        strategy_language = getattr(self, "strategy_language", "python")
+        if not isinstance(strategy_language, str):
+            strategy_language = "python"
         system_prompt, user_prompt = build_compilation_error_prompt(
             previous_strategy,
             error_message,
-            strategy_language=self.strategy_language,
+            strategy_language=strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,
@@ -3861,10 +4008,13 @@ class StrategyGenerator:
         Returns:
             New strategy body
         """
+        strategy_language = getattr(self, "strategy_language", "python")
+        if not isinstance(strategy_language, str):
+            strategy_language = "python"
         system_prompt, user_prompt = build_evaluation_failure_prompt(
             previous_strategy,
             evaluation_feedback,
-            strategy_language=self.strategy_language,
+            strategy_language=strategy_language,
         )
         return self._generate_valid_strategy(
             system_prompt,

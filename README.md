@@ -57,9 +57,8 @@ verified-agent-synthesis/
 │   ├── evaluator.py
 │   ├── common/
 │   ├── gsm_symbolic/
-│   ├── folio/
-│   ├── pddl/
-│   └── sygus_slia/
+│   ├── spider/
+│   └── chem_cot_bench/
 │
 ├── utils/             # Stage-agnostic assets and helpers
 │   ├── grammars/
@@ -98,9 +97,8 @@ The verification stage lowers Python CSD code through [verification/transpiler/t
 The verified Python strategy is then evaluated against benchmark tasks:
 
 - `gsm_symbolic`
-- `folio`
-- `pddl`
-- `sygus_slia`
+- `spider`
+- `chem_cot_bench`
 
 Shared evaluation helpers live under [evaluation/common](/home/advayth2/projects/verified-agent-synthesis/evaluation/common).
 
@@ -137,9 +135,8 @@ Use shell shortcuts for specific dataset/model pairs:
 
 ```bash
 bash synthesis/shell/gsm_symbolic_qwen7b.sh
-bash synthesis/shell/folio_qwen3b.sh
-bash synthesis/shell/pddl_qwen7b.sh
 bash synthesis/shell/spider_gpt54_qwen7b.sh
+bash synthesis/shell/chem_cot_bench_gpt54_qwen7b.sh
 ```
 
 Evaluate a saved run directly:
@@ -155,7 +152,7 @@ Re-evaluate an existing synthesized run with the current evaluator:
 ```bash
 python synthesis/cli/evaluate_existing_run.py \
   --run-dir outputs/latest \
-  --dataset folio
+  --dataset chem_cot_bench
 ```
 
 Legacy helper: run a Dafny-built strategy against a grammar manually:

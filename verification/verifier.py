@@ -14,9 +14,29 @@ from typing import Optional
 
 from verification.dafny_runner import (
     check_dafny_available,
+    get_verified_agent_synthesis_dafny_path,
     prepare_temp_dafny_dir,
     prepare_temp_dafny_dir_from_dafny,
 )
+
+
+@dataclass
+class VerificationDiagnostic:
+    """Structured summary of one verifier finding for refinement prompts."""
+
+    file: str
+    line: int
+    column: int
+    message: str
+    obligation_kind: str
+    failing_text: str = ""
+    source_excerpt: str = ""
+    call_name: str = ""
+    related_file: Optional[str] = None
+    related_line: Optional[int] = None
+    related_message: str = ""
+    contract_excerpt: str = ""
+    python_line: Optional[int] = None
 
 
 @dataclass
@@ -41,6 +61,7 @@ class VerificationResult:
     raw_output: str = ""
     raw_stderr: str = ""
     return_code: int = 0
+    diagnostics: list[VerificationDiagnostic] = field(default_factory=list)
     
     def get_error_summary(self) -> str:
         """Get a human-readable summary of errors for the LLM refinement prompt."""
@@ -68,6 +89,35 @@ class VerificationResult:
             lines.append(raw_preview)
         return "\n".join(lines)
 
+    def get_structured_feedback(self) -> str:
+        """Return a compact structured verifier summary for refinement prompts."""
+        if self.success or not self.diagnostics:
+            return ""
+
+        lines = ["Structured verification analysis:"]
+        for idx, diagnostic in enumerate(self.diagnostics, start=1):
+            location = f"{Path(diagnostic.file).name}:{diagnostic.line}"
+            if diagnostic.python_line is not None:
+                location += f" (Python line {diagnostic.python_line})"
+            lines.append(f"{idx}. {diagnostic.obligation_kind.title()} failure at {location}")
+            lines.append(f"   Message: {diagnostic.message}")
+            if diagnostic.call_name:
+                lines.append(f"   Related call: {diagnostic.call_name}(...)")
+            if diagnostic.failing_text:
+                lines.append(f"   Failing code: {diagnostic.failing_text}")
+            if diagnostic.related_file and diagnostic.related_line:
+                related_location = f"{Path(diagnostic.related_file).name}:{diagnostic.related_line}"
+                related_message = diagnostic.related_message or "Related contract location from Dafny"
+                lines.append(f"   Related contract: {related_location} ({related_message})")
+            if diagnostic.source_excerpt:
+                lines.append("   Local code excerpt:")
+                lines.extend(f"     {line}" for line in diagnostic.source_excerpt.splitlines())
+            if diagnostic.contract_excerpt:
+                lines.append("   Relevant contract excerpt:")
+                lines.extend(f"     {line}" for line in diagnostic.contract_excerpt.splitlines())
+
+        return "\n".join(lines)
+
 
 class DafnyVerifier:
     """
@@ -81,6 +131,9 @@ class DafnyVerifier:
     ERROR_PATTERN = re.compile(
         r"^(.+?)\((\d+),(\d+)\):\s*(Error|Warning|Info):\s*(.+)$",
         re.MULTILINE
+    )
+    RELATED_PATTERN = re.compile(
+        r"^(.+?)\((\d+),(\d+)\):\s*Related location:\s*(.+)$"
     )
     PYTHON_LINE_MARKER_PATTERN = re.compile(r"^\s*//\s*Python line\s+(\d+)\s*$")
     
@@ -158,6 +211,102 @@ class DafnyVerifier:
         for error in errors:
             error.python_line = python_line_map.get(error.line)
         return errors
+
+    @staticmethod
+    def _classify_obligation(message: str) -> str:
+        lowered = message.lower()
+        if "loop invariant" in lowered or "invariant could not be proved" in lowered:
+            return "invariant"
+        if "precondition for this call" in lowered:
+            return "precondition"
+        if "postcondition could not be proved" in lowered:
+            return "postcondition"
+        if "decreases expression" in lowered:
+            return "decreases"
+        return "verification"
+
+    @staticmethod
+    def _extract_line(text: str, line_no: int) -> str:
+        lines = text.splitlines()
+        if 1 <= line_no <= len(lines):
+            return lines[line_no - 1].strip()
+        return ""
+
+    @staticmethod
+    def _extract_excerpt(text: str, line_no: int, radius: int = 2) -> str:
+        lines = text.splitlines()
+        if not lines or line_no <= 0:
+            return ""
+        start = max(1, line_no - radius)
+        end = min(len(lines), line_no + radius)
+        excerpt_lines = []
+        for current in range(start, end + 1):
+            marker = ">" if current == line_no else " "
+            excerpt_lines.append(f"{marker} {current}: {lines[current - 1]}")
+        return "\n".join(excerpt_lines)
+
+    @staticmethod
+    def _extract_call_name(source_line: str) -> str:
+        match = re.search(r"(?:helpers\.|lm\.|parser\.)?([A-Za-z_][A-Za-z0-9_]*)\s*\(", source_line)
+        return match.group(1) if match else ""
+
+    def _match_error_blocks(self, output: str, errors: list[VerificationError]) -> list[list[str]]:
+        lines = output.splitlines()
+        error_indices = [idx for idx, line in enumerate(lines) if self.ERROR_PATTERN.match(line)]
+        blocks: list[list[str]] = []
+        for pos, _ in enumerate(errors):
+            if pos >= len(error_indices):
+                blocks.append([])
+                continue
+            start = error_indices[pos]
+            end = error_indices[pos + 1] if pos + 1 < len(error_indices) else len(lines)
+            blocks.append(lines[start:end])
+        return blocks
+
+    def _build_diagnostics(
+        self,
+        output: str,
+        errors: list[VerificationError],
+        generated_source: str,
+        proof_source: str,
+        python_line_map: dict[int, int],
+    ) -> list[VerificationDiagnostic]:
+        diagnostics: list[VerificationDiagnostic] = []
+        blocks = self._match_error_blocks(output, errors)
+
+        for error, block in zip(errors, blocks):
+            source_name = Path(error.file).name
+            source_text = proof_source if source_name == "VerifiedAgentSynthesis.dfy" else generated_source
+            source_line = self._extract_line(source_text, error.line)
+            diagnostic = VerificationDiagnostic(
+                file=error.file,
+                line=error.line,
+                column=error.column,
+                message=error.message,
+                obligation_kind=self._classify_obligation(error.message),
+                failing_text=source_line,
+                source_excerpt=self._extract_excerpt(source_text, error.line),
+                call_name=self._extract_call_name(source_line),
+                python_line=python_line_map.get(error.line) if source_name != "VerifiedAgentSynthesis.dfy" else None,
+            )
+
+            for raw_line in block:
+                related = self.RELATED_PATTERN.match(raw_line)
+                if not related:
+                    continue
+                diagnostic.related_file = related.group(1)
+                diagnostic.related_line = int(related.group(2))
+                diagnostic.related_message = related.group(4).strip()
+                related_name = Path(diagnostic.related_file).name
+                if related_name == "VerifiedAgentSynthesis.dfy":
+                    diagnostic.contract_excerpt = self._extract_excerpt(proof_source, diagnostic.related_line)
+                elif related_name == "GeneratedCSD.dfy":
+                    diagnostic.contract_excerpt = self._extract_excerpt(generated_source, diagnostic.related_line)
+                break
+
+            diagnostics.append(diagnostic)
+
+        return diagnostics
     
     def verify(self, python_code: str) -> VerificationResult:
         """
@@ -183,6 +332,11 @@ class DafnyVerifier:
                     )],
                     return_code=-1,
                 )
+
+            proof_source_text = ""
+            proof_path = get_verified_agent_synthesis_dafny_path()
+            if proof_path is not None and proof_path.exists():
+                proof_source_text = proof_path.read_text(encoding="utf-8")
 
             # Run dafny verify
             cmd = [
@@ -217,9 +371,14 @@ class DafnyVerifier:
             # Parse the output
             combined_output = result.stdout + result.stderr
             errors = self._parse_errors(combined_output, str(source_file))
-            errors = self._attach_python_line_numbers(
+            python_line_map = self._build_python_line_map(dafny_source)
+            errors = self._attach_python_line_numbers(errors, python_line_map)
+            diagnostics = self._build_diagnostics(
+                combined_output,
                 errors,
-                self._build_python_line_map(dafny_source),
+                dafny_source,
+                proof_source_text,
+                python_line_map,
             )
             
             # Dafny returns 0 on success
@@ -230,7 +389,8 @@ class DafnyVerifier:
                 errors=errors,
                 raw_output=result.stdout,
                 raw_stderr=result.stderr,
-                return_code=result.returncode
+                return_code=result.returncode,
+                diagnostics=diagnostics,
             )
 
     def verify_dafny(self, dafny_code: str) -> VerificationResult:
@@ -249,6 +409,11 @@ class DafnyVerifier:
                     )],
                     return_code=-1,
                 )
+
+            proof_source_text = ""
+            proof_path = get_verified_agent_synthesis_dafny_path()
+            if proof_path is not None and proof_path.exists():
+                proof_source_text = proof_path.read_text(encoding="utf-8")
 
             cmd = [
                 self.dafny_path,
@@ -280,9 +445,14 @@ class DafnyVerifier:
 
             combined_output = result.stdout + result.stderr
             errors = self._parse_errors(combined_output, str(source_file))
-            errors = self._attach_python_line_numbers(
+            python_line_map = self._build_python_line_map(dafny_source)
+            errors = self._attach_python_line_numbers(errors, python_line_map)
+            diagnostics = self._build_diagnostics(
+                combined_output,
                 errors,
-                self._build_python_line_map(dafny_source),
+                dafny_source,
+                proof_source_text,
+                python_line_map,
             )
             success = result.returncode == 0 and len(errors) == 0
             return VerificationResult(
@@ -291,6 +461,7 @@ class DafnyVerifier:
                 raw_output=result.stdout,
                 raw_stderr=result.stderr,
                 return_code=result.returncode,
+                diagnostics=diagnostics,
             )
     
     def verify_file(self, file_path: Path) -> VerificationResult:

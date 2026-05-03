@@ -259,12 +259,13 @@ Previous strategy:
 Error:
 {error_message}
 
-Rewrite the strategy body using only the curated helper surface.
+{structured_feedback_block}{error_history_block}{behavioral_context_block}Rewrite the strategy body using only the curated helper surface.
 Preserve the natural-delimiter style when applicable.
 Prefer helper wrappers such as `helpers.IsComplete(generated)` over direct parser calls.
 If a top-k call appears, replace broad top-k behavior with `AppendConstrainedStep(...)` or literal
 `k = 1`.
 If `decreases stepsLeft` may not decrease, make every live branch consume a helper step or `break`.
+Use the structured verifier details to target the actual failed obligation rather than making a broad rewrite.
 Do not use removed helpers or stale legacy patterns.
 Return only the corrected Python body with the required rationale and proof-sketch blocks.
 """
@@ -685,13 +686,30 @@ def _append_runtime_mode_reminders(user_prompt: str) -> str:
     return user_prompt
 
 
-def build_initial_prompt(task_description: str, *, strategy_language: str = "python") -> tuple[str, str]:
+def _append_context_block(user_prompt: str, *, heading: str, body: str) -> str:
+    body = body.strip()
+    if not body:
+        return user_prompt
+    return user_prompt + f"\n\n{heading}:\n```\n{body}\n```"
+
+
+def build_initial_prompt(
+    task_description: str,
+    *,
+    strategy_language: str = "python",
+    additional_context: str = "",
+) -> tuple[str, str]:
     if strategy_language == "dafny":
         user_prompt = DAFNY_INITIAL_GENERATION_PROMPT.format(task_description=task_description)
         user_prompt = _append_runtime_mode_reminders(user_prompt)
         memory_block = build_prompt_memory(task_description, strategy_language=strategy_language)
         if memory_block:
             user_prompt += "\n\n" + memory_block
+        user_prompt = _append_context_block(
+            user_prompt,
+            heading="Additional Run Context",
+            body=additional_context,
+        )
         return _compose_dafny_system_prompt(), user_prompt
 
     user_prompt = INITIAL_GENERATION_PROMPT.format(
@@ -702,22 +720,73 @@ def build_initial_prompt(task_description: str, *, strategy_language: str = "pyt
     memory_block = build_prompt_memory(task_description, strategy_language=strategy_language)
     if memory_block:
         user_prompt += "\n\n" + memory_block
+    user_prompt = _append_context_block(
+        user_prompt,
+        heading="Additional Run Context",
+        body=additional_context,
+    )
     return _compose_system_prompt(), user_prompt
 
 
 def build_verification_error_prompt(
-    previous_strategy: str, error_message: str, *, strategy_language: str = "python"
+    previous_strategy: str,
+    error_message: str,
+    *,
+    strategy_language: str = "python",
+    behavioral_context: str = "",
+    structured_feedback: str = "",
+    error_history: str = "",
 ) -> tuple[str, str]:
+    behavioral_context_block = ""
+    structured_feedback_block = ""
+    error_history_block = ""
+    if behavioral_context:
+        behavioral_context_block = (
+            "\nRecent behavioral context from evaluation:\n```\n"
+            f"{behavioral_context}\n"
+            "```\n\n"
+        )
+    if structured_feedback:
+        structured_feedback_block = (
+            "\nStructured verifier analysis:\n```\n"
+            f"{structured_feedback}\n"
+            "```\n\n"
+        )
+    if error_history:
+        error_history_block = (
+            "\nRecent verification history across this run:\n```\n"
+            f"{error_history}\n"
+            "```\n\n"
+        )
+
     if strategy_language == "dafny":
         user_prompt = DAFNY_VERIFICATION_ERROR_REFINEMENT_PROMPT.format(
             previous_strategy=previous_strategy,
             error_message=error_message,
+        )
+        user_prompt = _append_context_block(
+            user_prompt,
+            heading="Recent Behavioral Context From Evaluation",
+            body=behavioral_context,
+        )
+        user_prompt = _append_context_block(
+            user_prompt,
+            heading="Structured Verifier Analysis",
+            body=structured_feedback,
+        )
+        user_prompt = _append_context_block(
+            user_prompt,
+            heading="Recent Verification History Across This Run",
+            body=error_history,
         )
         return _compose_dafny_system_prompt(), user_prompt
 
     user_prompt = VERIFICATION_ERROR_REFINEMENT_PROMPT.format(
         previous_strategy=previous_strategy,
         error_message=error_message,
+        behavioral_context_block=behavioral_context_block,
+        structured_feedback_block=structured_feedback_block,
+        error_history_block=error_history_block,
     )
     return _compose_system_prompt(), user_prompt
 

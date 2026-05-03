@@ -45,8 +45,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--vocab-size",
         type=int,
-        default=3000,
-        help="Vocabulary size for evaluation.",
+        default=0,
+        help="Vocabulary size for evaluation. Use 0 for the full tokenizer vocabulary (default).",
     )
     parser.add_argument(
         "--load-in-4bit",

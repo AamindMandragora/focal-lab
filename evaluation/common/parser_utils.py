@@ -211,207 +211,6 @@ def create_lark_dafny_parser(
     return LarkDafnyParser
 
 
-def create_folio_wrapper_parser(
-    VerifiedDecoderAgent,
-    _dafny,
-    fol_parser_instance,
-    lm_tokens,
-    tokenizer,
-):
-    """
-    Parser for FOLIO: plain text, then "$", then FOL (Prover9 grammar), then "%", then plain text.
-    Single-character delimiters $ and % are used so they never appear inside FOL formulas.
-    The LLM's single CSD strategy runs over the whole output; structure is enforced by this parser.
-    """
-    try:
-        token_list = list(lm_tokens)
-    except TypeError:
-        token_list = [lm_tokens[i] for i in range(len(lm_tokens))]
-
-    fol_parser = fol_parser_instance
-    open_marker = "$"
-    close_marker = "%"
-
-    def tokens_to_text(prefix):
-        if len(prefix) == 0:
-            return ""
-        try:
-            return "".join(dafny_seq_to_str(prefix[i]) for i in range(len(prefix)))
-        except (TypeError, AttributeError, IndexError):
-            return str(prefix)
-
-    icp_calls = [0]  # diagnostic counter for IsCompletePrefix
-
-    class FOLIOWrapperParser(VerifiedDecoderAgent.Parser):
-        def __init__(self):
-            super().__init__()
-            self._token_list = token_list
-            self._fol_parser = fol_parser
-            self._open = open_marker
-            self._close = close_marker
-            self._tokenizer = tokenizer
-
-        def _dafny_seq_to_str(self, seq):
-            return dafny_seq_to_str(seq)
-
-        def _get_fol_section(self, full_text: str):
-            if self._open not in full_text:
-                return None, None, "intro"
-            start = full_text.rfind(self._open) + len(self._open)
-            after_open = full_text[start:]
-            if self._close in after_open:
-                end_idx = after_open.index(self._close)
-                fol_text = after_open[:end_idx]
-                return start, start + end_idx, "outro"
-            return start, len(full_text), "fol"
-
-        def _fol_tokens_from_prefix(self, prefix):
-            """Return Dafny Seq of tokens that form the FOL part of prefix."""
-            text = tokens_to_text(prefix)
-            start, end, section = self._get_fol_section(text)
-            if section != "fol" and section != "outro":
-                return _dafny.SeqWithoutIsStrInference([])
-            fol_text = text[start:end] if section == "outro" else text[start:]
-            if section == "outro" and self._close in text[start:]:
-                fol_text = text[start:].split(self._close)[0]
-            if not fol_text.strip():
-                return _dafny.SeqWithoutIsStrInference([])
-            try:
-                ids = self._tokenizer.encode(fol_text, add_special_tokens=False)
-                token_strs = [self._tokenizer.decode([i]) for i in ids]
-            except Exception:
-                return _dafny.SeqWithoutIsStrInference([])
-            return _dafny.SeqWithoutIsStrInference([
-                _dafny.SeqWithoutIsStrInference(s) for s in token_strs
-            ])
-
-        def IsValidPrefix(self, prefix) -> bool:
-            if self._prefix_empty(prefix):
-                return True
-            text = tokens_to_text(prefix)
-            _, _, section = self._get_fol_section(text)
-            if section == "intro":
-                return True
-            fol_seq = self._fol_tokens_from_prefix(prefix)
-            if len(fol_seq) == 0:
-                return True
-            return self._fol_parser.IsValidPrefix(fol_seq)
-
-        def _prefix_empty(self, prefix) -> bool:
-            """True if prefix is empty. Robust for Dafny-passed seqs (len/__len__/length())."""
-            try:
-                if prefix is None:
-                    return True
-                n = len(prefix)
-                return n == 0
-            except (TypeError, AttributeError):
-                try:
-                    L = getattr(prefix, "length", None)
-                    return (L() if callable(L) else 0) == 0
-                except Exception:
-                    return True  # treat as empty so empty is never considered complete
-
-        def IsCompletePrefix(self, prefix) -> bool:
-            # Empty is valid prefix but never complete — must not treat as complete or strategy returns immediately
-            is_empty = self._prefix_empty(prefix)
-            icp_calls[0] += 1
-            if icp_calls[0] <= 2:
-                try:
-                    plen = len(prefix)
-                except Exception as e:
-                    plen = str(e)
-                print(f"  [PARSER] IsCompletePrefix call#{icp_calls[0]} len(prefix)={plen} _prefix_empty={is_empty} -> {'False (empty)' if is_empty else '...'}", flush=True)
-            if is_empty:
-                return False
-            text = tokens_to_text(prefix)
-            if self._open not in text or self._close not in text:
-                return False
-            start = text.rfind(self._open) + len(self._open)
-            after_open = text[start:]
-            if self._close not in after_open:
-                return False
-            close_idx = after_open.index(self._close)
-            fol_text = after_open[:close_idx]
-            if not fol_text.strip():
-                return False
-            # Allow complete when we have " << formula >>" with no trailing text, so we stop instead of filling to max_steps with junk.
-            try:
-                ids = self._tokenizer.encode(fol_text, add_special_tokens=False)
-                token_strs = [self._tokenizer.decode([i]) for i in ids]
-            except Exception:
-                return False
-            fol_seq = _dafny.SeqWithoutIsStrInference([
-                _dafny.SeqWithoutIsStrInference(s) for s in token_strs
-            ])
-            return self._fol_parser.IsCompletePrefix(fol_seq)
-
-        def _intro_delimiter_tokens(self):
-            """Tokens that would start with the open delimiter. Exclude so we don't begin with $."""
-            bad = {self._open}
-            out = []
-            for i in range(len(token_list)):
-                t = token_list[i]
-                try:
-                    s = self._dafny_seq_to_str(t)
-                except (TypeError, AttributeError, IndexError):
-                    s = str(t)
-                if s not in bad:
-                    out.append(t)
-            if not out:
-                out = [token_list[j] for j in range(len(token_list))]
-            return out
-
-        def ValidNextTokens(self, prefix):
-            if self._prefix_empty(prefix):
-                # Empty intro: disallow token that would start with the open delimiter.
-                allowed = self._intro_delimiter_tokens()
-                return _dafny.SeqWithoutIsStrInference(allowed)
-            text = tokens_to_text(prefix)
-            _, _, section = self._get_fol_section(text)
-            if section == "intro" or section == "outro":
-                text_stripped = text.strip()
-                if len(text_stripped) == 0:
-                    # Still only whitespace — same exclusions so we don't start with $.
-                    allowed = self._intro_delimiter_tokens()
-                    return _dafny.SeqWithoutIsStrInference(allowed)
-                return _dafny.SeqWithoutIsStrInference(token_list)
-            fol_seq = self._fol_tokens_from_prefix(prefix)
-            valid = self._fol_parser.ValidNextTokens(fol_seq)
-            # Disallow newlines/tabs/spaces inside the formula (grammar ignores WS, so they'd otherwise be valid).
-            try:
-                n = len(valid)
-                filtered = [valid[i] for i in range(n) if self._dafny_seq_to_str(valid[i]).strip() != ""]
-            except (TypeError, AttributeError, IndexError):
-                filtered = []
-                for t in valid:
-                    try:
-                        if self._dafny_seq_to_str(t).strip() != "":
-                            filtered.append(t)
-                    except Exception:
-                        filtered.append(t)
-            # When filtered is empty, the FOL parser only returned WS (formula complete). Offer close delimiter so we don't return [] (which causes tie-break garbage).
-            if not filtered and self._fol_parser.IsCompletePrefix(fol_seq):
-                close_tokens = [t for t in token_list if self._dafny_seq_to_str(t) == self._close]
-                filtered = close_tokens
-            # Whenever the formula is complete, also allow "%" so the model can choose to close instead of overgenerating.
-            elif self._fol_parser.IsCompletePrefix(fol_seq):
-                close_tokens = [t for t in token_list if self._dafny_seq_to_str(t) == self._close]
-                has_close = any(self._dafny_seq_to_str(f) == self._close for f in filtered)
-                if close_tokens and not has_close:
-                    filtered = list(filtered) + close_tokens
-            return _dafny.SeqWithoutIsStrInference(filtered)
-
-        def IsPermissive(self, prefix) -> bool:
-            """True when any token is valid (intro/outro). Used by Dafny to maintain IsValidPrefix after UnconstrainedStep."""
-            if self._prefix_empty(prefix):
-                return True
-            text = tokens_to_text(prefix)
-            _, _, section = self._get_fol_section(text)
-            return section == "intro" or section == "outro"
-
-    return FOLIOWrapperParser()
-
-
 def create_lark_native_parser(
     grammar_source: str,
     VerifiedAgentSynthesis,
@@ -441,11 +240,20 @@ def create_lark_native_parser(
         def __init__(self, lm_tokens: list):
             self._token_list = list(lm_tokens)
             self._lark = lark_parser
-            self._cache: dict = {}
+            self._prefix_cache: dict[str, bool] = {}
+            self._complete_cache: dict[str, bool] = {}
+            self._valid_next_cache: dict[str, list] = {}
+
+        def _tokens_to_text(self, prefix: list) -> str:
+            if not prefix:
+                return ""
+            if all(isinstance(t, str) for t in prefix):
+                return "".join(prefix)
+            return "".join(str(t) for t in prefix)
 
         def _is_valid_prefix(self, text: str) -> bool:
-            if text in self._cache:
-                return self._cache[text]
+            if text in self._prefix_cache:
+                return self._prefix_cache[text]
             try:
                 lark_parser.parse(text)
                 res = True
@@ -457,17 +265,21 @@ def create_lark_native_parser(
                 res = _is_recoverable_lark_prefix(text, lark_parser)
             except Exception:
                 res = False
-            self._cache[text] = res
+            self._prefix_cache[text] = res
             return res
 
         def _is_complete(self, text: str) -> bool:
+            if text in self._complete_cache:
+                return self._complete_cache[text]
             if not text:
                 return False
             try:
                 lark_parser.parse(text)
-                return True
+                res = True
             except Exception:
-                return False
+                res = False
+            self._complete_cache[text] = res
+            return res
 
         def is_valid_prefix(self, text: str) -> bool:
             return self._is_valid_prefix(text)
@@ -478,143 +290,32 @@ def create_lark_native_parser(
         def IsValidPrefix(self, prefix: list) -> bool:
             if not prefix:
                 return True
-            return self._is_valid_prefix("".join(str(t) for t in prefix))
+            return self._is_valid_prefix(self._tokens_to_text(prefix))
 
         def IsCompletePrefix(self, prefix: list) -> bool:
             if not prefix:
                 return False
-            return self._is_complete("".join(str(t) for t in prefix))
+            return self._is_complete(self._tokens_to_text(prefix))
 
         def ValidNextTokens(self, prefix: list) -> list:
-            current_text = "".join(str(t) for t in prefix)
+            current_text = self._tokens_to_text(prefix)
+            cached = self._valid_next_cache.get(current_text)
+            if cached is not None:
+                return cached
             if current_text and not self._is_valid_prefix(current_text):
                 return []
             valid = []
             for token in self._token_list:
-                t_str = str(token)
+                t_str = token if isinstance(token, str) else str(token)
                 if t_str and self._is_valid_prefix(current_text + t_str):
                     valid.append(token)
+            self._valid_next_cache[current_text] = valid
             return valid
 
         def IsPermissive(self, prefix: list) -> bool:
             return False
 
     return LarkNativeParser
-
-
-def create_folio_native_parser(
-    VerifiedAgentSynthesis,
-    fol_parser_instance,
-    lm_tokens: list,
-    tokenizer,
-):
-    """
-    Python-native FOLIO wrapper parser (no Dafny runtime).
-
-    Tokens and prefixes are plain Python lists of strings.
-    """
-    token_list = list(lm_tokens)
-    fol_parser = fol_parser_instance
-    open_marker = "$"
-    close_marker = "%"
-
-    def _tokens_to_text(prefix: list) -> str:
-        return "".join(str(t) for t in prefix)
-
-    def _get_fol_section(full_text: str):
-        if open_marker not in full_text:
-            return None, None, "intro"
-        start = full_text.rfind(open_marker) + len(open_marker)
-        after_open = full_text[start:]
-        if close_marker in after_open:
-            end_idx = after_open.index(close_marker)
-            return start, start + end_idx, "outro"
-        return start, len(full_text), "fol"
-
-    class FOLIONativeParser(VerifiedAgentSynthesis.Parser):
-        def __init__(self):
-            self._token_list = token_list
-            self._fol_parser = fol_parser
-            self._tokenizer = tokenizer
-
-        def _fol_tokens_from_prefix(self, prefix: list) -> list:
-            text = _tokens_to_text(prefix)
-            start, end, section = _get_fol_section(text)
-            if section not in ("fol", "outro"):
-                return []
-            fol_text = text[start:end] if section == "outro" else text[start:]
-            if section == "outro" and close_marker in text[start:]:
-                fol_text = text[start:].split(close_marker)[0]
-            if not fol_text.strip():
-                return []
-            try:
-                ids = self._tokenizer.encode(fol_text, add_special_tokens=False)
-                return [self._tokenizer.decode([i]) for i in ids]
-            except Exception:
-                return []
-
-        def IsValidPrefix(self, prefix: list) -> bool:
-            if not prefix:
-                return True
-            text = _tokens_to_text(prefix)
-            _, _, section = _get_fol_section(text)
-            if section == "intro":
-                return True
-            fol_tokens = self._fol_tokens_from_prefix(prefix)
-            if not fol_tokens:
-                return True
-            return self._fol_parser.IsValidPrefix(fol_tokens)
-
-        def IsCompletePrefix(self, prefix: list) -> bool:
-            if not prefix:
-                return False
-            text = _tokens_to_text(prefix)
-            if open_marker not in text or close_marker not in text:
-                return False
-            start = text.rfind(open_marker) + len(open_marker)
-            after_open = text[start:]
-            if close_marker not in after_open:
-                return False
-            fol_text = after_open[: after_open.index(close_marker)]
-            if not fol_text.strip():
-                return False
-            try:
-                ids = self._tokenizer.encode(fol_text, add_special_tokens=False)
-                fol_tokens = [self._tokenizer.decode([i]) for i in ids]
-            except Exception:
-                return False
-            return self._fol_parser.IsCompletePrefix(fol_tokens)
-
-        def ValidNextTokens(self, prefix: list) -> list:
-            if not prefix:
-                bad = {open_marker}
-                return [t for t in token_list if str(t) not in bad]
-            text = _tokens_to_text(prefix)
-            _, _, section = _get_fol_section(text)
-            if section in ("intro", "outro"):
-                if not text.strip():
-                    bad = {open_marker}
-                    return [t for t in token_list if str(t) not in bad]
-                return list(token_list)
-            fol_tokens = self._fol_tokens_from_prefix(prefix)
-            valid = self._fol_parser.ValidNextTokens(fol_tokens)
-            filtered = [t for t in valid if str(t).strip() != ""]
-            if not filtered and self._fol_parser.IsCompletePrefix(fol_tokens):
-                filtered = [t for t in token_list if str(t) == close_marker]
-            elif self._fol_parser.IsCompletePrefix(fol_tokens):
-                close_tokens = [t for t in token_list if str(t) == close_marker]
-                if close_tokens and not any(str(t) == close_marker for t in filtered):
-                    filtered = list(filtered) + close_tokens
-            return filtered
-
-        def IsPermissive(self, prefix: list) -> bool:
-            if not prefix:
-                return True
-            text = _tokens_to_text(prefix)
-            _, _, section = _get_fol_section(text)
-            return section in ("intro", "outro")
-
-    return FOLIONativeParser()
 
 
 def get_builtin_grammar(format_name: str) -> str:

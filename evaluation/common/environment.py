@@ -12,7 +12,7 @@ import importlib.util
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _VAS_DIR = _PROJECT_ROOT / "generation" / "csd"
@@ -64,13 +64,13 @@ def setup_dafny_environment(
     run_dir: Path,
     model_name: str,
     device: str,
-    vocab_size: int,
+    vocab_size: int | None,
     grammar_file: Path,
     start_rule: str = "start",
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
-    add_fol_keyword_tokens: bool = False,
     add_gsm_delimiter_tokens: bool = False,
+    extra_token_strings: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """
     Load model and setup Dafny environment once.
@@ -80,9 +80,9 @@ def setup_dafny_environment(
         run_dir: Path to the synthesis run directory
         model_name: HuggingFace model identifier
         device: Device to run on ("cuda" or "cpu")
-        vocab_size: Size of constrained vocabulary
+        vocab_size: Size of constrained vocabulary. `None` or <= 0 uses the full tokenizer.
         grammar_file: Path to grammar file
-        start_rule: Grammar start rule (e.g. "start" for FOLIO, "csd_start" for GSM)
+        start_rule: Grammar start rule for the selected benchmark
         load_in_4bit: Whether to load model in 4-bit quantization
         load_in_8bit: Whether to load model in 8-bit quantization
 
@@ -104,8 +104,8 @@ def setup_dafny_environment(
             _dafny,
             load_in_4bit=load_in_4bit,
             load_in_8bit=load_in_8bit,
-            add_fol_keyword_tokens=add_fol_keyword_tokens,
             add_gsm_delimiter_tokens=add_gsm_delimiter_tokens,
+            extra_token_strings=extra_token_strings,
         )
     except RuntimeError as e:
         if "out of memory" not in str(e).lower():
@@ -122,8 +122,8 @@ def setup_dafny_environment(
             _dafny,
             load_in_4bit=load_in_4bit,
             load_in_8bit=load_in_8bit,
-            add_fol_keyword_tokens=add_fol_keyword_tokens,
             add_gsm_delimiter_tokens=add_gsm_delimiter_tokens,
+            extra_token_strings=extra_token_strings,
         )
         used_cpu_fallback = True
 
@@ -150,13 +150,12 @@ def setup_python_native_environment(
     python_source_path: Path,
     model_name: str,
     device: str,
-    vocab_size: int,
+    vocab_size: int | None,
     grammar_file: Path,
     start_rule: str = "start",
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
     add_gsm_delimiter_tokens: bool = False,
-    add_fol_keyword_tokens: bool = False,
     extra_token_strings: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """

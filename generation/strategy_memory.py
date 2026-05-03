@@ -25,12 +25,8 @@ def task_family_from_description(task_description: str) -> str:
         return "gsm_symbolic"
     if "spider" in text or "sql" in text:
         return "spider"
-    if "folio" in text or "first-order" in text:
-        return "folio"
-    if "pddl" in text:
-        return "pddl"
-    if "sygus" in text or "slia" in text:
-        return "sygus_slia"
+    if "chem-cot-bench" in text or "chem cot bench" in text or "chemistry" in text or "molecule" in text:
+        return "chem_cot_bench"
     return "general"
 
 
@@ -40,6 +36,8 @@ def _family_matches(name: str, family: str) -> bool:
         return "gsm" in lowered
     if family == "spider":
         return "spider" in lowered or "sql" in lowered
+    if family == "chem_cot_bench":
+        return any(marker in lowered for marker in ("chem", "molecule", "reaction"))
     return family in lowered
 
 
@@ -230,6 +228,44 @@ def _strategy_excerpt(
     return excerpt
 
 
+def _generation_diagnostics_summary(
+    generation_diagnostics: list[dict[str, object]] | None,
+    *,
+    max_items: int = 3,
+) -> list[str]:
+    if not generation_diagnostics:
+        return []
+
+    lines: list[str] = []
+    for item in generation_diagnostics:
+        if not isinstance(item, dict):
+            continue
+        candidate = item.get("candidate", "?")
+        issue = re.sub(r"\s+", " ", str(item.get("issue", "")).strip())
+        if not issue:
+            if item.get("raw_output_empty"):
+                issue = "empty raw output"
+            elif item.get("extracted_strategy_empty"):
+                issue = "empty extracted strategy"
+            else:
+                issue = "rejected candidate"
+        if len(issue) > 220:
+            issue = issue[:217] + "..."
+        strategy_excerpt = re.sub(
+            r"\s+",
+            " ",
+            str(item.get("final_strategy") or item.get("extracted_strategy") or "").strip(),
+        )
+        if strategy_excerpt:
+            if len(strategy_excerpt) > 180:
+                strategy_excerpt = strategy_excerpt[:177] + "..."
+            issue += f" | excerpt: {strategy_excerpt}"
+        lines.append(f"candidate {candidate}: {issue}")
+        if len(lines) >= max_items:
+            break
+    return lines
+
+
 def build_prompt_memory(task_description: str, *, strategy_language: str = "python") -> str:
     family = task_family_from_description(task_description)
     sections: list[str] = []
@@ -299,6 +335,7 @@ def record_failure_memory(
     strategy_code: str,
     change_diff: str,
     metrics: dict[str, float] | None = None,
+    generation_diagnostics: list[dict[str, object]] | None = None,
 ) -> Path:
     family = task_family_from_description(task_description)
     out_dir = WORST_DIR / family
@@ -333,6 +370,10 @@ def record_failure_memory(
     if strategy_code:
         lines.append(f"Strategy shape: {_rationale_summary(strategy_code, max_chars=320)}")
         lines.append(f"Helpers used: {_helper_summary(strategy_code, limit=10)}.")
+    diagnostic_lines = _generation_diagnostics_summary(generation_diagnostics)
+    if diagnostic_lines:
+        lines.append("Generation diagnostics:")
+        lines.extend(f"- {line}" for line in diagnostic_lines)
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path

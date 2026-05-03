@@ -14,11 +14,9 @@ from pathlib import Path
 
 STRATEGY_MODULE_FALLBACK_SUBDIRS = (
     "generated_csd",
-    "folio_csd",
     "gsm_crane_csd",
-    "fol_csd",
-    "pddl_csd",
-    "sygus_slia_csd",
+    "chem_cot_bench_csd",
+    "spider_sql_csd",
     "pipeline_smoke",
 )
 

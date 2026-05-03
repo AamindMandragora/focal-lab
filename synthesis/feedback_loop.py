@@ -1807,7 +1807,8 @@ class SynthesisPipeline:
         self.generator = generator or StrategyGenerator()
         self.verifier = verifier or DafnyVerifier()
         self.compiler = compiler
-        self.strategy_language = getattr(self.generator, "strategy_language", "python")
+        strategy_language = getattr(self.generator, "strategy_language", "python")
+        self.strategy_language = strategy_language if isinstance(strategy_language, str) else "python"
         self.runner = runner  # Will be created per-task in synthesize()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
@@ -1943,6 +1944,32 @@ class SynthesisPipeline:
             outcome = "incomplete"
         return f"{category}; helpers: {helper_text}; {outcome}"
 
+    @staticmethod
+    def _summarize_generation_diagnostics(
+        generation_diagnostics: list[dict[str, object]],
+        *,
+        max_items: int = 2,
+    ) -> list[str]:
+        lines: list[str] = []
+        for item in generation_diagnostics:
+            if not isinstance(item, dict):
+                continue
+            candidate = item.get("candidate", "?")
+            issue = str(item.get("issue", "")).replace("\n", " ").strip()
+            if not issue:
+                if item.get("raw_output_empty"):
+                    issue = "empty raw output"
+                elif item.get("extracted_strategy_empty"):
+                    issue = "empty extracted strategy"
+                else:
+                    issue = "rejected candidate"
+            if len(issue) > 280:
+                issue = issue[:277] + "..."
+            lines.append(f"candidate {candidate}: {issue}")
+            if len(lines) >= max_items:
+                break
+        return lines
+
     def _history_context(
         self,
         attempts: list[SynthesisAttempt],
@@ -1987,6 +2014,12 @@ class SynthesisPipeline:
             elif attempt.failed_at == FailureStage.RUNTIME and attempt.error_summary:
                 err = attempt.error_summary.replace("\n", " ")
                 lines.append(f"  Runtime failure: {err[:500]}")
+            elif attempt.failed_at == FailureStage.GENERATION and attempt.error_summary:
+                err = attempt.error_summary.replace("\n", " ")
+                lines.append(f"  Generation failure: {err[:500]}")
+            if attempt.generation_diagnostics:
+                for diag in self._summarize_generation_diagnostics(attempt.generation_diagnostics):
+                    lines.append(f"  Generation diagnostic: {diag}")
 
         if regressed_attempts:
             lines.append("")
@@ -2092,9 +2125,47 @@ class SynthesisPipeline:
                 strategy_code=attempt.strategy_code,
                 change_diff=attempt.change_diff,
                 metrics=metrics,
+                generation_diagnostics=attempt.generation_diagnostics,
             )
         except Exception as exc:
             print(f"Warning: Could not update strategy memory: {exc}")
+
+    def _restart_generation_with_failure_context(
+        self,
+        task_description: str,
+        *,
+        attempt: SynthesisAttempt,
+        attempts: list[SynthesisAttempt],
+        best_attempt: Optional[SynthesisAttempt],
+        regressed_attempts: list[SynthesisAttempt],
+    ) -> str:
+        history_context = self._history_context(
+            attempts,
+            best_attempt=best_attempt,
+            regressed_attempts=regressed_attempts,
+        )
+        fresh_context_parts: list[str] = [
+            "Recent attempt failed and the next GPT call should avoid repeating it.",
+            f"Latest attempt summary: {self._attempt_brief(attempt)}",
+        ]
+        if attempt.error_summary:
+            fresh_context_parts.append(f"Latest failure details:\n{attempt.error_summary}")
+        if attempt.generation_diagnostics:
+            fresh_context_parts.append(
+                "Rejected generation candidates:\n"
+                + "\n".join(
+                    f"- {line}"
+                    for line in self._summarize_generation_diagnostics(
+                        attempt.generation_diagnostics,
+                        max_items=3,
+                    )
+                )
+            )
+        if history_context:
+            fresh_context_parts.append(history_context)
+        fresh_context = "\n\n".join(part for part in fresh_context_parts if part.strip())
+        print("  Starting a fresh generation with recent failure context...")
+        return self.generator.generate_initial(task_description, additional_context=fresh_context)
 
     def synthesize(
         self,
@@ -2170,6 +2241,7 @@ class SynthesisPipeline:
         best_eval_result: Optional[EvaluationResult] = None
         best_eval_score = -1.0
         regressed_attempts: list[SynthesisAttempt] = []
+        last_restart_index = 0
         long_run_message_shown = False
         for iteration in range(self.max_iterations):
             attempt_num = iteration + 1
@@ -2246,7 +2318,83 @@ class SynthesisPipeline:
                         break
 
                 if consecutive_same >= 2:
-                    # After 3+ identical errors, prepend strong guidance
+                    if best_eval_attempt is not None and best_eval_strategy_code:
+                        print(
+                            f"  Stuck on the same verification error for {consecutive_same + 1} attempts; "
+                            f"falling back to best evaluated strategy (attempt {best_eval_attempt.attempt_number})."
+                        )
+                        strategy_code = best_eval_strategy_code
+                        next_parent_attempt = best_eval_attempt.attempt_number
+                        next_parent_strategy_code = best_eval_strategy_code
+                    else:
+                        print(
+                            f"  Stuck on the same verification error for {consecutive_same + 1} attempts; "
+                            "restarting from a fresh generation."
+                        )
+                        try:
+                            strategy_code = self._restart_generation_with_failure_context(
+                                task_description,
+                                attempt=attempt,
+                                attempts=attempts,
+                                best_attempt=best_eval_attempt,
+                                regressed_attempts=regressed_attempts,
+                            )
+                            next_parent_attempt = attempt_num
+                            next_parent_strategy_code = attempt.strategy_code
+                        except StrategyGenerationError as exc:
+                            attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {exc}"
+                            attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                            print(f"  ✗ Restart generation failed: {exc}")
+                            self._persist_failure_memory(task_description, attempt)
+                            break
+                    last_restart_index = len(attempts)
+                    continue
+
+                post_restart_attempts = attempts[last_restart_index:]
+                consecutive_verification_failures = 0
+                for prev in reversed(post_restart_attempts):
+                    if prev.failed_at == FailureStage.VERIFICATION:
+                        consecutive_verification_failures += 1
+                    else:
+                        break
+
+                if consecutive_verification_failures >= 3:
+                    if best_eval_attempt is not None and best_eval_strategy_code:
+                        print(
+                            f"  {consecutive_verification_failures} consecutive verification failures since the "
+                            f"last restart; falling back to best evaluated strategy "
+                            f"(attempt {best_eval_attempt.attempt_number})."
+                        )
+                        strategy_code = best_eval_strategy_code
+                        next_parent_attempt = best_eval_attempt.attempt_number
+                        next_parent_strategy_code = best_eval_strategy_code
+                    else:
+                        print(
+                            f"  {consecutive_verification_failures} consecutive verification failures since the "
+                            "last restart; restarting from a fresh generation."
+                        )
+                        try:
+                            strategy_code = self._restart_generation_with_failure_context(
+                                task_description,
+                                attempt=attempt,
+                                attempts=attempts,
+                                best_attempt=best_eval_attempt,
+                                regressed_attempts=regressed_attempts,
+                            )
+                            next_parent_attempt = attempt_num
+                            next_parent_strategy_code = attempt.strategy_code
+                        except StrategyGenerationError as exc:
+                            attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {exc}"
+                            attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                            print(f"  ✗ Restart generation failed: {exc}")
+                            self._persist_failure_memory(task_description, attempt)
+                            break
+                    last_restart_index = len(attempts)
+                    continue
+
+                if consecutive_same >= 1:
+                    # When we are not restarting yet, at least force the next repair prompt
+                    # to acknowledge that the current direction has already failed.
                     error_msg = (
                         f"WARNING: This is the SAME error for {consecutive_same + 1} consecutive attempts. "
                         f"Your previous fixes did NOT work. You MUST use a COMPLETELY DIFFERENT approach. "
@@ -2272,16 +2420,20 @@ class SynthesisPipeline:
                 print("  Refining based on verification error... (LLM call may take 1–2 min)")
                 t0 = time.perf_counter()
                 try:
+                    behavioral_context = self._get_recent_behavioral_context(attempts[:-1])
+                    structured_feedback = verification_result.get_structured_feedback()
+                    error_history = self._get_verification_history_summary(attempts)
                     context = self._history_context(
                         attempts,
                         best_attempt=best_eval_attempt,
                         regressed_attempts=regressed_attempts,
                     )
-                    contextual_error = error_msg
-                    if context:
-                        contextual_error += "\n\n" + context
                     strategy_code = self.generator.refine_after_verification_error(
-                        strategy_code, contextual_error
+                        strategy_code,
+                        error_msg if not context else f"{error_msg}\n\n{context}",
+                        behavioral_context=behavioral_context,
+                        structured_feedback=structured_feedback,
+                        error_history=error_history,
                     )
                     next_parent_attempt = attempt_num
                     next_parent_strategy_code = attempt.strategy_code
@@ -2289,7 +2441,26 @@ class SynthesisPipeline:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
-                    break
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        break
+                    try:
+                        strategy_code = self._restart_generation_with_failure_context(
+                            task_description,
+                            attempt=attempt,
+                            attempts=attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as retry_exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Restart generation failed: {retry_exc}")
+                        self._persist_failure_memory(task_description, attempt)
+                        break
+                    continue
                 print(f"  (refinement took {time.perf_counter() - t0:.1f}s)")
                 continue
 
@@ -2340,7 +2511,26 @@ class SynthesisPipeline:
                         attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                         attempt.generation_diagnostics = self._capture_generation_diagnostics()
                         print(f"  ✗ Refinement generation failed: {exc}")
-                        break
+                        self._persist_failure_memory(task_description, attempt)
+                        if attempt_num >= self.max_iterations:
+                            break
+                        try:
+                            strategy_code = self._restart_generation_with_failure_context(
+                                task_description,
+                                attempt=attempt,
+                                attempts=attempts,
+                                best_attempt=best_eval_attempt,
+                                regressed_attempts=regressed_attempts,
+                            )
+                            next_parent_attempt = attempt_num
+                            next_parent_strategy_code = attempt.strategy_code
+                        except StrategyGenerationError as retry_exc:
+                            attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                            attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                            print(f"  ✗ Restart generation failed: {retry_exc}")
+                            self._persist_failure_memory(task_description, attempt)
+                            break
+                        continue
                     continue
                 compiled_dir = run_dir / f"compiled_python_attempt_{attempt_num}"
                 if compiled_dir.exists():
@@ -2400,7 +2590,26 @@ class SynthesisPipeline:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
-                    break
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        break
+                    try:
+                        strategy_code = self._restart_generation_with_failure_context(
+                            task_description,
+                            attempt=attempt,
+                            attempts=attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as retry_exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Restart generation failed: {retry_exc}")
+                        self._persist_failure_memory(task_description, attempt)
+                        break
+                    continue
                 continue
 
             print(f"  ✓ Execution successful ({runtime_result.execution_time_ms:.1f}ms)")
@@ -2436,7 +2645,26 @@ class SynthesisPipeline:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
-                    break
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        break
+                    try:
+                        strategy_code = self._restart_generation_with_failure_context(
+                            task_description,
+                            attempt=attempt,
+                            attempts=attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as retry_exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Restart generation failed: {retry_exc}")
+                        self._persist_failure_memory(task_description, attempt)
+                        break
+                    continue
                 continue
 
             # Stage 3/4: Evaluation — use same device as generator to avoid loading on a full GPU
@@ -2493,7 +2721,26 @@ class SynthesisPipeline:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
-                    break
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        break
+                    try:
+                        strategy_code = self._restart_generation_with_failure_context(
+                            task_description,
+                            attempt=attempt,
+                            attempts=attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as retry_exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Restart generation failed: {retry_exc}")
+                        self._persist_failure_memory(task_description, attempt)
+                        break
+                    continue
                 continue
 
             # Check if evaluation meets thresholds
@@ -2571,7 +2818,26 @@ class SynthesisPipeline:
                     attempt.error_summary = f"{attempt.error_summary}\n\nRefinement generation failed: {exc}"
                     attempt.generation_diagnostics = self._capture_generation_diagnostics()
                     print(f"  ✗ Refinement generation failed: {exc}")
-                    break
+                    self._persist_failure_memory(task_description, attempt)
+                    if attempt_num >= self.max_iterations:
+                        break
+                    try:
+                        strategy_code = self._restart_generation_with_failure_context(
+                            task_description,
+                            attempt=attempt,
+                            attempts=attempts,
+                            best_attempt=best_eval_attempt,
+                            regressed_attempts=regressed_attempts,
+                        )
+                        next_parent_attempt = attempt_num
+                        next_parent_strategy_code = attempt.strategy_code
+                    except StrategyGenerationError as retry_exc:
+                        attempt.error_summary = f"{attempt.error_summary}\n\nRestart generation failed: {retry_exc}"
+                        attempt.generation_diagnostics = self._capture_generation_diagnostics()
+                        print(f"  ✗ Restart generation failed: {retry_exc}")
+                        self._persist_failure_memory(task_description, attempt)
+                        break
+                    continue
                 continue
 
             print(f"  ✓ Evaluation passed:")

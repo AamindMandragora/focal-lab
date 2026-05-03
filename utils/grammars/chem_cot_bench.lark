@@ -1,0 +1,15 @@
+// Compact single-line chemistry answer grammar for Chem-CoT-Bench.
+// This intentionally stays broad enough for numbers, labels, reagents, and
+// SMILES-like outputs while still enforcing a bounded answer-only span.
+
+csd_start: answer
+start: answer
+
+answer: atom+
+
+atom: CHEM_TOKEN
+
+CHEM_TOKEN: /[A-Za-z0-9+#@%.,;_()[\]{}=:'"<>|*\/\\-]+/
+
+%import common.WS_INLINE
+%ignore WS_INLINE

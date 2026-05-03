@@ -1,7 +1,7 @@
 """
 Shared CLI argument groups for evaluation scripts.
 
-Use add_common_eval_args() so GSM and FOLIO CLIs don't duplicate
+Use add_common_eval_args() so benchmark CLIs don't duplicate
 run-dir, model, device, limit, max-steps, vocab-size, grammar, etc.
 """
 
@@ -25,7 +25,7 @@ def add_common_eval_args(
 
     Args:
         parser: Parser to add arguments to
-        default_grammar: Default path to grammar file (e.g. utils/grammars/gsm.lark or utils/grammars/folio.lark)
+        default_grammar: Default path to grammar file for the benchmark
         default_max_steps: Default max generation steps
     """
     parser.add_argument(
@@ -59,8 +59,8 @@ def add_common_eval_args(
     parser.add_argument(
         "--vocab-size",
         type=int,
-        default=3000,
-        help="Token vocabulary size limit",
+        default=0,
+        help="Token vocabulary size limit; use 0 for the full tokenizer vocabulary (default)",
     )
     parser.add_argument(
         "--grammar",
