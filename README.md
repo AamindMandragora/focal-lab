@@ -20,6 +20,36 @@ A synthesis pipeline for generating **Constrained Decoding Strategies (CSD)** us
                               Feedback Loop (on failure)
 ```
 
+## Repository Layout
+
+The repo currently mixes core packages, runnable utilities, research notes, and historical experiment artifacts. The organizing rule going forward is:
+
+- Keep the repo root thin.
+- Put implementation code in importable packages.
+- Put runnable helpers in `scripts/`.
+- Put generated outputs and experiment byproducts under `outputs/`.
+- Treat root-level wrappers as compatibility shims, not places for new logic.
+
+### Canonical homes
+
+| Area | Canonical location | What belongs there |
+|------|--------------------|--------------------|
+| Synthesis pipeline | `synthesis/` | Generator, verifier, compiler, runner, feedback loop |
+| Benchmark logic | `evaluations/` | Dataset-specific evaluation packages and shared runtime helpers |
+| Grammars and parsing | `grammars/`, `parsers/` | Lark grammars and parser adapters |
+| Formal specs | `dafny/` | Dafny source, templates, and runtime binaries |
+| Runnable helpers | `scripts/` | Utility CLIs and shell helpers |
+| Generated runs | `outputs/` | Run artifacts, compiled strategies, reports |
+| Research notes | `docs/`, `RESEARCH_NOTES.md` | Papers, notes, and design documentation |
+
+### Root policy
+
+Keep only stable entry points and project metadata at the top level:
+
+- `run_synthesis.py` stays at the root as the primary CLI.
+- `README.md`, `AGENTS.md`, `CLAUDE.md`, and `requirements.txt` stay at the root as project metadata.
+- Files such as `generator.py`, `evaluator.py`, `comprehensive_eval.py`, `run_csd_with_grammar.py`, `generate_gsm_csd.sh`, and `run_gsm_vanilla.sh` are compatibility wrappers; new behavior should be implemented in `synthesis/` or `scripts/`.
+
 ## Quick Start
 
 ### Prerequisites
@@ -114,88 +144,59 @@ By synthesizing strategies in Dafny, we ensure that the generated Python code is
 
 ```
 focal-lab/
-├── run_synthesis.py          # Main CLI entry point for CSD strategy synthesis
-├── run_eval.sh               # Example evaluation runner script
-├── requirements.txt          # Python dependencies
+├── run_synthesis.py              # Primary CLI entry point
+├── requirements.txt             # Python dependencies
+├── README.md                    # Project overview and layout guide
+├── AGENTS.md                    # Local agent instructions
+├── CLAUDE.md                    # Additional workflow notes
 │
-├── synthesis/                # Core synthesis pipeline
-│   ├── generator.py          # Qwen-based strategy generation (Dafny code)
-│   ├── verifier.py           # Dafny verification wrapper (proof checking)
-│   ├── compiler.py           # Dafny → Python compilation (verified code to runtime)
-│   ├── runner.py             # Runtime testing of compiled strategies
-│   ├── feedback_loop.py      # Main orchestration with iterative refinement
-│   ├── prompts.py            # LLM prompt templates for strategy generation
-│   └── rationale.py          # Strategy rationale extraction from LLM output
+├── synthesis/                   # Canonical synthesis implementation
+│   ├── generator.py
+│   ├── verifier.py
+│   ├── compiler.py
+│   ├── runner.py
+│   ├── evaluator.py
+│   ├── feedback_loop.py
+│   ├── prompts.py
+│   └── rationale.py
 │
-├── evaluations/              # Evaluation framework (modular design)
-│   ├── __init__.py           # Package exports
-│   ├── common/               # Shared utilities across evaluations
-│   │   ├── __init__.py
-│   │   ├── model_utils.py    # HuggingFace model loading with Dafny interface
-│   │   ├── parser_utils.py   # Lark grammar parser creation utilities
-│   │   └── token_selection.py # Token vocabulary selection for constrained decoding
-│   │
-│   ├── gsm_symbolic/         # GSM-Symbolic math reasoning evaluation
-│   │   ├── __init__.py       # Package exports
-│   │   ├── dataset.py        # Dataset loading from HuggingFace
-│   │   ├── prompts.py        # CRANE-style prompt formatting
-│   │   ├── answer_extraction.py # Answer extraction and evaluation
-│   │   ├── grammar.py        # Dynamic grammar construction
-│   │   ├── generation.py     # Generation methods (CRANE-CSD)
-│   │   ├── environment.py    # Dafny environment setup
-│   │   ├── metrics.py        # Evaluation metrics
-│   │   └── cli.py            # Command-line interface
-│   │
-│   └── folio/                # FOLIO first-order logic reasoning evaluation
-│       ├── __init__.py       # Package exports
-│       ├── dataset.py        # Dataset loading from HuggingFace (yale-nlp/FOLIO)
-│       ├── prompts.py        # CRANE-style FOL prompt formatting
-│       ├── answer_extraction.py # Answer extraction (True/False/Uncertain)
-│       ├── grammar.py        # Dynamic FOL grammar construction
-│       ├── generation.py     # CSD generation for FOL expressions
-│       ├── environment.py    # Dafny environment setup
-│       ├── metrics.py        # Evaluation metrics with per-label breakdown
-│       └── cli.py            # Command-line interface
+├── evaluations/                 # Dataset-specific runtime and benchmark code
+│   ├── common/
+│   ├── gsm_symbolic/
+│   ├── folio/
+│   └── sql_spider/
 │
-├── scripts/                  # CLI entry points and utilities
-│   ├── comprehensive_eval.py # Full benchmark evaluation across models
-│   ├── run_csd_with_grammar.py # Run CSD strategies with custom grammars
-│   ├── generate_gsm_csd.sh   # Helper script for GSM CSD generation
-│   └── run_gsm_vanilla.sh    # Run GSM evaluation without CSD (baseline)
+├── scripts/                     # Canonical helper scripts and utility CLIs
+│   ├── __init__.py
+│   ├── comprehensive_eval.py
+│   ├── run_csd_with_grammar.py
+│   ├── generate_gsm_csd.sh
+│   ├── run_gsm_vanilla.sh
+│   └── ...
 │
-├── dafny/                    # Dafny source files
-│   ├── GeneratedCSD.dfy      # Template for generated strategies (injection point)
-│   └── VerifiedAgentSynthesis.dfy  # Core Dafny verification module (LM/parser specs)
-│
-├── dafny_externs/            # Python implementations of Dafny {:extern} functions
-│   └── extern_functions.py   # LM, Parser, and decoding primitives for strategy execution
-│
-├── parsers/                  # Grammar and parsing utilities
-│   ├── __init__.py           # Package exports
-│   └── lark_parser.py        # Generic Lark-based grammar parser (character-level)
-│
-├── grammars/                 # Lark grammar files for various formats
-│   ├── json.lark             # JSON syntax (ECMA-404 compliant)
-│   ├── json_charwise.lark    # Character-level JSON grammar
-│   ├── math.lark             # Mathematical expressions
-│   ├── gsm.lark              # Math expressions for GSM-Symbolic (arithmetic operations)
-│   ├── gsm_math.lark         # Extended math grammar for GSM calculations
-│   ├── gsm_vars_only.lark    # Variable-only grammar for GSM
-│   ├── folio.lark            # First-order logic expressions for FOLIO (Prover9-style)
-│   └── folio_charwise.lark   # Character-level FOL grammar
-│
-├── outputs/                  # Generated outputs
-│   └── generated-csd/
-│       ├── latest_run.txt    # Pointer to most recent run
-│       └── runs/             # Individual run directories
-│           └── YYYYMMDD_HHMMSS_HASH/
-│               ├── generated_csd.dfy
-│               ├── success_report.json (or failure_report.json)
-│               └── generated_csd/      # Compiled Python module
-│
-└── docs/                     # Research paper and documentation
-    └── papers/               # Academic paper LaTeX source
+├── grammars/                    # Lark grammars used by synthesis and eval
+├── parsers/                     # Parser adapters and helpers
+├── dafny/                       # Dafny specs, templates, and local runtime bundle
+├── docs/                        # Papers and supporting docs
+├── outputs/                     # Generated runs, reports, compiled modules, baselines
+├── datasets/                    # Local dataset checkouts or gitlinks
+└── root compatibility wrappers  # Thin shims delegating into `scripts/` or `synthesis/`
+    ├── comprehensive_eval.py
+    ├── run_csd_with_grammar.py
+    ├── generate_gsm_csd.sh
+    ├── run_gsm_vanilla.sh
+    ├── generator.py
+    └── evaluator.py
 ```
+
+### Where new code should go
+
+- Add new synthesis logic to `synthesis/`.
+- Add new benchmark or dataset-specific runtime code to `evaluations/<dataset>/`.
+- Add new utility CLIs and shell helpers to `scripts/`.
+- Add new grammar files to `grammars/`.
+- Add long-form design notes or experiment summaries to `docs/` or `RESEARCH_NOTES.md`.
+- Avoid adding new root-level modules unless they are true primary entry points.
 
 ---
 

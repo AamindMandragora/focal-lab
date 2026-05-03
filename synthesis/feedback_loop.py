@@ -295,6 +295,7 @@ class SynthesisPipeline:
         save_reports: bool = True,
         # Evaluation thresholds
         min_accuracy: float = 0.0,
+        min_format_rate: float = 0.0,
         min_syntax_rate: float = 0.0,
         require_delimiters: bool = True,
         eval_sample_size: int = 10,
@@ -313,6 +314,7 @@ class SynthesisPipeline:
             output_dir: Directory for outputs and reports
             save_reports: Whether to save failure reports to disk
             min_accuracy: Minimum accuracy threshold for evaluation
+            min_format_rate: Minimum format/delimiter threshold for evaluation
             min_syntax_rate: Minimum syntax validity rate threshold
             require_delimiters: Whether evaluated outputs must contain << >> spans
             eval_sample_size: Number of examples to evaluate on
@@ -320,7 +322,7 @@ class SynthesisPipeline:
         """
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
-        self.verifier = verifier or DafnyVerifier()
+        self.verifier = verifier
         self.compiler = compiler or DafnyCompiler()
         self.runner = runner  # Will be created per-task in synthesize()
         self.max_iterations = max_iterations
@@ -329,6 +331,7 @@ class SynthesisPipeline:
 
         # Evaluation thresholds
         self.min_accuracy = min_accuracy
+        self.min_format_rate = min_format_rate
         self.min_syntax_rate = min_syntax_rate
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
@@ -562,9 +565,14 @@ class SynthesisPipeline:
         # Create runner if not already provided
         if self.runner is None:
             grammar_source = None
-            if self.evaluator.dataset_name in ("spider", "gsm_symbolic", "folio"):
+            if self.evaluator.dataset_name in ("spider", "gsm_symbolic", "smiles", "folio"):
                 grammars_dir = Path(__file__).parent.parent / "grammars"
-                grammar_map = {"spider": "sql.lark", "gsm_symbolic": "gsm.lark", "folio": "folio.lark"}
+                grammar_map = {
+                    "spider": "sql.lark",
+                    "gsm_symbolic": "gsm.lark",
+                    "smiles": "smiles.lark",
+                    "folio": "folio.lark",
+                }
                 grammar_path = grammars_dir / grammar_map[self.evaluator.dataset_name]
                 if grammar_path.exists():
                     grammar_source = str(grammar_path)
@@ -584,6 +592,9 @@ class SynthesisPipeline:
             pass
 
         # Use a per-run compiler output directory.
+        if self.verifier is None:
+            self.verifier = DafnyVerifier()
+
         compiler = DafnyCompiler(
             dafny_path=self.compiler.dafny_path,
             output_dir=run_dir,
@@ -826,6 +837,7 @@ class SynthesisPipeline:
             # Check if evaluation meets thresholds
             if not eval_result.meets_threshold(
                 min_accuracy=self.min_accuracy,
+                min_format_rate=self.min_format_rate,
                 min_syntax_rate=self.min_syntax_rate,
                 require_delimiters=self.require_delimiters,
                 max_seconds_per_example=self.eval_max_seconds_per_example,
