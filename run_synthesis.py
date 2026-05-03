@@ -7,10 +7,10 @@ until evaluation thresholds are met or max iterations exhausted.
 
 Usage:
     python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-        --min-accuracy 0.3 --min-syntax-rate 0.5
+        --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5
 
-    python run_synthesis.py --task "..." --dataset folio \\
-        --min-accuracy 0.5 --min-syntax-rate 0.7
+    python run_synthesis.py --task "..." --dataset spider \\
+        --min-accuracy 0.1 --min-format-rate 0.0 --min-syntax-rate 1.0
 """
 
 import argparse
@@ -28,16 +28,21 @@ Examples:
   # GSM-Symbolic
   python run_synthesis.py --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-syntax-rate 0.5
+      --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5
 
-  # FOLIO
-  python run_synthesis.py --task "Generate FOL reasoning strategy" \\
-      --dataset folio \\
-      --min-accuracy 0.5 --min-syntax-rate 0.7
+  # Spider
+  python run_synthesis.py --task "Generate SQL strategy" \\
+      --dataset spider \\
+      --min-accuracy 0.1 --min-format-rate 0.0 --min-syntax-rate 1.0
+
+  # SMILES
+  python run_synthesis.py --task "Generate constrained molecular generation strategy" \\
+      --dataset smiles \\
+      --min-accuracy 0.2 --min-format-rate 1.0 --min-syntax-rate 1.0
 
   # With more iterations and custom eval sample size
   python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-syntax-rate 0.5 \\
+      --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5 \\
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
     )
@@ -155,7 +160,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "folio", "spider"],
+        choices=["gsm_symbolic", "spider", "smiles", "folio"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -165,6 +170,13 @@ Examples:
         type=float,
         required=True,
         help="Minimum accuracy threshold for evaluation (e.g. 0.3)"
+    )
+
+    parser.add_argument(
+        "--min-format-rate",
+        type=float,
+        default=0.0,
+        help="Minimum format/delimiter validity threshold for evaluation (default: 0.0)"
     )
 
     parser.add_argument(
@@ -352,6 +364,7 @@ Examples:
         save_reports=not args.no_save_reports,
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
+        min_format_rate=args.min_format_rate,
         min_syntax_rate=args.min_syntax_rate,
         require_delimiters=args.require_delimiters,
         eval_sample_size=args.eval_sample_size,
