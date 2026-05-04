@@ -466,6 +466,7 @@ class StrategyGenerator:
         behavioral_context: str = "",
         structured_feedback: str = "",
         error_history: str = "",
+        strategy_context: str = "",
     ) -> str:
         """
         Generate a refined strategy after verification failure.
@@ -485,6 +486,7 @@ class StrategyGenerator:
             behavioral_context,
             structured_feedback,
             error_history,
+            strategy_context,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)

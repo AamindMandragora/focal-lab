@@ -1103,6 +1103,83 @@ class SynthesisPipeline:
 
         return "\n".join(lines)
 
+    def _get_verification_refinement_context(
+        self,
+        attempts: list[SynthesisAttempt],
+        current_attempt: SynthesisAttempt,
+    ) -> str:
+        """Describe evaluated lineage when a verification-only attempt needs repair."""
+        evaluated_attempts = [
+            attempt
+            for attempt in attempts
+            if attempt.eval_result is not None
+        ]
+        if not evaluated_attempts:
+            return ""
+
+        balanced_best = max(
+            evaluated_attempts,
+            key=lambda attempt: self._evaluation_progress_score(attempt.eval_result),
+        )
+        best_result = balanced_best.eval_result
+        if best_result is None:
+            return ""
+
+        previous_eval = evaluated_attempts[-1]
+        previous_result = previous_eval.eval_result
+
+        def attempt_line(label: str, attempt: SynthesisAttempt, result: EvaluationResult) -> str:
+            return (
+                f"{label}: Attempt {attempt.attempt_number}: "
+                f"accuracy {result.accuracy:.1%} ({result.num_correct}/{result.num_examples}), "
+                f"syntax {result.syntax_rate:.1%}, "
+                f"contains << >> {'yes' if result.contains_delimiters else 'no'}, "
+                f"slowest {result.max_sample_time_seconds:.2f}s"
+            )
+
+        lines = [
+            "Strategy context before verification failure:",
+            (
+                f"Current attempt {current_attempt.attempt_number} failed verification and has not been evaluated. "
+                "The evaluated attempts below are the current empirical context."
+            ),
+            (
+                "Best-so-far is selected by balanced accuracy/syntax progress; "
+                "a lopsided result is not best merely because one metric is high."
+            ),
+            attempt_line("Current balanced-best evaluated attempt", balanced_best, best_result),
+        ]
+
+        if previous_result is not None:
+            lines.extend(
+                [
+                    attempt_line("Immediately previous evaluated attempt", previous_eval, previous_result),
+                    "Modification diff from previous evaluated attempt to verification-failed attempt:",
+                    self._short_unified_diff(
+                        self._get_strategy_body_for_evaluation_history(previous_eval.strategy_code),
+                        self._get_strategy_body_for_evaluation_history(current_attempt.strategy_code),
+                        f"attempt_{previous_eval.attempt_number}_body",
+                        f"attempt_{current_attempt.attempt_number}_body",
+                        max_lines=80,
+                    ),
+                ]
+            )
+
+        repeated_profiles = self._get_repeated_strategy_profile_summary(attempts)
+        if repeated_profiles:
+            lines.extend(["", repeated_profiles])
+
+        lines.extend(
+            [
+                "Complete balanced-best strategy body without rationale/proof sketch:",
+                "```dafny",
+                self._get_strategy_body_for_evaluation_history(balanced_best.strategy_code),
+                "```",
+            ]
+        )
+
+        return "\n".join(lines)
+
     def _get_evaluation_history_summary(self, attempts: list[SynthesisAttempt]) -> str:
         """Summarize evaluated attempts with factual metrics and strategy bodies."""
         evaluated_attempts = [
@@ -1283,12 +1360,15 @@ class SynthesisPipeline:
                 print("  Refining based on verification error...")
                 structured_feedback = verification_result.get_structured_feedback()
                 error_history = self._get_verification_history_summary(attempts)
+                strategy_context = self._get_verification_refinement_context(attempts, attempt)
+                behavioral_context = self._get_recent_behavioral_context(attempts)
                 strategy_code = self.generator.refine_after_verification_error(
                     strategy_code,
                     error_msg,
-                    "",
+                    behavioral_context,
                     structured_feedback,
                     error_history,
+                    strategy_context,
                 )
                 continue
 
