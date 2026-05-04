@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 def dafny_seq_to_str(seq) -> str:
@@ -28,6 +28,13 @@ def dafny_seq_to_str(seq) -> str:
             return str(seq)
 
 
+def _enforce_max_steps(result_tokens: List[str], max_steps: int) -> None:
+    if len(result_tokens) > max_steps:
+        raise RuntimeError(
+            f"CSD exceeded max_steps: generated {len(result_tokens)} tokens > {max_steps}"
+        )
+
+
 def run_crane_csd(
     env: dict,
     prompt_text: str,
@@ -36,6 +43,9 @@ def run_crane_csd(
     debug_delimiters: bool = False,
     dynamic_parser=None,
     debug_csd: bool = False,
+    step_token_budget: int = 1,
+    valid_tokens: Optional[List[str]] = None,
+    valid_token_groups: Optional[List[List[str]]] = None,
 ) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
@@ -72,16 +82,49 @@ def run_crane_csd(
     if isinstance(trace_state, dict):
         trace_state["events"] = []
 
-    result = GeneratedCSD.default__.MyCSDStrategy(
-        lm,
-        parser,
-        _dafny.SeqWithoutIsStrInference([]),
-        generated_prefix,
-        False,
-        current_constrained,
-        max_steps,
-        eos_token_dafny,
+    if valid_token_groups is not None:
+        token_groups = valid_token_groups
+        flat_tokens = [t for group in token_groups for t in group]
+    else:
+        flat_tokens = valid_tokens or []
+        token_groups = [flat_tokens] if flat_tokens else []
+
+    valid_tokens_dafny = _dafny.SeqWithoutIsStrInference(
+        [_dafny.Seq(t) for t in flat_tokens]
     )
+    valid_token_groups_dafny = _dafny.SeqWithoutIsStrInference(
+        [
+            _dafny.SeqWithoutIsStrInference([_dafny.Seq(t) for t in group])
+            for group in token_groups
+        ]
+    )
+
+    import inspect
+    sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
+    param_names = list(sig.parameters.keys())
+    n_params = len(param_names)
+    if "validTokenGroups" in param_names:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            False, current_constrained, max_steps, step_token_budget,
+            valid_token_groups_dafny, eos_token_dafny,
+        )
+    elif "validTokens" in param_names or n_params >= 10:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            False, current_constrained, max_steps, step_token_budget,
+            valid_tokens_dafny, eos_token_dafny,
+        )
+    elif n_params >= 9:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            False, current_constrained, max_steps, step_token_budget, eos_token_dafny,
+        )
+    else:
+        result = GeneratedCSD.default__.MyCSDStrategy(
+            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+            False, current_constrained, max_steps, eos_token_dafny,
+        )
 
     if isinstance(result, tuple) and len(result) == 4:
         csd_output, _inside_constrained, _current_constrained, total_cost = result
@@ -92,6 +135,7 @@ def run_crane_csd(
         total_cost = 0
 
     result_tokens = [dafny_seq_to_str(t) for t in csd_output]
+    _enforce_max_steps(result_tokens, max_steps)
     output_text = "".join(result_tokens)
     execution_time = time.time() - start_time
 

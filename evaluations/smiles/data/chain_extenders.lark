@@ -1,0 +1,25 @@
+start: smiles
+
+//Rules
+smiles: first_term rest*
+first_term: atom branch* RING_CLOSURE*
+rest: BOND? (atom branch* RING_CLOSURE* | RING_CLOSURE)
+branch: "(" BOND? smiles ")"
+atom: SIMPLE_ATOM | atom_spec
+atom_spec: "[" ISOTOPE? bracket_atom_symbol CHIRAL_CLASS? H_COUNT? CHARGE? CLASS? "]"
+bracket_atom_symbol: "se" | "as" | AROMATIC_SYMBOL | ELEMENT_SYMBOL | WILDCARD
+
+//Terminals
+SIMPLE_ATOM: ORGANIC_SYMBOL | AROMATIC_SYMBOL | WILDCARD | GROUP_SYMBOL
+BOND: "-" | "=" | "#" | "$" | ":" | "/" | "\\" | "."
+ORGANIC_SYMBOL: "Br" | "Cl" | "N" | "O" | "P" | "S" | "F" | "I" | "B" | "C"
+AROMATIC_SYMBOL: "b" | "c" | "n" | "o" | "p" | "s"
+GROUP_SYMBOL: "OC" | "CO" | "N"
+WILDCARD: "*"
+ELEMENT_SYMBOL: ("A".."Z") ("a".."z")?
+RING_CLOSURE: "%" ("1".."9") ("0".."9")? | "0".."9"
+CHIRAL_CLASS: "@" ("@" | "TH" ("1".."2") | "AL" ("1".."2") | "SP" ("1".."3") | "TB" (("1".."9") ("0".."9")? | "20" | "2") | "OH" (("1".."9") ("0".."9")? | "20" | "2" | "30" | "3" | "4".."9"))?
+CHARGE: "-" ("-" | "0" | "1" ("0".."5")? | "2".."9")? | "+" ("+" | "0" | "1" ("0".."5")? | "2".."9")?
+H_COUNT: "H" ("0".."9")?
+CLASS: ":" ("0".."9")+
+ISOTOPE: ("1".."9") ("0".."9")? ("0".."9")?

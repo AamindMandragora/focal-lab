@@ -5,7 +5,9 @@ Supports HuggingFace, vLLM, and OpenAI-compatible chat APIs.
 """
 
 import os
+import json
 import re
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -120,6 +122,7 @@ class StrategyGenerator:
         self._client = None
         self._vllm = None
         self._current_task_description: Optional[str] = None
+        self._prompt_log_counter = 0
 
         # Load template
         self._template = self._load_template()
@@ -294,7 +297,9 @@ class StrategyGenerator:
                 top_p=self.top_p,
             )
             content = response.choices[0].message.content or ""
-            return content.strip()
+            output = content.strip()
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
 
         if self.backend == "vllm":
             from vllm import SamplingParams
@@ -310,7 +315,9 @@ class StrategyGenerator:
                 top_p=self.top_p,
             )
             outputs = self._vllm.generate([text], sampling_params=sampling_params, use_tqdm=False)
-            return outputs[0].outputs[0].text.strip()
+            output = outputs[0].outputs[0].text.strip()
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
 
         # Apply chat template
         text = self._tokenizer.apply_chat_template(
@@ -337,7 +344,30 @@ class StrategyGenerator:
         generated = outputs[0][inputs["input_ids"].shape[1]:]
         response = self._tokenizer.decode(generated, skip_special_tokens=True)
 
-        return response.strip()
+        output = response.strip()
+        self._log_prompt_io(system_prompt, user_prompt, output)
+        return output
+
+    def _log_prompt_io(self, system_prompt: str, user_prompt: str, output: str) -> None:
+        """Optionally persist exact prompt/response records for debugging."""
+        log_dir = os.environ.get("CSD_PROMPT_LOG_DIR")
+        if not log_dir:
+            return
+
+        self._prompt_log_counter += 1
+        path = Path(log_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        record = {
+            "index": self._prompt_log_counter,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "backend": self.backend,
+            "model": self.model_name,
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+            "output": output,
+        }
+        with (path / "prompt_io.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
     
     def _extract_strategy(self, raw_output: str) -> str:
         """
@@ -508,11 +538,8 @@ class StrategyGenerator:
         self,
         previous_strategy: str,
         evaluation_feedback: str,
-        task_description: str = "",
-        best_strategy: str = "",
-        best_accuracy: float = 0.0,
-        current_accuracy: float = 0.0,
-        min_accuracy: float = 0.75,
+        evaluation_history: str = "",
+        working_hypothesis: str = "",
     ) -> str:
         """
         Generate a refined strategy after evaluation failure.
@@ -524,15 +551,19 @@ class StrategyGenerator:
         Args:
             previous_strategy: The strategy that failed evaluation
             evaluation_feedback: Feedback summary from the evaluator
+            evaluation_history: Recent evaluated attempts and outcomes
+            working_hypothesis: Compact strategy lineage and balanced-best state
 
         Returns:
             New strategy expression
         """
         task_description = self._current_task_description or "Unknown task"
         system_prompt, user_prompt = build_evaluation_failure_prompt(
-            task_description, previous_strategy, evaluation_feedback,
-            best_strategy=best_strategy, best_accuracy=best_accuracy,
-            current_accuracy=current_accuracy, min_accuracy=min_accuracy,
+            task_description,
+            previous_strategy,
+            evaluation_feedback,
+            evaluation_history,
+            working_hypothesis,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)

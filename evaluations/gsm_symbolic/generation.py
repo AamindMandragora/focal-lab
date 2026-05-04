@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple, Union
 
 
 def dafny_seq_to_str(seq) -> str:
@@ -28,9 +28,16 @@ def dafny_seq_to_str(seq) -> str:
             return str(seq)
 
 
+def _enforce_max_steps(result_tokens: List[str], max_steps: int) -> None:
+    if len(result_tokens) > max_steps:
+        raise RuntimeError(
+            f"CSD exceeded max_steps: generated {len(result_tokens)} tokens > {max_steps}"
+        )
+
+
 def run_crane_csd(
     env: dict,
-    prompt_text: str,
+    prompt_text: Union[str, List[dict]],
     max_steps: int,
     grammar_file: Path,
     debug_delimiters: bool = False,
@@ -66,7 +73,13 @@ def run_crane_csd(
     lm = env["lm"]
     parser = dynamic_parser if dynamic_parser is not None else env["parser"]
 
-    lm.instruction_text = prompt_text
+    if isinstance(prompt_text, list):
+        chat_messages = prompt_text
+    else:
+        chat_messages = [{"role": "user", "content": prompt_text}]
+    lm.instruction_text = lm.tokenizer.apply_chat_template(
+        chat_messages, tokenize=False, add_generation_prompt=True
+    )
     start_time = time.time()
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
@@ -78,28 +91,23 @@ def run_crane_csd(
     if isinstance(trace_state, dict):
         trace_state["events"] = []
 
-    # Resolve the runtime token-context input. Callers may supply either
-    # `valid_token_groups` (nested, one inner list per group) or the legacy flat
-    # `valid_tokens`. We build both shapes so we can dispatch to whichever shape
-    # the compiled strategy was written against.
     if valid_token_groups is not None:
-        _vt_groups = valid_token_groups
-        _vt_flat = [t for g in valid_token_groups for t in g]
+        token_groups = valid_token_groups
+        flat_tokens = [t for group in token_groups for t in group]
     else:
-        _vt_flat = valid_tokens or []
-        _vt_groups = [_vt_flat] if _vt_flat else []
+        flat_tokens = valid_tokens or []
+        token_groups = [flat_tokens] if flat_tokens else []
 
-    _valid_tokens_dafny = _dafny.SeqWithoutIsStrInference(
-        [_dafny.Seq(t) for t in _vt_flat]
+    valid_tokens_dafny = _dafny.SeqWithoutIsStrInference(
+        [_dafny.Seq(t) for t in flat_tokens]
     )
-    _valid_token_groups_dafny = _dafny.SeqWithoutIsStrInference(
-        [_dafny.SeqWithoutIsStrInference([_dafny.Seq(t) for t in g]) for g in _vt_groups]
+    valid_token_groups_dafny = _dafny.SeqWithoutIsStrInference(
+        [
+            _dafny.SeqWithoutIsStrInference([_dafny.Seq(t) for t in group])
+            for group in token_groups
+        ]
     )
 
-    # Detect strategy signature by parameter name where possible. The compiled
-    # Dafny method exposes its original parameter names via inspect.signature,
-    # so we can choose between the grouped and flat token-context shapes
-    # without breaking strategies compiled against the older flat signature.
     import inspect
     _sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
     _param_names = list(_sig.parameters.keys())
@@ -108,13 +116,13 @@ def run_crane_csd(
         result = GeneratedCSD.default__.MyCSDStrategy(
             lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
             start_inside_constrained, current_constrained,
-            max_steps, step_token_budget, _valid_token_groups_dafny, eos_token_dafny,
+            max_steps, step_token_budget, valid_token_groups_dafny, eos_token_dafny,
         )
     elif "validTokens" in _param_names or _n_params >= 10:
         result = GeneratedCSD.default__.MyCSDStrategy(
             lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
             start_inside_constrained, current_constrained,
-            max_steps, step_token_budget, _valid_tokens_dafny, eos_token_dafny,
+            max_steps, step_token_budget, valid_tokens_dafny, eos_token_dafny,
         )
     elif _n_params >= 9:
         result = GeneratedCSD.default__.MyCSDStrategy(
@@ -123,7 +131,6 @@ def run_crane_csd(
             max_steps, step_token_budget, eos_token_dafny,
         )
     else:
-        # Legacy strategy compiled without stepTokenBudget parameter.
         result = GeneratedCSD.default__.MyCSDStrategy(
             lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
             start_inside_constrained, current_constrained,
@@ -142,6 +149,7 @@ def run_crane_csd(
         total_cost = 0
 
     result_tokens = [dafny_seq_to_str(t) for t in csd_output]
+    _enforce_max_steps(result_tokens, max_steps)
     output_text = "".join(result_tokens)
     execution_time = time.time() - start_time
 
@@ -195,7 +203,7 @@ def run_crane_csd(
 
 def run_unconstrained(
     env: dict,
-    prompt_text: str,
+    prompt_text: Union[str, List[dict]],
     max_steps: int,
     debug: bool = False,
 ) -> Tuple[str, int, float]:
@@ -218,7 +226,13 @@ def run_unconstrained(
 
     result_tokens: List[str] = []
 
-    lm.instruction_text = prompt_text
+    if isinstance(prompt_text, list):
+        chat_messages = prompt_text
+    else:
+        chat_messages = [{"role": "user", "content": prompt_text}]
+    lm.instruction_text = lm.tokenizer.apply_chat_template(
+        chat_messages, tokenize=False, add_generation_prompt=True
+    )
     start_time = time.time()
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"

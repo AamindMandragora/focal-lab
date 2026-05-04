@@ -1,9 +1,4 @@
-"""
-Environment setup for SMILES evaluation.
-
-The runtime is dataset-agnostic; this module keeps the import surface parallel
-to the other evaluation packages.
-"""
+"""Environment setup for SMILES evaluation."""
 
 from __future__ import annotations
 
