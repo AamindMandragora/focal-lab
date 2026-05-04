@@ -1321,6 +1321,7 @@ Previous attempt:
 ```dafny
 {previous_strategy}
 ```
+{strategy_context_block}
 
 Verification error:
 ```
@@ -1328,6 +1329,13 @@ Verification error:
 ```
 {structured_feedback_block}{error_history_block}{behavioral_context_block}
 Revise the method body so it verifies.
+
+## Verified Examples
+
+These are verified reference CSD patterns available for reuse during verification repair.
+Use them as examples of valid helper usage, state tracking, loop structure, and proof style.
+
+{verified_examples}
 
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
@@ -1451,10 +1459,17 @@ def build_verification_error_prompt(
     behavioral_context: str = "",
     structured_feedback: str = "",
     error_history: str = "",
+    strategy_context: str = "",
 ) -> tuple[str, str]:
     behavioral_context_block = ""
     structured_feedback_block = ""
     error_history_block = ""
+    strategy_context_block = ""
+    if strategy_context:
+        strategy_context_block = (
+            "\nStrategy context from evaluated attempts before this verification failure:\n"
+            f"{strategy_context}\n"
+        )
     if behavioral_context:
         behavioral_context_block = (
             "\nRecent behavioral context from evaluation:\n```\n"
@@ -1477,9 +1492,11 @@ def build_verification_error_prompt(
         task_description=task_description,
         previous_strategy=previous_strategy,
         error_message=error_message,
+        strategy_context_block=strategy_context_block,
         structured_feedback_block=structured_feedback_block,
         error_history_block=error_history_block,
         behavioral_context_block=behavioral_context_block,
+        verified_examples=VERIFIED_EXAMPLES,
     )
     return SYSTEM_PROMPT, user_prompt
 
