@@ -469,21 +469,42 @@ class StrategyRunner:
                 eos_token = lm.get_eos_token()
                 generated_prefix = _dafny.SeqWithoutIsStrInference([])
                 current_constrained = _dafny.SeqWithoutIsStrInference([])
-                call_args = [
-                    lm,
-                    parser,
-                    test_prompt,
-                    generated_prefix,
-                    False,
-                    current_constrained,
-                    max_steps,
-                ]
-                if "stepTokenBudget" in params:
-                    call_args.append(8)
                 if "validTokenGroups" in params:
-                    call_args.append(_dafny.SeqWithoutIsStrInference([]))
-                call_args.append(eos_token)
-                result = csd_strategy_method(*call_args)
+                    result = csd_strategy_method(
+                        lm,
+                        parser,
+                        test_prompt,
+                        generated_prefix,
+                        False,
+                        current_constrained,
+                        max_steps,
+                        1,
+                        _dafny.SeqWithoutIsStrInference([]),
+                        eos_token,
+                    )
+                elif "stepTokenBudget" in params:
+                    result = csd_strategy_method(
+                        lm,
+                        parser,
+                        test_prompt,
+                        generated_prefix,
+                        False,
+                        current_constrained,
+                        max_steps,
+                        1,
+                        eos_token,
+                    )
+                else:
+                    result = csd_strategy_method(
+                        lm,
+                        parser,
+                        test_prompt,
+                        generated_prefix,
+                        False,
+                        current_constrained,
+                        max_steps,
+                        eos_token,
+                    )
             elif "currentPrefix" in params and "eosToken" in params:
                 import _dafny
                 eos_token = lm.get_eos_token()
@@ -514,12 +535,18 @@ class StrategyRunner:
                     output = [self._dafny_token_to_str(t) for t in output]
                 elif hasattr(output, '__len__') and hasattr(output, '__getitem__'):
                     output = [self._dafny_token_to_str(output[i]) for i in range(len(output))]
+
+                if len(output) > max_steps:
+                    raise RuntimeError(
+                        f"CSD exceeded max_steps: generated {len(output)} tokens > {max_steps}"
+                    )
             
             execution_time = (time.time() - start_time) * 1000
             
-            # Note: We no longer manually validate the output here.
-            # The Dafny strategy is formally verified to maintain parser validity
-            # and satisfy the built-in cost contract (cost <= maxSteps).
+            # Note: We no longer manually validate parser acceptance here.
+            # Dafny verification is responsible for parser validity; this runner
+            # keeps a runtime guard for stale or unverified modules that exceed
+            # the token budget.
             
             return RuntimeResult(
                 success=True,

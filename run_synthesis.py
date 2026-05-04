@@ -7,16 +7,22 @@ until evaluation thresholds are met or max iterations exhausted.
 
 Usage:
     python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-        --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5
+        --min-accuracy 0.3 --min-syntax-rate 0.5
 
-    python run_synthesis.py --task "..." --dataset spider \\
-        --min-accuracy 0.1 --min-format-rate 0.0 --min-syntax-rate 1.0
+    python run_synthesis.py --task "..." --dataset folio \\
+        --min-accuracy 0.5 --min-syntax-rate 0.7
 """
 
 import argparse
 import os
 import sys
 from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except ImportError:
+    pass
 
 
 def main():
@@ -28,21 +34,16 @@ Examples:
   # GSM-Symbolic
   python run_synthesis.py --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5
+      --min-accuracy 0.3 --min-syntax-rate 0.5
 
-  # Spider
-  python run_synthesis.py --task "Generate SQL strategy" \\
-      --dataset spider \\
-      --min-accuracy 0.1 --min-format-rate 0.0 --min-syntax-rate 1.0
-
-  # SMILES
-  python run_synthesis.py --task "Generate constrained molecular generation strategy" \\
-      --dataset smiles \\
-      --min-accuracy 0.2 --min-format-rate 1.0 --min-syntax-rate 1.0
+  # FOLIO
+  python run_synthesis.py --task "Generate FOL reasoning strategy" \\
+      --dataset folio \\
+      --min-accuracy 0.5 --min-syntax-rate 0.7
 
   # With more iterations and custom eval sample size
   python run_synthesis.py --task "..." --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-format-rate 1.0 --min-syntax-rate 0.5 \\
+      --min-accuracy 0.3 --min-syntax-rate 0.5 \\
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
     )
@@ -138,8 +139,8 @@ Examples:
         "--max-tokens",
         dest="synthesis_max_tokens",
         type=int,
-        default=4096,
-        help="Maximum tokens for CSD synthesis generation per attempt (default: 4096)"
+        default=1024,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 1024)"
     )
     
     parser.add_argument(
@@ -160,7 +161,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "spider", "smiles", "folio"],
+        choices=["gsm_symbolic", "folio", "spider", "smiles"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -170,13 +171,6 @@ Examples:
         type=float,
         required=True,
         help="Minimum accuracy threshold for evaluation (e.g. 0.3)"
-    )
-
-    parser.add_argument(
-        "--min-format-rate",
-        type=float,
-        default=0.0,
-        help="Minimum format/delimiter validity threshold for evaluation (default: 0.0)"
     )
 
     parser.add_argument(
@@ -206,13 +200,6 @@ Examples:
         default=None,
         help="Optional RNG seed for reproducible evaluation sampling"
     )
-    parser.add_argument(
-        "--eval-random",
-        type=lambda v: str(v).lower() in ("1", "true", "yes", "y", "t"),
-        default=True,
-        help="If True (default), sample eval set randomly with --eval-seed. "
-             "If False, take the first --eval-sample-size examples deterministically."
-    )
 
     parser.add_argument(
         "--eval-max-steps",
@@ -233,6 +220,34 @@ Examples:
         type=float,
         default=None,
         help="Optional runtime budget per evaluated example in seconds"
+    )
+
+    parser.add_argument(
+        "--gsm-source-dir",
+        type=str,
+        default=None,
+        help="Load GSM-Symbolic examples from this local folder of JSON files (e.g. CRANE's gsm_symbolic/) instead of HuggingFace"
+    )
+
+    parser.add_argument(
+        "--smiles-samples-per-class",
+        type=int,
+        default=10,
+        help="Number of SMILES attempts per molecular class during synthesis feedback (default: 10)"
+    )
+
+    parser.add_argument(
+        "--smiles-final-samples-per-class",
+        type=int,
+        default=100,
+        help="Target valid unique SMILES samples per class for final benchmark scripts (default: 100)"
+    )
+
+    parser.add_argument(
+        "--smiles-classes",
+        type=str,
+        default="acrylates,chain_extenders,isocyanates",
+        help="Comma-separated SMILES classes to evaluate (default: all three CARS molecule classes)"
     )
 
     parser.add_argument(
@@ -329,6 +344,10 @@ Examples:
     compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=args.output_dir)
     # Runner is created by the pipeline with task-appropriate parser mode
 
+    feedback_sample_size = (
+        args.smiles_samples_per_class if args.dataset == "smiles" else args.eval_sample_size
+    )
+
     # Create evaluator for the feedback loop
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
@@ -338,7 +357,7 @@ Examples:
         model_name=args.eval_model,
         backend=args.eval_backend,
         device=device or "cuda",
-        sample_size=args.eval_sample_size,
+        sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         load_in_4bit=args.load_in_4bit,
@@ -349,8 +368,9 @@ Examples:
         vllm_max_model_len=args.vllm_max_model_len,
         vllm_enforce_eager=args.vllm_enforce_eager,
         sample_seed=args.eval_seed,
-        random_sample=args.eval_random,
         max_seconds_per_example=args.eval_max_seconds_per_example,
+        gsm_source_dir=args.gsm_source_dir,
+        smiles_classes=args.smiles_classes,
     )
 
     pipeline = SynthesisPipeline(
@@ -364,10 +384,9 @@ Examples:
         save_reports=not args.no_save_reports,
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
-        min_format_rate=args.min_format_rate,
         min_syntax_rate=args.min_syntax_rate,
         require_delimiters=args.require_delimiters,
-        eval_sample_size=args.eval_sample_size,
+        eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
     )
     

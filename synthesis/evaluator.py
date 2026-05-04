@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
-from decimal import Decimal, InvalidOperation
 
 # SQL keyword set for failure-preview anonymization. Identifiers outside this
 # set are replaced with <id>; numbers with <num>; string literals with <str>.
@@ -61,9 +60,47 @@ def _anonymize_sql_preview(s: str) -> str:
     return "".join(out_parts)
 
 import time
+import signal
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+
+class PerExampleTimeout(Exception):
+    """Raised when a single evaluation example exceeds its runtime budget."""
+
+
+class _PerExampleTimer:
+    """Unix wall-clock timer for interrupting a single long-running example."""
+
+    def __init__(self, seconds: Optional[float]):
+        self.seconds = seconds
+        self._old_handler = None
+        self._old_timer = None
+
+    def __enter__(self):
+        if self.seconds is None:
+            return self
+        if self.seconds <= 0:
+            raise PerExampleTimeout(f"Example exceeded {self.seconds:.2f}s runtime budget")
+
+        def _raise_timeout(signum, frame):
+            raise PerExampleTimeout(f"Example exceeded {self.seconds:.2f}s runtime budget")
+
+        self._old_handler = signal.getsignal(signal.SIGALRM)
+        self._old_timer = signal.setitimer(signal.ITIMER_REAL, 0.0)
+        signal.signal(signal.SIGALRM, _raise_timeout)
+        signal.setitimer(signal.ITIMER_REAL, self.seconds)
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self.seconds is not None:
+            signal.setitimer(signal.ITIMER_REAL, 0.0)
+            if self._old_handler is not None:
+                signal.signal(signal.SIGALRM, self._old_handler)
+            if self._old_timer and self._old_timer[0] > 0:
+                signal.setitimer(signal.ITIMER_REAL, self._old_timer[0], self._old_timer[1])
+        return False
 
 
 @dataclass
@@ -75,12 +112,11 @@ class EvaluationResult:
     """
     success: bool
     accuracy: float  # 0.0 to 1.0
+    contains_delimiters: bool
     syntax_rate: float  # 0.0 to 1.0
     num_examples: int
     num_correct: int
     total_time_seconds: float
-    contains_delimiters: bool = False
-    format_rate: Optional[float] = None
     max_sample_time_seconds: float = 0.0
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
@@ -92,7 +128,6 @@ class EvaluationResult:
     def meets_threshold(
         self,
         min_accuracy: float = 0.0,
-        min_format_rate: float = 0.0,
         min_syntax_rate: float = 0.0,
         require_delimiters: bool = True,
         max_seconds_per_example: Optional[float] = None,
@@ -103,15 +138,10 @@ class EvaluationResult:
         runtime_ok = True
         if max_seconds_per_example is not None:
             runtime_ok = self.max_sample_time_seconds <= max_seconds_per_example
-        format_rate = self.format_rate
-        if format_rate is None:
-            format_rate = 1.0 if self.contains_delimiters else 0.0
         return (
             runtime_ok
             and self.accuracy >= min_accuracy
-            and format_rate >= min_format_rate
             and self.syntax_rate >= min_syntax_rate
-            and (not require_delimiters or self.contains_delimiters or format_rate > 0.0)
         )
 
     def get_feedback_summary(self) -> str:
@@ -119,95 +149,55 @@ class EvaluationResult:
         lines = [
             f"Evaluation Results ({self.num_examples} examples):",
             f"  Accuracy: {self.accuracy:.1%} ({self.num_correct}/{self.num_examples})",
-            f"  Format Rate: {self._format_rate_value():.1%}",
+            f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}",
             f"  Syntax Rate: {self.syntax_rate:.1%}",
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
 
-        # Token count distribution
-        token_counts = [s.get("token_count", 0) for s in self.sample_outputs if s.get("token_count") is not None]
-        if token_counts:
-            token_counts_sorted = sorted(token_counts)
-            n_tc = len(token_counts_sorted)
-            lines.append(f"\nToken Count Distribution ({n_tc} examples):")
-            lines.append(f"  min={token_counts_sorted[0]}, median={token_counts_sorted[n_tc//2]}, max={token_counts_sorted[-1]}")
-            n_short = sum(1 for t in token_counts if t < 10)
-            n_max = sum(1 for t in token_counts if t >= 400)
-            if n_short:
-                lines.append(f"  Very short (<10 tokens): {n_short} examples")
-            if n_max:
-                lines.append(f"  Hit max steps (>=400 tokens): {n_max} examples")
+        failure_modes = self._summarize_failure_modes()
+        if failure_modes:
+            lines.append("\nPrimary Failure Modes:")
+            for mode, count, detail in failure_modes:
+                lines.append(f"  - {mode}: {count} example(s) {detail}")
 
-        # Full helper traces: one successful example and one failed example
-        traced = [s for s in self.sample_outputs if s.get("helper_trace")]
-        correct_traced = [s for s in traced if s.get("is_correct")]
-        failed_traced = [s for s in traced if not s.get("is_correct")]
+        output_run_summary = self._summarize_output_run()
+        if output_run_summary:
+            lines.append("\nOutput Run Summary:")
+            lines.extend(f"  {metric}" for metric in output_run_summary)
 
-        trace_examples: list[tuple[str, dict]] = []
-        if correct_traced:
-            trace_examples.append(("correct", correct_traced[len(correct_traced) // 2]))
-        if failed_traced:
-            trace_examples.append(("failed", failed_traced[0]))
-
-        if trace_examples:
-            lines.append("\nFull Helper Traces:")
-            for label, sample in trace_examples:
-                trace = sample.get("helper_trace", [])
-                tc = sample.get("token_count", "?")
-                actual = (sample.get("actual") or "(empty)").strip()[:200]
-                expected = (sample.get("expected") or "(empty)").strip()[:200]
-                lines.append(f"  [{label}, {tc} tokens] expected={expected} actual={actual}")
-                lines.append(f"    full call sequence ({len(trace)} events):")
-                for event in trace:
-                    h = event.get("helper", "unknown")
-                    detail = event.get("detail", "")
-                    detail_str = f": {detail}" if detail else ""
-                    lines.append(f"    {h}{detail_str}")
-
-        # Failure mode categories removed — the model gets raw traces and
-        # failed examples, which is enough signal without pre-digesting the
-        # diagnosis.
-
+        # Anonymized failure summary (April 25): we used to dump up to 3 specific
+        # failed examples (question + expected + actual) into the feedback to
+        # gpt-5.4. That content leaked synthesis-sample specifics into the
+        # generator's context, biasing strategies to fit those exact examples
+        # and producing 12-22 pp held-out drops. We now report only aggregate
+        # statistics — failure_mode counts (already populated above), runtime
+        # budget exceedances, and any unexpected exception types — without any
+        # question text, expected SQL, or actual SQL strings.
         if self.sample_outputs:
             n_runtime_exceeded = sum(
                 1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
             )
-            error_types: dict[str, int] = {}
-            for s in self.sample_outputs:
-                err = s.get("error")
-                if err:
-                    etype = (str(err).split(":", 1)[0] or "Exception").strip()
-                    error_types[etype] = error_types.get(etype, 0) + 1
             extras = []
             if n_runtime_exceeded:
                 extras.append(
-                    f"  Runtime budget exceeded on {n_runtime_exceeded} example(s)."
+                    f"  Time budget exceeded on {n_runtime_exceeded} example(s)."
                 )
-            for etype, count in sorted(error_types.items(), key=lambda kv: (-kv[1], kv[0])):
-                extras.append(f"  Exceptions ({etype}): {count}")
             if extras:
                 lines.append("\nAggregate Failure Stats:")
                 lines.extend(extras)
 
-            failed = [s for s in self.sample_outputs if not s.get("is_correct", False) and not s.get("error")]
-            if failed:
-                show = failed[:5]
-                lines.append(f"\nFailed Examples ({len(failed)} total, showing {len(show)}):")
-                for idx, s in enumerate(show, 1):
-                    actual = (s.get("actual") or "(empty)").strip()[:200]
-                    expected = (s.get("expected") or "(empty)").strip()[:200]
-                    tc = s.get("token_count", "?")
-                    lines.append(f"  [{idx}] tokens={tc}")
-                    lines.append(f"      expected: {expected}")
-                    lines.append(f"      actual:   {actual}")
+        diagnostic_metrics = self._summarize_diagnostic_metrics()
+        if diagnostic_metrics:
+            lines.append("\nDiagnostic Error Decomposition:")
+            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
+
+        structural_metrics = self._summarize_structural_metrics()
+        if structural_metrics:
+            lines.append("\nStructural Generation Metrics:")
+            lines.extend(f"  {metric}" for metric in structural_metrics)
 
         return "\n".join(lines)
-
-    def _format_rate_value(self) -> float:
-        if self.format_rate is not None:
-            return self.format_rate
-        return 1.0 if self.contains_delimiters else 0.0
 
     @staticmethod
     def _format_trace_event(event: Dict[str, Any]) -> str:
@@ -264,19 +254,21 @@ class EvaluationResult:
             syntax_rate = float(sample.get("syntax_rate", 0.0))
             matched = False
 
-            if error:
-                key = "runtime_or_generation_error"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = f"(first error: {str(error)[:120]})"
-                continue
-
             if sample.get("runtime_budget_exceeded"):
                 key = "too_slow"
                 counters[key] = counters.get(key, 0) + 1
                 if key not in details:
                     details[key] = "(generation exceeded the per-example runtime budget)"
                 matched = True
+                if error:
+                    continue
+
+            if error:
+                key = "runtime_or_generation_error"
+                counters[key] = counters.get(key, 0) + 1
+                if key not in details:
+                    details[key] = f"(first error: {str(error)[:120]})"
+                continue
 
             if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
                 key = "unterminated_constrained_segment"
@@ -338,10 +330,432 @@ class EvaluationResult:
                 key = "other_observed_failure"
                 counters[key] = counters.get(key, 0) + 1
                 if key not in details:
-                    details[key] = "(incorrect output — see failed examples below)"
+                    raw_preview = (full_output or "").replace("\n", " ")[:120] or str(actual)[:120]
+                    anon = _anonymize_sql_preview(raw_preview) if raw_preview else "no preview"
+                    details[key] = f"(uncategorized failure preview, anonymized: {anon})"
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
         return [(mode, count, details.get(mode, "")) for mode, count in ranked[:4]]
+
+    @staticmethod
+    def _mean(values: List[float]) -> Optional[float]:
+        if not values:
+            return None
+        return sum(values) / len(values)
+
+    @staticmethod
+    def _median(values: List[float]) -> Optional[float]:
+        if not values:
+            return None
+        ordered = sorted(values)
+        mid = len(ordered) // 2
+        if len(ordered) % 2:
+            return ordered[mid]
+        return (ordered[mid - 1] + ordered[mid]) / 2
+
+    @staticmethod
+    def _visible_span_shape(output: str) -> Dict[str, Any]:
+        """Return delimiter/span shape statistics without preserving span text."""
+        opens = output.count("<<")
+        closes = output.count(">>")
+        spans = re.findall(r"<<\s*(.*?)\s*>>", output, flags=re.DOTALL)
+
+        active_opens = 0
+        unmatched_closes = 0
+        i = 0
+        while i < len(output):
+            if output.startswith("<<", i):
+                active_opens += 1
+                i += 2
+            elif output.startswith(">>", i):
+                if active_opens > 0:
+                    active_opens -= 1
+                else:
+                    unmatched_closes += 1
+                i += 2
+            else:
+                i += 1
+
+        first_open_tokens: Optional[int] = None
+        first_open = output.find("<<")
+        if first_open >= 0:
+            first_open_tokens = len(output[:first_open].split())
+
+        span_lengths = [len(span.strip().split()) for span in spans if span.strip()]
+        complete_spans = len(spans)
+        return {
+            "opens": opens,
+            "closes": closes,
+            "complete_spans": complete_spans,
+            "span_lengths": span_lengths,
+            "first_open_tokens": first_open_tokens,
+            "unterminated": active_opens > 0 or opens > complete_spans,
+            "unmatched_close": unmatched_closes > 0 or closes > complete_spans,
+            "balanced_with_span": complete_spans > 0 and opens == closes == complete_spans,
+        }
+
+    _CONSTRAINED_HELPERS = {
+        "OpenConstrainedSpan",
+        "EnterObservedConstrainedSpan",
+        "CloseConstrainedSpan",
+        "ConstrainedStep",
+        "AdaptiveConstrainedStep",
+        "GroupBoostedConstrainedStep",
+        "AppendConstrainedToken",
+        "ConstrainedSymbol",
+        "ConstrainedSymbolInGenerated",
+        "RollbackConstrainedSuffix",
+    }
+
+    _UNCONSTRAINED_HELPERS = {"UnconstrainedStep", "UnconstrainedChunk"}
+
+    @classmethod
+    def _sample_has_valid_span_or_chunk(cls, sample: Dict[str, Any]) -> bool:
+        return (
+            int(sample.get("num_valid_visible_spans", 0) or 0) > 0
+            or bool(sample.get("used_constrained_chunk") and sample.get("uses_hidden_chunks"))
+        )
+
+    @classmethod
+    def _sample_has_constrained_activity(cls, sample: Dict[str, Any]) -> bool:
+        return any(
+            event.get("helper", "unknown") in cls._CONSTRAINED_HELPERS
+            for event in sample.get("helper_trace") or []
+        )
+
+    def get_diagnostic_counts(self) -> Dict[str, int]:
+        """Return neutral per-example diagnostic buckets for prompt deltas."""
+        samples = self.sample_outputs
+        n = len(samples)
+        syntax_valid = [s for s in samples if s.get("is_syntax_valid")]
+        syntax_invalid = [s for s in samples if not s.get("is_syntax_valid")]
+        valid_span = [s for s in samples if self._sample_has_valid_span_or_chunk(s)]
+        constrained_activity = [s for s in samples if self._sample_has_constrained_activity(s)]
+        visible_span_no_activity = [
+            s
+            for s in samples
+            if int(s.get("num_visible_spans", 0) or 0) > 0
+            and not self._sample_has_constrained_activity(s)
+        ]
+
+        return {
+            "examples": n,
+            "syntax_valid_correct": sum(1 for s in syntax_valid if s.get("is_correct")),
+            "syntax_valid_wrong": sum(1 for s in syntax_valid if not s.get("is_correct")),
+            "syntax_invalid_correct": sum(1 for s in syntax_invalid if s.get("is_correct")),
+            "syntax_invalid_wrong": sum(1 for s in syntax_invalid if not s.get("is_correct")),
+            "no_complete_span_wrong": sum(
+                1
+                for s in samples
+                if int(s.get("num_visible_spans", 0) or 0) == 0
+                and not s.get("is_correct")
+            ),
+            "answer_from_last_visible_span": sum(
+                1 for s in samples if s.get("answer_source") == "last_visible_span"
+            ),
+            "answer_from_text_fallback": sum(
+                1 for s in samples if s.get("answer_source") == "text_fallback"
+            ),
+            "answer_from_hidden_or_task_extractor": sum(
+                1 for s in samples if s.get("answer_source") == "hidden_or_task_extractor"
+            ),
+            "no_extracted_answer": sum(
+                1 for s in samples if not s.get("has_extracted_answer", False)
+            ),
+            "examples_with_final_answer_span": sum(
+                1 for s in samples if s.get("answer_source") == "last_visible_span"
+            ),
+            "examples_with_valid_nonfinal_spans_only": sum(
+                1
+                for s in valid_span
+                if s.get("answer_source") != "last_visible_span"
+            ),
+            "examples_with_no_valid_span": n - len(valid_span),
+            "examples_with_constrained_activity": len(constrained_activity),
+            "examples_without_constrained_activity": n - len(constrained_activity),
+            "correct_with_constrained_activity": sum(
+                1 for s in constrained_activity if s.get("is_correct")
+            ),
+            "wrong_with_constrained_activity": sum(
+                1 for s in constrained_activity if not s.get("is_correct")
+            ),
+            "correct_without_constrained_activity": sum(
+                1
+                for s in samples
+                if not self._sample_has_constrained_activity(s) and s.get("is_correct")
+            ),
+            "wrong_without_constrained_activity": sum(
+                1
+                for s in samples
+                if not self._sample_has_constrained_activity(s) and not s.get("is_correct")
+            ),
+            "visible_span_without_constrained_activity": len(visible_span_no_activity),
+        }
+
+    @staticmethod
+    def _is_helper_api_error(error: str) -> bool:
+        """Heuristic bucket for actual helper/API exceptions, not behavior metrics."""
+        lowered = error.lower()
+        helper_terms = (
+            "helper",
+            "csdhelpers",
+            "constrainedstep",
+            "adaptiveconstrainedstep",
+            "groupboostedconstrainedstep",
+            "constrainedsymbol",
+            "constrainedsymbolingenerated",
+            "appendconstrainedtoken",
+            "openconstrainedspan",
+            "enterobservedconstrainedspan",
+            "closeconstrainedspan",
+            "rollbackconstrainedsuffix",
+        )
+        api_error_terms = (
+            "attributeerror",
+            "nameerror",
+            "typeerror",
+            "missing",
+            "undefined",
+            "not defined",
+            "has no attribute",
+            "takes",
+            "argument",
+        )
+        return any(term in lowered for term in helper_terms) and any(
+            term in lowered for term in api_error_terms
+        )
+
+    def _summarize_output_run(self) -> List[str]:
+        """Summarize factual output behavior without causal labels."""
+        if not self.sample_outputs:
+            return []
+
+        n = len(self.sample_outputs)
+        errors = [str(sample.get("error") or "") for sample in self.sample_outputs if sample.get("error")]
+        timeouts = sum(1 for sample in self.sample_outputs if sample.get("runtime_budget_exceeded"))
+        nonempty_outputs = sum(
+            1
+            for sample in self.sample_outputs
+            if int(sample.get("token_count", 0) or 0) > 0
+            or bool((sample.get("scored_output") or sample.get("full_output") or "").strip())
+        )
+
+        lines = [
+            "verification: passed",
+            "compilation: passed",
+            f"generated-token outputs: {nonempty_outputs}/{n} nonempty",
+        ]
+        if not errors and timeouts == 0:
+            lines.append("All evaluated examples completed and returned generated output records.")
+            return lines
+
+        if errors:
+            lines.append(f"examples without completed output records: {len(errors)}/{n}")
+        if timeouts:
+            lines.append(f"per-example time budget exceeded: {timeouts}/{n}")
+        return lines
+
+    def _summarize_diagnostic_metrics(self) -> List[str]:
+        """Summarize where failures enter without exposing example content."""
+        if not self.sample_outputs:
+            return []
+
+        counts = self.get_diagnostic_counts()
+        n = counts["examples"]
+        return [
+            (
+                "Correctness by syntax bucket: "
+                f"syntax_valid_correct {counts['syntax_valid_correct']}/{n}, "
+                f"syntax_valid_wrong {counts['syntax_valid_wrong']}/{n}, "
+                f"syntax_invalid_correct {counts['syntax_invalid_correct']}/{n}, "
+                f"syntax_invalid_wrong {counts['syntax_invalid_wrong']}/{n}"
+            ),
+            f"No-complete-span wrong answers: {counts['no_complete_span_wrong']}/{n}",
+            (
+                "Answer extraction source: "
+                f"last_visible_span {counts['answer_from_last_visible_span']}/{n}, "
+                f"text_fallback {counts['answer_from_text_fallback']}/{n}, "
+                f"hidden_or_task_extractor {counts['answer_from_hidden_or_task_extractor']}/{n}, "
+                f"none {counts['no_extracted_answer']}/{n}"
+            ),
+            (
+                "Span usefulness: "
+                f"final_answer_span {counts['examples_with_final_answer_span']}/{n}, "
+                f"valid_nonfinal_spans_only {counts['examples_with_valid_nonfinal_spans_only']}/{n}, "
+                f"no_valid_span {counts['examples_with_no_valid_span']}/{n}"
+            ),
+            (
+                "Constrained intervention activity: "
+                f"examples_with_activity {counts['examples_with_constrained_activity']}/{n}, "
+                f"examples_without_activity {counts['examples_without_constrained_activity']}/{n}, "
+                f"visible_span_without_activity {counts['visible_span_without_constrained_activity']}/{n}"
+            ),
+            (
+                "Correctness conditioned on constrained activity: "
+                f"correct_with_activity {counts['correct_with_constrained_activity']}/{n}, "
+                f"wrong_with_activity {counts['wrong_with_constrained_activity']}/{n}, "
+                f"correct_without_activity {counts['correct_without_constrained_activity']}/{n}, "
+                f"wrong_without_activity {counts['wrong_without_constrained_activity']}/{n}"
+            ),
+        ]
+
+    def _summarize_structural_metrics(self) -> List[str]:
+        """Summarize neutral span/search behavior for refinement feedback."""
+        if not self.sample_outputs:
+            return []
+
+        n = len(self.sample_outputs)
+        shapes = [
+            self._visible_span_shape(s.get("scored_output") or s.get("full_output") or "")
+            for s in self.sample_outputs
+        ]
+        helper_counts: Counter[str] = Counter()
+
+        constrained_calls = 0
+        unconstrained_calls = 0
+        for sample in self.sample_outputs:
+            for event in sample.get("helper_trace") or []:
+                helper = event.get("helper", "unknown")
+                helper_counts[helper] += 1
+                constrained_calls += int(helper in EvaluationResult._CONSTRAINED_HELPERS)
+                unconstrained_calls += int(helper in EvaluationResult._UNCONSTRAINED_HELPERS)
+
+        total_opens = sum(int(shape["opens"]) for shape in shapes)
+        total_complete_spans = sum(int(shape["complete_spans"]) for shape in shapes)
+        span_completion_rate = total_complete_spans / total_opens if total_opens else None
+
+        first_open_positions = [
+            float(shape["first_open_tokens"])
+            for shape in shapes
+            if shape["first_open_tokens"] is not None
+        ]
+        visible_span_lengths = [
+            float(length)
+            for shape in shapes
+            for length in shape["span_lengths"]
+        ]
+        valid_span_lengths = [
+            float(length)
+            for sample in self.sample_outputs
+            for length in sample.get("valid_visible_span_token_lengths", [])
+        ]
+        output_tokens = [
+            float(sample.get("token_count", 0) or 0)
+            for sample in self.sample_outputs
+        ]
+        runtimes = [
+            float(sample.get("time_seconds", 0.0) or 0.0)
+            for sample in self.sample_outputs
+        ]
+
+        examples_with_visible_open = sum(1 for shape in shapes if shape["opens"] > 0)
+        examples_with_complete_span = sum(1 for shape in shapes if shape["complete_spans"] > 0)
+        examples_with_balanced_span = sum(1 for shape in shapes if shape["balanced_with_span"])
+        examples_with_unterminated = sum(1 for shape in shapes if shape["unterminated"])
+        examples_with_unmatched_close = sum(1 for shape in shapes if shape["unmatched_close"])
+        examples_without_complete_span = n - examples_with_complete_span
+        examples_with_valid_span = sum(
+            1 for sample in self.sample_outputs
+            if self._sample_has_valid_span_or_chunk(sample)
+        )
+        examples_with_parser_span_failure = sum(
+            1 for sample in self.sample_outputs
+            if int(sample.get("num_visible_spans", 0) or 0)
+            > int(sample.get("num_valid_visible_spans", 0) or 0)
+        )
+        examples_with_valid_span_wrong = sum(
+            1 for sample in self.sample_outputs
+            if (
+                int(sample.get("num_valid_visible_spans", 0) or 0) > 0
+                or bool(sample.get("used_constrained_chunk") and sample.get("uses_hidden_chunks"))
+            )
+            and not sample.get("is_correct")
+        )
+        examples_format_valid_wrong = sum(
+            1 for sample in self.sample_outputs
+            if sample.get("is_syntax_valid") and not sample.get("is_correct")
+        )
+        examples_without_extracted_answer = sum(
+            1 for sample in self.sample_outputs
+            if not sample.get("has_extracted_answer", False)
+        )
+        examples_with_tiny_valid_spans = sum(
+            1 for sample in self.sample_outputs
+            if sample.get("valid_visible_span_token_lengths")
+            and max(sample.get("valid_visible_span_token_lengths")) <= 2
+        )
+        examples_with_long_visible_span = sum(
+            1 for shape in shapes if any(length > 64 for length in shape["span_lengths"])
+        )
+        examples_hitting_max_steps = sum(
+            1 for sample in self.sample_outputs if sample.get("hit_max_steps")
+        )
+
+        mean_spans = self._mean([float(shape["complete_spans"]) for shape in shapes])
+        mean_first_open = self._mean(first_open_positions)
+        median_first_open = self._median(first_open_positions)
+        mean_visible_span_len = self._mean(visible_span_lengths)
+        median_visible_span_len = self._median(visible_span_lengths)
+        mean_valid_span_len = self._mean(valid_span_lengths)
+        mean_output_tokens = self._mean(output_tokens)
+        median_output_tokens = self._median(output_tokens)
+        max_output_tokens = max(output_tokens, default=0.0)
+        total_runtime = sum(runtimes)
+        total_tokens = sum(output_tokens)
+        time_per_token = total_runtime / total_tokens if total_tokens else None
+        constrained_fraction = (
+            constrained_calls / (constrained_calls + unconstrained_calls)
+            if constrained_calls + unconstrained_calls
+            else None
+        )
+
+        def fmt_optional(value: Optional[float], suffix: str = "") -> str:
+            return "n/a" if value is None else f"{value:.2f}{suffix}"
+
+        lines = [
+            f"Examples with visible `<<`: {examples_with_visible_open}/{n}",
+            f"Examples with complete visible spans: {examples_with_complete_span}/{n}",
+            f"Examples without complete visible spans: {examples_without_complete_span}/{n}",
+            f"Examples with balanced visible spans: {examples_with_balanced_span}/{n}",
+            f"Examples with unterminated visible spans: {examples_with_unterminated}/{n}",
+            f"Examples with unmatched visible close: {examples_with_unmatched_close}/{n}",
+            f"Visible span completion rate: {fmt_optional(span_completion_rate)}",
+            f"Avg complete visible spans/example: {fmt_optional(mean_spans)}",
+            (
+                "Tokens before first visible open: "
+                f"avg {fmt_optional(mean_first_open)}, median {fmt_optional(median_first_open)}"
+            ),
+            (
+                "Visible span token length: "
+                f"avg {fmt_optional(mean_visible_span_len)}, median {fmt_optional(median_visible_span_len)}"
+            ),
+            f"Valid visible span token length avg: {fmt_optional(mean_valid_span_len)}",
+            f"Examples with at least one valid span/chunk: {examples_with_valid_span}/{n}",
+            f"Examples with visible parser span failure: {examples_with_parser_span_failure}/{n}",
+            f"Examples with valid span/chunk but wrong answer: {examples_with_valid_span_wrong}/{n}",
+            f"Examples syntax-valid but wrong answer: {examples_format_valid_wrong}/{n}",
+            f"Examples without extracted answer: {examples_without_extracted_answer}/{n}",
+            f"Examples with only tiny valid visible spans: {examples_with_tiny_valid_spans}/{n}",
+            f"Examples with long visible span (>64 tokens): {examples_with_long_visible_span}/{n}",
+            f"Examples hitting max steps: {examples_hitting_max_steps}/{n}",
+            (
+                "Generated tokens/example: "
+                f"avg {fmt_optional(mean_output_tokens)}, median {fmt_optional(median_output_tokens)}, "
+                f"max {max_output_tokens:.0f}"
+            ),
+            f"Runtime per generated token: {fmt_optional(time_per_token, 's')}",
+        ]
+        if helper_counts:
+            top_helpers = ", ".join(
+                f"{name}={count}" for name, count in helper_counts.most_common(8)
+            )
+            lines.append(f"Top helper calls: {top_helpers}")
+            lines.append(
+                "Constrained helper call fraction: "
+                f"{fmt_optional(constrained_fraction)}"
+            )
+
+        return lines
 
     def _looks_like_early_constrained_entry(self, output: str) -> bool:
         """Heuristic: flags outputs that open a constrained segment almost immediately."""
@@ -372,7 +786,6 @@ class EvaluationResult:
         return {
             "success": self.success,
             "accuracy": self.accuracy,
-            "format_rate": self._format_rate_value(),
             "contains_delimiters": self.contains_delimiters,
             "syntax_rate": self.syntax_rate,
             "num_examples": self.num_examples,
@@ -388,8 +801,8 @@ class Evaluator:
     """
     Evaluates synthesized CSD strategies on dataset samples.
 
-    Supports GSM-Symbolic, Spider, SMILES, and legacy FOLIO datasets with
-    their respective evaluation metrics and syntax validation.
+    Supports both GSM-Symbolic and FOLIO datasets with their respective
+    evaluation metrics and syntax validation.
     """
 
     def __init__(
@@ -399,7 +812,7 @@ class Evaluator:
         backend: str = "huggingface",
         device: str = "cuda",
         sample_size: int = 10,
-        max_steps: int = 150,
+        max_steps: int = 600,
         load_in_4bit: bool = False,
         load_in_8bit: bool = False,
         vllm_tensor_parallel_size: Optional[int] = None,
@@ -408,15 +821,18 @@ class Evaluator:
         vllm_max_model_len: int = 4096,
         vllm_enforce_eager: bool = True,
         sample_seed: Optional[int] = None,
-        random_sample: bool = True,
         max_seconds_per_example: Optional[float] = None,
         step_token_budget: int = 1,
+        gsm_source_dir: str | Path | None = None,
+        gsm_split_file: str | Path | None = None,
+        gsm_split_name: str = "train",
+        smiles_classes: Optional[List[str]] = None,
     ):
         """
         Initialize the evaluator.
 
         Args:
-            dataset_name: Dataset to evaluate on
+            dataset_name: Dataset to evaluate on ("gsm_symbolic" or "folio")
             model_name: HuggingFace model for generation
             backend: Runtime LM backend ("huggingface" or "vllm")
             device: Device to run on ("cuda", "mps", "cpu")
@@ -431,6 +847,8 @@ class Evaluator:
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
             sample_seed: Optional RNG seed for reproducible dataset sampling
             max_seconds_per_example: Optional runtime budget per example in seconds
+            gsm_split_file: Optional JSON manifest with train_indices/eval_indices for GSM.
+            gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
         """
         if backend not in {"huggingface", "vllm"}:
             raise NotImplementedError(
@@ -453,9 +871,12 @@ class Evaluator:
         self.vllm_max_model_len = vllm_max_model_len
         self.vllm_enforce_eager = vllm_enforce_eager
         self.sample_seed = sample_seed
-        self.random_sample = random_sample
         self.max_seconds_per_example = max_seconds_per_example
         self.step_token_budget = step_token_budget
+        self.gsm_source_dir = gsm_source_dir
+        self.gsm_split_file = Path(gsm_split_file) if gsm_split_file is not None else None
+        self.gsm_split_name = gsm_split_name
+        self.smiles_classes = smiles_classes
 
         # Lazy-loaded components
         self._dataset = None
@@ -466,13 +887,24 @@ class Evaluator:
         self._dynamic_parser_factory_cache: Dict[Tuple[str, ...], Any] = {}
         self._syntax_parser_cache: Dict[Tuple[str, ...], Any] = {}
 
-    @staticmethod
-    def _example_field(example: Any, key: str, default: Any = None) -> Any:
-        if hasattr(example, key):
-            return getattr(example, key)
-        if hasattr(example, "get") and callable(getattr(example, "get")):
-            return example.get(key, default)
-        return default
+    def _load_gsm_split_indices(self) -> Optional[List[int]]:
+        """Load explicit GSM example indices from a train/eval split manifest."""
+        if self.gsm_split_file is None:
+            return None
+
+        manifest = json.loads(self.gsm_split_file.read_text())
+        key = f"{self.gsm_split_name}_indices"
+        if key not in manifest:
+            available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
+            raise ValueError(
+                f"Split file {self.gsm_split_file} does not contain {key}. "
+                f"Available index fields: {available}"
+            )
+
+        indices = manifest[key]
+        if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
+            raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
+        return indices
 
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
@@ -480,12 +912,10 @@ class Evaluator:
             grammars_dir = Path(__file__).parent.parent / "grammars"
             if self.dataset_name == "gsm_symbolic":
                 self._grammar_file = grammars_dir / "gsm.lark"
-            elif self.dataset_name == "spider":
-                self._grammar_file = grammars_dir / "sql.lark"
-            elif self.dataset_name == "smiles":
-                self._grammar_file = grammars_dir / "smiles.lark"
             elif self.dataset_name == "folio":
                 self._grammar_file = grammars_dir / "folio.lark"
+            elif self.dataset_name == "spider":
+                self._grammar_file = grammars_dir / "sql.lark"
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
@@ -534,55 +964,6 @@ class Evaluator:
             self._dynamic_parser_factory_cache[cache_key] = parser_factory
 
         return parser_factory(env["lm"]._Tokens)
-
-    def _build_spider_valid_token_groups(self, env: Dict[str, Any], example: dict) -> list:
-        """
-        Build per-example token groups for Spider. The outer list is one group
-        per logical schema unit: index 0 holds the table-name group, indices
-        1..N hold the column groups for each table (in sorted-table order).
-        Tokens within a group are BPE-token strings produced by tokenizing each
-        identifier in common case/space variants. Empty list if no schema.
-        """
-        if self.dataset_name != "spider":
-            return []
-        try:
-            from evaluations.sql_spider.grammar import parse_db_info
-            schema = parse_db_info(example.get("db_info", ""))
-        except Exception:
-            return []
-        if not schema:
-            return []
-        tok = env.get("tokenizer")
-        if tok is None:
-            return []
-
-        def _tokens_for(ident: str) -> list:
-            bag = set()
-            for variant in (ident, " " + ident, ident.lower(), " " + ident.lower(),
-                            ident.upper(), " " + ident.upper()):
-                try:
-                    ids = tok.encode(variant, add_special_tokens=False)
-                except Exception:
-                    continue
-                for tid in ids:
-                    try:
-                        bag.add(tok.decode([tid]))
-                    except Exception:
-                        pass
-            return sorted(bag)
-
-        groups: list = []
-        sorted_tables = sorted(schema.keys())
-        table_group = []
-        for tbl in sorted_tables:
-            table_group.extend(_tokens_for(tbl))
-        groups.append(sorted(set(table_group)))
-        for tbl in sorted_tables:
-            col_bag = []
-            for col in schema[tbl]:
-                col_bag.extend(_tokens_for(col))
-            groups.append(sorted(set(col_bag)))
-        return groups
 
     def _build_spider_dynamic_parser(self, env: Dict[str, Any], example: dict):
         """
@@ -702,31 +1083,11 @@ class Evaluator:
             return self._dataset
 
         if self.dataset_name == "gsm_symbolic":
-            from evaluations.gsm_symbolic.dataset import load_gsm_symbolic
-            ds = load_gsm_symbolic(
-                config="main",
-                split="test",
+            from evaluations.gsm_symbolic.dataset import load_gsm_from_crane_folder
+            ds = load_gsm_from_crane_folder(
+                crane_dir=self.gsm_source_dir,
                 limit=self.sample_size,
-                random_sample=self.random_sample,
-                seed=self.sample_seed if self.random_sample else None,
-            )
-            self._dataset = list(ds)
-        elif self.dataset_name == "spider":
-            from evaluations.sql_spider.dataset import load_spider
-            ds = load_spider(
-                source="auto",
-                limit=self.sample_size,
-                random_sample=self.random_sample,
-                seed=self.sample_seed if self.random_sample else None,
-            )
-            self._dataset = list(ds)
-        elif self.dataset_name == "smiles":
-            from evaluations.smiles.dataset import load_smiles
-            ds = load_smiles(
-                split="test",
-                limit=self.sample_size,
-                random_sample=self.random_sample,
-                seed=self.sample_seed if self.random_sample else 42,
+                indices=self._load_gsm_split_indices(),
             )
             self._dataset = list(ds)
         elif self.dataset_name == "folio":
@@ -735,6 +1096,15 @@ class Evaluator:
                 split="validation",
                 num_samples=self.sample_size,
                 seed=42,
+            )
+            self._dataset = list(ds)
+        elif self.dataset_name == "spider":
+            from evaluations.sql_spider.dataset import load_spider
+            ds = load_spider(
+                source="auto",
+                limit=self.sample_size,
+                random_sample=True,
+                seed=self.sample_seed,
             )
             self._dataset = list(ds)
         else:
@@ -777,8 +1147,6 @@ class Evaluator:
             from evaluations.gsm_symbolic.environment import setup_dafny_environment
         elif self.dataset_name == "spider":
             from evaluations.sql_spider.environment import setup_dafny_environment
-        elif self.dataset_name == "smiles":
-            from evaluations.smiles.environment import setup_dafny_environment
         else:
             from evaluations.folio.environment import setup_dafny_environment
 
@@ -1052,77 +1420,6 @@ class Evaluator:
 
         return None
 
-    @staticmethod
-    def _looks_like_smiles(text: str) -> bool:
-        candidate = text.strip()
-        if not candidate or " " in candidate or len(candidate) > 256:
-            return False
-        return bool(re.fullmatch(r"[A-Za-z0-9@+\-\[\]\(\)=#$\\/%.]+", candidate))
-
-    @staticmethod
-    def _canonicalize_smiles(text: str) -> Optional[str]:
-        if not Evaluator._looks_like_smiles(text):
-            return None
-        try:
-            from rdkit import Chem
-        except Exception:
-            return None
-        try:
-            mol = Chem.MolFromSmiles(text.strip())
-        except Exception:
-            return None
-        if mol is None:
-            return None
-        try:
-            return Chem.MolToSmiles(mol, canonical=True)
-        except Exception:
-            return None
-
-    @staticmethod
-    def _split_smiles_items(text: str) -> list[str]:
-        raw = re.split(r"\s*(?:\||;|,)\s*", text.strip())
-        return [item for item in raw if item]
-
-    def _normalize_smiles_text(self, text: Optional[str]) -> Optional[str]:
-        if text is None:
-            return None
-
-        value = str(text).strip()
-        if not value:
-            return None
-
-        if value.startswith(("'", '"')) and value.endswith(("'", '"')) and len(value) >= 2:
-            value = value[1:-1].strip()
-
-        canonical_smiles = self._canonicalize_smiles(value)
-        if canonical_smiles is not None:
-            return f"smiles:{canonical_smiles}"
-
-        try:
-            numeric = Decimal(value)
-            if numeric == numeric.to_integral_value():
-                return f"number:{int(numeric)}"
-            return f"number:{format(numeric.normalize(), 'f')}"
-        except InvalidOperation:
-            pass
-
-        try:
-            parsed_json = json.loads(value)
-        except Exception:
-            parsed_json = None
-        if parsed_json is not None:
-            return json.dumps(parsed_json, sort_keys=True, ensure_ascii=True)
-
-        collapsed = re.sub(r"\s+", " ", value).strip()
-        return collapsed.casefold()
-
-    def _extract_answer_smiles(self, output: str) -> Optional[str]:
-        """Extract the final chemistry answer from the last constrained span."""
-        matches = self._extract_constrained_content(output)
-        if not matches:
-            return None
-        return matches[-1].strip()
-
     def _fol_keyword_to_unicode(self, text: str) -> str:
         """Convert {keyword} FOL syntax from grammar to Unicode symbols for Prover9."""
         replacements = {
@@ -1201,102 +1498,76 @@ class Evaluator:
             return "Unknown"
         return None
 
-    def _answers_match(
-        self,
-        actual: Optional[str],
-        expected: str,
-        example: Optional[Any] = None,
-    ) -> bool:
-        """Check if actual and expected answers match."""
+    def _answers_match(self, actual: Optional[str], expected: str) -> bool:
+        """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
         if actual is None:
             return False
-        if self.dataset_name == "gsm_symbolic":
-            try:
-                return Decimal(str(actual).strip()) == Decimal(str(expected).strip())
-            except InvalidOperation:
-                return str(actual).strip() == str(expected).strip()
-        if self.dataset_name == "smiles":
-            norm_actual = self._normalize_smiles_text(actual)
-            norm_expected = self._normalize_smiles_text(expected)
-            if norm_actual is None or norm_expected is None:
-                return False
-            matching_strategy = (
-                str(self._example_field(example, "matching_strategy", "") or "").strip().lower()
-            )
-            if any(marker in matching_strategy for marker in ("set", "unordered", "bag")):
-                return set(self._split_smiles_items(norm_actual)) == set(
-                    self._split_smiles_items(norm_expected)
-                )
-            return norm_actual == norm_expected
         a = str(actual).strip().lower()
         e = str(expected).strip().lower()
-        # Normalize "uncertain" and "unknown" to be equivalent
         if a in ("uncertain", "unknown"):
             a = "unknown"
         if e in ("uncertain", "unknown"):
             e = "unknown"
         return a == e
 
+    def _gsm_symbolic_equivalence(
+        self, model_expr: Optional[str], expected_expr: str, variable_types: dict
+    ) -> bool:
+        """Check symbolic equivalence via random value substitution (matches CRANE's method)."""
+        if model_expr is None:
+            return False
+        import random as _rng
+
+        var_names = set(re.findall(r'\b[a-zA-Z_]\w*\b', model_expr + ' ' + expected_expr))
+        var_names -= {'int'}
+
+        for name in var_names:
+            if name not in variable_types:
+                return False
+
+        for _ in range(200):
+            env = {}
+            for var in var_names:
+                vtype = variable_types.get(var, 'int')
+                if vtype == 'float between 0 and 1':
+                    env[var] = _rng.uniform(0.001, 1)
+                elif vtype == 'float':
+                    env[var] = _rng.uniform(0.001, 100)
+                else:
+                    env[var] = _rng.randint(1, 100)
+            try:
+                val_model = eval(model_expr, {"__builtins__": {}}, {**env, 'int': int})
+                val_expected = eval(expected_expr, {"__builtins__": {}}, {**env, 'int': int})
+            except Exception:
+                return False
+            if abs(val_model - val_expected) > 1e-6 * max(1, abs(val_expected)):
+                return False
+        return True
+
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
         if self.dataset_name == "gsm_symbolic":
+            symbolic = example.get("answer_parsed", "")
+            if symbolic:
+                return symbolic
             answer_str = example.get("answer", "")
             match = re.search(r"####\s*([-+]?\d*\.?\d+)", answer_str)
             if match:
                 return match.group(1)
             return answer_str
         elif self.dataset_name == "spider":
-            return str(self._example_field(example, "query", "") or "").strip()
-        elif self.dataset_name == "smiles":
-            return str(self._example_field(example, "answer", "") or "").strip()
+            return (example.get("query") or "").strip()
         else:
             if hasattr(example, "label"):
                 return example.label
             return example.get("label", "Unknown")
 
-    def _format_prompt(self, example: dict) -> str:
+    def _format_prompt(self, example: dict) -> Union[str, List[dict]]:
         """Format a dataset example as a prompt."""
         if self.dataset_name == "gsm_symbolic":
-            question = example.get("question", "")
-            allowed_variables = self._get_gsm_allowed_variables(example)
-            symbolic_template = example.get("question_parsed", "")
-
-            variable_guidance = ""
-            if allowed_variables:
-                variable_guidance = (
-                    "Use only these symbolic quantity names when you define variables and write << >> expressions: "
-                    f"{', '.join(allowed_variables)}. Do not invent new variable names outside this set.\n"
-                )
-            template_guidance = ""
-            if symbolic_template:
-                template_guidance = (
-                    "Symbolic template for the allowed variables: "
-                    f"{symbolic_template}\n"
-                )
-
-            return (
-                "Solve the following math problem step by step. "
-                "Define variables for each quantity and state their numeric values. "
-                "Use the provided symbolic quantity names when they are supplied. "
-                "You may use descriptive identifiers with letters, digits, and underscores, "
-                "and must reuse those same variable names inside << >> expressions. "
-                "Write each computation step as a SHORT expression inside << >> delimiters — "
-                "one step per << >> window, closing >> before starting the next step. "
-                "Once you have written the final answer, stop immediately. Do not continue with extra explanation, confirmation, code fences, or another answer block.\n\n"
-                "Example response format:\n"
-                "Problem: A store sells pens for $3 each and notebooks for $8 each. "
-                "Bob buys 4 pens and 2 notebooks. How much does he spend?\n"
-                "Response:\n"
-                "Let p = 3, n = 8, a = 4, b = 2.\n"
-                "Pen total = <<a * p>>\n"
-                "Notebook total = <<b * n>>\n"
-                "Total spent = <<a * p + b * n>>\n"
-                "The answer is a * p + b * n.\n\n"
-                f"Problem: {question}\n"
-                f"{variable_guidance}"
-                f"{template_guidance}"
-                "Response:\n"
-            )
+            from evaluations.gsm_symbolic.cli import _build_gsm_prompt
+            question = example.get("question_parsed") or example.get("question", "")
+            return _build_gsm_prompt(question, do_cot=True, modify_system_prompt=True)
         elif self.dataset_name == "spider":
             db_id = example.get("db_id", "")
             db_info = example.get("db_info", "")
@@ -1314,21 +1585,6 @@ class Evaluator:
                 f"db_info: {db_info}\n"
                 f"question: {question}\n"
                 "SQL: "
-            )
-        elif self.dataset_name == "smiles":
-            question = str(self._example_field(example, "question", "") or "")
-            task = str(
-                self._example_field(example, "task", "")
-                or self._example_field(example, "config", "")
-                or "smiles"
-            )
-            return (
-                "You are solving a constrained molecular generation problem.\n"
-                "Give the final answer only inside one << >> span.\n"
-                "Inside << >>, emit only the requested answer string on one line, with no label or explanation.\n\n"
-                f"Task group: {task}\n"
-                f"Problem:\n{question}\n\n"
-                "Final answer:"
             )
         else:
             # FOLIOExample is a dataclass — access via attribute or .get() for dict fallback
@@ -1369,10 +1625,6 @@ class Evaluator:
     def _contains_delimiters(self, output: str) -> bool:
         """Check if the output contains at least one non-empty << >> segment."""
         return "<<" in output and ">>" in output
-
-    def _check_format_validity(self, output: str) -> bool:
-        """Return whether the output includes at least one constrained span."""
-        return self._contains_delimiters(output)
 
     def _check_syntax_validity(
         self,
@@ -1439,14 +1691,11 @@ class Evaluator:
                 from evaluations.gsm_symbolic.generation import run_crane_csd
             elif self.dataset_name == "spider":
                 from evaluations.sql_spider.generation import run_crane_csd
-            elif self.dataset_name == "smiles":
-                from evaluations.smiles.generation import run_crane_csd
             else:
                 from evaluations.folio.generation import run_crane_csd
 
             num_correct = 0
             all_examples_contain_delimiters = True
-            num_examples_with_delimiters = 0
             num_examples_syntax_pass = 0
 
             for i, example in enumerate(dataset):
@@ -1457,26 +1706,21 @@ class Evaluator:
 
                 try:
                     print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
-                    valid_token_groups = (
-                        self._build_spider_valid_token_groups(env, example)
-                        if self.dataset_name == "spider"
-                        else []
-                    )
-                    output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
-                        env=env,
-                        prompt_text=prompt,
-                        max_steps=self.max_steps,
-                        step_token_budget=self.step_token_budget,
-                        grammar_file=self._get_grammar_file(),
-                        dynamic_parser=(
-                            self._build_gsm_dynamic_parser(env, example)
-                            if self.dataset_name == "gsm_symbolic"
-                            else self._build_spider_dynamic_parser(env, example)
-                            if self.dataset_name == "spider"
-                            else None
-                        ),
-                        valid_token_groups=valid_token_groups,
-                    )
+                    with _PerExampleTimer(self.max_seconds_per_example):
+                        output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
+                            env=env,
+                            prompt_text=prompt,
+                            max_steps=self.max_steps,
+                            step_token_budget=self.step_token_budget,
+                            grammar_file=self._get_grammar_file(),
+                            dynamic_parser=(
+                                self._build_gsm_dynamic_parser(env, example)
+                                if self.dataset_name == "gsm_symbolic"
+                                else self._build_spider_dynamic_parser(env, example)
+                                if self.dataset_name == "spider"
+                                else None
+                            ),
+                        )
                     example_time = time.time() - example_start
                     print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
 
@@ -1487,30 +1731,49 @@ class Evaluator:
                     )
 
                     if self.dataset_name == "gsm_symbolic":
-                        actual = self._extract_answer_gsm(scored_output)
+                        expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
+                        actual = expr_matches[-1].strip() if expr_matches else None
+                        answer_source = "last_visible_span" if expr_matches else "none"
                     elif self.dataset_name == "spider":
                         actual = self._extract_answer_spider(scored_output)
-                    elif self.dataset_name == "smiles":
-                        actual = self._extract_answer_smiles(scored_output)
+                        answer_source = "hidden_or_task_extractor" if actual is not None else "none"
                     else:
                         actual = self._extract_answer_folio(scored_output, example=example)
+                        answer_source = "hidden_or_task_extractor" if actual is not None else "none"
 
-                    if self.dataset_name == "spider":
+                    if self.dataset_name == "gsm_symbolic":
+                        vt = example.get("variable_types", {})
+                        if isinstance(vt, str):
+                            try:
+                                vt = eval(vt)
+                            except Exception:
+                                vt = {}
+                        if vt and example.get("answer_parsed"):
+                            is_correct = self._gsm_symbolic_equivalence(actual, expected, vt)
+                        else:
+                            numeric_actual = self._extract_answer_gsm(scored_output)
+                            if actual is None and numeric_actual is not None:
+                                answer_source = "text_fallback"
+                            numeric_expected = re.search(r"####\s*([-+]?\d*\.?\d+)", example.get("answer", ""))
+                            if numeric_expected:
+                                is_correct = self._answers_match(numeric_actual, numeric_expected.group(1))
+                            else:
+                                is_correct = self._answers_match(numeric_actual, expected)
+                    elif self.dataset_name == "spider":
                         is_correct = self._exec_match_spider(actual, expected, example)
                     else:
-                        is_correct = self._answers_match(actual, expected, example=example)
+                        is_correct = self._answers_match(actual, expected)
                     if is_correct:
                         num_correct += 1
 
                     visible_delimiters = self._contains_delimiters(scored_output)
                     used_hidden_chunk = bool(constrained_segments) or any(
-                        event.get("helper") in {"AppendConstrainedToken", "ConstrainedStep", "CloseConstrainedSpan"}
+                        event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
                         for event in (helper_trace or [])
                     )
                     contains_delimiters = (
                         used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
                     )
-                    num_examples_with_delimiters += int(contains_delimiters)
                     all_examples_contain_delimiters = (
                         all_examples_contain_delimiters and contains_delimiters
                     )
@@ -1526,23 +1789,28 @@ class Evaluator:
                         example_syntax_pass = bool(segments) and all_valid_syntax
                     num_examples_syntax_pass += int(example_syntax_pass)
                     example_syntax_rate = 1.0 if example_syntax_pass else 0.0
+                    visible_span_lengths = [
+                        len(segment.strip().split()) for segment, _ in segments
+                    ]
+                    valid_visible_span_lengths = [
+                        len(segment.strip().split())
+                        for segment, is_valid in segments
+                        if is_valid
+                    ]
+                    num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
 
                     if hasattr(example, "conclusion"):
                         q_str = (example.premises + " | " + example.conclusion)[:200]
                     else:
-                        q_str = str(
-                            self._example_field(
-                                example,
-                                "question",
-                                self._example_field(example, "premises", ""),
-                            )
-                        )[:200]
+                        q_str = example.get("question", str(example.get("premises", "")))[:200]
                     sample_outputs.append({
                         "question": q_str,
                         "expected": expected,
                         "actual": actual or output_text[:100],
                         "full_output": output_text,
                         "scored_output": scored_output,
+                        "answer_source": answer_source,
+                        "has_extracted_answer": actual is not None or answer_source == "text_fallback",
                         "is_correct": is_correct,
                         "contains_delimiters": contains_delimiters,
                         "visible_delimiters": visible_delimiters,
@@ -1550,7 +1818,12 @@ class Evaluator:
                         "uses_hidden_chunks": self.dataset_name == "spider",
                         "is_syntax_valid": example_syntax_pass,
                         "syntax_rate": example_syntax_rate,
+                        "num_visible_spans": len(segments),
+                        "num_valid_visible_spans": num_valid_visible_spans,
+                        "visible_span_token_lengths": visible_span_lengths,
+                        "valid_visible_span_token_lengths": valid_visible_span_lengths,
                         "token_count": token_count,
+                        "hit_max_steps": token_count >= self.max_steps,
                         "time_seconds": gen_time,
                         "runtime_budget_exceeded": (
                             self.max_seconds_per_example is not None
@@ -1563,23 +1836,61 @@ class Evaluator:
                     if hasattr(example, "conclusion"):
                         q_str = (example.premises + " | " + example.conclusion)[:200]
                     else:
-                        q_str = str(
-                            self._example_field(
-                                example,
-                                "question",
-                                self._example_field(example, "premises", ""),
-                            )
-                        )[:200]
+                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                    elapsed = time.time() - example_start
+                    timed_out = isinstance(e, PerExampleTimeout)
+                    if timed_out:
+                        print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
                     sample_outputs.append({
                         "question": q_str,
                         "expected": expected,
                         "actual": None,
+                        "full_output": "",
+                        "scored_output": "",
+                        "answer_source": "none",
+                        "has_extracted_answer": False,
                         "is_correct": False,
                         "contains_delimiters": False,
+                        "visible_delimiters": False,
+                        "used_constrained_chunk": False,
+                        "uses_hidden_chunks": self.dataset_name == "spider",
                         "is_syntax_valid": False,
                         "syntax_rate": 0.0,
+                        "num_visible_spans": 0,
+                        "num_valid_visible_spans": 0,
+                        "visible_span_token_lengths": [],
+                        "valid_visible_span_token_lengths": [],
+                        "token_count": 0,
+                        "hit_max_steps": False,
+                        "time_seconds": elapsed,
+                        "runtime_budget_exceeded": timed_out or (
+                            self.max_seconds_per_example is not None
+                            and elapsed > self.max_seconds_per_example
+                        ),
                         "error": str(e),
                     })
+                    if timed_out:
+                        total_time = time.time() - start_time
+                        evaluated_count = len(sample_outputs)
+                        max_sample_time = max(
+                            (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
+                            default=0.0,
+                        )
+                        return EvaluationResult(
+                            success=True,
+                            accuracy=num_correct / max(1, evaluated_count),
+                            contains_delimiters=False,
+                            syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
+                            num_examples=evaluated_count,
+                            num_correct=num_correct,
+                            total_time_seconds=total_time,
+                            max_sample_time_seconds=max_sample_time,
+                            error=(
+                                "Evaluation stopped early because one example exceeded "
+                                f"the {self.max_seconds_per_example:.2f}s runtime budget."
+                            ),
+                            sample_outputs=sample_outputs,
+                        )
 
             total_time = time.time() - start_time
             num_examples = len(dataset)
@@ -1588,7 +1899,6 @@ class Evaluator:
             return EvaluationResult(
                 success=True,
                 accuracy=num_correct / max(1, num_examples),
-                format_rate=num_examples_with_delimiters / max(1, num_examples),
                 contains_delimiters=all_examples_contain_delimiters,
                 syntax_rate=num_examples_syntax_pass / max(1, num_examples),
                 num_examples=num_examples,
@@ -1602,7 +1912,6 @@ class Evaluator:
             return EvaluationResult(
                 success=False,
                 accuracy=0.0,
-                format_rate=0.0,
                 contains_delimiters=False,
                 syntax_rate=0.0,
                 num_examples=0,
