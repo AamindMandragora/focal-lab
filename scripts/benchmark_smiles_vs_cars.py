@@ -116,7 +116,8 @@ def _summarize_cars_log(log_dir: Path, class_name: str, target_samples: int = 10
             })
     unique_valid = sorted({r["smiles"] for r in records if r.get("unique_valid_candidate")})
     syntax_count = sum(1 for r in records if r.get("syntax_valid"))
-    membership_count = sum(1 for r in records if r.get("class_membership"))
+    valid_membership_count = sum(1 for r in records if r.get("valid_class_membership"))
+    membership_count_all = sum(1 for r in records if r.get("class_membership"))
     attempts_to_100 = None
     attempts_to_target = None
     successes_seen = 0
@@ -137,7 +138,12 @@ def _summarize_cars_log(log_dir: Path, class_name: str, target_samples: int = 10
         "samples_needed_for_100_successes": attempts_to_100,
         "unique_valid_count": len(unique_valid),
         "syntax_rate": syntax_count / max(1, len(records)),
-        "accuracy": membership_count / max(1, len(records)),
+        "accuracy": valid_membership_count / syntax_count if syntax_count else None,
+        "accuracy_definition": "class_membership_among_syntax_valid_molecules",
+        "accuracy_num_correct": valid_membership_count,
+        "accuracy_denominator": syntax_count,
+        "invalid_outputs_excluded_from_accuracy": len(records) - syntax_count,
+        "membership_rate_all_attempts": membership_count_all / max(1, len(records)),
         "records": records,
     }
 
@@ -212,7 +218,8 @@ def run_csd(args, classes: list[str]) -> list[dict[str, Any]]:
                 if row.get("unique_valid_candidate"):
                     unique_valid.add(row.get("smiles", ""))
         syntax_count = sum(1 for r in records if r.get("syntax_valid"))
-        membership_count = sum(1 for r in records if r.get("class_membership"))
+        valid_membership_count = sum(1 for r in records if r.get("valid_class_membership"))
+        membership_count_all = sum(1 for r in records if r.get("class_membership"))
         summaries.append({
             "class_name": class_name,
             "attempt_count": attempts,
@@ -220,7 +227,12 @@ def run_csd(args, classes: list[str]) -> list[dict[str, Any]]:
             "unique_valid_count": len(unique_valid),
             "reached_target": len(unique_valid) >= args.target_samples,
             "syntax_rate": syntax_count / max(1, len(records)),
-            "accuracy": membership_count / max(1, len(records)),
+            "accuracy": valid_membership_count / syntax_count if syntax_count else None,
+            "accuracy_definition": "class_membership_among_syntax_valid_molecules",
+            "accuracy_num_correct": valid_membership_count,
+            "accuracy_denominator": syntax_count,
+            "invalid_outputs_excluded_from_accuracy": len(records) - syntax_count,
+            "membership_rate_all_attempts": membership_count_all / max(1, len(records)),
             "wall_time": time.time() - start,
             "records": records,
         })

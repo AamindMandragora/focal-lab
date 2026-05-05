@@ -210,23 +210,6 @@ def ensure_spider_split(args: argparse.Namespace) -> None:
     )
 
 
-def unsupported_reason(dataset: str, method: str) -> str | None:
-    if method == "metadecode":
-        return None
-    if dataset == "spider" and method in {"itergen", "cars"}:
-        return None
-    if dataset == "smiles" and method == "cars":
-        return None
-    if dataset == "gsm":
-        return (
-            f"{method} has no GSM-Symbolic adapter in this checkout; "
-            "GSM support here is CRANE/metaDecode only."
-        )
-    if dataset == "smiles" and method == "itergen":
-        return "IterGen is wired here only for SQL/Spider, not SMILES class generation."
-    return f"No supported {method} runner is wired for {dataset}."
-
-
 def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[str]:
     return [
         args.python,
@@ -271,6 +254,60 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[s
     ]
 
 
+def gsm_itergen_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/run_itergen_gsm_split.py",
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--split-file",
+        str(args.gsm_split_file),
+        "--split-name",
+        "eval",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--model",
+        model.name,
+        "--device",
+        args.itergen_device,
+        "--seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--max-new-tokens",
+        str(args.itergen_gsm_max_new_tokens),
+        "--output",
+        str(output_path),
+    ]
+
+
+def gsm_cars_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_gsm_vs_cars.py",
+        "--cars-repo",
+        str(args.cars_repo),
+        "--output",
+        str(output_path),
+        "--split-file",
+        str(args.gsm_split_file),
+        "--split-name",
+        "eval",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--model-name",
+        model.name,
+        "--cars-style",
+        args.cars_style,
+        "--max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--max-new-tokens",
+        str(args.gsm_cars_max_new_tokens),
+        "--cuda-visible-devices",
+        args.cars_cuda_visible_devices,
+    ]
+
+
 def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]:
     return [
         args.python,
@@ -279,6 +316,8 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         f"{args.run_name}_spider_itergen_metadecode_{model.alias}",
         "--output-dir",
         str(args.output_dir),
+        "--itergen-repo",
+        str(args.itergen_repo),
         "--split-file",
         str(args.spider_split_file),
         "--train-size",
@@ -295,6 +334,10 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         args.device,
         "--itergen-device",
         args.itergen_device,
+        "--itergen-seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
         "--max-iterations",
         str(args.max_iterations),
         "--generation-model",
@@ -390,6 +433,33 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
     ]
 
 
+def smiles_itergen_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/run_itergen_smiles.py",
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--output",
+        str(output_path),
+        "--classes",
+        args.smiles_classes,
+        "--target-samples",
+        str(args.smiles_test_samples),
+        "--max-attempts",
+        str(args.smiles_max_attempts),
+        "--model",
+        model.name,
+        "--device",
+        args.itergen_device,
+        "--seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--max-new-tokens",
+        str(args.itergen_smiles_max_new_tokens),
+    ]
+
+
 def legacy_ablation_commands(args: argparse.Namespace) -> list[tuple[str, list[str], str]]:
     if not args.include_ablations:
         return []
@@ -412,7 +482,6 @@ def build_manifest(args: argparse.Namespace, models: list[ModelSpec], datasets: 
     cells = []
     for dataset in datasets:
         for method in methods:
-            reason = unsupported_reason(dataset, method)
             for model in models:
                 cells.append({
                     "cell_id": f"{dataset}_{method}_{model.alias}",
@@ -420,8 +489,7 @@ def build_manifest(args: argparse.Namespace, models: list[ModelSpec], datasets: 
                     "method": method,
                     "model_alias": model.alias,
                     "model_name": model.name,
-                    "status": "unsupported" if reason else "pending",
-                    "unsupported_reason": reason,
+                    "status": "pending",
                 })
     return {
         "run_name": args.run_name,
@@ -430,6 +498,10 @@ def build_manifest(args: argparse.Namespace, models: list[ModelSpec], datasets: 
         "methods": methods,
         "models": [model.__dict__ for model in models],
         "excluded_models": ["QwQ-32B"],
+        "adapter_contract": (
+            "Each dataset supplies its grammar, prompts/examples, and scorer; "
+            "each method runner consumes the dataset grammar explicitly."
+        ),
         "sizes": {
             "gsm": {
                 "train": 50,
@@ -506,11 +578,17 @@ def main() -> int:
     parser.add_argument("--spider-vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--spider-vllm-max-model-len", type=int, default=4096)
     parser.add_argument("--spider-cuda-visible-devices", default=os.environ.get("SPIDER_CUDA_VISIBLE_DEVICES", "2"))
+    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-device", default="cuda:0")
+    parser.add_argument("--itergen-seed", type=int, default=0)
+    parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
+    parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
+    parser.add_argument("--itergen-smiles-max-new-tokens", type=int, default=512)
 
     parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
     parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
 
@@ -528,6 +606,7 @@ def main() -> int:
     args.output_dir = args.output_dir.expanduser().resolve()
     args.gsm_split_file = args.gsm_split_file.expanduser().resolve()
     args.spider_split_file = args.spider_split_file.expanduser().resolve()
+    args.itergen_repo = args.itergen_repo.expanduser().resolve()
     args.cars_repo = args.cars_repo.expanduser().resolve()
 
     models = select_models(args.models)
@@ -554,26 +633,37 @@ def main() -> int:
 
     base_env = os.environ.copy()
 
-    for dataset in datasets:
-        for method in methods:
-            reason = unsupported_reason(dataset, method)
-            if reason:
-                for model in models:
-                    append_ledger(
-                        paths["ledger"],
-                        {
-                            "event": "cell_end",
-                            "cell_id": f"{dataset}_{method}_{model.alias}",
-                            "dataset": dataset,
-                            "method": method,
-                            "model_alias": model.alias,
-                            "model_name": model.name,
-                            "status": "unsupported",
-                            "reason": reason,
-                        },
-                    )
-
     for model in models:
+        if "gsm" in datasets and "itergen" in methods:
+            cell_id = f"gsm_itergen_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = gsm_itergen_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                meta={"dataset": "gsm", "method": "itergen", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
+            )
+
+        if "gsm" in datasets and "cars" in methods:
+            cell_id = f"gsm_cars_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = gsm_cars_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.cars_cuda_visible_devices),
+                meta={"dataset": "gsm", "method": "cars", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
+            )
+
         if "gsm" in datasets and "metadecode" in methods:
             cell_id = f"gsm_metadecode_{model.alias}"
             cmd = gsm_metadecode_command(args, model)
@@ -631,6 +721,21 @@ def main() -> int:
                 log_path=paths["logs"] / f"smiles_cars_metadecode_{model.alias}.log",
                 env=gpu_env(base_env, args.smiles_cuda_visible_devices),
                 meta={"dataset": "smiles", "method": "+".join(paired_methods), "model_alias": model.alias, "model_name": model.name},
+            )
+
+        if "smiles" in datasets and "itergen" in methods:
+            cell_id = f"smiles_itergen_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = smiles_itergen_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                meta={"dataset": "smiles", "method": "itergen", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
     for ablation_id, cmd, reason in legacy_ablation_commands(args):
