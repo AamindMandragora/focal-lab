@@ -237,10 +237,25 @@ class EvaluationResult:
             lines.append("\nDiagnostic Error Decomposition:")
             lines.extend(f"  {metric}" for metric in diagnostic_metrics)
 
+        provenance_metrics = self._summarize_provenance_metrics()
+        if provenance_metrics:
+            lines.append("\nOutput Provenance and Failure Localization:")
+            lines.extend(f"  {metric}" for metric in provenance_metrics)
+
+        contrast_metrics = self._summarize_correct_wrong_contrast()
+        if contrast_metrics:
+            lines.append("\nCorrect-vs-Wrong Behavioral Contrast:")
+            lines.extend(f"  {metric}" for metric in contrast_metrics)
+
         structural_metrics = self._summarize_structural_metrics()
         if structural_metrics:
             lines.append("\nStructural Generation Metrics:")
             lines.extend(f"  {metric}" for metric in structural_metrics)
+
+        snapshots = self._summarize_representative_snapshots()
+        if snapshots:
+            lines.append("\nRepresentative Factual Snapshots:")
+            lines.extend(snapshots)
 
         return "\n".join(lines)
 
@@ -255,6 +270,228 @@ class EvaluationResult:
             cost_part = f" [cost {before}->{after}]"
         return f"{helper}: {detail}{cost_part}".strip()
 
+    @staticmethod
+    def _redact_artifact_preview(value: Any, max_chars: int = 96) -> str:
+        """Return a compact structural preview without preserving dataset-specific text."""
+        if value is None:
+            return "none"
+        text = str(value).replace("\\n", " ").replace("\\r", " ")
+        text = re.sub(r"\s+", " ", text).strip()
+        if not text:
+            return "empty"
+        text = _anonymize_sql_preview(text)
+        keep_words = {"true", "false", "yes", "no", "none", "null", "and", "or", "not"}
+        text = re.sub(r"[-+]?\d+(?:\.\d+)?", "<num>", text)
+        text = re.sub(
+            r"(?<!<)\b[A-Za-z_][A-Za-z0-9_]*\b(?!>)",
+            lambda m: m.group(0) if m.group(0).lower() in keep_words or m.group(0).upper() in _SQL_KEYWORDS else "<id>",
+            text,
+        )
+        if len(text) > max_chars:
+            text = text[: max_chars - 3] + "..."
+        return text
+
+    @staticmethod
+    def _format_counter(counter: Counter[str], denominator: int, max_items: int = 5) -> str:
+        if not counter:
+            return "none"
+        return ", ".join(
+            f"{key} {count}/{denominator}"
+            for key, count in counter.most_common(max_items)
+        )
+
+    @classmethod
+    def _helper_counts_for_sample(cls, sample: Dict[str, Any]) -> Counter[str]:
+        return Counter(
+            event.get("helper", "unknown")
+            for event in sample.get("helper_trace") or []
+        )
+
+    @classmethod
+    def _control_tags_for_sample(cls, sample: Dict[str, Any]) -> List[str]:
+        helpers = set(cls._helper_counts_for_sample(sample))
+        tags: List[str] = []
+        if helpers & cls._UNCONSTRAINED_HELPERS:
+            tags.append("free_lm_generation")
+        if "UnconstrainedChunk" in helpers:
+            tags.append("free_lm_chunking")
+        if "EnterObservedConstrainedSpan" in helpers:
+            tags.append("observed_span_entry")
+        if "OpenConstrainedSpan" in helpers:
+            tags.append("explicit_span_entry")
+        if helpers & cls._HARD_TOKEN_HELPERS:
+            tags.append("hard_token_constrained")
+        if helpers & cls._CONFIDENCE_HELPERS:
+            tags.append("confidence_gated")
+        if helpers & cls._GROUP_OR_ADAPTIVE_HELPERS:
+            tags.append("group_or_adaptive_bias")
+        if helpers & cls._SAFE_LOGIT_STEP_HELPERS:
+            tags.append("safe_logit_step")
+        if helpers & cls._SOFT_CONSTRAINED_HELPERS:
+            tags.append("soft_then_hard_fallback")
+        if helpers & cls._SYMBOL_HELPERS:
+            tags.append("symbol_or_chunk_acceptance")
+        if helpers & cls._REPAIR_HELPERS:
+            tags.append("parser_repair_or_rollback")
+        if not any(event.get("helper", "unknown") in cls._CONSTRAINED_HELPERS for event in sample.get("helper_trace") or []):
+            tags.append("no_constrained_activity")
+        return tags or ["no_trace"]
+
+    @classmethod
+    def _derive_answer_provenance(cls, sample: Dict[str, Any]) -> str:
+        source = sample.get("answer_source") or "none"
+        tags = set(sample.get("provenance_tags") or cls._control_tags_for_sample(sample))
+        if source == "last_visible_span":
+            if "no_constrained_activity" in tags:
+                return "last_visible_span_without_constrained_activity"
+            if "explicit_span_entry" in tags:
+                return "last_visible_span_after_explicit_entry"
+            if "observed_span_entry" in tags:
+                return "last_visible_span_after_observed_entry"
+            return "last_visible_span_with_constrained_activity"
+        if source == "text_fallback":
+            return "free_text_fallback"
+        if source == "hidden_or_task_extractor":
+            if "no_constrained_activity" in tags:
+                return "task_extractor_without_constrained_activity"
+            return "task_extractor_with_constrained_activity"
+        return "no_scored_answer"
+
+    @classmethod
+    def _derive_failure_location(cls, sample: Dict[str, Any]) -> str:
+        if sample.get("runtime_budget_exceeded"):
+            return "time_budget_exceeded"
+        if sample.get("error"):
+            return "output_record_error"
+        if sample.get("is_correct"):
+            return "correct"
+        if not sample.get("has_extracted_answer", False):
+            return "answer_extraction_or_completion"
+        if sample.get("hit_max_steps"):
+            return "token_budget_exhausted"
+        if not sample.get("uses_hidden_chunks"):
+            if int(sample.get("num_visible_spans", 0) or 0) == 0:
+                return "span_absent"
+            if int(sample.get("num_valid_visible_spans", 0) or 0) == 0:
+                return "no_valid_visible_span"
+            if not sample.get("is_syntax_valid"):
+                return "visible_span_syntax"
+        if sample.get("is_syntax_valid") and not sample.get("is_correct"):
+            return "syntax_valid_semantic_mismatch"
+        if cls._sample_has_constrained_activity(sample):
+            return "wrong_after_constrained_activity"
+        return "wrong_without_constrained_activity"
+
+    @classmethod
+    def _annotate_sample_observability(cls, sample: Dict[str, Any]) -> Dict[str, Any]:
+        tags = cls._control_tags_for_sample(sample)
+        sample["provenance_tags"] = tags
+        sample["answer_provenance"] = cls._derive_answer_provenance(sample)
+        sample["failure_location"] = cls._derive_failure_location(sample)
+        return sample
+
+    def get_provenance_counts(self) -> Dict[str, Counter[str]]:
+        """Return neutral provenance/localization buckets for prompt deltas."""
+        answer_provenance: Counter[str] = Counter()
+        control_tags: Counter[str] = Counter()
+        failure_location: Counter[str] = Counter()
+        for sample in self.sample_outputs:
+            if "provenance_tags" not in sample:
+                self._annotate_sample_observability(sample)
+            answer_provenance[sample.get("answer_provenance", "unknown")] += 1
+            failure_location[sample.get("failure_location", "unknown")] += 1
+            for tag in sample.get("provenance_tags") or []:
+                control_tags[tag] += 1
+        return {
+            "answer_provenance": answer_provenance,
+            "control_tags": control_tags,
+            "failure_location": failure_location,
+        }
+
+    def _summarize_provenance_metrics(self) -> List[str]:
+        if not self.sample_outputs:
+            return []
+        n = len(self.sample_outputs)
+        counts = self.get_provenance_counts()
+        return [
+            "Answer provenance: " + self._format_counter(counts["answer_provenance"], n),
+            "Control path tags: " + self._format_counter(counts["control_tags"], n),
+            "Failure localization: " + self._format_counter(counts["failure_location"], n),
+        ]
+
+    def _summarize_correct_wrong_contrast(self) -> List[str]:
+        if not self.sample_outputs:
+            return []
+
+        def summarize(label: str, samples: List[Dict[str, Any]]) -> str:
+            n = len(samples)
+            if n == 0:
+                return f"{label}: 0 examples"
+            provenance = Counter(sample.get("answer_provenance", "unknown") for sample in samples)
+            tags: Counter[str] = Counter()
+            locations = Counter(sample.get("failure_location", "unknown") for sample in samples)
+            for sample in samples:
+                for tag in sample.get("provenance_tags") or []:
+                    tags[tag] += 1
+            avg_tokens = self._mean([float(sample.get("token_count", 0) or 0) for sample in samples]) or 0.0
+            avg_valid_spans = self._mean([float(sample.get("num_valid_visible_spans", 0) or 0) for sample in samples]) or 0.0
+            syntax_valid = sum(1 for sample in samples if sample.get("is_syntax_valid"))
+            return (
+                f"{label}: {n} examples; syntax_valid {syntax_valid}/{n}; "
+                f"avg_tokens {avg_tokens:.2f}; avg_valid_spans {avg_valid_spans:.2f}; "
+                f"provenance {self._format_counter(provenance, n, max_items=3)}; "
+                f"control_tags {self._format_counter(tags, n, max_items=4)}; "
+                f"locations {self._format_counter(locations, n, max_items=4)}"
+            )
+
+        correct = [sample for sample in self.sample_outputs if sample.get("is_correct")]
+        wrong = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
+        return [summarize("Correct examples", correct), summarize("Wrong examples", wrong)]
+
+    def _summarize_representative_snapshots(self, max_snapshots: int = 4) -> List[str]:
+        """Show small redacted factual records for distinct observed failure locations."""
+        if not self.sample_outputs:
+            return []
+        selected: List[tuple[str, Dict[str, Any]]] = []
+        seen_locations: set[str] = set()
+        priority = [
+            "syntax_valid_semantic_mismatch",
+            "visible_span_syntax",
+            "answer_extraction_or_completion",
+            "span_absent",
+            "no_valid_visible_span",
+            "time_budget_exceeded",
+            "wrong_after_constrained_activity",
+            "wrong_without_constrained_activity",
+        ]
+        wrong_samples = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
+        for location in priority:
+            for sample in wrong_samples:
+                if sample.get("failure_location") == location and location not in seen_locations:
+                    selected.append((location, sample))
+                    seen_locations.add(location)
+                    break
+            if len(selected) >= max_snapshots:
+                break
+        if not selected:
+            return []
+
+        lines = []
+        for location, sample in selected:
+            tags = ",".join((sample.get("provenance_tags") or [])[:4]) or "none"
+            lines.append(
+                "  - "
+                f"location={location}; "
+                f"syntax={'valid' if sample.get('is_syntax_valid') else 'invalid'}; "
+                f"answer_source={sample.get('answer_source', 'none')}; "
+                f"provenance={sample.get('answer_provenance', 'unknown')}; "
+                f"expected={self._redact_artifact_preview(sample.get('expected'))}; "
+                f"actual={self._redact_artifact_preview(sample.get('actual'))}; "
+                f"valid_spans={sample.get('num_valid_visible_spans', 0)}/{sample.get('num_visible_spans', 0)}; "
+                f"control_tags={tags}"
+            )
+        return lines
+
     def get_behavioral_context_summary(self, max_examples: int = 1, max_trace_events: int = 12) -> str:
         traced_examples = [s for s in self.sample_outputs if s.get("helper_trace")]
         if not traced_examples:
@@ -265,10 +502,14 @@ class EvaluationResult:
             trace = sample.get("helper_trace") or []
             counts = Counter(event.get("helper", "unknown") for event in trace)
             lines.append(f"Example {idx + 1}:")
+            if "provenance_tags" not in sample:
+                self._annotate_sample_observability(sample)
             lines.append(
                 f"  Token count: {sample.get('token_count', 'N/A')} | "
                 f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
-                f"Syntax rate: {sample.get('syntax_rate', 0.0):.1%}"
+                f"Syntax rate: {sample.get('syntax_rate', 0.0):.1%} | "
+                f"Provenance: {sample.get('answer_provenance', 'unknown')} | "
+                f"Location: {sample.get('failure_location', 'unknown')}"
             )
             if counts:
                 counts_summary = ", ".join(
@@ -439,17 +680,34 @@ class EvaluationResult:
             "balanced_with_span": complete_spans > 0 and opens == closes == complete_spans,
         }
 
+    _HARD_TOKEN_HELPERS = {"ConstrainedStep"}
+    _CONFIDENCE_HELPERS = {"ConfidenceGatedStep"}
+    _GROUP_OR_ADAPTIVE_HELPERS = {"AdaptiveConstrainedStep", "GroupBoostedConstrainedStep"}
+    _SAFE_LOGIT_STEP_HELPERS = {
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
+    }
+    _SOFT_CONSTRAINED_HELPERS = {"SoftConstrainedStep", "SafeSoftConstrainedStep"}
+    _SYMBOL_HELPERS = {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}
+    _REPAIR_HELPERS = {
+        "RollbackConstrainedSpan",
+        "RollbackConstrainedSuffix",
+        "RollbackToValidPrefix",
+    }
     _CONSTRAINED_HELPERS = {
         "OpenConstrainedSpan",
         "EnterObservedConstrainedSpan",
         "CloseConstrainedSpan",
-        "ConstrainedStep",
-        "AdaptiveConstrainedStep",
-        "GroupBoostedConstrainedStep",
         "AppendConstrainedToken",
-        "ConstrainedSymbol",
-        "ConstrainedSymbolInGenerated",
-        "RollbackConstrainedSuffix",
+        *_HARD_TOKEN_HELPERS,
+        *_CONFIDENCE_HELPERS,
+        *_GROUP_OR_ADAPTIVE_HELPERS,
+        *_SAFE_LOGIT_STEP_HELPERS,
+        *_SOFT_CONSTRAINED_HELPERS,
+        *_SYMBOL_HELPERS,
+        *_REPAIR_HELPERS,
     }
 
     _UNCONSTRAINED_HELPERS = {"UnconstrainedStep", "UnconstrainedChunk"}
@@ -2029,7 +2287,7 @@ class Evaluator:
                         q_str = (example.premises + " | " + example.conclusion)[:200]
                     else:
                         q_str = example.get("question", str(example.get("premises", "")))[:200]
-                    sample_outputs.append({
+                    sample = {
                         "question": q_str,
                         "expected": expected,
                         "actual": actual or output_text[:100],
@@ -2057,7 +2315,8 @@ class Evaluator:
                         ),
                         "helper_trace": helper_trace,
                         "smiles_eval": smiles_eval,
-                    })
+                    }
+                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
 
                 except Exception as e:
                     if hasattr(example, "conclusion"):
@@ -2068,7 +2327,7 @@ class Evaluator:
                     timed_out = isinstance(e, PerExampleTimeout)
                     if timed_out:
                         print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
-                    sample_outputs.append({
+                    sample = {
                         "question": q_str,
                         "expected": expected,
                         "actual": None,
@@ -2095,7 +2354,9 @@ class Evaluator:
                             and elapsed > self.max_seconds_per_example
                         ),
                         "error": str(e),
-                    })
+                        "helper_trace": [],
+                    }
+                    sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
                     if timed_out:
                         total_time = time.time() - start_time
                         evaluated_count = len(sample_outputs)

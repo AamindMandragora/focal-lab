@@ -56,7 +56,20 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         "cost_after": cost_after,
     }
 
-    if name in {"UnconstrainedStep", "ConstrainedStep", "PenalizedConstrainedStep", "BoostedConstrainedStep", "RepetitionPenaltyStep", "TemperatureConstrainedStep"}:
+    if name in {
+        "UnconstrainedStep",
+        "ConstrainedStep",
+        "PenalizedConstrainedStep",
+        "BoostedConstrainedStep",
+        "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
+        "GroupBoostedConstrainedStep",
+        "AdaptiveConstrainedStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
+    }:
         # Keep delimiter tokens verbatim; redact other tokens (synthesis-sample-leaky).
         token = _safe_token(result)
         event["token"] = token
@@ -77,18 +90,19 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         )
         return event
 
-    if name == "SoftConstrainedStep":
-        is_valid = bool(result[1]) if isinstance(result, tuple) and len(result) == 2 else False
+    if name in {"SoftConstrainedStep", "SafeSoftConstrainedStep", "ConfidenceGatedStep"}:
+        flag = bool(result[1]) if isinstance(result, tuple) and len(result) == 2 else False
         token = _safe_token(result[0]) if isinstance(result, tuple) and len(result) == 2 else _safe_token(result)
         event["token"] = token
-        event["is_valid"] = is_valid
-        event["detail"] = f"token={token}, is_valid={is_valid}"
+        event["fallback_or_constrained_path"] = flag
+        event["detail"] = f"token={token}, fallback_or_constrained_path={flag}"
         return event
 
-    if name == "OpenConstrainedSpan":
+    if name in {"OpenConstrainedSpan", "EnterObservedConstrainedSpan"}:
         generated_len = _safe_len(result[0]) if isinstance(result, tuple) and len(result) >= 1 else None
         event["generated_len"] = generated_len
-        event["detail"] = f"opened span, generated_len={generated_len}"
+        action = "entered observed span" if name == "EnterObservedConstrainedSpan" else "opened span"
+        event["detail"] = f"{action}, generated_len={generated_len}"
         return event
 
     if name == "AppendConstrainedToken":
@@ -105,17 +119,44 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"closed span, generated_len={generated_len}"
         return event
 
-    if name == "RollbackConstrainedSpan":
-        current_len = _safe_len(result[1]) if isinstance(result, tuple) and len(result) >= 2 else None
+    if name in {"RollbackConstrainedSpan", "RollbackConstrainedSuffix", "RollbackToValidPrefix"}:
+        current_len = _safe_len(result[1]) if isinstance(result, tuple) and len(result) >= 2 else _safe_len(result)
         event["current_len"] = current_len
         event["detail"] = f"rollback, current_len={current_len}"
+        return event
+
+    if name in {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}:
+        hit_eos = False
+        steps_used = None
+        current_len = None
+        generated_len = None
+        if isinstance(result, tuple):
+            if name == "ConstrainedSymbol" and len(result) >= 3:
+                current_len = _safe_len(result[0])
+                hit_eos = bool(result[1])
+                steps_used = int(result[2])
+            elif name == "ConstrainedSymbolInGenerated" and len(result) >= 4:
+                generated_len = _safe_len(result[0])
+                current_len = _safe_len(result[1])
+                hit_eos = bool(result[2])
+                steps_used = int(result[3])
+        event["current_len"] = current_len
+        event["generated_len"] = generated_len
+        event["hit_eos"] = hit_eos
+        event["steps_used"] = steps_used
+        event["detail"] = f"symbol steps={steps_used}, hit_eos={hit_eos}, current_len={current_len}, generated_len={generated_len}"
         return event
 
     if name == "DeadEndDetection":
         event["detail"] = f"narrow={bool(result)}"
         return event
 
-    if name in {"BoostTokenLogits", "PenalizeTokenLogits"}:
+    if name == "ValidTokenCount":
+        event["count"] = int(result) if isinstance(result, int) else str(result)
+        event["detail"] = f"count={event['count']}"
+        return event
+
+    if name in {"BoostTokenLogits", "PenalizeTokenLogits", "SafeBoostTokenLogits", "SafePenalizeTokenLogits"}:
         # Strategy chose these tokens; conservatively keep universals,
         # redact others to prevent strategy from passing through sampled
         # tokens.
@@ -488,20 +529,42 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "UnconstrainedStep",
         "UnconstrainedChunk",
         "OpenConstrainedSpan",
+        "EnterObservedConstrainedSpan",
         "AppendConstrainedToken",
         "CloseConstrainedSpan",
         "ConstrainedStep",
+        "ConfidenceGatedStep",
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
         "SoftConstrainedStep",
         "RepetitionPenaltyStep",
         "TemperatureConstrainedStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
+        "SafeSoftConstrainedStep",
+        "GroupBoostedConstrainedStep",
+        "AdaptiveConstrainedStep",
+        "ConstrainedSymbol",
+        "ConstrainedSymbolInGenerated",
         "RollbackConstrainedSpan",
+        "RollbackConstrainedSuffix",
+        "RollbackToValidPrefix",
         "DeadEndDetection",
+        "ValidTokenCount",
         "BoostTokenLogits",
         "PenalizeTokenLogits",
+        "SafeBoostTokenLogits",
+        "SafePenalizeTokenLogits",
         "TopValidCandidates",
         "IsTokenValidNext",
+        "LastTokenBefore",
+        "ExtractAfterKeyword",
+        "FlattenTokenGroups",
+        "GroupContaining",
+        "IntersectTokenSets",
+        "SubtractTokenSets",
     ]
 
     for name in helper_names:
