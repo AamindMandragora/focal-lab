@@ -22,7 +22,7 @@ import os
 import random
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 DEFAULT_SPIDER_DIR = Path(
     os.environ.get("SPIDER_DATA_DIR", "/home/aadivyar/spider_data/spider_data")
@@ -167,6 +167,7 @@ def load_spider(
     limit: Optional[int] = None,
     random_sample: bool = False,
     seed: Optional[int] = None,
+    indices: Optional[Sequence[int]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Load the Spider dev split.
@@ -178,6 +179,7 @@ def load_spider(
         limit: maximum number of rows to return.
         random_sample: if True and limit is set, pick random indices.
         seed: RNG seed when random_sample is True.
+        indices: Optional explicit row indices to select before applying limit.
 
     Returns:
         list of dicts (see module docstring).
@@ -208,6 +210,18 @@ def load_spider(
     if not rows:
         raise RuntimeError("Failed to load Spider: " + "; ".join(errors))
 
+    if indices is not None:
+        selected: List[Dict[str, Any]] = []
+        for idx in indices:
+            if idx < 0 or idx >= len(rows):
+                raise IndexError(
+                    f"Spider index {idx} is out of range for {len(rows)} loaded rows"
+                )
+            row = dict(rows[idx])
+            row["spider_source_index"] = idx
+            selected.append(row)
+        rows = selected
+
     if limit is not None and limit > 0:
         if random_sample:
             rng = random.Random(seed) if seed is not None else random
@@ -217,6 +231,75 @@ def load_spider(
             rows = rows[: min(limit, len(rows))]
 
     return rows
+
+
+def make_spider_train_test_split(
+    total_examples: int,
+    train_size: int = 50,
+    test_size: int = 100,
+    seed: int = 123,
+) -> Dict[str, Any]:
+    """Create a deterministic non-overlapping Spider train/test index split."""
+    if total_examples <= 0:
+        raise ValueError("total_examples must be positive")
+    if train_size <= 0 or test_size <= 0:
+        raise ValueError("train_size and test_size must be positive")
+    if train_size + test_size > total_examples:
+        raise ValueError(
+            f"Requested train_size + test_size = {train_size + test_size}, "
+            f"but only {total_examples} Spider examples are available"
+        )
+
+    rng = random.Random(seed)
+    shuffled = list(range(total_examples))
+    rng.shuffle(shuffled)
+    train_indices = sorted(shuffled[:train_size])
+    test_indices = sorted(shuffled[train_size: train_size + test_size])
+    return {
+        "seed": seed,
+        "split_strategy": "random_non_overlapping",
+        "total_examples": total_examples,
+        "train_indices": train_indices,
+        "test_indices": test_indices,
+        "train_size": len(train_indices),
+        "test_size": len(test_indices),
+    }
+
+
+def write_spider_train_test_split(
+    output_path: Path | str,
+    *,
+    source: str = "auto",
+    spider_dir: Optional[Path | str] = None,
+    train_size: int = 50,
+    test_size: int = 100,
+    seed: int = 123,
+    include_preview: bool = True,
+) -> Dict[str, Any]:
+    """Write a deterministic Spider split manifest for synthesis/test workflows."""
+    rows = load_spider(source=source, spider_dir=spider_dir)
+    split = make_spider_train_test_split(
+        total_examples=len(rows),
+        train_size=train_size,
+        test_size=test_size,
+        seed=seed,
+    )
+    if include_preview:
+        for split_name in ("train", "test"):
+            previews = []
+            for idx in split[f"{split_name}_indices"][:10]:
+                row = rows[idx]
+                previews.append({
+                    "index": idx,
+                    "db_id": row.get("db_id", ""),
+                    "question": row.get("question", ""),
+                })
+            split[f"{split_name}_preview"] = previews
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(split, indent=2))
+    return split
 
 
 def write_gold_file(examples: List[Dict[str, Any]], path: Path) -> None:

@@ -225,6 +225,45 @@ def _get_cached_vllm_engine(
     return llm, tokenizer
 
 
+def clear_vllm_engine_cache() -> None:
+    """Release cached vLLM engines before switching back to a generator model."""
+    cached_engines = list(_VLLM_ENGINE_CACHE.values())
+    _VLLM_ENGINE_CACHE.clear()
+
+    for llm, _tokenizer in cached_engines:
+        for attr_name in ("shutdown", "close"):
+            maybe_shutdown = getattr(llm, attr_name, None)
+            if callable(maybe_shutdown):
+                try:
+                    maybe_shutdown()
+                except Exception:
+                    pass
+
+        engine = getattr(llm, "llm_engine", None)
+        if engine is not None:
+            for attr_name in ("shutdown", "close"):
+                maybe_shutdown = getattr(engine, attr_name, None)
+                if callable(maybe_shutdown):
+                    try:
+                        maybe_shutdown()
+                    except Exception:
+                        pass
+
+    try:
+        from vllm.distributed import destroy_distributed_environment, destroy_model_parallel
+
+        destroy_model_parallel()
+        destroy_distributed_environment()
+    except Exception:
+        pass
+
+    import gc
+
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 def _get_vllm_quantization_kwargs(
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,
@@ -598,6 +637,18 @@ def create_huggingface_lm(
         model = AutoModelForCausalLM.from_pretrained(**kwargs)
         input_device = get_model_input_device(model)
         print(f"Model loaded across {torch.cuda.device_count()} GPU(s), inputs go to {input_device}")
+    elif device == "mps" and torch.backends.mps.is_available():
+        # Apple Silicon path: FP16 on Metal. bitsandbytes is unsupported on MPS,
+        # so load_in_4bit/load_in_8bit flags are ignored if requested here.
+        if load_in_4bit or load_in_8bit:
+            print("⚠️  4/8-bit quantization is not supported on MPS — loading FP16 instead.")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            trust_remote_code=True,
+            torch_dtype=torch.float16,
+        )
+        model = model.to("mps")
+        input_device = torch.device("mps")
     else:
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
@@ -676,9 +727,7 @@ def create_huggingface_lm(
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
-                    do_sample=True,
-                    temperature=1.0,
-                    top_p=1.0,
+                    do_sample=False,
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -787,8 +836,7 @@ def create_vllm_lm(
             full_prompt = self.instruction_text + prefix_text
             sampling_params = SamplingParams(
                 max_tokens=max_new_tokens,
-                temperature=1.0,
-                top_p=1.0,
+                temperature=0.0,
                 detokenize=False,
             )
             outputs = self.engine.generate([full_prompt], sampling_params=sampling_params, use_tqdm=False)

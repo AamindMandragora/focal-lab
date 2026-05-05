@@ -230,6 +230,36 @@ Examples:
     )
 
     parser.add_argument(
+        "--gsm-split-file",
+        type=str,
+        default=None,
+        help="Optional GSM train/eval split manifest with train_indices and eval_indices"
+    )
+
+    parser.add_argument(
+        "--gsm-split-name",
+        type=str,
+        choices=["train", "eval"],
+        default="train",
+        help="Which split from --gsm-split-file to use during synthesis evaluation (default: train)"
+    )
+
+    parser.add_argument(
+        "--spider-split-file",
+        type=str,
+        default=None,
+        help="Optional Spider train/test split manifest with train_indices and test_indices"
+    )
+
+    parser.add_argument(
+        "--spider-split-name",
+        type=str,
+        choices=["train", "test", "eval"],
+        default="train",
+        help="Which split from --spider-split-file to use during synthesis evaluation (default: train)"
+    )
+
+    parser.add_argument(
         "--smiles-samples-per-class",
         type=int,
         default=10,
@@ -370,6 +400,10 @@ Examples:
         sample_seed=args.eval_seed,
         max_seconds_per_example=args.eval_max_seconds_per_example,
         gsm_source_dir=args.gsm_source_dir,
+        gsm_split_file=args.gsm_split_file,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file,
+        spider_split_name=args.spider_split_name,
         smiles_classes=args.smiles_classes,
     )
 
@@ -385,7 +419,7 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
-        require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
+        require_delimiters=args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
     )
