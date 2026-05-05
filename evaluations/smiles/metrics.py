@@ -42,6 +42,9 @@ def clean_smiles_output(output: str | None) -> str:
     for marker in EOS_MARKERS:
         text = text.replace(marker, "")
     text = text.replace("<<", "").replace(">>", "")
+    # Safety net: remove orphan angle-bracket control tokens that can leak from
+    # delimiter generation into the extracted molecule string.
+    text = text.replace("<", "").replace(">", "")
     text = text.split("\n\n", 1)[0].strip()
     if "Molecule:" in text:
         text = text.rsplit("Molecule:", 1)[-1].strip()

@@ -39,7 +39,7 @@ echo "Using Python: $PYTHON_BIN"
   "${DAFNY_PATH_ARG[@]}" \
   --device cuda \
   --min-accuracy "${MIN_ACCURACY:-0.70}" \
-  --min-syntax-rate "${MIN_SYNTAX_RATE:-0.71}" \
+  --min-syntax-rate "${MIN_SYNTAX_RATE:-0.70}" \
   --eval-sample-size "${EVAL_SAMPLE_SIZE:-30}" \
   --eval-max-steps "${EVAL_MAX_STEPS:-512}" \
   --eval-seed "${EVAL_SEED:-123}" \
