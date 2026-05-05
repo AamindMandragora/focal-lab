@@ -78,6 +78,10 @@ You must output ONLY the Dafny method body for:
 - `generated` / `generatedPrefix` contain the full answer text, including delimiter tokens.
 - `currentConstrained` / `currentConstrainedOut` track only the active constrained segment contents between delimiters.
 - EOS is terminal.
+- Visible delimiters such as `"<<"` and `">>"` are task-contract artifacts.
+  Use them when the task or evaluator requires visible constrained spans. Do
+  not invent visible delimiters for tasks whose contract is hidden constrained
+  chunks, fully constrained objects, or another structured-output surface.
 
 ## Available Tools
 
@@ -374,6 +378,12 @@ Task:
 Output ONLY the Dafny method body. Do NOT output a method signature, outer wrapper text, or markdown code fences.
 
 ## Verified Examples
+
+The verified examples below are pattern demonstrations, not task-specific recommendations.
+Use them as a palette of mechanisms: span entry, constrained progression,
+closing/termination, repair, chunking, and preference shaping. Adapt or combine
+only the parts whose control behavior matches the current task contract and
+measured failures; do not copy an example shape just because it verifies.
 
 ```dafny
 // CSD_RATIONALE_BEGIN
@@ -1317,6 +1327,7 @@ Your previous method body failed Dafny verification.
 Task:
 {task_description}
 
+{search_memory_block}
 Previous attempt:
 ```dafny
 {previous_strategy}
@@ -1341,6 +1352,25 @@ Use them as examples of valid helper usage, state tracking, loop structure, and 
 
 {verified_examples}
 
+Adaptive revision policy:
+Treat balanced-best and previous evaluated attempts as evidence, not templates.
+When preserving a mechanism, preserve it because measured behavior says it
+protected a useful subsystem. A useful ingredient is a mechanism with evidence
+of contributing to a positive metric shift, not a whole strategy template. First
+choose the refinement mode. If balanced-best is near target, make a surgical
+repair that preserves its broad structure and answer-production path, changing
+only the measured weak point. If balanced-best is delimiter-valid with decent
+syntax but not near target, preserve useful ingredients, compare the
+contract/syntax anchor with the accuracy anchor if both are present, and change
+one causal axis. When anchors differ, prefer merge/repair: preserve the
+contract anchor's delimiter contract while importing only one accuracy-improving
+ingredient from the accuracy anchor; alternatively repair the accuracy anchor's
+contract if that is the smaller change. If there is no valid basin, repeated
+single-axis repairs have failed, or metrics show a specific useful ingredient
+stopped helping, make a causal structural change while carrying forward the
+useful ingredients that still have positive metric evidence. In any mode, name
+the measured failure source and avoid repeating a broad behavior profile unless
+the next change alters the causal axis that failed.
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
 Use only the contracts and tools already available in the system prompt.
@@ -1350,6 +1380,10 @@ Use only the contracts and tools already available in the system prompt.
 RUNTIME_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed at runtime.
 
+Task:
+{task_description}
+
+{search_memory_block}
 Previous attempt:
 ```dafny
 {previous_strategy}
@@ -1362,13 +1396,14 @@ Runtime error:
 
 Fix the runtime error. If needed, rewrite the method body instead of making only local edits.
 Output ONLY a corrected method body (no signature, no braces, no markdown fences).
-The corrected body must include the required rationale block at the top.
+The corrected body must include the required rationale and proof sketch blocks at the top.
 """
 
 
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
+{search_memory_block}
 Previous attempt:
 ```dafny
 {previous_strategy}
@@ -1381,7 +1416,7 @@ Compilation error:
 
 Fix the compilation error. If needed, rewrite the method body instead of making only local edits.
 Output ONLY a corrected method body (no signature, no braces, no markdown fences).
-The corrected body must include the required rationale block at the top.
+The corrected body must include the required rationale and proof sketch blocks at the top.
 """
 
 
@@ -1389,10 +1424,13 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
+{search_memory_block}
 Content to rewrite:
 ```dafny
 {previous_strategy}
 ```
+
+The corrected body must include the required rationale and proof sketch blocks.
 """
 
 
@@ -1407,6 +1445,7 @@ Treat the evaluation results below as factual observations of generated outputs.
 Task:
 {task_description}
 
+{search_memory_block}
 ## Strategy Context
 
 Previous/current evaluated attempt:
@@ -1431,17 +1470,38 @@ parts, if any, are relevant to the next strategy revision.
 {verified_examples}
 
 Recent evaluation history is provided for context.
-Use the evaluation history to avoid repeating strategies that already failed.
-Prefer substantive changes over small parameter-only tweaks when the prior
-strategy structure performed poorly. Preserve and improve ideas that were
-closer to the thresholds.
+Use the evaluation history to recognize which prior approach families already
+failed, matched, or improved. When balanced-best is far from target or a family
+repeatedly underperforms, prefer substantive causal changes over small
+parameter-only tweaks. When balanced-best is near target, prefer a minimal
+localized repair that preserves the successful family unless that exact family
+has already failed multiple surgical repairs.
 Best-so-far means the strategy with the best balanced progress on both accuracy
 and syntax. A strategy that is strong on only one metric but weak on the other
 is not best-so-far merely because one score is high.
 Avoid small parameter tweaks to a strategy shape that repeatedly underperformed.
-If a shape regressed multiple times, make a structurally different change.
-If a shape is best-so-far, preserve its core unless changing a clearly isolated
-failure mode.
+If a shape regressed multiple times and is not the near-win balanced-best family,
+make a structurally different change.
+Adaptive revision policy:
+Treat balanced-best and previous evaluated attempts as evidence, not templates.
+When preserving a mechanism, preserve it because measured behavior says it
+protected a useful subsystem. A useful ingredient is a mechanism with evidence
+of contributing to a positive metric shift, not a whole strategy template. First
+choose the refinement mode. If balanced-best is near target, use it as an anchor
+for a surgical repair: preserve its broad structure and answer-production path,
+and change only the measured weak point. If balanced-best is delimiter-valid
+with decent syntax but not near target, preserve useful ingredients, compare the
+contract/syntax anchor with the accuracy anchor if both are present, and change
+one causal axis. When anchors differ, prefer merge/repair: preserve the
+contract anchor's delimiter contract while importing only one accuracy-improving
+ingredient from the accuracy anchor; alternatively repair the accuracy anchor's
+contract if that is the smaller change. If there is no valid basin, repeated
+single-axis repairs have failed, or metrics show a specific useful ingredient
+stopped helping, then make a causal structural change while carrying forward the
+useful ingredients that still have positive metric evidence. Do not re-submit
+balanced-best or a balanced-best-like near-copy whose expected metric movement
+is unclear. Name the measured failure source and avoid repeating a broad
+behavior profile unless the next change alters the causal axis that failed.
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
 The revised rationale should explain what changed in response to the evaluation results.
@@ -1464,11 +1524,15 @@ def build_verification_error_prompt(
     structured_feedback: str = "",
     error_history: str = "",
     strategy_context: str = "",
+    search_memory: str = "",
 ) -> tuple[str, str]:
     behavioral_context_block = ""
     structured_feedback_block = ""
     error_history_block = ""
     strategy_context_block = ""
+    search_memory_block = ""
+    if search_memory:
+        search_memory_block = f"{search_memory}\n"
     if strategy_context:
         strategy_context_block = (
             "\nStrategy context from evaluated attempts before this verification failure:\n"
@@ -1501,28 +1565,47 @@ def build_verification_error_prompt(
         error_history_block=error_history_block,
         behavioral_context_block=behavioral_context_block,
         verified_examples=VERIFIED_EXAMPLES,
+        search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
 
 
-def build_runtime_error_prompt(previous_strategy: str, error_traceback: str) -> tuple[str, str]:
+def build_runtime_error_prompt(
+    previous_strategy: str,
+    error_traceback: str,
+    task_description: str = "Unknown task",
+    search_memory: str = "",
+) -> tuple[str, str]:
+    search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
+        task_description=task_description,
         previous_strategy=previous_strategy,
         error_traceback=error_traceback,
+        search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
 
 
-def build_compilation_error_prompt(previous_strategy: str, error_message: str) -> tuple[str, str]:
+def build_compilation_error_prompt(
+    previous_strategy: str,
+    error_message: str,
+    search_memory: str = "",
+) -> tuple[str, str]:
+    search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
         previous_strategy=previous_strategy,
         error_message=error_message,
+        search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
 
 
-def build_format_repair_prompt(previous_strategy: str) -> tuple[str, str]:
-    user_prompt = FORMAT_REPAIR_PROMPT.format(previous_strategy=previous_strategy)
+def build_format_repair_prompt(previous_strategy: str, search_memory: str = "") -> tuple[str, str]:
+    search_memory_block = f"{search_memory}\n" if search_memory else ""
+    user_prompt = FORMAT_REPAIR_PROMPT.format(
+        previous_strategy=previous_strategy,
+        search_memory_block=search_memory_block,
+    )
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -1532,9 +1615,13 @@ def build_evaluation_failure_prompt(
     evaluation_feedback: str,
     evaluation_history: str = "",
     working_hypothesis: str = "",
+    search_memory: str = "",
 ) -> tuple[str, str]:
     evaluation_history_block = ""
     working_hypothesis_block = ""
+    search_memory_block = ""
+    if search_memory:
+        search_memory_block = f"{search_memory}\n"
     if evaluation_history:
         evaluation_history_block = (
             "\nRecent evaluation history:\n```\n"
@@ -1553,5 +1640,6 @@ def build_evaluation_failure_prompt(
         evaluation_feedback=evaluation_feedback,
         evaluation_history_block=evaluation_history_block,
         verified_examples=VERIFIED_EXAMPLES,
+        search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
