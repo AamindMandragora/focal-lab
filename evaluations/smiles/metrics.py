@@ -117,6 +117,7 @@ def evaluate_smiles_output(
     membership_ok = target_class_membership(class_name, smiles)
     exemplar = is_prompt_exemplar(smiles, prompt_exemplars)
     unique_valid_candidate = bool(smiles and syntax_ok and membership_ok and not exemplar)
+    valid_class_membership = bool(syntax_ok and membership_ok)
     return {
         "smiles": smiles,
         "grammar_valid": grammar_ok,
@@ -124,6 +125,10 @@ def evaluate_smiles_output(
         "rdkit_valid": rdkit_ok,
         "syntax_valid": syntax_ok,
         "class_membership": membership_ok,
+        # Accuracy should be computed over syntactically valid molecules only.
+        # This flag is the numerator for that conditional class-membership rate.
+        "valid_class_membership": valid_class_membership,
+        "accuracy_applicable": syntax_ok,
         "is_prompt_exemplar": exemplar,
         "unique_valid_candidate": unique_valid_candidate,
     }

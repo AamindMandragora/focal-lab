@@ -81,6 +81,32 @@ def command_for_example(
     ]
 
 
+def batch_command(args: argparse.Namespace, jobs_file: Path) -> list[str]:
+    cars_repo = args.cars_repo.expanduser().resolve()
+    grammar = cars_repo / "datasets" / "spider" / "grammar.lark"
+    model_name = args.model_name or MODEL_MAP[args.model_number]
+    return [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "run_cars_batch.py"),
+        "--cars-repo",
+        str(cars_repo),
+        "--grammar-file",
+        str(grammar),
+        "--jobs-file",
+        str(jobs_file),
+        "--model-name",
+        model_name,
+        "--sample-style",
+        args.cars_style,
+        "--default-target-samples",
+        "1",
+        "--default-n-steps",
+        str(args.max_attempts_per_example),
+        "--default-max-new-tokens",
+        str(args.max_new_tokens),
+    ]
+
+
 def extract_first_prediction(log_dir: Path) -> tuple[str, dict[str, Any]]:
     candidates = sorted(log_dir.glob("*.json"), key=lambda p: p.stat().st_mtime)
     if not candidates:
@@ -133,6 +159,7 @@ def main() -> int:
     commands: list[list[str]] = []
     predictions: list[str] = []
     records: list[dict[str, Any]] = []
+    jobs: list[dict[str, Any]] = []
     env = os.environ.copy()
     if args.cuda_visible_devices:
         env["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
@@ -143,22 +170,40 @@ def main() -> int:
         log_dir = output_dir / f"instance_{source_index:04d}"
         cmd = command_for_example(args, source_index=source_index, log_dir=log_dir)
         commands.append(cmd)
+        jobs.append({
+            "prompt_file": str(args.cars_repo.expanduser().resolve() / "datasets" / "spider" / f"instance_{source_index:04d}.txt"),
+            "log_dir": str(log_dir),
+            "target_samples": 1,
+            "n_steps": args.max_attempts_per_example,
+            "max_new_tokens": args.max_new_tokens,
+        })
         print(f"[cars-spider {ordinal + 1}/{len(examples)}] source_index={source_index}")
         print(" ".join(cmd))
         if args.dry_run:
             predictions.append("")
             records.append({"source_index": source_index, "command": cmd})
             continue
-        subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env, check=True)
-        pred, raw = extract_first_prediction(log_dir)
-        predictions.append(pred)
-        records.append({
-            "source_index": source_index,
-            "db_id": example.get("db_id", ""),
-            "question": example.get("question", ""),
-            "prediction": pred,
-            **raw,
-        })
+
+    jobs_file = args.output.parent / f"{args.output.stem}_cars_jobs.json"
+    if not args.dry_run:
+        write_json(jobs_file, {"jobs": jobs})
+        batch_cmd = batch_command(args, jobs_file)
+        commands = [batch_cmd]
+        subprocess.run(batch_cmd, cwd=str(PROJECT_ROOT), env=env, check=True)
+
+    if not args.dry_run:
+        for ordinal, example in enumerate(examples):
+            source_index = int(example.get("spider_source_index", ordinal))
+            log_dir = output_dir / f"instance_{source_index:04d}"
+            pred, raw = extract_first_prediction(log_dir)
+            predictions.append(pred)
+            records.append({
+                "source_index": source_index,
+                "db_id": example.get("db_id", ""),
+                "question": example.get("question", ""),
+                "prediction": pred,
+                **raw,
+            })
 
     payload: dict[str, Any] = {
         "config": {

@@ -117,6 +117,9 @@ class EvaluationResult:
     num_examples: int
     num_correct: int
     total_time_seconds: float
+    accuracy_denominator: Optional[int] = None
+    accuracy_definition: str = "correct_examples_over_all_examples"
+    invalid_outputs_excluded_from_accuracy: int = 0
     max_sample_time_seconds: float = 0.0
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
@@ -149,12 +152,23 @@ class EvaluationResult:
         """Generate a summary for feedback to the generator."""
         lines = [
             f"Evaluation Results ({self.num_examples} examples):",
-            f"  Accuracy: {self.accuracy:.1%} ({self.num_correct}/{self.num_examples})",
+            (
+                "  Accuracy: "
+                f"{self.accuracy:.1%} "
+                f"({self.num_correct}/{self.accuracy_denominator or self.num_examples})"
+            ),
             f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}",
             f"  Syntax Rate: {self.syntax_rate:.1%}",
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
+        if self.accuracy_definition != "correct_examples_over_all_examples":
+            lines.append(f"  Accuracy Definition: {self.accuracy_definition}")
+        if self.invalid_outputs_excluded_from_accuracy:
+            lines.append(
+                "  Invalid outputs excluded from accuracy denominator: "
+                f"{self.invalid_outputs_excluded_from_accuracy}"
+            )
 
         smiles_trial = self.aux_metrics.get("smiles_paper_trial")
         if isinstance(smiles_trial, dict):
@@ -1093,6 +1107,9 @@ class EvaluationResult:
             "syntax_rate": self.syntax_rate,
             "num_examples": self.num_examples,
             "num_correct": self.num_correct,
+            "accuracy_denominator": self.accuracy_denominator or self.num_examples,
+            "accuracy_definition": self.accuracy_definition,
+            "invalid_outputs_excluded_from_accuracy": self.invalid_outputs_excluded_from_accuracy,
             "total_time_seconds": self.total_time_seconds,
             "max_sample_time_seconds": self.max_sample_time_seconds,
             "error": self.error,
@@ -2220,6 +2237,7 @@ class Evaluator:
             num_correct = 0
             all_examples_contain_delimiters = True
             num_examples_syntax_pass = 0
+            num_accuracy_examples = 0
 
             for i, example in enumerate(dataset):
                 print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
@@ -2315,11 +2333,13 @@ class Evaluator:
                     elif self.dataset_name == "spider":
                         is_correct = self._exec_match_spider(actual, expected, example)
                     elif self.dataset_name == "smiles":
-                        is_correct = bool(smiles_eval.get("class_membership"))
+                        # For SMILES, class-membership accuracy is only meaningful
+                        # after the molecule is syntactically valid. Invalid
+                        # molecules affect syntax_rate but are excluded from the
+                        # accuracy denominator.
+                        is_correct = bool(smiles_eval.get("valid_class_membership"))
                     else:
                         is_correct = self._answers_match(actual, expected)
-                    if is_correct:
-                        num_correct += 1
 
                     visible_delimiters = self._contains_delimiters(scored_output)
                     used_hidden_chunk = bool(constrained_segments) or any(
@@ -2345,6 +2365,15 @@ class Evaluator:
                         example_syntax_pass = bool(smiles_eval and smiles_eval.get("syntax_valid"))
                     else:
                         example_syntax_pass = bool(segments) and all_valid_syntax
+                    accuracy_applicable = (
+                        bool(smiles_eval.get("accuracy_applicable"))
+                        if self.dataset_name == "smiles"
+                        else True
+                    )
+                    if accuracy_applicable:
+                        num_accuracy_examples += 1
+                    if is_correct:
+                        num_correct += 1
                     num_examples_syntax_pass += int(example_syntax_pass)
                     example_syntax_rate = 1.0 if example_syntax_pass else 0.0
                     if self.dataset_name == "smiles":
@@ -2376,6 +2405,7 @@ class Evaluator:
                         "answer_source": answer_source,
                         "has_extracted_answer": actual is not None or answer_source == "text_fallback",
                         "is_correct": is_correct,
+                        "accuracy_applicable": accuracy_applicable,
                         "contains_delimiters": contains_delimiters,
                         "visible_delimiters": visible_delimiters,
                         "used_constrained_chunk": used_hidden_chunk,
@@ -2418,6 +2448,7 @@ class Evaluator:
                         "answer_source": "none",
                         "has_extracted_answer": False,
                         "is_correct": False,
+                        "accuracy_applicable": self.dataset_name != "smiles",
                         "contains_delimiters": False,
                         "visible_delimiters": False,
                         "used_constrained_chunk": False,
@@ -2448,11 +2479,30 @@ class Evaluator:
                         )
                         return EvaluationResult(
                             success=True,
-                            accuracy=num_correct / max(1, evaluated_count),
+                            accuracy=(
+                                num_correct / max(1, num_accuracy_examples)
+                                if self.dataset_name == "smiles"
+                                else num_correct / max(1, evaluated_count)
+                            ),
                             contains_delimiters=False,
                             syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
                             num_examples=evaluated_count,
                             num_correct=num_correct,
+                            accuracy_denominator=(
+                                num_accuracy_examples
+                                if self.dataset_name == "smiles"
+                                else evaluated_count
+                            ),
+                            accuracy_definition=(
+                                "class_membership_among_syntax_valid_molecules"
+                                if self.dataset_name == "smiles"
+                                else "correct_examples_over_all_examples"
+                            ),
+                            invalid_outputs_excluded_from_accuracy=(
+                                evaluated_count - num_accuracy_examples
+                                if self.dataset_name == "smiles"
+                                else 0
+                            ),
                             total_time_seconds=total_time,
                             max_sample_time_seconds=max_sample_time,
                             error=(
@@ -2475,27 +2525,28 @@ class Evaluator:
                 if self.dataset_name == "smiles"
                 else {}
             )
-            adjusted_accuracy = num_correct / max(1, num_examples)
-            adjusted_num_correct = num_correct
-            if self.dataset_name == "smiles":
-                # For apples-to-apples comparison with CARS-style baselines,
-                # use raw membership as the primary accuracy score.
-                trial = aux_metrics.get("smiles_paper_trial", {})
-                adjusted_accuracy = float(
-                    trial.get(
-                        "membership",
-                        adjusted_accuracy,
-                    )
-                )
-                adjusted_num_correct = int(round(adjusted_accuracy * num_examples))
+            accuracy_denominator = (
+                num_accuracy_examples if self.dataset_name == "smiles" else num_examples
+            )
+            accuracy_definition = (
+                "class_membership_among_syntax_valid_molecules"
+                if self.dataset_name == "smiles"
+                else "correct_examples_over_all_examples"
+            )
+            invalid_excluded = (
+                num_examples - num_accuracy_examples if self.dataset_name == "smiles" else 0
+            )
 
             return EvaluationResult(
                 success=True,
-                accuracy=adjusted_accuracy,
+                accuracy=num_correct / max(1, accuracy_denominator),
                 contains_delimiters=all_examples_contain_delimiters,
                 syntax_rate=num_examples_syntax_pass / max(1, num_examples),
                 num_examples=num_examples,
-                num_correct=adjusted_num_correct,
+                num_correct=num_correct,
+                accuracy_denominator=accuracy_denominator,
+                accuracy_definition=accuracy_definition,
+                invalid_outputs_excluded_from_accuracy=invalid_excluded,
                 total_time_seconds=total_time,
                 max_sample_time_seconds=max_sample_time,
                 sample_outputs=sample_outputs,
