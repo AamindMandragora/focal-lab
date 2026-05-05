@@ -44,6 +44,9 @@ echo "Using Python: $PYTHON_BIN"
 echo "Run dir: $RUN_DIR"
 echo "Compiled module: $COMPILED_MODULE"
 
+SEED="${SEED:-$(date +%s)}"
+echo "Sampling seed: $SEED"
+
 "$PYTHON_BIN" scripts/run_smiles_cars_baseline.py \
   --compiled-module "$COMPILED_MODULE" \
   --model-name "${MODEL_NAME:-Qwen/Qwen2.5-Coder-7B-Instruct}" \
@@ -52,4 +55,5 @@ echo "Compiled module: $COMPILED_MODULE"
   --classes "${CLASSES:-acrylates,chain_extenders,isocyanates}" \
   --target-samples "${TARGET_SAMPLES:-100}" \
   --max-attempts "${MAX_ATTEMPTS:-1000}" \
-  --max-steps "${MAX_STEPS:-512}"
+  --max-steps "${MAX_STEPS:-512}" \
+  --seed "$SEED"

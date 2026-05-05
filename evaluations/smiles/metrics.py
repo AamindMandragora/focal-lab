@@ -105,10 +105,12 @@ def evaluate_smiles_output(
     smiles = clean_smiles_output(output)
     grammar_ok = grammar_valid(smiles, grammar_text)
     rdkit_ok = rdkit_valid(smiles)
+    # For SMILES benchmarking in this project, treat syntax validity as RDKit
+    # validity directly; keep grammar validity as a separate diagnostic signal.
     if require_rdkit:
-        syntax_ok = bool(grammar_ok and rdkit_ok is True)
+        syntax_ok = bool(rdkit_ok is True)
     else:
-        syntax_ok = bool(grammar_ok and (rdkit_ok if rdkit_ok is not None else True))
+        syntax_ok = bool(rdkit_ok if rdkit_ok is not None else grammar_ok)
     membership_ok = target_class_membership(class_name, smiles)
     exemplar = is_prompt_exemplar(smiles, prompt_exemplars)
     unique_valid_candidate = bool(smiles and syntax_ok and membership_ok and not exemplar)

@@ -86,6 +86,7 @@ def _sample_token_with_cars(
     forbidden_root: _TrieNode,
     probs_cache: dict[tuple[int, ...], torch.Tensor],
     survival_cache: dict[tuple[int, ...], float],
+    rng: torch.Generator,
 ) -> int:
     prefix_key = tuple(int(x) for x in prefix_ids)
 
@@ -130,7 +131,7 @@ def _sample_token_with_cars(
     probs = probs_for(prefix_key, prefix_token_strs)
     node = _trie_walk(forbidden_root, prefix_ids)
     if node is None or node.terminal or not node.children:
-        return int(torch.multinomial(probs, num_samples=1).item())
+        return int(torch.multinomial(probs, num_samples=1, generator=rng).item())
 
     adjusted = probs.clone()
     for tok_id, child in node.children.items():
@@ -150,9 +151,9 @@ def _sample_token_with_cars(
 
     total = float(adjusted.sum().item())
     if total <= 0.0 or torch.isnan(adjusted).any():
-        return int(torch.multinomial(probs, num_samples=1).item())
+        return int(torch.multinomial(probs, num_samples=1, generator=rng).item())
     adjusted = adjusted / total
-    return int(torch.multinomial(adjusted, num_samples=1).item())
+    return int(torch.multinomial(adjusted, num_samples=1, generator=rng).item())
 
 
 def _generate_one(
@@ -163,6 +164,7 @@ def _generate_one(
     max_steps: int,
     style: str,
     forbidden_root: _TrieNode,
+    rng: torch.Generator,
 ) -> tuple[str, list[int], float]:
     _dafny = env["_dafny"]
     lm = env["lm"]
@@ -196,6 +198,7 @@ def _generate_one(
                 forbidden_root=forbidden_root,
                 probs_cache=probs_cache,
                 survival_cache=survival_cache,
+                rng=rng,
             )
         else:
             probs = lm._full_logits if getattr(lm, "_full_logits", None) is not None else lm._logits_tensor
@@ -203,7 +206,7 @@ def _generate_one(
             if torch.isnan(probs).any() or probs.sum().item() <= 0:
                 next_id = int(torch.argmax(lm._full_logits if getattr(lm, "_full_logits", None) is not None else lm._logits_tensor).item())
             else:
-                next_id = int(torch.multinomial(probs, num_samples=1).item())
+                next_id = int(torch.multinomial(probs, num_samples=1, generator=rng).item())
 
         if int(next_id) == int(eos_id):
             break
@@ -224,6 +227,7 @@ def run_native_smiles_baseline(
     target_samples: int,
     max_attempts: int,
     style: str,
+    seed: int | None = None,
 ) -> list[dict[str, Any]]:
     """
     Run native RS/ARS/CARS over SMILES tasks.
@@ -235,6 +239,10 @@ def run_native_smiles_baseline(
     """
     if style not in {"rs", "ars", "cars"}:
         raise ValueError(f"Unsupported native baseline style: {style}")
+
+    base_seed = int(seed) if seed is not None else int(time.time_ns() % 2_147_483_647)
+    rng = torch.Generator(device="cpu")
+    rng.manual_seed(base_seed)
 
     evaluator = Evaluator(
         dataset_name="smiles",
@@ -267,6 +275,7 @@ def run_native_smiles_baseline(
                 max_steps=max_steps,
                 style=style,
                 forbidden_root=forbidden_root,
+                rng=rng,
             )
 
             eval_row = evaluate_smiles_output(

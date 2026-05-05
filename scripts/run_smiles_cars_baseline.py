@@ -37,6 +37,7 @@ def main() -> int:
     ap.add_argument("--max-steps", type=int, default=512)
     ap.add_argument("--target-samples", type=int, default=100)
     ap.add_argument("--max-attempts", type=int, default=1000)
+    ap.add_argument("--seed", type=int, default=None, help="Sampling seed (default: random per run)")
     ap.add_argument("--output", type=Path, default=None)
     args = ap.parse_args()
 
@@ -52,6 +53,7 @@ def main() -> int:
         target_samples=args.target_samples,
         max_attempts=args.max_attempts,
         style="cars",
+        seed=args.seed,
     )
     payload = {
         "method": "cars",
@@ -64,6 +66,7 @@ def main() -> int:
             "max_steps": args.max_steps,
             "target_samples": args.target_samples,
             "max_attempts": args.max_attempts,
+            "seed": args.seed,
         },
         "wall_time": time.time() - started,
         "results": results,

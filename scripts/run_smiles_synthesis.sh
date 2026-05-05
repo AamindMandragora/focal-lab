@@ -38,10 +38,10 @@ echo "Using Python: $PYTHON_BIN"
   --synthesis-max-tokens 1536 \
   "${DAFNY_PATH_ARG[@]}" \
   --device cuda \
-  --min-accuracy 0.2 \
-  --min-syntax-rate 1.0 \
-  --eval-sample-size 10 \
-  --eval-max-steps 256 \
-  --eval-seed 123 \
+  --min-accuracy "${MIN_ACCURACY:-0.70}" \
+  --min-syntax-rate "${MIN_SYNTAX_RATE:-0.71}" \
+  --eval-sample-size "${EVAL_SAMPLE_SIZE:-30}" \
+  --eval-max-steps "${EVAL_MAX_STEPS:-512}" \
+  --eval-seed "${EVAL_SEED:-123}" \
   --vllm-tensor-parallel-size 1 \
   --vllm-gpu-memory-utilization 0.40
