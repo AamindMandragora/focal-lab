@@ -22,11 +22,14 @@ if [[ -z "$RUN_DIR" ]]; then
   exit 1
 fi
 
+SEED="${SEED:-$(date +%s)}"
+echo "Evaluation seed: $SEED"
+
 python -m evaluations.smiles.cli \
   --run-dir "$RUN_DIR" \
   --model "Qwen/Qwen2.5-Coder-7B-Instruct" \
   --device cuda \
   --limit 100 \
   --max-steps 256 \
-  --seed 123 \
+  --seed "$SEED" \
   --unconstrained

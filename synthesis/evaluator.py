@@ -2135,10 +2135,12 @@ class Evaluator:
             adjusted_accuracy = num_correct / max(1, num_examples)
             adjusted_num_correct = num_correct
             if self.dataset_name == "smiles":
-                anti = aux_metrics.get("anti_degeneracy", {})
+                # For apples-to-apples comparison with CARS-style baselines,
+                # use raw membership as the primary accuracy score.
+                trial = aux_metrics.get("smiles_paper_trial", {})
                 adjusted_accuracy = float(
-                    anti.get(
-                        "adjusted_membership_score",
+                    trial.get(
+                        "membership",
                         adjusted_accuracy,
                     )
                 )

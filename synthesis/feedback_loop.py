@@ -1448,21 +1448,47 @@ class SynthesisPipeline:
                 torch.cuda.empty_cache()
                 print("  Generator vllm engine unloaded to free GPU memory")
 
-            # Rotate eval seed each iteration so the gate moves and the
-            # synthesis loop can't local-search a single sample's quirks.
+            # For SMILES synthesis inner-loop, keep eval seed fixed across
+            # attempts so candidate strategies are compared on the same gate.
+            # For other datasets, rotate each iteration to reduce overfitting
+            # to a single sampled slice.
             if not hasattr(self, "_eval_base_seed"):
                 self._eval_base_seed = (
                     int(self.evaluator.sample_seed)
                     if self.evaluator.sample_seed is not None
                     else 0
                 )
-            self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
+            if self.evaluator.dataset_name == "smiles":
+                self.evaluator.sample_seed = self._eval_base_seed
+            else:
+                self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
             eval_result = self.evaluator.evaluate_sample(
                 compiled_module_path=compilation_result.main_module_path,
                 sample_size=self.eval_sample_size,
             )
             attempt.eval_result = eval_result
+
+            smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
+            if isinstance(smiles_trial, dict) and smiles_trial:
+                membership = smiles_trial.get("membership")
+                validity = smiles_trial.get("validity_rdkit")
+                samples_to_target = smiles_trial.get("samples_to_target_unique_valid")
+                unique_valid = smiles_trial.get("unique_valid_count")
+                sample_count = smiles_trial.get("sample_count")
+                print("  [smiles] paper-aligned metrics:")
+                if membership is not None:
+                    print(f"    Membership: {float(membership):.1%}")
+                if validity is not None:
+                    print(f"    RDKit Validity: {float(validity):.1%}")
+                print(
+                    "    Samples to 100 unique valid (cap 1000): "
+                    f"{samples_to_target}"
+                )
+                print(
+                    "    Unique valid molecules this eval: "
+                    f"{unique_valid}/{sample_count}"
+                )
 
             if not eval_result.success:
                 print(f"  ✗ Evaluation failed: {eval_result.error}")
