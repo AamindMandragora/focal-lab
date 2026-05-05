@@ -1330,6 +1330,10 @@ Verification error:
 {structured_feedback_block}{error_history_block}{behavioral_context_block}
 Revise the method body so it verifies.
 
+Dafny constraint reminder:
+- Methods cannot be called directly inside expression contexts (e.g., `if A && helpers.SomeMethod(...)`).
+- Call the method first, bind its result to a local variable, then use that variable in the condition.
+
 ## Verified Examples
 
 These are verified reference CSD patterns available for reuse during verification repair.

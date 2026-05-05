@@ -124,6 +124,7 @@ class EvaluationResult:
 
     # Error information if evaluation failed
     error: Optional[str] = None
+    aux_metrics: Dict[str, Any] = field(default_factory=dict)
 
     def meets_threshold(
         self,
@@ -154,6 +155,50 @@ class EvaluationResult:
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
+
+        smiles_trial = self.aux_metrics.get("smiles_paper_trial")
+        if isinstance(smiles_trial, dict):
+            lines.extend(
+                [
+                    "",
+                    "SMILES Quality Metrics (paper-aligned, single trial):",
+                    f"  RDKit Validity: {smiles_trial.get('validity_rdkit', 0.0):.1%}",
+                    f"  Membership: {smiles_trial.get('membership', 0.0):.1%}",
+                    (
+                        "  Diversity (avg pairwise Tanimoto distance): "
+                        f"{smiles_trial.get('diversity_tanimoto') if smiles_trial.get('diversity_tanimoto') is not None else 'n/a'}"
+                    ),
+                    (
+                        "  RetroStar score: "
+                        f"{smiles_trial.get('retro_score') if smiles_trial.get('retro_score') is not None else 'n/a'}"
+                    ),
+                    (
+                        "  Samples to 100 unique valid (cap 1000): "
+                        f"{smiles_trial.get('samples_to_target_unique_valid', 'n/a')}"
+                    ),
+                    (
+                        "  Unique valid molecules: "
+                        f"{smiles_trial.get('unique_valid_count', 0)}/{smiles_trial.get('sample_count', 0)}"
+                    ),
+                ]
+            )
+
+        anti = self.aux_metrics.get("anti_degeneracy")
+        if isinstance(anti, dict):
+            lines.extend(
+                [
+                    "",
+                    "Anti-Degeneracy Diagnostics:",
+                    f"  Delimiter churn ratio: {anti.get('delimiter_churn_ratio', 0.0):.3f}",
+                    f"  Tiny-span rate: {anti.get('tiny_span_rate', 0.0):.1%}",
+                    f"  Max-steps hit rate: {anti.get('max_steps_hit_rate', 0.0):.1%}",
+                    f"  Applied penalty: {anti.get('penalty', 0.0):.1%}",
+                    (
+                        "  Membership adjusted by penalty: "
+                        f"{anti.get('adjusted_membership_score', self.accuracy):.1%}"
+                    ),
+                ]
+            )
 
         failure_modes = self._summarize_failure_modes()
         if failure_modes:
@@ -794,6 +839,7 @@ class EvaluationResult:
             "max_sample_time_seconds": self.max_sample_time_seconds,
             "error": self.error,
             "sample_outputs": self.sample_outputs,
+            "aux_metrics": self.aux_metrics,
         }
 
 
@@ -884,7 +930,7 @@ class Evaluator:
         self._env_cache_key: Optional[tuple[Any, ...]] = None
         self._grammar_file = None
         self._base_grammar_text: Optional[str] = None
-        self._dynamic_parser_factory_cache: Dict[Tuple[str, ...], Any] = {}
+        self._dynamic_parser_factory_cache: Dict[Tuple[Any, ...], Any] = {}
         self._syntax_parser_cache: Dict[Tuple[str, ...], Any] = {}
 
     def _load_gsm_split_indices(self) -> Optional[List[int]]:
@@ -916,6 +962,8 @@ class Evaluator:
                 self._grammar_file = grammars_dir / "folio.lark"
             elif self.dataset_name == "spider":
                 self._grammar_file = grammars_dir / "sql.lark"
+            elif self.dataset_name == "smiles":
+                self._grammar_file = grammars_dir / "smiles.lark"
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
@@ -987,6 +1035,27 @@ class Evaluator:
         caught at scoring time regardless of the grammar used for decode.
         """
         return None
+
+    def _build_smiles_dynamic_parser(self, env: Dict[str, Any], example: dict):
+        if self.dataset_name != "smiles":
+            return None
+
+        from evaluations.common.parser_utils import create_lark_dafny_parser
+
+        grammar_text = example.get("grammar_text", self._get_grammar_text())
+        class_name = str(example.get("class_name", "smiles"))
+        cache_key = ("smiles", class_name, grammar_text)
+        parser_factory = self._dynamic_parser_factory_cache.get(cache_key)
+        if parser_factory is None:
+            parser_factory = create_lark_dafny_parser(
+                grammar_text,
+                env["VerifiedDecoderAgent"],
+                env["_dafny"],
+                start="start",
+                tokenizer=env["tokenizer"],
+            )
+            self._dynamic_parser_factory_cache[cache_key] = parser_factory
+        return parser_factory(env["lm"]._Tokens)
 
     def _extract_answer_spider(self, output: str) -> Optional[str]:
         """Extract a SQL query: take the raw output up to the first blank line.
@@ -1060,6 +1129,19 @@ class Evaluator:
         """Create or reuse a syntax parser for one example's allowed variables."""
         from lark import Lark
 
+        if self.dataset_name == "smiles":
+            grammar_text = (
+                example.get("grammar_text", self._get_grammar_text())
+                if isinstance(example, dict)
+                else self._get_grammar_text()
+            )
+            cache_key = ("smiles", grammar_text)
+            parser = self._syntax_parser_cache.get(cache_key)
+            if parser is None:
+                parser = Lark(grammar_text, start="start", parser="lalr")
+                self._syntax_parser_cache[cache_key] = parser
+            return parser
+
         if self.dataset_name != "gsm_symbolic" or example is None:
             return Lark(self._get_grammar_text(), start="start", parser="lalr")
 
@@ -1107,6 +1189,13 @@ class Evaluator:
                 seed=self.sample_seed,
             )
             self._dataset = list(ds)
+        elif self.dataset_name == "smiles":
+            from evaluations.smiles.dataset import load_smiles
+            ds = load_smiles(
+                classes=self.smiles_classes,
+                samples_per_class=self.sample_size,
+            )
+            self._dataset = list(ds)
         else:
             raise ValueError(f"Unknown dataset: {self.dataset_name}")
 
@@ -1147,6 +1236,8 @@ class Evaluator:
             from evaluations.gsm_symbolic.environment import setup_dafny_environment
         elif self.dataset_name == "spider":
             from evaluations.sql_spider.environment import setup_dafny_environment
+        elif self.dataset_name == "smiles":
+            from evaluations.smiles.environment import setup_dafny_environment
         else:
             from evaluations.folio.environment import setup_dafny_environment
 
@@ -1498,6 +1589,13 @@ class Evaluator:
             return "Unknown"
         return None
 
+    def _extract_answer_smiles(self, output: str, example: Optional[dict] = None) -> Optional[str]:
+        """Extract the generated SMILES string from raw output."""
+        from evaluations.smiles.metrics import clean_smiles_output
+
+        smiles = clean_smiles_output(output)
+        return smiles or None
+
     def _answers_match(self, actual: Optional[str], expected: str) -> bool:
         """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
         if actual is None:
@@ -1557,6 +1655,8 @@ class Evaluator:
             return answer_str
         elif self.dataset_name == "spider":
             return (example.get("query") or "").strip()
+        elif self.dataset_name == "smiles":
+            return example.get("class_name", "smiles")
         else:
             if hasattr(example, "label"):
                 return example.label
@@ -1586,6 +1686,8 @@ class Evaluator:
                 f"question: {question}\n"
                 "SQL: "
             )
+        elif self.dataset_name == "smiles":
+            return example.get("prompt", "")
         else:
             # FOLIOExample is a dataclass — access via attribute or .get() for dict fallback
             if hasattr(example, "premises"):
@@ -1639,6 +1741,24 @@ class Evaluator:
         """
         from lark.exceptions import LarkError
 
+        if self.dataset_name == "smiles":
+            from evaluations.smiles.metrics import evaluate_smiles_output
+
+            class_name = (example or {}).get("class_name", "smiles")
+            prompt_exemplars = (example or {}).get("prompt_exemplars", [])
+            grammar_text = (example or {}).get("grammar_text", self._get_grammar_text())
+            eval_row = evaluate_smiles_output(
+                class_name,
+                output,
+                grammar_text,
+                prompt_exemplars,
+                require_rdkit=True,
+            )
+            smiles = eval_row["smiles"]
+            if not smiles:
+                return False, []
+            return bool(eval_row["syntax_valid"]), [(smiles, bool(eval_row["syntax_valid"]))]
+
         segments: List[Tuple[str, bool]] = []
         matches = self._extract_constrained_content(output)
 
@@ -1658,6 +1778,78 @@ class Evaluator:
 
         all_valid = all(is_valid for _, is_valid in segments) if segments else True
         return all_valid, segments
+
+    def _ensure_smiles_rdkit_available(self) -> None:
+        if self.dataset_name != "smiles":
+            return
+        from evaluations.smiles.metrics import rdkit_available
+
+        if not rdkit_available():
+            raise RuntimeError(
+                "SMILES evaluation requires RDKit but it is not available in this environment. "
+                "Install RDKit before running smiles synthesis/evaluation."
+            )
+
+    def _compute_smiles_aux_metrics(
+        self,
+        sample_outputs: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        from evaluations.smiles.metrics import smiles_trial_metrics
+
+        paper_metrics = smiles_trial_metrics(
+            sample_outputs,
+            target_unique_valid=100,
+            sample_cap=1000,
+        )
+
+        helper_events = [
+            event
+            for sample in sample_outputs
+            for event in (sample.get("helper_trace") or [])
+            if isinstance(event, dict)
+        ]
+        helper_count = len(helper_events)
+        open_close_helpers = {
+            "OpenConstrainedSpan",
+            "CloseConstrainedSpan",
+            "EnterObservedConstrainedSpan",
+        }
+        churn_calls = sum(
+            1 for event in helper_events if event.get("helper") in open_close_helpers
+        )
+        delimiter_churn_ratio = churn_calls / max(1, helper_count)
+
+        tiny_spans = 0
+        for sample in sample_outputs:
+            smiles_eval = sample.get("smiles_eval") or {}
+            smiles = str(smiles_eval.get("smiles") or "")
+            if smiles and len(smiles) <= 3:
+                tiny_spans += 1
+        tiny_span_rate = tiny_spans / max(1, len(sample_outputs))
+
+        max_steps_hits = sum(1 for sample in sample_outputs if sample.get("hit_max_steps"))
+        max_steps_hit_rate = max_steps_hits / max(1, len(sample_outputs))
+
+        penalty = min(
+            0.60,
+            0.35 * delimiter_churn_ratio
+            + 0.35 * tiny_span_rate
+            + 0.30 * max_steps_hit_rate,
+        )
+        membership = float(paper_metrics.get("membership", 0.0) or 0.0)
+        adjusted_membership = max(0.0, membership - penalty)
+
+        anti = {
+            "delimiter_churn_ratio": delimiter_churn_ratio,
+            "tiny_span_rate": tiny_span_rate,
+            "max_steps_hit_rate": max_steps_hit_rate,
+            "penalty": penalty,
+            "adjusted_membership_score": adjusted_membership,
+        }
+        return {
+            "smiles_paper_trial": paper_metrics,
+            "anti_degeneracy": anti,
+        }
 
     def evaluate_sample(
         self,
@@ -1684,6 +1876,7 @@ class Evaluator:
         sample_outputs: List[Dict[str, Any]] = []
 
         try:
+            self._ensure_smiles_rdkit_available()
             dataset = self._load_dataset_sample()
             env = self._setup_environment(compiled_module_path)
 
@@ -1691,6 +1884,8 @@ class Evaluator:
                 from evaluations.gsm_symbolic.generation import run_crane_csd
             elif self.dataset_name == "spider":
                 from evaluations.sql_spider.generation import run_crane_csd
+            elif self.dataset_name == "smiles":
+                from evaluations.smiles.generation import run_crane_csd
             else:
                 from evaluations.folio.generation import run_crane_csd
 
@@ -1703,6 +1898,7 @@ class Evaluator:
                 example_start = time.time()
                 prompt = self._format_prompt(example)
                 expected = self._get_expected_answer(example)
+                smiles_eval: Optional[dict[str, Any]] = None
 
                 try:
                     print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
@@ -1718,6 +1914,8 @@ class Evaluator:
                                 if self.dataset_name == "gsm_symbolic"
                                 else self._build_spider_dynamic_parser(env, example)
                                 if self.dataset_name == "spider"
+                                else self._build_smiles_dynamic_parser(env, example)
+                                if self.dataset_name == "smiles"
                                 else None
                             ),
                         )
@@ -1734,6 +1932,19 @@ class Evaluator:
                         expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
                         actual = expr_matches[-1].strip() if expr_matches else None
                         answer_source = "last_visible_span" if expr_matches else "none"
+                    elif self.dataset_name == "smiles":
+                        from evaluations.smiles.metrics import evaluate_smiles_output
+
+                        class_name = example.get("class_name", "smiles")
+                        smiles_eval = evaluate_smiles_output(
+                            class_name,
+                            scored_output,
+                            example.get("grammar_text", self._get_grammar_text()),
+                            example.get("prompt_exemplars", []),
+                            require_rdkit=True,
+                        )
+                        actual = smiles_eval["smiles"] or None
+                        answer_source = "smiles_eval"
                     elif self.dataset_name == "spider":
                         actual = self._extract_answer_spider(scored_output)
                         answer_source = "hidden_or_task_extractor" if actual is not None else "none"
@@ -1759,6 +1970,8 @@ class Evaluator:
                                 is_correct = self._answers_match(numeric_actual, numeric_expected.group(1))
                             else:
                                 is_correct = self._answers_match(numeric_actual, expected)
+                    elif self.dataset_name == "smiles":
+                        is_correct = bool(smiles_eval and smiles_eval.get("unique_valid_candidate"))
                     elif self.dataset_name == "spider":
                         is_correct = self._exec_match_spider(actual, expected, example)
                     else:
@@ -1771,9 +1984,13 @@ class Evaluator:
                         event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
                         for event in (helper_trace or [])
                     )
-                    contains_delimiters = (
-                        used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
-                    )
+                    if self.dataset_name == "smiles":
+                        contains_delimiters = False
+                        used_hidden_chunk = bool(constrained_segments)
+                    else:
+                        contains_delimiters = (
+                            used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
+                        )
                     all_examples_contain_delimiters = (
                         all_examples_contain_delimiters and contains_delimiters
                     )
@@ -1781,23 +1998,32 @@ class Evaluator:
                     all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
                     # Per-example syntax pass:
                     # - GSM/FOLIO: visible <<...>> chunks must exist and parse.
+                    # - SMILES: the full output is the generated molecule string.
                     # - Spider: chunks are internal/hidden; visible delimiter tokens are not
                     #   part of the answer contract, so count parser-governed chunk usage.
                     if self.dataset_name == "spider":
                         example_syntax_pass = used_hidden_chunk
+                    elif self.dataset_name == "smiles":
+                        example_syntax_pass = bool(smiles_eval and smiles_eval.get("syntax_valid"))
                     else:
                         example_syntax_pass = bool(segments) and all_valid_syntax
                     num_examples_syntax_pass += int(example_syntax_pass)
                     example_syntax_rate = 1.0 if example_syntax_pass else 0.0
-                    visible_span_lengths = [
-                        len(segment.strip().split()) for segment, _ in segments
-                    ]
-                    valid_visible_span_lengths = [
-                        len(segment.strip().split())
-                        for segment, is_valid in segments
-                        if is_valid
-                    ]
-                    num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
+                    if self.dataset_name == "smiles":
+                        visible_span_lengths = [len((smiles_eval or {}).get("smiles", "").split())] if actual else []
+                        valid_visible_span_lengths = visible_span_lengths if example_syntax_pass else []
+                        num_valid_visible_spans = 1 if example_syntax_pass and actual else 0
+                        segments = [(actual or "", example_syntax_pass)] if actual else []
+                    else:
+                        visible_span_lengths = [
+                            len(segment.strip().split()) for segment, _ in segments
+                        ]
+                        valid_visible_span_lengths = [
+                            len(segment.strip().split())
+                            for segment, is_valid in segments
+                            if is_valid
+                        ]
+                        num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
 
                     if hasattr(example, "conclusion"):
                         q_str = (example.premises + " | " + example.conclusion)[:200]
@@ -1815,7 +2041,7 @@ class Evaluator:
                         "contains_delimiters": contains_delimiters,
                         "visible_delimiters": visible_delimiters,
                         "used_constrained_chunk": used_hidden_chunk,
-                        "uses_hidden_chunks": self.dataset_name == "spider",
+                        "uses_hidden_chunks": self.dataset_name in {"spider", "smiles"},
                         "is_syntax_valid": example_syntax_pass,
                         "syntax_rate": example_syntax_rate,
                         "num_visible_spans": len(segments),
@@ -1830,6 +2056,7 @@ class Evaluator:
                             and gen_time > self.max_seconds_per_example
                         ),
                         "helper_trace": helper_trace,
+                        "smiles_eval": smiles_eval,
                     })
 
                 except Exception as e:
@@ -1853,7 +2080,7 @@ class Evaluator:
                         "contains_delimiters": False,
                         "visible_delimiters": False,
                         "used_constrained_chunk": False,
-                        "uses_hidden_chunks": self.dataset_name == "spider",
+                        "uses_hidden_chunks": self.dataset_name in {"spider", "smiles"},
                         "is_syntax_valid": False,
                         "syntax_rate": 0.0,
                         "num_visible_spans": 0,
@@ -1890,22 +2117,44 @@ class Evaluator:
                                 f"the {self.max_seconds_per_example:.2f}s runtime budget."
                             ),
                             sample_outputs=sample_outputs,
+                            aux_metrics=(
+                                self._compute_smiles_aux_metrics(sample_outputs)
+                                if self.dataset_name == "smiles"
+                                else {}
+                            ),
                         )
 
             total_time = time.time() - start_time
             num_examples = len(dataset)
             max_sample_time = max((float(sample.get("time_seconds", 0.0)) for sample in sample_outputs), default=0.0)
+            aux_metrics = (
+                self._compute_smiles_aux_metrics(sample_outputs)
+                if self.dataset_name == "smiles"
+                else {}
+            )
+            adjusted_accuracy = num_correct / max(1, num_examples)
+            adjusted_num_correct = num_correct
+            if self.dataset_name == "smiles":
+                anti = aux_metrics.get("anti_degeneracy", {})
+                adjusted_accuracy = float(
+                    anti.get(
+                        "adjusted_membership_score",
+                        adjusted_accuracy,
+                    )
+                )
+                adjusted_num_correct = int(round(adjusted_accuracy * num_examples))
 
             return EvaluationResult(
                 success=True,
-                accuracy=num_correct / max(1, num_examples),
+                accuracy=adjusted_accuracy,
                 contains_delimiters=all_examples_contain_delimiters,
                 syntax_rate=num_examples_syntax_pass / max(1, num_examples),
                 num_examples=num_examples,
-                num_correct=num_correct,
+                num_correct=adjusted_num_correct,
                 total_time_seconds=total_time,
                 max_sample_time_seconds=max_sample_time,
                 sample_outputs=sample_outputs,
+                aux_metrics=aux_metrics,
             )
 
         except Exception as e:
