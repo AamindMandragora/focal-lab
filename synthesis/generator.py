@@ -420,7 +420,13 @@ class StrategyGenerator:
         
         return strategy
 
-    def _ensure_rationale_block(self, strategy_body: str, *, max_repairs: int = 2) -> str:
+    def _ensure_rationale_block(
+        self,
+        strategy_body: str,
+        *,
+        max_repairs: int = 2,
+        search_memory: str = "",
+    ) -> str:
         """
         Ensure the strategy body contains the required rationale markers.
 
@@ -433,7 +439,7 @@ class StrategyGenerator:
 
         current = strategy_body
         for _ in range(max_repairs):
-            system_prompt, user_prompt = build_format_repair_prompt(current)
+            system_prompt, user_prompt = build_format_repair_prompt(current, search_memory)
             repaired_raw = self._generate_text(system_prompt, user_prompt)
             repaired = self._extract_strategy(repaired_raw)
             extracted = extract_rationale(repaired)
@@ -467,6 +473,7 @@ class StrategyGenerator:
         structured_feedback: str = "",
         error_history: str = "",
         strategy_context: str = "",
+        search_memory: str = "",
     ) -> str:
         """
         Generate a refined strategy after verification failure.
@@ -487,15 +494,17 @@ class StrategyGenerator:
             structured_feedback,
             error_history,
             strategy_context,
+            search_memory,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
-        return self._ensure_rationale_block(strategy)
+        return self._ensure_rationale_block(strategy, search_memory=search_memory)
     
     def refine_after_runtime_error(
         self,
         previous_strategy: str,
-        error_traceback: str
+        error_traceback: str,
+        search_memory: str = "",
     ) -> str:
         """
         Generate a refined strategy after runtime failure.
@@ -507,17 +516,22 @@ class StrategyGenerator:
         Returns:
             New strategy expression
         """
+        task_description = self._current_task_description or "Unknown task"
         system_prompt, user_prompt = build_runtime_error_prompt(
-            previous_strategy, error_traceback
+            previous_strategy,
+            error_traceback,
+            task_description,
+            search_memory,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
-        return self._ensure_rationale_block(strategy)
+        return self._ensure_rationale_block(strategy, search_memory=search_memory)
     
     def refine_after_compilation_error(
         self,
         previous_strategy: str,
-        error_message: str
+        error_message: str,
+        search_memory: str = "",
     ) -> str:
         """
         Generate a refined strategy after compilation failure.
@@ -530,11 +544,11 @@ class StrategyGenerator:
             New strategy expression
         """
         system_prompt, user_prompt = build_compilation_error_prompt(
-            previous_strategy, error_message
+            previous_strategy, error_message, search_memory
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
-        return self._ensure_rationale_block(strategy)
+        return self._ensure_rationale_block(strategy, search_memory=search_memory)
 
     def refine_after_evaluation_failure(
         self,
@@ -542,6 +556,7 @@ class StrategyGenerator:
         evaluation_feedback: str,
         evaluation_history: str = "",
         working_hypothesis: str = "",
+        search_memory: str = "",
     ) -> str:
         """
         Generate a refined strategy after evaluation failure.
@@ -566,10 +581,11 @@ class StrategyGenerator:
             evaluation_feedback,
             evaluation_history,
             working_hypothesis,
+            search_memory,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
-        return self._ensure_rationale_block(strategy)
+        return self._ensure_rationale_block(strategy, search_memory=search_memory)
 
 
     def inject_strategy(self, strategy: str) -> str:
