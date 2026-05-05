@@ -24,6 +24,7 @@ from evaluations.smiles.metrics import evaluate_smiles_output
 MODEL_MAP = {
     "1": "meta-llama/Llama-3.1-8B-Instruct",
     "2": "Qwen/Qwen2.5-7B-Instruct",
+    "3": "Qwen/Qwen2.5-14B-Instruct",
 }
 
 
@@ -54,10 +55,33 @@ def _ensure_cars_files(cars_repo: Path, classes: list[str]) -> None:
         raise FileNotFoundError(f"Missing CARS run_task.py under {cars_repo}")
 
 
-def _cars_command(class_name: str, style: str, model_number: str) -> list[str]:
-    grammar = f"datasets/smiles/{class_name}.lark"
-    prompt = f"datasets/smiles/{class_name}.txt"
-    return ["python3", "run_task.py", grammar, prompt, style, model_number]
+def _cars_command(args, class_name: str, log_dir: Path) -> list[str]:
+    cars_repo = Path(args.cars_repo).expanduser().resolve()
+    grammar = cars_repo / "datasets" / "smiles" / f"{class_name}.lark"
+    prompt = cars_repo / "datasets" / "smiles" / f"{class_name}.txt"
+    model_name = args.model_name or MODEL_MAP[args.model_number]
+    return [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "run_cars_task.py"),
+        "--cars-repo",
+        str(cars_repo),
+        "--grammar-file",
+        str(grammar),
+        "--prompt-file",
+        str(prompt),
+        "--model-name",
+        model_name,
+        "--sample-style",
+        args.cars_style,
+        "--log-dir",
+        str(log_dir),
+        "--target-samples",
+        str(args.target_samples),
+        "--n-steps",
+        str(args.max_attempts),
+        "--max-new-tokens",
+        str(args.max_steps),
+    ]
 
 
 def _latest_cars_log_dir(cars_repo: Path, class_name: str, style: str, model_number: str) -> Path | None:
@@ -68,7 +92,7 @@ def _latest_cars_log_dir(cars_repo: Path, class_name: str, style: str, model_num
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
-def _summarize_cars_log(log_dir: Path, class_name: str) -> dict[str, Any]:
+def _summarize_cars_log(log_dir: Path, class_name: str, target_samples: int = 100) -> dict[str, Any]:
     task = get_smiles_task(class_name)
     records: list[dict[str, Any]] = []
     success_flags: list[bool] = []
@@ -92,24 +116,34 @@ def _summarize_cars_log(log_dir: Path, class_name: str) -> dict[str, Any]:
             })
     unique_valid = sorted({r["smiles"] for r in records if r.get("unique_valid_candidate")})
     syntax_count = sum(1 for r in records if r.get("syntax_valid"))
-    membership_count = sum(1 for r in records if r.get("class_membership"))
+    valid_membership_count = sum(1 for r in records if r.get("valid_class_membership"))
+    membership_count_all = sum(1 for r in records if r.get("class_membership"))
     attempts_to_100 = None
+    attempts_to_target = None
     successes_seen = 0
     for idx, flag in enumerate(success_flags, start=1):
         if flag:
             successes_seen += 1
+        if attempts_to_target is None and successes_seen >= target_samples:
+            attempts_to_target = idx
         if successes_seen >= 100:
             attempts_to_100 = idx
-            break
     return {
         "class_name": class_name,
         "log_dir": str(log_dir),
+        "target_samples": target_samples,
         "attempt_count": len(success_flags),
         "success_count": sum(1 for x in success_flags if x),
+        "samples_needed_for_target_successes": attempts_to_target,
         "samples_needed_for_100_successes": attempts_to_100,
         "unique_valid_count": len(unique_valid),
         "syntax_rate": syntax_count / max(1, len(records)),
-        "accuracy": membership_count / max(1, len(records)),
+        "accuracy": valid_membership_count / syntax_count if syntax_count else None,
+        "accuracy_definition": "class_membership_among_syntax_valid_molecules",
+        "accuracy_num_correct": valid_membership_count,
+        "accuracy_denominator": syntax_count,
+        "invalid_outputs_excluded_from_accuracy": len(records) - syntax_count,
+        "membership_rate_all_attempts": membership_count_all / max(1, len(records)),
         "records": records,
     }
 
@@ -122,16 +156,16 @@ def run_cars(args, classes: list[str]) -> list[dict[str, Any]]:
     if args.cuda_visible_devices:
         env["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
     for class_name in classes:
-        cmd = _cars_command(class_name, args.cars_style, args.model_number)
+        log_dir = args.output_dir / "cars_logs" / class_name
+        cmd = _cars_command(args, class_name, log_dir)
         if args.dry_run:
             summaries.append({"class_name": class_name, "command": cmd, "cwd": str(cars_repo)})
             continue
         start = time.time()
-        subprocess.run(cmd, cwd=str(cars_repo), env=env, check=True)
-        log_dir = _latest_cars_log_dir(cars_repo, class_name, args.cars_style, args.model_number)
+        subprocess.run(cmd, cwd=str(REPO_ROOT), env=env, check=True)
         if log_dir is None:
             raise RuntimeError(f"CARS completed but no log directory was found for {class_name}")
-        summary = _summarize_cars_log(log_dir, class_name)
+        summary = _summarize_cars_log(log_dir, class_name, target_samples=args.target_samples)
         summary["wall_time"] = time.time() - start
         summaries.append(summary)
     return summaries
@@ -144,6 +178,7 @@ def run_csd(args, classes: list[str]) -> list[dict[str, Any]]:
     if spec is None or spec.loader is None:
         raise RuntimeError("Could not load synthesis/evaluator.py")
     evaluator_module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = evaluator_module
     spec.loader.exec_module(evaluator_module)
     Evaluator = evaluator_module.Evaluator
 
@@ -183,7 +218,8 @@ def run_csd(args, classes: list[str]) -> list[dict[str, Any]]:
                 if row.get("unique_valid_candidate"):
                     unique_valid.add(row.get("smiles", ""))
         syntax_count = sum(1 for r in records if r.get("syntax_valid"))
-        membership_count = sum(1 for r in records if r.get("class_membership"))
+        valid_membership_count = sum(1 for r in records if r.get("valid_class_membership"))
+        membership_count_all = sum(1 for r in records if r.get("class_membership"))
         summaries.append({
             "class_name": class_name,
             "attempt_count": attempts,
@@ -191,7 +227,12 @@ def run_csd(args, classes: list[str]) -> list[dict[str, Any]]:
             "unique_valid_count": len(unique_valid),
             "reached_target": len(unique_valid) >= args.target_samples,
             "syntax_rate": syntax_count / max(1, len(records)),
-            "accuracy": membership_count / max(1, len(records)),
+            "accuracy": valid_membership_count / syntax_count if syntax_count else None,
+            "accuracy_definition": "class_membership_among_syntax_valid_molecules",
+            "accuracy_num_correct": valid_membership_count,
+            "accuracy_denominator": syntax_count,
+            "invalid_outputs_excluded_from_accuracy": len(records) - syntax_count,
+            "membership_rate_all_attempts": membership_count_all / max(1, len(records)),
             "wall_time": time.time() - start,
             "records": records,
         })

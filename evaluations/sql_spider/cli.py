@@ -9,6 +9,8 @@ dev split, then scores with Spider's execution-accuracy evaluator.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import time
 from pathlib import Path
@@ -21,7 +23,6 @@ from evaluations.sql_spider.dataset import (
     load_spider,
 )
 from evaluations.sql_spider.grammar import (
-    parse_db_info,
     build_dynamic_sql_grammar,
     extract_schema_identifiers,
 )
@@ -82,6 +83,10 @@ def main() -> None:
                     help="Spider tables.json")
     ap.add_argument("--limit", type=int, default=50,
                     help="Max examples to evaluate")
+    ap.add_argument("--split-file", type=Path, default=None,
+                    help="Optional Spider train/test split manifest")
+    ap.add_argument("--split-name", choices=["train", "test", "eval"], default="test",
+                    help="Split key to read from --split-file")
     ap.add_argument("--random-sample", action="store_true",
                     help="Randomly sample examples instead of taking first N")
     ap.add_argument("--seed", type=int, default=0)
@@ -104,14 +109,28 @@ def main() -> None:
     ap.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
     ap.add_argument("--vllm-max-model-len", type=int, default=4096)
     ap.add_argument("--vllm-enforce-eager", action="store_true", default=True)
+    ap.add_argument("--pred-dump", type=Path, default=None,
+                    help="Optional JSON output with predictions, scores, and rows")
     args = ap.parse_args()
+
+    split_indices = None
+    if args.split_file is not None:
+        manifest = json.loads(args.split_file.read_text())
+        key = f"{args.split_name}_indices"
+        if key not in manifest:
+            available = sorted(k for k in manifest if k.endswith("_indices"))
+            raise SystemExit(
+                f"{args.split_file} does not contain {key}; available index fields: {available}"
+            )
+        split_indices = manifest[key]
 
     examples = load_spider(
         source=args.source,
         spider_dir=args.spider_dir,
         limit=args.limit,
-        random_sample=args.random_sample,
+        random_sample=args.random_sample and split_indices is None,
         seed=args.seed,
+        indices=split_indices,
     )
     n = len(examples)
     metrics = SQLMetrics()
@@ -149,7 +168,6 @@ def main() -> None:
 
         # Build a schema-constrained parser for this question, if enabled.
         dynamic_parser = None
-        tables, columns = [], []
         if not args.no_dynamic_grammar and not args.unconstrained:
             tables, columns = extract_schema_identifiers(example.get("db_info", ""))
             cache_key = (tuple(tables), tuple(columns))
@@ -166,41 +184,6 @@ def main() -> None:
                 parser_factory_cache[cache_key] = parser_factory
             dynamic_parser = parser_factory(dafny_env["lm"]._Tokens)
 
-        # Build per-example valid_token_groups. The outer list is one group per
-        # schema table (in schema order). The first group is the table-name
-        # group; subsequent groups are the columns belonging to each table.
-        # Tokens within a group are BPE-token strings produced by tokenizing
-        # each identifier in common case/space variants.
-        valid_token_groups: list = []
-        if not args.unconstrained and (tables or columns):
-            tok = dafny_env["tokenizer"]
-
-            def _tokens_for(ident: str) -> list:
-                bag = set()
-                for variant in (ident, " " + ident, ident.lower(), " " + ident.lower(),
-                                ident.upper(), " " + ident.upper()):
-                    try:
-                        ids = tok.encode(variant, add_special_tokens=False)
-                    except Exception:
-                        continue
-                    for tid in ids:
-                        try:
-                            bag.add(tok.decode([tid]))
-                        except Exception:
-                            pass
-                return sorted(bag)
-
-            schema = parse_db_info(example.get("db_info", ""))
-            table_group = []
-            for tbl in sorted(schema.keys()):
-                table_group.extend(_tokens_for(tbl))
-            valid_token_groups.append(sorted(set(table_group)))
-            for tbl in sorted(schema.keys()):
-                col_bag = []
-                for col in schema[tbl]:
-                    col_bag.extend(_tokens_for(col))
-                valid_token_groups.append(sorted(set(col_bag)))
-
         print(f"[{i+1}/{n}] {example.get('db_id', '')}: {example.get('question', '')[:80]}", flush=True)
 
         if args.unconstrained:
@@ -213,7 +196,6 @@ def main() -> None:
                 dafny_env, prompt, args.max_steps, args.grammar,
                 debug_delimiters=args.verbose,
                 dynamic_parser=dynamic_parser,
-                valid_token_groups=valid_token_groups,
             )
 
         contains_delimiters = True  # not used for SQL; launch with --no-require-delimiters
@@ -247,22 +229,6 @@ def main() -> None:
     )
     metrics.record_batch_scores(scores, error_types)
 
-    # Dump full predictions + per-row scoring results for offline diagnosis.
-    try:
-        import json, os
-        dump_path = os.environ.get("SQL_PRED_DUMP")
-        if dump_path:
-            with open(dump_path, "w") as _f:
-                json.dump({
-                    "predictions": predictions,
-                    "rows": rows,
-                    "scores": scores,
-                    "error_types": error_types,
-                }, _f, indent=2, default=str)
-            print(f"Wrote prediction dump to {dump_path}")
-    except Exception as _e:
-        print(f"Failed to dump predictions: {_e}")
-
     print("\n" + "=" * 60)
     print("SQL SPIDER RESULTS")
     print("=" * 60)
@@ -271,6 +237,24 @@ def main() -> None:
     print(f"Examples scored: {len(rows)}")
     print()
     print(metrics.summary())
+
+    pred_dump = args.pred_dump
+    if pred_dump is None and os.environ.get("SQL_PRED_DUMP"):
+        pred_dump = Path(os.environ["SQL_PRED_DUMP"])
+    if pred_dump is not None:
+        pred_dump.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "method": "Unconstrained Baseline" if args.unconstrained else "CSD",
+            "model": args.model,
+            "split_file": str(args.split_file) if args.split_file else None,
+            "split_name": args.split_name if args.split_file else None,
+            "scores": scores,
+            "error_types": error_types,
+            "metrics_summary": metrics.summary(),
+            "rows": rows,
+        }
+        pred_dump.write_text(json.dumps(payload, indent=2))
+        print(f"Wrote prediction dump: {pred_dump}")
 
 
 if __name__ == "__main__":
