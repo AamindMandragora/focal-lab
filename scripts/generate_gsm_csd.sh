@@ -25,7 +25,6 @@ python run_synthesis.py \
     --temperature 0.7 \
     --device auto \
     --min-accuracy 0.3 \
-    --min-format-rate 0.5 \
     --min-syntax-rate 0.5 \
     --eval-sample-size 10 \
     --eval-max-steps 512

@@ -26,9 +26,14 @@ def _tokenizer_cache_fingerprint(tokenizer) -> tuple[str, int]:
 
 def _ensure_syncode_import_path() -> None:
     syncode_dir = Path(__file__).parent.parent.parent / "syncode"
-    syncode_parent = str(syncode_dir.parent)
-    if syncode_parent not in sys.path:
-        sys.path.insert(0, syncode_parent)
+    # Vendored layout is repo_root/syncode/syncode. We need repo_root/syncode
+    # on sys.path so imports like `syncode.parsers` resolve correctly.
+    candidates = [str(syncode_dir), str(syncode_dir.parent)]
+    for candidate in reversed(candidates):
+        if candidate in sys.path:
+            sys.path.remove(candidate)
+    for candidate in candidates:
+        sys.path.insert(0, candidate)
 
 
 def _load_grammar_text(grammar_source: str) -> str:

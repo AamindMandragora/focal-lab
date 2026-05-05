@@ -20,7 +20,7 @@ from evaluations.smiles.environment import (
     verify_critical_tokens,
 )
 from evaluations.smiles.generation import run_crane_csd, run_unconstrained
-from evaluations.smiles.metrics import SmilesMetrics
+from evaluations.smiles.metrics import SmilesMetrics, evaluate_smiles_output
 from synthesis.evaluator import Evaluator
 
 
@@ -61,8 +61,9 @@ def main() -> None:
 
     eval_start_time = time.time()
     for index, example in enumerate(examples, start=1):
-        prompt = helper._format_prompt(example)
-        print(f"[{index}/{len(examples)}] {example.task or example.config}: {example.question[:80]}", flush=True)
+        prompt = example["prompt"]
+        class_name = example["class_name"]
+        print(f"[{index}/{len(examples)}] {class_name}: {example['question'][:80]}", flush=True)
 
         if args.unconstrained:
             output_text, token_count, time_seconds = run_unconstrained(
@@ -81,12 +82,17 @@ def main() -> None:
                 debug_delimiters=args.verbose,
             )
 
-        actual = helper._extract_answer_smiles(output_text)
-        expected = example.answer
-        is_correct = helper._answers_match(actual, expected, example=example)
+        smiles_eval = evaluate_smiles_output(
+            class_name,
+            output_text,
+            example["grammar_text"],
+            example["prompt_exemplars"],
+        )
+        actual = smiles_eval["smiles"]
+        is_correct = smiles_eval["unique_valid_candidate"]
         contains_delimiters = helper._contains_delimiters(output_text)
-        all_valid_syntax, parsed_segments = helper._check_syntax_validity(output_text)
-        syntax_segments = parsed_segments if parsed_segments else constrained_segments
+        all_valid_syntax = smiles_eval["syntax_valid"]
+        syntax_segments = [(actual, all_valid_syntax)] if actual else []
 
         metrics.update(
             is_correct=is_correct,
@@ -108,7 +114,7 @@ def main() -> None:
         )
 
         if args.verbose:
-            print(f"  Expected: {expected}")
+            print(f"  Expected class: {class_name}")
             print(f"  Output: {output_text}")
 
     total_time = time.time() - eval_start_time

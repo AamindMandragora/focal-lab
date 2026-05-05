@@ -385,7 +385,7 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
-        require_delimiters=args.require_delimiters,
+        require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
     )

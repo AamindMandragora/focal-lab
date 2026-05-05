@@ -1,5 +1,18 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+if [[ -f ".env" ]]; then
+  set -a
+  source .env
+  set +a
+fi
+
+DAFNY_PATH_ARG=("--dafny-path" "${DAFNY_PATH:-/home/aadivyar/.dotnet/tools/dafny}")
 
 # script to evaluate gsm symbolic using the vanilla CRANE system without any dynamic CSD generation
 
@@ -32,7 +45,7 @@ EOF
 
 # 2. Compile the strategy (skip generation)
 echo "Compiling strategy..."
-python run_synthesis.py --task "Vanilla CRANE" --compile-only --output-name generated_csd > /dev/null
+python run_synthesis.py --task "Vanilla CRANE" --compile-only --output-name generated_csd "${DAFNY_PATH_ARG[@]}" > /dev/null
 
 # 3. Get the run directory
 RUN_DIR=$(cat outputs/generated-csd/latest_run.txt)

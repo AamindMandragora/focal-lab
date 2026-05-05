@@ -20,7 +20,7 @@ module VerifiedDecoderAgent {
       (forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) && 
       (forall i, j :: 0 <= i < |Tokens| && 0 <= j < |Tokens| && i != j ==> Tokens[i] != Tokens[j]) &&
       (forall token: Token :: token in Tokens ==> (exists i :: 0 <= i < |Ids| && Tokens[i] == token)) &&
-      (forall i :: 0 <= i < Logits.Length ==> Logits[i] <= 1e9 && Logits[i] >= -1e9)
+      (forall i :: (0 <= i < Logits.Length) ==> (-1000000000.0 <= Logits[i] && Logits[i] <= 1000000000.0))
     }
 
     // The constructor for this LM wrapper class will create lists of Tokens, Ids, and Logits according to the above standards.
@@ -122,7 +122,7 @@ module VerifiedDecoderAgent {
       else [IdToLogit(ids[0])] + IdsToLogits(ids[1..])
     }
 
-    // Method that sets a token's logit to -1e9, ensuring it is never chosen.
+    // Method that sets a token's logit to -1000000000.0, ensuring it is never chosen.
     method MaskToken(token: Token)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -133,7 +133,7 @@ module VerifiedDecoderAgent {
       ensures forall t: Token :: t in Tokens && t != token ==> Logits[TokenToId(t)] == old(Logits[TokenToId(t)])
     {
       var id := TokenToId(token);
-      Logits[id] := -1e9;
+      Logits[id] := -1000000000.0;
     }
 
     // Method that masks a list of tokens, ensuring none of them are chosen.
@@ -201,7 +201,7 @@ module VerifiedDecoderAgent {
       requires token in Tokens
       ensures ValidTokensIdsLogits()
     {
-      Logits[TokenToId(token)] == -1e9
+      Logits[TokenToId(token)] == -1000000000.0
     }
 
     // Function that checks if an unmasked token exists to choose from.
@@ -267,7 +267,7 @@ module VerifiedDecoderAgent {
       requires ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       requires eosToken in Tokens
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures ValidTokensIdsLogits()
   }
 
@@ -595,7 +595,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
       ensures cost == old(cost)
     {
@@ -623,7 +623,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -657,7 +657,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -698,7 +698,7 @@ module VerifiedDecoderAgent {
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires forall t :: t in tokensToPenalize ==> t in lm.Tokens
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 1e8
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -733,7 +733,7 @@ module VerifiedDecoderAgent {
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires forall t :: t in tokensToBoost ==> t in lm.Tokens
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -765,7 +765,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -797,7 +797,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 1e8
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1088,14 +1088,14 @@ module VerifiedDecoderAgent {
     // novel constrained decoding strategies different from CRANE.
     // =========================================================================
 
-    // Adds `amount` to logits of specified tokens. Clamped to 1e9 upper bound.
+    // Adds `amount` to logits of specified tokens. Clamped to 1000000000.0 upper bound.
     // Cost: 0 (no LM call, just logit array modification).
     // Use: boost grammar-valid tokens for soft constraining, or boost << to encourage expressions.
     method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires forall t :: t in tokens ==> t in lm.Tokens
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
       ensures forall t :: t in lm.Tokens && !(t in tokens) ==>
         lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
@@ -1110,7 +1110,7 @@ module VerifiedDecoderAgent {
       {
         var id := lm.TokenToId(tokens[i]);
         var newVal := lm.Logits[id] + amount;
-        if newVal > 1e9 { newVal := 1e9; }
+        if newVal > 1000000000.0 { newVal := 1000000000.0; }
         lm.Logits[id] := newVal;
         i := i + 1;
       }
@@ -1121,21 +1121,21 @@ module VerifiedDecoderAgent {
     method SafeBoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
     {
       var validTokens := IntersectTokenSets(lm.Tokens, tokens);
       BoostTokenLogits(lm, validTokens, amount);
     }
 
-    // Subtracts `amount` from logits of specified tokens. Clamped to -1e9 lower bound.
+    // Subtracts `amount` from logits of specified tokens. Clamped to -1000000000.0 lower bound.
     // Cost: 0 (no LM call).
     // Use: penalize >> to prevent premature expression closing, penalize << to force reasoning.
     method PenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires forall t :: t in tokens ==> t in lm.Tokens
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
       ensures forall t :: t in lm.Tokens && !(t in tokens) ==>
         lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
@@ -1150,7 +1150,7 @@ module VerifiedDecoderAgent {
       {
         var id := lm.TokenToId(tokens[i]);
         var newVal := lm.Logits[id] - amount;
-        if newVal < -1e9 { newVal := -1e9; }
+        if newVal < -1000000000.0 { newVal := -1000000000.0; }
         lm.Logits[id] := newVal;
         i := i + 1;
       }
@@ -1161,7 +1161,7 @@ module VerifiedDecoderAgent {
     method SafePenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
-      requires amount >= 0.0 && amount <= 1e8
+      requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
     {
       var validTokens := IntersectTokenSets(lm.Tokens, tokens);
@@ -1218,7 +1218,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1247,7 +1247,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
-      requires boostAmount >= 0.0 && boostAmount <= 1e8
+      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1348,14 +1348,14 @@ module VerifiedDecoderAgent {
       logit := lm.Logits[lm.TokenToId(token)];
     }
 
-    // Multiplies every logit by scalar, clamped to [-1e9, 1e9].
+    // Multiplies every logit by scalar, clamped to [-1000000000.0, 1000000000.0].
     // Cost: 0 (no forward pass, just array modification).
     // scalar > 0: temperature scaling. scalar < 1 sharpens distribution, scalar > 1 flattens it.
     // Use: apply temperature before sampling without re-running the model.
     method ScaleAllLogits(lm: LM, scalar: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
-      requires scalar > 0.0 && scalar <= 1e8
+      requires scalar > 0.0 && scalar <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
       ensures forall t :: t in lm.Tokens && !(t in lm.Tokens) ==>
         lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
@@ -1370,8 +1370,8 @@ module VerifiedDecoderAgent {
       {
         var id := lm.TokenToId(lm.Tokens[i]);
         var newVal := lm.Logits[id] * scalar;
-        if newVal > 1e9 { newVal := 1e9; }
-        if newVal < -1e9 { newVal := -1e9; }
+        if newVal > 1000000000.0 { newVal := 1000000000.0; }
+        if newVal < -1000000000.0 { newVal := -1000000000.0; }
         lm.Logits[id] := newVal;
         i := i + 1;
       }
@@ -1450,7 +1450,7 @@ module VerifiedDecoderAgent {
         decreases target - |chosen|
       {
         var bestTok := pool[0];
-        var bestLogit := -1e9;
+        var bestLogit := -1000000000.0;
         var found := false;
         var j := 0;
 
@@ -1517,7 +1517,7 @@ module VerifiedDecoderAgent {
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       requires forall t :: t in generated ==> t in lm.Tokens
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 1e8
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1549,7 +1549,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 1e8
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1585,7 +1585,7 @@ module VerifiedDecoderAgent {
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
-      requires temperature >= 1e-8 && temperature <= 1e8
+      requires temperature >= 0.00000001 && temperature <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures next in lm.Tokens
@@ -1595,7 +1595,7 @@ module VerifiedDecoderAgent {
     {
       lm.GenerateLogits(prompt + prefix);
       var scalar := 1.0 / temperature;
-      if scalar > 1e8 { scalar := 1e8; }
+      if scalar > 100000000.0 { scalar := 100000000.0; }
       ScaleAllLogits(lm, scalar);
       RollbackPreservesTokenInvariant(lm, parser, prefix);
       lm.MaskValidNextAndEos(parser, prefix, eosToken);
@@ -1626,15 +1626,15 @@ module VerifiedDecoderAgent {
     {
       lm.GenerateLogits(prompt + prefix);
       var safeTemperature := temperature;
-      if safeTemperature < 1e-8 {
-        safeTemperature := 1e-8;
+      if safeTemperature < 0.00000001 {
+        safeTemperature := 0.00000001;
       }
-      if safeTemperature > 1e8 {
-        safeTemperature := 1e8;
+      if safeTemperature > 100000000.0 {
+        safeTemperature := 100000000.0;
       }
       var scalar := 1.0 / safeTemperature;
-      if scalar > 1e8 {
-        scalar := 1e8;
+      if scalar > 100000000.0 {
+        scalar := 100000000.0;
       }
       if scalar <= 0.0 {
         scalar := 1.0;
