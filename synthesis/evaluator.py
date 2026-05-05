@@ -1130,6 +1130,8 @@ class Evaluator:
         gsm_source_dir: str | Path | None = None,
         gsm_split_file: str | Path | None = None,
         gsm_split_name: str = "train",
+        spider_split_file: str | Path | None = None,
+        spider_split_name: str = "train",
         smiles_classes: Optional[List[str]] = None,
     ):
         """
@@ -1153,6 +1155,8 @@ class Evaluator:
             max_seconds_per_example: Optional runtime budget per example in seconds
             gsm_split_file: Optional JSON manifest with train_indices/eval_indices for GSM.
             gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
+            spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
+            spider_split_name: Which split from spider_split_file to use ("train" or "test").
         """
         if backend not in {"huggingface", "vllm"}:
             raise NotImplementedError(
@@ -1180,6 +1184,8 @@ class Evaluator:
         self.gsm_source_dir = gsm_source_dir
         self.gsm_split_file = Path(gsm_split_file) if gsm_split_file is not None else None
         self.gsm_split_name = gsm_split_name
+        self.spider_split_file = Path(spider_split_file) if spider_split_file is not None else None
+        self.spider_split_name = spider_split_name
         self.smiles_classes = smiles_classes
 
         # Lazy-loaded components
@@ -1190,6 +1196,29 @@ class Evaluator:
         self._base_grammar_text: Optional[str] = None
         self._dynamic_parser_factory_cache: Dict[Tuple[Any, ...], Any] = {}
         self._syntax_parser_cache: Dict[Tuple[str, ...], Any] = {}
+
+    def unload_runtime(self) -> None:
+        """Release cached runtime model state so the generator can reclaim GPU memory."""
+        self._env = None
+        self._env_cache_key = None
+        if self.backend == "vllm":
+            try:
+                from evaluations.common.model_utils import clear_vllm_engine_cache
+
+                clear_vllm_engine_cache()
+            except Exception:
+                pass
+        else:
+            import gc
+
+            gc.collect()
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
 
     def _load_gsm_split_indices(self) -> Optional[List[int]]:
         """Load explicit GSM example indices from a train/eval split manifest."""
@@ -1210,6 +1239,25 @@ class Evaluator:
             raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
         return indices
 
+    def _load_spider_split_indices(self) -> Optional[List[int]]:
+        """Load explicit Spider example indices from a train/test split manifest."""
+        if self.spider_split_file is None:
+            return None
+
+        manifest = json.loads(self.spider_split_file.read_text())
+        key = f"{self.spider_split_name}_indices"
+        if key not in manifest:
+            available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
+            raise ValueError(
+                f"Split file {self.spider_split_file} does not contain {key}. "
+                f"Available index fields: {available}"
+            )
+
+        indices = manifest[key]
+        if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
+            raise ValueError(f"{key} in {self.spider_split_file} must be a list of integers")
+        return indices
+
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
         if self._grammar_file is None:
@@ -1221,10 +1269,30 @@ class Evaluator:
             elif self.dataset_name == "spider":
                 self._grammar_file = grammars_dir / "sql.lark"
             elif self.dataset_name == "smiles":
-                self._grammar_file = grammars_dir / "smiles.lark"
+                from evaluations.smiles.dataset import get_smiles_task
+
+                classes = self._normalize_smiles_classes()
+                if len(classes) != 1:
+                    raise ValueError(
+                        "SMILES CSD evaluation uses class-specific grammars; "
+                        "pass exactly one class via --smiles-classes."
+                    )
+                self._grammar_file = Path(get_smiles_task(classes[0])["grammar_path"])
             else:
                 raise ValueError(f"Unknown dataset: {self.dataset_name}")
         return self._grammar_file
+
+    def _normalize_smiles_classes(self) -> List[str]:
+        """Return the selected SMILES classes as a normalized list."""
+        if self.smiles_classes is None:
+            from evaluations.smiles.dataset import SMILES_CLASSES
+
+            return list(SMILES_CLASSES)
+        if isinstance(self.smiles_classes, str):
+            raw = [part.strip() for part in self.smiles_classes.split(",")]
+        else:
+            raw = [str(part).strip() for part in self.smiles_classes]
+        return [part for part in raw if part]
 
     def _get_grammar_text(self) -> str:
         """Load and cache the active grammar text."""
@@ -1440,20 +1508,22 @@ class Evaluator:
             self._dataset = list(ds)
         elif self.dataset_name == "spider":
             from evaluations.sql_spider.dataset import load_spider
+            split_indices = self._load_spider_split_indices()
             ds = load_spider(
                 source="auto",
                 limit=self.sample_size,
-                random_sample=True,
+                random_sample=split_indices is None,
                 seed=self.sample_seed,
+                indices=split_indices,
             )
             self._dataset = list(ds)
         elif self.dataset_name == "smiles":
             from evaluations.smiles.dataset import load_smiles
-            ds = load_smiles(
-                classes=self.smiles_classes,
+
+            self._dataset = load_smiles(
+                classes=self._normalize_smiles_classes(),
                 samples_per_class=self.sample_size,
             )
-            self._dataset = list(ds)
         else:
             raise ValueError(f"Unknown dataset: {self.dataset_name}")
 
@@ -1914,7 +1984,7 @@ class Evaluator:
         elif self.dataset_name == "spider":
             return (example.get("query") or "").strip()
         elif self.dataset_name == "smiles":
-            return example.get("class_name", "smiles")
+            return str(example.get("class_name", ""))
         else:
             if hasattr(example, "label"):
                 return example.label
@@ -2206,7 +2276,19 @@ class Evaluator:
                     elif self.dataset_name == "spider":
                         actual = self._extract_answer_spider(scored_output)
                         answer_source = "hidden_or_task_extractor" if actual is not None else "none"
+                    elif self.dataset_name == "smiles":
+                        from evaluations.smiles.metrics import evaluate_smiles_output
+
+                        smiles_eval = evaluate_smiles_output(
+                            example.get("class_name", ""),
+                            scored_output,
+                            example.get("grammar_text", self._get_grammar_text()),
+                            example.get("prompt_exemplars", []),
+                        )
+                        actual = smiles_eval.get("smiles") or None
+                        answer_source = "hidden_or_task_extractor" if actual is not None else "none"
                     else:
+                        smiles_eval = None
                         actual = self._extract_answer_folio(scored_output, example=example)
                         answer_source = "hidden_or_task_extractor" if actual is not None else "none"
 
@@ -2232,6 +2314,8 @@ class Evaluator:
                         is_correct = bool(smiles_eval and smiles_eval.get("unique_valid_candidate"))
                     elif self.dataset_name == "spider":
                         is_correct = self._exec_match_spider(actual, expected, example)
+                    elif self.dataset_name == "smiles":
+                        is_correct = bool(smiles_eval.get("class_membership"))
                     else:
                         is_correct = self._answers_match(actual, expected)
                     if is_correct:
@@ -2242,13 +2326,9 @@ class Evaluator:
                         event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
                         for event in (helper_trace or [])
                     )
-                    if self.dataset_name == "smiles":
-                        contains_delimiters = False
-                        used_hidden_chunk = bool(constrained_segments)
-                    else:
-                        contains_delimiters = (
-                            used_hidden_chunk if self.dataset_name == "spider" else visible_delimiters
-                        )
+                    contains_delimiters = (
+                        used_hidden_chunk if self.dataset_name in {"spider", "smiles"} else visible_delimiters
+                    )
                     all_examples_contain_delimiters = (
                         all_examples_contain_delimiters and contains_delimiters
                     )
@@ -2316,6 +2396,8 @@ class Evaluator:
                         "helper_trace": helper_trace,
                         "smiles_eval": smiles_eval,
                     }
+                    if self.dataset_name == "smiles":
+                        sample["smiles_eval"] = smiles_eval
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
 
                 except Exception as e:

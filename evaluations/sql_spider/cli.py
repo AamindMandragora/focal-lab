@@ -9,6 +9,8 @@ dev split, then scores with Spider's execution-accuracy evaluator.
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 import time
 from pathlib import Path
@@ -82,6 +84,10 @@ def main() -> None:
                     help="Spider tables.json")
     ap.add_argument("--limit", type=int, default=50,
                     help="Max examples to evaluate")
+    ap.add_argument("--split-file", type=Path, default=None,
+                    help="Optional Spider train/test split manifest")
+    ap.add_argument("--split-name", choices=["train", "test", "eval"], default="test",
+                    help="Split key to read from --split-file")
     ap.add_argument("--random-sample", action="store_true",
                     help="Randomly sample examples instead of taking first N")
     ap.add_argument("--seed", type=int, default=0)
@@ -104,14 +110,28 @@ def main() -> None:
     ap.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
     ap.add_argument("--vllm-max-model-len", type=int, default=4096)
     ap.add_argument("--vllm-enforce-eager", action="store_true", default=True)
+    ap.add_argument("--pred-dump", type=Path, default=None,
+                    help="Optional JSON output with predictions, scores, and rows")
     args = ap.parse_args()
+
+    split_indices = None
+    if args.split_file is not None:
+        manifest = json.loads(args.split_file.read_text())
+        key = f"{args.split_name}_indices"
+        if key not in manifest:
+            available = sorted(k for k in manifest if k.endswith("_indices"))
+            raise SystemExit(
+                f"{args.split_file} does not contain {key}; available index fields: {available}"
+            )
+        split_indices = manifest[key]
 
     examples = load_spider(
         source=args.source,
         spider_dir=args.spider_dir,
         limit=args.limit,
-        random_sample=args.random_sample,
+        random_sample=args.random_sample and split_indices is None,
         seed=args.seed,
+        indices=split_indices,
     )
     n = len(examples)
     metrics = SQLMetrics()
@@ -271,6 +291,24 @@ def main() -> None:
     print(f"Examples scored: {len(rows)}")
     print()
     print(metrics.summary())
+
+    pred_dump = args.pred_dump
+    if pred_dump is None and os.environ.get("SQL_PRED_DUMP"):
+        pred_dump = Path(os.environ["SQL_PRED_DUMP"])
+    if pred_dump is not None:
+        pred_dump.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "method": "Unconstrained Baseline" if args.unconstrained else "CSD",
+            "model": args.model,
+            "split_file": str(args.split_file) if args.split_file else None,
+            "split_name": args.split_name if args.split_file else None,
+            "scores": scores,
+            "error_types": error_types,
+            "metrics_summary": metrics.summary(),
+            "rows": rows,
+        }
+        pred_dump.write_text(json.dumps(payload, indent=2))
+        print(f"Wrote prediction dump: {pred_dump}")
 
 
 if __name__ == "__main__":

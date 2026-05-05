@@ -1,0 +1,635 @@
+#!/usr/bin/env python3
+"""Train/eval split workflow for GSM-Symbolic CSD synthesis.
+
+This script keeps synthesis feedback and held-out reporting separate:
+
+1. `prepare` creates a deterministic 50/50 split over the sorted CRANE GSM
+   folder, runs the CRANE baseline on the training half, and writes a
+   `run_synthesis.py` command whose thresholds require strictly improving over
+   CRANE on that same training half.
+2. `heldout` evaluates CRANE and a synthesized CSD on the held-out half.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+DEFAULT_CRANE_GSM_DIR = Path("/home/aadivyar/CRANE/src/gsm_symbolic")
+
+DEFAULT_TASK = (
+    "Solve math word problems step by step, writing each arithmetic computation "
+    "inside << >> delimiters."
+)
+
+
+def strict_next_threshold(pass_rate: float, n_examples: int) -> float:
+    """Smallest discrete rate that is strictly greater than pass_rate."""
+    if n_examples <= 0:
+        raise ValueError("n_examples must be positive")
+    passed = int(round(pass_rate * n_examples))
+    return min(1.0, (passed + 1) / n_examples)
+
+
+def parse_difficulty_counts(raw: str) -> dict[str, int]:
+    """Parse easy/medium/hard counts from 'easy=17,medium=17,hard=16' or '17,17,16'."""
+    raw = raw.strip()
+    if not raw:
+        raise ValueError("Difficulty counts cannot be empty")
+    difficulties = ("easy", "medium", "hard")
+    if "=" not in raw:
+        parts = [part.strip() for part in raw.split(",") if part.strip()]
+        if len(parts) != 3:
+            raise ValueError(
+                "Difficulty counts must be easy,medium,hard or easy=N,medium=N,hard=N"
+            )
+        return {difficulty: int(value) for difficulty, value in zip(difficulties, parts)}
+
+    counts: dict[str, int] = {}
+    for part in raw.split(","):
+        if not part.strip():
+            continue
+        key, value = part.split("=", 1)
+        key = key.strip().lower()
+        if key not in difficulties:
+            raise ValueError(f"Unknown GSM difficulty: {key}")
+        counts[key] = int(value.strip())
+    missing = [difficulty for difficulty in difficulties if difficulty not in counts]
+    if missing:
+        raise ValueError(f"Missing difficulty counts for: {missing}")
+    return counts
+
+
+def split_size(split_file: Path, split_name: str) -> int:
+    manifest = json.loads(split_file.read_text())
+    key = f"{split_name}_indices"
+    if key not in manifest:
+        raise ValueError(f"{split_file} does not contain {key}")
+    return len(manifest[key])
+
+
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, default=str))
+
+
+def compile_crane_baseline(args: argparse.Namespace) -> Path:
+    from synthesis.compiler import DafnyCompiler
+
+    compiler = DafnyCompiler(
+        dafny_path=args.dafny_path,
+        output_dir=args.output_dir,
+        timeout=args.compile_timeout,
+    )
+    result = compiler.compile_file(
+        PROJECT_ROOT / "dafny" / "CraneBaseline.dfy",
+        output_name=args.crane_output_name,
+    )
+    if not result.success or result.main_module_path is None:
+        raise RuntimeError(result.get_error_summary())
+    return result.main_module_path
+
+
+def evaluate_module(
+    *,
+    module_path: Path,
+    label: str,
+    split_file: Path,
+    split_name: str,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    from synthesis.evaluator import Evaluator
+
+    n_examples = split_size(split_file, split_name)
+    evaluator = Evaluator(
+        dataset_name="gsm_symbolic",
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=n_examples,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        load_in_4bit=args.load_in_4bit,
+        load_in_8bit=args.load_in_8bit,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        vllm_pipeline_parallel_size=args.vllm_pipeline_parallel_size,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_max_model_len=args.vllm_max_model_len,
+        vllm_enforce_eager=args.vllm_enforce_eager,
+        sample_seed=args.eval_seed,
+        max_seconds_per_example=args.eval_max_seconds_per_example,
+        gsm_source_dir=args.gsm_source_dir,
+        gsm_split_file=split_file,
+        gsm_split_name=split_name,
+    )
+    result = evaluator.evaluate_sample(module_path, sample_size=n_examples)
+    return {
+        "label": label,
+        "module_path": str(module_path),
+        "split_file": str(split_file),
+        "split_name": split_name,
+        "success": result.success,
+        "accuracy": result.accuracy,
+        "syntax_rate": result.syntax_rate,
+        "contains_delimiters": result.contains_delimiters,
+        "num_correct": result.num_correct,
+        "num_examples": result.num_examples,
+        "total_time_seconds": result.total_time_seconds,
+        "max_sample_time_seconds": result.max_sample_time_seconds,
+        "error": result.error,
+        "sample_outputs": result.sample_outputs,
+    }
+
+
+def build_synthesis_command(
+    *,
+    split_file: Path,
+    train_size: int,
+    min_accuracy: float,
+    min_syntax_rate: float,
+    args: argparse.Namespace,
+) -> list[str]:
+    cmd = [
+        sys.executable,
+        "run_synthesis.py",
+        "--task",
+        args.task,
+        "--dataset",
+        "gsm_symbolic",
+        "--gsm-source-dir",
+        args.gsm_source_dir,
+        "--gsm-split-file",
+        str(split_file),
+        "--gsm-split-name",
+        "train",
+        "--max-iterations",
+        str(args.max_iterations),
+        "--generation-model",
+        args.generation_model,
+        "--generation-backend",
+        args.generation_backend,
+        "--eval-model",
+        args.eval_model,
+        "--eval-backend",
+        args.eval_backend,
+        "--output-name",
+        args.synthesis_output_name,
+        "--min-accuracy",
+        f"{min_accuracy:.12g}",
+        "--min-syntax-rate",
+        f"{min_syntax_rate:.12g}",
+        "--eval-sample-size",
+        str(train_size),
+        "--eval-max-steps",
+        str(args.eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.eval_step_token_budget),
+        "--device",
+        args.device,
+        "--dafny-path",
+        args.dafny_path,
+        "--synthesis-max-tokens",
+        str(args.synthesis_max_tokens),
+        "--vllm-gpu-memory-utilization",
+        str(args.vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.vllm_max_model_len),
+    ]
+    if args.eval_seed is not None:
+        cmd.extend(["--eval-seed", str(args.eval_seed)])
+    if args.eval_max_seconds_per_example is not None:
+        cmd.extend([
+            "--eval-max-seconds-per-example",
+            str(args.eval_max_seconds_per_example),
+        ])
+    if args.vllm_tensor_parallel_size is not None:
+        cmd.extend(["--vllm-tensor-parallel-size", str(args.vllm_tensor_parallel_size)])
+    if args.vllm_pipeline_parallel_size != 1:
+        cmd.extend(["--vllm-pipeline-parallel-size", str(args.vllm_pipeline_parallel_size)])
+    if args.vllm_enforce_eager:
+        cmd.append("--vllm-enforce-eager")
+    else:
+        cmd.append("--no-vllm-enforce-eager")
+    if args.load_in_4bit:
+        cmd.append("--load-in-4bit")
+    if args.load_in_8bit:
+        cmd.append("--load-in-8bit")
+    return cmd
+
+
+def command_text(cmd: list[str]) -> str:
+    return " ".join(shlex.quote(part) for part in cmd)
+
+
+def prepare(args: argparse.Namespace) -> dict[str, Any]:
+    from evaluations.gsm_symbolic.dataset import (
+        annotate_gsm_crane_rubric_difficulty_labels,
+        write_gsm_stratified_train_eval_split,
+        write_gsm_train_eval_split,
+    )
+
+    split_file = args.split_file
+    if split_file is None:
+        split_tag = "stratified" if args.split_strategy == "stratified" else f"train{int(args.train_fraction * 100)}"
+        split_file = (
+            args.output_dir
+            / "splits"
+            / f"gsm_symbolic_seed{args.split_seed}_{split_tag}.json"
+        )
+
+    difficulty_annotation = None
+    if args.annotate_difficulty:
+        difficulty_annotation = annotate_gsm_crane_rubric_difficulty_labels(
+            crane_dir=args.gsm_source_dir,
+            backup=not args.no_difficulty_backup,
+        )
+        print(
+            "[prepare] absolute rubric labels in CRANE folder: "
+            f"updated={difficulty_annotation['updated_files']} "
+            f"source={difficulty_annotation['difficulty_source']}"
+        )
+
+    if args.split_strategy == "stratified":
+        split = write_gsm_stratified_train_eval_split(
+            split_file,
+            crane_dir=args.gsm_source_dir,
+            train_counts=parse_difficulty_counts(args.difficulty_train_counts),
+            eval_counts=parse_difficulty_counts(args.difficulty_eval_counts),
+            seed=args.split_seed,
+        )
+    else:
+        split = write_gsm_train_eval_split(
+            split_file,
+            crane_dir=args.gsm_source_dir,
+            train_fraction=args.train_fraction,
+            seed=args.split_seed,
+        )
+
+    print(f"[prepare] wrote split: {split_file}")
+    print(
+        f"[prepare] train={split['train_size']} eval={split['eval_size']} "
+        f"total={split['total_examples']} seed={split['seed']}"
+    )
+    if "train_composition" in split:
+        print(
+            "[prepare] stratified composition: "
+            f"train={split['train_composition']} eval={split['eval_composition']} "
+            f"source={split['difficulty_source']}"
+        )
+
+    crane_module = compile_crane_baseline(args)
+    print(f"[prepare] compiled CRANE baseline: {crane_module}")
+
+    train_result = evaluate_module(
+        module_path=crane_module,
+        label="CRANE_train",
+        split_file=split_file,
+        split_name="train",
+        args=args,
+    )
+    benchmark_path = args.output_dir / "benchmarks" / f"{args.run_name}_crane_train.json"
+    write_json(benchmark_path, train_result)
+    print(
+        "[prepare] CRANE train: "
+        f"accuracy={train_result['accuracy']:.1%} "
+        f"({train_result['num_correct']}/{train_result['num_examples']}), "
+        f"syntax={train_result['syntax_rate']:.1%}"
+    )
+    print(f"[prepare] saved benchmark: {benchmark_path}")
+
+    min_accuracy = strict_next_threshold(
+        float(train_result["accuracy"]), int(train_result["num_examples"])
+    )
+    min_syntax_rate = strict_next_threshold(
+        float(train_result["syntax_rate"]), int(train_result["num_examples"])
+    )
+    cmd = build_synthesis_command(
+        split_file=split_file,
+        train_size=int(split["train_size"]),
+        min_accuracy=min_accuracy,
+        min_syntax_rate=min_syntax_rate,
+        args=args,
+    )
+    launch = {
+        "split_file": str(split_file),
+        "crane_train_benchmark": str(benchmark_path),
+        "crane_module": str(crane_module),
+        "min_accuracy": min_accuracy,
+        "min_syntax_rate": min_syntax_rate,
+        "synthesis_command": cmd,
+        "synthesis_command_text": command_text(cmd),
+        "difficulty_annotation": difficulty_annotation,
+    }
+    launch_path = args.output_dir / "benchmarks" / f"{args.run_name}_launch.json"
+    write_json(launch_path, launch)
+    print(
+        "[prepare] strict synthesis thresholds: "
+        f"accuracy>CRANE => {min_accuracy:.1%}, "
+        f"syntax>CRANE => {min_syntax_rate:.1%}"
+    )
+    print(f"[prepare] saved launch metadata: {launch_path}")
+    print("[prepare] synthesis command:")
+    print(command_text(cmd))
+    return launch
+
+
+def heldout(args: argparse.Namespace) -> dict[str, Any]:
+    split_file = args.split_file
+    if split_file is None:
+        raise ValueError("--split-file is required for heldout")
+
+    crane_module = args.crane_module or compile_crane_baseline(args)
+    csd_module = args.csd_module
+    if csd_module is None:
+        raise ValueError("--csd-module is required for heldout")
+
+    results = [
+        evaluate_module(
+            module_path=Path(crane_module),
+            label="CRANE_eval",
+            split_file=split_file,
+            split_name="eval",
+            args=args,
+        ),
+        evaluate_module(
+            module_path=Path(csd_module),
+            label=args.csd_label,
+            split_file=split_file,
+            split_name="eval",
+            args=args,
+        ),
+    ]
+    out = {
+        "split_file": str(split_file),
+        "split_name": "eval",
+        "results": results,
+        "delta": {
+            "accuracy": results[1]["accuracy"] - results[0]["accuracy"],
+            "syntax_rate": results[1]["syntax_rate"] - results[0]["syntax_rate"],
+        },
+    }
+    output_path = args.output_dir / "benchmarks" / f"{args.run_name}_heldout_compare.json"
+    write_json(output_path, out)
+
+    print("[heldout] CRANE eval: "
+          f"accuracy={results[0]['accuracy']:.1%}, syntax={results[0]['syntax_rate']:.1%}")
+    print("[heldout] CSD eval: "
+          f"accuracy={results[1]['accuracy']:.1%}, syntax={results[1]['syntax_rate']:.1%}")
+    print("[heldout] delta: "
+          f"accuracy={out['delta']['accuracy']:+.1%}, "
+          f"syntax={out['delta']['syntax_rate']:+.1%}")
+    print(f"[heldout] saved comparison: {output_path}")
+    return out
+
+
+def annotate_difficulty(args: argparse.Namespace) -> dict[str, Any]:
+    from evaluations.gsm_symbolic.dataset import annotate_gsm_crane_rubric_difficulty_labels
+
+    summary = annotate_gsm_crane_rubric_difficulty_labels(
+        crane_dir=args.gsm_source_dir,
+        backup=not args.no_difficulty_backup,
+    )
+    output_path = args.output_dir / "benchmarks" / f"{args.run_name}_difficulty_annotation.json"
+    write_json(output_path, summary)
+    print(
+        "[difficulty] CRANE GSM absolute rubric labels: "
+        f"updated={summary['updated_files']} "
+        f"composition={summary['difficulty_composition']} "
+        f"source={summary['difficulty_source']}"
+    )
+    print(f"[difficulty] saved summary: {output_path}")
+    return summary
+
+
+def annotate_hf_difficulty(args: argparse.Namespace) -> dict[str, Any]:
+    from evaluations.gsm_symbolic.dataset import annotate_gsm_crane_hf_difficulty_matches
+
+    summary = annotate_gsm_crane_hf_difficulty_matches(
+        crane_dir=args.gsm_source_dir,
+        split=args.hf_split,
+        overwrite=args.overwrite_difficulty,
+        backup=not args.no_difficulty_backup,
+    )
+    output_path = args.output_dir / "benchmarks" / f"{args.run_name}_hf_difficulty_match.json"
+    write_json(output_path, summary)
+    print(
+        "[hf-difficulty] CRANE GSM HF matches: "
+        f"updated={summary['updated_files']} "
+        f"label_updates={summary['difficulty_label_updates']} "
+        f"stats={summary['match_stats']}"
+    )
+    print(f"[hf-difficulty] saved summary: {output_path}")
+    return summary
+
+
+def annotate_rubric_difficulty(args: argparse.Namespace) -> dict[str, Any]:
+    from evaluations.gsm_symbolic.dataset import annotate_gsm_crane_rubric_difficulty_labels
+
+    summary = annotate_gsm_crane_rubric_difficulty_labels(
+        crane_dir=args.gsm_source_dir,
+        backup=not args.no_difficulty_backup,
+    )
+    output_path = args.output_dir / "benchmarks" / f"{args.run_name}_rubric_difficulty.json"
+    write_json(output_path, summary)
+    print(
+        "[rubric-difficulty] CRANE GSM labels: "
+        f"updated={summary['updated_files']} "
+        f"composition={summary['difficulty_composition']}"
+    )
+    print(f"[rubric-difficulty] saved summary: {output_path}")
+    return summary
+
+
+def run_synthesis_command(cmd: list[str], log_path: Path) -> Path:
+    """Run synthesis, tee output to a log, and return the compiled module path."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    print("[run-all] launching synthesis:")
+    print(command_text(cmd))
+    print(f"[run-all] synthesis log: {log_path}")
+
+    compiled_module: Path | None = None
+    with log_path.open("w") as log_file:
+        process = subprocess.Popen(
+            cmd,
+            cwd=PROJECT_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        assert process.stdout is not None
+        for line in process.stdout:
+            print(line, end="")
+            log_file.write(line)
+            log_file.flush()
+            match = re.search(r"^Compiled module:\s*(.+?)\s*$", line)
+            if match:
+                compiled_module = Path(match.group(1))
+
+        return_code = process.wait()
+
+    if return_code != 0:
+        raise RuntimeError(
+            f"Synthesis command failed with exit code {return_code}. "
+            f"See log: {log_path}"
+        )
+    if compiled_module is None:
+        log_text = log_path.read_text(errors="replace")
+        matches = re.findall(r"^Compiled module:\s*(.+?)\s*$", log_text, flags=re.MULTILINE)
+        if matches:
+            compiled_module = Path(matches[-1])
+    if compiled_module is None:
+        raise RuntimeError(
+            "Synthesis completed but no `Compiled module:` line was found. "
+            f"See log: {log_path}"
+        )
+
+    print(f"[run-all] synthesized module: {compiled_module}")
+    return compiled_module
+
+
+def run_all(args: argparse.Namespace) -> dict[str, Any]:
+    """Run split creation, CRANE train benchmark, synthesis, and held-out comparison."""
+    launch = prepare(args)
+    synthesis_log = args.synthesis_log
+    if synthesis_log is None:
+        synthesis_log = args.output_dir / "logs" / f"{args.run_name}_synthesis.log"
+
+    compiled_module = run_synthesis_command(
+        launch["synthesis_command"],
+        synthesis_log,
+    )
+
+    args.split_file = Path(launch["split_file"])
+    args.crane_module = Path(launch["crane_module"])
+    args.csd_module = compiled_module
+    args.csd_label = args.csd_label or "CSD_eval"
+    comparison = heldout(args)
+
+    summary = {
+        "launch": launch,
+        "synthesis_log": str(synthesis_log),
+        "compiled_module": str(compiled_module),
+        "heldout_comparison": comparison,
+    }
+    summary_path = args.output_dir / "benchmarks" / f"{args.run_name}_run_all_summary.json"
+    write_json(summary_path, summary)
+    print(f"[run-all] saved full workflow summary: {summary_path}")
+    return summary
+
+
+def add_common_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--run-name", default="gsm_split_train50_eval50")
+    parser.add_argument(
+        "--gsm-source-dir",
+        default=str(DEFAULT_CRANE_GSM_DIR),
+        help=(
+            "Path to the original CRANE GSM-Symbolic JSON folder. Defaults to the "
+            "CRANE checkout under this csd-generation repo."
+        ),
+    )
+    parser.add_argument("--split-file", type=Path, default=None)
+    parser.add_argument("--split-seed", type=int, default=123)
+    parser.add_argument("--split-strategy", choices=["stratified", "random"], default="stratified")
+    parser.add_argument("--train-fraction", type=float, default=0.5)
+    parser.add_argument(
+        "--difficulty-train-counts",
+        default="easy=13,medium=12,hard=25",
+        help=(
+            "Difficulty counts for the train split. Defaults to half of the "
+            "absolute rubric distribution in the 100-example CRANE GSM folder."
+        ),
+    )
+    parser.add_argument(
+        "--difficulty-eval-counts",
+        default="easy=13,medium=12,hard=25",
+        help=(
+            "Difficulty counts for the eval split. Defaults to the same label "
+            "distribution as train."
+        ),
+    )
+    parser.add_argument("--sample-size", type=int, default=50,
+                        help="Legacy random-split sample size; explicit split sizes override it.")
+    parser.add_argument("--annotate-difficulty", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--overwrite-difficulty", action="store_true")
+    parser.add_argument("--no-difficulty-backup", action="store_true")
+    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
+    parser.add_argument("--dafny-path", default="/home/aadivyar/.dotnet/tools/dafny")
+    parser.add_argument("--compile-timeout", type=int, default=120)
+    parser.add_argument("--crane-output-name", default="crane_baseline")
+    parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
+    parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
+    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--eval-seed", type=int, default=123)
+    parser.add_argument("--eval-max-steps", type=int, default=600)
+    parser.add_argument("--eval-step-token-budget", type=int, default=1)
+    parser.add_argument("--eval-max-seconds-per-example", type=float, default=120.0)
+    parser.add_argument("--load-in-4bit", action="store_true")
+    parser.add_argument("--load-in-8bit", action="store_true")
+    parser.add_argument("--vllm-tensor-parallel-size", type=int, default=None)
+    parser.add_argument("--vllm-pipeline-parallel-size", type=int, default=1)
+    parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.5)
+    parser.add_argument("--vllm-max-model-len", type=int, default=8192)
+    parser.add_argument("--vllm-enforce-eager", action=argparse.BooleanOptionalAction, default=True)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    prepare_parser = subparsers.add_parser("prepare")
+    add_common_args(prepare_parser)
+    prepare_parser.add_argument("--task", default=DEFAULT_TASK)
+    prepare_parser.add_argument("--max-iterations", type=int, default=100)
+    prepare_parser.add_argument("--generation-model", default="gpt-5.4")
+    prepare_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    prepare_parser.add_argument("--synthesis-output-name", default="gsm_split_train50_synthesis")
+    prepare_parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
+    prepare_parser.set_defaults(func=prepare)
+
+    run_all_parser = subparsers.add_parser("run-all")
+    add_common_args(run_all_parser)
+    run_all_parser.add_argument("--task", default=DEFAULT_TASK)
+    run_all_parser.add_argument("--max-iterations", type=int, default=100)
+    run_all_parser.add_argument("--generation-model", default="gpt-5.4")
+    run_all_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    run_all_parser.add_argument("--synthesis-output-name", default="gsm_split_train50_synthesis")
+    run_all_parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
+    run_all_parser.add_argument("--synthesis-log", type=Path, default=None)
+    run_all_parser.add_argument("--csd-label", default="CSD_eval")
+    run_all_parser.set_defaults(func=run_all)
+
+    heldout_parser = subparsers.add_parser("heldout")
+    add_common_args(heldout_parser)
+    heldout_parser.add_argument("--crane-module", type=Path, default=None)
+    heldout_parser.add_argument("--csd-module", type=Path, required=True)
+    heldout_parser.add_argument("--csd-label", default="CSD_eval")
+    heldout_parser.set_defaults(func=heldout)
+
+    annotate_parser = subparsers.add_parser("annotate-difficulty")
+    add_common_args(annotate_parser)
+    annotate_parser.set_defaults(func=annotate_difficulty)
+
+    annotate_hf_parser = subparsers.add_parser("annotate-hf-difficulty")
+    add_common_args(annotate_hf_parser)
+    annotate_hf_parser.add_argument("--hf-split", default="test")
+    annotate_hf_parser.set_defaults(func=annotate_hf_difficulty)
+
+    annotate_rubric_parser = subparsers.add_parser("annotate-rubric-difficulty")
+    add_common_args(annotate_rubric_parser)
+    annotate_rubric_parser.set_defaults(func=annotate_rubric_difficulty)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()
