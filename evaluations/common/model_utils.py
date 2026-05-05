@@ -225,6 +225,45 @@ def _get_cached_vllm_engine(
     return llm, tokenizer
 
 
+def clear_vllm_engine_cache() -> None:
+    """Release cached vLLM engines before switching back to a generator model."""
+    cached_engines = list(_VLLM_ENGINE_CACHE.values())
+    _VLLM_ENGINE_CACHE.clear()
+
+    for llm, _tokenizer in cached_engines:
+        for attr_name in ("shutdown", "close"):
+            maybe_shutdown = getattr(llm, attr_name, None)
+            if callable(maybe_shutdown):
+                try:
+                    maybe_shutdown()
+                except Exception:
+                    pass
+
+        engine = getattr(llm, "llm_engine", None)
+        if engine is not None:
+            for attr_name in ("shutdown", "close"):
+                maybe_shutdown = getattr(engine, attr_name, None)
+                if callable(maybe_shutdown):
+                    try:
+                        maybe_shutdown()
+                    except Exception:
+                        pass
+
+    try:
+        from vllm.distributed import destroy_distributed_environment, destroy_model_parallel
+
+        destroy_model_parallel()
+        destroy_distributed_environment()
+    except Exception:
+        pass
+
+    import gc
+
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 def _get_vllm_quantization_kwargs(
     load_in_4bit: bool = False,
     load_in_8bit: bool = False,

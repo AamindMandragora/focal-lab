@@ -2523,6 +2523,8 @@ class SynthesisPipeline:
                 attempt.error_summary = eval_result.error or "Evaluation failed"
                 attempts.append(attempt)
 
+                self.evaluator.unload_runtime()
+                print("  Evaluator runtime unloaded to free GPU memory")
                 print("  Refining based on evaluation error...")
                 eval_history = self._get_evaluation_history_summary(attempts)
                 working_hypothesis = self._get_working_hypothesis_state(attempts, attempt)
@@ -2561,6 +2563,8 @@ class SynthesisPipeline:
                 attempt.error_summary = eval_result.get_feedback_summary()
                 attempts.append(attempt)
 
+                self.evaluator.unload_runtime()
+                print("  Evaluator runtime unloaded to free GPU memory")
                 print("  Refining based on evaluation results...")
                 threshold_feedback = (
                     "Required thresholds:\n"
