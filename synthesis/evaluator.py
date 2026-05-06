@@ -2014,9 +2014,12 @@ class Evaluator:
             return (
                 "Solve the following math problem step by step. "
                 "Define variables for each quantity and state their numeric values. "
-                "Write each arithmetic computation as an expression inside << >> delimiters. "
-                "Reuse the same variable names consistently. "
-                "After the final computation, stop immediately.\n\n"
+                "Reuse the same variable names consistently. Natural-language reasoning "
+                "may stay outside << >> delimiters. For scoring, the required constrained "
+                "region is the final answer only: the last visible <<...>> span must "
+                "contain one valid symbolic arithmetic expression that answers the question. "
+                "Do not require every intermediate calculation to be wrapped. After the "
+                "final answer, stop immediately.\n\n"
                 f"Problem: {question}\n"
                 "Response:\n"
             )

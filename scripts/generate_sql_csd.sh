@@ -5,10 +5,10 @@
 
 set -e
 
-# SQL/Spider task description - bare description, no strategy hints.
-TASK_DESC="Text-to-SQL generation on the Spider benchmark. The model reads a schema (tables and columns) and \
-a natural-language question, then emits a single SQL query as its output. The parser validates the query \
-against a SQL grammar that is dynamically narrowed to the current schema's tables and columns."
+# SQL/Spider task description - aligned with the evaluator output contract.
+TASK_DESC="Generate a Spider SQL query that answers the natural-language question using only the provided database schema. \
+The answer contract is one SQL query only: no explanations, no code fences, and no text after the query. \
+Keep the SQL query inside the hidden constrained parser-guided chunk."
 
 echo "Generating Spider-specific CSD for SQL windows..."
 echo ""

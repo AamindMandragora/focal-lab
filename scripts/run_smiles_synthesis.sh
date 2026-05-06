@@ -26,7 +26,7 @@ echo "Using Python: $PYTHON_BIN"
 "$PYTHON_BIN" -c "import sys; print('Python executable:', sys.executable)"
 
 "$PYTHON_BIN" run_synthesis.py \
-  --task "Answer constrained molecular generation problems by producing the requested chemistry answer string, typically a SMILES string, inside << >> delimiters." \
+  --task "Generate one new, valid, non-exemplar SMILES molecule for the requested molecule class. The answer contract is a single SMILES string and nothing else." \
   --dataset smiles \
   --max-iterations 10 \
   --generation-model "gpt-5.4" \
