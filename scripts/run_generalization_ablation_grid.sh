@@ -27,6 +27,10 @@ DEVICE="${DEVICE:-cuda}"
 CRANE_REPO="${CRANE_REPO:-/home/aadivyar/CRANE}"
 CRANE_DEVICE="${CRANE_DEVICE:-cuda:0}"
 KILL_VLLM_WORKERS="${KILL_VLLM_WORKERS:-1}"
+ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES="${ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES:-auto}"
+GPU_MIN_FREE_MIB="${GPU_MIN_FREE_MIB:-12000}"
+GPU_AVOID_DEVICES="${GPU_AVOID_DEVICES:-}"
+CARS_CUDA_VISIBLE_DEVICES="${CARS_CUDA_VISIBLE_DEVICES:-auto}"
 
 GSM_SPLIT_FILE="${GSM_SPLIT_FILE:-${OUTPUT_DIR}/splits/gsm_absolute_rubric_seed123_train50_eval50.json}"
 GSM_SOURCE_DIR="${GSM_SOURCE_DIR:-/home/aadivyar/CRANE/src/gsm_symbolic}"
@@ -98,12 +102,15 @@ run_cell() {
         --synthesis-max-tokens 6144
         --itergen-repo /home/aadivyar/itergen
         --itergen-device cuda:0
+        --original-framework-cuda-visible-devices "${ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES}"
+        --gpu-min-free-mib "${GPU_MIN_FREE_MIB}"
+        --gpu-avoid-devices "${GPU_AVOID_DEVICES}"
         --crane-repo "${CRANE_REPO}"
         --crane-device "${CRANE_DEVICE}"
         --cars-repo /home/aadivyar/cars
         --cars-style cars
         --cars-max-attempts-per-example 2000
-        --cars-cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES:-1,3}")
+        --cars-cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES}")
       ;;
     spider|sql)
       dataset="spider"
@@ -123,6 +130,9 @@ run_cell() {
         --eval-backend "${EVAL_BACKEND}"
         --device "${DEVICE}"
 	        --itergen-device cuda:0
+	        --original-framework-cuda-visible-devices "${ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES}"
+	        --gpu-min-free-mib "${GPU_MIN_FREE_MIB}"
+	        --gpu-avoid-devices "${GPU_AVOID_DEVICES}"
 	        --crane-repo "${CRANE_REPO}"
 	        --crane-device "${CRANE_DEVICE}"
 	        --max-iterations "${iterations}"
@@ -136,7 +146,7 @@ run_cell() {
         --cars-repo /home/aadivyar/cars
         --cars-style cars
         --cars-max-attempts-per-example 2000
-        --cars-cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES:-1,3}")
+        --cars-cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES}")
       ;;
     smiles)
       cmd=(/opt/anaconda/bin/python scripts/smiles_generalization_workflow.py
@@ -149,9 +159,12 @@ run_cell() {
         --eval-model "${EVAL_MODEL}"
         --eval-backend "${EVAL_BACKEND}"
         --device "${DEVICE}"
-	        --cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES:-1,3}"
+	        --cuda-visible-devices "${CARS_CUDA_VISIBLE_DEVICES}"
 	        --crane-repo "${CRANE_REPO}"
 	        --crane-device "${CRANE_DEVICE}"
+	        --original-framework-cuda-visible-devices "${ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES}"
+	        --gpu-min-free-mib "${GPU_MIN_FREE_MIB}"
+	        --gpu-avoid-devices "${GPU_AVOID_DEVICES}"
 	        --model-number 2
         --cars-style cars
         --max-attempts 2000
