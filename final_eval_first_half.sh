@@ -14,8 +14,8 @@ PYTHON_BIN="/home/advayth2/envs/vas-rdkit/bin/python"
 OUTPUT_DIR="./outputs/generated-csd/"
 
 "$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run baselines_qwen15
-"$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run baselines_qwen7
-"$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run baselines_qwen14
 "$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run metadecode_gpt54_qwen15
+"$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run baselines_qwen7
 "$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run metadecode_gpt54_qwen7
+"$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run baselines_qwen14
 "$PYTHON_BIN" scripts/run_experiment_part.py --output-dir "$OUTPUT_DIR" run metadecode_gpt54_qwen14

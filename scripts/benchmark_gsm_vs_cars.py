@@ -22,7 +22,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from evaluations.gsm_symbolic.dataset import load_gsm_from_crane_folder
 from evaluations.gsm_symbolic.grammar import build_dynamic_grammar, extract_variables_from_mapping
-from project_defaults import default_gsm_source_dir
+from project_defaults import default_crane_repo, default_gsm_source_dir
+from scripts.gsm_baseline_prompts import crane_gsm_text_prompt
 
 
 MODEL_MAP = {
@@ -49,18 +50,9 @@ def load_split_indices(split_file: Path, split_name: str, limit: int | None) -> 
     return indices
 
 
-def prompt_for_example(example: dict[str, Any]) -> str:
+def prompt_for_example(example: dict[str, Any], crane_repo: Path) -> str:
     question = example.get("question_parsed") or example.get("question") or ""
-    variables = extract_variables_from_mapping(example.get("variable_types") or {})
-    var_text = ", ".join(variables) if variables else "the variables in the problem"
-    return (
-        "Solve this GSM-Symbolic word problem symbolically. "
-        "Output only the final arithmetic expression, with no explanation, no code fences, "
-        "and no << >> delimiters. Use only these variable names: "
-        f"{var_text}.\n\n"
-        f"Problem: {question}\n"
-        "Expression:"
-    )
+    return crane_gsm_text_prompt(crane_repo, question)
 
 
 def write_cars_compatible_grammar(source: Path, output_path: Path) -> Path:
@@ -181,6 +173,7 @@ def syntax_valid(expr: str | None, base_grammar: str, variable_types: dict[str, 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cars-repo", type=Path, required=True)
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--split-file", type=Path, required=True)
     parser.add_argument("--split-name", choices=["train", "eval", "test"], default="eval")
@@ -195,6 +188,7 @@ def main() -> int:
     parser.add_argument("--cuda-visible-devices", type=str, default="")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    crane_repo = args.crane_repo.expanduser().resolve()
 
     indices = load_split_indices(args.split_file, args.split_name, args.limit)
     examples = load_gsm_from_crane_folder(args.gsm_source_dir, indices=indices)
@@ -213,7 +207,7 @@ def main() -> int:
         prompt_path = prompt_dir / f"gsm_{source_index:04d}.txt"
         log_dir = log_root / f"gsm_{source_index:04d}"
         prompt_path.parent.mkdir(parents=True, exist_ok=True)
-        prompt_path.write_text(prompt_for_example(example))
+        prompt_path.write_text(prompt_for_example(example, crane_repo))
         jobs.append({
             "prompt_file": str(prompt_path),
             "log_dir": str(log_dir),
@@ -269,6 +263,8 @@ def main() -> int:
             "method": "cars",
             "dataset": "gsm",
             "model_name": args.model_name or MODEL_MAP[args.model_number],
+            "crane_repo": str(crane_repo),
+            "prompt_source": "crane.src.prompt_templates.gsm_symbolic.cot.gsm",
             "split_file": str(args.split_file),
             "split_name": args.split_name,
             "indices": indices,

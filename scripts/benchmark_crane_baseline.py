@@ -24,6 +24,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from synthesis.evaluator import Evaluator
 from project_defaults import default_crane_repo, default_gsm_source_dir
+from scripts.gsm_baseline_prompts import crane_gsm_chat_prompt
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -65,38 +66,155 @@ def add_crane_paths(crane_repo: Path) -> None:
             sys.path.insert(0, path_str)
 
 
-def load_crane_class(crane_repo: Path):
+def load_crane_class(
+    crane_repo: Path,
+    *,
+    stable_mode: bool = False,
+    decoder_source: str = "auto",
+):
     add_crane_paths(crane_repo)
-    try:
-        from itergen.main import AdaptiveConstrainedDecoder as CraneDecoder  # type: ignore
 
-        return CraneDecoder, "itergen.main.AdaptiveConstrainedDecoder"
-    except Exception:
+    def _patch_logits_warper_compat(module: Any) -> None:
+        itergen_cls = getattr(module, "IterGen", None)
+        if itergen_cls is None:
+            return
+        if getattr(itergen_cls, "_vas_logits_warper_patched", False):
+            return
+
+        def _compat_update_gen_args(self, **gen_args: dict) -> None:
+            self.cursors = [0 for _ in range(self.num_outputs)]
+            self.generation_config.update(**gen_args)
+            default_int_fields = {
+                "num_return_sequences": 1,
+                "num_beams": 1,
+                "num_beam_groups": 1,
+            }
+            for field_name, default_value in default_int_fields.items():
+                if getattr(self.generation_config, field_name, None) is None:
+                    setattr(self.generation_config, field_name, default_value)
+            if getattr(self.generation_config, "do_sample", None) is None:
+                self.generation_config.do_sample = False
+            get_warper = getattr(self.model, "_get_logits_warper", None)
+            if callable(get_warper):
+                self.logit_warper = get_warper(self.generation_config, device=self.device)
+            else:
+                self.logit_warper = lambda _token_ids, scores: scores
+
+        itergen_cls.update_gen_args = _compat_update_gen_args
+        itergen_cls._vas_logits_warper_patched = True
+
+    def _patch_dfa_warning_spam() -> None:
+        try:
+            import crane.iter_syncode.dfa_mask_store as dfa_mask_store  # type: ignore
+        except Exception:
+            return
+        lookup_cls = getattr(dfa_mask_store, "LookupTable", None)
+        if lookup_cls is None or getattr(lookup_cls, "_vas_warn_patch_applied", False):
+            return
+
+        original = lookup_cls.incomplete_case_lookup
+
+        def _incomplete_case_lookup_once(self, dfa_state):  # type: ignore[no-untyped-def]
+            assert isinstance(dfa_state, dfa_mask_store.DFAState)
+            if self._mode == "grammar_mask":
+                return self._overapprox_lookup[dfa_state]
+            if self._mode == "grammar_strict":
+                if dfa_state in self._exact_lookup:
+                    return self._exact_lookup[dfa_state]
+                warned = getattr(self, "_vas_warned_dfa_states", None)
+                if warned is None:
+                    warned = set()
+                    setattr(self, "_vas_warned_dfa_states", warned)
+                if dfa_state not in warned:
+                    warned.add(dfa_state)
+                    print(
+                        f"Warning: Exact lookup not found for {dfa_state} in the DFA mask store. Falling back to overapprox.",
+                        flush=True,
+                    )
+                return self._overapprox_lookup[dfa_state]
+            return original(self, dfa_state)
+
+        lookup_cls.incomplete_case_lookup = _incomplete_case_lookup_once
+        lookup_cls._vas_warn_patch_applied = True
+
+    if not stable_mode:
+        _patch_dfa_warning_spam()
+
+    itergen_error: Exception | None = None
+    if decoder_source in {"auto", "itergen"}:
+        try:
+            from itergen.main import AdaptiveConstrainedDecoder as CraneDecoder  # type: ignore
+            import itergen.main as itergen_main  # type: ignore
+
+            _patch_logits_warper_compat(itergen_main)
+            return CraneDecoder, "itergen.main.AdaptiveConstrainedDecoder"
+        except Exception as exc:
+            itergen_error = exc
+            if decoder_source == "itergen":
+                raise RuntimeError(f"Requested --decoder-source itergen, but import failed: {exc}") from exc
+
+    if decoder_source in {"auto", "crane"}:
         from crane.main import CRANE as CraneDecoder  # type: ignore
+        import crane.main as crane_main  # type: ignore
 
-        return CraneDecoder, "crane.main.CRANE"
+        _patch_logits_warper_compat(crane_main)
+        source = "crane.main.CRANE"
+        if itergen_error is not None and decoder_source == "auto":
+            source = f"{source} (itergen_import_failed: {itergen_error})"
+        return CraneDecoder, source
+
+    raise ValueError(f"Unsupported decoder_source={decoder_source!r}")
+
+
+def _inline_common_lark_imports(grammar_text: str) -> str:
+    replacements = {
+        r"^\s*%import\s+common\.CNAME\s*->\s*VARIABLE\s*$": 'VARIABLE: /[a-zA-Z_][a-zA-Z0-9_]*/',
+        r"^\s*%import\s+common\.NUMBER\s*$": r"NUMBER: /-?\d+(\.\d+)?/",
+        r"^\s*%import\s+common\.WS_INLINE\s*$": r"WS_INLINE: /[ \t\f]+/",
+        r"^\s*%import\s+common\.WS\s*$": r"WS: /[ \t\f\r\n]+/",
+    }
+    result = grammar_text
+    for pattern, replacement in replacements.items():
+        result = re.sub(pattern, lambda _m, rep=replacement: rep, result, flags=re.MULTILINE)
+    return result
 
 
 def grammar_for_dataset(dataset: str, smiles_class: str | None = None) -> str:
     if dataset == "gsm_symbolic":
-        return (PROJECT_ROOT / "grammars" / "gsm_crane.lark").read_text()
+        return _inline_common_lark_imports((PROJECT_ROOT / "grammars" / "gsm_crane.lark").read_text())
     if dataset == "spider":
-        return (PROJECT_ROOT / "grammars" / "sql.lark").read_text()
+        return _inline_common_lark_imports((PROJECT_ROOT / "grammars" / "sql.lark").read_text())
     if dataset == "smiles":
         from evaluations.smiles.dataset import get_smiles_task
 
         if not smiles_class:
             raise ValueError("smiles_class is required for SMILES grammar")
-        return str(get_smiles_task(smiles_class)["grammar_text"])
+        return _inline_common_lark_imports(str(get_smiles_task(smiles_class)["grammar_text"]))
     raise ValueError(f"Unsupported dataset: {dataset}")
 
 
-def prompt_for_crane(evaluator: Evaluator, dataset: str, example: dict[str, Any]) -> str | list[dict[str, str]]:
+def prompt_for_crane(
+    evaluator: Evaluator,
+    dataset: str,
+    example: dict[str, Any],
+    *,
+    stable_mode: bool = False,
+    crane_repo: Path | None = None,
+) -> str | list[dict[str, str]]:
     if dataset == "gsm_symbolic":
         from evaluations.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
 
         question = example.get("question_parsed") or example.get("question", "")
-        return reasoning_with_symbolic_expr_prompt(question)
+        if stable_mode:
+            if crane_repo is not None:
+                return crane_gsm_chat_prompt(crane_repo, question)
+            return reasoning_with_symbolic_expr_prompt(question)
+        base = reasoning_with_symbolic_expr_prompt(question)
+        marker_instruction = (
+            "Begin immediately with << and output only the final symbolic expression. "
+            "Do not include additional reasoning text."
+        )
+        return f"{base}\n{marker_instruction}\n<<"
 
     prompt = evaluator._format_prompt(example)
     if dataset == "spider":
@@ -119,10 +237,18 @@ def prompt_for_crane(evaluator: Evaluator, dataset: str, example: dict[str, Any]
     return prompt
 
 
-def clean_gsm_expression(output: str) -> str | None:
+def clean_gsm_expression(output: str, *, prioritize_final_answer_span: bool = True) -> str | None:
     text = str(output or "").strip()
     for marker in ("<|im_end|>", "<|eot_id|>", "<|endoftext|>"):
         text = text.replace(marker, "")
+    if prioritize_final_answer_span:
+        final_answer_matches = re.findall(
+            r"the final answer is\s*<<\s*([^<>]+?)\s*>>",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if final_answer_matches:
+            return final_answer_matches[-1].strip()
     matches = re.findall(r"<<\s*([^<>]+?)\s*>>", text)
     if matches:
         return matches[-1].strip()
@@ -149,11 +275,12 @@ def score_output(
     dataset: str,
     example: dict[str, Any],
     output_text: str,
+    stable_mode: bool = False,
 ) -> tuple[bool, bool, dict[str, Any]]:
     expected = evaluator._get_expected_answer(example)
     if dataset == "gsm_symbolic":
         scored_output = evaluator._truncate_gsm_output(output_text)
-        actual = clean_gsm_expression(scored_output)
+        actual = clean_gsm_expression(scored_output, prioritize_final_answer_span=not stable_mode)
         variable_types = example.get("variable_types") or {}
         if isinstance(variable_types, str):
             try:
@@ -203,18 +330,23 @@ def score_output(
 
 
 def build_crane_decoder(args: argparse.Namespace, *, dataset: str, smiles_class: str | None = None):
-    CraneDecoder, source = load_crane_class(args.crane_repo)
+    CraneDecoder, source = load_crane_class(
+        args.crane_repo,
+        stable_mode=args.stable_mode,
+        decoder_source=args.decoder_source,
+    )
     grammar = grammar_for_dataset(dataset, smiles_class=smiles_class)
     start_symbol = "<<" if dataset in {"gsm_symbolic", "spider", "smiles"} else args.start_symbol
     start_in_grammar = dataset == "gsm_symbolic"
     end_symbol = ">>" if dataset == "gsm_symbolic" else None
     end_in_grammar = dataset == "gsm_symbolic"
+    stop_strings = [">>"] if dataset == "gsm_symbolic" and args.stable_mode else []
     decoder = CraneDecoder(
         grammar=grammar,
         model_id=args.eval_model,
         parse_output_only=True,
         recurrence_penalty=args.recurrence_penalty,
-        stop_strings=[],
+        stop_strings=stop_strings,
         device=args.crane_device,
         max_tokens=args.crane_max_model_len,
         max_new_tokens=args.eval_max_steps,
@@ -224,12 +356,12 @@ def build_crane_decoder(args: argparse.Namespace, *, dataset: str, smiles_class:
         end_in_grammar=end_in_grammar,
     )
     return decoder, source, {
-        "grammar_source": "gsm_builtin" if dataset == "gsm_symbolic" else "dataset_lark_text",
+        "grammar_source": "dataset_lark_text",
         "start_symbol": start_symbol,
         "start_in_grammar": start_in_grammar,
         "end_symbol": end_symbol,
         "end_in_grammar": end_in_grammar,
-        "stop_strings": [],
+        "stop_strings": stop_strings,
     }
 
 
@@ -239,8 +371,16 @@ def run_single_generation(
     *,
     dataset: str,
     example: dict[str, Any],
+    stable_mode: bool = False,
+    crane_repo: Path | None = None,
 ) -> tuple[str, int, float]:
-    prompt = prompt_for_crane(evaluator, dataset, example)
+    prompt = prompt_for_crane(
+        evaluator,
+        dataset,
+        example,
+        stable_mode=stable_mode,
+        crane_repo=crane_repo,
+    )
     kwargs: dict[str, Any] = {}
     if dataset == "gsm_symbolic":
         from evaluations.gsm_symbolic.grammar import extract_variables_from_mapping
@@ -307,12 +447,15 @@ def run_dataset(
                 evaluator,
                 dataset=dataset,
                 example=example,
+                stable_mode=args.stable_mode,
+                crane_repo=args.crane_repo,
             )
             is_correct, syntax_valid, score_meta = score_output(
                 evaluator,
                 dataset=dataset,
                 example=example,
                 output_text=output_text,
+                stable_mode=args.stable_mode,
             )
             accuracy_applicable = syntax_valid if dataset == "smiles" else True
             if accuracy_applicable:
@@ -397,12 +540,15 @@ def run_smiles_target(
                 evaluator,
                 dataset="smiles",
                 example=example,
+                stable_mode=args.stable_mode,
+                crane_repo=args.crane_repo,
             )
             is_correct, syntax_valid, score_meta = score_output(
                 evaluator,
                 dataset="smiles",
                 example=example,
                 output_text=output_text,
+                stable_mode=args.stable_mode,
             )
             smiles_eval = score_meta.get("smiles_eval", {})
             if smiles_eval.get("unique_valid_candidate"):
@@ -536,15 +682,32 @@ def main() -> int:
     parser.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="test")
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
     parser.add_argument("--smiles-max-attempts", type=int, default=2000)
+    parser.add_argument(
+        "--decoder-source",
+        choices=["auto", "crane", "itergen"],
+        default="auto",
+        help="Choose which CRANE decoder class to use.",
+    )
+    parser.add_argument(
+        "--stable-mode",
+        action="store_true",
+        help="Use historical prompt/extraction behavior while keeping only minimal crash-compat patches.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     args.crane_device = args.crane_device or args.device
+    if args.stable_mode and args.decoder_source == "auto":
+        args.decoder_source = "crane"
 
     dataset = normalize_dataset(args.dataset)
     start = time.time()
 
     if args.dry_run:
-        CraneDecoder, source = load_crane_class(args.crane_repo)
+        CraneDecoder, source = load_crane_class(
+            args.crane_repo,
+            stable_mode=args.stable_mode,
+            decoder_source=args.decoder_source,
+        )
         payload = {
             "config": {
                 **vars(args),

@@ -69,6 +69,94 @@ def add_crane_paths(crane_repo: Path) -> None:
             del sys.modules[module_name]
 
 
+def patch_unconstrained_generation_compat() -> None:
+    try:
+        import crane.iter_syncode.language_model as lm_mod  # type: ignore
+    except Exception:
+        return
+
+    model_cls = getattr(lm_mod, "HuggingFaceModel", None)
+    if model_cls is None or getattr(model_cls, "_vas_gen_compat_patched", False):
+        return
+
+    original_get_mode = model_cls._get_generation_mode
+    original_generate = model_cls._generate
+
+    def _compat_get_generation_mode(self, generation_config):  # type: ignore[no-untyped-def]
+        default_int_fields = {
+            "num_return_sequences": 1,
+            "num_beams": 1,
+            "num_beam_groups": 1,
+        }
+        for field_name, default_value in default_int_fields.items():
+            if getattr(generation_config, field_name, None) is None:
+                setattr(generation_config, field_name, default_value)
+        if getattr(generation_config, "do_sample", None) is None:
+            generation_config.do_sample = False
+        return original_get_mode(self, generation_config)
+
+    def _compat_generate(self, inputs, gen_config, gen_mode, grammar_decoder=None, stopping_criteria=[]):  # type: ignore[no-untyped-def]
+        get_warper = getattr(self.model, "_get_logits_warper", None)
+        if callable(get_warper):
+            return original_generate(self, inputs, gen_config, gen_mode, grammar_decoder, stopping_criteria)
+
+        token_ids, attention_mask, past_key_values = inputs["input_ids"], inputs["attention_mask"], None
+        logit_warper = lambda _token_ids, scores: scores
+        max_new_tokens = int(self.gen_args.get("max_new_tokens") or 0)
+        max_tokens = max_new_tokens + token_ids.size(1)
+        num_outputs = token_ids.size(0)
+        unfinished_sequences = lm_mod.torch.ones(num_outputs, dtype=lm_mod.torch.long, device=self.device)
+        this_peer_finished = False
+
+        while not this_peer_finished:
+            if past_key_values:
+                input_ids = token_ids[..., -1].unsqueeze(-1)
+            else:
+                input_ids = token_ids
+
+            outputs = self.model(
+                input_ids,
+                attention_mask=attention_mask,
+                past_key_values=past_key_values,
+            )
+            next_token_scores, past_key_values = outputs.logits[:, -1, :], outputs.past_key_values
+
+            if grammar_decoder is not None:
+                next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
+                for idx in range(token_ids.size(0)):
+                    token_ids_i = token_ids[idx : idx + 1]
+                    next_token_scores_i = next_token_scores[idx : idx + 1]
+                    next_token_i = next_tokens[idx : idx + 1]
+                    if not grammar_decoder.is_valid(token_ids_i, next_token_i):
+                        next_token_scores_i = grammar_decoder(token_ids_i, next_token_scores_i)
+                        next_tokens[idx] = self._get_next_token(gen_mode, token_ids_i, logit_warper, next_token_scores_i)
+            else:
+                next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
+
+            next_tokens = next_tokens * unfinished_sequences + self.tokenizer.eos_token_id * (1 - unfinished_sequences)
+            token_ids = lm_mod.torch.cat([token_ids, next_tokens[:, None]], dim=-1)
+            if token_ids.size(1) >= max_tokens:
+                break
+
+            attention_mask = lm_mod.torch.cat(
+                [
+                    attention_mask,
+                    lm_mod.torch.ones((attention_mask.size(0), 1), dtype=attention_mask.dtype).to(self.device),
+                ],
+                dim=-1,
+            )
+            unfinished_sequences = unfinished_sequences & ~(
+                stopping_criteria(token_ids, next_token_scores) | (token_ids[:, -1] == self.tokenizer.eos_token_id)
+            )
+            this_peer_finished = unfinished_sequences.max() == 0
+
+        return token_ids
+
+    model_cls._get_generation_mode = _compat_get_generation_mode
+    model_cls._generate = _compat_generate
+    model_cls._vas_gen_compat_patched = True
+
+
 def task_name_for_original_lm(dataset: str) -> str:
     if dataset == "gsm_symbolic":
         return "gsm_symbolic"
@@ -81,6 +169,7 @@ def task_name_for_original_lm(dataset: str) -> str:
 
 def build_original_unconstrained_lm(args: argparse.Namespace, *, dataset: str):
     add_crane_paths(args.crane_repo)
+    patch_unconstrained_generation_compat()
     from models.base_model import BaseLM  # type: ignore
 
     lm = BaseLM(

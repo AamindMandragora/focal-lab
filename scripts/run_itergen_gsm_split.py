@@ -21,7 +21,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from evaluations.gsm_symbolic.dataset import load_gsm_from_crane_folder
 from evaluations.gsm_symbolic.grammar import build_dynamic_grammar, extract_variables_from_mapping
-from project_defaults import default_gsm_source_dir, default_itergen_repo
+from project_defaults import default_crane_repo, default_gsm_source_dir, default_itergen_repo
+from scripts.gsm_baseline_prompts import crane_gsm_chat_prompt, crane_gsm_text_prompt
 
 
 def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
@@ -63,21 +64,11 @@ def load_indices(split_file: Path, split_name: str, limit: int | None) -> list[i
     return indices
 
 
-def prompt_for_example(example: dict[str, Any], model: str) -> str | list[dict[str, str]]:
+def prompt_for_example(example: dict[str, Any], model: str, crane_repo: Path) -> str | list[dict[str, str]]:
     question = example.get("question_parsed") or example.get("question") or ""
-    variables = extract_variables_from_mapping(example.get("variable_types") or {})
-    var_text = ", ".join(variables) if variables else "the variables in the problem"
-    prompt = (
-        "Solve this GSM-Symbolic word problem symbolically. "
-        "Output only the final arithmetic expression, with no explanation, no code fences, "
-        "and no << >> delimiters. Use only these variable names: "
-        f"{var_text}.\n\n"
-        f"Problem: {question}\n"
-        "Expression:"
-    )
     if any(tag in model for tag in ("Instruct", "instruct", "chat", "it")):
-        return [{"role": "user", "content": prompt}]
-    return prompt
+        return crane_gsm_chat_prompt(crane_repo, question)
+    return crane_gsm_text_prompt(crane_repo, question)
 
 
 def clean_expression(output: str | None) -> str | None:
@@ -142,6 +133,7 @@ def syntax_valid(expr: str | None, base_grammar: str, variable_types: dict[str, 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--split-file", type=Path, required=True)
     parser.add_argument("--split-name", choices=["train", "eval", "test"], default="eval")
     parser.add_argument("--gsm-source-dir", type=Path, default=default_gsm_source_dir())
@@ -152,6 +144,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--recurrence-penalty", type=float, default=0.3)
+    parser.add_argument("--max-model-len", type=int, default=8192)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -160,6 +153,7 @@ def main() -> int:
 
     torch.manual_seed(args.seed)
     itergen_repo = args.itergen_repo.expanduser().resolve()
+    crane_repo = args.crane_repo.expanduser().resolve()
     add_itergen_paths(itergen_repo)
     from itergen.main import IterGen  # type: ignore
 
@@ -175,9 +169,11 @@ def main() -> int:
         iter_gen = IterGen(
             grammar=base_grammar,
             model_id=args.model,
+            default_unit="syncode",
             parse_output_only=True,
             do_sample=do_sample,
             temperature=args.temperature,
+            max_tokens=args.max_model_len,
             max_new_tokens=args.max_new_tokens,
             recurrence_penalty=args.recurrence_penalty,
             device=args.device,
@@ -191,7 +187,7 @@ def main() -> int:
         for local_i, example in enumerate(examples, start=1):
             print(f"[{local_i}/{len(examples)}] GSM source_index={example.get('crane_source_index')}", flush=True)
             ex_start = time.time()
-            prompt = prompt_for_example(example, args.model)
+            prompt = prompt_for_example(example, args.model, crane_repo)
             raw_output = ""
             metadata: dict[str, Any] = {}
             try:
@@ -231,6 +227,9 @@ def main() -> int:
             "method": "itergen",
             "dataset": "gsm",
             "itergen_repo": str(itergen_repo),
+            "crane_repo": str(crane_repo),
+            "prompt_source": "crane.src.prompt_templates.gsm_symbolic.cot.gsm",
+            "default_unit": "syncode",
             "split_file": str(args.split_file),
             "split_name": args.split_name,
             "indices": indices,
@@ -239,6 +238,8 @@ def main() -> int:
             "seed": args.seed,
             "temperature": args.temperature,
             "recurrence_penalty": args.recurrence_penalty,
+            "max_model_len": args.max_model_len,
+            "max_new_tokens": args.max_new_tokens,
         },
         "accuracy": correct / max(1, len(rows)),
         "syntax_rate": syntax_ok / max(1, len(rows)),
