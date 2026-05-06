@@ -51,11 +51,13 @@ def add_crane_paths(crane_repo: Path) -> None:
     repo = crane_repo.expanduser().resolve()
     paths = [
         repo / "src",
-        repo / "syncode",
-        repo / "syncode" / "syncode",
         repo / "src" / "itergen",
         repo / "src" / "itergen" / "iter_syncode",
+        repo / "syncode",
+        repo / "syncode" / "syncode",
         repo / "upstream-uiuc" / "src",
+        repo / "upstream-uiuc" / "syncode",
+        repo / "upstream-uiuc" / "syncode" / "syncode",
     ]
     for path in paths:
         if path.exists():
@@ -63,9 +65,6 @@ def add_crane_paths(crane_repo: Path) -> None:
             if path_str in sys.path:
                 sys.path.remove(path_str)
             sys.path.insert(0, path_str)
-    for module_name in ("syncode", "parsers"):
-        if module_name in sys.modules:
-            del sys.modules[module_name]
 
 
 def task_name_for_original_lm(dataset: str) -> str:
