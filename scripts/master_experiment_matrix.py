@@ -540,15 +540,15 @@ def legacy_ablation_commands(args: argparse.Namespace) -> list[tuple[str, list[s
         return []
     commands: list[tuple[str, list[str], str]] = []
     commands.append((
-        "ablation_gsm_regression",
-        ["bash", "scripts/run_gsm_regression.sh"],
-        "Existing GSM low-iteration regression synthesis ablation.",
+        "ablation_gsm_maxsteps_iterations_grid",
+        ["bash", "scripts/run_gsm_ablation_grid.sh"],
+        "GSM ablation grid over maxSteps={256,512,1024} and synthesis iterations={5,10,15,20}.",
     ))
     if args.include_lottery_ablation:
         commands.append((
-            "ablation_gsm_lottery",
+            "ablation_gsm_lottery_legacy",
             ["bash", "scripts/run_gsm_lottery.sh"],
-            "Existing GSM lottery-seed synthesis ablation.",
+            "Legacy GSM lottery-seed synthesis ablation; not part of the maxSteps/iteration grid.",
         ))
     return commands
 
