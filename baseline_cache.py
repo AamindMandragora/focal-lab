@@ -13,6 +13,13 @@ from typing import Any, Callable
 Validator = Callable[[dict[str, Any]], bool]
 
 
+FATAL_GENERATION_ERROR_SNIPPETS = (
+    "repeat_interleave() received an invalid combination",
+    "got (NoneType, dim=int)",
+    "'>' not supported between instances of 'NoneType' and 'int'",
+)
+
+
 def file_digest(path: Path | str | None) -> str | None:
     if path is None:
         return None
@@ -59,12 +66,60 @@ def baseline_cache_path(
     return output_dir / "benchmarks" / "baseline_cache" / safe_dataset / f"{safe_method}_{key}.json"
 
 
+def payload_contains_fatal_generation_error(value: Any) -> bool:
+    if isinstance(value, str):
+        return any(snippet in value for snippet in FATAL_GENERATION_ERROR_SNIPPETS)
+    if isinstance(value, dict):
+        return any(payload_contains_fatal_generation_error(child) for child in value.values())
+    if isinstance(value, list):
+        return any(payload_contains_fatal_generation_error(child) for child in value)
+    return False
+
+
+def _record_lists(value: Any) -> list[list[dict[str, Any]]]:
+    lists: list[list[dict[str, Any]]] = []
+    if isinstance(value, dict):
+        for key in ("sample_outputs", "rows", "records"):
+            rows = value.get(key)
+            if isinstance(rows, list):
+                row_dicts = [row for row in rows if isinstance(row, dict)]
+                if row_dicts:
+                    lists.append(row_dicts)
+        for child in value.values():
+            if isinstance(child, (dict, list)):
+                lists.extend(_record_lists(child))
+    elif isinstance(value, list):
+        for child in value:
+            if isinstance(child, (dict, list)):
+                lists.extend(_record_lists(child))
+    return lists
+
+
+def _row_failed_before_generating(row: dict[str, Any]) -> bool:
+    metadata = row.get("metadata")
+    has_error = bool(row.get("error"))
+    if isinstance(metadata, dict):
+        has_error = has_error or bool(metadata.get("error"))
+    token_count = int(row.get("token_count") or row.get("num_tokens") or 0)
+    raw_output = str(row.get("raw_output") or row.get("prediction") or row.get("completion") or "")
+    return has_error and token_count == 0 and raw_output == ""
+
+
+def baseline_payload_healthy(payload: dict[str, Any]) -> bool:
+    if payload_contains_fatal_generation_error(payload):
+        return False
+    for rows in _record_lists(payload):
+        if rows and all(_row_failed_before_generating(row) for row in rows):
+            return False
+    return True
+
+
 def accuracy_syntax_validator(payload: dict[str, Any]) -> bool:
-    return "accuracy" in payload and "syntax_rate" in payload
+    return baseline_payload_healthy(payload) and "accuracy" in payload and "syntax_rate" in payload
 
 
 def json_validator(payload: dict[str, Any]) -> bool:
-    return bool(payload)
+    return bool(payload) and baseline_payload_healthy(payload)
 
 
 def _load_valid(path: Path, validator: Validator | None) -> dict[str, Any] | None:

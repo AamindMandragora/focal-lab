@@ -28,6 +28,16 @@ def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
         from transformers.generation.logits_process import LogitsProcessorList
 
         self.generation_config.update(**gen_args)
+        default_int_fields = {
+            "num_return_sequences": 1,
+            "num_beams": 1,
+            "num_beam_groups": 1,
+        }
+        for field_name, default_value in default_int_fields.items():
+            if getattr(self.generation_config, field_name, None) is None:
+                setattr(self.generation_config, field_name, default_value)
+        if getattr(self.generation_config, "do_sample", None) is None:
+            self.generation_config.do_sample = False
         if hasattr(self.model, "_get_logits_warper"):
             self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
         else:
@@ -94,15 +104,19 @@ def main() -> int:
         for class_name in classes:
             task = get_smiles_task(class_name)
             print(f"[itergen-smiles:{class_name}] loading grammar/model", flush=True)
+            gen_kwargs: dict[str, Any] = {
+                "do_sample": do_sample,
+                "max_new_tokens": args.max_new_tokens,
+                "recurrence_penalty": args.recurrence_penalty,
+                "device": args.device,
+            }
+            if args.temperature is not None:
+                gen_kwargs["temperature"] = args.temperature
             iter_gen = IterGen(
                 grammar=task["grammar_text"],
                 model_id=args.model,
                 parse_output_only=True,
-                do_sample=do_sample,
-                temperature=args.temperature,
-                max_new_tokens=args.max_new_tokens,
-                recurrence_penalty=args.recurrence_penalty,
-                device=args.device,
+                **gen_kwargs,
             )
             prompt = format_prompt(task["prompt"], args.model)
             rows: list[dict[str, Any]] = []

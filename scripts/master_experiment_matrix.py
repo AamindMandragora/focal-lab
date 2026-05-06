@@ -30,6 +30,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from baseline_cache import baseline_payload_healthy
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -201,9 +203,40 @@ def find_reusable_benchmark(
             payload = json.loads(candidate.read_text())
         except Exception:
             continue
-        if isinstance(payload, dict) and payload:
+        if benchmark_payload_reusable(payload):
             return candidate
     return None
+
+
+def benchmark_payload_reusable(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not payload:
+        return False
+    if not baseline_payload_healthy(payload):
+        return False
+    config = payload.get("config")
+    if isinstance(config, dict) and config.get("dry_run"):
+        return False
+    if payload.get("dry_run"):
+        return False
+    if payload.get("success") is False:
+        return False
+
+    rows = payload.get("sample_outputs") or payload.get("rows") or payload.get("records")
+    if isinstance(rows, list) and rows:
+        row_dicts = [row for row in rows if isinstance(row, dict)]
+        if row_dicts and all(row.get("success") is False for row in row_dicts):
+            return False
+        if row_dicts and all(row.get("error") for row in row_dicts):
+            return False
+
+    num_examples = int(payload.get("num_examples") or 0)
+    avg_tokens = float(payload.get("avg_num_tokens") or payload.get("avg_tokens") or 0.0)
+    if num_examples > 0 and avg_tokens == 0.0 and isinstance(rows, list) and rows:
+        row_dicts = [row for row in rows if isinstance(row, dict)]
+        if row_dicts and all(int(row.get("token_count") or 0) == 0 for row in row_dicts):
+            return False
+
+    return True
 
 
 def gpu_env(base: dict[str, str], cuda_visible_devices: str | None) -> dict[str, str]:

@@ -14,6 +14,7 @@ import json
 import re
 import sys
 import time
+import traceback
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from project_defaults import default_crane_repo, default_gsm_source_dir
+from scripts.gsm_baseline_prompts import crane_gsm_chat_prompt, crane_gsm_text_prompt
 from synthesis.evaluator import Evaluator
 
 
@@ -70,91 +72,136 @@ def add_crane_paths(crane_repo: Path) -> None:
 
 
 def patch_unconstrained_generation_compat() -> None:
-    try:
-        import crane.iter_syncode.language_model as lm_mod  # type: ignore
-    except Exception:
-        return
+    def _patch_module(module_name: str) -> None:
+        try:
+            lm_mod = __import__(module_name, fromlist=["HuggingFaceModel"])
+        except Exception:
+            return
 
-    model_cls = getattr(lm_mod, "HuggingFaceModel", None)
-    if model_cls is None or getattr(model_cls, "_vas_gen_compat_patched", False):
-        return
+        model_cls = getattr(lm_mod, "HuggingFaceModel", None)
+        if model_cls is None or getattr(model_cls, "_vas_gen_compat_patched", False):
+            return
 
-    original_get_mode = model_cls._get_generation_mode
-    original_generate = model_cls._generate
+        original_get_mode = model_cls._get_generation_mode
+        original_generate = model_cls._generate
 
-    def _compat_get_generation_mode(self, generation_config):  # type: ignore[no-untyped-def]
-        default_int_fields = {
-            "num_return_sequences": 1,
-            "num_beams": 1,
-            "num_beam_groups": 1,
-        }
-        for field_name, default_value in default_int_fields.items():
-            if getattr(generation_config, field_name, None) is None:
-                setattr(generation_config, field_name, default_value)
-        if getattr(generation_config, "do_sample", None) is None:
-            generation_config.do_sample = False
-        return original_get_mode(self, generation_config)
+        def _normalize_generation_config(generation_config):  # type: ignore[no-untyped-def]
+            default_int_fields = {
+                "num_return_sequences": 1,
+                "num_beams": 1,
+                "num_beam_groups": 1,
+            }
+            for field_name, default_value in default_int_fields.items():
+                if getattr(generation_config, field_name, None) is None:
+                    setattr(generation_config, field_name, default_value)
+            if getattr(generation_config, "do_sample", None) is None:
+                generation_config.do_sample = False
+            if getattr(generation_config, "top_k", None) is None:
+                generation_config.top_k = 50
+            if getattr(generation_config, "top_p", None) is None:
+                generation_config.top_p = 1.0
+            return generation_config
 
-    def _compat_generate(self, inputs, gen_config, gen_mode, grammar_decoder=None, stopping_criteria=[]):  # type: ignore[no-untyped-def]
-        get_warper = getattr(self.model, "_get_logits_warper", None)
-        if callable(get_warper):
-            return original_generate(self, inputs, gen_config, gen_mode, grammar_decoder, stopping_criteria)
+        def _compat_get_generation_mode(self, generation_config):  # type: ignore[no-untyped-def]
+            return original_get_mode(self, _normalize_generation_config(generation_config))
 
-        token_ids, attention_mask, past_key_values = inputs["input_ids"], inputs["attention_mask"], None
-        logit_warper = lambda _token_ids, scores: scores
-        max_new_tokens = int(self.gen_args.get("max_new_tokens") or 0)
-        max_tokens = max_new_tokens + token_ids.size(1)
-        num_outputs = token_ids.size(0)
-        unfinished_sequences = lm_mod.torch.ones(num_outputs, dtype=lm_mod.torch.long, device=self.device)
-        this_peer_finished = False
+        def _compat_generate(  # type: ignore[no-untyped-def]
+            self,
+            inputs,
+            gen_config,
+            gen_mode,
+            grammar_decoder=None,
+            stopping_criteria=None,
+            stop_criteria=None,
+            debug=False,
+            **kwargs,
+        ):
+            _normalize_generation_config(gen_config)
+            criteria = stop_criteria if stop_criteria is not None else stopping_criteria
+            if criteria is None:
+                criteria = []
 
-        while not this_peer_finished:
-            if past_key_values:
-                input_ids = token_ids[..., -1].unsqueeze(-1)
-            else:
-                input_ids = token_ids
+            get_warper = getattr(self.model, "_get_logits_warper", None)
+            if callable(get_warper):
+                import inspect
 
-            outputs = self.model(
-                input_ids,
-                attention_mask=attention_mask,
-                past_key_values=past_key_values,
-            )
-            next_token_scores, past_key_values = outputs.logits[:, -1, :], outputs.past_key_values
+                original_params = inspect.signature(original_generate).parameters
+                call_kwargs = {"grammar_decoder": grammar_decoder}
+                if "stop_criteria" in original_params:
+                    call_kwargs["stop_criteria"] = criteria
+                else:
+                    call_kwargs["stopping_criteria"] = criteria
+                if "debug" in original_params:
+                    call_kwargs["debug"] = debug
+                return original_generate(self, inputs, gen_config, gen_mode, **call_kwargs)
 
-            if grammar_decoder is not None:
-                next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
-                for idx in range(token_ids.size(0)):
-                    token_ids_i = token_ids[idx : idx + 1]
-                    next_token_scores_i = next_token_scores[idx : idx + 1]
-                    next_token_i = next_tokens[idx : idx + 1]
-                    if not grammar_decoder.is_valid(token_ids_i, next_token_i):
-                        next_token_scores_i = grammar_decoder(token_ids_i, next_token_scores_i)
-                        next_tokens[idx] = self._get_next_token(gen_mode, token_ids_i, logit_warper, next_token_scores_i)
-            else:
-                next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
+            token_ids, attention_mask, past_key_values = inputs["input_ids"], inputs["attention_mask"], None
+            logit_warper = lambda _token_ids, scores: scores
+            max_new_tokens = int(self.gen_args.get("max_new_tokens") or 0)
+            max_tokens = max_new_tokens + token_ids.size(1)
+            num_outputs = token_ids.size(0)
+            unfinished_sequences = lm_mod.torch.ones(num_outputs, dtype=lm_mod.torch.long, device=self.device)
+            this_peer_finished = False
 
-            next_tokens = next_tokens * unfinished_sequences + self.tokenizer.eos_token_id * (1 - unfinished_sequences)
-            token_ids = lm_mod.torch.cat([token_ids, next_tokens[:, None]], dim=-1)
-            if token_ids.size(1) >= max_tokens:
-                break
+            while not this_peer_finished:
+                if past_key_values:
+                    input_ids = token_ids[..., -1].unsqueeze(-1)
+                else:
+                    input_ids = token_ids
 
-            attention_mask = lm_mod.torch.cat(
-                [
-                    attention_mask,
-                    lm_mod.torch.ones((attention_mask.size(0), 1), dtype=attention_mask.dtype).to(self.device),
-                ],
-                dim=-1,
-            )
-            unfinished_sequences = unfinished_sequences & ~(
-                stopping_criteria(token_ids, next_token_scores) | (token_ids[:, -1] == self.tokenizer.eos_token_id)
-            )
-            this_peer_finished = unfinished_sequences.max() == 0
+                outputs = self.model(
+                    input_ids,
+                    attention_mask=attention_mask,
+                    past_key_values=past_key_values,
+                )
+                next_token_scores, past_key_values = outputs.logits[:, -1, :], outputs.past_key_values
 
-        return token_ids
+                if grammar_decoder is not None:
+                    next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
+                    for idx in range(token_ids.size(0)):
+                        token_ids_i = token_ids[idx : idx + 1]
+                        next_token_scores_i = next_token_scores[idx : idx + 1]
+                        next_token_i = next_tokens[idx : idx + 1]
+                        if not grammar_decoder.is_valid(token_ids_i, next_token_i):
+                            next_token_scores_i = grammar_decoder(token_ids_i, next_token_scores_i)
+                            next_tokens[idx] = self._get_next_token(
+                                gen_mode,
+                                token_ids_i,
+                                logit_warper,
+                                next_token_scores_i,
+                            )
+                else:
+                    next_tokens = self._get_next_token(gen_mode, token_ids, logit_warper, next_token_scores)
 
-    model_cls._get_generation_mode = _compat_get_generation_mode
-    model_cls._generate = _compat_generate
-    model_cls._vas_gen_compat_patched = True
+                next_tokens = next_tokens * unfinished_sequences + self.tokenizer.eos_token_id * (1 - unfinished_sequences)
+                token_ids = lm_mod.torch.cat([token_ids, next_tokens[:, None]], dim=-1)
+                if token_ids.size(1) >= max_tokens:
+                    break
+
+                attention_mask = lm_mod.torch.cat(
+                    [
+                        attention_mask,
+                        lm_mod.torch.ones((attention_mask.size(0), 1), dtype=attention_mask.dtype).to(self.device),
+                    ],
+                    dim=-1,
+                )
+                if callable(criteria):
+                    stopped = criteria(token_ids, next_token_scores)
+                else:
+                    stopped = False
+                    for criterion in criteria:
+                        stopped = stopped | criterion(token_ids, next_token_scores)
+                unfinished_sequences = unfinished_sequences & ~(stopped | (token_ids[:, -1] == self.tokenizer.eos_token_id))
+                this_peer_finished = unfinished_sequences.max() == 0
+
+            return token_ids
+
+        model_cls._get_generation_mode = _compat_get_generation_mode
+        model_cls._generate = _compat_generate
+        model_cls._vas_gen_compat_patched = True
+
+    _patch_module("syncode.language_model")
+    _patch_module("crane.iter_syncode.language_model")
 
 
 def task_name_for_original_lm(dataset: str) -> str:
@@ -179,6 +226,7 @@ def build_original_unconstrained_lm(args: argparse.Namespace, *, dataset: str):
         max_tokens=args.eval_max_steps,
         temperature=0.0,
         device=args.crane_device,
+        stop_words=[">>"] if dataset == "gsm_symbolic" else None,
         task=task_name_for_original_lm(dataset),
         start_symbol="<<",
         start_in_grammar=True,
@@ -202,6 +250,25 @@ def generate_unconstrained(lm: Any, prompt: str | list[dict[str, str]]) -> tuple
         int(info.get("tokens") or 0),
         float(info.get("time") or 0.0),
     )
+
+
+def prompt_for_unconstrained(
+    evaluator: Evaluator,
+    dataset: str,
+    example: dict[str, Any],
+    *,
+    crane_repo: Path,
+    eval_model: str,
+    prompt_style: str = "native",
+) -> str | list[dict[str, str]]:
+    if dataset == "gsm_symbolic":
+        if prompt_style == "native":
+            return evaluator._format_prompt(example)
+        question = example.get("question_parsed") or example.get("question", "")
+        if any(tag in eval_model for tag in ("Instruct", "instruct", "chat", "it")):
+            return crane_gsm_chat_prompt(crane_repo, question)
+        return crane_gsm_text_prompt(crane_repo, question)
+    return evaluator._format_prompt(example)
 
 
 def clean_gsm_expression(output: str) -> str | None:
@@ -314,7 +381,14 @@ def run_dataset(
 
     for i, example in enumerate(examples, start=1):
         print(f"[unconstrained:{dataset}] {i}/{len(examples)}", flush=True)
-        prompt = evaluator._format_prompt(example)
+        prompt = prompt_for_unconstrained(
+            evaluator,
+            dataset,
+            example,
+            crane_repo=args.crane_repo,
+            eval_model=args.eval_model,
+            prompt_style=args.prompt_style,
+        )
         try:
             output_text, token_count, gen_time = generate_unconstrained(lm, prompt)
             is_correct, syntax_valid, score_meta = score_output(
@@ -349,6 +423,7 @@ def run_dataset(
                 "is_syntax_valid": False,
                 "accuracy_applicable": dataset != "smiles",
                 "error": str(exc),
+                "traceback": traceback.format_exc(),
             })
             if dataset != "smiles":
                 accuracy_denominator += 1
@@ -371,6 +446,13 @@ def run_dataset(
         ),
         "avg_num_tokens": total_tokens / max(1, num_examples),
         "wall_time_seconds": time.time() - start,
+        "prompt_source": (
+            "evaluator.gsm_symbolic.reasoning_with_symbolic_expr_prompt"
+            if dataset == "gsm_symbolic" and args.prompt_style == "native"
+            else "crane.src.prompt_templates.gsm_symbolic.cot.gsm"
+            if dataset == "gsm_symbolic"
+            else "evaluator"
+        ),
         "sample_outputs": rows,
     }
     return payload, list(examples)
@@ -545,7 +627,8 @@ def main() -> int:
     parser.add_argument("--spider-split-file", type=Path, default=None)
     parser.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="test")
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
-    parser.add_argument("--smiles-max-attempts", type=int, default=2000)
+    parser.add_argument("--smiles-max-attempts", type=int, default=1000)
+    parser.add_argument("--prompt-style", choices=["native", "crane"], default="native")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()

@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+import importlib.util
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -42,6 +43,34 @@ def _ensure_syncode_import_path() -> None:
     repo_root_str = str(repo_root)
     if repo_root_str not in sys.path:
         sys.path.insert(0, repo_root_str)
+
+
+def _load_spider_evaluate():
+    """Load the vendored Spider evaluator without relying on `syncode` package resolution."""
+    repo_root = Path(__file__).parent.parent.parent
+    candidates = [
+        repo_root / "syncode" / "syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
+        Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
+    ]
+    eval_path = next((path for path in candidates if path.exists()), None)
+    if eval_path is None:
+        candidate_text = "\n".join(f"  - {path}" for path in candidates)
+        raise FileNotFoundError(f"Could not find Spider evaluator. Checked:\n{candidate_text}")
+
+    eval_dir = str(eval_path.parent)
+    if eval_dir not in sys.path:
+        sys.path.insert(0, eval_dir)
+
+    module_name = "_vas_sql_spider_eval"
+    module = sys.modules.get(module_name)
+    if module is None or getattr(module, "__file__", None) != str(eval_path):
+        spec = importlib.util.spec_from_file_location(module_name, eval_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load Spider evaluator from {eval_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+    return module.evaluate
 
 
 def _clean_sql(text: str) -> str:
@@ -114,7 +143,7 @@ def execute_accuracy(
             for i in range(len(examples))
         ]
 
-        from syncode.utils.sql_spider_eval.evaluation import evaluate
+        evaluate = _load_spider_evaluate()
 
         try:
             scores, error_types = evaluate(
@@ -162,7 +191,7 @@ def _evaluate_rows_resilient(
     tables_json: Path,
     result_jsonl: List[Dict[str, Any]],
 ) -> Tuple[Dict[str, Any], Dict[str, int]]:
-    from syncode.utils.sql_spider_eval.evaluation import evaluate
+    evaluate = _load_spider_evaluate()
 
     merged_scores: Dict[str, Any] = {"all": {"count": 0, "exec": 0.0}}
     merged_errors: Counter[str] = Counter()
