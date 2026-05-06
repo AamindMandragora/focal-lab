@@ -15,6 +15,9 @@ mkdir -p "${LOG_DIR}" "$(dirname "${SUMMARY_PATH}")"
 read -r -a DATASET_VALUES <<< "${DATASET_VALUES:-gsm spider smiles}"
 read -r -a MAX_STEPS_VALUES <<< "${MAX_STEPS_VALUES:-256 512 1024}"
 read -r -a SYNTHESIS_ITERATIONS_VALUES <<< "${SYNTHESIS_ITERATIONS_VALUES:-5 10 15 20}"
+ABLATION_SWEEP="${ABLATION_SWEEP:-both}"
+FIXED_MAX_STEPS="${FIXED_MAX_STEPS:-512}"
+FIXED_SYNTHESIS_ITERATIONS="${FIXED_SYNTHESIS_ITERATIONS:-20}"
 
 GENERATION_MODEL="${GENERATION_MODEL:-gpt-5.4}"
 GENERATION_BACKEND="${GENERATION_BACKEND:-openai}"
@@ -33,8 +36,9 @@ SMILES_CLASSES="${SMILES_CLASSES:-acrylates,chain_extenders,isocyanates}"
 
 echo "[ablation-grid] run_name=${RUN_NAME}"
 echo "[ablation-grid] datasets=${DATASET_VALUES[*]}"
-echo "[ablation-grid] max_steps=${MAX_STEPS_VALUES[*]}"
-echo "[ablation-grid] synthesis_iterations=${SYNTHESIS_ITERATIONS_VALUES[*]}"
+echo "[ablation-grid] sweep=${ABLATION_SWEEP}"
+echo "[ablation-grid] max_steps_sweep=${MAX_STEPS_VALUES[*]} fixed_iterations=${FIXED_SYNTHESIS_ITERATIONS}"
+echo "[ablation-grid] iterations_sweep=${SYNTHESIS_ITERATIONS_VALUES[*]} fixed_max_steps=${FIXED_MAX_STEPS}"
 echo "[ablation-grid] summary=${SUMMARY_PATH}"
 
 kill_vllm_workers() {
@@ -63,7 +67,8 @@ run_cell() {
   local dataset="$1"
   local max_steps="$2"
   local iterations="$3"
-  local cell_id="${dataset}_ablation_steps${max_steps}_iters${iterations}"
+  local sweep="$4"
+  local cell_id="${dataset}_ablation_${sweep}_steps${max_steps}_iters${iterations}"
   local cell_run_name="${RUN_NAME}_${cell_id}"
   local log_path="${LOG_DIR}/${cell_id}.log"
   local started_at
@@ -102,7 +107,7 @@ run_cell() {
       ;;
     spider|sql)
       dataset="spider"
-      cell_id="spider_ablation_steps${max_steps}_iters${iterations}"
+      cell_id="spider_ablation_${sweep}_steps${max_steps}_iters${iterations}"
       cell_run_name="${RUN_NAME}_${cell_id}"
       log_path="${LOG_DIR}/${cell_id}.log"
       cmd=(/opt/anaconda/bin/python scripts/itergen_generalization_workflow.py
@@ -289,6 +294,7 @@ row = {
     "dataset": "${dataset}",
     "status": "${status}",
     "returncode": ${rc},
+    "sweep": "${sweep}",
     "max_steps": ${max_steps},
     "synthesis_iterations": ${iterations},
     "generation_model": "${GENERATION_MODEL}",
@@ -322,12 +328,37 @@ PY
   echo "[ablation-grid:end] ${cell_id} rc=${rc} ${finished_at}"
 }
 
-for dataset in "${DATASET_VALUES[@]}"; do
-  for max_steps in "${MAX_STEPS_VALUES[@]}"; do
-    for iterations in "${SYNTHESIS_ITERATIONS_VALUES[@]}"; do
-      run_cell "${dataset}" "${max_steps}" "${iterations}"
+run_maxsteps_sweep() {
+  for dataset in "${DATASET_VALUES[@]}"; do
+    for max_steps in "${MAX_STEPS_VALUES[@]}"; do
+      run_cell "${dataset}" "${max_steps}" "${FIXED_SYNTHESIS_ITERATIONS}" "maxsteps"
     done
   done
-done
+}
+
+run_iterations_sweep() {
+  for dataset in "${DATASET_VALUES[@]}"; do
+    for iterations in "${SYNTHESIS_ITERATIONS_VALUES[@]}"; do
+      run_cell "${dataset}" "${FIXED_MAX_STEPS}" "${iterations}" "iterations"
+    done
+  done
+}
+
+case "${ABLATION_SWEEP}" in
+  maxsteps|steps)
+    run_maxsteps_sweep
+    ;;
+  iterations|iters)
+    run_iterations_sweep
+    ;;
+  both)
+    run_maxsteps_sweep
+    run_iterations_sweep
+    ;;
+  *)
+    echo "[ablation-grid:error] ABLATION_SWEEP must be maxsteps, iterations, or both; got ${ABLATION_SWEEP}" >&2
+    exit 2
+    ;;
+esac
 
 echo "[ablation-grid] complete summary=${SUMMARY_PATH}"
