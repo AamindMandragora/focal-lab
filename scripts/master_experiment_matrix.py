@@ -320,6 +320,8 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         str(args.itergen_repo),
         "--split-file",
         str(args.spider_split_file),
+        "--spider-source",
+        args.spider_source,
         "--train-size",
         str(args.spider_train_size),
         "--test-size",
@@ -569,7 +571,7 @@ def main() -> int:
         type=Path,
         default=PROJECT_ROOT / "outputs/generated-csd/splits/spider_seed123_train50_test100.json",
     )
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="auto")
+    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--spider-train-size", type=int, default=50)
     parser.add_argument("--spider-test-size", type=int, default=100)
