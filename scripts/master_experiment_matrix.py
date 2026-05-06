@@ -17,6 +17,7 @@ import json
 import os
 import signal
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -57,6 +58,26 @@ GENERATION_MODELS: tuple[GenerationSpec, ...] = (
 
 DATASETS = ("gsm", "spider", "smiles")
 METHODS = ("crane", "itergen", "cars", "unconstrained", "metadecode")
+
+
+def _default_repo_path(env_var: str, fallback_name: str) -> Path:
+    raw = os.environ.get(env_var)
+    if raw:
+        return Path(raw).expanduser()
+    return Path.home() / fallback_name
+
+
+def _default_gsm_source_dir() -> Path:
+    env_gsm = os.environ.get("CRANE_GSM_SYMBOLIC_DIR")
+    if env_gsm:
+        p = Path(env_gsm).expanduser()
+        if p.exists():
+            return p
+    crane_root = _default_repo_path("CRANE_REPO", "CRANE")
+    for candidate in (crane_root / "src" / "gsm_symbolic", crane_root / "gsm_symbolic"):
+        if candidate.exists():
+            return candidate
+    return crane_root / "src" / "gsm_symbolic"
 
 
 def now_iso() -> str:
@@ -162,6 +183,29 @@ def status_paths(args: argparse.Namespace) -> dict[str, Path]:
     }
 
 
+def find_reusable_benchmark(
+    *,
+    output_dir: Path,
+    cell_id: str,
+    current_run_root: Path,
+) -> Path | None:
+    candidates = sorted(
+        (output_dir / "master_experiments").glob(f"*/benchmarks/{cell_id}.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for candidate in candidates:
+        if current_run_root in candidate.parents:
+            continue
+        try:
+            payload = json.loads(candidate.read_text())
+        except Exception:
+            continue
+        if isinstance(payload, dict) and payload:
+            return candidate
+    return None
+
+
 def gpu_env(base: dict[str, str], cuda_visible_devices: str | None) -> dict[str, str]:
     env = dict(base)
     if cuda_visible_devices:
@@ -229,6 +273,38 @@ def run_logged(
     env: dict[str, str],
     meta: dict[str, Any],
 ) -> int:
+    method = str(meta.get("method", ""))
+    output_path_raw = meta.get("output_path")
+    if (
+        args.reuse_existing_benchmarks
+        and method in {"crane", "itergen", "cars", "unconstrained"}
+        and isinstance(output_path_raw, str)
+        and len(cell_ids) == 1
+    ):
+        output_path = Path(output_path_raw)
+        reusable = find_reusable_benchmark(
+            output_dir=args.output_dir,
+            cell_id=cell_ids[0],
+            current_run_root=args.output_dir / "master_experiments" / args.run_name,
+        )
+        if reusable is not None:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(reusable, output_path)
+            append_ledger(
+                ledger,
+                {
+                    "event": "cell_skip_reused",
+                    "cell_id": cell_ids[0],
+                    "group_id": group_id,
+                    "status": "skipped_reused",
+                    "reused_from": str(reusable),
+                    "output_path": str(output_path),
+                    **meta,
+                },
+            )
+            print(f"[SKIP-REUSE] {group_id} -> {reusable}")
+            return 0
+
     for cell_id in cell_ids:
         append_ledger(
             ledger,
@@ -961,6 +1037,7 @@ def main() -> int:
     parser.add_argument("--methods", default="all", help="all, or comma-separated crane,itergen,cars,unconstrained,metadecode")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--continue-on-error", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--reuse-existing-benchmarks", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--regenerate-splits", action="store_true")
     parser.add_argument("--include-ablations", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include-lottery-ablation", action=argparse.BooleanOptionalAction, default=False)
@@ -973,7 +1050,7 @@ def main() -> int:
     parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     parser.add_argument("--split-seed", type=int, default=123)
 
-    parser.add_argument("--gsm-source-dir", type=Path, default=Path("/home/aadivyar/CRANE/src/gsm_symbolic"))
+    parser.add_argument("--gsm-source-dir", type=Path, default=_default_gsm_source_dir())
     parser.add_argument(
         "--gsm-split-file",
         type=Path,
@@ -992,7 +1069,11 @@ def main() -> int:
         type=Path,
         default=PROJECT_ROOT / "outputs/generated-csd/splits/spider_seed123_train50_test100.json",
     )
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
+    parser.add_argument(
+        "--spider-source",
+        choices=["auto", "hf", "local"],
+        default=os.environ.get("SPIDER_SOURCE", "hf"),
+    )
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--spider-train-size", type=int, default=50)
     parser.add_argument("--spider-test-size", type=int, default=100)
@@ -1001,7 +1082,7 @@ def main() -> int:
     parser.add_argument("--spider-vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--spider-vllm-max-model-len", type=int, default=4096)
     parser.add_argument("--spider-cuda-visible-devices", default=os.environ.get("SPIDER_CUDA_VISIBLE_DEVICES", "2"))
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=_default_repo_path("ITERGEN_REPO", "itergen"))
     parser.add_argument("--itergen-device", default="cuda:0")
     parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
@@ -1011,10 +1092,10 @@ def main() -> int:
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
     parser.add_argument("--itergen-smiles-max-new-tokens", type=int, default=512)
 
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=_default_repo_path("CRANE_REPO", "CRANE"))
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
 
-    parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
+    parser.add_argument("--cars-repo", type=Path, default=_default_repo_path("CARS_REPO", "cars"))
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)

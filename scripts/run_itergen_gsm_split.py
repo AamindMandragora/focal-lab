@@ -23,6 +23,23 @@ from evaluations.gsm_symbolic.dataset import load_gsm_from_crane_folder
 from evaluations.gsm_symbolic.grammar import build_dynamic_grammar, extract_variables_from_mapping
 
 
+def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
+    if getattr(itergen_cls, "__vas_logits_warper_patched__", False):
+        return
+
+    def _compat_update_gen_args(self: Any, **gen_args: dict) -> None:
+        from transformers.generation.logits_process import LogitsProcessorList
+
+        self.generation_config.update(**gen_args)
+        if hasattr(self.model, "_get_logits_warper"):
+            self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
+        else:
+            self.logit_warper = LogitsProcessorList()
+
+    itergen_cls.update_gen_args = _compat_update_gen_args
+    setattr(itergen_cls, "__vas_logits_warper_patched__", True)
+
+
 def add_itergen_paths(itergen_repo: Path) -> None:
     for path in [
         itergen_repo,
@@ -145,6 +162,7 @@ def main() -> int:
     add_itergen_paths(itergen_repo)
     from itergen.main import IterGen  # type: ignore
 
+    patch_itergen_logits_warper_compat(IterGen)
     base_grammar = args.grammar.read_text()
     indices = load_indices(args.split_file, args.split_name, args.limit)
     examples = load_gsm_from_crane_folder(args.gsm_source_dir, indices=indices)

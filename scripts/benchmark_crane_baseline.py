@@ -48,10 +48,32 @@ def normalize_smiles_classes(raw: str) -> list[str]:
     return classes
 
 
+def _patch_logits_warper_compat(decoder_cls: type[Any]) -> None:
+    base_cls = decoder_cls.__mro__[1] if len(decoder_cls.__mro__) > 1 else decoder_cls
+    if getattr(base_cls, "__vas_logits_warper_patched__", False):
+        return
+
+    def _compat_update_gen_args(self: Any, **gen_args: dict) -> None:
+        from transformers.generation.logits_process import LogitsProcessorList
+
+        if hasattr(self, "cursors"):
+            self.cursors = [0 for _ in range(getattr(self, "num_outputs", 1))]
+        self.generation_config.update(**gen_args)
+        if hasattr(self.model, "_get_logits_warper"):
+            self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
+        else:
+            self.logit_warper = LogitsProcessorList()
+
+    base_cls.update_gen_args = _compat_update_gen_args
+    setattr(base_cls, "__vas_logits_warper_patched__", True)
+
+
 def add_crane_paths(crane_repo: Path) -> None:
     repo = crane_repo.expanduser().resolve()
     paths = [
         repo / "src",
+        repo / "syncode",
+        repo / "syncode" / "syncode",
         repo / "src" / "itergen",
         repo / "src" / "itergen" / "iter_syncode",
         repo / "upstream-uiuc" / "src",
@@ -62,6 +84,9 @@ def add_crane_paths(crane_repo: Path) -> None:
             if path_str in sys.path:
                 sys.path.remove(path_str)
             sys.path.insert(0, path_str)
+    for module_name in ("syncode", "parsers"):
+        if module_name in sys.modules:
+            del sys.modules[module_name]
 
 
 def load_crane_class(crane_repo: Path):
@@ -69,25 +94,109 @@ def load_crane_class(crane_repo: Path):
     try:
         from itergen.main import AdaptiveConstrainedDecoder as CraneDecoder  # type: ignore
 
+        _patch_logits_warper_compat(CraneDecoder)
         return CraneDecoder, "itergen.main.AdaptiveConstrainedDecoder"
     except Exception:
         from crane.main import CRANE as CraneDecoder  # type: ignore
 
+        _patch_logits_warper_compat(CraneDecoder)
         return CraneDecoder, "crane.main.CRANE"
 
 
 def grammar_for_dataset(dataset: str, smiles_class: str | None = None) -> str:
     if dataset == "gsm_symbolic":
-        return "gsm"
+        return (
+            'start: space? "<" "<" space? expr space? ">" ">" space?\n'
+            "\n"
+            "expr: expr space? \"+\" space? term\n"
+            "    | expr space? \"-\" space? term\n"
+            "    | term\n"
+            "\n"
+            "term: term space? \"*\" space? factor\n"
+            "    | term space? \"/\" space? factor\n"
+            "    | term space? \"//\" space? factor\n"
+            "    | term space? \"%\" space? factor\n"
+            "    | factor space?\n"
+            "\n"
+            "factor: \"-\" space? factor\n"
+            "      | TYPE \"(\" space? expr space? \")\"\n"
+            "      | primary space?\n"
+            "\n"
+            "primary: NUMBER\n"
+            "       | VARIABLE\n"
+            "       | \"(\" space? expr space? \")\"\n"
+            "\n"
+            'TYPE.4: "int"\n'
+            "space: \" \"\n"
+            "VARIABLE: /[a-zA-Z_][a-zA-Z0-9_]*/\n"
+            "NUMBER: /-?\\d+(\\.\\d+)?/\n"
+        )
     if dataset == "spider":
-        return (PROJECT_ROOT / "grammars" / "sql.lark").read_text()
+        return _crane_compatible_grammar((PROJECT_ROOT / "grammars" / "sql.lark").read_text())
     if dataset == "smiles":
         from evaluations.smiles.dataset import get_smiles_task
 
         if not smiles_class:
             raise ValueError("smiles_class is required for SMILES grammar")
-        return str(get_smiles_task(smiles_class)["grammar_text"])
+        return _crane_compatible_grammar(str(get_smiles_task(smiles_class)["grammar_text"]))
     raise ValueError(f"Unsupported dataset: {dataset}")
+
+
+def _crane_compatible_grammar(grammar_text: str) -> str:
+    text = grammar_text
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.WS_INLINE\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f"{m.group(1)}: /[ \\t\\f\\r\\n]+/",
+        text,
+    )
+    text = re.sub(r"(?m)^\s*%import\s+common\.WS_INLINE\s*$", lambda _m: "WS_INLINE: /[ \\t\\f\\r\\n]+/", text)
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.WS\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f"{m.group(1)}: /[ \\t\\f\\r\\n]+/",
+        text,
+    )
+    text = re.sub(r"(?m)^\s*%import\s+common\.WS\s*$", lambda _m: "WS: /[ \\t\\f\\r\\n]+/", text)
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.CNAME\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f"{m.group(1)}: /[a-zA-Z_][a-zA-Z0-9_]*/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.CNAME\s*$",
+        lambda _m: "CNAME: /[a-zA-Z_][a-zA-Z0-9_]*/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.NUMBER\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f"{m.group(1)}: /-?\\d+(\\.\\d+)?/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.NUMBER\s*$",
+        lambda _m: "NUMBER: /-?\\d+(\\.\\d+)?/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.INT\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f"{m.group(1)}: /[+-]?\\d+/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.INT\s*$",
+        lambda _m: "INT: /[+-]?\\d+/",
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.ESCAPED_STRING\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
+        lambda m: f'{m.group(1)}: /"([^"\\\\]|\\\\.)*"|\'([^\'\\\\]|\\\\.)*\'/',
+        text,
+    )
+    text = re.sub(
+        r"(?m)^\s*%import\s+common\.ESCAPED_STRING\s*$",
+        lambda _m: 'STRING: /"([^"\\\\]|\\\\.)*"|\'([^\'\\\\]|\\\\.)*\'/',
+        text,
+    )
+    return text
 
 
 def prompt_for_crane(evaluator: Evaluator, dataset: str, example: dict[str, Any]) -> str | list[dict[str, str]]:
