@@ -1,8 +1,0 @@
-{
-  "strategy_code": "// CSD_RATIONALE_BEGIN\n// For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar with variables and numeric constants. Given the critical rules, we will use the CRANE-style generation approach. This approach starts with free-form text, switches to constrained mode when the model generates '<<', and continues in constrained mode until the parser completes (e.g., expression + '>>'). This ensures that the generated expressions are both syntactically correct and semantically meaningful.\n// CSD_RATIONALE_END\ngenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);\ncost := helpers.cost;",
-  "tool_choice_rationale": "For GSM-Symbolic reasoning, we need to generate short symbolic mathematical expressions that adhere to a strict arithmetic grammar with variables and numeric constants. Given the critical rules, we will use the CRANE-style generation approach. This approach starts with free-form text, switches to constrained mode when the model generates '<<', and continues in constrained mode until the parser completes (e.g., expression + '>>'). This ensures that the generated expressions are both syntactically correct and semantically meaningful.",
-  "dafny_file": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_001400_435db6/gsm_crane_csd.dfy",
-  "compiled_dir": "/home/aadivyar/csd-generation/outputs/generated-csd/runs/20260220_001400_435db6/gsm_crane_csd_20260220_001435_786872",
-  "total_attempts": 2,
-  "timestamp": "2026-02-20T00:14:48.975299"
-}
