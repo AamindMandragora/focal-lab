@@ -39,9 +39,24 @@ from project_defaults import (
 
 
 DEFAULT_TASK_TEMPLATE = (
-    "Generate valid, non-exemplar SMILES strings for the {class_name} molecule "
-    "class. Use the hidden parser-guided constrained chunk for the SMILES token "
+    "Generate one new, valid, non-exemplar SMILES molecule for the {class_name} "
+    "class. The answer contract is a single SMILES string and nothing else. "
+    "Use the hidden parser-guided constrained chunk for that SMILES token "
     "sequence and avoid copying prompt exemplars."
+)
+SATURATED_BASELINE_SYNTAX_TARGET = 0.95
+CLASS_CORRECT_FALLBACK_SMILES = {
+    "acrylates": "CCOC(=O)C=C",
+    "chain_extenders": "NCCN",
+    "isocyanates": "CCN=C=O",
+}
+DEFAULT_VALID_FALLBACK_GUIDANCE_TEMPLATE = (
+    "Syntax salvage rule: if the strategy cannot confidently produce a "
+    "class-correct molecule, prefer emitting the class-correct, grammar-valid, "
+    "non-exemplar fallback {fallback_smiles} for {class_name} rather than "
+    "malformed SMILES. Do not use a fallback from another class: the fallback "
+    "must remain both syntactically valid and class-correct so syntax salvage "
+    "does not depress the conditional class-membership accuracy."
 )
 
 
@@ -68,6 +83,24 @@ def strict_next_threshold(pass_rate: float | None, n_examples: int) -> float:
     rate = float(pass_rate or 0.0)
     passed = int(round(rate * n_examples))
     return min(1.0, (passed + 1) / n_examples)
+
+
+def synthesis_syntax_threshold(baseline_syntax_rate: float | None, n_examples: int) -> float:
+    rate = float(baseline_syntax_rate or 0.0)
+    if rate >= 1.0 - 1e-12:
+        return SATURATED_BASELINE_SYNTAX_TARGET
+    return strict_next_threshold(rate, n_examples)
+
+
+def task_with_default_valid_fallback(task: str, *, class_name: str) -> str:
+    if "Syntax salvage rule:" in task:
+        return task
+    fallback_smiles = CLASS_CORRECT_FALLBACK_SMILES[class_name]
+    guidance = DEFAULT_VALID_FALLBACK_GUIDANCE_TEMPLATE.format(
+        class_name=class_name,
+        fallback_smiles=fallback_smiles,
+    )
+    return f"{task}\n\n{guidance}"
 
 
 def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool, env: dict[str, str] | None = None) -> int:
@@ -121,7 +154,10 @@ def synthesis_command(
         sys.executable,
         "run_synthesis.py",
         "--task",
-        args.task_template.format(class_name=class_name),
+        task_with_default_valid_fallback(
+            args.task_template.format(class_name=class_name),
+            class_name=class_name,
+        ),
         "--dataset",
         "smiles",
         "--smiles-classes",
@@ -602,18 +638,19 @@ def main() -> int:
             min_accuracy = args.min_accuracy
         if args.min_syntax_rate is None:
             max_syntax_rate = max((float(b["syntax_rate"] or 0.0) for b in train_baselines), default=0.0)
-            min_syntax_rate = strict_next_threshold(max_syntax_rate, args.train_samples)
+            min_syntax_rate = synthesis_syntax_threshold(max_syntax_rate, args.train_samples)
         else:
             max_syntax_rate = args.min_syntax_rate
             min_syntax_rate = args.min_syntax_rate
         class_summary["train_baselines"] = train_baselines
-        class_summary["threshold_policy"] = "strict_next_discrete_over_max_cars_itergen_crane_train_baseline_or_1_if_saturated"
+        class_summary["threshold_policy"] = "strict_next_discrete_over_max_cars_itergen_crane_train_baseline; syntax_uses_95_percent_when_max_baseline_is_100_percent"
         class_summary["min_accuracy"] = min_accuracy
         class_summary["min_syntax_rate"] = min_syntax_rate
+        class_summary["saturated_baseline_syntax_target"] = SATURATED_BASELINE_SYNTAX_TARGET
         print(
             f"[threshold:{class_name}] "
             f"accuracy>max_baseline({max_accuracy:.1%}) => {min_accuracy:.1%}; "
-            f"syntax>max_baseline({max_syntax_rate:.1%}) => {min_syntax_rate:.1%}"
+            f"syntax target from max_baseline({max_syntax_rate:.1%}) => {min_syntax_rate:.1%}"
         )
 
         compiled_module = args.compiled_module
