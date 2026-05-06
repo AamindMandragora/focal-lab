@@ -33,6 +33,16 @@ def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
         from transformers.generation.logits_process import LogitsProcessorList
 
         self.generation_config.update(**gen_args)
+        default_int_fields = {
+            "num_return_sequences": 1,
+            "num_beams": 1,
+            "num_beam_groups": 1,
+        }
+        for field_name, default_value in default_int_fields.items():
+            if getattr(self.generation_config, field_name, None) is None:
+                setattr(self.generation_config, field_name, default_value)
+        if getattr(self.generation_config, "do_sample", None) is None:
+            self.generation_config.do_sample = False
         if hasattr(self.model, "_get_logits_warper"):
             self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
         else:
@@ -64,8 +74,33 @@ def load_indices(split_file: Path, split_name: str, limit: int | None) -> list[i
     return indices
 
 
-def prompt_for_example(example: dict[str, Any], model: str, crane_repo: Path) -> str | list[dict[str, str]]:
+def native_prompt_for_example(example: dict[str, Any]) -> str:
     question = example.get("question_parsed") or example.get("question") or ""
+    variables = extract_variables_from_mapping(example.get("variable_types") or {})
+    var_text = ", ".join(variables) if variables else "the variables in the problem"
+    return (
+        "Solve this GSM-Symbolic word problem symbolically. "
+        "Output only the final arithmetic expression, with no explanation, no code fences, "
+        "and no << >> delimiters. Use only these variable names: "
+        f"{var_text}.\n\n"
+        f"Problem: {question}\n"
+        "Expression:"
+    )
+
+
+def prompt_for_example(
+    example: dict[str, Any],
+    model: str,
+    crane_repo: Path,
+    *,
+    prompt_style: str = "native",
+) -> str | list[dict[str, str]]:
+    question = example.get("question_parsed") or example.get("question") or ""
+    if prompt_style == "native":
+        prompt = native_prompt_for_example(example)
+        if any(tag in model for tag in ("Instruct", "instruct", "chat", "it")):
+            return [{"role": "user", "content": prompt}]
+        return prompt
     if any(tag in model for tag in ("Instruct", "instruct", "chat", "it")):
         return crane_gsm_chat_prompt(crane_repo, question)
     return crane_gsm_text_prompt(crane_repo, question)
@@ -144,6 +179,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--recurrence-penalty", type=float, default=0.3)
+    parser.add_argument("--prompt-style", choices=["native", "crane"], default="native")
     parser.add_argument("--max-model-len", type=int, default=8192)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--output", type=Path, required=True)
@@ -162,6 +198,15 @@ def main() -> int:
     indices = load_indices(args.split_file, args.split_name, args.limit)
     examples = load_gsm_from_crane_folder(args.gsm_source_dir, indices=indices)
     do_sample = args.temperature is not None
+    gen_kwargs: dict[str, Any] = {
+        "do_sample": do_sample,
+        "max_tokens": args.max_model_len,
+        "max_new_tokens": args.max_new_tokens,
+        "recurrence_penalty": args.recurrence_penalty,
+        "device": args.device,
+    }
+    if args.temperature is not None:
+        gen_kwargs["temperature"] = args.temperature
 
     old_cwd = Path.cwd()
     os.chdir(itergen_repo)
@@ -169,14 +214,9 @@ def main() -> int:
         iter_gen = IterGen(
             grammar=base_grammar,
             model_id=args.model,
-            default_unit="syncode",
+            default_unit="syncode" if args.prompt_style == "crane" else "start",
             parse_output_only=True,
-            do_sample=do_sample,
-            temperature=args.temperature,
-            max_tokens=args.max_model_len,
-            max_new_tokens=args.max_new_tokens,
-            recurrence_penalty=args.recurrence_penalty,
-            device=args.device,
+            **gen_kwargs,
         )
 
         rows: list[dict[str, Any]] = []
@@ -187,7 +227,7 @@ def main() -> int:
         for local_i, example in enumerate(examples, start=1):
             print(f"[{local_i}/{len(examples)}] GSM source_index={example.get('crane_source_index')}", flush=True)
             ex_start = time.time()
-            prompt = prompt_for_example(example, args.model, crane_repo)
+            prompt = prompt_for_example(example, args.model, crane_repo, prompt_style=args.prompt_style)
             raw_output = ""
             metadata: dict[str, Any] = {}
             try:
@@ -228,8 +268,13 @@ def main() -> int:
             "dataset": "gsm",
             "itergen_repo": str(itergen_repo),
             "crane_repo": str(crane_repo),
-            "prompt_source": "crane.src.prompt_templates.gsm_symbolic.cot.gsm",
-            "default_unit": "syncode",
+            "prompt_style": args.prompt_style,
+            "prompt_source": (
+                "itergen_gsm_native_expression_only"
+                if args.prompt_style == "native"
+                else "crane.src.prompt_templates.gsm_symbolic.cot.gsm"
+            ),
+            "default_unit": "syncode" if args.prompt_style == "crane" else "start",
             "split_file": str(args.split_file),
             "split_name": args.split_name,
             "indices": indices,

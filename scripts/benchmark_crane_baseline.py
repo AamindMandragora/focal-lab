@@ -202,19 +202,12 @@ def prompt_for_crane(
     crane_repo: Path | None = None,
 ) -> str | list[dict[str, str]]:
     if dataset == "gsm_symbolic":
+        question = example.get("question_parsed") or example.get("question", "")
+        if crane_repo is not None:
+            return crane_gsm_chat_prompt(crane_repo, question)
         from evaluations.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
 
-        question = example.get("question_parsed") or example.get("question", "")
-        if stable_mode:
-            if crane_repo is not None:
-                return crane_gsm_chat_prompt(crane_repo, question)
-            return reasoning_with_symbolic_expr_prompt(question)
-        base = reasoning_with_symbolic_expr_prompt(question)
-        marker_instruction = (
-            "Begin immediately with << and output only the final symbolic expression. "
-            "Do not include additional reasoning text."
-        )
-        return f"{base}\n{marker_instruction}\n<<"
+        return reasoning_with_symbolic_expr_prompt(question)
 
     prompt = evaluator._format_prompt(example)
     if dataset == "spider":
@@ -357,6 +350,11 @@ def build_crane_decoder(args: argparse.Namespace, *, dataset: str, smiles_class:
     )
     return decoder, source, {
         "grammar_source": "dataset_lark_text",
+        "prompt_source": (
+            "crane.src.prompt_templates.gsm_symbolic.cot.gsm"
+            if dataset == "gsm_symbolic"
+            else "evaluator"
+        ),
         "start_symbol": start_symbol,
         "start_in_grammar": start_in_grammar,
         "end_symbol": end_symbol,
@@ -681,7 +679,7 @@ def main() -> int:
     parser.add_argument("--spider-split-file", type=Path, default=None)
     parser.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="test")
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
-    parser.add_argument("--smiles-max-attempts", type=int, default=2000)
+    parser.add_argument("--smiles-max-attempts", type=int, default=1000)
     parser.add_argument(
         "--decoder-source",
         choices=["auto", "crane", "itergen"],
