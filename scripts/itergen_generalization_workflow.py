@@ -112,7 +112,7 @@ def make_split(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def itergen_command(args: argparse.Namespace, split_name: str, output_path: Path) -> list[str]:
-    return [
+    cmd = [
         sys.executable,
         str(PROJECT_ROOT / "scripts" / "run_itergen_sql_split.py"),
         "--itergen-repo",
@@ -131,12 +131,99 @@ def itergen_command(args: argparse.Namespace, split_name: str, output_path: Path
         str(args.recurrence_penalty),
         "--max-iter",
         str(args.itergen_max_iter),
+        "--source",
+        args.spider_source,
         "--output",
         str(output_path),
     ]
+    if args.spider_dir is not None:
+        cmd.extend(["--spider-dir", str(args.spider_dir)])
+    return cmd
 
 
-def synthesis_command(args: argparse.Namespace, min_accuracy: float) -> list[str]:
+def cars_command(args: argparse.Namespace, split_name: str, output_path: Path) -> list[str]:
+    cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "benchmark_spider_vs_cars.py"),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--output",
+        str(output_path),
+        "--split-file",
+        str(args.split_file),
+        "--split-name",
+        split_name,
+        "--source",
+        args.spider_source,
+        "--model-name",
+        args.eval_model,
+        "--cars-style",
+        args.cars_style,
+        "--max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--max-new-tokens",
+        str(args.spider_cars_max_new_tokens),
+        "--cuda-visible-devices",
+        args.cars_cuda_visible_devices,
+    ]
+    if args.spider_dir is not None:
+        cmd.extend(["--spider-dir", str(args.spider_dir)])
+    return cmd
+
+
+def crane_command(args: argparse.Namespace, split_name: str, output_path: Path) -> list[str]:
+    cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "benchmark_crane_baseline.py"),
+        "--dataset",
+        "spider",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--spider-split-file",
+        str(args.split_file),
+        "--spider-split-name",
+        split_name,
+        "--sample-size",
+        str(split_size(args.split_file, split_name)),
+        "--eval-model",
+        args.eval_model,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.vllm_max_model_len),
+    ]
+    if args.dry_run:
+        cmd.append("--dry-run")
+    return cmd
+
+
+def spider_exec_accuracy(path: Path) -> float:
+    payload = json.loads(path.read_text())
+    if "all_exec_accuracy" in payload:
+        return float(payload.get("all_exec_accuracy") or 0.0)
+    return float(payload.get("scores", {}).get("all", {}).get("exec", 0.0) or 0.0)
+
+
+def syntax_rate(path: Path) -> float:
+    payload = json.loads(path.read_text())
+    return float(payload.get("syntax_rate") or 0.0)
+
+
+def synthesis_command(args: argparse.Namespace, min_accuracy: float, min_syntax_rate: float) -> list[str]:
     return [
         sys.executable,
         "run_synthesis.py",
@@ -163,7 +250,7 @@ def synthesis_command(args: argparse.Namespace, min_accuracy: float) -> list[str
         "--min-accuracy",
         f"{min_accuracy:.12g}",
         "--min-syntax-rate",
-        f"{args.min_syntax_rate:.12g}",
+        f"{min_syntax_rate:.12g}",
         "--no-require-delimiters",
         "--eval-sample-size",
         str(split_size(args.split_file, "train")),
@@ -185,7 +272,7 @@ def synthesis_command(args: argparse.Namespace, min_accuracy: float) -> list[str
 
 
 def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_path: Path) -> list[str]:
-    return [
+    cmd = [
         sys.executable,
         "-m",
         "evaluations.sql_spider.cli",
@@ -201,6 +288,8 @@ def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_pat
         str(args.split_file),
         "--split-name",
         "test",
+        "--source",
+        args.spider_source,
         "--limit",
         str(split_size(args.split_file, "test")),
         "--max-steps",
@@ -212,6 +301,9 @@ def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_pat
         "--pred-dump",
         str(output_path),
     ]
+    if args.spider_dir is not None:
+        cmd.extend(["--spider-dir", str(args.spider_dir)])
+    return cmd
 
 
 def main() -> int:
@@ -223,7 +315,7 @@ def main() -> int:
     parser.add_argument("--train-size", type=int, default=50)
     parser.add_argument("--test-size", type=int, default=100)
     parser.add_argument("--regenerate-split", action="store_true")
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="auto")
+    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")
@@ -231,10 +323,17 @@ def main() -> int:
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-max-iter", type=int, default=20)
+    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
+    parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
+    parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
+    parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
+    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
-    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default="openai")
     parser.add_argument("--synthesis-output-name", default="itergen_spider_train50_synthesis")
     parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")
@@ -255,6 +354,8 @@ def main() -> int:
     logs_dir = args.output_dir / "logs"
     train_itergen_json = benchmarks_dir / f"{args.run_name}_itergen_train.json"
     test_itergen_json = benchmarks_dir / f"{args.run_name}_itergen_test.json"
+    train_cars_json = benchmarks_dir / f"{args.run_name}_cars_train.json"
+    train_crane_json = benchmarks_dir / f"{args.run_name}_crane_train.json"
     synthesis_log = logs_dir / f"{args.run_name}_synthesis.log"
     csd_test_json = benchmarks_dir / f"{args.run_name}_csd_test.json"
 
@@ -264,16 +365,42 @@ def main() -> int:
     if rc != 0:
         raise SystemExit(rc)
 
+    print("[cars-train]")
+    cars_train_cmd = cars_command(args, "train", train_cars_json)
+    rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_cars_train.log", dry_run=args.dry_run)
+    if rc != 0:
+        raise SystemExit(rc)
+
+    print("[crane-train]")
+    crane_train_cmd = crane_command(args, "train", train_crane_json)
+    rc = run_logged(crane_train_cmd, logs_dir / f"{args.run_name}_crane_train.log", dry_run=args.dry_run)
+    if rc != 0:
+        raise SystemExit(rc)
+
     if args.dry_run:
         train_accuracy = 0.0
+        cars_train_accuracy = 0.0
+        crane_train_accuracy = 0.0
+        crane_train_syntax_rate = 0.0
         min_accuracy = 0.0
+        min_syntax_rate = args.min_syntax_rate
     else:
-        train_result = json.loads(train_itergen_json.read_text())
-        train_accuracy = float(train_result.get("all_exec_accuracy", 0.0))
-        min_accuracy = strict_next_threshold(train_accuracy, split["train_size"])
-    print(f"[benchmark] IterGen train accuracy={train_accuracy:.1%}; synthesis threshold={min_accuracy:.1%}")
+        train_accuracy = spider_exec_accuracy(train_itergen_json)
+        cars_train_accuracy = spider_exec_accuracy(train_cars_json)
+        crane_train_accuracy = spider_exec_accuracy(train_crane_json)
+        crane_train_syntax_rate = syntax_rate(train_crane_json)
 
-    synth_cmd = synthesis_command(args, min_accuracy)
+        threshold_base_accuracy = max(train_accuracy, cars_train_accuracy, crane_train_accuracy)
+        min_accuracy = strict_next_threshold(threshold_base_accuracy, split["train_size"])
+        threshold_base_syntax = max(args.min_syntax_rate, crane_train_syntax_rate)
+        min_syntax_rate = strict_next_threshold(threshold_base_syntax, split["train_size"])
+    print(
+        "[benchmark] train accuracy: "
+        f"IterGen={train_accuracy:.1%}, CARS={cars_train_accuracy:.1%}, CRANE={crane_train_accuracy:.1%}; "
+        f"accuracy threshold={min_accuracy:.1%}, syntax threshold={min_syntax_rate:.1%}"
+    )
+
+    synth_cmd = synthesis_command(args, min_accuracy, min_syntax_rate)
     print("[synthesis]")
     rc = run_logged(synth_cmd, synthesis_log, dry_run=args.dry_run)
     if rc != 0:
@@ -300,16 +427,23 @@ def main() -> int:
         "split_file": str(args.split_file),
         "split": split,
         "itergen_train": str(train_itergen_json),
+        "cars_train": str(train_cars_json),
+        "crane_train": str(train_crane_json),
         "itergen_test": str(test_itergen_json),
         "synthesis_log": str(synthesis_log),
         "compiled_module": str(compiled_module),
         "csd_test": str(csd_test_json),
         "commands": {
             "itergen_train": train_cmd,
+            "cars_train": cars_train_cmd,
+            "crane_train": crane_train_cmd,
             "synthesis": synth_cmd,
             "itergen_test": test_itergen_cmd,
             "csd_test": csd_cmd,
         },
+        "threshold_policy": "strict_next_discrete_over_max_itergen_cars_crane_train_exec_accuracy_and_crane_syntax_or_1_if_saturated",
+        "min_accuracy": min_accuracy,
+        "min_syntax_rate": min_syntax_rate,
         "dry_run": args.dry_run,
         "wall_time_seconds": time.time() - start,
     }
@@ -318,6 +452,9 @@ def main() -> int:
         csd_test = json.loads(csd_test_json.read_text())
         summary["results"] = {
             "itergen_train_accuracy": train_accuracy,
+            "cars_train_accuracy": cars_train_accuracy,
+            "crane_train_accuracy": crane_train_accuracy,
+            "crane_train_syntax_rate": crane_train_syntax_rate,
             "itergen_test_accuracy": float(itergen_test.get("all_exec_accuracy", 0.0)),
             "csd_test_accuracy": float(csd_test.get("scores", {}).get("all", {}).get("exec", 0.0)),
         }

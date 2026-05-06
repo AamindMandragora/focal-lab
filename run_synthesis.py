@@ -72,7 +72,7 @@ Examples:
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai"],
+        choices=["huggingface", "vllm", "openai", "anthropic", "gemini"],
         default="vllm",
         help="Backend for strategy generation (default: vllm)"
     )

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -81,23 +82,6 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, default=str))
 
 
-def compile_crane_baseline(args: argparse.Namespace) -> Path:
-    from synthesis.compiler import DafnyCompiler
-
-    compiler = DafnyCompiler(
-        dafny_path=args.dafny_path,
-        output_dir=args.output_dir,
-        timeout=args.compile_timeout,
-    )
-    result = compiler.compile_file(
-        PROJECT_ROOT / "dafny" / "CraneBaseline.dfy",
-        output_name=args.crane_output_name,
-    )
-    if not result.success or result.main_module_path is None:
-        raise RuntimeError(result.get_error_summary())
-    return result.main_module_path
-
-
 def evaluate_module(
     *,
     module_path: Path,
@@ -130,23 +114,70 @@ def evaluate_module(
         gsm_split_file=split_file,
         gsm_split_name=split_name,
     )
-    result = evaluator.evaluate_sample(module_path, sample_size=n_examples)
-    return {
-        "label": label,
-        "module_path": str(module_path),
-        "split_file": str(split_file),
-        "split_name": split_name,
-        "success": result.success,
-        "accuracy": result.accuracy,
-        "syntax_rate": result.syntax_rate,
-        "contains_delimiters": result.contains_delimiters,
-        "num_correct": result.num_correct,
-        "num_examples": result.num_examples,
-        "total_time_seconds": result.total_time_seconds,
-        "max_sample_time_seconds": result.max_sample_time_seconds,
-        "error": result.error,
-        "sample_outputs": result.sample_outputs,
-    }
+    try:
+        result = evaluator.evaluate_sample(module_path, sample_size=n_examples)
+        return {
+            "label": label,
+            "module_path": str(module_path),
+            "split_file": str(split_file),
+            "split_name": split_name,
+            "success": result.success,
+            "accuracy": result.accuracy,
+            "syntax_rate": result.syntax_rate,
+            "contains_delimiters": result.contains_delimiters,
+            "num_correct": result.num_correct,
+            "num_examples": result.num_examples,
+            "total_time_seconds": result.total_time_seconds,
+            "max_sample_time_seconds": result.max_sample_time_seconds,
+            "error": result.error,
+            "sample_outputs": result.sample_outputs,
+        }
+    finally:
+        evaluator.unload_runtime()
+
+
+def crane_benchmark_command(
+    args: argparse.Namespace,
+    split_file: Path,
+    split_name: str,
+    output_path: Path,
+) -> list[str]:
+    return [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "benchmark_crane_baseline.py"),
+        "--dataset",
+        "gsm_symbolic",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--gsm-split-file",
+        str(split_file),
+        "--gsm-split-name",
+        split_name,
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--sample-size",
+        str(split_size(split_file, split_name)),
+        "--eval-model",
+        args.eval_model,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.vllm_max_model_len),
+    ]
 
 
 def build_synthesis_command(
@@ -229,6 +260,94 @@ def command_text(cmd: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in cmd)
 
 
+def run_logged(cmd: list[str], log_path: Path, *, env: dict[str, str] | None = None) -> None:
+    print(command_text(cmd))
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w") as log_file:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=PROJECT_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env or os.environ.copy(),
+        )
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            print(line, end="")
+            log_file.write(line)
+            log_file.flush()
+        rc = proc.wait()
+    if rc != 0:
+        raise RuntimeError(f"Command failed with exit code {rc}. See log: {log_path}")
+
+
+def itergen_train_command(args: argparse.Namespace, split_file: Path, output_path: Path) -> list[str]:
+    return [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "run_itergen_gsm_split.py"),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--split-file",
+        str(split_file),
+        "--split-name",
+        "train",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--model",
+        args.eval_model,
+        "--device",
+        args.itergen_device,
+        "--seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--max-new-tokens",
+        str(args.itergen_gsm_max_new_tokens),
+        "--output",
+        str(output_path),
+    ]
+
+
+def cars_train_command(args: argparse.Namespace, split_file: Path, output_path: Path) -> list[str]:
+    return [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "benchmark_gsm_vs_cars.py"),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--output",
+        str(output_path),
+        "--split-file",
+        str(split_file),
+        "--split-name",
+        "train",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--model-name",
+        args.eval_model,
+        "--cars-style",
+        args.cars_style,
+        "--max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--max-new-tokens",
+        str(args.gsm_cars_max_new_tokens),
+        "--cuda-visible-devices",
+        args.cars_cuda_visible_devices,
+    ]
+
+
+def summarize_baseline(label: str, path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "label": label,
+        "benchmark_path": str(path),
+        "accuracy": float(payload.get("accuracy", 0.0) or 0.0),
+        "syntax_rate": float(payload.get("syntax_rate", 0.0) or 0.0),
+        "num_correct": payload.get("num_correct"),
+        "num_examples": payload.get("num_examples"),
+    }
+
+
 def prepare(args: argparse.Namespace) -> dict[str, Any]:
     from evaluations.gsm_symbolic.dataset import (
         annotate_gsm_crane_rubric_difficulty_labels,
@@ -285,18 +404,20 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
             f"source={split['difficulty_source']}"
         )
 
-    crane_module = compile_crane_baseline(args)
-    print(f"[prepare] compiled CRANE baseline: {crane_module}")
-
-    train_result = evaluate_module(
-        module_path=crane_module,
-        label="CRANE_train",
-        split_file=split_file,
-        split_name="train",
-        args=args,
-    )
+    logs_dir = args.output_dir / "logs"
     benchmark_path = args.output_dir / "benchmarks" / f"{args.run_name}_crane_train.json"
+    print("[prepare] original CRANE train baseline:")
+    crane_train_cmd = crane_benchmark_command(args, split_file, "train", benchmark_path)
+    run_logged(
+        crane_train_cmd,
+        logs_dir / f"{args.run_name}_crane_train.log",
+    )
+    train_result = json.loads(benchmark_path.read_text())
+    train_result["label"] = "CRANE_train"
+    train_result["split_file"] = str(split_file)
+    train_result["split_name"] = "train"
     write_json(benchmark_path, train_result)
+    baseline_results = [summarize_baseline("CRANE_train", benchmark_path, train_result)]
     print(
         "[prepare] CRANE train: "
         f"accuracy={train_result['accuracy']:.1%} "
@@ -305,15 +426,34 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     )
     print(f"[prepare] saved benchmark: {benchmark_path}")
 
-    min_accuracy = strict_next_threshold(
-        float(train_result["accuracy"]), int(train_result["num_examples"])
-    )
-    min_syntax_rate = strict_next_threshold(
-        float(train_result["syntax_rate"]), int(train_result["num_examples"])
-    )
+    if not args.skip_itergen_train_baseline:
+        itergen_path = args.output_dir / "benchmarks" / f"{args.run_name}_itergen_train.json"
+        print("[prepare] IterGen train baseline:")
+        run_logged(
+            itergen_train_command(args, split_file, itergen_path),
+            logs_dir / f"{args.run_name}_itergen_train.log",
+        )
+        itergen_result = json.loads(itergen_path.read_text())
+        baseline_results.append(summarize_baseline("IterGen_train", itergen_path, itergen_result))
+
+    if not args.skip_cars_train_baseline:
+        cars_path = args.output_dir / "benchmarks" / f"{args.run_name}_cars_train.json"
+        print("[prepare] CARS train baseline:")
+        run_logged(
+            cars_train_command(args, split_file, cars_path),
+            logs_dir / f"{args.run_name}_cars_train.log",
+        )
+        cars_result = json.loads(cars_path.read_text())
+        baseline_results.append(summarize_baseline("CARS_train", cars_path, cars_result))
+
+    threshold_accuracy_base = max(result["accuracy"] for result in baseline_results)
+    threshold_syntax_base = max(result["syntax_rate"] for result in baseline_results)
+    train_size = int(split["train_size"])
+    min_accuracy = strict_next_threshold(threshold_accuracy_base, train_size)
+    min_syntax_rate = strict_next_threshold(threshold_syntax_base, train_size)
     cmd = build_synthesis_command(
         split_file=split_file,
-        train_size=int(split["train_size"]),
+        train_size=train_size,
         min_accuracy=min_accuracy,
         min_syntax_rate=min_syntax_rate,
         args=args,
@@ -321,9 +461,12 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     launch = {
         "split_file": str(split_file),
         "crane_train_benchmark": str(benchmark_path),
-        "crane_module": str(crane_module),
+        "train_baselines": baseline_results,
+        "crane_framework": "original_crane_repo",
+        "crane_train_command": crane_train_cmd,
         "min_accuracy": min_accuracy,
         "min_syntax_rate": min_syntax_rate,
+        "threshold_policy": "strict_next_discrete_over_max_train_baseline_or_1_if_saturated",
         "synthesis_command": cmd,
         "synthesis_command_text": command_text(cmd),
         "difficulty_annotation": difficulty_annotation,
@@ -332,8 +475,8 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     write_json(launch_path, launch)
     print(
         "[prepare] strict synthesis thresholds: "
-        f"accuracy>CRANE => {min_accuracy:.1%}, "
-        f"syntax>CRANE => {min_syntax_rate:.1%}"
+        f"accuracy>max_baseline({threshold_accuracy_base:.1%}) => {min_accuracy:.1%}, "
+        f"syntax>max_baseline({threshold_syntax_base:.1%}) => {min_syntax_rate:.1%}"
     )
     print(f"[prepare] saved launch metadata: {launch_path}")
     print("[prepare] synthesis command:")
@@ -346,19 +489,24 @@ def heldout(args: argparse.Namespace) -> dict[str, Any]:
     if split_file is None:
         raise ValueError("--split-file is required for heldout")
 
-    crane_module = args.crane_module or compile_crane_baseline(args)
     csd_module = args.csd_module
     if csd_module is None:
         raise ValueError("--csd-module is required for heldout")
 
+    logs_dir = args.output_dir / "logs"
+    crane_eval_path = args.output_dir / "benchmarks" / f"{args.run_name}_crane_eval.json"
+    crane_eval_cmd = crane_benchmark_command(args, split_file, "eval", crane_eval_path)
+    run_logged(
+        crane_eval_cmd,
+        logs_dir / f"{args.run_name}_crane_eval.log",
+    )
+    crane_eval = json.loads(crane_eval_path.read_text())
+    crane_eval["label"] = "CRANE_eval"
+    crane_eval["split_file"] = str(split_file)
+    crane_eval["split_name"] = "eval"
+
     results = [
-        evaluate_module(
-            module_path=Path(crane_module),
-            label="CRANE_eval",
-            split_file=split_file,
-            split_name="eval",
-            args=args,
-        ),
+        crane_eval,
         evaluate_module(
             module_path=Path(csd_module),
             label=args.csd_label,
@@ -509,7 +657,6 @@ def run_all(args: argparse.Namespace) -> dict[str, Any]:
     )
 
     args.split_file = Path(launch["split_file"])
-    args.crane_module = Path(launch["crane_module"])
     args.csd_module = compiled_module
     args.csd_label = args.csd_label or "CSD_eval"
     comparison = heldout(args)
@@ -563,11 +710,11 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--no-difficulty-backup", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
     parser.add_argument("--dafny-path", default="/home/aadivyar/.dotnet/tools/dafny")
-    parser.add_argument("--compile-timeout", type=int, default=120)
-    parser.add_argument("--crane-output-name", default="crane_baseline")
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
     parser.add_argument("--eval-seed", type=int, default=123)
     parser.add_argument("--eval-max-steps", type=int, default=600)
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
@@ -579,6 +726,18 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.5)
     parser.add_argument("--vllm-max-model-len", type=int, default=8192)
     parser.add_argument("--vllm-enforce-eager", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-device", default="cuda:0")
+    parser.add_argument("--itergen-seed", type=int, default=0)
+    parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
+    parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
+    parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
+    parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
+    parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
+    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
+    parser.add_argument("--skip-itergen-train-baseline", action="store_true")
+    parser.add_argument("--skip-cars-train-baseline", action="store_true")
 
 
 def main() -> None:
@@ -590,7 +749,7 @@ def main() -> None:
     prepare_parser.add_argument("--task", default=DEFAULT_TASK)
     prepare_parser.add_argument("--max-iterations", type=int, default=100)
     prepare_parser.add_argument("--generation-model", default="gpt-5.4")
-    prepare_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    prepare_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default="openai")
     prepare_parser.add_argument("--synthesis-output-name", default="gsm_split_train50_synthesis")
     prepare_parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     prepare_parser.set_defaults(func=prepare)
@@ -600,7 +759,7 @@ def main() -> None:
     run_all_parser.add_argument("--task", default=DEFAULT_TASK)
     run_all_parser.add_argument("--max-iterations", type=int, default=100)
     run_all_parser.add_argument("--generation-model", default="gpt-5.4")
-    run_all_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    run_all_parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default="openai")
     run_all_parser.add_argument("--synthesis-output-name", default="gsm_split_train50_synthesis")
     run_all_parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     run_all_parser.add_argument("--synthesis-log", type=Path, default=None)
@@ -609,7 +768,6 @@ def main() -> None:
 
     heldout_parser = subparsers.add_parser("heldout")
     add_common_args(heldout_parser)
-    heldout_parser.add_argument("--crane-module", type=Path, default=None)
     heldout_parser.add_argument("--csd-module", type=Path, required=True)
     heldout_parser.add_argument("--csd-label", default="CSD_eval")
     heldout_parser.set_defaults(func=heldout)
