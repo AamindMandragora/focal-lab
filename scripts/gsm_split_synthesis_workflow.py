@@ -130,23 +130,26 @@ def evaluate_module(
         gsm_split_file=split_file,
         gsm_split_name=split_name,
     )
-    result = evaluator.evaluate_sample(module_path, sample_size=n_examples)
-    return {
-        "label": label,
-        "module_path": str(module_path),
-        "split_file": str(split_file),
-        "split_name": split_name,
-        "success": result.success,
-        "accuracy": result.accuracy,
-        "syntax_rate": result.syntax_rate,
-        "contains_delimiters": result.contains_delimiters,
-        "num_correct": result.num_correct,
-        "num_examples": result.num_examples,
-        "total_time_seconds": result.total_time_seconds,
-        "max_sample_time_seconds": result.max_sample_time_seconds,
-        "error": result.error,
-        "sample_outputs": result.sample_outputs,
-    }
+    try:
+        result = evaluator.evaluate_sample(module_path, sample_size=n_examples)
+        return {
+            "label": label,
+            "module_path": str(module_path),
+            "split_file": str(split_file),
+            "split_name": split_name,
+            "success": result.success,
+            "accuracy": result.accuracy,
+            "syntax_rate": result.syntax_rate,
+            "contains_delimiters": result.contains_delimiters,
+            "num_correct": result.num_correct,
+            "num_examples": result.num_examples,
+            "total_time_seconds": result.total_time_seconds,
+            "max_sample_time_seconds": result.max_sample_time_seconds,
+            "error": result.error,
+            "sample_outputs": result.sample_outputs,
+        }
+    finally:
+        evaluator.unload_runtime()
 
 
 def build_synthesis_command(
