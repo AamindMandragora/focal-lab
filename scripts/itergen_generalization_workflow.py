@@ -112,7 +112,7 @@ def make_split(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def itergen_command(args: argparse.Namespace, split_name: str, output_path: Path) -> list[str]:
-    return [
+    cmd = [
         sys.executable,
         str(PROJECT_ROOT / "scripts" / "run_itergen_sql_split.py"),
         "--itergen-repo",
@@ -131,9 +131,14 @@ def itergen_command(args: argparse.Namespace, split_name: str, output_path: Path
         str(args.recurrence_penalty),
         "--max-iter",
         str(args.itergen_max_iter),
+        "--source",
+        args.spider_source,
         "--output",
         str(output_path),
     ]
+    if args.spider_dir is not None:
+        cmd.extend(["--spider-dir", str(args.spider_dir)])
+    return cmd
 
 
 def synthesis_command(args: argparse.Namespace, min_accuracy: float) -> list[str]:
@@ -185,7 +190,7 @@ def synthesis_command(args: argparse.Namespace, min_accuracy: float) -> list[str
 
 
 def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_path: Path) -> list[str]:
-    return [
+    cmd = [
         sys.executable,
         "-m",
         "evaluations.sql_spider.cli",
@@ -201,6 +206,8 @@ def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_pat
         str(args.split_file),
         "--split-name",
         "test",
+        "--source",
+        args.spider_source,
         "--limit",
         str(split_size(args.split_file, "test")),
         "--max-steps",
@@ -212,6 +219,9 @@ def csd_test_command(args: argparse.Namespace, compiled_module: Path, output_pat
         "--pred-dump",
         str(output_path),
     ]
+    if args.spider_dir is not None:
+        cmd.extend(["--spider-dir", str(args.spider_dir)])
+    return cmd
 
 
 def main() -> int:
@@ -223,7 +233,7 @@ def main() -> int:
     parser.add_argument("--train-size", type=int, default=50)
     parser.add_argument("--test-size", type=int, default=100)
     parser.add_argument("--regenerate-split", action="store_true")
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="auto")
+    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")

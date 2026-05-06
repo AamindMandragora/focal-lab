@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -115,16 +116,97 @@ def execute_accuracy(
 
         from syncode.utils.sql_spider_eval.evaluation import evaluate
 
-        scores, error_types = evaluate(
-            str(pred_path),
-            str(gold_path),
-            str(db_dir),
-            etype,
-            str(tables_json),
-            result_jsonl=result_jsonl,
-        )
+        try:
+            scores, error_types = evaluate(
+                str(pred_path),
+                str(gold_path),
+                str(db_dir),
+                etype,
+                str(tables_json),
+                result_jsonl=result_jsonl,
+            )
+        except Exception as batch_exc:
+            print(
+                "[spider-eval] Batch Spider evaluator failed; "
+                f"falling back to per-row scoring: {batch_exc}",
+                flush=True,
+            )
+            scores, error_types = _evaluate_rows_resilient(
+                predictions=predictions,
+                examples=examples,
+                db_dir=db_dir,
+                etype=etype,
+                tables_json=tables_json,
+                result_jsonl=result_jsonl,
+            )
 
     return scores, dict(error_types), result_jsonl
+
+
+def _merge_scores(target: Dict[str, Any], source: Dict[str, Any]) -> None:
+    for level, metrics in source.items():
+        if not isinstance(metrics, dict):
+            continue
+        bucket = target.setdefault(level, {})
+        for metric, value in metrics.items():
+            if isinstance(value, (int, float)):
+                bucket[metric] = bucket.get(metric, 0) + value
+
+
+def _evaluate_rows_resilient(
+    *,
+    predictions: List[str],
+    examples: List[Dict[str, Any]],
+    db_dir: Path,
+    etype: str,
+    tables_json: Path,
+    result_jsonl: List[Dict[str, Any]],
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
+    from syncode.utils.sql_spider_eval.evaluation import evaluate
+
+    merged_scores: Dict[str, Any] = {"all": {"count": 0, "exec": 0.0}}
+    merged_errors: Counter[str] = Counter()
+
+    for i, (pred, example) in enumerate(zip(predictions, examples)):
+        with tempfile.TemporaryDirectory(prefix="sql_eval_row_") as row_tmp:
+            row_pred_path = Path(row_tmp) / "pred.sql"
+            row_gold_path = Path(row_tmp) / "gold.sql"
+            row_pred_path.write_text(_clean_sql(pred) + "\n")
+            write_gold_file([example], row_gold_path)
+            row_jsonl = [dict(result_jsonl[i])]
+
+            try:
+                row_scores, row_errors = evaluate(
+                    str(row_pred_path),
+                    str(row_gold_path),
+                    str(db_dir),
+                    etype,
+                    str(tables_json),
+                    result_jsonl=row_jsonl,
+                )
+                _merge_scores(merged_scores, row_scores)
+                merged_errors.update(dict(row_errors))
+                result_jsonl[i].update(row_jsonl[0])
+            except Exception as row_exc:
+                merged_scores.setdefault("all", {})
+                merged_scores["all"]["count"] = merged_scores["all"].get("count", 0) + 1
+                merged_scores["all"].setdefault("exec", 0.0)
+                merged_errors["Execution Error"] += 1
+                result_jsonl[i].update({
+                    "exec": False,
+                    "validity": "Execution Error",
+                    "error": str(row_exc),
+                })
+
+    for metrics in merged_scores.values():
+        if isinstance(metrics, dict) and metrics.get("count"):
+            count = metrics["count"]
+            for key, value in list(metrics.items()):
+                if key == "count" or not isinstance(value, (int, float)):
+                    continue
+                metrics[key] = value / count
+
+    return merged_scores, dict(merged_errors)
 
 
 def score_predictions(

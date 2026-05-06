@@ -80,6 +80,8 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--db-dir", type=Path, default=None)
     parser.add_argument("--tables-json", type=Path, default=None)
+    parser.add_argument("--source", choices=["auto", "hf", "local"], default="local")
+    parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--etype", choices=["exec", "match", "all"], default="exec")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -96,8 +98,12 @@ def main() -> int:
     IterGen = eval_sql.IterGen
     sql_dataset = eval_sql.sql_dataset
 
-    csd_examples = load_spider(source="auto", indices=indices)
-    problems = [sql_dataset.problems[idx] for idx in indices]
+    csd_examples = load_spider(
+        source=args.source,
+        spider_dir=args.spider_dir,
+        indices=indices,
+    )
+    problems = csd_examples
     mismatches = []
     for local_i, (problem, example, source_idx) in enumerate(zip(problems, csd_examples, indices)):
         if not _question_match(problem.get("question", ""), example.get("question", "")):
