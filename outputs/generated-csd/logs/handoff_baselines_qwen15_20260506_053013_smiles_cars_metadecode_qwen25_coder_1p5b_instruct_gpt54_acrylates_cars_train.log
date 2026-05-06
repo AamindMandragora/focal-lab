@@ -1,0 +1,144 @@
+/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
+  warnings.warn(
+Tokenizer: Qwen/Qwen2.5-Coder-1.5B-Instruct
+`torch_dtype` is deprecated! Use `dtype` instead!
+2026-05-06 06:36:03.935330: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-05-06 06:36:03.957394: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1778049363.978883 4035617 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1778049363.988094 4035617 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1778049364.007662 4035617 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778049364.007692 4035617 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778049364.007694 4035617 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778049364.007696 4035617 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-05-06 06:36:04.012788: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+Model device: cuda:0
+Creating new oracle trie
+
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0 failed, tokens: tensor([   34, 40917,     7], device='cuda:0') / ['C', '=C', '('], time: 0.72 (0.03)
+C=C(
+Sample 1 failed, tokens: tensor([   46, 47932], device='cuda:0') / ['O', 'CCCC'], time: 0.09 (0.00)
+OCCCC
+Sample 2 failed, tokens: tensor([3706,    7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'O'], time: 0.18 (0.01)
+CC(=O
+Sample 3 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '(C'], time: 0.48 (0.03)
+CC(=C)C(=O)OCCC(C
+Sample 4 failed, tokens: tensor([  34,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'CC'], time: 0.17 (0.01)
+C(=CC
+Sample 5 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '=C', '(C'], time: 0.43 (0.01)
+CC(=C)C(=O)OC=C(C
+Sample 6 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 3706,
+          28, 9949], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'NC'], time: 0.53 (0.04)
+C=CC(=O)OCC1=CC=NC
+Sample 7 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 3706,
+           7,   28, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.53 (0.02)
+C=CC(=O)OCC1=CC(=CC
+Sample 8 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16, 40917,   955], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=C', '(f'], time: 0.46 (0.01)
+CC(=C)C(=O)OC1=C(f
+Sample 9 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.47 (0.02)
+C=CC(=O)OC1=CC=CC=C
+Sample 10 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.50 (0.01)
+C=CC(=O)OCC1=CC=CC=C
+Sample 11 failed, tokens: tensor([7612,    7,   28,   46,    8,   34, 7612], device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', 'OC'], time: 0.31 (0.02)
+OC(=O)COC
+Sample 12 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.74 (0.03)
+CC(=C)C(=O)OCCC1=CC=CC=C
+Sample 13 failed, tokens: tensor([   46, 40917,    28], device='cuda:0') / ['O', '=C', '='], time: 0.17 (0.01)
+O=C=
+Sample 14 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,     7,    28,    46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '(', '=', 'O'], time: 0.73 (0.03)
+CC(=C)C(=O)OCCC(=O
+Sample 15 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.71 (0.04)
+C=CC(=O)OCCC1=CC=CC=C
+Sample 16 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16, 40917,
+         3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=C', '(C'], time: 0.48 (0.01)
+C=CC(=O)OC1=C(C
+Sample 17 failed, tokens: tensor([3706, 7612,   46], device='cuda:0') / ['CC', 'OC', 'O'], time: 0.16 (0.00)
+CCOCO
+Sample 18 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,   16,
+        3706, 3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', 'CC', '(C'], time: 0.63 (0.02)
+CC(=C)C(=O)OC1CC(C
+Sample 19 failed, tokens: tensor([8996,   16, 3706,   46, 8204,   34,    7,   28,   46], device='cuda:0') / ['NO', '1', 'CC', 'O', '(N', 'C', '(', '=', 'O'], time: 0.43 (0.02)
+NO1CCO(NC(=O
+Sample 20 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.73 (0.02)
+CC(=C)C(=O)OC1=CC=CC=C
+Sample 21 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+          46, 3025, 2376, 8281, 3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'O', '(C', ')(', 'CO', 'CC'], time: 0.75 (0.03)
+CC(=C)C(=O)OCCO(C)(COCC
+Sample 22 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,    7,
+          28,   46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '(', '=', 'O'], time: 0.62 (0.02)
+CC(=C)C(=O)OC(=O
+Sample 23 success: [34, 28, 3706, 7, 28, 46, 8, 46, 47932, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -8.2949857711792, cons_logprob: -7.036993026733398, time: 0.71 (0.03)
+C=CC(=O)OCCCCOC(=O)C=C<|im_end|>
+Sample 24 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612,   16,   34,    7,   28,
+        3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'C', '(', '=', 'CC'], time: 0.59 (0.02)
+C=CC(=O)OC1C(=CC
+Sample 25 failed, tokens: tensor([3706,   46, 3706], device='cuda:0') / ['CC', 'O', 'CC'], time: 0.16 (0.00)
+CCOCC
+Sample 26 success: [53873, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.767592906951904, cons_logprob: -5.465003967285156, time: 0.37 (0.03)
+CCCOC(=O)C=C<|im_end|>
+Sample 27 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+           28,  3706, 40917,    28], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=', 'CC', '=C', '='], time: 0.49 (0.02)
+C=CC(=O)OCCCC1=CC=C=
+Sample 28 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 91443,  3025],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCCCC', '(C'], time: 0.35 (0.02)
+C=CC(=O)OCCCCCC(C
+Sample 29 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   46, 3706],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'O', 'CC'], time: 0.42 (0.01)
+C=CC(=O)OCCOCC
+Sample 30 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706, 7612,   16],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'OC', '1'], time: 0.48 (0.01)
+C=CC(=O)OCCOC1
+Sample 31 failed, tokens: tensor([  34,    7,   28,   34, 2376], device='cuda:0') / ['C', '(', '=', 'C', ')('], time: 0.18 (0.01)
+C(=C)(
+Sample 32 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.53 (0.02)
+C=CC(=O)OCCCC1=CC=CC=C
+Sample 33 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.55 (0.04)
+CC=CC(=O)OCC1=CC=CC=C
+Sample 34 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.61 (0.03)
+CC(=C)C(=O)OCC1=CC=CC=C
+Sample 35 failed, tokens: tensor([34,  7, 28, 34,  8, 46], device='cuda:0') / ['C', '(', '=', 'C', ')', 'O'], time: 0.21 (0.01)
+C(=C)O
+Sample 36 failed, tokens: tensor([   46, 40917, 19238,  3706], device='cuda:0') / ['O', '=C', '(O', 'CC'], time: 0.15 (0.00)
+O=C(OCC
+Sample 37 failed, tokens: tensor([5066, 3706,    7,   28,   46], device='cuda:0') / ['Cl', 'CC', '(', '=', 'O'], time: 0.19 (0.01)
+ClCC(=O
+Sample 38 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612,    7,   28,   46],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '(', '=', 'O'], time: 0.44 (0.02)
+C=CC(=O)OC(=O
+Sample 39 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -5.03537654876709, time: 0.31 (0.02)
+COC(=O)C=C<|im_end|>
+Sample 40 success: [3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.376511096954346, cons_logprob: -4.798541069030762, time: 0.29 (0.02)
+CCOC(=O)C=C<|im_end|>
+Sample 41 failed, tokens: tensor([    34,     28,   3706,      7,     28,     46,      8,   7612,  40917,
+        113624], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '=C', '互补'], time: 0.37 (0.01)
+C=CC(=O)OC=C互补
+Sample 42 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 47932, 34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'CCCC', 'C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -11.7337064743042, cons_logprob: -10.143095970153809, time: 0.65 (0.04)
+C=CC(=O)OC1CCCCCOC(=O)C=C<|im_end|>
+Sample 43 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706, 3025],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '(C'], time: 0.46 (0.02)
+C=CC(=O)OCC1CC(C
+Sample 44 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.68 (0.05)
+CC(=C)C(=O)OCCCC1=CC=CC=C
+Sample 45 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+        7612,   16], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'OC', '1'], time: 0.54 (0.02)
+CC(=C)C(=O)OCCOC1
