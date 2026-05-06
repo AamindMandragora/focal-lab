@@ -251,6 +251,26 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[s
         str(args.gsm_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--itergen-device",
+        args.itergen_device,
+        "--itergen-seed",
+        str(args.itergen_seed),
+        "--itergen-recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--itergen-gsm-max-new-tokens",
+        str(args.itergen_gsm_max_new_tokens),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--cars-style",
+        args.cars_style,
+        "--cars-max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--gsm-cars-max-new-tokens",
+        str(args.gsm_cars_max_new_tokens),
+        "--cars-cuda-visible-devices",
+        args.cars_cuda_visible_devices,
     ]
 
 
@@ -356,6 +376,16 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         str(args.spider_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--cars-style",
+        args.cars_style,
+        "--cars-max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--spider-cars-max-new-tokens",
+        str(args.spider_cars_max_new_tokens),
+        "--cars-cuda-visible-devices",
+        args.cars_cuda_visible_devices,
     ]
 
 
@@ -432,6 +462,16 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         str(args.smiles_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--itergen-device",
+        args.itergen_device,
+        "--itergen-seed",
+        str(args.itergen_seed),
+        "--itergen-recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--itergen-smiles-max-new-tokens",
+        str(args.itergen_smiles_max_new_tokens),
     ]
 
 

@@ -50,6 +50,14 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, default=str))
 
 
+def strict_next_threshold(pass_rate: float | None, n_examples: int) -> float:
+    if n_examples <= 0:
+        raise ValueError("n_examples must be positive")
+    rate = float(pass_rate or 0.0)
+    passed = int(round(rate * n_examples))
+    return min(1.0, (passed + 1) / n_examples)
+
+
 def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool, env: dict[str, str] | None = None) -> int:
     print(command_text(cmd))
     if dry_run:
@@ -81,7 +89,13 @@ def compiled_module_from_log(log_path: Path) -> Path:
     return Path(matches[-1])
 
 
-def synthesis_command(args: argparse.Namespace, class_name: str) -> list[str]:
+def synthesis_command(
+    args: argparse.Namespace,
+    class_name: str,
+    *,
+    min_accuracy: float,
+    min_syntax_rate: float,
+) -> list[str]:
     return [
         sys.executable,
         "run_synthesis.py",
@@ -106,9 +120,9 @@ def synthesis_command(args: argparse.Namespace, class_name: str) -> list[str]:
         "--output-name",
         f"{args.synthesis_output_prefix}_{class_name}",
         "--min-accuracy",
-        f"{args.min_accuracy:.12g}",
+        f"{min_accuracy:.12g}",
         "--min-syntax-rate",
-        f"{args.min_syntax_rate:.12g}",
+        f"{min_syntax_rate:.12g}",
         "--no-require-delimiters",
         "--eval-max-steps",
         str(args.eval_max_steps),
@@ -178,9 +192,68 @@ def benchmark_command(
     return cmd
 
 
+def itergen_command(
+    args: argparse.Namespace,
+    *,
+    class_name: str,
+    output_path: Path,
+    target_samples: int,
+) -> list[str]:
+    return [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "run_itergen_smiles.py"),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--output",
+        str(output_path),
+        "--classes",
+        class_name,
+        "--target-samples",
+        str(target_samples),
+        "--max-attempts",
+        str(args.max_attempts),
+        "--model",
+        args.eval_model,
+        "--device",
+        args.itergen_device,
+        "--seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--max-new-tokens",
+        str(args.itergen_smiles_max_new_tokens),
+    ]
+
+
 def latest_benchmark_json(output_dir: Path) -> Path | None:
     candidates = sorted(output_dir.glob("smiles_benchmark_*.json"), key=lambda p: p.stat().st_mtime)
     return candidates[-1] if candidates else None
+
+
+def first_class_metric(path: Path | None, section: str) -> dict[str, Any]:
+    if path is None:
+        return {}
+    payload = json.loads(path.read_text())
+    rows = payload.get(section) or []
+    return rows[0] if rows else {}
+
+
+def itergen_class_metric(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text())
+    rows = payload.get("classes") or []
+    return rows[0] if rows else {}
+
+
+def summarize_baseline(label: str, path: Path | None, metrics: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "label": label,
+        "benchmark_path": str(path) if path else None,
+        "accuracy": metrics.get("accuracy"),
+        "syntax_rate": metrics.get("syntax_rate"),
+        "accuracy_num_correct": metrics.get("accuracy_num_correct"),
+        "accuracy_denominator": metrics.get("accuracy_denominator"),
+        "invalid_outputs_excluded_from_accuracy": metrics.get("invalid_outputs_excluded_from_accuracy"),
+    }
 
 
 def main() -> int:
@@ -203,8 +276,10 @@ def main() -> int:
     parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
     parser.add_argument("--synthesis-output-prefix", default="smiles_train50_synthesis")
     parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
-    parser.add_argument("--min-accuracy", type=float, default=1.0)
-    parser.add_argument("--min-syntax-rate", type=float, default=1.0)
+    parser.add_argument("--min-accuracy", type=float, default=None,
+                        help="Override synthesized CSD accuracy threshold instead of deriving it from train baselines.")
+    parser.add_argument("--min-syntax-rate", type=float, default=None,
+                        help="Override synthesized CSD syntax threshold instead of deriving it from train baselines.")
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-7B-Instruct")
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
     parser.add_argument("--device", default="cuda")
@@ -216,6 +291,12 @@ def main() -> int:
     parser.add_argument("--model-number", choices=["1", "2"], default="2")
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cuda-visible-devices", default="1,2")
+    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-device", default="cuda:0")
+    parser.add_argument("--itergen-seed", type=int, default=0)
+    parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
+    parser.add_argument("--itergen-smiles-max-new-tokens", type=int, default=512)
+    parser.add_argument("--skip-itergen-train-baseline", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -248,12 +329,66 @@ def main() -> int:
             rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_{class_name}_cars_train.log", dry_run=args.dry_run)
             if rc != 0:
                 raise SystemExit(rc)
-            class_summary["cars_train_benchmark"] = str(latest_benchmark_json(class_benchmark_dir / "cars_train50"))
+            cars_train_path = latest_benchmark_json(class_benchmark_dir / "cars_train50")
+            class_summary["cars_train_benchmark"] = str(cars_train_path)
+        else:
+            cars_train_path = None
+
+        train_baselines: list[dict[str, Any]] = []
+        if not args.skip_cars and cars_train_path is not None and not args.dry_run:
+            train_baselines.append(
+                summarize_baseline("CARS_train", cars_train_path, first_class_metric(cars_train_path, "cars"))
+            )
+
+        if not args.skip_itergen_train_baseline:
+            itergen_train_path = class_benchmark_dir / f"itergen_train50_{class_name}.json"
+            itergen_train_cmd = itergen_command(
+                args,
+                class_name=class_name,
+                output_path=itergen_train_path,
+                target_samples=args.train_samples,
+            )
+            print(f"[itergen-train:{class_name}]")
+            rc = run_logged(itergen_train_cmd, logs_dir / f"{args.run_name}_{class_name}_itergen_train.log", dry_run=args.dry_run)
+            if rc != 0:
+                raise SystemExit(rc)
+            class_summary["itergen_train_benchmark"] = str(itergen_train_path)
+            if not args.dry_run:
+                train_baselines.append(
+                    summarize_baseline("IterGen_train", itergen_train_path, itergen_class_metric(itergen_train_path))
+                )
+
+        if args.min_accuracy is None:
+            max_accuracy = max((float(b["accuracy"] or 0.0) for b in train_baselines), default=0.0)
+            min_accuracy = strict_next_threshold(max_accuracy, args.train_samples)
+        else:
+            max_accuracy = args.min_accuracy
+            min_accuracy = args.min_accuracy
+        if args.min_syntax_rate is None:
+            max_syntax_rate = max((float(b["syntax_rate"] or 0.0) for b in train_baselines), default=0.0)
+            min_syntax_rate = strict_next_threshold(max_syntax_rate, args.train_samples)
+        else:
+            max_syntax_rate = args.min_syntax_rate
+            min_syntax_rate = args.min_syntax_rate
+        class_summary["train_baselines"] = train_baselines
+        class_summary["threshold_policy"] = "strict_next_discrete_over_max_cars_itergen_train_baseline_or_1_if_saturated"
+        class_summary["min_accuracy"] = min_accuracy
+        class_summary["min_syntax_rate"] = min_syntax_rate
+        print(
+            f"[threshold:{class_name}] "
+            f"accuracy>max_baseline({max_accuracy:.1%}) => {min_accuracy:.1%}; "
+            f"syntax>max_baseline({max_syntax_rate:.1%}) => {min_syntax_rate:.1%}"
+        )
 
         compiled_module = args.compiled_module
         synthesis_log = logs_dir / f"{args.run_name}_{class_name}_synthesis.log"
         if compiled_module is None and not args.skip_synthesis:
-            synth_cmd = synthesis_command(args, class_name)
+            synth_cmd = synthesis_command(
+                args,
+                class_name,
+                min_accuracy=min_accuracy,
+                min_syntax_rate=min_syntax_rate,
+            )
             print(f"[synthesis:{class_name}]")
             rc = run_logged(synth_cmd, synthesis_log, dry_run=args.dry_run)
             if rc != 0:
