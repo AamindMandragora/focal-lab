@@ -23,6 +23,7 @@ EVAL_BACKEND="${EVAL_BACKEND:-vllm}"
 DEVICE="${DEVICE:-cuda}"
 CRANE_REPO="${CRANE_REPO:-/home/aadivyar/CRANE}"
 CRANE_DEVICE="${CRANE_DEVICE:-cuda:0}"
+KILL_VLLM_WORKERS="${KILL_VLLM_WORKERS:-1}"
 
 GSM_SPLIT_FILE="${GSM_SPLIT_FILE:-${OUTPUT_DIR}/splits/gsm_absolute_rubric_seed123_train50_eval50.json}"
 GSM_SOURCE_DIR="${GSM_SOURCE_DIR:-/home/aadivyar/CRANE/src/gsm_symbolic}"
@@ -52,7 +53,11 @@ kill_vllm_workers() {
   kill -9 "${pids[@]}" 2>/dev/null || true
 }
 
-kill_vllm_workers "before ablation grid"
+if [[ "${KILL_VLLM_WORKERS}" == "1" ]]; then
+  kill_vllm_workers "before ablation grid"
+else
+  echo "[vllm-cleanup] disabled for this ablation grid"
+fi
 
 run_cell() {
   local dataset="$1"
@@ -168,7 +173,9 @@ run_cell() {
   printf '\n'
 
   set +e
-  kill_vllm_workers "before ${cell_id}"
+  if [[ "${KILL_VLLM_WORKERS}" == "1" ]]; then
+    kill_vllm_workers "before ${cell_id}"
+  fi
   "${cmd[@]}" >"${log_path}" 2>&1
   local rc=$?
   set -e
