@@ -30,6 +30,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.gpu_utils import select_cuda_visible_devices
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -206,13 +208,43 @@ def find_reusable_benchmark(
     return None
 
 
-def gpu_env(base: dict[str, str], cuda_visible_devices: str | None) -> dict[str, str]:
+def gpu_env(
+    base: dict[str, str],
+    cuda_visible_devices: str | None,
+    *,
+    min_free_mib: int | None = None,
+    avoid: str | None = None,
+) -> dict[str, str]:
     env = dict(base)
-    if cuda_visible_devices:
-        env["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
+    requested = (cuda_visible_devices or "").strip()
+    if requested:
+        selected = (
+            select_cuda_visible_devices(
+                requested=requested,
+                min_free_mib=min_free_mib,
+                avoid=avoid,
+            )
+            if requested.lower() == "auto"
+            else requested
+        )
+        if selected:
+            env["CUDA_VISIBLE_DEVICES"] = selected
+            if requested.lower() == "auto":
+                print(f"[gpu-select] requested=auto CUDA_VISIBLE_DEVICES={selected}", flush=True)
+        else:
+            env.pop("CUDA_VISIBLE_DEVICES", None)
     env.setdefault("PYTHONPATH", str(PROJECT_ROOT))
     env.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
     return env
+
+
+def cell_gpu_env(args: argparse.Namespace, base: dict[str, str], cuda_visible_devices: str | None) -> dict[str, str]:
+    return gpu_env(
+        base,
+        cuda_visible_devices,
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
 
 
 def kill_owned_vllm_workers(reason: str) -> list[int]:
@@ -1159,7 +1191,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.gsm_cuda_visible_devices),
                 meta={"dataset": "gsm", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1174,7 +1206,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.gsm_cuda_visible_devices),
                 meta={"dataset": "gsm", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1189,7 +1221,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.gsm_cuda_visible_devices),
                 meta={"dataset": "gsm", "method": "itergen", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1204,7 +1236,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.cars_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.cars_cuda_visible_devices),
                 meta={"dataset": "gsm", "method": "cars", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1219,7 +1251,7 @@ def main() -> int:
                     group_id=cell_id,
                     cmd=cmd,
                     log_path=paths["logs"] / f"{cell_id}.log",
-                    env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                    env=cell_gpu_env(args, base_env, args.gsm_cuda_visible_devices),
                     meta={
                         "dataset": "gsm",
                         "method": "metadecode",
@@ -1242,7 +1274,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.spider_cuda_visible_devices),
                 meta={"dataset": "spider", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1257,7 +1289,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.spider_cuda_visible_devices),
                 meta={"dataset": "spider", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1281,7 +1313,7 @@ def main() -> int:
                     group_id=f"spider_itergen_metadecode_{model.alias}_{generation.alias}",
                     cmd=cmd,
                     log_path=paths["logs"] / f"spider_itergen_metadecode_{model.alias}_{generation.alias}.log",
-                    env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                    env=cell_gpu_env(args, base_env, args.spider_cuda_visible_devices),
                     meta={
                         "dataset": "spider",
                         "method": "+".join(["itergen"] * ("itergen" in methods and generation_index == 0) + ["metadecode"] * ("metadecode" in methods)),
@@ -1304,7 +1336,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.cars_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.cars_cuda_visible_devices),
                 meta={"dataset": "spider", "method": "cars", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1319,7 +1351,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.smiles_cuda_visible_devices),
                 meta={"dataset": "smiles", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1334,7 +1366,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.smiles_cuda_visible_devices),
                 meta={"dataset": "smiles", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1358,7 +1390,7 @@ def main() -> int:
                     group_id=f"smiles_cars_metadecode_{model.alias}_{generation.alias}",
                     cmd=cmd,
                     log_path=paths["logs"] / f"smiles_cars_metadecode_{model.alias}_{generation.alias}.log",
-                    env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                    env=cell_gpu_env(args, base_env, args.smiles_cuda_visible_devices),
                     meta={
                         "dataset": "smiles",
                         "method": "+".join(["cars"] * ("cars" in methods and generation_index == 0) + ["metadecode"] * ("metadecode" in methods)),
@@ -1381,7 +1413,7 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                env=cell_gpu_env(args, base_env, args.smiles_cuda_visible_devices),
                 meta={"dataset": "smiles", "method": "itergen", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
@@ -1393,7 +1425,7 @@ def main() -> int:
             group_id=ablation_id,
             cmd=cmd,
             log_path=paths["logs"] / f"{ablation_id}.log",
-            env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+            env=cell_gpu_env(args, base_env, args.gsm_cuda_visible_devices),
             meta={"dataset": "all", "method": "ablation", "model_alias": "legacy_script", "model_name": "legacy_script", "reason": reason},
         )
 
