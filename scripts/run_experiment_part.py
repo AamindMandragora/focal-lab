@@ -109,20 +109,29 @@ def master_cmd(
     return tuple(cmd)
 
 
-def ablation_cmd(args: argparse.Namespace, *, part_name: str, dataset: str) -> tuple[str, ...]:
+def ablation_cmd(
+    args: argparse.Namespace,
+    *,
+    part_name: str,
+    dataset: str,
+    sweep: str,
+) -> tuple[str, ...]:
     run_name = f"{args.run_name_prefix}_{part_name}_{time.strftime('%Y%m%d_%H%M%S')}"
+    env_parts = [
+        f"DATASET_VALUES={shlex.quote(dataset)}",
+        f"RUN_NAME={shlex.quote(run_name)}",
+        f"OUTPUT_DIR={shlex.quote(str(args.output_dir))}",
+        f"ABLATION_SWEEP={shlex.quote(sweep)}",
+        "KILL_VLLM_WORKERS=0",
+    ]
+    if sweep == "maxsteps":
+        env_parts.append("FIXED_SYNTHESIS_ITERATIONS=20")
+    elif sweep == "iterations":
+        env_parts.append("FIXED_MAX_STEPS=512")
     return (
         "bash",
         "-lc",
-        " ".join(
-            [
-                f"DATASET_VALUES={shlex.quote(dataset)}",
-                f"RUN_NAME={shlex.quote(run_name)}",
-                f"OUTPUT_DIR={shlex.quote(str(args.output_dir))}",
-                "KILL_VLLM_WORKERS=0",
-                "scripts/run_generalization_ablation_grid.sh",
-            ]
-        ),
+        " ".join([*env_parts, "scripts/run_generalization_ablation_grid.sh"]),
     )
 
 
@@ -174,11 +183,24 @@ def build_parts(args: argparse.Namespace) -> dict[str, Part]:
         )
 
     for dataset in ("gsm", "spider", "smiles"):
-        name = f"ablation_{dataset}"
+        name = f"ablation_maxsteps_{dataset}"
         parts[name] = Part(
             name=name,
-            description=f"metaDecode ablation grid for {dataset}: maxSteps 256/512/1024 x iterations 5/10/15/20.",
-            command=ablation_cmd(args, part_name=name, dataset=dataset),
+            description=(
+                f"metaDecode maxSteps-only ablation for {dataset}: "
+                "maxSteps 256/512/1024 with synthesis iterations fixed at 20."
+            ),
+            command=ablation_cmd(args, part_name=name, dataset=dataset, sweep="maxsteps"),
+        )
+
+        name = f"ablation_iterations_{dataset}"
+        parts[name] = Part(
+            name=name,
+            description=(
+                f"metaDecode synthesis-iterations-only ablation for {dataset}: "
+                "iterations 5/10/15/20 with maxSteps fixed at 512."
+            ),
+            command=ablation_cmd(args, part_name=name, dataset=dataset, sweep="iterations"),
         )
 
     return parts
@@ -193,9 +215,7 @@ def print_parts(parts: dict[str, Part]) -> None:
 
 def launch_part(args: argparse.Namespace, part: Part) -> int:
     log_dir = args.output_dir / "logs" / "experiment_parts"
-    log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{part.name}_{time.strftime('%Y%m%d_%H%M%S')}.log"
-    env = base_env(args)
 
     print(f"[part] {part.name}")
     print(f"[description] {part.description}")
@@ -204,6 +224,9 @@ def launch_part(args: argparse.Namespace, part: Part) -> int:
 
     if args.print_only:
         return 0
+
+    log_dir.mkdir(parents=True, exist_ok=True)
+    env = base_env(args)
 
     if args.background:
         with log_path.open("w") as log_file:
