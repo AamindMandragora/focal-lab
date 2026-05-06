@@ -122,6 +122,8 @@ def ablation_cmd(
         f"RUN_NAME={shlex.quote(run_name)}",
         f"OUTPUT_DIR={shlex.quote(str(args.output_dir))}",
         f"ABLATION_SWEEP={shlex.quote(sweep)}",
+        "GENERATION_MODEL=gpt-5.4",
+        "GENERATION_BACKEND=openai",
         "KILL_VLLM_WORKERS=0",
     ]
     if sweep == "maxsteps":
