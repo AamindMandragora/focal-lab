@@ -26,6 +26,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 DEFAULT_CRANE_GSM_DIR = Path("/home/aadivyar/CRANE/src/gsm_symbolic")
 
+from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
+
 DEFAULT_TASK = (
     "Solve math word problems step by step, writing each arithmetic computation "
     "inside << >> delimiters."
@@ -283,6 +285,15 @@ def run_logged(cmd: list[str], log_path: Path, *, env: dict[str, str] | None = N
         raise RuntimeError(f"Command failed with exit code {rc}. See log: {log_path}")
 
 
+def original_framework_env(args: argparse.Namespace, requested: str | None = None, *, count: int = 1) -> dict[str, str]:
+    return cuda_env(
+        requested=requested or args.original_framework_cuda_visible_devices,
+        count=count,
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
+
+
 def itergen_train_command(args: argparse.Namespace, split_file: Path, output_path: Path) -> list[str]:
     return [
         sys.executable,
@@ -311,6 +322,12 @@ def itergen_train_command(args: argparse.Namespace, split_file: Path, output_pat
 
 
 def cars_train_command(args: argparse.Namespace, split_file: Path, output_path: Path) -> list[str]:
+    cars_cuda_visible_devices = select_cuda_visible_devices(
+        requested=args.cars_cuda_visible_devices,
+        count=visible_device_count(args.cars_cuda_visible_devices),
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
     return [
         sys.executable,
         str(PROJECT_ROOT / "scripts" / "benchmark_gsm_vs_cars.py"),
@@ -333,7 +350,7 @@ def cars_train_command(args: argparse.Namespace, split_file: Path, output_path: 
         "--max-new-tokens",
         str(args.gsm_cars_max_new_tokens),
         "--cuda-visible-devices",
-        args.cars_cuda_visible_devices,
+        cars_cuda_visible_devices,
     ]
 
 
@@ -411,6 +428,7 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     run_logged(
         crane_train_cmd,
         logs_dir / f"{args.run_name}_crane_train.log",
+        env=original_framework_env(args),
     )
     train_result = json.loads(benchmark_path.read_text())
     train_result["label"] = "CRANE_train"
@@ -432,6 +450,7 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         run_logged(
             itergen_train_command(args, split_file, itergen_path),
             logs_dir / f"{args.run_name}_itergen_train.log",
+            env=original_framework_env(args),
         )
         itergen_result = json.loads(itergen_path.read_text())
         baseline_results.append(summarize_baseline("IterGen_train", itergen_path, itergen_result))
@@ -715,6 +734,9 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
+    parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
+    parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
+    parser.add_argument("--gpu-avoid-devices", default=os.environ.get("GPU_AVOID_DEVICES", ""))
     parser.add_argument("--eval-seed", type=int, default=123)
     parser.add_argument("--eval-max-steps", type=int, default=600)
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
@@ -735,7 +757,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
-    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
+    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--skip-itergen-train-baseline", action="store_true")
     parser.add_argument("--skip-cars-train-baseline", action="store_true")
 

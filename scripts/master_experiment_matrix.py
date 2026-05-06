@@ -353,6 +353,12 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec, generatio
         str(args.itergen_repo),
         "--itergen-device",
         args.itergen_device,
+        "--original-framework-cuda-visible-devices",
+        args.original_framework_cuda_visible_devices,
+        "--gpu-min-free-mib",
+        str(args.gpu_min_free_mib),
+        "--gpu-avoid-devices",
+        args.gpu_avoid_devices,
         "--crane-repo",
         str(args.crane_repo),
         "--crane-device",
@@ -536,6 +542,12 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec, generation: 
         args.device,
         "--itergen-device",
         args.itergen_device,
+        "--original-framework-cuda-visible-devices",
+        args.original_framework_cuda_visible_devices,
+        "--gpu-min-free-mib",
+        str(args.gpu_min_free_mib),
+        "--gpu-avoid-devices",
+        args.gpu_avoid_devices,
         "--itergen-seed",
         str(args.itergen_seed),
         "--recurrence-penalty",
@@ -702,6 +714,12 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec, generation: 
         str(args.crane_repo),
         "--crane-device",
         args.crane_device,
+        "--original-framework-cuda-visible-devices",
+        args.original_framework_cuda_visible_devices,
+        "--gpu-min-free-mib",
+        str(args.gpu_min_free_mib),
+        "--gpu-avoid-devices",
+        args.gpu_avoid_devices,
         "--model-number",
         "2",
         "--cars-style",
@@ -985,6 +1003,9 @@ def main() -> int:
     parser.add_argument("--spider-cuda-visible-devices", default=os.environ.get("SPIDER_CUDA_VISIBLE_DEVICES", "2"))
     parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-device", default="cuda:0")
+    parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
+    parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
+    parser.add_argument("--gpu-avoid-devices", default=os.environ.get("GPU_AVOID_DEVICES", ""))
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
@@ -998,7 +1019,7 @@ def main() -> int:
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
-    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
+    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
 
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
     parser.add_argument("--smiles-train-samples", type=int, default=50)
@@ -1008,7 +1029,7 @@ def main() -> int:
     parser.add_argument("--smiles-eval-step-token-budget", type=int, default=1)
     parser.add_argument("--smiles-vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--smiles-vllm-max-model-len", type=int, default=4096)
-    parser.add_argument("--smiles-cuda-visible-devices", default=os.environ.get("SMILES_CUDA_VISIBLE_DEVICES", "1,3"))
+    parser.add_argument("--smiles-cuda-visible-devices", default=os.environ.get("SMILES_CUDA_VISIBLE_DEVICES", "auto"))
     args = parser.parse_args()
 
     args.output_dir = args.output_dir.expanduser().resolve()

@@ -24,6 +24,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
+
 
 DEFAULT_TASK = (
     "Generate a Spider SQL query that answers the natural-language question "
@@ -48,7 +50,7 @@ def strict_next_threshold(pass_rate: float, n_examples: int) -> float:
     return min(1.0, (passed + 1) / n_examples)
 
 
-def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool) -> int:
+def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool, env: dict[str, str] | None = None) -> int:
     print(command_text(cmd))
     if dry_run:
         return 0
@@ -61,7 +63,7 @@ def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool) -> int:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            env=os.environ.copy(),
+            env=env or os.environ.copy(),
         )
         assert proc.stdout is not None
         for line in proc.stdout:
@@ -69,6 +71,15 @@ def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool) -> int:
             log_file.write(line)
             log_file.flush()
         return proc.wait()
+
+
+def original_framework_env(args: argparse.Namespace, requested: str | None = None, *, count: int = 1) -> dict[str, str]:
+    return cuda_env(
+        requested=requested or args.original_framework_cuda_visible_devices,
+        count=count,
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
 
 
 def compiled_module_from_log(log_path: Path) -> Path:
@@ -142,6 +153,12 @@ def itergen_command(args: argparse.Namespace, split_name: str, output_path: Path
 
 
 def cars_command(args: argparse.Namespace, split_name: str, output_path: Path) -> list[str]:
+    cars_cuda_visible_devices = select_cuda_visible_devices(
+        requested=args.cars_cuda_visible_devices,
+        count=visible_device_count(args.cars_cuda_visible_devices),
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
     cmd = [
         sys.executable,
         str(PROJECT_ROOT / "scripts" / "benchmark_spider_vs_cars.py"),
@@ -164,7 +181,7 @@ def cars_command(args: argparse.Namespace, split_name: str, output_path: Path) -
         "--max-new-tokens",
         str(args.spider_cars_max_new_tokens),
         "--cuda-visible-devices",
-        args.cars_cuda_visible_devices,
+        cars_cuda_visible_devices,
     ]
     if args.spider_dir is not None:
         cmd.extend(["--spider-dir", str(args.spider_dir)])
@@ -320,6 +337,9 @@ def main() -> int:
     parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")
     parser.add_argument("--itergen-device", default="cuda:0")
+    parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
+    parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
+    parser.add_argument("--gpu-avoid-devices", default=os.environ.get("GPU_AVOID_DEVICES", ""))
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-max-iter", type=int, default=20)
@@ -329,7 +349,7 @@ def main() -> int:
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
-    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "1,3"))
+    parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
@@ -361,7 +381,12 @@ def main() -> int:
 
     train_cmd = itergen_command(args, "train", train_itergen_json)
     print("[itergen-train]")
-    rc = run_logged(train_cmd, logs_dir / f"{args.run_name}_itergen_train.log", dry_run=args.dry_run)
+    rc = run_logged(
+        train_cmd,
+        logs_dir / f"{args.run_name}_itergen_train.log",
+        dry_run=args.dry_run,
+        env=original_framework_env(args),
+    )
     if rc != 0:
         raise SystemExit(rc)
 
@@ -373,7 +398,12 @@ def main() -> int:
 
     print("[crane-train]")
     crane_train_cmd = crane_command(args, "train", train_crane_json)
-    rc = run_logged(crane_train_cmd, logs_dir / f"{args.run_name}_crane_train.log", dry_run=args.dry_run)
+    rc = run_logged(
+        crane_train_cmd,
+        logs_dir / f"{args.run_name}_crane_train.log",
+        dry_run=args.dry_run,
+        env=original_framework_env(args),
+    )
     if rc != 0:
         raise SystemExit(rc)
 
@@ -413,7 +443,12 @@ def main() -> int:
 
     test_itergen_cmd = itergen_command(args, "test", test_itergen_json)
     print("[itergen-test]")
-    rc = run_logged(test_itergen_cmd, logs_dir / f"{args.run_name}_itergen_test.log", dry_run=args.dry_run)
+    rc = run_logged(
+        test_itergen_cmd,
+        logs_dir / f"{args.run_name}_itergen_test.log",
+        dry_run=args.dry_run,
+        env=original_framework_env(args),
+    )
     if rc != 0:
         raise SystemExit(rc)
 

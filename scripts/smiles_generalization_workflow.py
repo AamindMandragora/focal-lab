@@ -23,6 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
 from evaluations.smiles.dataset import SMILES_CLASSES
 
 
@@ -79,6 +80,15 @@ def run_logged(cmd: list[str], log_path: Path, *, dry_run: bool, env: dict[str, 
             log_file.write(line)
             log_file.flush()
         return proc.wait()
+
+
+def original_framework_env(args: argparse.Namespace, requested: str | None = None, *, count: int = 1) -> dict[str, str]:
+    return cuda_env(
+        requested=requested or args.original_framework_cuda_visible_devices,
+        count=count,
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
 
 
 def compiled_module_from_log(log_path: Path) -> Path:
@@ -151,6 +161,12 @@ def benchmark_command(
     run_csd: bool,
     target_samples: int,
 ) -> list[str]:
+    cuda_visible_devices = select_cuda_visible_devices(
+        requested=args.cuda_visible_devices,
+        count=visible_device_count(args.cuda_visible_devices),
+        min_free_mib=args.gpu_min_free_mib,
+        avoid=args.gpu_avoid_devices,
+    )
     cmd = [
         sys.executable,
         str(PROJECT_ROOT / "scripts" / "benchmark_smiles_vs_cars.py"),
@@ -177,7 +193,7 @@ def benchmark_command(
         "--step-token-budget",
         str(args.eval_step_token_budget),
         "--cuda-visible-devices",
-        args.cuda_visible_devices,
+        cuda_visible_devices,
     ]
     if args.cars_repo:
         cmd.extend(["--cars-repo", str(args.cars_repo)])
@@ -354,9 +370,12 @@ def main() -> int:
     parser.add_argument("--vllm-max-model-len", type=int, default=4096)
     parser.add_argument("--model-number", choices=["1", "2"], default="2")
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--cuda-visible-devices", default="1,2")
+    parser.add_argument("--cuda-visible-devices", default=os.environ.get("SMILES_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
+    parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
+    parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
+    parser.add_argument("--gpu-avoid-devices", default=os.environ.get("GPU_AVOID_DEVICES", ""))
     parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
     parser.add_argument("--itergen-device", default="cuda:0")
     parser.add_argument("--itergen-seed", type=int, default=0)
@@ -415,7 +434,12 @@ def main() -> int:
                 target_samples=args.train_samples,
             )
             print(f"[itergen-train:{class_name}]")
-            rc = run_logged(itergen_train_cmd, logs_dir / f"{args.run_name}_{class_name}_itergen_train.log", dry_run=args.dry_run)
+            rc = run_logged(
+                itergen_train_cmd,
+                logs_dir / f"{args.run_name}_{class_name}_itergen_train.log",
+                dry_run=args.dry_run,
+                env=original_framework_env(args),
+            )
             if rc != 0:
                 raise SystemExit(rc)
             class_summary["itergen_train_benchmark"] = str(itergen_train_path)
@@ -432,7 +456,12 @@ def main() -> int:
             target_samples=args.train_samples,
         )
         print(f"[crane-train:{class_name}]")
-        rc = run_logged(crane_train_cmd, logs_dir / f"{args.run_name}_{class_name}_crane_train.log", dry_run=args.dry_run)
+        rc = run_logged(
+            crane_train_cmd,
+            logs_dir / f"{args.run_name}_{class_name}_crane_train.log",
+            dry_run=args.dry_run,
+            env=original_framework_env(args),
+        )
         if rc != 0:
             raise SystemExit(rc)
         class_summary["crane_train_benchmark"] = str(crane_train_path)
