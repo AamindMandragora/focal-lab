@@ -27,6 +27,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 DEFAULT_CRANE_GSM_DIR = Path("/home/aadivyar/CRANE/src/gsm_symbolic")
 
 from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
+from baseline_cache import (
+    accuracy_syntax_validator,
+    file_digest,
+    reuse_cached_baseline,
+    store_cached_baseline,
+)
 
 DEFAULT_TASK = (
     "Solve math word problems step by step, writing each arithmetic computation "
@@ -365,6 +371,54 @@ def summarize_baseline(label: str, path: Path, payload: dict[str, Any]) -> dict[
     }
 
 
+def crane_train_cache_identity(args: argparse.Namespace, split_file: Path, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "crane",
+        "dataset": "gsm_symbolic",
+        "crane_repo": str(args.crane_repo),
+        "eval_model": args.eval_model,
+        "eval_backend": args.eval_backend,
+        "sample_size": split_size(split_file, split_name),
+        "eval_max_steps": args.eval_max_steps,
+        "eval_step_token_budget": args.eval_step_token_budget,
+        "vllm_max_model_len": args.vllm_max_model_len,
+        "gsm_source_dir": str(args.gsm_source_dir),
+        "gsm_split_file": str(split_file),
+        "gsm_split_name": split_name,
+        "split_digest": file_digest(split_file),
+    }
+
+
+def itergen_train_cache_identity(args: argparse.Namespace, split_file: Path, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "itergen",
+        "dataset": "gsm",
+        "itergen_repo": str(args.itergen_repo),
+        "split_file": str(split_file),
+        "split_name": split_name,
+        "split_digest": file_digest(split_file),
+        "model": args.eval_model,
+        "seed": args.itergen_seed,
+        "recurrence_penalty": args.itergen_recurrence_penalty,
+        "max_new_tokens": args.itergen_gsm_max_new_tokens,
+    }
+
+
+def cars_train_cache_identity(args: argparse.Namespace, split_file: Path, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "cars",
+        "dataset": "gsm",
+        "cars_repo": str(args.cars_repo),
+        "model_name": args.eval_model,
+        "split_file": str(split_file),
+        "split_name": split_name,
+        "split_digest": file_digest(split_file),
+        "cars_style": args.cars_style,
+        "max_attempts_per_example": args.cars_max_attempts_per_example,
+        "max_new_tokens": args.gsm_cars_max_new_tokens,
+    }
+
+
 def prepare(args: argparse.Namespace) -> dict[str, Any]:
     from evaluations.gsm_symbolic.dataset import (
         annotate_gsm_crane_rubric_difficulty_labels,
@@ -425,11 +479,30 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     benchmark_path = args.output_dir / "benchmarks" / f"{args.run_name}_crane_train.json"
     print("[prepare] original CRANE train baseline:")
     crane_train_cmd = crane_benchmark_command(args, split_file, "train", benchmark_path)
-    run_logged(
-        crane_train_cmd,
-        logs_dir / f"{args.run_name}_crane_train.log",
-        env=original_framework_env(args),
+    crane_cache = reuse_cached_baseline(
+        output_dir=args.output_dir,
+        dataset="gsm_symbolic",
+        method="crane",
+        identity=crane_train_cache_identity(args, split_file, "train"),
+        output_path=benchmark_path,
+        label="GSM CRANE train",
+        validator=accuracy_syntax_validator,
     )
+    if not crane_cache["hit"]:
+        run_logged(
+            crane_train_cmd,
+            logs_dir / f"{args.run_name}_crane_train.log",
+            env=original_framework_env(args),
+        )
+        store_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="gsm_symbolic",
+            method="crane",
+            identity=crane_train_cache_identity(args, split_file, "train"),
+            output_path=benchmark_path,
+            label="GSM CRANE train",
+            validator=accuracy_syntax_validator,
+        )
     train_result = json.loads(benchmark_path.read_text())
     train_result["label"] = "CRANE_train"
     train_result["split_file"] = str(split_file)
@@ -447,21 +520,59 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
     if not args.skip_itergen_train_baseline:
         itergen_path = args.output_dir / "benchmarks" / f"{args.run_name}_itergen_train.json"
         print("[prepare] IterGen train baseline:")
-        run_logged(
-            itergen_train_command(args, split_file, itergen_path),
-            logs_dir / f"{args.run_name}_itergen_train.log",
-            env=original_framework_env(args),
+        itergen_cache = reuse_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="gsm_symbolic",
+            method="itergen",
+            identity=itergen_train_cache_identity(args, split_file, "train"),
+            output_path=itergen_path,
+            label="GSM IterGen train",
+            validator=accuracy_syntax_validator,
         )
+        if not itergen_cache["hit"]:
+            run_logged(
+                itergen_train_command(args, split_file, itergen_path),
+                logs_dir / f"{args.run_name}_itergen_train.log",
+                env=original_framework_env(args),
+            )
+            store_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="gsm_symbolic",
+                method="itergen",
+                identity=itergen_train_cache_identity(args, split_file, "train"),
+                output_path=itergen_path,
+                label="GSM IterGen train",
+                validator=accuracy_syntax_validator,
+            )
         itergen_result = json.loads(itergen_path.read_text())
         baseline_results.append(summarize_baseline("IterGen_train", itergen_path, itergen_result))
 
     if not args.skip_cars_train_baseline:
         cars_path = args.output_dir / "benchmarks" / f"{args.run_name}_cars_train.json"
         print("[prepare] CARS train baseline:")
-        run_logged(
-            cars_train_command(args, split_file, cars_path),
-            logs_dir / f"{args.run_name}_cars_train.log",
+        cars_cache = reuse_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="gsm_symbolic",
+            method="cars",
+            identity=cars_train_cache_identity(args, split_file, "train"),
+            output_path=cars_path,
+            label="GSM CARS train",
+            validator=accuracy_syntax_validator,
         )
+        if not cars_cache["hit"]:
+            run_logged(
+                cars_train_command(args, split_file, cars_path),
+                logs_dir / f"{args.run_name}_cars_train.log",
+            )
+            store_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="gsm_symbolic",
+                method="cars",
+                identity=cars_train_cache_identity(args, split_file, "train"),
+                output_path=cars_path,
+                label="GSM CARS train",
+                validator=accuracy_syntax_validator,
+            )
         cars_result = json.loads(cars_path.read_text())
         baseline_results.append(summarize_baseline("CARS_train", cars_path, cars_result))
 

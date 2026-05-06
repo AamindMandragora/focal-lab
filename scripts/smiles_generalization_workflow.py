@@ -25,6 +25,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
 from evaluations.smiles.dataset import SMILES_CLASSES
+from baseline_cache import (
+    json_validator,
+    reuse_cached_baseline,
+    store_cached_baseline,
+)
 
 
 DEFAULT_TASK_TEMPLATE = (
@@ -336,6 +341,54 @@ def summarize_baseline(label: str, path: Path | None, metrics: dict[str, Any]) -
     }
 
 
+def cars_train_cache_identity(args: argparse.Namespace, class_name: str) -> dict[str, Any]:
+    return {
+        "method": "cars",
+        "dataset": "smiles",
+        "classes": class_name,
+        "model_number": args.model_number,
+        "model_name": args.eval_model,
+        "backend": args.eval_backend,
+        "cars_style": args.cars_style,
+        "target_samples": args.train_samples,
+        "max_attempts": args.max_attempts,
+        "max_steps": args.eval_max_steps,
+        "step_token_budget": args.eval_step_token_budget,
+        "cars_repo": str(args.cars_repo) if args.cars_repo else None,
+    }
+
+
+def itergen_train_cache_identity(args: argparse.Namespace, class_name: str) -> dict[str, Any]:
+    return {
+        "method": "itergen",
+        "dataset": "smiles",
+        "itergen_repo": str(args.itergen_repo),
+        "classes": class_name,
+        "target_samples": args.train_samples,
+        "max_attempts": args.max_attempts,
+        "model": args.eval_model,
+        "seed": args.itergen_seed,
+        "recurrence_penalty": args.itergen_recurrence_penalty,
+        "max_new_tokens": args.itergen_smiles_max_new_tokens,
+    }
+
+
+def crane_train_cache_identity(args: argparse.Namespace, class_name: str) -> dict[str, Any]:
+    return {
+        "method": "crane",
+        "dataset": "smiles",
+        "crane_repo": str(args.crane_repo),
+        "smiles_classes": class_name,
+        "sample_size": args.train_samples,
+        "smiles_max_attempts": args.max_attempts,
+        "eval_model": args.eval_model,
+        "eval_backend": args.eval_backend,
+        "eval_max_steps": args.eval_max_steps,
+        "eval_step_token_budget": args.eval_step_token_budget,
+        "vllm_max_model_len": args.vllm_max_model_len,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
@@ -401,6 +454,17 @@ def main() -> int:
         class_benchmark_dir = benchmarks_dir / class_name
 
         if not args.skip_cars:
+            cars_train_path = class_benchmark_dir / "cars_train50" / f"smiles_benchmark_cached_{class_name}.json"
+            cars_cache = reuse_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="smiles",
+                method="cars",
+                identity=cars_train_cache_identity(args, class_name),
+                output_path=cars_train_path,
+                label=f"SMILES CARS train:{class_name}",
+                validator=json_validator,
+                dry_run=args.dry_run,
+            )
             cars_train_cmd = benchmark_command(
                 args,
                 class_name=class_name,
@@ -410,11 +474,23 @@ def main() -> int:
                 run_csd=False,
                 target_samples=args.train_samples,
             )
-            print(f"[cars-train:{class_name}]")
-            rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_{class_name}_cars_train.log", dry_run=args.dry_run)
-            if rc != 0:
-                raise SystemExit(rc)
-            cars_train_path = latest_benchmark_json(class_benchmark_dir / "cars_train50")
+            if not cars_cache["hit"]:
+                print(f"[cars-train:{class_name}]")
+                rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_{class_name}_cars_train.log", dry_run=args.dry_run)
+                if rc != 0:
+                    raise SystemExit(rc)
+                cars_train_path = latest_benchmark_json(class_benchmark_dir / "cars_train50")
+                if cars_train_path is not None:
+                    store_cached_baseline(
+                        output_dir=args.output_dir,
+                        dataset="smiles",
+                        method="cars",
+                        identity=cars_train_cache_identity(args, class_name),
+                        output_path=cars_train_path,
+                        label=f"SMILES CARS train:{class_name}",
+                        validator=json_validator,
+                        dry_run=args.dry_run,
+                    )
             class_summary["cars_train_benchmark"] = str(cars_train_path)
         else:
             cars_train_path = None
@@ -434,14 +510,35 @@ def main() -> int:
                 target_samples=args.train_samples,
             )
             print(f"[itergen-train:{class_name}]")
-            rc = run_logged(
-                itergen_train_cmd,
-                logs_dir / f"{args.run_name}_{class_name}_itergen_train.log",
+            itergen_cache = reuse_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="smiles",
+                method="itergen",
+                identity=itergen_train_cache_identity(args, class_name),
+                output_path=itergen_train_path,
+                label=f"SMILES IterGen train:{class_name}",
+                validator=json_validator,
                 dry_run=args.dry_run,
-                env=original_framework_env(args),
             )
-            if rc != 0:
-                raise SystemExit(rc)
+            if not itergen_cache["hit"]:
+                rc = run_logged(
+                    itergen_train_cmd,
+                    logs_dir / f"{args.run_name}_{class_name}_itergen_train.log",
+                    dry_run=args.dry_run,
+                    env=original_framework_env(args),
+                )
+                if rc != 0:
+                    raise SystemExit(rc)
+                store_cached_baseline(
+                    output_dir=args.output_dir,
+                    dataset="smiles",
+                    method="itergen",
+                    identity=itergen_train_cache_identity(args, class_name),
+                    output_path=itergen_train_path,
+                    label=f"SMILES IterGen train:{class_name}",
+                    validator=json_validator,
+                    dry_run=args.dry_run,
+                )
             class_summary["itergen_train_benchmark"] = str(itergen_train_path)
             if not args.dry_run:
                 train_baselines.append(
@@ -456,14 +553,35 @@ def main() -> int:
             target_samples=args.train_samples,
         )
         print(f"[crane-train:{class_name}]")
-        rc = run_logged(
-            crane_train_cmd,
-            logs_dir / f"{args.run_name}_{class_name}_crane_train.log",
+        crane_cache = reuse_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="smiles",
+            method="crane",
+            identity=crane_train_cache_identity(args, class_name),
+            output_path=crane_train_path,
+            label=f"SMILES CRANE train:{class_name}",
+            validator=json_validator,
             dry_run=args.dry_run,
-            env=original_framework_env(args),
         )
-        if rc != 0:
-            raise SystemExit(rc)
+        if not crane_cache["hit"]:
+            rc = run_logged(
+                crane_train_cmd,
+                logs_dir / f"{args.run_name}_{class_name}_crane_train.log",
+                dry_run=args.dry_run,
+                env=original_framework_env(args),
+            )
+            if rc != 0:
+                raise SystemExit(rc)
+            store_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="smiles",
+                method="crane",
+                identity=crane_train_cache_identity(args, class_name),
+                output_path=crane_train_path,
+                label=f"SMILES CRANE train:{class_name}",
+                validator=json_validator,
+                dry_run=args.dry_run,
+            )
         class_summary["crane_train_benchmark"] = str(crane_train_path)
         if not args.dry_run:
             train_baselines.append(
