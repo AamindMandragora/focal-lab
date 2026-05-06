@@ -17,6 +17,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from project_defaults import default_dafny_path
 
 try:
     from dotenv import load_dotenv
@@ -123,7 +124,7 @@ Examples:
     parser.add_argument(
         "--dafny-path",
         type=str,
-        default="/home/aadivyar/.dotnet/tools/dafny",
+        default=default_dafny_path(),
         help="Path to Dafny executable"
     )
     

@@ -18,8 +18,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+from project_defaults import default_gsm_source_dir
+
 DEFAULT_CRANE_GSM_DIR = Path(
-    os.environ.get("CRANE_GSM_SYMBOLIC_DIR", "/home/aadivyar/CRANE/src/gsm_symbolic")
+    default_gsm_source_dir()
 )
 
 GSM_DIFFICULTIES: tuple[str, ...] = ("easy", "medium", "hard")

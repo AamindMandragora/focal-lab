@@ -11,7 +11,7 @@ Loads text-to-SQL problems in the same shape itergen uses. Each row has:
 
 Priority:
     1. HuggingFace `richardr1126/spider-context-validation` (matches itergen).
-    2. Local fallback at $SPIDER_DATA_DIR (default /home/aadivyar/spider_data/spider_data)
+    2. Local fallback at $SPIDER_DATA_DIR (default: ~/spider_data/spider_data)
        using dev.json, dev_gold.sql, tables.json.
 """
 
@@ -24,8 +24,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from project_defaults import default_spider_data_dir
+
 DEFAULT_SPIDER_DIR = Path(
-    os.environ.get("SPIDER_DATA_DIR", "/home/aadivyar/spider_data/spider_data")
+    default_spider_data_dir()
 )
 
 
@@ -175,7 +177,7 @@ def load_spider(
     Args:
         source: "hf", "local", or "auto" (tries HF first, then local).
         spider_dir: override local Spider directory (defaults to SPIDER_DATA_DIR env
-                    or /home/aadivyar/spider_data/spider_data).
+                    or ~/spider_data/spider_data).
         limit: maximum number of rows to return.
         random_sample: if True and limit is set, pick random indices.
         seed: RNG seed when random_sample is True.

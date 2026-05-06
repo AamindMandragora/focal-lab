@@ -31,6 +31,12 @@ from baseline_cache import (
     reuse_cached_baseline,
     store_cached_baseline,
 )
+from project_defaults import (
+    default_cars_repo,
+    default_crane_repo,
+    default_dafny_path,
+    default_itergen_repo,
+)
 
 
 DEFAULT_TASK = (
@@ -389,9 +395,9 @@ def main() -> int:
     parser.add_argument("--train-size", type=int, default=50)
     parser.add_argument("--test-size", type=int, default=100)
     parser.add_argument("--regenerate-split", action="store_true")
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
+    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="auto")
     parser.add_argument("--spider-dir", type=Path, default=None)
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--itergen-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")
     parser.add_argument("--itergen-device", default="cuda:0")
     parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
@@ -400,9 +406,9 @@ def main() -> int:
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-max-iter", type=int, default=20)
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
-    parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
+    parser.add_argument("--cars-repo", type=Path, default=default_cars_repo())
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
@@ -419,7 +425,7 @@ def main() -> int:
     parser.add_argument("--eval-max-steps", type=int, default=400)
     parser.add_argument("--eval-step-token-budget", type=int, default=4)
     parser.add_argument("--min-syntax-rate", type=float, default=0.0)
-    parser.add_argument("--dafny-path", default="/home/aadivyar/.dotnet/tools/dafny")
+    parser.add_argument("--dafny-path", default=default_dafny_path())
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--vllm-max-model-len", type=int, default=4096)
     parser.add_argument("--dry-run", action="store_true")

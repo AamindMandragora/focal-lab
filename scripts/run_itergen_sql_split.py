@@ -22,6 +22,7 @@ from evaluations.sql_spider.dataset import (
     load_spider,
 )
 from evaluations.sql_spider.executor import _clean_sql, execute_accuracy
+from project_defaults import default_itergen_repo
 
 
 def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
@@ -85,7 +86,7 @@ def _question_match(a: str, b: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--split-file", type=Path, required=True)
     parser.add_argument("--split-name", choices=["train", "test", "eval"], default="test")
     parser.add_argument("--limit", type=int, default=None)
@@ -97,7 +98,7 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--db-dir", type=Path, default=None)
     parser.add_argument("--tables-json", type=Path, default=None)
-    parser.add_argument("--source", choices=["auto", "hf", "local"], default="local")
+    parser.add_argument("--source", choices=["auto", "hf", "local"], default="auto")
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--etype", choices=["exec", "match", "all"], default="exec")
     parser.add_argument("--output", type=Path, required=True)

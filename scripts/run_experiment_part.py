@@ -28,7 +28,7 @@ from typing import Iterable
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "outputs" / "generated-csd"
-DEFAULT_PYTHON = "/opt/anaconda/bin/python"
+DEFAULT_PYTHON = sys.executable
 
 QWEN_MODELS = {
     "qwen15": "qwen25_coder_1p5b_instruct",

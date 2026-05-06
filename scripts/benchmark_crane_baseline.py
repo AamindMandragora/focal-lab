@@ -23,6 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from synthesis.evaluator import Evaluator
+from project_defaults import default_crane_repo, default_gsm_source_dir
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -48,32 +49,10 @@ def normalize_smiles_classes(raw: str) -> list[str]:
     return classes
 
 
-def _patch_logits_warper_compat(decoder_cls: type[Any]) -> None:
-    base_cls = decoder_cls.__mro__[1] if len(decoder_cls.__mro__) > 1 else decoder_cls
-    if getattr(base_cls, "__vas_logits_warper_patched__", False):
-        return
-
-    def _compat_update_gen_args(self: Any, **gen_args: dict) -> None:
-        from transformers.generation.logits_process import LogitsProcessorList
-
-        if hasattr(self, "cursors"):
-            self.cursors = [0 for _ in range(getattr(self, "num_outputs", 1))]
-        self.generation_config.update(**gen_args)
-        if hasattr(self.model, "_get_logits_warper"):
-            self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
-        else:
-            self.logit_warper = LogitsProcessorList()
-
-    base_cls.update_gen_args = _compat_update_gen_args
-    setattr(base_cls, "__vas_logits_warper_patched__", True)
-
-
 def add_crane_paths(crane_repo: Path) -> None:
     repo = crane_repo.expanduser().resolve()
     paths = [
         repo / "src",
-        repo / "syncode",
-        repo / "syncode" / "syncode",
         repo / "src" / "itergen",
         repo / "src" / "itergen" / "iter_syncode",
         repo / "upstream-uiuc" / "src",
@@ -84,9 +63,6 @@ def add_crane_paths(crane_repo: Path) -> None:
             if path_str in sys.path:
                 sys.path.remove(path_str)
             sys.path.insert(0, path_str)
-    for module_name in ("syncode", "parsers"):
-        if module_name in sys.modules:
-            del sys.modules[module_name]
 
 
 def load_crane_class(crane_repo: Path):
@@ -94,112 +70,34 @@ def load_crane_class(crane_repo: Path):
     try:
         from itergen.main import AdaptiveConstrainedDecoder as CraneDecoder  # type: ignore
 
-        _patch_logits_warper_compat(CraneDecoder)
         return CraneDecoder, "itergen.main.AdaptiveConstrainedDecoder"
     except Exception:
         from crane.main import CRANE as CraneDecoder  # type: ignore
 
-        _patch_logits_warper_compat(CraneDecoder)
         return CraneDecoder, "crane.main.CRANE"
 
 
 def grammar_for_dataset(dataset: str, smiles_class: str | None = None) -> str:
     if dataset == "gsm_symbolic":
-        return (
-            'start: space? "<" "<" space? expr space? ">" ">" space?\n'
-            "\n"
-            "expr: expr space? \"+\" space? term\n"
-            "    | expr space? \"-\" space? term\n"
-            "    | term\n"
-            "\n"
-            "term: term space? \"*\" space? factor\n"
-            "    | term space? \"/\" space? factor\n"
-            "    | term space? \"//\" space? factor\n"
-            "    | term space? \"%\" space? factor\n"
-            "    | factor space?\n"
-            "\n"
-            "factor: \"-\" space? factor\n"
-            "      | TYPE \"(\" space? expr space? \")\"\n"
-            "      | primary space?\n"
-            "\n"
-            "primary: NUMBER\n"
-            "       | VARIABLE\n"
-            "       | \"(\" space? expr space? \")\"\n"
-            "\n"
-            'TYPE.4: "int"\n'
-            "space: \" \"\n"
-            "VARIABLE: /[a-zA-Z_][a-zA-Z0-9_]*/\n"
-            "NUMBER: /-?\\d+(\\.\\d+)?/\n"
-        )
+        return (PROJECT_ROOT / "grammars" / "gsm_crane.lark").read_text()
     if dataset == "spider":
-        return _crane_compatible_grammar((PROJECT_ROOT / "grammars" / "sql.lark").read_text())
+        return (PROJECT_ROOT / "grammars" / "sql.lark").read_text()
     if dataset == "smiles":
         from evaluations.smiles.dataset import get_smiles_task
 
         if not smiles_class:
             raise ValueError("smiles_class is required for SMILES grammar")
-        return _crane_compatible_grammar(str(get_smiles_task(smiles_class)["grammar_text"]))
+        return str(get_smiles_task(smiles_class)["grammar_text"])
     raise ValueError(f"Unsupported dataset: {dataset}")
 
 
-def _crane_compatible_grammar(grammar_text: str) -> str:
-    text = grammar_text
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.WS_INLINE\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f"{m.group(1)}: /[ \\t\\f\\r\\n]+/",
-        text,
-    )
-    text = re.sub(r"(?m)^\s*%import\s+common\.WS_INLINE\s*$", lambda _m: "WS_INLINE: /[ \\t\\f\\r\\n]+/", text)
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.WS\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f"{m.group(1)}: /[ \\t\\f\\r\\n]+/",
-        text,
-    )
-    text = re.sub(r"(?m)^\s*%import\s+common\.WS\s*$", lambda _m: "WS: /[ \\t\\f\\r\\n]+/", text)
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.CNAME\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f"{m.group(1)}: /[a-zA-Z_][a-zA-Z0-9_]*/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.CNAME\s*$",
-        lambda _m: "CNAME: /[a-zA-Z_][a-zA-Z0-9_]*/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.NUMBER\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f"{m.group(1)}: /-?\\d+(\\.\\d+)?/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.NUMBER\s*$",
-        lambda _m: "NUMBER: /-?\\d+(\\.\\d+)?/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.INT\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f"{m.group(1)}: /[+-]?\\d+/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.INT\s*$",
-        lambda _m: "INT: /[+-]?\\d+/",
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.ESCAPED_STRING\s*->\s*([A-Z_][A-Z0-9_]*)\s*$",
-        lambda m: f'{m.group(1)}: /"([^"\\\\]|\\\\.)*"|\'([^\'\\\\]|\\\\.)*\'/',
-        text,
-    )
-    text = re.sub(
-        r"(?m)^\s*%import\s+common\.ESCAPED_STRING\s*$",
-        lambda _m: 'STRING: /"([^"\\\\]|\\\\.)*"|\'([^\'\\\\]|\\\\.)*\'/',
-        text,
-    )
-    return text
-
-
 def prompt_for_crane(evaluator: Evaluator, dataset: str, example: dict[str, Any]) -> str | list[dict[str, str]]:
+    if dataset == "gsm_symbolic":
+        from evaluations.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
+
+        question = example.get("question_parsed") or example.get("question", "")
+        return reasoning_with_symbolic_expr_prompt(question)
+
     prompt = evaluator._format_prompt(example)
     if dataset == "spider":
         marker_instruction = (
@@ -617,7 +515,7 @@ def main() -> int:
     parser.add_argument("--dataset", choices=["gsm", "gsm_symbolic", "spider", "sql", "smiles"], required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="huggingface",
                         help="Accepted for matrix compatibility; original CRANE uses its HuggingFace backend.")
@@ -631,7 +529,7 @@ def main() -> int:
     parser.add_argument("--crane-max-model-len", type=int, default=8192)
     parser.add_argument("--recurrence-penalty", type=float, default=1.0)
     parser.add_argument("--start-symbol", default="<<")
-    parser.add_argument("--gsm-source-dir", type=Path, default=Path("/home/aadivyar/CRANE/src/gsm_symbolic"))
+    parser.add_argument("--gsm-source-dir", type=Path, default=default_gsm_source_dir())
     parser.add_argument("--gsm-split-file", type=Path, default=None)
     parser.add_argument("--gsm-split-name", choices=["train", "eval", "test"], default="eval")
     parser.add_argument("--spider-split-file", type=Path, default=None)

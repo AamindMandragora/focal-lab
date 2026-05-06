@@ -2010,16 +2010,10 @@ class Evaluator:
     def _format_prompt(self, example: dict) -> Union[str, List[dict]]:
         """Format a dataset example as a prompt."""
         if self.dataset_name == "gsm_symbolic":
+            from evaluations.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
+
             question = example.get("question_parsed") or example.get("question", "")
-            return (
-                "Solve the following math problem step by step. "
-                "Define variables for each quantity and state their numeric values. "
-                "Write each arithmetic computation as an expression inside << >> delimiters. "
-                "Reuse the same variable names consistently. "
-                "After the final computation, stop immediately.\n\n"
-                f"Problem: {question}\n"
-                "Response:\n"
-            )
+            return reasoning_with_symbolic_expr_prompt(question)
         elif self.dataset_name == "spider":
             db_id = example.get("db_id", "")
             db_info = example.get("db_info", "")

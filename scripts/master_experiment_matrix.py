@@ -459,7 +459,7 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec, generatio
 
 
 def gsm_crane_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
-    return [
+    cmd = [
         args.python,
         "scripts/benchmark_crane_baseline.py",
         "--dataset",
@@ -495,6 +495,7 @@ def gsm_crane_command(args: argparse.Namespace, model: ModelSpec, output_path: P
         "--vllm-max-model-len",
         str(args.gsm_vllm_max_model_len),
     ]
+    return cmd
 
 
 def gsm_unconstrained_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
@@ -1030,7 +1031,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-name", default=f"master_experiments_{default_stamp}")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
-    parser.add_argument("--python", default="/opt/anaconda/bin/python")
+    parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--models", default="all", help="all, or comma-separated model aliases/full HF IDs")
     parser.add_argument("--generation-models", default="all", help="all, or comma-separated generation model aliases/names")
     parser.add_argument("--datasets", default="all", help="all, or comma-separated gsm,spider,smiles")
@@ -1063,7 +1064,6 @@ def main() -> int:
     parser.add_argument("--gsm-vllm-gpu-memory-utilization", type=float, default=0.5)
     parser.add_argument("--gsm-vllm-max-model-len", type=int, default=8192)
     parser.add_argument("--gsm-cuda-visible-devices", default=os.environ.get("GSM_CUDA_VISIBLE_DEVICES", "3"))
-
     parser.add_argument(
         "--spider-split-file",
         type=Path,
