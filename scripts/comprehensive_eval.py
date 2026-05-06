@@ -44,8 +44,11 @@ BENCHMARKS: dict[str, dict[str, object]] = {
     "gsm_symbolic": {
         "display_name": "GSM-Symbolic",
         "task_description": (
-            "Solve math word problems step by step, writing each arithmetic computation "
-            "inside << >> delimiters."
+            "Solve GSM-Symbolic math word problems. Natural-language reasoning may stay "
+            "outside constrained spans; for scoring, the required constrained region is "
+            "the final answer only. The last <<...>> span must contain one valid symbolic "
+            "arithmetic expression that answers the question. Do not require every "
+            "intermediate calculation to be wrapped."
         ),
         "eval_module": "evaluations.gsm_symbolic.cli",
         "eval_args": ["--max-steps", "1024"],
@@ -57,8 +60,9 @@ BENCHMARKS: dict[str, dict[str, object]] = {
     "spider": {
         "display_name": "Spider",
         "task_description": (
-            "Answer text-to-SQL questions by generating a single SQL query from the "
-            "provided schema and question."
+            "Generate a Spider SQL query that answers the natural-language question "
+            "using only the provided database schema. The answer contract is one SQL "
+            "query only: no explanations, no code fences, and no text after the query."
         ),
         "eval_module": "evaluations.sql_spider.cli",
         "eval_args": ["--max-steps", "400"],
@@ -70,8 +74,9 @@ BENCHMARKS: dict[str, dict[str, object]] = {
     "smiles": {
         "display_name": "SMILES",
         "task_description": (
-            "Answer constrained molecular generation problems by producing the requested "
-            "chemistry answer string, typically a SMILES string, inside << >> delimiters."
+            "Generate one new, valid, non-exemplar SMILES molecule for the requested "
+            "molecule class. The answer contract is a single SMILES string and nothing "
+            "else."
         ),
         "eval_module": "evaluations.smiles.cli",
         "eval_args": ["--max-steps", "256"],

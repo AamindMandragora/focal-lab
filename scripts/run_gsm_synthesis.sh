@@ -18,7 +18,7 @@ export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
 DAFNY_PATH_ARG=("--dafny-path" "${DAFNY_PATH:-/home/aadivyar/.dotnet/tools/dafny}")
 
 python run_synthesis.py \
-  --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
+  --task "Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped." \
   --dataset gsm_symbolic \
   --max-iterations 15 \
   --generation-model "gpt-5.4" \

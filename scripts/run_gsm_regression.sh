@@ -4,7 +4,7 @@ cd ~/csd-generation
 source ~/.profile
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-TASK_DESC="Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters."
+TASK_DESC="Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped."
 
 CUDA_VISIBLE_DEVICES=0 /opt/anaconda/bin/python run_synthesis.py \
     --task "$TASK_DESC" \

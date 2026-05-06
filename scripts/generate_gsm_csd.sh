@@ -5,9 +5,10 @@
 
 set -e
 
-# GSM task description - bare description of the task, no strategy hints
-TASK_DESC="Math word problem solving where the model reasons in natural language and writes \
-arithmetic expressions inside << >> delimiters. The parser validates expression syntax automatically."
+# GSM task description - aligned with the evaluator scoring contract.
+TASK_DESC="Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; \
+for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one \
+valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped."
 
 echo "Generating GSM-specific CSD for CRANE math windows..."
 echo ""

@@ -4,7 +4,7 @@ cd ~/csd-generation
 for SEED in 200 300 400 500 600 700 800 900 1000 1100; do
     echo "=== Lottery seed base=$SEED $(date) ==="
     CUDA_VISIBLE_DEVICES=1 python run_synthesis.py \
-        --task 'Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters.' \
+        --task 'Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.' \
         --dataset gsm_symbolic \
         --max-iterations 12 \
         --generation-model gpt-5.4 \
