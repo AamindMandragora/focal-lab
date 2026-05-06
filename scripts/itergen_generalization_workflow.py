@@ -25,6 +25,12 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
+from baseline_cache import (
+    file_digest,
+    json_validator,
+    reuse_cached_baseline,
+    store_cached_baseline,
+)
 
 
 DEFAULT_TASK = (
@@ -240,6 +246,57 @@ def syntax_rate(path: Path) -> float:
     return float(payload.get("syntax_rate") or 0.0)
 
 
+def itergen_train_cache_identity(args: argparse.Namespace, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "itergen",
+        "dataset": "spider",
+        "itergen_repo": str(args.itergen_repo),
+        "split_file": str(args.split_file),
+        "split_name": split_name,
+        "split_digest": file_digest(args.split_file),
+        "model": args.itergen_model,
+        "seed": args.itergen_seed,
+        "recurrence_penalty": args.recurrence_penalty,
+        "max_iter": args.itergen_max_iter,
+        "source": args.spider_source,
+        "spider_dir": str(args.spider_dir) if args.spider_dir is not None else None,
+    }
+
+
+def cars_train_cache_identity(args: argparse.Namespace, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "cars",
+        "dataset": "spider",
+        "cars_repo": str(args.cars_repo),
+        "split_file": str(args.split_file),
+        "split_name": split_name,
+        "split_digest": file_digest(args.split_file),
+        "source": args.spider_source,
+        "spider_dir": str(args.spider_dir) if args.spider_dir is not None else None,
+        "model_name": args.eval_model,
+        "cars_style": args.cars_style,
+        "max_attempts_per_example": args.cars_max_attempts_per_example,
+        "max_new_tokens": args.spider_cars_max_new_tokens,
+    }
+
+
+def crane_train_cache_identity(args: argparse.Namespace, split_name: str) -> dict[str, Any]:
+    return {
+        "method": "crane",
+        "dataset": "spider",
+        "crane_repo": str(args.crane_repo),
+        "spider_split_file": str(args.split_file),
+        "spider_split_name": split_name,
+        "split_digest": file_digest(args.split_file),
+        "sample_size": split_size(args.split_file, split_name),
+        "eval_model": args.eval_model,
+        "eval_backend": args.eval_backend,
+        "eval_max_steps": args.eval_max_steps,
+        "eval_step_token_budget": args.eval_step_token_budget,
+        "vllm_max_model_len": args.vllm_max_model_len,
+    }
+
+
 def synthesis_command(args: argparse.Namespace, min_accuracy: float, min_syntax_rate: float) -> list[str]:
     return [
         sys.executable,
@@ -381,31 +438,94 @@ def main() -> int:
 
     train_cmd = itergen_command(args, "train", train_itergen_json)
     print("[itergen-train]")
-    rc = run_logged(
-        train_cmd,
-        logs_dir / f"{args.run_name}_itergen_train.log",
+    itergen_cache = reuse_cached_baseline(
+        output_dir=args.output_dir,
+        dataset="spider",
+        method="itergen",
+        identity=itergen_train_cache_identity(args, "train"),
+        output_path=train_itergen_json,
+        label="Spider IterGen train",
+        validator=json_validator,
         dry_run=args.dry_run,
-        env=original_framework_env(args),
     )
-    if rc != 0:
-        raise SystemExit(rc)
+    if not itergen_cache["hit"]:
+        rc = run_logged(
+            train_cmd,
+            logs_dir / f"{args.run_name}_itergen_train.log",
+            dry_run=args.dry_run,
+            env=original_framework_env(args),
+        )
+        if rc != 0:
+            raise SystemExit(rc)
+        store_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="spider",
+            method="itergen",
+            identity=itergen_train_cache_identity(args, "train"),
+            output_path=train_itergen_json,
+            label="Spider IterGen train",
+            validator=json_validator,
+            dry_run=args.dry_run,
+        )
 
     print("[cars-train]")
     cars_train_cmd = cars_command(args, "train", train_cars_json)
-    rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_cars_train.log", dry_run=args.dry_run)
-    if rc != 0:
-        raise SystemExit(rc)
+    cars_cache = reuse_cached_baseline(
+        output_dir=args.output_dir,
+        dataset="spider",
+        method="cars",
+        identity=cars_train_cache_identity(args, "train"),
+        output_path=train_cars_json,
+        label="Spider CARS train",
+        validator=json_validator,
+        dry_run=args.dry_run,
+    )
+    if not cars_cache["hit"]:
+        rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_cars_train.log", dry_run=args.dry_run)
+        if rc != 0:
+            raise SystemExit(rc)
+        store_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="spider",
+            method="cars",
+            identity=cars_train_cache_identity(args, "train"),
+            output_path=train_cars_json,
+            label="Spider CARS train",
+            validator=json_validator,
+            dry_run=args.dry_run,
+        )
 
     print("[crane-train]")
     crane_train_cmd = crane_command(args, "train", train_crane_json)
-    rc = run_logged(
-        crane_train_cmd,
-        logs_dir / f"{args.run_name}_crane_train.log",
+    crane_cache = reuse_cached_baseline(
+        output_dir=args.output_dir,
+        dataset="spider",
+        method="crane",
+        identity=crane_train_cache_identity(args, "train"),
+        output_path=train_crane_json,
+        label="Spider CRANE train",
+        validator=json_validator,
         dry_run=args.dry_run,
-        env=original_framework_env(args),
     )
-    if rc != 0:
-        raise SystemExit(rc)
+    if not crane_cache["hit"]:
+        rc = run_logged(
+            crane_train_cmd,
+            logs_dir / f"{args.run_name}_crane_train.log",
+            dry_run=args.dry_run,
+            env=original_framework_env(args),
+        )
+        if rc != 0:
+            raise SystemExit(rc)
+        store_cached_baseline(
+            output_dir=args.output_dir,
+            dataset="spider",
+            method="crane",
+            identity=crane_train_cache_identity(args, "train"),
+            output_path=train_crane_json,
+            label="Spider CRANE train",
+            validator=json_validator,
+            dry_run=args.dry_run,
+        )
 
     if args.dry_run:
         train_accuracy = 0.0
