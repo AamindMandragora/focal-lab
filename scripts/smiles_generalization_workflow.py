@@ -273,7 +273,7 @@ def main() -> int:
     parser.add_argument("--task-template", default=DEFAULT_TASK_TEMPLATE)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
-    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default="openai")
     parser.add_argument("--synthesis-output-prefix", default="smiles_train50_synthesis")
     parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     parser.add_argument("--min-accuracy", type=float, default=None,
