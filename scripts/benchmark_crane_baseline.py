@@ -207,7 +207,7 @@ def build_crane_decoder(args: argparse.Namespace, *, dataset: str, smiles_class:
         model_id=args.eval_model,
         parse_output_only=True,
         recurrence_penalty=args.recurrence_penalty,
-        stop_strings=[end_symbol] if end_symbol else [],
+        stop_strings=[],
         device=args.crane_device,
         max_tokens=args.crane_max_model_len,
         max_new_tokens=args.eval_max_steps,
@@ -222,6 +222,7 @@ def build_crane_decoder(args: argparse.Namespace, *, dataset: str, smiles_class:
         "start_in_grammar": start_in_grammar,
         "end_symbol": end_symbol,
         "end_in_grammar": end_in_grammar,
+        "stop_strings": [],
     }
 
 
