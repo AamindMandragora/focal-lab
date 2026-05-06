@@ -68,9 +68,7 @@ def strict_next_threshold(pass_rate: float, n_examples: int) -> float:
 
 
 def synthesis_syntax_threshold(baseline_syntax_rate: float, n_examples: int) -> float:
-    if baseline_syntax_rate >= 1.0 - 1e-12:
-        return SATURATED_BASELINE_SYNTAX_TARGET
-    return strict_next_threshold(baseline_syntax_rate, n_examples)
+    return min(SATURATED_BASELINE_SYNTAX_TARGET, strict_next_threshold(baseline_syntax_rate, n_examples))
 
 
 def task_with_default_valid_fallback(task: str) -> str:
@@ -619,7 +617,7 @@ def main() -> int:
             "itergen_test": test_itergen_cmd,
             "csd_test": csd_cmd,
         },
-        "threshold_policy": "strict_next_discrete_over_max_itergen_cars_crane_train_exec_accuracy_and_crane_syntax; syntax_uses_95_percent_when_baseline_is_100_percent",
+        "threshold_policy": "strict_next_discrete_over_max_itergen_cars_crane_train_exec_accuracy_and_crane_syntax; derived_syntax_threshold_clipped_to_95_percent",
         "min_accuracy": min_accuracy,
         "min_syntax_rate": min_syntax_rate,
         "saturated_baseline_syntax_target": SATURATED_BASELINE_SYNTAX_TARGET,

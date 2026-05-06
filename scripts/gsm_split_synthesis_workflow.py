@@ -61,10 +61,8 @@ def strict_next_threshold(pass_rate: float, n_examples: int) -> float:
 
 
 def synthesis_syntax_threshold(baseline_syntax_rate: float, n_examples: int) -> float:
-    """Use a reachable syntax target when the baseline is already perfect."""
-    if baseline_syntax_rate >= 1.0 - 1e-12:
-        return SATURATED_BASELINE_SYNTAX_TARGET
-    return strict_next_threshold(baseline_syntax_rate, n_examples)
+    """Derive a baseline-improving target, capped at the soft syntax target."""
+    return min(SATURATED_BASELINE_SYNTAX_TARGET, strict_next_threshold(baseline_syntax_rate, n_examples))
 
 
 def task_with_default_valid_fallback(task: str) -> str:
@@ -621,7 +619,7 @@ def prepare(args: argparse.Namespace) -> dict[str, Any]:
         "crane_train_command": crane_train_cmd,
         "min_accuracy": min_accuracy,
         "min_syntax_rate": min_syntax_rate,
-        "threshold_policy": "strict_next_discrete_over_max_train_baseline; syntax_uses_95_percent_when_max_baseline_is_100_percent",
+        "threshold_policy": "strict_next_discrete_over_max_train_baseline; derived_syntax_threshold_clipped_to_95_percent",
         "saturated_baseline_syntax_target": SATURATED_BASELINE_SYNTAX_TARGET,
         "synthesis_command": cmd,
         "synthesis_command_text": command_text(cmd),
