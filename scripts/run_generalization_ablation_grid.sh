@@ -179,8 +179,104 @@ run_cell() {
   if [[ "${rc}" -ne 0 ]]; then
     status="failed"
   fi
-  /opt/anaconda/bin/python - <<PY
+/opt/anaconda/bin/python - <<PY
 import json
+from pathlib import Path
+
+dataset = "${dataset}"
+output_dir = Path("${OUTPUT_DIR}")
+cell_run_name = "${cell_run_name}"
+
+def load_json(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except Exception:
+        return None
+
+def metric_value(payload, *keys):
+    cur = payload
+    for key in keys:
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(key)
+    return cur
+
+def add_gsm_metrics(row, summary):
+    comparison = summary.get("heldout_comparison") or {}
+    results = comparison.get("results") or []
+    baseline = results[0] if len(results) > 0 and isinstance(results[0], dict) else {}
+    csd = results[1] if len(results) > 1 and isinstance(results[1], dict) else {}
+    row.update({
+        "metadecode_accuracy": csd.get("accuracy"),
+        "metadecode_syntax_rate": csd.get("syntax_rate"),
+        "metadecode_accuracy_denominator": csd.get("accuracy_denominator"),
+        "baseline_crane_accuracy": baseline.get("accuracy"),
+        "baseline_crane_syntax_rate": baseline.get("syntax_rate"),
+        "heldout_delta_accuracy": metric_value(comparison, "delta", "accuracy"),
+        "heldout_delta_syntax_rate": metric_value(comparison, "delta", "syntax_rate"),
+        "accuracy": csd.get("accuracy"),
+        "syntax_rate": csd.get("syntax_rate"),
+    })
+
+def add_spider_metrics(row, summary):
+    results = summary.get("results") or {}
+    row.update(results)
+    row.update({
+        "metadecode_accuracy": results.get("csd_test_accuracy"),
+        "baseline_itergen_accuracy": results.get("itergen_test_accuracy"),
+        "min_accuracy": summary.get("min_accuracy"),
+        "min_syntax_rate": summary.get("min_syntax_rate"),
+        "accuracy": results.get("csd_test_accuracy"),
+    })
+
+def normalize_smiles_metric(path):
+    payload = load_json(path)
+    if not isinstance(payload, dict):
+        return {}
+    rows = payload.get("csd") or payload.get("classes") or []
+    if isinstance(rows, list) and rows:
+        return dict(rows[0])
+    return dict(payload)
+
+def add_smiles_metrics(row, summary):
+    classes = summary.get("classes") or []
+    total_correct = 0
+    total_denominator = 0
+    total_attempts = 0
+    syntax_pass = 0.0
+    class_metrics = []
+    for class_summary in classes:
+        if not isinstance(class_summary, dict):
+            continue
+        metric = normalize_smiles_metric(class_summary.get("csd_benchmark"))
+        if not metric:
+            continue
+        denom = int(metric.get("accuracy_denominator") or 0)
+        correct = int(metric.get("accuracy_num_correct") or 0)
+        attempts = int(metric.get("attempt_count") or len(metric.get("records") or []) or 0)
+        syntax_rate = float(metric.get("syntax_rate") or 0.0)
+        total_correct += correct
+        total_denominator += denom
+        total_attempts += attempts
+        syntax_pass += syntax_rate * attempts
+        class_metrics.append({
+            "class_name": class_summary.get("class_name") or metric.get("class_name"),
+            "accuracy": metric.get("accuracy"),
+            "syntax_rate": metric.get("syntax_rate"),
+            "accuracy_num_correct": metric.get("accuracy_num_correct"),
+            "accuracy_denominator": metric.get("accuracy_denominator"),
+            "invalid_outputs_excluded_from_accuracy": metric.get("invalid_outputs_excluded_from_accuracy"),
+        })
+    row.update({
+        "smiles_class_metrics": class_metrics,
+        "metadecode_accuracy": (total_correct / total_denominator) if total_denominator else None,
+        "metadecode_syntax_rate": (syntax_pass / total_attempts) if total_attempts else None,
+        "metadecode_accuracy_num_correct": total_correct,
+        "metadecode_accuracy_denominator": total_denominator,
+        "accuracy": (total_correct / total_denominator) if total_denominator else None,
+        "syntax_rate": (syntax_pass / total_attempts) if total_attempts else None,
+    })
+
 row = {
     "cell_id": "${cell_id}",
     "dataset": "${dataset}",
@@ -197,6 +293,22 @@ row = {
     "started_at": "${started_at}",
     "finished_at": "${finished_at}",
 }
+summary_name = (
+    f"{cell_run_name}_run_all_summary.json"
+    if dataset == "gsm"
+    else f"{cell_run_name}_summary.json"
+)
+summary_path = output_dir / "benchmarks" / summary_name
+row["workflow_summary_path"] = str(summary_path)
+summary = load_json(summary_path)
+row["workflow_summary_found"] = isinstance(summary, dict)
+if isinstance(summary, dict):
+    if dataset == "gsm":
+        add_gsm_metrics(row, summary)
+    elif dataset == "spider":
+        add_spider_metrics(row, summary)
+    elif dataset == "smiles":
+        add_smiles_metrics(row, summary)
 with open("${SUMMARY_PATH}", "a", encoding="utf-8") as f:
     f.write(json.dumps(row) + "\\n")
 PY
