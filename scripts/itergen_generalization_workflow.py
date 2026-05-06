@@ -286,7 +286,7 @@ def main() -> int:
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
-    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default="openai")
     parser.add_argument("--synthesis-output-name", default="itergen_spider_train50_synthesis")
     parser.add_argument("--synthesis-max-tokens", type=int, default=6144)
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-14B-Instruct")

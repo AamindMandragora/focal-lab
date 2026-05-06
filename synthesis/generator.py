@@ -8,6 +8,9 @@ import os
 import json
 import re
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -95,8 +98,8 @@ class StrategyGenerator:
         self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
         self.vllm_max_model_len = vllm_max_model_len
         self.vllm_enforce_eager = vllm_enforce_eager
-        self.api_base_url = api_base_url or os.environ.get("OPENAI_BASE_URL")
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        self.api_base_url = api_base_url or self._default_api_base_url(backend)
+        self.api_key = api_key or self._default_api_key(backend)
         
         # Auto-detect device
         if device is None:
@@ -126,6 +129,29 @@ class StrategyGenerator:
 
         # Load template
         self._template = self._load_template()
+
+    @staticmethod
+    def _default_api_base_url(backend: str) -> Optional[str]:
+        if backend == "openai":
+            return os.environ.get("OPENAI_BASE_URL")
+        if backend == "anthropic":
+            return os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1")
+        if backend == "gemini":
+            return os.environ.get(
+                "GEMINI_BASE_URL",
+                "https://generativelanguage.googleapis.com/v1beta",
+            )
+        return None
+
+    @staticmethod
+    def _default_api_key(backend: str) -> Optional[str]:
+        if backend == "openai":
+            return os.environ.get("OPENAI_API_KEY")
+        if backend == "anthropic":
+            return os.environ.get("ANTHROPIC_API_KEY")
+        if backend == "gemini":
+            return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        return None
 
     def _get_vllm_quantization_kwargs(self) -> dict:
         """Translate local quantization flags to the installed vLLM config surface."""
@@ -184,6 +210,14 @@ class StrategyGenerator:
                 if self.api_base_url:
                     client_kwargs["base_url"] = self.api_base_url
                 self._client = OpenAI(**client_kwargs)
+            return
+
+        if self.backend in {"anthropic", "gemini"}:
+            if not self.api_key:
+                env_name = "ANTHROPIC_API_KEY" if self.backend == "anthropic" else "GEMINI_API_KEY or GOOGLE_API_KEY"
+                raise ValueError(
+                    f"{env_name} is required when --generation-backend={self.backend}"
+                )
             return
 
         if self.backend == "vllm":
@@ -301,6 +335,16 @@ class StrategyGenerator:
             self._log_prompt_io(system_prompt, user_prompt, output)
             return output
 
+        if self.backend == "anthropic":
+            output = self._generate_anthropic(messages)
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
+        if self.backend == "gemini":
+            output = self._generate_gemini(system_prompt, user_prompt)
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
         if self.backend == "vllm":
             from vllm import SamplingParams
 
@@ -347,6 +391,68 @@ class StrategyGenerator:
         output = response.strip()
         self._log_prompt_io(system_prompt, user_prompt, output)
         return output
+
+    def _post_json(self, url: str, headers: dict[str, str], payload: dict) -> dict:
+        request = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", **headers},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                body = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(
+                f"{self.backend} generation API returned HTTP {exc.code}: {error_body[:1000]}"
+            ) from exc
+        return json.loads(body)
+
+    def _generate_anthropic(self, messages: list[dict[str, str]]) -> str:
+        url = (self.api_base_url or "https://api.anthropic.com/v1").rstrip("/") + "/messages"
+        system_prompt = messages[0]["content"] if messages and messages[0]["role"] == "system" else ""
+        user_messages = [message for message in messages if message["role"] != "system"]
+        payload = {
+            "model": self.model_name,
+            "max_tokens": self.max_new_tokens,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "system": system_prompt,
+            "messages": user_messages,
+        }
+        data = self._post_json(
+            url,
+            {
+                "x-api-key": self.api_key or "",
+                "anthropic-version": os.environ.get("ANTHROPIC_VERSION", "2023-06-01"),
+            },
+            payload,
+        )
+        parts = data.get("content") or []
+        text = "".join(part.get("text", "") for part in parts if part.get("type") == "text")
+        return text.strip()
+
+    def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
+        base_url = (self.api_base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+        model = urllib.parse.quote(self.model_name, safe="")
+        key = urllib.parse.quote(self.api_key or "", safe="")
+        url = f"{base_url}/models/{model}:generateContent?key={key}"
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": self.max_new_tokens,
+                "temperature": self.temperature,
+                "topP": self.top_p,
+            },
+        }
+        data = self._post_json(url, {}, payload)
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return ""
+        parts = candidates[0].get("content", {}).get("parts") or []
+        return "".join(part.get("text", "") for part in parts).strip()
 
     def _log_prompt_io(self, system_prompt: str, user_prompt: str, output: str) -> None:
         """Optionally persist exact prompt/response records for debugging."""
