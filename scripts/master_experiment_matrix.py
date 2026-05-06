@@ -52,7 +52,7 @@ PAPER_MODELS: tuple[ModelSpec, ...] = (
 GENERATION_MODELS: tuple[GenerationSpec, ...] = (
     GenerationSpec("gpt54", "gpt-5.4", "openai"),
     GenerationSpec("opus47", "claude-opus-4-7", "anthropic"),
-    GenerationSpec("gemini31pro", "gemini-3.1-pro", "gemini"),
+    GenerationSpec("gemini31pro", "gemini-3.1-pro-preview", "gemini"),
 )
 
 DATASETS = ("gsm", "spider", "smiles")
