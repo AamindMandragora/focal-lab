@@ -124,6 +124,21 @@ def select_generation_models(raw: str) -> list[GenerationSpec]:
     return selected
 
 
+def generation_models_for_eval_model(
+    model: ModelSpec,
+    generations: list[GenerationSpec],
+) -> list[GenerationSpec]:
+    """Return synthesis models to test for a given eval/generator backbone.
+
+    Policy requested for the paper run:
+    - GPT-5.4 synthesizes CSDs for all Qwen Coder eval models.
+    - Claude Opus 4.7 and Gemini 3.1 Pro synthesize only for Qwen Coder 7B.
+    """
+    if model.alias == "qwen25_coder_7b_instruct":
+        return list(generations)
+    return [generation for generation in generations if generation.alias == "gpt54"]
+
+
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=str))
@@ -853,7 +868,7 @@ def build_manifest(
         for method in methods:
             for model in models:
                 if method == "metadecode":
-                    for generation in generations:
+                    for generation in generation_models_for_eval_model(model, generations):
                         cells.append({
                             "cell_id": f"{dataset}_{method}_{model.alias}_{generation.alias}",
                             "dataset": dataset,
@@ -881,6 +896,10 @@ def build_manifest(
         "methods": methods,
         "models": [model.__dict__ for model in models],
         "generation_models": [generation.__dict__ for generation in generations],
+        "generation_pairing_policy": (
+            "gpt54 pairs with all Qwen2.5-Coder eval models; "
+            "opus47 and gemini31pro pair only with qwen25_coder_7b_instruct."
+        ),
         "excluded_eval_models": "All non-Qwen2.5-Coder 1.5B/7B/14B models removed by request.",
         "adapter_contract": (
             "Each dataset supplies its grammar, prompts/examples, and scorer; "
@@ -1088,7 +1107,7 @@ def main() -> int:
             )
 
         if "gsm" in datasets and "metadecode" in methods:
-            for generation in generations:
+            for generation in generation_models_for_eval_model(model, generations):
                 cell_id = f"gsm_metadecode_{model.alias}_{generation.alias}"
                 cmd = gsm_metadecode_command(args, model, generation)
                 run_logged(
@@ -1141,7 +1160,11 @@ def main() -> int:
             )
 
         if "spider" in datasets and any(m in methods for m in ("itergen", "metadecode")):
-            active_generations = generations if "metadecode" in methods else generations[:1]
+            active_generations = (
+                generation_models_for_eval_model(model, generations)
+                if "metadecode" in methods
+                else generations[:1]
+            )
             for generation_index, generation in enumerate(active_generations):
                 cell_ids = []
                 if "itergen" in methods and generation_index == 0:
@@ -1214,7 +1237,11 @@ def main() -> int:
             )
 
         if "smiles" in datasets and any(m in methods for m in ("cars", "metadecode")):
-            active_generations = generations if "metadecode" in methods else generations[:1]
+            active_generations = (
+                generation_models_for_eval_model(model, generations)
+                if "metadecode" in methods
+                else generations[:1]
+            )
             for generation_index, generation in enumerate(active_generations):
                 cell_ids = []
                 if "cars" in methods and generation_index == 0:
