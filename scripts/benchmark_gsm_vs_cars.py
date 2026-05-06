@@ -62,7 +62,21 @@ def prompt_for_example(example: dict[str, Any]) -> str:
     )
 
 
-def batch_command(args: argparse.Namespace, jobs_file: Path) -> list[str]:
+def write_cars_compatible_grammar(source: Path, output_path: Path) -> Path:
+    """Write a CARS/llguidance-compatible GSM grammar copy.
+
+    The repo's Lark grammar uses terminal priority syntax such as ``TYPE.4``.
+    CARS' llguidance frontend rejects that extension, so the adapter removes
+    priority suffixes while leaving the evaluation grammar unchanged.
+    """
+    text = source.read_text()
+    text = re.sub(r"^([A-Z_][A-Z0-9_]*)\.\d+:", r"\1:", text, flags=re.MULTILINE)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text)
+    return output_path
+
+
+def batch_command(args: argparse.Namespace, jobs_file: Path, grammar_file: Path) -> list[str]:
     model_name = args.model_name or MODEL_MAP[args.model_number]
     return [
         sys.executable,
@@ -70,7 +84,7 @@ def batch_command(args: argparse.Namespace, jobs_file: Path) -> list[str]:
         "--cars-repo",
         str(args.cars_repo),
         "--grammar-file",
-        str(args.grammar),
+        str(grammar_file),
         "--jobs-file",
         str(jobs_file),
         "--model-name",
@@ -187,6 +201,7 @@ def main() -> int:
     run_root = args.output.parent / f"{args.output.stem}_cars"
     prompt_dir = run_root / "prompts"
     log_root = run_root / "logs"
+    cars_grammar = write_cars_compatible_grammar(args.grammar, run_root / "gsm_cars_grammar.lark")
     jobs: list[dict[str, Any]] = []
     commands: list[list[str]] = []
     records: list[dict[str, Any]] = []
@@ -207,7 +222,7 @@ def main() -> int:
         })
 
     jobs_file = run_root / "cars_jobs.json"
-    cmd = batch_command(args, jobs_file)
+    cmd = batch_command(args, jobs_file, cars_grammar)
     commands.append(cmd)
     env = os.environ.copy()
     if args.cuda_visible_devices:

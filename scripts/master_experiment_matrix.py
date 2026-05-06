@@ -3,8 +3,9 @@
 
 Runs the paper-facing matrix over:
   datasets: gsm, spider, smiles
-  methods: itergen, cars, metadecode
-  eval models: the CRANE table models except QwQ-32B
+  methods: crane, itergen, cars, unconstrained, metadecode
+  eval models: Qwen2.5-Coder 1.5B, 7B, and 14B
+  synthesis models: GPT-5.4, Claude Opus 4.7, and Gemini 3.1 Pro
 
 Unsupported cells are written explicitly to the JSONL ledger.
 """
@@ -14,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import shlex
 import subprocess
 import sys
@@ -34,19 +36,27 @@ class ModelSpec:
     name: str
 
 
+@dataclass(frozen=True)
+class GenerationSpec:
+    alias: str
+    name: str
+    backend: str
+
+
 PAPER_MODELS: tuple[ModelSpec, ...] = (
-    ModelSpec("qwen25_1p5b_instruct", "Qwen/Qwen2.5-1.5B-Instruct"),
+    ModelSpec("qwen25_coder_1p5b_instruct", "Qwen/Qwen2.5-Coder-1.5B-Instruct"),
     ModelSpec("qwen25_coder_7b_instruct", "Qwen/Qwen2.5-Coder-7B-Instruct"),
-    ModelSpec("qwen25_math_7b_instruct", "Qwen/Qwen2.5-Math-7B-Instruct"),
-    ModelSpec("llama31_8b_instruct", "meta-llama/Llama-3.1-8B-Instruct"),
-    ModelSpec("deepseek_r1_distill_qwen_7b", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"),
-    ModelSpec("deepseek_r1_distill_llama_8b", "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"),
     ModelSpec("qwen25_coder_14b_instruct", "Qwen/Qwen2.5-Coder-14B-Instruct"),
-    ModelSpec("deepseek_r1_distill_qwen_14b", "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"),
+)
+
+GENERATION_MODELS: tuple[GenerationSpec, ...] = (
+    GenerationSpec("gpt54", "gpt-5.4", "openai"),
+    GenerationSpec("opus47", "claude-opus-4-7", "anthropic"),
+    GenerationSpec("gemini31pro", "gemini-3.1-pro", "gemini"),
 )
 
 DATASETS = ("gsm", "spider", "smiles")
-METHODS = ("itergen", "cars", "metadecode")
+METHODS = ("crane", "itergen", "cars", "unconstrained", "metadecode")
 
 
 def now_iso() -> str:
@@ -90,6 +100,30 @@ def select_models(raw: str) -> list[ModelSpec]:
     return selected
 
 
+def select_generation_models(raw: str) -> list[GenerationSpec]:
+    if raw.strip() == "all":
+        return list(GENERATION_MODELS)
+    by_alias = {model.alias: model for model in GENERATION_MODELS}
+    by_name = {model.name: model for model in GENERATION_MODELS}
+    selected: list[GenerationSpec] = []
+    unknown: list[str] = []
+    for part in [p.strip() for p in raw.split(",") if p.strip()]:
+        if part in by_alias:
+            selected.append(by_alias[part])
+        elif part in by_name:
+            selected.append(by_name[part])
+        else:
+            unknown.append(part)
+    if unknown:
+        raise SystemExit(
+            "Unknown generation model selector(s): "
+            + ", ".join(unknown)
+            + ". Use one of: "
+            + ", ".join(model.alias for model in GENERATION_MODELS)
+        )
+    return selected
+
+
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, default=str))
@@ -122,6 +156,53 @@ def gpu_env(base: dict[str, str], cuda_visible_devices: str | None) -> dict[str,
     return env
 
 
+def kill_owned_vllm_workers(reason: str) -> list[int]:
+    """Best-effort cleanup of this user's stale vLLM workers before a cell starts."""
+    pattern = "vllm|VLLM|multiproc_worker_utils|VllmWorkerProcess"
+    try:
+        proc = subprocess.run(
+            ["pgrep", "-u", str(os.getuid()), "-af", pattern],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return []
+
+    current_pid = os.getpid()
+    targets: list[int] = []
+    for line in proc.stdout.splitlines():
+        parts = line.strip().split(maxsplit=1)
+        if not parts or not parts[0].isdigit():
+            continue
+        pid = int(parts[0])
+        cmdline = parts[1] if len(parts) > 1 else ""
+        if pid == current_pid or "pgrep" in cmdline or "master_experiment_matrix.py" in cmdline:
+            continue
+        targets.append(pid)
+
+    if not targets:
+        return []
+
+    print(f"[vllm-cleanup] {reason}: terminating owned vLLM worker pids={targets}", flush=True)
+    for pid in targets:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    time.sleep(2)
+    for pid in targets:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    return targets
+
+
 def run_logged(
     *,
     args: argparse.Namespace,
@@ -152,6 +233,8 @@ def run_logged(
     if args.dry_run:
         rc = 0
     else:
+        if args.kill_vllm_before_cells:
+            kill_owned_vllm_workers(f"before {group_id}")
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("w") as log_file:
             proc = subprocess.Popen(
@@ -210,13 +293,13 @@ def ensure_spider_split(args: argparse.Namespace) -> None:
     )
 
 
-def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[str]:
+def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec, generation: GenerationSpec) -> list[str]:
     return [
         args.python,
         "scripts/gsm_split_synthesis_workflow.py",
         "run-all",
         "--run-name",
-        f"{args.run_name}_gsm_metadecode_{model.alias}",
+        f"{args.run_name}_gsm_metadecode_{model.alias}_{generation.alias}",
         "--split-file",
         str(args.gsm_split_file),
         "--split-strategy",
@@ -238,9 +321,9 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[s
         "--max-iterations",
         str(args.max_iterations),
         "--generation-model",
-        args.generation_model,
+        generation.name,
         "--generation-backend",
-        args.generation_backend,
+        generation.backend,
         "--eval-max-steps",
         str(args.gsm_eval_max_steps),
         "--eval-step-token-budget",
@@ -251,6 +334,108 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec) -> list[s
         str(args.gsm_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--itergen-device",
+        args.itergen_device,
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--itergen-seed",
+        str(args.itergen_seed),
+        "--itergen-recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--itergen-gsm-max-new-tokens",
+        str(args.itergen_gsm_max_new_tokens),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--cars-style",
+        args.cars_style,
+        "--cars-max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--gsm-cars-max-new-tokens",
+        str(args.gsm_cars_max_new_tokens),
+        "--cars-cuda-visible-devices",
+        args.cars_cuda_visible_devices,
+    ]
+
+
+def gsm_crane_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_crane_baseline.py",
+        "--dataset",
+        "gsm_symbolic",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--gsm-split-file",
+        str(args.gsm_split_file),
+        "--gsm-split-name",
+        "eval",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--sample-size",
+        "50",
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.gsm_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.gsm_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.gsm_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.gsm_vllm_max_model_len),
+    ]
+
+
+def gsm_unconstrained_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_unconstrained_baseline.py",
+        "--dataset",
+        "gsm_symbolic",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        str(args.crane_device),
+        "--gsm-split-file",
+        str(args.gsm_split_file),
+        "--gsm-split-name",
+        "eval",
+        "--gsm-source-dir",
+        str(args.gsm_source_dir),
+        "--sample-size",
+        "50",
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.gsm_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.gsm_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.gsm_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.gsm_vllm_max_model_len),
     ]
 
 
@@ -308,18 +493,20 @@ def gsm_cars_command(args: argparse.Namespace, model: ModelSpec, output_path: Pa
     ]
 
 
-def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]:
+def spider_pair_command(args: argparse.Namespace, model: ModelSpec, generation: GenerationSpec) -> list[str]:
     return [
         args.python,
         "scripts/itergen_generalization_workflow.py",
         "--run-name",
-        f"{args.run_name}_spider_itergen_metadecode_{model.alias}",
+        f"{args.run_name}_spider_itergen_metadecode_{model.alias}_{generation.alias}",
         "--output-dir",
         str(args.output_dir),
         "--itergen-repo",
         str(args.itergen_repo),
         "--split-file",
         str(args.spider_split_file),
+        "--spider-source",
+        args.spider_source,
         "--train-size",
         str(args.spider_train_size),
         "--test-size",
@@ -341,9 +528,9 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         "--max-iterations",
         str(args.max_iterations),
         "--generation-model",
-        args.generation_model,
+        generation.name,
         "--generation-backend",
-        args.generation_backend,
+        generation.backend,
         "--eval-max-steps",
         str(args.spider_eval_max_steps),
         "--eval-step-token-budget",
@@ -354,6 +541,94 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         str(args.spider_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        str(args.crane_device),
+        "--cars-repo",
+        str(args.cars_repo),
+        "--cars-style",
+        args.cars_style,
+        "--cars-max-attempts-per-example",
+        str(args.cars_max_attempts_per_example),
+        "--spider-cars-max-new-tokens",
+        str(args.spider_cars_max_new_tokens),
+        "--cars-cuda-visible-devices",
+        args.cars_cuda_visible_devices,
+    ]
+
+
+def spider_crane_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_crane_baseline.py",
+        "--dataset",
+        "spider",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--spider-split-file",
+        str(args.spider_split_file),
+        "--spider-split-name",
+        "test",
+        "--sample-size",
+        str(args.spider_test_size),
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.spider_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.spider_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.spider_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.spider_vllm_max_model_len),
+    ]
+
+
+def spider_unconstrained_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_unconstrained_baseline.py",
+        "--dataset",
+        "spider",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        str(args.crane_device),
+        "--spider-split-file",
+        str(args.spider_split_file),
+        "--spider-split-name",
+        "test",
+        "--sample-size",
+        str(args.spider_test_size),
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.spider_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.spider_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.spider_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.spider_vllm_max_model_len),
     ]
 
 
@@ -384,12 +659,12 @@ def spider_cars_command(args: argparse.Namespace, model: ModelSpec, output_path:
     ]
 
 
-def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]:
+def smiles_pair_command(args: argparse.Namespace, model: ModelSpec, generation: GenerationSpec) -> list[str]:
     return [
         args.python,
         "scripts/smiles_generalization_workflow.py",
         "--run-name",
-        f"{args.run_name}_smiles_cars_metadecode_{model.alias}",
+        f"{args.run_name}_smiles_cars_metadecode_{model.alias}_{generation.alias}",
         "--output-dir",
         str(args.output_dir),
         "--cars-repo",
@@ -408,6 +683,10 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         args.device,
         "--cuda-visible-devices",
         args.smiles_cuda_visible_devices,
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
         "--model-number",
         "2",
         "--cars-style",
@@ -417,9 +696,9 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         "--max-iterations",
         str(args.max_iterations),
         "--generation-model",
-        args.generation_model,
+        generation.name,
         "--generation-backend",
-        args.generation_backend,
+        generation.backend,
         "--eval-max-steps",
         str(args.smiles_eval_max_steps),
         "--eval-step-token-budget",
@@ -430,6 +709,90 @@ def smiles_pair_command(args: argparse.Namespace, model: ModelSpec) -> list[str]
         str(args.smiles_vllm_max_model_len),
         "--synthesis-max-tokens",
         str(args.synthesis_max_tokens),
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--itergen-device",
+        args.itergen_device,
+        "--itergen-seed",
+        str(args.itergen_seed),
+        "--itergen-recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--itergen-smiles-max-new-tokens",
+        str(args.itergen_smiles_max_new_tokens),
+    ]
+
+
+def smiles_crane_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_crane_baseline.py",
+        "--dataset",
+        "smiles",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        args.crane_device,
+        "--smiles-classes",
+        args.smiles_classes,
+        "--sample-size",
+        str(args.smiles_test_samples),
+        "--smiles-max-attempts",
+        str(args.smiles_max_attempts),
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.smiles_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.smiles_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.smiles_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.smiles_vllm_max_model_len),
+    ]
+
+
+def smiles_unconstrained_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/benchmark_unconstrained_baseline.py",
+        "--dataset",
+        "smiles",
+        "--output",
+        str(output_path),
+        "--output-dir",
+        str(args.output_dir),
+        "--crane-repo",
+        str(args.crane_repo),
+        "--crane-device",
+        str(args.crane_device),
+        "--smiles-classes",
+        args.smiles_classes,
+        "--sample-size",
+        str(args.smiles_test_samples),
+        "--smiles-max-attempts",
+        str(args.smiles_max_attempts),
+        "--eval-model",
+        model.name,
+        "--eval-backend",
+        args.eval_backend,
+        "--device",
+        args.device,
+        "--eval-max-steps",
+        str(args.smiles_eval_max_steps),
+        "--eval-step-token-budget",
+        str(args.smiles_eval_step_token_budget),
+        "--vllm-gpu-memory-utilization",
+        str(args.smiles_vllm_gpu_memory_utilization),
+        "--vllm-max-model-len",
+        str(args.smiles_vllm_max_model_len),
     ]
 
 
@@ -465,24 +828,44 @@ def legacy_ablation_commands(args: argparse.Namespace) -> list[tuple[str, list[s
         return []
     commands: list[tuple[str, list[str], str]] = []
     commands.append((
-        "ablation_gsm_regression",
-        ["bash", "scripts/run_gsm_regression.sh"],
-        "Existing GSM low-iteration regression synthesis ablation.",
+        "ablation_gsm_maxsteps_iterations_grid",
+        ["bash", "scripts/run_generalization_ablation_grid.sh"],
+        "Generalization ablation grid over datasets={gsm,spider,smiles}, maxSteps={256,512,1024}, and synthesis iterations={5,10,15,20}.",
     ))
     if args.include_lottery_ablation:
         commands.append((
-            "ablation_gsm_lottery",
+            "ablation_gsm_lottery_legacy",
             ["bash", "scripts/run_gsm_lottery.sh"],
-            "Existing GSM lottery-seed synthesis ablation.",
+            "Legacy GSM lottery-seed synthesis ablation; not part of the maxSteps/iteration grid.",
         ))
     return commands
 
 
-def build_manifest(args: argparse.Namespace, models: list[ModelSpec], datasets: list[str], methods: list[str]) -> dict[str, Any]:
+def build_manifest(
+    args: argparse.Namespace,
+    models: list[ModelSpec],
+    generations: list[GenerationSpec],
+    datasets: list[str],
+    methods: list[str],
+) -> dict[str, Any]:
     cells = []
     for dataset in datasets:
         for method in methods:
             for model in models:
+                if method == "metadecode":
+                    for generation in generations:
+                        cells.append({
+                            "cell_id": f"{dataset}_{method}_{model.alias}_{generation.alias}",
+                            "dataset": dataset,
+                            "method": method,
+                            "model_alias": model.alias,
+                            "model_name": model.name,
+                            "generation_alias": generation.alias,
+                            "generation_model": generation.name,
+                            "generation_backend": generation.backend,
+                            "status": "pending",
+                        })
+                    continue
                 cells.append({
                     "cell_id": f"{dataset}_{method}_{model.alias}",
                     "dataset": dataset,
@@ -497,7 +880,8 @@ def build_manifest(args: argparse.Namespace, models: list[ModelSpec], datasets: 
         "datasets": datasets,
         "methods": methods,
         "models": [model.__dict__ for model in models],
-        "excluded_models": ["QwQ-32B"],
+        "generation_models": [generation.__dict__ for generation in generations],
+        "excluded_eval_models": "All non-Qwen2.5-Coder 1.5B/7B/14B models removed by request.",
         "adapter_contract": (
             "Each dataset supplies its grammar, prompts/examples, and scorer; "
             "each method runner consumes the dataset grammar explicitly."
@@ -535,15 +919,17 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
     parser.add_argument("--python", default="/opt/anaconda/bin/python")
     parser.add_argument("--models", default="all", help="all, or comma-separated model aliases/full HF IDs")
+    parser.add_argument("--generation-models", default="all", help="all, or comma-separated generation model aliases/names")
     parser.add_argument("--datasets", default="all", help="all, or comma-separated gsm,spider,smiles")
-    parser.add_argument("--methods", default="all", help="all, or comma-separated itergen,cars,metadecode")
+    parser.add_argument("--methods", default="all", help="all, or comma-separated crane,itergen,cars,unconstrained,metadecode")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--continue-on-error", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--regenerate-splits", action="store_true")
     parser.add_argument("--include-ablations", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--include-lottery-ablation", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--generation-model", default="gpt-5.4")
-    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai"], default="openai")
+    parser.add_argument("--kill-vllm-before-cells", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--generation-model", default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--generation-backend", choices=["huggingface", "vllm", "openai", "anthropic", "gemini"], default=None, help=argparse.SUPPRESS)
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--max-iterations", type=int, default=100)
@@ -569,7 +955,7 @@ def main() -> int:
         type=Path,
         default=PROJECT_ROOT / "outputs/generated-csd/splits/spider_seed123_train50_test100.json",
     )
-    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="auto")
+    parser.add_argument("--spider-source", choices=["auto", "hf", "local"], default="local")
     parser.add_argument("--spider-dir", type=Path, default=None)
     parser.add_argument("--spider-train-size", type=int, default=50)
     parser.add_argument("--spider-test-size", type=int, default=100)
@@ -584,6 +970,9 @@ def main() -> int:
     parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
     parser.add_argument("--itergen-smiles-max-new-tokens", type=int, default=512)
+
+    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
 
     parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
@@ -607,16 +996,18 @@ def main() -> int:
     args.gsm_split_file = args.gsm_split_file.expanduser().resolve()
     args.spider_split_file = args.spider_split_file.expanduser().resolve()
     args.itergen_repo = args.itergen_repo.expanduser().resolve()
+    args.crane_repo = args.crane_repo.expanduser().resolve()
     args.cars_repo = args.cars_repo.expanduser().resolve()
 
     models = select_models(args.models)
+    generations = select_generation_models(args.generation_models)
     datasets = parse_csv(args.datasets, DATASETS, "dataset")
     methods = parse_csv(args.methods, METHODS, "method")
     paths = status_paths(args)
     paths["root"].mkdir(parents=True, exist_ok=True)
     paths["logs"].mkdir(parents=True, exist_ok=True)
 
-    manifest = build_manifest(args, models, datasets, methods)
+    manifest = build_manifest(args, models, generations, datasets, methods)
     write_json(paths["manifest"], manifest)
     write_json(paths["latest"], {
         "run_name": args.run_name,
@@ -628,12 +1019,44 @@ def main() -> int:
     })
     append_ledger(paths["ledger"], {"event": "run_start", "status": "running", "manifest": str(paths["manifest"])})
 
-    if "spider" in datasets and any(m in methods for m in ("itergen", "cars", "metadecode")):
+    if "spider" in datasets and any(m in methods for m in ("crane", "itergen", "cars", "unconstrained", "metadecode")):
         ensure_spider_split(args)
 
     base_env = os.environ.copy()
+    if args.kill_vllm_before_cells and not args.dry_run:
+        kill_owned_vllm_workers("before master run")
 
     for model in models:
+        if "gsm" in datasets and "crane" in methods:
+            cell_id = f"gsm_crane_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = gsm_crane_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                meta={"dataset": "gsm", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
+            )
+
+        if "gsm" in datasets and "unconstrained" in methods:
+            cell_id = f"gsm_unconstrained_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = gsm_unconstrained_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                meta={"dataset": "gsm", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
+            )
+
         if "gsm" in datasets and "itergen" in methods:
             cell_id = f"gsm_itergen_{model.alias}"
             output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
@@ -665,8 +1088,32 @@ def main() -> int:
             )
 
         if "gsm" in datasets and "metadecode" in methods:
-            cell_id = f"gsm_metadecode_{model.alias}"
-            cmd = gsm_metadecode_command(args, model)
+            for generation in generations:
+                cell_id = f"gsm_metadecode_{model.alias}_{generation.alias}"
+                cmd = gsm_metadecode_command(args, model, generation)
+                run_logged(
+                    args=args,
+                    ledger=paths["ledger"],
+                    cell_ids=[cell_id],
+                    group_id=cell_id,
+                    cmd=cmd,
+                    log_path=paths["logs"] / f"{cell_id}.log",
+                    env=gpu_env(base_env, args.gsm_cuda_visible_devices),
+                    meta={
+                        "dataset": "gsm",
+                        "method": "metadecode",
+                        "model_alias": model.alias,
+                        "model_name": model.name,
+                        "generation_alias": generation.alias,
+                        "generation_model": generation.name,
+                        "generation_backend": generation.backend,
+                    },
+                )
+
+        if "spider" in datasets and "crane" in methods:
+            cell_id = f"spider_crane_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = spider_crane_command(args, model, output_path)
             run_logged(
                 args=args,
                 ledger=paths["ledger"],
@@ -674,24 +1121,52 @@ def main() -> int:
                 group_id=cell_id,
                 cmd=cmd,
                 log_path=paths["logs"] / f"{cell_id}.log",
-                env=gpu_env(base_env, args.gsm_cuda_visible_devices),
-                meta={"dataset": "gsm", "method": "metadecode", "model_alias": model.alias, "model_name": model.name},
+                env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                meta={"dataset": "spider", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
-        if "spider" in datasets and any(m in methods for m in ("itergen", "metadecode")):
-            paired_methods = [m for m in ("itergen", "metadecode") if m in methods]
-            cell_ids = [f"spider_{method}_{model.alias}" for method in paired_methods]
-            cmd = spider_pair_command(args, model)
+        if "spider" in datasets and "unconstrained" in methods:
+            cell_id = f"spider_unconstrained_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = spider_unconstrained_command(args, model, output_path)
             run_logged(
                 args=args,
                 ledger=paths["ledger"],
-                cell_ids=cell_ids,
-                group_id=f"spider_itergen_metadecode_{model.alias}",
+                cell_ids=[cell_id],
+                group_id=cell_id,
                 cmd=cmd,
-                log_path=paths["logs"] / f"spider_itergen_metadecode_{model.alias}.log",
+                log_path=paths["logs"] / f"{cell_id}.log",
                 env=gpu_env(base_env, args.spider_cuda_visible_devices),
-                meta={"dataset": "spider", "method": "+".join(paired_methods), "model_alias": model.alias, "model_name": model.name},
+                meta={"dataset": "spider", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
+
+        if "spider" in datasets and any(m in methods for m in ("itergen", "metadecode")):
+            active_generations = generations if "metadecode" in methods else generations[:1]
+            for generation_index, generation in enumerate(active_generations):
+                cell_ids = []
+                if "itergen" in methods and generation_index == 0:
+                    cell_ids.append(f"spider_itergen_{model.alias}")
+                if "metadecode" in methods:
+                    cell_ids.append(f"spider_metadecode_{model.alias}_{generation.alias}")
+                cmd = spider_pair_command(args, model, generation)
+                run_logged(
+                    args=args,
+                    ledger=paths["ledger"],
+                    cell_ids=cell_ids,
+                    group_id=f"spider_itergen_metadecode_{model.alias}_{generation.alias}",
+                    cmd=cmd,
+                    log_path=paths["logs"] / f"spider_itergen_metadecode_{model.alias}_{generation.alias}.log",
+                    env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                    meta={
+                        "dataset": "spider",
+                        "method": "+".join(["itergen"] * ("itergen" in methods and generation_index == 0) + ["metadecode"] * ("metadecode" in methods)),
+                        "model_alias": model.alias,
+                        "model_name": model.name,
+                        "generation_alias": generation.alias,
+                        "generation_model": generation.name,
+                        "generation_backend": generation.backend,
+                    },
+                )
 
         if "spider" in datasets and "cars" in methods:
             cell_id = f"spider_cars_{model.alias}"
@@ -708,20 +1183,63 @@ def main() -> int:
                 meta={"dataset": "spider", "method": "cars", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
-        if "smiles" in datasets and any(m in methods for m in ("cars", "metadecode")):
-            paired_methods = [m for m in ("cars", "metadecode") if m in methods]
-            cell_ids = [f"smiles_{method}_{model.alias}" for method in paired_methods]
-            cmd = smiles_pair_command(args, model)
+        if "smiles" in datasets and "crane" in methods:
+            cell_id = f"smiles_crane_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = smiles_crane_command(args, model, output_path)
             run_logged(
                 args=args,
                 ledger=paths["ledger"],
-                cell_ids=cell_ids,
-                group_id=f"smiles_cars_metadecode_{model.alias}",
+                cell_ids=[cell_id],
+                group_id=cell_id,
                 cmd=cmd,
-                log_path=paths["logs"] / f"smiles_cars_metadecode_{model.alias}.log",
+                log_path=paths["logs"] / f"{cell_id}.log",
                 env=gpu_env(base_env, args.smiles_cuda_visible_devices),
-                meta={"dataset": "smiles", "method": "+".join(paired_methods), "model_alias": model.alias, "model_name": model.name},
+                meta={"dataset": "smiles", "method": "crane", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
+
+        if "smiles" in datasets and "unconstrained" in methods:
+            cell_id = f"smiles_unconstrained_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = smiles_unconstrained_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                meta={"dataset": "smiles", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
+            )
+
+        if "smiles" in datasets and any(m in methods for m in ("cars", "metadecode")):
+            active_generations = generations if "metadecode" in methods else generations[:1]
+            for generation_index, generation in enumerate(active_generations):
+                cell_ids = []
+                if "cars" in methods and generation_index == 0:
+                    cell_ids.append(f"smiles_cars_{model.alias}")
+                if "metadecode" in methods:
+                    cell_ids.append(f"smiles_metadecode_{model.alias}_{generation.alias}")
+                cmd = smiles_pair_command(args, model, generation)
+                run_logged(
+                    args=args,
+                    ledger=paths["ledger"],
+                    cell_ids=cell_ids,
+                    group_id=f"smiles_cars_metadecode_{model.alias}_{generation.alias}",
+                    cmd=cmd,
+                    log_path=paths["logs"] / f"smiles_cars_metadecode_{model.alias}_{generation.alias}.log",
+                    env=gpu_env(base_env, args.smiles_cuda_visible_devices),
+                    meta={
+                        "dataset": "smiles",
+                        "method": "+".join(["cars"] * ("cars" in methods and generation_index == 0) + ["metadecode"] * ("metadecode" in methods)),
+                        "model_alias": model.alias,
+                        "model_name": model.name,
+                        "generation_alias": generation.alias,
+                        "generation_model": generation.name,
+                        "generation_backend": generation.backend,
+                    },
+                )
 
         if "smiles" in datasets and "itergen" in methods:
             cell_id = f"smiles_itergen_{model.alias}"
@@ -747,7 +1265,7 @@ def main() -> int:
             cmd=cmd,
             log_path=paths["logs"] / f"{ablation_id}.log",
             env=gpu_env(base_env, args.gsm_cuda_visible_devices),
-            meta={"dataset": "gsm", "method": "ablation", "model_alias": "legacy_script", "model_name": "legacy_script", "reason": reason},
+            meta={"dataset": "all", "method": "ablation", "model_alias": "legacy_script", "model_name": "legacy_script", "reason": reason},
         )
 
     append_ledger(paths["ledger"], {"event": "run_end", "status": "completed"})
