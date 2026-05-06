@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/master_experiment_matrix.py", line 1407, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/master_experiment_matrix.py", line 1140, in main
+    ensure_spider_split(args)
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/master_experiment_matrix.py", line 373, in ensure_spider_split
+    split = write_spider_train_test_split(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/evaluations/sql_spider/dataset.py", line 280, in write_spider_train_test_split
+    rows = load_spider(source=source, spider_dir=spider_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/evaluations/sql_spider/dataset.py", line 203, in load_spider
+    rows = _load_local_spider(spider_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/evaluations/sql_spider/dataset.py", line 91, in _load_local_spider
+    if not (dev_path.exists() and tables_path.exists()):
+            ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda/lib/python3.12/pathlib.py", line 860, in exists
+    self.stat(follow_symlinks=follow_symlinks)
+  File "/opt/anaconda/lib/python3.12/pathlib.py", line 840, in stat
+    return os.stat(self, follow_symlinks=follow_symlinks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/home/aadivyar/spider_data/spider_data/dev.json'

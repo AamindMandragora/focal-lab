@@ -142,3 +142,771 @@ CC(=C)C(=O)OCCCC1=CC=CC=C
 Sample 45 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
         7612,   16], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'OC', '1'], time: 0.54 (0.02)
 CC(=C)C(=O)OCCOC1
+Sample 46 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8, 19499, 53873],
+       device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'OO', 'CCC'], time: 0.37 (0.02)
+CC=CC(=O)OOCCC
+Sample 47 failed, tokens: tensor([641, 279], device='cuda:0') / ['In', ' the'], time: 0.12 (0.01)
+In the
+Sample 48 failed, tokens: tensor([ 3706,  7612,     7,    28,    46,     8,    34,    28, 13534],
+       device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=', ' CC'], time: 0.37 (0.02)
+CCOC(=O)C= CC
+Sample 49 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612, 7612,
+          46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', 'OC', 'O'], time: 0.50 (0.02)
+CC(=C)C(=O)OCOCO
+Sample 50 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+         3706,    28,  3706,    28], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', 'CC', '=', 'CC', '='], time: 0.57 (0.04)
+CC=CC(=O)OCCC1CC=CC=
+Sample 51 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    28,  3706, 40917], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.52 (0.03)
+CC=CC(=O)OC1=CC=CC=C
+Sample 52 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 3706,
+           7,   28,   34,    8, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '(', '=', 'C', ')', 'CC'], time: 0.56 (0.02)
+C=CC(=O)OCC1=CC(=C)CC
+Sample 53 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612, 28668,  6412,    46,  3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', 'CN', 'CS', 'O', 'CC'], time: 0.51 (0.02)
+CC(=C)C(=O)OCCNCSOCC
+Sample 54 failed, tokens: tensor([   34,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    17,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '2', '=', 'CC', '=', 'CC', '=C'], time: 0.63 (0.05)
+C(=C)C(=O)OCC2=CC=CC=C
+Sample 55 success: [97754, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16, 638, 37054, 16] / ['Cc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1', 'cc', 'ccc', '1'], raw_logprob: -9.648183822631836, cons_logprob: -7.987251281738281, time: 20.05 (2.67)
+Cc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1ccccc1
+Sample 56 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706,    7,
+        7612], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '(', 'OC'], time: 0.52 (0.02)
+C=CC(=O)OCC1CC(OC
+Sample 57 failed, tokens: tensor([3706,   16,   46, 3706], device='cuda:0') / ['CC', '1', 'O', 'CC'], time: 0.20 (0.02)
+CC1OCC
+Sample 58 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8, 19499, 53873],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OO', 'CCC'], time: 0.37 (0.03)
+C=CC(=O)OOCCC
+Sample 59 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    34,
+           16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.63 (0.04)
+C=CC(=O)OCCCCC1=CC=CC=C
+Sample 60 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.905045986175537, time: 0.33 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 61 failed, tokens: tensor([   46, 40917, 19238,     8,    46], device='cuda:0') / ['O', '=C', '(O', ')', 'O'], time: 0.23 (0.01)
+O=C(O)O
+Sample 62 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706, 40917,    17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=C', '2'], time: 0.44 (0.01)
+C=CC(=O)OC1=CC=C2
+Sample 63 failed, tokens: tensor([   34,    28,  3706, 19238,     8,  7612], device='cuda:0') / ['C', '=', 'CC', '(O', ')', 'OC'], time: 0.21 (0.01)
+C=CC(O)OC
+Sample 64 failed, tokens: tensor([3706, 6412,   37, 3706, 3759], device='cuda:0') / ['CC', 'CS', 'F', 'CC', '(S'], time: 0.19 (0.01)
+CCCSFCC(S
+Sample 65 failed, tokens: tensor([97754,    16,    77,   638, 37054,    16,    58,    46,    60,    17,
+           66,    17,    77,   638, 37054,    17,  8382,    66,    18,    77,
+           16,    66,    19, 37054,    20, 37054,    21,   638,    22, 37054,
+           23,   638,    24,    58,    46,    60,    18,    78, 75652],
+       device='cuda:0') / ['Cc', '1', 'n', 'cc', 'ccc', '1', '[', 'O', ']', '2', 'c', '2', 'n', 'cc', 'ccc', '2', '.O', 'c', '3', 'n', '1', 'c', '4', 'ccc', '5', 'ccc', '6', 'cc', '7', 'ccc', '8', 'cc', '9', '[', 'O', ']', '3', 'o', 'Ubuntu'], time: 1.37 (0.14)
+Cc1nccccc1[O]2c2nccccc2.Oc3n1c4ccc5ccc6cc7ccc8cc9[O]3oUbuntu
+Sample 66 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+           7,   28,   46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '(', '=', 'O'], time: 0.50 (0.02)
+CC(=C)C(=O)OCC(=O
+Sample 67 success: [3706, 17, 53873, 16, 45, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '2', 'CCC', '1', 'N', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -24.110397338867188, cons_logprob: -22.382104873657227, time: 0.78 (0.14)
+CC2CCC1NOC(=O)C(=C)C<|im_end|>
+Sample 68 failed, tokens: tensor([53873,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'O'], time: 0.19 (0.02)
+CCC(=O
+Sample 69 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,  3706,
+           17, 53873,    16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'CC', '2', 'CCC', '1', '(C'], time: 0.49 (0.02)
+C=CC(=O)OC1CC2CCC1(C
+Sample 70 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+         3706, 40917,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', 'CC', '=C', '1'], time: 0.43 (0.01)
+C=CC(=O)OCCC1CC=C1
+Sample 71 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+        19499,  3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OO', 'CC'], time: 0.40 (0.01)
+CC(=C)C(=O)OOCC
+Sample 72 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,    7,   28,   46],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '(', '=', 'O'], time: 0.42 (0.01)
+C=CC(=O)OCC(=O
+Sample 73 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,     7,
+           28,    46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '(', '=', 'O'], time: 0.40 (0.01)
+C=CC(=O)OCCC(=O
+Sample 74 failed, tokens: tensor([3706,   28, 3706,    7,   28,   46,    8, 7612,    7,   28,   46],
+       device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'OC', '(', '=', 'O'], time: 0.41 (0.02)
+CC=CC(=O)OC(=O
+Sample 75 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706, 8281,
+        3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', 'CO', 'CC'], time: 0.43 (0.01)
+C=CC(=O)OCC1CCCOCC
+Sample 76 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   34,    7,
+          28, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'C', '(', '=', 'CC'], time: 0.49 (0.02)
+C=CC(=O)OCC1C(=CC
+Sample 77 failed, tokens: tensor([  46,   28, 3706], device='cuda:0') / ['O', '=', 'CC'], time: 0.13 (0.01)
+O=CC
+Sample 78 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 53873, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -7.350058078765869, cons_logprob: -5.481771469116211, time: 0.68 (0.04)
+CC(=C)C(=O)OCCCOC(=O)C=C<|im_end|>
+Sample 79 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.716480255126953, time: 0.32 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 80 failed, tokens: tensor([3706,   16, 3706,    7,   28, 3706], device='cuda:0') / ['CC', '1', 'CC', '(', '=', 'CC'], time: 0.29 (0.02)
+CC1CC(=CC
+Sample 81 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706, 40917,    17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=C', '2'], time: 0.52 (0.02)
+C=CC(=O)OCCC1=CC=C2
+Sample 82 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+        47932,    34,    17,  3706,     7,    28,    46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CCCC', 'C', '2', 'CC', '(', '=', 'O'], time: 0.64 (0.05)
+C=CC(=O)OCC1CCCCC2CC(=O
+Sample 83 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+          16,   28, 3706,    7,   28, 3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.66 (0.04)
+CC(=C)C(=O)OCC1=CC(=CC
+Sample 84 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    34,
+           16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'C', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.62 (0.04)
+C=CC(=O)OCCC1=CC=CC=C
+Sample 85 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,   28,
+          46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '=', 'O'], time: 0.52 (0.02)
+CC(=C)C(=O)OC=O
+Sample 86 failed, tokens: tensor([8281, 3706], device='cuda:0') / ['CO', 'CC'], time: 0.11 (0.00)
+COCC
+Sample 87 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    34,
+           16,  3706,    16,  7612,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'C', '1', 'CC', '1', 'OC', '1'], time: 0.52 (0.02)
+C=CC(=O)OCCCCC1CC1OC1
+Sample 88 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+        40917,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=C', '(C'], time: 0.39 (0.01)
+C=CC(=O)OCC1=C(C
+Sample 89 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           16,    34,     7,    28,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '1', 'C', '(', '=', 'CC'], time: 0.51 (0.02)
+C=CC(=O)OCCC11C(=CC
+Sample 90 failed, tokens: tensor([7612,    7,   28,   46,    8,   34,    7,   28, 3706], device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', '(', '=', 'CC'], time: 0.31 (0.01)
+OC(=O)C(=CC
+Sample 91 failed, tokens: tensor([3706,   16,   28, 3706,    7,   28, 3706], device='cuda:0') / ['CC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.28 (0.02)
+CC1=CC(=CC
+Sample 92 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.49 (0.02)
+CC=CC(=O)OCCC1=CC=CC=C
+Sample 93 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,  7612,     7,    28,    46,     8, 53873],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', 'OC', '(', '=', 'O', ')', 'CCC'], time: 0.59 (0.04)
+CC(=C)C(=O)OCCCCOC(=O)CCC
+Sample 94 failed, tokens: tensor([28668,  3706,    46,  3706], device='cuda:0') / ['CN', 'CC', 'O', 'CC'], time: 0.15 (0.01)
+CNCCOCC
+Sample 95 failed, tokens: tensor([3706,   16, 3706,    7,   28,   34, 7612], device='cuda:0') / ['CC', '1', 'CC', '(', '=', 'C', 'OC'], time: 0.24 (0.01)
+CC1CC(=COC
+Sample 96 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    17, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '2', '=C', '(C'], time: 0.48 (0.02)
+CC(=C)C(=O)OCC2=C(C
+Sample 97 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 91443,     7,
+           28,    46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCCCC', '(', '=', 'O'], time: 0.39 (0.01)
+C=CC(=O)OCCCCCC(=O
+Sample 98 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,  3706,
+        40917,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'CC', '=C', '(C'], time: 0.41 (0.01)
+C=CC(=O)OC1CC=C(C
+Sample 99 failed, tokens: tensor([47932,    16, 40917,     7,  7612], device='cuda:0') / ['CCCC', '1', '=C', '(', 'OC'], time: 0.20 (0.01)
+CCCC1=C(OC
+Sample 100 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,  7612,
+            7,    28,    46,     8, 47932], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'CCCC'], time: 0.49 (0.02)
+C=CC(=O)OCCOC(=O)CCCC
+Sample 101 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706, 7612,
+          16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', 'OC', '1'], time: 0.43 (0.01)
+C=CC(=O)OCC1CCOC1
+Sample 102 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612,   28, 3706,   16],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '=', 'CC', '1'], time: 0.38 (0.01)
+C=CC(=O)OC=CC1
+Sample 103 failed, tokens: tensor([  34, 8281, 3706], device='cuda:0') / ['C', 'CO', 'CC'], time: 0.13 (0.01)
+CCOCC
+Sample 104 failed, tokens: tensor([43504,    28], device='cuda:0') / ['[C', '='], time: 0.09 (0.00)
+[C=
+Sample 105 failed, tokens: tensor([ 3706, 40917,  3025], device='cuda:0') / ['CC', '=C', '(C'], time: 0.14 (0.01)
+CC=C(C
+Sample 106 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612,   16,   28, 3706,    7,
+          28, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.45 (0.01)
+C=CC(=O)OC1=CC(=CC
+Sample 107 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 7612, 3025],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'OC', '(C'], time: 0.33 (0.01)
+C=CC(=O)OOC(C
+Sample 108 failed, tokens: tensor([ 7612,     7,    28,    46,     8,    34,    28,  3706, 40917,    16],
+       device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', '=', 'CC', '=C', '1'], time: 0.33 (0.01)
+OC(=O)C=CC=C1
+Sample 109 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,     7,
+           28,    34,     8,  7612], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '(', '=', 'C', ')', 'OC'], time: 0.44 (0.01)
+C=CC(=O)OCCC(=C)OC
+Sample 110 failed, tokens: tensor([ 3706,    16, 40917,     7,  7612], device='cuda:0') / ['CC', '1', '=C', '(', 'OC'], time: 0.18 (0.01)
+CC1=C(OC
+Sample 111 failed, tokens: tensor([28668,  3025,     8,  3706,    46,  3706], device='cuda:0') / ['CN', '(C', ')', 'CC', 'O', 'CC'], time: 0.29 (0.07)
+CN(C)CCOCC
+Sample 112 failed, tokens: tensor([ 7612,     7,    28,    46,     8,    34, 40917,   271],
+       device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', '=C', '\n\n'], time: 0.28 (0.01)
+OC(=O)C=C
+
+
+Sample 113 failed, tokens: tensor([53873,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,  3025], device='cuda:0') / ['CCC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '(C'], time: 0.57 (0.12)
+CCC(=C)C(=O)OCC(C
+Sample 114 failed, tokens: tensor([  34, 7658,    7,   28,   46], device='cuda:0') / ['C', '-C', '(', '=', 'O'], time: 0.18 (0.01)
+C-C(=O
+Sample 115 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28,  3706,     7,    28,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.50 (0.02)
+C=CC(=O)OCCC1=CC(=CC
+Sample 116 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    19,
+           28,  3706, 37054,    20, 47932,    66,    19, 55597,    20,  8592],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '4', '=', 'CC', 'ccc', '5', 'CCCC', 'c', '4', 'cccc', '5', ' street'], time: 0.65 (0.04)
+C=CC(=O)OCC4=CCccc5CCCCc4cccc5 street
+Sample 117 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.472753047943115, time: 0.26 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 118 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+        47932,    17, 53873,    16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CCCC', '2', 'CCC', '1', '(C'], time: 0.49 (0.02)
+C=CC(=O)OC1=CCCC2CCC1(C
+Sample 119 failed, tokens: tensor([  34, 7612,    7,   28,   46,    8,   34,    7,   28,   34, 2376, 8281,
+        3706], device='cuda:0') / ['C', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')(', 'CO', 'CC'], time: 0.47 (0.02)
+COC(=O)C(=C)(COCC
+Sample 120 success: [97754, 16, 638, 37054, 16, 638, 16, 66, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16, 638, 17, 638, 37054, 16] / ['Cc', '1', 'cc', 'ccc', '1', 'cc', '1', 'c', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1', 'cc', '2', 'cc', 'ccc', '1'], raw_logprob: -23.01633644104004, cons_logprob: -20.899560928344727, time: 18.36 (2.00)
+Cc1ccccc1cc1c2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1cc2ccccc1
+Sample 121 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34, 19238,     8,    34],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(O', ')', 'C'], time: 0.42 (0.02)
+CC(=C)C(O)C
+Sample 122 failed, tokens: tensor([97754,    16,    66,    58,    17,   610], device='cuda:0') / ['Cc', '1', 'c', '[', '2', 'ach'], time: 0.30 (0.06)
+Cc1c[2ach
+Sample 123 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16,    28,  3706,     7,    28,  3706],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.68 (0.03)
+CC(=C)C(=O)OCCC1=CC(=CC
+Sample 124 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28,  3706, 40917,  7612], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=C', 'OC'], time: 0.55 (0.03)
+C=CC(=O)OCC1=CC=COC
+Sample 125 failed, tokens: tensor([  638, 37054,   509,   638,   509,   509,     7,    28,    78,  2376,
+           66,     8, 37054,     7,   509,  2376,    66,     8, 55597,     7,
+          509, 46986,     7,   509, 37054,     7,   509, 46986,     7,   509,
+         2376,    66,     8, 37054,     7,   509, 46986,     7,   509, 31424,
+         1171], device='cuda:0') / ['cc', 'ccc', 'oc', 'cc', 'oc', 'oc', '(', '=', 'o', ')(', 'c', ')', 'ccc', '(', 'oc', ')(', 'c', ')', 'cccc', '(', 'oc', ')c', '(', 'oc', 'ccc', '(', 'oc', ')c', '(', 'oc', ')(', 'c', ')', 'ccc', '(', 'oc', ')c', '(', 'oc', '(cc', '))\n'], time: 1.55 (0.17)
+cccccocccococ(=o)(c)ccc(oc)(c)cccc(oc)c(occcc(oc)c(oc)(c)ccc(oc)c(oc(cc))
+
+Sample 126 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -7.934075355529785, cons_logprob: -5.790909290313721, time: 0.70 (0.04)
+C=CC(=O)OCCOC(=O)C(=C)C<|im_end|>
+Sample 127 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612, 3706, 3025],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', 'CC', '(C'], time: 0.37 (0.01)
+C=CC(=O)OCCC(C
+Sample 128 failed, tokens: tensor([ 3706,    16, 28668,  3706, 24872], device='cuda:0') / ['CC', '1', 'CN', 'CC', ' CN'], time: 0.20 (0.01)
+CC1CNCC CN
+Sample 129 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   17,    7],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '2', '('], time: 0.40 (0.01)
+C=CC(=O)OCC2(
+Sample 130 failed, tokens: tensor([3706,   16,   17, 3706, 3025], device='cuda:0') / ['CC', '1', '2', 'CC', '(C'], time: 0.23 (0.02)
+CC12CC(C
+Sample 131 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -8.533336639404297, cons_logprob: -6.387809753417969, time: 0.80 (0.05)
+CC(=C)C(=O)OCCOC(=O)C(=C)C<|im_end|>
+Sample 132 success: [53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -8.21284294128418, cons_logprob: -6.066871643066406, time: 0.47 (0.03)
+CCCOC(=O)C(=C)C<|im_end|>
+Sample 133 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,  7612,
+            7,    28,    46,     8,    46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'O'], time: 0.55 (0.03)
+C=CC(=O)OCCCOC(=O)O
+Sample 134 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,     7,
+           28,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '(', '=', 'CC'], time: 0.43 (0.02)
+C=CC(=O)OCCCC(=CC
+Sample 135 failed, tokens: tensor([  46, 7612,    7,   28,   46, 6620], device='cuda:0') / ['O', 'OC', '(', '=', 'O', ')['], time: 0.23 (0.01)
+OOC(=O)[
+Sample 136 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -7.698486804962158, cons_logprob: -5.529735565185547, time: 0.79 (0.03)
+CC(=C)C(=O)OCCCOC(=O)C(=C)C<|im_end|>
+Sample 137 success: [3706, 16, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '1', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -9.983288764953613, cons_logprob: -7.814233779907227, time: 0.65 (0.12)
+CC1CCOC(=O)C(=C)C<|im_end|>
+Sample 138 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16,    34,     7,    28,  3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', 'C', '(', '=', 'CC'], time: 0.61 (0.03)
+CC(=C)C(=O)OCCC1C(=CC
+Sample 139 failed, tokens: tensor([97754,    16, 55597, 37054, 43644,     8,   564], device='cuda:0') / ['Cc', '1', 'cccc', 'ccc', '(Cl', ')', 'cl'], time: 0.26 (0.02)
+Cc1ccccccc(Cl)cl
+Sample 140 failed, tokens: tensor([ 3706,    16, 47932, 53873,     7,  7612], device='cuda:0') / ['CC', '1', 'CCCC', 'CCC', '(', 'OC'], time: 0.23 (0.02)
+CC1CCCCCCC(OC
+Sample 141 failed, tokens: tensor([   34,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.59 (0.04)
+C(=C)C(=O)OC1=CC=CC=C
+Sample 142 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    17,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '2', '=', 'CC', '=', 'CC', '=C'], time: 0.66 (0.03)
+CC(=C)C(=O)OCC12=CC=CC=C
+Sample 143 failed, tokens: tensor([47932, 47932, 91443,    46,  3706], device='cuda:0') / ['CCCC', 'CCCC', 'CCCCCC', 'O', 'CC'], time: 0.20 (0.02)
+CCCCCCCCCCCCCCOCC
+Sample 144 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 16, 47932, 53873, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CCCC', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -10.967926025390625, cons_logprob: -8.785910606384277, time: 0.70 (0.04)
+C=CC(=O)OCC1CCCCCCCOC(=O)C=C<|im_end|>
+Sample 145 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706, 40917,
+         3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '=C', '(C'], time: 0.37 (0.01)
+C=CC(=O)OCC=C(C
+Sample 146 failed, tokens: tensor([97754,    16, 37054,  1337, 12447,    60,    16,   638,  2388,    16,
+            8, 51087], device='cuda:0') / ['Cc', '1', 'ccc', '(c', '[c', ']', '1', 'cc', 'sc', '1', ')', 'opers'], time: 0.47 (0.04)
+Cc1ccc(c[c]1ccsc1)opers
+Sample 147 success: [97754, 16, 37054, 43644, 8, 37054, 16, 151645] / ['Cc', '1', 'ccc', '(Cl', ')', 'ccc', '1', '<|im_end|>'], raw_logprob: -11.707244873046875, cons_logprob: -9.523735046386719, time: 0.29 (0.03)
+Cc1ccc(Cl)ccc1<|im_end|>
+Sample 148 success: [34, 37054, 7612, 7, 28, 46, 8, 34, 28, 3706, 45, 7832, 8, 37, 151645] / ['C', 'ccc', 'OC', '(', '=', 'O', ')', 'C', '=', 'CC', 'N', '(F', ')', 'F', '<|im_end|>'], raw_logprob: -27.534862518310547, cons_logprob: -25.35132598876953, time: 0.57 (0.06)
+CcccOC(=O)C=CCN(F)F<|im_end|>
+Sample 149 failed, tokens: tensor([  34,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,   28,
+          46], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '=', 'O'], time: 0.51 (0.02)
+C(=C)C(=O)OC=O
+Sample 150 failed, tokens: tensor([  34,   25, 3706,    7,   28,   46], device='cuda:0') / ['C', ':', 'CC', '(', '=', 'O'], time: 0.25 (0.01)
+C:CC(=O
+Sample 151 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.403790473937988, time: 0.33 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 152 failed, tokens: tensor([3706,   46, 7612, 7612], device='cuda:0') / ['CC', 'O', 'OC', 'OC'], time: 0.19 (0.01)
+CCOOCOC
+Sample 153 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   17,   28, 3706,
+           7,   28, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '2', '=', 'CC', '(', '=', 'CC'], time: 0.58 (0.04)
+C=CC(=O)OCC2=CC(=CC
+Sample 154 failed, tokens: tensor([97754, 10108, 31424,    16,    46, 40917,    16], device='cuda:0') / ['Cc', '(o', '(cc', '1', 'O', '=C', '1'], time: 0.31 (0.03)
+Cc(o(cc1O=C1
+Sample 155 failed, tokens: tensor([3706,   46, 7612,    7,   28,   46,    8,   34,    7,   28,   34,    8,
+        3706,   16,   28, 3706,    7,   28,   46], device='cuda:0') / ['CC', 'O', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CC', '1', '=', 'CC', '(', '=', 'O'], time: 0.77 (0.08)
+CCOOC(=O)C(=C)CC1=CC(=O
+Sample 156 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 7612,   16, 3706,   17, 3706,
+          16, 3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'CC', '2', 'CC', '1', '(C'], time: 0.57 (0.03)
+C=CC(=O)OC1CC2CC1(C
+Sample 157 failed, tokens: tensor([97754,    16,   638, 31424,    16, 46986,    17,   638, 37054,    17,
+        47991,    66,    18,  7370, 37054,    18,  1015,    17,   331],
+       device='cuda:0') / ['Cc', '1', 'cc', '(cc', '1', ')c', '2', 'cc', 'ccc', '2', 'noc', 'c', '3', 'nn', 'ccc', '3', 'co', '2', 'ch'], time: 0.69 (0.06)
+Cc1cc(cc1)c2ccccc2nocc3nnccc3co2ch
+Sample 158 failed, tokens: tensor([3706,   28, 3706,    7,   28,   46,    8, 7612,   16,   28, 3706,    7,
+          28, 3706], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.47 (0.02)
+CC=CC(=O)OC1=CC(=CC
+Sample 159 failed, tokens: tensor([3706,   28, 3706,    7,   28,   46,    8,   46, 3706,   46, 3706],
+       device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'O', 'CC'], time: 0.40 (0.01)
+CC=CC(=O)OCCOCC
+Sample 160 success: [3706, 66, 16, 638, 8204, 3706, 8, 37054, 16, 151645] / ['CC', 'c', '1', 'cc', '(N', 'CC', ')', 'ccc', '1', '<|im_end|>'], raw_logprob: -22.459901809692383, cons_logprob: -20.26885414123535, time: 0.32 (0.02)
+CCc1cc(NCC)ccc1<|im_end|>
+Sample 161 failed, tokens: tensor([  46,    7,   28, 3706,    8,   34,    7,   28,   46], device='cuda:0') / ['O', '(', '=', 'CC', ')', 'C', '(', '=', 'O'], time: 0.33 (0.03)
+O(=CC)C(=O
+Sample 162 failed, tokens: tensor([   46,    66,  3025, 11730,    46,  7612,  3025], device='cuda:0') / ['O', 'c', '(C', ')=', 'O', 'OC', '(C'], time: 0.27 (0.03)
+Oc(C)=OOC(C
+Sample 163 failed, tokens: tensor([ 3706,    16, 53873,     7,    28,    46], device='cuda:0') / ['CC', '1', 'CCC', '(', '=', 'O'], time: 0.22 (0.01)
+CC1CCC(=O
+Sample 164 success: [34, 28, 3706, 7, 28, 46, 8, 46, 47932, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -9.689565658569336, cons_logprob: -7.489649772644043, time: 0.81 (0.10)
+C=CC(=O)OCCCCOC(=O)C(=C)C<|im_end|>
+Sample 165 failed, tokens: tensor([ 3706, 19499,  3706], device='cuda:0') / ['CC', 'OO', 'CC'], time: 0.15 (0.01)
+CCOOCC
+Sample 166 failed, tokens: tensor([  34, 7612,    7,   28,   46,    8,   34,    7,   28,   34,    8,   34,
+        6253], device='cuda:0') / ['C', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '(Q'], time: 0.49 (0.02)
+COC(=O)C(=C)C(Q
+Sample 167 failed, tokens: tensor([  34,   16, 3706,   28, 3706,   17], device='cuda:0') / ['C', '1', 'CC', '=', 'CC', '2'], time: 0.24 (0.01)
+C1CC=CC2
+Sample 168 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 7612,
+          16], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'OC', '1'], time: 0.42 (0.01)
+CC(=C)C(=O)OOC1
+Sample 169 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,  7612,
+            7,    28,    46,     8,    34,    28,  3706, 40917,    16],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '=', 'CC', '=C', '1'], time: 0.62 (0.03)
+C=CC(=O)OCCCOC(=O)C=CC=C1
+Sample 170 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.3729705810546875, time: 0.29 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 171 failed, tokens: tensor([3706, 8281, 3706], device='cuda:0') / ['CC', 'CO', 'CC'], time: 0.13 (0.01)
+CCCOCC
+Sample 172 success: [34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.587860107421875, cons_logprob: -4.359101295471191, time: 0.27 (0.01)
+COC(=O)C=C<|im_end|>
+Sample 173 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,     7,    28,    34,     8,    34, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '(', '=', 'C', ')', 'C', '=C'], time: 0.61 (0.03)
+C=CC(=O)OC1=CC(=C)C=C
+Sample 174 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    28,  3706,
+            7,    28,    46,     8,  7612,    28,  3706,     7,    28,    46,
+            8,  7612,    28,  3706,     7,    28,    46,     8, 53873],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '=', 'CC', '(', '=', 'O', ')', 'OC', '=', 'CC', '(', '=', 'O', ')', 'OC', '=', 'CC', '(', '=', 'O', ')', 'CCC'], time: 1.01 (0.08)
+C=CC(=O)OC=CC(=O)OC=CC(=O)OC=CC(=O)CCC
+Sample 175 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,    46, 53873,     7,
+           28,    34,     8,    34,     7,    28,    46,     8,  7612,    16,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.95 (0.10)
+CC=CC(=O)OCCC(=C)C(=O)OC1=CC=CC=C
+Sample 176 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    17, 40917,
+            7,  7612], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '2', '=C', '(', 'OC'], time: 0.50 (0.04)
+C=CC(=O)OC2=C(OC
+Sample 177 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  6412,     7,
+           28,    46,     8,    34,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CS', '(', '=', 'O', ')', 'C', '=', 'CC', '=C'], time: 0.66 (0.06)
+C=CC(=O)OCS(=O)C=CC=C
+Sample 178 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 91443, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -7.718690395355225, cons_logprob: -5.485161304473877, time: 0.75 (0.06)
+CC(=C)C(=O)OCCCCCCOC(=O)C=C<|im_end|>
+Sample 179 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    17, 53873,    16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '2', 'CCC', '1', '(C'], time: 0.59 (0.03)
+C=CC(=O)OC1=CC2CCC1(C
+Sample 180 success: [34, 28, 3706, 7, 28, 46, 8, 46, 47932, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -8.2949857711792, cons_logprob: -6.058556079864502, time: 0.62 (0.02)
+C=CC(=O)OCCCCOC(=O)C=C<|im_end|>
+Sample 181 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,    46, 74071, 40917,
+            8], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', '(CC', '=C', ')'], time: 0.43 (0.02)
+CC=CC(=O)O(CC=C)
+Sample 182 failed, tokens: tensor([ 3706,    16,  8281, 47932], device='cuda:0') / ['CC', '1', 'CO', 'CCCC'], time: 0.15 (0.00)
+CC1COCCCC
+Sample 183 failed, tokens: tensor([  34,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,    7,
+          28,   46], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '(', '=', 'O'], time: 0.47 (0.01)
+C(=C)C(=O)OC(=O
+Sample 184 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706,   17,
+          34, 3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '2', 'C', '(C'], time: 0.47 (0.02)
+C=CC(=O)OCC1CC2C(C
+Sample 185 success: [34, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 5066, 151645] / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'Cl', '<|im_end|>'], raw_logprob: -14.144225120544434, cons_logprob: -11.8969087600708, time: 0.44 (0.02)
+C(=C)C(=O)OCl<|im_end|>
+Sample 186 failed, tokens: tensor([   34,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.58 (0.02)
+C(=C)C(=O)OCC1=CC=CC=C
+Sample 187 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16,    28,  3706, 40917,  7612], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CC', '=C', 'OC'], time: 0.54 (0.02)
+CC(=C)C(=O)OCCC1=CC=COC
+Sample 188 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16,   28, 3706,
+        7612,   17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', 'OC', '2'], time: 0.50 (0.02)
+C=CC(=O)OCC1=CCOC2
+Sample 189 failed, tokens: tensor([   34,    16, 53873,     7,    28,    46], device='cuda:0') / ['C', '1', 'CCC', '(', '=', 'O'], time: 0.26 (0.03)
+C1CCC(=O
+Sample 190 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 91443, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -7.718690395355225, cons_logprob: -5.452256679534912, time: 0.61 (0.01)
+CC(=C)C(=O)OCCCCCCOC(=O)C=C<|im_end|>
+Sample 191 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8, 19499,  7612,    16],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OO', 'OC', '1'], time: 0.35 (0.01)
+C=CC(=O)OOOC1
+Sample 192 failed, tokens: tensor([53873,  7612,     7,    28,    46,     8,    34,     7,    28,    34,
+            8,  3706,    16, 40917,     7,  7612], device='cuda:0') / ['CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CC', '1', '=C', '(', 'OC'], time: 0.56 (0.02)
+CCCOC(=O)C(=C)CC1=C(OC
+Sample 193 failed, tokens: tensor([ 7612,     7,    28,    46,     8,    34, 40917,  3025, 40917,     8],
+       device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', '=C', '(C', '=C', ')'], time: 0.37 (0.02)
+OC(=O)C=C(C=C)
+Sample 194 failed, tokens: tensor([8281, 3025, 2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281,
+        2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281,
+        2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281, 2376, 8281, 3025, 2376,
+        8281, 3025, 2376, 8281, 3025, 2376, 8281, 2376, 8281, 2376, 8281, 2376,
+        8281, 7705, 8281,    8, 3706, 3025], device='cuda:0') / ['CO', '(C', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', '(C', ')(', 'CO', '(C', ')(', 'CO', '(C', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')(', 'CO', ')))', 'CO', ')', 'CC', '(C'], time: 1.89 (0.18)
+CO(C)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO)(CO(C)(CO(C)(CO(C)(CO)(CO)(CO)(CO)))CO)CC(C
+Sample 195 success: [3706, 28, 3706, 7, 28, 46, 8, 46, 53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -11.165178298950195, cons_logprob: -8.89791488647461, time: 0.69 (0.04)
+CC=CC(=O)OCCCOC(=O)C(=C)C<|im_end|>
+Sample 196 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -8.533336639404297, cons_logprob: -6.265790939331055, time: 0.84 (0.04)
+CC(=C)C(=O)OCCOC(=O)C(=C)C<|im_end|>
+Sample 197 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,    28,  3706,    28,  3706, 19238,  3706],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CC', '=', 'CC', '(O', 'CC'], time: 0.70 (0.03)
+CC(=C)C(=O)OCC1=CC=CC(OCC
+Sample 198 failed, tokens: tensor([ 3706,    16,    28,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.30 (0.02)
+CC1=CC=CC=C
+Sample 199 failed, tokens: tensor([53873,    16,  7612,     7,    28,    46,     8,    34, 19238],
+       device='cuda:0') / ['CCC', '1', 'OC', '(', '=', 'O', ')', 'C', '(O'], time: 0.38 (0.03)
+CCC1OC(=O)C(O
+Sample 200 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -9.667328834533691, cons_logprob: -7.393006324768066, time: 0.73 (0.03)
+CC(=C)C(=O)OCCOC(=O)C=C<|im_end|>
+Sample 201 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -7.698486804962158, cons_logprob: -5.424137115478516, time: 0.86 (0.04)
+CC(=C)C(=O)OCCCOC(=O)C(=C)C<|im_end|>
+Sample 202 failed, tokens: tensor([ 97754,     16,     66,   3025,  46986,   3025,  46986,     16,    638,
+            17,  55597,     17,     78,     17,     66,     16, 151644],
+       device='cuda:0') / ['Cc', '1', 'c', '(C', ')c', '(C', ')c', '1', 'cc', '2', 'cccc', '2', 'o', '2', 'c', '1', '<|im_start|>'], time: 0.65 (0.06)
+Cc1c(C)c(C)c1cc2cccc2o2c1<|im_start|>
+Sample 203 failed, tokens: tensor([    34,   8281,     13, 151645], device='cuda:0') / ['C', 'CO', '.', '<|im_end|>'], time: 0.12 (0.00)
+CCO.<|im_end|>
+Sample 204 failed, tokens: tensor([47932,  7612,     7,    28,    46,     8,    34,     7,    28,    34,
+            8,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CCCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.61 (0.05)
+CCCCOC(=O)C(=C)CC1=CC=CC=C
+Sample 205 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', '=C', '(C'], time: 0.52 (0.02)
+CC(=C)C(=O)OCC1=C(C
+Sample 206 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+           28, 53873, 40917,    16], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', '=', 'CCC', '=C', '1'], time: 0.46 (0.02)
+C=CC(=O)OCCC1=CCC=C1
+Sample 207 failed, tokens: tensor([9949,    7,   28,   45], device='cuda:0') / ['NC', '(', '=', 'N'], time: 0.16 (0.01)
+NC(=N
+Sample 208 success: [3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.376511096954346, cons_logprob: -4.092358589172363, time: 0.27 (0.01)
+CCOC(=O)C=C<|im_end|>
+Sample 209 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    46,     7,
+           28,    46,     8,  3706,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', 'O', '(', '=', 'O', ')', 'CC', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.65 (0.04)
+C=CC(=O)OCO(=O)CC1=CC=CC=C
+Sample 210 failed, tokens: tensor([28668,  3025, 11730,    46,  7612,  3025], device='cuda:0') / ['CN', '(C', ')=', 'O', 'OC', '(C'], time: 0.35 (0.05)
+CN(C)=OOC(C
+Sample 211 failed, tokens: tensor([ 3706,  7612,     7,    28,    46,     8,    34,    28,  3706, 19238],
+       device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=', 'CC', '(O'], time: 0.39 (0.03)
+CCOC(=O)C=CC(O
+Sample 212 failed, tokens: tensor([   34, 53873,     7,    28,    46], device='cuda:0') / ['C', 'CCC', '(', '=', 'O'], time: 0.18 (0.01)
+CCCC(=O
+Sample 213 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  5790,  3706,    16,    28, 53873,    16,  3025],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CON', 'CC', '1', '=', 'CCC', '1', '(C'], time: 0.59 (0.03)
+CC(=C)C(=O)OCONCC1=CCC1(C
+Sample 214 failed, tokens: tensor([28668,    16,    34,  7612,     7,    28,    46,     8,    34,     7,
+           28,  3706], device='cuda:0') / ['CN', '1', 'C', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'CC'], time: 0.41 (0.03)
+CN1COC(=O)C(=CC
+Sample 215 failed, tokens: tensor([  34,    7,   28,   34,    8,   34,    7,   28,   46,    8, 7612,   16,
+          28, 3706,    7,   28, 3706], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '(', '=', 'CC'], time: 0.56 (0.02)
+C(=C)C(=O)OC1=CC(=CC
+Sample 216 failed, tokens: tensor([53873,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,     7,    28,    46], device='cuda:0') / ['CCC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '(', '=', 'O'], time: 0.49 (0.02)
+CCC(=C)C(=O)OCC(=O
+Sample 217 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3025,
+        2376, 8281, 2376, 8281, 3706], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', '(C', ')(', 'CO', ')(', 'CO', 'CC'], time: 0.59 (0.03)
+CC(=C)C(=O)O(C)(CO)(COCC
+Sample 218 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,     7,    28,    46], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', '(', '=', 'O'], time: 0.50 (0.02)
+CC(=C)C(=O)OCCCC(=O
+Sample 219 failed, tokens: tensor([ 3067, 85167, 85167, 19238,  2376,    46,  2376,    46,  3706],
+       device='cuda:0') / ['OP', '(OP', '(OP', '(O', ')(', 'O', ')(', 'O', 'CC'], time: 0.36 (0.03)
+OP(OP(OP(O)(O)(OCC
+Sample 220 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,    16,  3706,    17, 53873,    16,  3025],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', '1', 'CC', '2', 'CCC', '1', '(C'], time: 0.65 (0.03)
+CC(=C)C(=O)OCCCC1CC2CCC1(C
+Sample 221 failed, tokens: tensor([97754,    16, 37054,    17,   638, 37054,    16,   638,    17,    66,
+           18, 37054,    18,    66,    19, 37054,    19,    66,    20, 37054,
+           20,    66,    21, 37054,    21,    66,    22, 37054,    22,    66,
+           23, 37054,    23,    66,    24, 37054,    24,    66,    16,    15,
+        37054,    16,    15,    66,    16,    16, 37054,    16,    16,    66,
+           16,    17, 37054,    16,    17,    66,    16,    18, 37054,    16,
+           18,    66,    16,    19, 37054,    16,    19,    66,  4906],
+       device='cuda:0') / ['Cc', '1', 'ccc', '2', 'cc', 'ccc', '1', 'cc', '2', 'c', '3', 'ccc', '3', 'c', '4', 'ccc', '4', 'c', '5', 'ccc', '5', 'c', '6', 'ccc', '6', 'c', '7', 'ccc', '7', 'c', '8', 'ccc', '8', 'c', '9', 'ccc', '9', 'c', '1', '0', 'ccc', '1', '0', 'c', '1', '1', 'ccc', '1', '1', 'c', '1', '2', 'ccc', '1', '2', 'c', '1', '3', 'ccc', '1', '3', 'c', '1', '4', 'ccc', '1', '4', 'c', '_start'], time: 2.67 (0.31)
+Cc1ccc2ccccc1cc2c3ccc3c4ccc4c5ccc5c6ccc6c7ccc7c8ccc8c9ccc9c10ccc10c11ccc11c12ccc12c13ccc13c14ccc14c_start
+Sample 222 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16,  3706,    17, 53873,    16,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', 'CC', '2', 'CCC', '1', '(C'], time: 0.70 (0.04)
+CC(=C)C(=O)OC1CC2CCC1(C
+Sample 223 failed, tokens: tensor([97754,    16,   638,    17,   638, 37054,    18,    66,    19, 12527],
+       device='cuda:0') / ['Cc', '1', 'cc', '2', 'cc', 'ccc', '3', 'c', '4', ' cc'], time: 0.42 (0.03)
+Cc1cc2ccccc3c4 cc
+Sample 224 failed, tokens: tensor([34, 16, 34, 17, 11], device='cuda:0') / ['C', '1', 'C', '2', ','], time: 0.20 (0.01)
+C1C2,
+Sample 225 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+        53873,    17,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CCC', '2', '(C'], time: 0.43 (0.02)
+C=CC(=O)OCC1CCC2(C
+Sample 226 failed, tokens: tensor([  34,   12, 7612, 3025], device='cuda:0') / ['C', '-', 'OC', '(C'], time: 0.15 (0.01)
+C-OC(C
+Sample 227 failed, tokens: tensor([47932,    46,  3706], device='cuda:0') / ['CCCC', 'O', 'CC'], time: 0.12 (0.00)
+CCCCOCC
+Sample 228 failed, tokens: tensor([3706, 7612,    7,   28,   46,    8,   34,    7,   28,   34,    8,   34,
+        3025], device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '(C'], time: 0.47 (0.03)
+CCOC(=O)C(=C)C(C
+Sample 229 failed, tokens: tensor([ 3706,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706, 40917,  3025], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '=C', '(C'], time: 0.44 (0.01)
+CC=CC(=O)OC1=CC=C(C
+Sample 230 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,    34,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', 'C', '(C'], time: 0.45 (0.01)
+CC(=C)C(=O)OCCCCC(C
+Sample 231 failed, tokens: tensor([ 3706,    16,  3706,    17, 53873,    16,    34,    17, 91474],
+       device='cuda:0') / ['CC', '1', 'CC', '2', 'CCC', '1', 'C', '2', ' CCC'], time: 0.31 (0.02)
+CC1CC2CCC1C2 CCC
+Sample 232 failed, tokens: tensor([ 3706,    45,  3025, 11730,    34,     7,  7612], device='cuda:0') / ['CC', 'N', '(C', ')=', 'C', '(', 'OC'], time: 0.26 (0.02)
+CCN(C)=C(OC
+Sample 233 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16,    28,
+         3706,    17,    28,  3706, 40917,    17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=', 'CC', '2', '=', 'CC', '=C', '2'], time: 0.51 (0.02)
+C=CC(=O)OC1=CC2=CC=C2
+Sample 234 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3025, 11730,
+           34,  8204], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', '(C', ')=', 'C', '(N'], time: 0.40 (0.01)
+C=CC(=O)O(C)=C(N
+Sample 235 failed, tokens: tensor([3706,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706,    7,
+        7612], device='cuda:0') / ['CC', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '(', 'OC'], time: 0.43 (0.01)
+CC=CC(=O)OCC1CC(OC
+Sample 236 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,  7612,
+            7,    28,    46,     8,    34,    28,  3706, 40917,  9949],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '=', 'CC', '=C', 'NC'], time: 0.61 (0.02)
+C=CC(=O)OCCOC(=O)C=CC=CNC
+Sample 237 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 47932, 34, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', 'C', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -10.235983848571777, cons_logprob: -7.91608190536499, time: 0.65 (0.03)
+CC(=C)C(=O)OCCCCCOC(=O)C=C<|im_end|>
+Sample 238 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+           28,    46,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=', 'O', 'CC'], time: 0.42 (0.01)
+C=CC(=O)OCCCC1=OCC
+Sample 239 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   18,   34, 3025],
+       device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '3', 'C', '(C'], time: 0.40 (0.01)
+C=CC(=O)OCC3C(C
+Sample 240 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 91443, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -7.718690395355225, cons_logprob: -5.398416519165039, time: 0.60 (0.02)
+CC(=C)C(=O)OCCCCCCOC(=O)C=C<|im_end|>
+Sample 241 failed, tokens: tensor([   34,    16,  3706,    17, 53873,    16,  3025], device='cuda:0') / ['C', '1', 'CC', '2', 'CCC', '1', '(C'], time: 0.25 (0.01)
+C1CC2CCC1(C
+Sample 242 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,    7,   28,   34,
+        2376], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '(', '=', 'C', ')('], time: 0.43 (0.01)
+C=CC(=O)OCC(=C)(
+Sample 243 failed, tokens: tensor([ 3706,  7612,     7,    28,    46,     8,    34,     7,    28,    34,
+         2376,  8281, 53873], device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')(', 'CO', 'CCC'], time: 0.43 (0.02)
+CCOC(=O)C(=C)(COCCC
+Sample 244 failed, tokens: tensor([  45, 3706,   46, 3706], device='cuda:0') / ['N', 'CC', 'O', 'CC'], time: 0.23 (0.01)
+NCCOCC
+Sample 245 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+        53873,    17, 53873,    16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CCC', '2', 'CCC', '1', '(C'], time: 0.59 (0.02)
+C=CC(=O)OCC1CCC2CCC1(C
+Sample 246 failed, tokens: tensor([12483, 47932, 53873,  7612,  3025], device='cuda:0') / ['OF', 'CCCC', 'CCC', 'OC', '(C'], time: 0.20 (0.01)
+OFCCCCCCCOC(C
+Sample 247 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    17,
+           28,  3706, 40917,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '2', '=', 'CC', '=C', 'CC'], time: 0.48 (0.01)
+C=CC(=O)OCC2=CC=CCC
+Sample 248 failed, tokens: tensor([ 3706, 43504,    60,  3706,     7,    28,    46], device='cuda:0') / ['CC', '[C', ']', 'CC', '(', '=', 'O'], time: 0.26 (0.02)
+CC[C]CC(=O
+Sample 249 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 53873,    16, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCC', '1', '=C', '(C'], time: 0.49 (0.01)
+CC(=C)C(=O)OCCC1=C(C
+Sample 250 success: [3706, 7, 28, 34, 8, 34, 7, 28, 46, 8, 46, 47932, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -9.4824800491333, cons_logprob: -7.154575347900391, time: 0.62 (0.02)
+CC(=C)C(=O)OCCCCOC(=O)C=C<|im_end|>
+Sample 251 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 18, 8996, 17, 46, 19, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '3', 'NO', '2', 'O', '4', '<|im_end|>'], raw_logprob: -24.437156677246094, cons_logprob: -22.109169006347656, time: 0.48 (0.02)
+C=CC(=O)OCC3NO2O4<|im_end|>
+Sample 252 success: [34, 16, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['C', '1', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -11.060415267944336, cons_logprob: -8.732429504394531, time: 0.49 (0.03)
+C1CCOC(=O)C(=C)C<|im_end|>
+Sample 253 success: [53873, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.767592906951904, cons_logprob: -4.439285755157471, time: 0.27 (0.01)
+CCCOC(=O)C=C<|im_end|>
+Sample 254 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16, 40917,
+           16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=C', '1', '(C'], time: 0.42 (0.01)
+C=CC(=O)OC1=C1(C
+Sample 255 failed, tokens: tensor([7612,    7,   28,   46,    8,   34,    7,   28,   34,    8,   34,    7,
+          28,   46], device='cuda:0') / ['OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '(', '=', 'O'], time: 0.47 (0.02)
+OC(=O)C(=C)C(=O
+Sample 256 success: [3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 9650, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CF', '<|im_end|>'], raw_logprob: -15.875510215759277, cons_logprob: -13.54325008392334, time: 0.40 (0.01)
+CCOC(=O)C(=C)CF<|im_end|>
+Sample 257 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,     7,
+           28,    34,     8,    34,     7,    28,    46,     8,  7612,     7,
+           28,    46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '(', '=', 'O'], time: 0.75 (0.04)
+C=CC(=O)OCCC(=C)C(=O)OC(=O
+Sample 258 failed, tokens: tensor([97754,    16,   638, 37054,    16,  3706,    16,  7612,     7,    28,
+           46,     8,    34,  3025], device='cuda:0') / ['Cc', '1', 'cc', 'ccc', '1', 'CC', '1', 'OC', '(', '=', 'O', ')', 'C', '(C'], time: 0.48 (0.03)
+Cc1ccccc1CC1OC(=O)C(C
+Sample 259 failed, tokens: tensor([   34,  7612,     7,    28,    46,     8,    34,     7,    28,    34,
+            8, 53873,     7,    28,    34,     8, 53873], device='cuda:0') / ['C', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CCC', '(', '=', 'C', ')', 'CCC'], time: 0.58 (0.02)
+COC(=O)C(=C)CCC(=C)CCC
+Sample 260 failed, tokens: tensor([ 3706,  7612,     7,    28,    46,     8,    34,     7,    28,    34,
+            8,    46, 53873], device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'O', 'CCC'], time: 0.42 (0.01)
+CCOC(=O)C(=C)OCCC
+Sample 261 failed, tokens: tensor([   46, 40917, 19238,     8,    34,    28,  3706, 40917,    16],
+       device='cuda:0') / ['O', '=C', '(O', ')', 'C', '=', 'CC', '=C', '1'], time: 0.31 (0.02)
+O=C(O)C=CC=C1
+Sample 262 success: [34, 28, 3706, 7, 28, 46, 8, 46, 47932, 3706, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', 'CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -11.502445220947266, cons_logprob: -9.162077903747559, time: 0.69 (0.04)
+C=CC(=O)OCCCCCCOC(=O)C(=C)C<|im_end|>
+Sample 263 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,    17,    28, 47932,    16,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', '2', '=', 'CCCC', '1', '(C'], time: 0.57 (0.02)
+CC(=C)C(=O)OCCCC2=CCCC1(C
+Sample 264 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+           28, 53873,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', '=', 'CCC', '=', 'CC', '=C'], time: 0.50 (0.02)
+C=CC(=O)OCC1=CCC=CC=C
+Sample 265 success: [34, 28, 3706, 7, 28, 46, 8, 46, 47932, 16, 37, 7832, 8, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37, 3540, 37] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', 'F', '(F', ')', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F', 'SC', 'F'], raw_logprob: -33.840240478515625, cons_logprob: -31.49553680419922, time: 18.45 (2.31)
+C=CC(=O)OCCCC1F(F)FSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCFSCF
+Sample 266 failed, tokens: tensor([6412,   28,   46, 8204, 3025, 3025], device='cuda:0') / ['CS', '=', 'O', '(N', '(C', '(C'], time: 0.24 (0.03)
+CS=O(N(C(C
+Sample 267 success: [34, 28, 3706, 7, 28, 46, 8, 46, 91443, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCCCC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.893970489501953, cons_logprob: -4.549245834350586, time: 0.54 (0.03)
+C=CC(=O)OCCCCCCOC(=O)C=C<|im_end|>
+Sample 268 failed, tokens: tensor([47932,  8281,  3706], device='cuda:0') / ['CCCC', 'CO', 'CC'], time: 0.12 (0.00)
+CCCCCOCC
+Sample 269 failed, tokens: tensor([   46, 43504,    31,    39,  4833,    46,  3706], device='cuda:0') / ['O', '[C', '@', 'H', ']=', 'O', 'CC'], time: 0.40 (0.10)
+O[C@H]=OCC
+Sample 270 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3025,
+          28, 3706,    8], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', '(C', '=', 'CC', ')'], time: 0.54 (0.02)
+CC(=C)C(=O)O(C=CC)
+Sample 271 failed, tokens: tensor([3706,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+        8281, 3025, 2376,   34, 7612, 3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'CO', '(C', ')(', 'C', 'OC', '(C'], time: 0.59 (0.02)
+CC(=C)C(=O)OCCCO(C)(COC(C
+Sample 272 failed, tokens: tensor([ 3706,    16,  7612,     7,    28,    46,     8,    34,     7,    28,
+           34,     8,  3706,    17, 53873,    16,  3025], device='cuda:0') / ['CC', '1', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CC', '2', 'CCC', '1', '(C'], time: 0.61 (0.06)
+CC1OC(=O)C(=C)CC2CCC1(C
+Sample 273 failed, tokens: tensor([91443,  7832], device='cuda:0') / ['CCCCCC', '(F'], time: 0.10 (0.00)
+CCCCCC(F
+Sample 274 failed, tokens: tensor([97754,    16, 37054, 31424, 37054,    16,     8,    34, 19535],
+       device='cuda:0') / ['Cc', '1', 'ccc', '(cc', 'ccc', '1', ')', 'C', '=c'], time: 0.33 (0.02)
+Cc1ccc(ccccc1)C=c
+Sample 275 failed, tokens: tensor([   34, 91443,  7612,    46], device='cuda:0') / ['C', 'CCCCCC', 'OC', 'O'], time: 0.16 (0.01)
+CCCCCCCOCO
+Sample 276 failed, tokens: tensor([  34,   16, 3706,    7,   28,   46], device='cuda:0') / ['C', '1', 'CC', '(', '=', 'O'], time: 0.22 (0.01)
+C1CC(=O
+Sample 277 failed, tokens: tensor([3706, 7612,    7,   28,   46,    8,   34,    7,   28,   34,    8, 3706,
+           7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706, 3025],
+       device='cuda:0') / ['CC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '(C'], time: 0.86 (0.06)
+CCOC(=O)C(=C)CC(=C)C(=O)OCC(C
+Sample 278 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46, 47932,    16, 40917,  3025], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=C', '(C'], time: 0.52 (0.01)
+CC(=C)C(=O)OCCCC1=C(C
+Sample 279 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   16, 3706,    7,
+          28, 3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '(', '=', 'CC'], time: 0.46 (0.01)
+C=CC(=O)OCC1CC(=CC
+Sample 280 failed, tokens: tensor([   34, 23917,    18, 74071], device='cuda:0') / ['C', '\\C', '3', '(CC'], time: 0.17 (0.01)
+C\C3(CC
+Sample 281 failed, tokens: tensor([  45,   28, 3706,    7,   28,   46], device='cuda:0') / ['N', '=', 'CC', '(', '=', 'O'], time: 0.23 (0.02)
+N=CC(=O
+Sample 282 failed, tokens: tensor([  34,   12, 3706, 3025], device='cuda:0') / ['C', '-', 'CC', '(C'], time: 0.16 (0.01)
+C-CC(C
+Sample 283 failed, tokens: tensor([3706,   16,   58,   46, 8013], device='cuda:0') / ['CC', '1', '[', 'O', '-('], time: 0.21 (0.01)
+CC1[O-(
+Sample 284 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 53873,    16,
+         3706,     7,    28,    34,     8,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', '1', 'CC', '(', '=', 'C', ')', 'CC'], time: 0.60 (0.04)
+C=CC(=O)OCCC1CC(=C)CC
+Sample 285 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+           28,  3706,    17,    28,  3706, 40917,    17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', '=', 'CC', '2', '=', 'CC', '=C', '2'], time: 0.65 (0.04)
+C=CC(=O)OCCCC1=CC2=CC=C2
+Sample 286 failed, tokens: tensor([   34, 47932, 53873,  3025], device='cuda:0') / ['C', 'CCCC', 'CCC', '(C'], time: 0.20 (0.01)
+CCCCCCCC(C
+Sample 287 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  3706,    16,  3706,    28,  3706, 40917], device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', '1', 'CC', '=', 'CC', '=C'], time: 0.66 (0.05)
+CC(=C)C(=O)OCC1CC=CC=C
+Sample 288 failed, tokens: tensor([ 3706,    16,  3706,  7658, 40917,    16], device='cuda:0') / ['CC', '1', 'CC', '-C', '=C', '1'], time: 0.26 (0.02)
+CC1CC-C=C1
+Sample 289 failed, tokens: tensor([  34,    7,   28,   34,    8,   34,    7,   28,   46,    8,   46, 3706,
+          46, 3706], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CC', 'O', 'CC'], time: 0.55 (0.03)
+C(=C)C(=O)OCCOCC
+Sample 290 failed, tokens: tensor([97754,    16, 37054,     7,   509,     7,    28,    78, 46986,    16,
+            8,   638,  1337,    17,    66,    16,   638,     7,   509,     7,
+           28,    78, 46986,    17,     8,   638,    17,     8, 37054,    17,
+          638,  1337,    18,    66,    17,   638,     7,   509,     7,    28,
+           78, 46986,    18,     8,   638,    17,     8, 37054,    17,   638,
+         1337,    19,    66,    18,   638,     7,   509,     7,    28,    78,
+        46986,    19,     8,   638,    18,     8, 37054,    17,   638,  1337,
+           20,    66,    19,   638,     7,   509,     7,    28,    78, 46986,
+           20,     8,   638,    19,     8, 37054,    17,   638,  1337,    21,
+           66,    20,   638,     7,   509,     7,    28,    78, 46986,    21,
+            8,   638,    20,     8, 37054,    17,   638,  1337,    22,    66,
+           21,   638,     7,   509,     7,    28,    78, 46986,    22,     8,
+          638,    21,     8, 37054,    17,   638,  1337,    23,    66,    22,
+          638,     7,   509,     7,    28,    78, 46986,    23,     8,   638,
+           22,     8, 37054,    17,   638,  1337,    24,    66,    23,   638,
+            7,   509,     7,    28,    78, 46986,    24,     8,   638,    23,
+            8, 37054,    17,   638, 82506], device='cuda:0') / ['Cc', '1', 'ccc', '(', 'oc', '(', '=', 'o', ')c', '1', ')', 'cc', '(c', '2', 'c', '1', 'cc', '(', 'oc', '(', '=', 'o', ')c', '2', ')', 'cc', '2', ')', 'ccc', '2', 'cc', '(c', '3', 'c', '2', 'cc', '(', 'oc', '(', '=', 'o', ')c', '3', ')', 'cc', '2', ')', 'ccc', '2', 'cc', '(c', '4', 'c', '3', 'cc', '(', 'oc', '(', '=', 'o', ')c', '4', ')', 'cc', '3', ')', 'ccc', '2', 'cc', '(c', '5', 'c', '4', 'cc', '(', 'oc', '(', '=', 'o', ')c', '5', ')', 'cc', '4', ')', 'ccc', '2', 'cc', '(c', '6', 'c', '5', 'cc', '(', 'oc', '(', '=', 'o', ')c', '6', ')', 'cc', '5', ')', 'ccc', '2', 'cc', '(c', '7', 'c', '6', 'cc', '(', 'oc', '(', '=', 'o', ')c', '7', ')', 'cc', '6', ')', 'ccc', '2', 'cc', '(c', '8', 'c', '7', 'cc', '(', 'oc', '(', '=', 'o', ')c', '8', ')', 'cc', '7', ')', 'ccc', '2', 'cc', '(c', '9', 'c', '8', 'cc', '(', 'oc', '(', '=', 'o', ')c', '9', ')', 'cc', '8', ')', 'ccc', '2', 'cc', '(ca'], time: 5.92 (0.78)
+Cc1ccc(oc(=o)c1)cc(c2c1cc(oc(=o)c2)cc2)ccc2cc(c3c2cc(oc(=o)c3)cc2)ccc2cc(c4c3cc(oc(=o)c4)cc3)ccc2cc(c5c4cc(oc(=o)c5)cc4)ccc2cc(c6c5cc(oc(=o)c6)cc5)ccc2cc(c7c6cc(oc(=o)c7)cc6)ccc2cc(c8c7cc(oc(=o)c8)cc7)ccc2cc(c9c8cc(oc(=o)c9)cc8)ccc2cc(ca
+Sample 291 failed, tokens: tensor([91443, 47932, 91443,     7,    28,    46], device='cuda:0') / ['CCCCCC', 'CCCC', 'CCCCCC', '(', '=', 'O'], time: 0.23 (0.01)
+CCCCCCCCCCCCCCCC(=O
+Sample 292 failed, tokens: tensor([97754,    16, 55597,  3025,     8,   638,    16, 37054,   509, 19238,
+            8,   638,     7,    16], device='cuda:0') / ['Cc', '1', 'cccc', '(C', ')', 'cc', '1', 'ccc', 'oc', '(O', ')', 'cc', '(', '1'], time: 0.49 (0.04)
+Cc1cccc(C)cc1cccoc(O)cc(1
+Sample 293 failed, tokens: tensor([3706, 3706,    7,   28,   46], device='cuda:0') / ['CC', 'CC', '(', '=', 'O'], time: 0.19 (0.01)
+CCCC(=O
+Sample 294 success: [3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.376511096954346, cons_logprob: -4.007589340209961, time: 0.27 (0.01)
+CCOC(=O)C=C<|im_end|>
+Sample 295 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+         3706,     7,    28,    34,     8,  3706], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', 'CC', '(', '=', 'C', ')', 'CC'], time: 0.56 (0.03)
+C=CC(=O)OCCCC1CC(=C)CC
+Sample 296 success: [3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -6.376511096954346, cons_logprob: -4.007298946380615, time: 0.27 (0.01)
+CCOC(=O)C=C<|im_end|>
+Sample 297 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,    16, 53873,
+            7,    28,    34,    17], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', 'CCC', '(', '=', 'C', '2'], time: 0.49 (0.03)
+C=CC(=O)OC1CCC(=C2
+Sample 298 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46, 47932,    16,
+        47932,    17, 53873,    16,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCCC', '1', 'CCCC', '2', 'CCC', '1', '(C'], time: 0.55 (0.03)
+C=CC(=O)OCCCC1CCCC2CCC1(C
+Sample 299 failed, tokens: tensor([3706,   16,   34, 3025], device='cuda:0') / ['CC', '1', 'C', '(C'], time: 0.21 (0.02)
+CC1C(C
+Sample 300 failed, tokens: tensor([   34,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+         7612,    16, 53873,  3025], device='cuda:0') / ['C', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'OC', '1', 'CCC', '(C'], time: 0.61 (0.02)
+C(=C)C(=O)OC1CCC(C
+Sample 301 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    17,
+           28,  3706,    28,  3706, 40917], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '2', '=', 'CC', '=', 'CC', '=C'], time: 0.59 (0.03)
+C=CC(=O)OCC2=CC=CC=C
+Sample 302 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,  7612,  7658,     7,
+           28,    34,     8,    34, 97857], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '-C', '(', '=', 'C', ')', 'C', 'Neo'], time: 0.61 (0.04)
+C=CC(=O)OC-C(=C)CNeo
+Sample 303 success: [34, 28, 3706, 7, 28, 46, 8, 46, 3706, 7612, 7, 28, 46, 8, 34, 40917, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', 'OC', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], raw_logprob: -8.667466163635254, cons_logprob: -6.2893385887146, time: 0.62 (0.03)
+C=CC(=O)OCCOC(=O)C=C<|im_end|>
+Sample 304 failed, tokens: tensor([28668,  3025,  2376,    34,     2,    34,     8,    46, 40917,    16],
+       device='cuda:0') / ['CN', '(C', ')(', 'C', '#', 'C', ')', 'O', '=C', '1'], time: 0.41 (0.03)
+CN(C)(C#C)O=C1
+Sample 305 failed, tokens: tensor([   34,    28,  3706,     7,    28,    46,     8,    46,  3706,    16,
+        47932,    17,  3025], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '1', 'CCCC', '2', '(C'], time: 0.51 (0.02)
+C=CC(=O)OCC1CCCC2(C
+Sample 306 success: [34, 28, 3706, 7, 28, 46, 8, 7612, 16, 19535, 17, 638, 37054, 17, 7612, 7, 28, 46, 8, 34, 40917, 16, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'OC', '1', '=c', '2', 'cc', 'ccc', '2', 'OC', '(', '=', 'O', ')', 'C', '=C', '1', '<|im_end|>'], raw_logprob: -22.61888313293457, cons_logprob: -20.24047088623047, time: 0.89 (0.09)
+C=CC(=O)OC1=c2ccccc2OC(=O)C=C1<|im_end|>
+Sample 307 failed, tokens: tensor([ 3706,     7,    28,    34,     8,    34,     7,    28,    46,     8,
+           46,  6412,    16,    28,  3706,    28,  3706, 40917],
+       device='cuda:0') / ['CC', '(', '=', 'C', ')', 'C', '(', '=', 'O', ')', 'O', 'CS', '1', '=', 'CC', '=', 'CC', '=C'], time: 0.60 (0.03)
+CC(=C)C(=O)OCS1=CC=CC=C
+Sample 308 success: [46, 16, 37054, 17, 55597, 37054, 18, 78, 17, 66, 16, 151645] / ['O', '1', 'ccc', '2', 'cccc', 'ccc', '3', 'o', '2', 'c', '1', '<|im_end|>'], raw_logprob: -30.485858917236328, cons_logprob: -28.107358932495117, time: 0.44 (0.04)
+O1ccc2ccccccc3o2c1<|im_end|>
+Sample 309 failed, tokens: tensor([   46,  7612,     7,    28,    46,     8, 53873], device='cuda:0') / ['O', 'OC', '(', '=', 'O', ')', 'CCC'], time: 0.29 (0.02)
+OOC(=O)CCC
+Sample 310 failed, tokens: tensor([3706,    2, 8281, 3706], device='cuda:0') / ['CC', '#', 'CO', 'CC'], time: 0.16 (0.01)
+CC#COCC
+Sample 311 failed, tokens: tensor([28668, 40917,    28,    46], device='cuda:0') / ['CN', '=C', '=', 'O'], time: 0.16 (0.01)
+CN=C=O
+Sample 312 failed, tokens: tensor([  34,   16,   28, 3706,    7,   28,   46], device='cuda:0') / ['C', '1', '=', 'CC', '(', '=', 'O'], time: 0.27 (0.01)
+C1=CC(=O
+Sample 313 failed, tokens: tensor([  3706,   8281,      7,     28,     46,      8,     34,  40917, 151645],
+       device='cuda:0') / ['CC', 'CO', '(', '=', 'O', ')', 'C', '=C', '<|im_end|>'], time: 0.29 (0.02)
+CCCO(=O)C=C<|im_end|>
+Sample 314 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8,   46, 3706,   18, 3706,   19,
+          28, 3706,    7,   28,   46], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CC', '3', 'CC', '4', '=', 'CC', '(', '=', 'O'], time: 0.59 (0.02)
+C=CC(=O)OCC3CC4=CC(=O
+Sample 315 failed, tokens: tensor([  34,   28, 3706,    7,   28,   46,    8, 3067,    7,   28,   46, 2376,
+        2149], device='cuda:0') / ['C', '=', 'CC', '(', '=', 'O', ')', 'OP', '(', '=', 'O', ')(', 'CH'], time: 0.54 (0.05)
+C=CC(=O)OP(=O)(CH
+Sample 316 success: [34, 28, 3706, 7, 28, 46, 8, 46, 53873, 7612, 7, 28, 46, 8, 34, 7, 28, 34, 8, 34, 151645] / ['C', '=', 'CC', '(', '=', 'O', ')', 'O', 'CCC', 'OC', '(', '=', 'O', ')', 'C', '(', '=', 'C', ')', 'C', '<|im_end|>'], raw_logprob: -7.249764919281006, cons_logprob: -4.858302116394043, time: 0.67 (0.03)
+C=CC(=O)OCCCOC(=O)C(=C)C<|im_end|>
+Total suceeses: 50/317
+Sample time: 207.44 s
+
+100%|██████████| 1/1 [03:27<00:00, 207.44s/it]
+100%|██████████| 1/1 [03:27<00:00, 207.44s/it]
+{
+  "classes": [
+    "acrylates"
+  ],
+  "model_number": "2",
+  "model_name": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+  "target_samples": 50,
+  "max_attempts": 2000,
+  "dry_run": false
+}
+Wrote /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_baselines_qwen15_20260506_053013_smiles_cars_metadecode_qwen25_coder_1p5b_instruct_gpt54/acrylates/cars_train50/smiles_benchmark_1778049583.json

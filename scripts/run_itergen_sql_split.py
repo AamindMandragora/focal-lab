@@ -24,6 +24,23 @@ from evaluations.sql_spider.dataset import (
 from evaluations.sql_spider.executor import _clean_sql, execute_accuracy
 
 
+def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
+    if getattr(itergen_cls, "__vas_logits_warper_patched__", False):
+        return
+
+    def _compat_update_gen_args(self: Any, **gen_args: dict) -> None:
+        from transformers.generation.logits_process import LogitsProcessorList
+
+        self.generation_config.update(**gen_args)
+        if hasattr(self.model, "_get_logits_warper"):
+            self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
+        else:
+            self.logit_warper = LogitsProcessorList()
+
+    itergen_cls.update_gen_args = _compat_update_gen_args
+    setattr(itergen_cls, "__vas_logits_warper_patched__", True)
+
+
 def _load_indices(split_file: Path, split_name: str, limit: int | None) -> list[int]:
     manifest = json.loads(split_file.read_text())
     key = f"{split_name}_indices"
@@ -96,6 +113,7 @@ def main() -> int:
     torch.manual_seed(args.seed)
     eval_sql = _load_itergen_eval_module(itergen_repo)
     IterGen = eval_sql.IterGen
+    patch_itergen_logits_warper_compat(IterGen)
     sql_dataset = eval_sql.sql_dataset
 
     csd_examples = load_spider(

@@ -19,6 +19,23 @@ from evaluations.smiles.dataset import SMILES_CLASSES, get_smiles_task
 from evaluations.smiles.metrics import evaluate_smiles_output
 
 
+def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
+    if getattr(itergen_cls, "__vas_logits_warper_patched__", False):
+        return
+
+    def _compat_update_gen_args(self: Any, **gen_args: dict) -> None:
+        from transformers.generation.logits_process import LogitsProcessorList
+
+        self.generation_config.update(**gen_args)
+        if hasattr(self.model, "_get_logits_warper"):
+            self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
+        else:
+            self.logit_warper = LogitsProcessorList()
+
+    itergen_cls.update_gen_args = _compat_update_gen_args
+    setattr(itergen_cls, "__vas_logits_warper_patched__", True)
+
+
 def add_itergen_paths(itergen_repo: Path) -> None:
     for path in [
         itergen_repo,
@@ -65,6 +82,7 @@ def main() -> int:
     add_itergen_paths(itergen_repo)
     from itergen.main import IterGen  # type: ignore
 
+    patch_itergen_logits_warper_compat(IterGen)
     classes = normalize_classes(args.classes)
     do_sample = args.temperature is not None
     class_summaries: list[dict[str, Any]] = []

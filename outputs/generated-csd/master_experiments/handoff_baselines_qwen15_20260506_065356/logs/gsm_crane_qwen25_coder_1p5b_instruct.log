@@ -1,0 +1,97 @@
+/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
+  warnings.warn(
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+`torch_dtype` is deprecated! Use `dtype` instead!
+2026-05-06 06:54:02.051828: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-05-06 06:54:02.074812: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1778050442.098045 4131850 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1778050442.105292 4131850 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1778050442.123968 4131850 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778050442.123996 4131850 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778050442.123997 4131850 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1778050442.123999 4131850 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-05-06 06:54:02.128891: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Creating DFA mask store for Qwen2TokenizerFast and custom, may take more than 10 minutes. Caching at /home/advayth2/projects/verified-agent-synthesis/iter_cache/mask_stores/Qwen2TokenizerFast/grammar_strict_3014460696_151643.pkl.
+Ignore whitespace tokens is False
+
+  0%|          | 0/37 [00:00<?, ?it/s]
+  3%|▎         | 1/37 [00:00<00:22,  1.61it/s]
+  5%|▌         | 2/37 [00:01<00:20,  1.74it/s]
+  8%|▊         | 3/37 [00:01<00:19,  1.76it/s]
+ 11%|█         | 4/37 [00:06<01:11,  2.18s/it]
+ 14%|█▎        | 5/37 [00:07<00:55,  1.72s/it]
+ 16%|█▌        | 6/37 [00:11<01:15,  2.44s/it]
+ 19%|█▉        | 7/37 [00:15<01:29,  2.97s/it]
+ 22%|██▏       | 8/37 [00:15<01:03,  2.21s/it]
+ 24%|██▍       | 9/37 [00:20<01:23,  2.97s/it]
+ 27%|██▋       | 10/37 [00:20<00:59,  2.21s/it]
+ 30%|██▉       | 11/37 [00:25<01:14,  2.87s/it]
+ 32%|███▏      | 12/37 [00:25<00:53,  2.15s/it]
+ 35%|███▌      | 13/37 [00:30<01:07,  2.80s/it]
+ 38%|███▊      | 14/37 [00:34<01:16,  3.31s/it]
+ 41%|████      | 15/37 [00:35<00:54,  2.49s/it]
+ 43%|████▎     | 16/37 [00:39<01:03,  3.04s/it]
+ 46%|████▌     | 17/37 [00:39<00:45,  2.29s/it]
+ 49%|████▊     | 18/37 [00:44<00:54,  2.89s/it]
+ 51%|█████▏    | 19/37 [00:44<00:39,  2.18s/it]
+ 54%|█████▍    | 20/37 [00:49<00:47,  2.81s/it]
+ 57%|█████▋    | 21/37 [00:49<00:34,  2.14s/it]
+ 59%|█████▉    | 22/37 [00:54<00:42,  2.86s/it]
+ 62%|██████▏   | 23/37 [00:54<00:30,  2.16s/it]
+ 65%|██████▍   | 24/37 [00:58<00:36,  2.78s/it]
+ 68%|██████▊   | 25/37 [00:59<00:25,  2.11s/it]
+ 70%|███████   | 26/37 [01:03<00:30,  2.81s/it]
+ 73%|███████▎  | 27/37 [01:04<00:21,  2.13s/it]
+ 76%|███████▌  | 28/37 [01:05<00:14,  1.66s/it]
+ 78%|███████▊  | 29/37 [01:09<00:19,  2.49s/it]
+ 81%|████████  | 30/37 [01:10<00:13,  1.90s/it]
+ 84%|████████▍ | 31/37 [01:14<00:15,  2.66s/it]
+ 86%|████████▋ | 32/37 [01:15<00:10,  2.04s/it]
+ 89%|████████▉ | 33/37 [01:19<00:10,  2.74s/it]
+ 92%|█████████▏| 34/37 [01:19<00:06,  2.08s/it]
+ 95%|█████████▍| 35/37 [01:24<00:05,  2.79s/it]
+ 97%|█████████▋| 36/37 [01:26<00:02,  2.57s/it]
+100%|██████████| 37/37 [01:30<00:00,  3.10s/it]
+100%|██████████| 37/37 [01:30<00:00,  2.45s/it]
+[crane-original:gsm_symbolic] 1/50
+[crane-original:gsm_symbolic] 2/50
+[crane-original:gsm_symbolic] 3/50
+[crane-original:gsm_symbolic] 4/50
+[crane-original:gsm_symbolic] 5/50
+[crane-original:gsm_symbolic] 6/50
+[crane-original:gsm_symbolic] 7/50
+[crane-original:gsm_symbolic] 8/50
+[crane-original:gsm_symbolic] 9/50
+[crane-original:gsm_symbolic] 10/50
+[crane-original:gsm_symbolic] 11/50
+[crane-original:gsm_symbolic] 12/50
+[crane-original:gsm_symbolic] 13/50
+[crane-original:gsm_symbolic] 14/50
+[crane-original:gsm_symbolic] 15/50
+[crane-original:gsm_symbolic] 16/50
+[crane-original:gsm_symbolic] 17/50
+[crane-original:gsm_symbolic] 18/50
+[crane-original:gsm_symbolic] 19/50
+[crane-original:gsm_symbolic] 20/50
+[crane-original:gsm_symbolic] 21/50
+[crane-original:gsm_symbolic] 22/50
+[crane-original:gsm_symbolic] 23/50
+[crane-original:gsm_symbolic] 24/50
+[crane-original:gsm_symbolic] 25/50
+[crane-original:gsm_symbolic] 26/50
+[crane-original:gsm_symbolic] 27/50
+[crane-original:gsm_symbolic] 28/50
+[crane-original:gsm_symbolic] 29/50
+[crane-original:gsm_symbolic] 30/50
+[crane-original:gsm_symbolic] 31/50
+[crane-original:gsm_symbolic] 32/50
+[crane-original:gsm_symbolic] 33/50
+[crane-original:gsm_symbolic] 34/50
+[crane-original:gsm_symbolic] 35/50
+[crane-original:gsm_symbolic] 36/50
+[crane-original:gsm_symbolic] 37/50
+[crane-original:gsm_symbolic] 38/50
+[crane-original:gsm_symbolic] 39/50
+[crane-original:gsm_symbolic] 40/50
