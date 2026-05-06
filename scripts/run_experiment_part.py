@@ -27,7 +27,7 @@ from typing import Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "outputs" / "generated-csd"
+DEFAULT_OUTPUT_DIR = Path("/home/aadivyar/csd-generation/outputs/generated-csd")
 DEFAULT_PYTHON = "/opt/anaconda/bin/python"
 
 QWEN_MODELS = {
@@ -104,6 +104,8 @@ def master_cmd(
         generation_models,
         "--no-kill-vllm-before-cells",
     ]
+    if methods == "metadecode":
+        cmd.extend(["--max-iterations", "40"])
     if not include_ablations:
         cmd.append("--no-include-ablations")
     return tuple(cmd)
