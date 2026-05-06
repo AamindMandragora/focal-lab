@@ -30,6 +30,12 @@ from baseline_cache import (
     reuse_cached_baseline,
     store_cached_baseline,
 )
+from project_defaults import (
+    default_cars_repo,
+    default_crane_repo,
+    default_dafny_path,
+    default_itergen_repo,
+)
 
 
 DEFAULT_TASK_TEMPLATE = (
@@ -394,7 +400,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
     parser.add_argument("--run-name", default="smiles_generalization")
     parser.add_argument("--classes", default=",".join(SMILES_CLASSES))
-    parser.add_argument("--cars-repo", type=Path, default=None,
+    parser.add_argument("--cars-repo", type=Path, default=default_cars_repo(),
                         help="Path to the original CARS repo. Required unless --skip-cars.")
     parser.add_argument("--skip-cars", action="store_true")
     parser.add_argument("--skip-synthesis", action="store_true")
@@ -418,18 +424,18 @@ def main() -> int:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--eval-max-steps", type=int, default=512)
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
-    parser.add_argument("--dafny-path", default="/home/aadivyar/.dotnet/tools/dafny")
+    parser.add_argument("--dafny-path", default=default_dafny_path())
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--vllm-max-model-len", type=int, default=4096)
     parser.add_argument("--model-number", choices=["1", "2"], default="2")
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cuda-visible-devices", default=os.environ.get("SMILES_CUDA_VISIBLE_DEVICES", "auto"))
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
     parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
     parser.add_argument("--gpu-avoid-devices", default=os.environ.get("GPU_AVOID_DEVICES", ""))
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--itergen-device", default="cuda:0")
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)

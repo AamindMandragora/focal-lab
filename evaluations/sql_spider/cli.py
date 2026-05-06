@@ -74,7 +74,7 @@ def main() -> None:
                     choices=["huggingface", "vllm"],
                     help="Runtime backend")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    ap.add_argument("--source", default="local", choices=["auto", "hf", "local"],
+    ap.add_argument("--source", default="auto", choices=["auto", "hf", "local"],
                     help="Spider data source")
     ap.add_argument("--spider-dir", type=Path, default=None,
                     help="Local Spider directory (dev.json, tables.json, databases/)")

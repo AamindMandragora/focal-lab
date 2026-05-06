@@ -21,6 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from project_defaults import default_crane_repo, default_gsm_source_dir
 from synthesis.evaluator import Evaluator
 
 
@@ -439,7 +440,7 @@ def main() -> int:
     parser.add_argument("--dataset", choices=["gsm", "gsm_symbolic", "spider", "sql", "smiles"], required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--crane-device", default="cuda:0")
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
@@ -449,7 +450,7 @@ def main() -> int:
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.75)
     parser.add_argument("--vllm-max-model-len", type=int, default=4096)
-    parser.add_argument("--gsm-source-dir", type=Path, default=Path("/home/aadivyar/CRANE/src/gsm_symbolic"))
+    parser.add_argument("--gsm-source-dir", type=Path, default=default_gsm_source_dir())
     parser.add_argument("--gsm-split-file", type=Path, default=None)
     parser.add_argument("--gsm-split-name", choices=["train", "eval", "test"], default="eval")
     parser.add_argument("--spider-split-file", type=Path, default=None)

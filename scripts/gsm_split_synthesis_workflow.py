@@ -24,7 +24,15 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
-DEFAULT_CRANE_GSM_DIR = Path("/home/aadivyar/CRANE/src/gsm_symbolic")
+from project_defaults import (
+    default_cars_repo,
+    default_crane_repo,
+    default_dafny_path,
+    default_gsm_source_dir,
+    default_itergen_repo,
+)
+
+DEFAULT_CRANE_GSM_DIR = default_gsm_source_dir()
 
 from gpu_utils import cuda_env, select_cuda_visible_devices, visible_device_count
 from baseline_cache import (
@@ -839,11 +847,11 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--overwrite-difficulty", action="store_true")
     parser.add_argument("--no-difficulty-backup", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "outputs" / "generated-csd")
-    parser.add_argument("--dafny-path", default="/home/aadivyar/.dotnet/tools/dafny")
+    parser.add_argument("--dafny-path", default=default_dafny_path())
     parser.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     parser.add_argument("--eval-backend", choices=["huggingface", "vllm"], default="vllm")
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--crane-repo", type=Path, default=Path("/home/aadivyar/CRANE"))
+    parser.add_argument("--crane-repo", type=Path, default=default_crane_repo())
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
     parser.add_argument("--original-framework-cuda-visible-devices", default=os.environ.get("ORIGINAL_FRAMEWORK_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--gpu-min-free-mib", type=int, default=int(os.environ.get("GPU_MIN_FREE_MIB", "12000")))
@@ -859,12 +867,12 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.5)
     parser.add_argument("--vllm-max-model-len", type=int, default=8192)
     parser.add_argument("--vllm-enforce-eager", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--itergen-device", default="cuda:0")
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
-    parser.add_argument("--cars-repo", type=Path, default=Path("/home/aadivyar/cars"))
+    parser.add_argument("--cars-repo", type=Path, default=default_cars_repo())
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)

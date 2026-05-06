@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from evaluations.gsm_symbolic.dataset import load_gsm_from_crane_folder
 from evaluations.gsm_symbolic.grammar import build_dynamic_grammar, extract_variables_from_mapping
+from project_defaults import default_gsm_source_dir, default_itergen_repo
 
 
 def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
@@ -140,10 +141,10 @@ def syntax_valid(expr: str | None, base_grammar: str, variable_types: dict[str, 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--split-file", type=Path, required=True)
     parser.add_argument("--split-name", choices=["train", "eval", "test"], default="eval")
-    parser.add_argument("--gsm-source-dir", type=Path, default=Path("/home/aadivyar/CRANE/src/gsm_symbolic"))
+    parser.add_argument("--gsm-source-dir", type=Path, default=default_gsm_source_dir())
     parser.add_argument("--grammar", type=Path, default=PROJECT_ROOT / "grammars" / "gsm.lark")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--model", default="Qwen/Qwen2.5-Coder-7B-Instruct")

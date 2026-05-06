@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from evaluations.smiles.dataset import SMILES_CLASSES, get_smiles_task
 from evaluations.smiles.metrics import evaluate_smiles_output
+from project_defaults import default_itergen_repo
 
 
 def patch_itergen_logits_warper_compat(itergen_cls: type[Any]) -> None:
@@ -62,7 +63,7 @@ def format_prompt(prompt: str, model: str) -> str | list[dict[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--itergen-repo", type=Path, default=Path("/home/aadivyar/itergen"))
+    parser.add_argument("--itergen-repo", type=Path, default=default_itergen_repo())
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--classes", default=",".join(SMILES_CLASSES))
     parser.add_argument("--target-samples", type=int, default=100)
