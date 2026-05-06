@@ -541,8 +541,8 @@ def legacy_ablation_commands(args: argparse.Namespace) -> list[tuple[str, list[s
     commands: list[tuple[str, list[str], str]] = []
     commands.append((
         "ablation_gsm_maxsteps_iterations_grid",
-        ["bash", "scripts/run_gsm_ablation_grid.sh"],
-        "GSM ablation grid over maxSteps={256,512,1024} and synthesis iterations={5,10,15,20}.",
+        ["bash", "scripts/run_generalization_ablation_grid.sh"],
+        "Generalization ablation grid over datasets={gsm,spider,smiles}, maxSteps={256,512,1024}, and synthesis iterations={5,10,15,20}.",
     ))
     if args.include_lottery_ablation:
         commands.append((
