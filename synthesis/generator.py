@@ -416,11 +416,12 @@ class StrategyGenerator:
         payload = {
             "model": self.model_name,
             "max_tokens": self.max_new_tokens,
-            "temperature": self.temperature,
-            "top_p": self.top_p,
             "system": system_prompt,
             "messages": user_messages,
         }
+        if not self._anthropic_uses_fixed_sampling():
+            payload["temperature"] = self.temperature
+            payload["top_p"] = self.top_p
         data = self._post_json(
             url,
             {
@@ -432,6 +433,9 @@ class StrategyGenerator:
         parts = data.get("content") or []
         text = "".join(part.get("text", "") for part in parts if part.get("type") == "text")
         return text.strip()
+
+    def _anthropic_uses_fixed_sampling(self) -> bool:
+        return self.model_name.startswith("claude-opus-4-7")
 
     def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
         base_url = (self.api_base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
