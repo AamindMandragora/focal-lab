@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 import importlib.util
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -80,6 +81,27 @@ def _clean_sql(text: str) -> str:
     s = str(text).strip()
     # Drop anything after a blank line (matches syncode Dataset.post_process_answer)
     s = s.split("\n\n")[0]
+    cut_positions = [len(s)]
+    for marker in (
+        r"\bHuman\s*:",
+        r"\bAssistant\s*:",
+        r"\bUser\s*:",
+        r"\bSystem\s*:",
+        r"\bdb_id\s*:",
+        r"\bdb_info\s*:",
+        r"\bquestion\s*:",
+        r"\bSQL\s*:",
+    ):
+        match = re.search(marker, s, flags=re.IGNORECASE)
+        if match and match.start() > 0:
+            cut_positions.append(match.start())
+    repeated_select = re.search(r"\s+SelEct\s+", s)
+    if repeated_select and repeated_select.start() > 0:
+        cut_positions.append(repeated_select.start())
+    semicolon = s.find(";")
+    if semicolon > 0:
+        cut_positions.append(semicolon)
+    s = s[: min(cut_positions)]
     # Collapse newlines to spaces
     s = s.replace("\n", " ").replace("\r", " ")
     # Strip trailing semicolons and whitespace

@@ -13,7 +13,16 @@ import json
 import os
 import re
 import time
+import sys
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.native_libs import ensure_env_lib_first
+
+ensure_env_lib_first()
 
 import torch
 
@@ -35,9 +44,6 @@ from evaluations.sql_spider.environment import (
 )
 from evaluations.sql_spider.executor import execute_accuracy, _clean_sql
 from evaluations.common.parser_utils import create_lark_dafny_parser
-
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-
 
 PROMPT_TEMPLATE = (
     "You are given a database schema and a question. "

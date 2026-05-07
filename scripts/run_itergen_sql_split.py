@@ -16,6 +16,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.native_libs import ensure_env_lib_first
+
+ensure_env_lib_first()
+
 from evaluations.sql_spider.dataset import (
     default_db_dir,
     default_tables_json,
@@ -203,15 +207,24 @@ def main() -> int:
         etype=args.etype,
     )
     for row, scored in zip(rows, scored_rows):
+        validity = scored.get("validity")
+        is_correct = scored.get("exec") is True
         row.update({
             "gold": scored.get("gold", ""),
             "exec": scored.get("exec"),
-            "validity": scored.get("validity"),
+            "validity": validity,
+            "is_correct": is_correct,
+            "syntax_valid": validity == "Valid",
         })
+    num_examples = len(rows)
+    num_correct = sum(1 for row in rows if row.get("exec") is True)
+    syntax_count = sum(1 for row in rows if row.get("validity") == "Valid")
+    all_exec_accuracy = float(scores.get("all", {}).get("exec", 0.0) or 0.0)
 
     output = {
         "config": {
             "method": "itergen",
+            "dataset": "spider",
             "itergen_repo": str(itergen_repo),
             "split_file": str(args.split_file),
             "split_name": args.split_name,
@@ -225,8 +238,15 @@ def main() -> int:
         },
         "scores": scores,
         "error_types": error_types,
-        "all_exec_accuracy": float(scores.get("all", {}).get("exec", 0.0)),
-        "avg_num_tokens": total_tokens / max(1, len(rows)),
+        "all_exec_accuracy": all_exec_accuracy,
+        "accuracy": all_exec_accuracy,
+        "num_correct": num_correct,
+        "num_examples": num_examples,
+        "accuracy_denominator": num_examples,
+        "accuracy_definition": "Spider official execution accuracy",
+        "syntax_rate": syntax_count / max(1, num_examples),
+        "syntax_definition": "Spider executor validity over generated SQL predictions",
+        "avg_num_tokens": total_tokens / max(1, num_examples),
         "wall_time_seconds": time.time() - start,
         "question_mismatches": mismatches,
         "rows": rows,

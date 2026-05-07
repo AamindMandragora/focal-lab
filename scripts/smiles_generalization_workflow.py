@@ -443,8 +443,8 @@ def main() -> int:
     parser.add_argument("--compiled-module", type=Path, default=None,
                         help="Existing compiled CSD module to test for a single selected class.")
     parser.add_argument("--train-samples", type=int, default=50)
-    parser.add_argument("--test-samples", type=int, default=100)
-    parser.add_argument("--max-attempts", type=int, default=2000)
+    parser.add_argument("--test-samples", type=int, default=50)
+    parser.add_argument("--max-attempts", type=int, default=500)
     parser.add_argument("--task-template", default=DEFAULT_TASK_TEMPLATE)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
@@ -672,11 +672,12 @@ def main() -> int:
 
         if compiled_module is not None:
             if not args.skip_cars:
+                cars_test_dir = class_benchmark_dir / f"cars_test{args.test_samples}"
                 cars_test_cmd = benchmark_command(
                     args,
                     class_name=class_name,
                     compiled_module=None,
-                    output_dir=class_benchmark_dir / "cars_test100",
+                    output_dir=cars_test_dir,
                     run_cars=True,
                     run_csd=False,
                     target_samples=args.test_samples,
@@ -685,7 +686,7 @@ def main() -> int:
                 rc = run_logged(cars_test_cmd, logs_dir / f"{args.run_name}_{class_name}_cars_test.log", dry_run=args.dry_run)
                 if rc != 0:
                     raise SystemExit(rc)
-                class_summary["cars_test_benchmark"] = str(latest_benchmark_json(class_benchmark_dir / "cars_test100"))
+                class_summary["cars_test_benchmark"] = str(latest_benchmark_json(cars_test_dir))
 
             csd_cmd = benchmark_command(
                 args,

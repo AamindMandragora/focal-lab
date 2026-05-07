@@ -214,6 +214,29 @@ class EvaluationResult:
                 ]
             )
 
+        early_stop = self.aux_metrics.get("early_stop")
+        if isinstance(early_stop, dict):
+            lines.extend(
+                [
+                    "",
+                    "Early Stop:",
+                    f"  Reason: {early_stop.get('reason', 'unknown')}",
+                    (
+                        "  Max possible accuracy: "
+                        f"{float(early_stop.get('max_possible_accuracy', 0.0)):.1%}"
+                    ),
+                    (
+                        "  Target accuracy: "
+                        f"{float(early_stop.get('target_accuracy', 0.0)):.1%}"
+                    ),
+                    (
+                        "  Evaluated examples: "
+                        f"{early_stop.get('evaluated_examples', 0)}/"
+                        f"{early_stop.get('total_examples', self.num_examples)}"
+                    ),
+                ]
+            )
+
         failure_modes = self._summarize_failure_modes()
         if failure_modes:
             lines.append("\nPrimary Failure Modes:")
@@ -2201,6 +2224,7 @@ class Evaluator:
         self,
         compiled_module_path: Path,
         sample_size: Optional[int] = None,
+        min_accuracy: Optional[float] = None,
     ) -> EvaluationResult:
         """
         Evaluate the compiled CSD on a sample of the dataset.
@@ -2208,6 +2232,9 @@ class Evaluator:
         Args:
             compiled_module_path: Path to the compiled GeneratedCSD.py module
             sample_size: Number of examples to evaluate (overrides init value)
+            min_accuracy: Optional target accuracy. If provided, evaluation
+                stops once even a perfect score on every remaining example
+                cannot reach this target.
 
         Returns:
             EvaluationResult with metrics and sample outputs
@@ -2239,6 +2266,69 @@ class Evaluator:
             all_examples_contain_delimiters = True
             num_examples_syntax_pass = 0
             num_accuracy_examples = 0
+            total_planned_examples = len(dataset)
+
+            def _accuracy_upper_bound() -> float:
+                remaining = max(0, total_planned_examples - len(sample_outputs))
+                if self.dataset_name == "smiles":
+                    # SMILES accuracy excludes syntax-invalid molecules from
+                    # the denominator, so the best future case is that every
+                    # remaining attempt is syntax-valid and class-correct.
+                    return (num_correct + remaining) / max(1, num_accuracy_examples + remaining)
+                return (num_correct + remaining) / max(1, total_planned_examples)
+
+            def _target_unreachable() -> bool:
+                return min_accuracy is not None and min_accuracy > 0.0 and _accuracy_upper_bound() < min_accuracy
+
+            def _partial_result_for_unreachable_target() -> EvaluationResult:
+                total_time = time.time() - start_time
+                evaluated_count = len(sample_outputs)
+                max_sample_time = max(
+                    (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
+                    default=0.0,
+                )
+                if self.dataset_name == "smiles":
+                    accuracy_denominator = num_accuracy_examples
+                    accuracy_definition = "class_membership_among_syntax_valid_molecules"
+                    invalid_excluded = evaluated_count - num_accuracy_examples
+                else:
+                    accuracy_denominator = total_planned_examples
+                    accuracy_definition = "correct_examples_over_all_examples"
+                    invalid_excluded = 0
+                upper_bound = _accuracy_upper_bound()
+                aux_metrics = (
+                    self._compute_smiles_aux_metrics(sample_outputs)
+                    if self.dataset_name == "smiles"
+                    else {}
+                )
+                aux_metrics["early_stop"] = {
+                    "reason": "target_accuracy_unreachable",
+                    "target_accuracy": min_accuracy,
+                    "max_possible_accuracy": upper_bound,
+                    "evaluated_examples": evaluated_count,
+                    "total_examples": total_planned_examples,
+                    "remaining_examples": max(0, total_planned_examples - evaluated_count),
+                }
+                return EvaluationResult(
+                    success=True,
+                    accuracy=num_correct / max(1, accuracy_denominator),
+                    contains_delimiters=all_examples_contain_delimiters,
+                    syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
+                    num_examples=evaluated_count,
+                    num_correct=num_correct,
+                    accuracy_denominator=accuracy_denominator,
+                    accuracy_definition=accuracy_definition,
+                    invalid_outputs_excluded_from_accuracy=invalid_excluded,
+                    total_time_seconds=total_time,
+                    max_sample_time_seconds=max_sample_time,
+                    error=(
+                        "Evaluation stopped early because target accuracy is "
+                        f"unreachable: best possible is {upper_bound:.1%}, "
+                        f"target is {float(min_accuracy or 0.0):.1%}."
+                    ),
+                    sample_outputs=sample_outputs,
+                    aux_metrics=aux_metrics,
+                )
 
             for i, example in enumerate(dataset):
                 print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
@@ -2430,6 +2520,15 @@ class Evaluator:
                     if self.dataset_name == "smiles":
                         sample["smiles_eval"] = smiles_eval
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
+                    if _target_unreachable():
+                        upper_bound = _accuracy_upper_bound()
+                        print(
+                            "  [EVAL]   Stopping early: target accuracy "
+                            f"{float(min_accuracy or 0.0):.1%} is unreachable "
+                            f"(best possible {upper_bound:.1%}).",
+                            flush=True,
+                        )
+                        return _partial_result_for_unreachable_target()
 
                 except Exception as e:
                     if hasattr(example, "conclusion"):
@@ -2471,6 +2570,15 @@ class Evaluator:
                         "helper_trace": [],
                     }
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
+                    if _target_unreachable():
+                        upper_bound = _accuracy_upper_bound()
+                        print(
+                            "  [EVAL]   Stopping early: target accuracy "
+                            f"{float(min_accuracy or 0.0):.1%} is unreachable "
+                            f"(best possible {upper_bound:.1%}).",
+                            flush=True,
+                        )
+                        return _partial_result_for_unreachable_target()
                     if timed_out:
                         total_time = time.time() - start_time
                         evaluated_count = len(sample_outputs)

@@ -73,6 +73,11 @@ def base_env(args: argparse.Namespace) -> dict[str, str]:
         env.update(load_env_file(PROJECT_ROOT / ".env"))
     env["PYTHONPATH"] = f"{PROJECT_ROOT}:{env.get('PYTHONPATH', '')}".rstrip(":")
     env.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+    python_lib = Path(args.python).expanduser().resolve().parent.parent / "lib"
+    if python_lib.exists():
+        existing = env.get("LD_LIBRARY_PATH", "")
+        parts = [str(python_lib), *[part for part in existing.split(":") if part and part != str(python_lib)]]
+        env["LD_LIBRARY_PATH"] = ":".join(parts)
     return env
 
 
