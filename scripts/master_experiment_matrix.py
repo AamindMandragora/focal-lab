@@ -216,6 +216,12 @@ def benchmark_payload_reusable(payload: Any) -> bool:
     config = payload.get("config")
     if isinstance(config, dict) and config.get("dry_run"):
         return False
+    if isinstance(config, dict):
+        dataset = config.get("dataset")
+        method = config.get("method")
+        prompt_style = config.get("prompt_style")
+        if dataset == "gsm_symbolic" and method == "unconstrained" and prompt_style != "crane":
+            return False
     if payload.get("dry_run"):
         return False
     if payload.get("success") is False:
@@ -245,6 +251,11 @@ def gpu_env(base: dict[str, str], cuda_visible_devices: str | None) -> dict[str,
         env["CUDA_VISIBLE_DEVICES"] = cuda_visible_devices
     env.setdefault("PYTHONPATH", str(PROJECT_ROOT))
     env.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+    python_lib = Path(sys.executable).resolve().parent.parent / "lib"
+    if python_lib.exists():
+        existing = env.get("LD_LIBRARY_PATH", "")
+        parts = [str(python_lib), *[part for part in existing.split(":") if part and part != str(python_lib)]]
+        env["LD_LIBRARY_PATH"] = ":".join(parts)
     return env
 
 
@@ -488,6 +499,7 @@ def gsm_metadecode_command(args: argparse.Namespace, model: ModelSpec, generatio
         str(args.gsm_cars_max_new_tokens),
         "--cars-cuda-visible-devices",
         args.cars_cuda_visible_devices,
+        "--skip-cars-train-baseline",
     ]
 
 
@@ -567,6 +579,8 @@ def gsm_unconstrained_command(args: argparse.Namespace, model: ModelSpec, output
         str(args.gsm_vllm_gpu_memory_utilization),
         "--vllm-max-model-len",
         str(args.gsm_vllm_max_model_len),
+        "--prompt-style",
+        "crane",
     ]
 
 
@@ -635,7 +649,7 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec, generation: 
         args.python,
         "scripts/itergen_generalization_workflow.py",
         "--run-name",
-        f"{args.run_name}_spider_itergen_metadecode_{model.alias}_{generation.alias}",
+        f"{args.run_name}_spider_metadecode_{model.alias}_{generation.alias}",
         "--output-dir",
         str(args.output_dir),
         "--itergen-repo",
@@ -698,6 +712,36 @@ def spider_pair_command(args: argparse.Namespace, model: ModelSpec, generation: 
         str(args.spider_cars_max_new_tokens),
         "--cars-cuda-visible-devices",
         args.cars_cuda_visible_devices,
+        "--skip-cars-train-baseline",
+    ]
+
+
+def spider_itergen_command(args: argparse.Namespace, model: ModelSpec, output_path: Path) -> list[str]:
+    return [
+        args.python,
+        "scripts/run_itergen_sql_split.py",
+        "--itergen-repo",
+        str(args.itergen_repo),
+        "--split-file",
+        str(args.spider_split_file),
+        "--split-name",
+        "test",
+        "--limit",
+        str(args.spider_test_size),
+        "--model",
+        model.name,
+        "--device",
+        args.itergen_device,
+        "--seed",
+        str(args.itergen_seed),
+        "--recurrence-penalty",
+        str(args.itergen_recurrence_penalty),
+        "--max-iter",
+        str(args.itergen_spider_max_iter),
+        "--source",
+        args.spider_source,
+        "--output",
+        str(output_path),
     ]
 
 
@@ -1129,6 +1173,7 @@ def main() -> int:
     parser.add_argument("--itergen-seed", type=int, default=0)
     parser.add_argument("--itergen-recurrence-penalty", type=float, default=0.3)
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
+    parser.add_argument("--itergen-spider-max-iter", type=int, default=20)
     parser.add_argument("--itergen-smiles-max-new-tokens", type=int, default=512)
 
     parser.add_argument("--crane-repo", type=Path, default=_default_repo_path("CRANE_REPO", "CRANE"))
@@ -1136,15 +1181,15 @@ def main() -> int:
 
     parser.add_argument("--cars-repo", type=Path, default=_default_repo_path("CARS_REPO", "cars"))
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--cars-max-attempts-per-example", type=int, default=500)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
     parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
 
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
     parser.add_argument("--smiles-train-samples", type=int, default=50)
-    parser.add_argument("--smiles-test-samples", type=int, default=100)
-    parser.add_argument("--smiles-max-attempts", type=int, default=2000)
+    parser.add_argument("--smiles-test-samples", type=int, default=50)
+    parser.add_argument("--smiles-max-attempts", type=int, default=500)
     parser.add_argument("--smiles-eval-max-steps", type=int, default=512)
     parser.add_argument("--smiles-eval-step-token-budget", type=int, default=1)
     parser.add_argument("--smiles-vllm-gpu-memory-utilization", type=float, default=0.75)
@@ -1300,30 +1345,36 @@ def main() -> int:
                 meta={"dataset": "spider", "method": "unconstrained", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
 
-        if "spider" in datasets and any(m in methods for m in ("itergen", "metadecode")):
-            active_generations = (
-                generation_models_for_eval_model(model, generations)
-                if "metadecode" in methods
-                else generations[:1]
+        if "spider" in datasets and "itergen" in methods:
+            cell_id = f"spider_itergen_{model.alias}"
+            output_path = paths["root"] / "benchmarks" / f"{cell_id}.json"
+            cmd = spider_itergen_command(args, model, output_path)
+            run_logged(
+                args=args,
+                ledger=paths["ledger"],
+                cell_ids=[cell_id],
+                group_id=cell_id,
+                cmd=cmd,
+                log_path=paths["logs"] / f"{cell_id}.log",
+                env=gpu_env(base_env, args.spider_cuda_visible_devices),
+                meta={"dataset": "spider", "method": "itergen", "model_alias": model.alias, "model_name": model.name, "output_path": str(output_path)},
             )
-            for generation_index, generation in enumerate(active_generations):
-                cell_ids = []
-                if "itergen" in methods and generation_index == 0:
-                    cell_ids.append(f"spider_itergen_{model.alias}")
-                if "metadecode" in methods:
-                    cell_ids.append(f"spider_metadecode_{model.alias}_{generation.alias}")
+
+        if "spider" in datasets and "metadecode" in methods:
+            for generation in generation_models_for_eval_model(model, generations):
+                cell_id = f"spider_metadecode_{model.alias}_{generation.alias}"
                 cmd = spider_pair_command(args, model, generation)
                 run_logged(
                     args=args,
                     ledger=paths["ledger"],
-                    cell_ids=cell_ids,
-                    group_id=f"spider_itergen_metadecode_{model.alias}_{generation.alias}",
+                    cell_ids=[cell_id],
+                    group_id=cell_id,
                     cmd=cmd,
-                    log_path=paths["logs"] / f"spider_itergen_metadecode_{model.alias}_{generation.alias}.log",
+                    log_path=paths["logs"] / f"{cell_id}.log",
                     env=gpu_env(base_env, args.spider_cuda_visible_devices),
                     meta={
                         "dataset": "spider",
-                        "method": "+".join(["itergen"] * ("itergen" in methods and generation_index == 0) + ["metadecode"] * ("metadecode" in methods)),
+                        "method": "metadecode",
                         "model_alias": model.alias,
                         "model_name": model.name,
                         "generation_alias": generation.alias,

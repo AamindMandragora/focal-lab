@@ -1,0 +1,84 @@
+{
+  "run_name": "handoff_gsm_spider_crane_itergen_qwen15_20260506_235546",
+  "created_at": "2026-05-06T23:55:47+00:00",
+  "datasets": [
+    "gsm",
+    "spider"
+  ],
+  "methods": [
+    "crane",
+    "itergen"
+  ],
+  "models": [
+    {
+      "alias": "qwen25_coder_1p5b_instruct",
+      "name": "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+    }
+  ],
+  "generation_models": [
+    {
+      "alias": "gpt54",
+      "name": "gpt-5.4",
+      "backend": "openai"
+    }
+  ],
+  "generation_pairing_policy": "gpt54 pairs with all Qwen2.5-Coder eval models; opus47 and gemini31pro pair only with qwen25_coder_7b_instruct.",
+  "excluded_eval_models": "All non-Qwen2.5-Coder 1.5B/7B/14B models removed by request.",
+  "adapter_contract": "Each dataset supplies its grammar, prompts/examples, and scorer; each method runner consumes the dataset grammar explicitly.",
+  "sizes": {
+    "gsm": {
+      "train": 50,
+      "eval": 50,
+      "split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json",
+      "difficulty_train_counts": "easy=13,medium=12,hard=25",
+      "difficulty_eval_counts": "easy=13,medium=12,hard=25"
+    },
+    "spider": {
+      "train": 50,
+      "test": 100,
+      "split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/spider_seed123_train50_test100.json"
+    },
+    "smiles": {
+      "train_samples": 50,
+      "test_samples": 50,
+      "classes": "acrylates,chain_extenders,isocyanates"
+    }
+  },
+  "cells": [
+    {
+      "cell_id": "gsm_crane_qwen25_coder_1p5b_instruct",
+      "dataset": "gsm",
+      "method": "crane",
+      "model_alias": "qwen25_coder_1p5b_instruct",
+      "model_name": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "status": "pending"
+    },
+    {
+      "cell_id": "gsm_itergen_qwen25_coder_1p5b_instruct",
+      "dataset": "gsm",
+      "method": "itergen",
+      "model_alias": "qwen25_coder_1p5b_instruct",
+      "model_name": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "status": "pending"
+    },
+    {
+      "cell_id": "spider_crane_qwen25_coder_1p5b_instruct",
+      "dataset": "spider",
+      "method": "crane",
+      "model_alias": "qwen25_coder_1p5b_instruct",
+      "model_name": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "status": "pending"
+    },
+    {
+      "cell_id": "spider_itergen_qwen25_coder_1p5b_instruct",
+      "dataset": "spider",
+      "method": "itergen",
+      "model_alias": "qwen25_coder_1p5b_instruct",
+      "model_name": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "status": "pending"
+    }
+  ],
+  "include_ablations": false,
+  "include_lottery_ablation": false,
+  "dry_run": false
+}

@@ -1,0 +1,358 @@
+[prepare] absolute rubric labels in CRANE folder: updated=100 source=rubric_absolute_v1
+[prepare] wrote split: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json
+[prepare] train=50 eval=50 total=100 seed=123
+[prepare] stratified composition: train={'easy': 13, 'hard': 25, 'medium': 12} eval={'easy': 13, 'hard': 25, 'medium': 12} source=json:rubric_absolute_v1
+[prepare] original CRANE train baseline:
+[baseline-cache] HIT GSM CRANE train: reused /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/crane_62b720372a2b4110b34655e2.json
+[prepare] CRANE train: accuracy=28.0% (14/50), syntax=76.0%
+[prepare] saved benchmark: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_010531_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_crane_train.json
+[prepare] IterGen train baseline:
+[baseline-cache] HIT GSM IterGen train: reused /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/itergen_0325c4a1ba65a5849ff29cf9.json
+[prepare] strict synthesis thresholds: accuracy>max_baseline(28.0%) => 30.0%, syntax target from max_baseline(92.0%) => 94.0%
+[prepare] saved launch metadata: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_010531_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_launch.json
+[prepare] synthesis command:
+/home/advayth2/envs/vas-rdkit/bin/python run_synthesis.py --task 'Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
+
+Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.' --dataset gsm_symbolic --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --gsm-split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --gsm-split-name train --max-iterations 100 --generation-model gpt-5.4 --generation-backend openai --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --output-name gsm_split_train50_synthesis --min-accuracy 0.3 --min-syntax-rate 0.94 --eval-sample-size 50 --eval-max-steps 600 --eval-step-token-budget 1 --device cuda --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny --synthesis-max-tokens 6144 --vllm-gpu-memory-utilization 0.5 --vllm-max-model-len 8192 --eval-seed 123 --eval-max-seconds-per-example 120.0 --vllm-enforce-eager
+[run-all] launching synthesis:
+/home/advayth2/envs/vas-rdkit/bin/python run_synthesis.py --task 'Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
+
+Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.' --dataset gsm_symbolic --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --gsm-split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --gsm-split-name train --max-iterations 100 --generation-model gpt-5.4 --generation-backend openai --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --output-name gsm_split_train50_synthesis --min-accuracy 0.3 --min-syntax-rate 0.94 --eval-sample-size 50 --eval-max-steps 600 --eval-step-token-budget 1 --device cuda --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny --synthesis-max-tokens 6144 --vllm-gpu-memory-utilization 0.5 --vllm-max-model-len 8192 --eval-seed 123 --eval-max-seconds-per-example 120.0 --vllm-enforce-eager
+[run-all] synthesis log: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/logs/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_010531_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_synthesis.log
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: gsm_symbolic
+  Generation model: gpt-5.4
+  Evaluation model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+Generating initial strategy for: Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
+
+Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.
+
+============================================================
+Attempt 1/100
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy tracks the visible output (`generated`), whether we are inside
+// the final constrained answer span, the active constrained suffix itself, and
+// a small local flag `answerArmed` that becomes true after free-form reasoning
+// emits likely answer-introducing tokens such as "=" or "answer". Outside the
+// span, the strategy either keeps generating freely, explicitly opens the final
+// span when `answerArmed` is set, or enters constrained mode if the model has
+// already emitted "<<". Inside the span, the parser is the hard authority: we
+// use adaptive/group-aware constrained steps while there is budget, but if EOS
+// is produced inside the span or remaining budget becomes too small before a
+// complete expression is reached, we salvage validity by rolling back to a
+// valid prefix and then appending a minimal grammar-valid fallback token "0"
+// when allowed, closing the span as soon as the parser reports completeness.
+// This supports the task because natural-language reasoning stays outside the
+// constrained region, while the final visible <<...>> span is kept valid and
+// closed even under uncertainty.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In unconstrained generation, the implication is vacuous
+//   unless we enter a span. The explicit open branch uses OpenConstrainedSpan,
+//   and the observed-open branch uses EnterObservedConstrainedSpan; both set
+//   currentConstrainedOut := [], which is valid by parser.IsValidPrefix([]).
+//   In the close branch, CloseConstrainedSpan sets insideConstrainedOut to
+//   false, so the implication becomes vacuous. In the ordinary constrained-step
+//   branch, AdaptiveConstrainedStep returns either EOS or a parser-valid next
+//   token, and AppendConstrainedToken preserves parser validity. In the salvage
+//   branch, RollbackConstrainedSuffix returns a valid constrained prefix; if
+//   token "0" is valid next, AppendConstrainedToken preserves validity, and if
+//   not, the rolled-back valid prefix is retained. Thus every branch preserves
+//   insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut).
+// progress: The free-token branch consumes one step via UnconstrainedStep and
+//   appends at most one visible token. OpenConstrainedSpan and
+//   CloseConstrainedSpan each consume one step and append at most one visible
+//   delimiter. EnterObservedConstrainedSpan consumes zero steps and appends no
+//   token, so the bound is unchanged. The constrained-step branch consumes one
+//   step and appends at most one visible token. The salvage branch may perform
+//   rollback at zero cost, then optionally append one fallback token using
+//   AppendConstrainedToken after a single AdaptiveConstrainedStep-equivalent
+//   budget increment we account for directly, and may then close with one more
+//   step; in all cases visible growth is at most the consumed step budget.
+//   Therefore |generated| <= |generatedPrefix| + steps is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var answerArmed: bool := false;
+var openTok: Token := "<<";
+var fallbackTok: Token := "0";
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    if answerArmed {
+      var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+      generated := openedGenerated;
+      insideConstrainedOut := openedInside;
+      currentConstrainedOut := openedCurrent;
+      answerArmed := false;
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == openTok {
+          var enteredGenerated, enteredInside, enteredCurrent := helpers.EnterObservedConstrainedSpan(lm, generated);
+          generated := enteredGenerated;
+          insideConstrainedOut := enteredInside;
+          currentConstrainedOut := enteredCurrent;
+          answerArmed := false;
+        } else if next == "=" || next == ":" || next == "answer" || next == "Answer" {
+          answerArmed := true;
+        }
+      }
+    }
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  } else {
+    var remaining: nat := maxSteps - steps;
+    if remaining <= 1 {
+      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+        parser, generated, currentConstrainedOut
+      );
+      generated := rolledGenerated;
+      insideConstrainedOut := true;
+      currentConstrainedOut := rolledCurrent;
+
+      if helpers.IsTokenValidNext(parser, currentConstrainedOut, fallbackTok) {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, fallbackTok
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+        steps := steps + 1;
+      } else {
+        break;
+      }
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      var next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, 12, eosToken
+      );
+      steps := steps + 1;
+      if next == eosToken {
+        var repairedGenerated, repairedCurrent := helpers.RollbackConstrainedSuffix(
+          parser, generated, currentConstrainedOut
+        );
+        generated := repairedGenerated;
+        insideConstrainedOut := true;
+        currentConstrainedOut := repairedCurrent;
+
+        if steps < maxSteps && helpers.IsTokenValidNext(parser, currentConstrainedOut, fallbackTok) {
+          var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, fallbackTok
+          );
+          generated := appendedGenerated2;
+          insideConstrainedOut := appendedInside2;
+          currentConstrainedOut := appendedCurrent2;
+        } else {
+          break;
+        }
+      } else {
+        var appendedGenerated3, appendedInside3, appendedCurrent3 := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, next
+        );
+        generated := appendedGenerated3;
+        insideConstrainedOut := appendedInside3;
+        currentConstrainedOut := appendedCurrent3;
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: GeneratedCSD.dfy(148,17): Error: expression is not allowed to invoke a method (IsTokenValidNext)
+    |
+148 |       if helpers.IsTokenValidNext(parser, currentConstrainedOut, fallbackTok) {
+    |                  ^^^^^^^^^^^^^^^^
+
+GeneratedCSD.dfy(148,33): Error: method call is not allowed to be used
+  Refining based on verification error...
+
+============================================================
+Attempt 2/100
+============================================================
+Strategy: // CSD_RATIONALE_BEGIN
+// This strategy keeps free-form reasoning outside constrained spans and aims to
+// place only the final answer inside the last visible <<...>> region. A local
+// flag `answerArmed` is set by lightweight answer-introducing cues in the free
+// text, after which the strategy explicitly opens a constrained span. If the
+// model naturally emits "<<", we instead enter the observed span without adding
+// another delimiter. Inside the span, the parser is the hard authority: we use
+// adaptive constrained decoding for ordinary progress, close immediately once
+// the expression is complete, and apply a syntax-salvage policy on low budget
+// or EOS by rolling back to a valid prefix and, when allowed, appending a
+// minimal fallback token "0" before closing on a later iteration. This favors a
+// grammar-valid final answer span over risking malformed or unclosed output.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branches, the implication is vacuous
+//   unless we enter a span. OpenConstrainedSpan and EnterObservedConstrainedSpan
+//   both establish currentConstrainedOut := [], which is valid by the method
+//   precondition parser.IsValidPrefix([]). In the complete-prefix branch,
+//   CloseConstrainedSpan sets insideConstrainedOut to false, so the implication
+//   becomes vacuous. In the ordinary constrained-step branch,
+//   AdaptiveConstrainedStep returns EOS or a parser-valid next token; on the
+//   non-EOS path AppendConstrainedToken preserves parser validity. In the
+//   salvage branches, RollbackConstrainedSuffix returns a valid constrained
+//   prefix, and if fallback token "0" is valid next then AppendConstrainedToken
+//   preserves validity; otherwise the repaired valid prefix is retained.
+// progress: UnconstrainedStep consumes one token-step and appends at most one
+//   visible token. OpenConstrainedSpan and CloseConstrainedSpan each consume one
+//   step and append at most one visible delimiter; EnterObservedConstrainedSpan
+//   consumes zero steps and appends nothing. AdaptiveConstrainedStep consumes
+//   one step and AppendConstrainedToken adds at most one visible token. The
+//   rollback repair branches consume zero steps by themselves and may shrink
+//   visible output; any later fallback append occurs only after one consumed LM
+//   step has already been charged, so visible growth is still bounded by total
+//   consumed steps. Therefore |generated| <= |generatedPrefix| + steps is
+//   preserved in every loop branch.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var answerArmed: bool := false;
+var openTok: Token := "<<";
+var fallbackTok: Token := "0";
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    if answerArmed {
+      var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+      generated := openedGenerated;
+      insideConstrainedOut := openedInside;
+      currentConstrainedOut := openedCurrent;
+      answerArmed := false;
+      steps := steps + 1;
+    } else {
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {
+        break;
+      } else {
+        generated := generated + [next];
+        if next == openTok {
+          var enteredGenerated, enteredInside, enteredCurrent := helpers.EnterObservedConstrainedSpan(lm, generated);
+          generated := enteredGenerated;
+          insideConstrainedOut := enteredInside;
+          currentConstrainedOut := enteredCurrent;
+          answerArmed := false;
+        } else if next == "=" || next == ":" || next == "answer" || next == "Answer" {
+          answerArmed := true;
+        }
+      }
+    }
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  } else {
+    var remaining: nat := maxSteps - steps;
+    if remaining <= 1 {
+      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+        parser, generated, currentConstrainedOut
+      );
+      generated := rolledGenerated;
+      insideConstrainedOut := true;
+      currentConstrainedOut := rolledCurrent;
+
+      var fallbackValid := helpers.IsTokenValidNext(parser, currentConstrainedOut, fallbackTok);
+      if fallbackValid {
+        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, fallbackTok
+        );
+        generated := appendedGenerated;
+        insideConstrainedOut := appendedInside;
+        currentConstrainedOut := appendedCurrent;
+      }
+      break;
+    } else {
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      var next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, 12, eosToken
+      );
+      steps := steps + 1;
+      if next == eosToken {
+        var repairedGenerated, repairedCurrent := helpers.RollbackConstrainedSuffix(
+          parser, generated, currentConstrainedOut
+        );
+        generated := repairedGenerated;
+        insideConstrainedOut := true;
+        currentConstrainedOut := repairedCurrent;
+
+        var canFallback := helpers.IsTokenValidNext(parser, currentConstrainedOut, fallbackTok);
+        if canFallback {
+          var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, fallbackTok
+          );
+          generated := appendedGenerated2;
+          insideConstrainedOut := appendedInside2;
+          currentConstrainedOut := appendedCurrent2;
+        }
+        break;
+      } else {
+        var appendedGenerated3, appendedInside3, appendedCurrent3 := helpers.AppendConstrainedToken(
+          lm, parser, generated, currentConstrainedOut, next
+        );
+        generated := appendedGenerated3;
+        insideConstrainedOut := appendedInside3;
+        currentConstrainedOut := appendedCurrent3;
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: GeneratedCSD.dfy(41,2): Error: a postcondition could not be proved on this return path
+   |
+41 |   {
+   |   ^
+
+GeneratedCSD.dfy(37,12): Related location: this is the postcondition that could not be proved
+   |
+37 |     ensures maxSteps == 0 || cost > 0 || generated != generatedPrefix ||
+   |        
+  Refining based on verification error...

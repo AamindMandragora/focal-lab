@@ -92,7 +92,7 @@ def _latest_cars_log_dir(cars_repo: Path, class_name: str, style: str, model_num
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
-def _summarize_cars_log(log_dir: Path, class_name: str, target_samples: int = 100) -> dict[str, Any]:
+def _summarize_cars_log(log_dir: Path, class_name: str, target_samples: int = 50) -> dict[str, Any]:
     task = get_smiles_task(class_name)
     records: list[dict[str, Any]] = []
     success_flags: list[bool] = []
@@ -250,8 +250,8 @@ def main() -> int:
     parser.add_argument("--backend", choices=["huggingface", "vllm"], default="vllm")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--target-samples", type=int, default=100)
-    parser.add_argument("--max-attempts", type=int, default=2000)
+    parser.add_argument("--target-samples", type=int, default=50)
+    parser.add_argument("--max-attempts", type=int, default=500)
     parser.add_argument("--max-steps", type=int, default=512)
     parser.add_argument("--step-token-budget", type=int, default=1)
     parser.add_argument("--cuda-visible-devices", type=str, default="1,2")

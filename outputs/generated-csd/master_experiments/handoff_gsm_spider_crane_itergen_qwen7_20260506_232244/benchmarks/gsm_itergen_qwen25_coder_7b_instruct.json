@@ -1,0 +1,780 @@
+{
+  "config": {
+    "method": "itergen",
+    "dataset": "gsm",
+    "itergen_repo": "/home/advayth2/itergen",
+    "crane_repo": "/home/advayth2/CRANE",
+    "prompt_style": "native",
+    "prompt_source": "itergen_gsm_native_expression_only",
+    "default_unit": "start",
+    "split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json",
+    "split_name": "eval",
+    "indices": [
+      1,
+      3,
+      7,
+      9,
+      10,
+      12,
+      14,
+      15,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      32,
+      35,
+      38,
+      39,
+      41,
+      44,
+      45,
+      46,
+      47,
+      50,
+      54,
+      56,
+      58,
+      60,
+      62,
+      63,
+      64,
+      67,
+      69,
+      72,
+      73,
+      74,
+      75,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      87,
+      91,
+      93,
+      95,
+      96
+    ],
+    "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "device": "cuda:0",
+    "seed": 0,
+    "temperature": null,
+    "recurrence_penalty": 0.3,
+    "max_model_len": 8192,
+    "max_new_tokens": 128
+  },
+  "accuracy": 0.38,
+  "syntax_rate": 0.98,
+  "num_correct": 19,
+  "num_examples": 50,
+  "avg_num_tokens": 14.74,
+  "wall_time_seconds": 33.12830185890198,
+  "rows": [
+    {
+      "source_index": 1,
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many minutes will it take for the fog bank to cover the whole city?",
+      "prediction": "t * (y / d)",
+      "raw_output": "t * (y / d)",
+      "expected": "y//d*t",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 8,
+      "time_seconds": 1.261371374130249,
+      "metadata": {
+        "total_tokens": 8
+      }
+    },
+    {
+      "source_index": 3,
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice the number that prefer playing {h_2}?",
+      "prediction": "n - n_1 - n_2 - 2*n_2",
+      "raw_output": "n - n_1 - n_2 - 2*n_2",
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 16,
+      "time_seconds": 0.789360761642456,
+      "metadata": {
+        "total_tokens": 16
+      }
+    },
+    {
+      "source_index": 7,
+      "question": "A farmer is buying feed for his {animals}. He buys a variety of {o1}, {o2}, {o3} and {o4}. Since {o4} are a rare treat, he only buys {n4} {w4}-{unit} boxes of them for the whole stable. He only wants enough {o3} to feed the {animals} while the vegetables are fresh, so he buys {n3} {w3}-bags. {o1} are the main diet of his {animals}, so he buys {n1} {w1}-bales. {o2} are a staple to supplement the {o1}, so he buys {n2} {w2}-sacks. If his farm truck can carry {total} pounds at a time, how many trips does the farmer need to transport all the feed?",
+      "prediction": "(n1*w1 + n2*w2 + n3*w3 + n4*w4) / total",
+      "raw_output": "(n1*w1 + n2*w2 + n3*w3 + n4*w4) / total",
+      "expected": "(n1*w1 + n2*w2 + n3*w3 + n4*w4)//total",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 23,
+      "time_seconds": 1.1665687561035156,
+      "metadata": {
+        "total_tokens": 23
+      }
+    },
+    {
+      "source_index": 9,
+      "question": "When {name} watches her {family}, she gets out a variety of toys for him. The bag of building blocks has {x} blocks in it. The bin of stuffed animals has {y} stuffed animals inside. The tower of stacking rings has {z} multicolored rings on it. {name} recently bought a tube of bouncy balls, bringing her total number of toys for her {family} up to {total}. How many bouncy balls came in the tube?",
+      "prediction": "total - x - y - z",
+      "raw_output": "total - x - y - z",
+      "expected": "total - (x + y + z)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 8,
+      "time_seconds": 0.4307849407196045,
+      "metadata": {
+        "total_tokens": 8
+      }
+    },
+    {
+      "source_index": 10,
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call cost?",
+      "prediction": "frac1*t + frac2*(total-t)",
+      "raw_output": "frac1*t + frac2*(total-t)",
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 11,
+      "time_seconds": 0.5607879161834717,
+      "metadata": {
+        "total_tokens": 11
+      }
+    },
+    {
+      "source_index": 12,
+      "question": "{name} places {obj} on some {surface}s. Each {surface} can hold {x} {obj}s. If he has {n} {obj}s and {k} {surface}s, how many {obj}s won't he be able to place on the {surface}?",
+      "prediction": "n - k*x",
+      "raw_output": "n - k*x",
+      "expected": "n - k*x",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 5,
+      "time_seconds": 0.22415661811828613,
+      "metadata": {
+        "total_tokens": 5
+      }
+    },
+    {
+      "source_index": 14,
+      "question": "{n1} and {n2} have {t} minutes to walk to the {loc1} together. It takes them {t1} minutes to get to the corner where the {loc2} is. It takes them another {t2} minutes to get to the {loc3}. How much longer do they have to get to {loc1} without being late?",
+      "prediction": "t - (t1 + t2)",
+      "raw_output": "t - (t1 + t2)",
+      "expected": "t - t1 - t2",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 10,
+      "time_seconds": 0.33231091499328613,
+      "metadata": {
+        "total_tokens": 10
+      }
+    },
+    {
+      "source_index": 15,
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "prediction": "((k1 + k2) / (n1 + n2)) * 100",
+      "raw_output": "((k1 + k2) / (n1 + n2)) * 100",
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 21,
+      "time_seconds": 0.920299768447876,
+      "metadata": {
+        "total_tokens": 21
+      }
+    },
+    {
+      "source_index": 22,
+      "question": "{name} was preparing for a {event} at her house, where she intended to serve {food}. She noticed that she was out of plastic {obj}, so she bought a new package of {obj}. Later, her husband also bought a package of {n1} new {obj} and gave them to {name}. While {name} was making the {food}, she used {n2} of the {obj} to sample her {food}. Later, when she went to set the table, she had a total of {total} {obj}. How many {obj} were in the package that {name} bought?",
+      "prediction": "x + n1 - n2",
+      "raw_output": "x + n1 - n2",
+      "expected": "total + n2 - n1",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 8,
+      "time_seconds": 0.44467711448669434,
+      "metadata": {
+        "total_tokens": 8
+      }
+    },
+    {
+      "source_index": 23,
+      "question": "{name} is knitting winter wear for her {count} grandchildren. They're {children}, so they're all the same size. She wants to make a {c1}, {c2}, {c3}, {c4}, and {c5} for each of them. It takes {n1} skeins of wool to make a {c1}, {n2} for a {c2}, {n3} for a {c3}, {n4} for a pair of {c4}, and {n5} for a pair of {c5}. How many skeins of wool will she need to buy?",
+      "prediction": "count * (n1 + n2 + n3 + 2 * n4 + 2 * n5)",
+      "raw_output": "count * (n1 + n2 + n3 + 2 * n4 + 2 * n5)",
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 25,
+      "time_seconds": 1.2241876125335693,
+      "metadata": {
+        "total_tokens": 25
+      }
+    },
+    {
+      "source_index": 24,
+      "question": "According to its nutritional info, a bag of {food} has {cal} calories per serving. If a {size} {unit} bag has {n} servings, how many {unit} can you eat if your daily calorie target is {total} and you have already consumed {spent} calories?",
+      "prediction": "(total - spent) / (cal * n / size)",
+      "raw_output": "(total - spent) / (cal * n / size)",
+      "expected": "size//n * (total-spent) // (cal)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 13,
+      "time_seconds": 0.4210958480834961,
+      "metadata": {
+        "total_tokens": 13
+      }
+    },
+    {
+      "source_index": 25,
+      "question": "In {teacher}'s class of {total} students, {p1}% of the class are {group1}. Out of the remaining class, {p2}% of the students are {group2} or part of {group3}. These 3 groups of students will need to leave early today to travel to an away {event}. How many students are leaving early?",
+      "prediction": "total * (p1/100) + total * ((100-p1)/100) * (p2/100)",
+      "raw_output": "total * (p1/100) + total * ((100-p1)/100) * (p2/100)",
+      "expected": "int(total*p1/100 + (total-int(total*p1/100))*p2/100)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 34,
+      "time_seconds": 1.5608162879943848,
+      "metadata": {
+        "total_tokens": 34
+      }
+    },
+    {
+      "source_index": 26,
+      "question": "{name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. How many {food} does this family eat in one week?",
+      "prediction": "7 * (n1 + n2 + n3)",
+      "raw_output": "7 * (n1 + n2 + n3)",
+      "expected": "(n1 + n2 + n3) * 7",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 13,
+      "time_seconds": 0.6004407405853271,
+      "metadata": {
+        "total_tokens": 13
+      }
+    },
+    {
+      "source_index": 27,
+      "question": "{name} gets {n} emails a day. {p}% of those emails don't require any response. He responds to the rest of them. How many emails does he respond to in a {d} day work week?",
+      "prediction": "n * (1 - p/100) * d",
+      "raw_output": "n * (1 - p/100) * d",
+      "expected": "d * (n * (100 - p) / 100)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 14,
+      "time_seconds": 0.5152568817138672,
+      "metadata": {
+        "total_tokens": 14
+      }
+    },
+    {
+      "source_index": 28,
+      "question": "A {facility} has a capacity of {total} {item}s with {frac} occupied. Due to the {event}, {daily} patients are admitted into the {facility} each day. Calculate the total number of unoccupied {item}s in the {facility} after {period} weeks.",
+      "prediction": "total * (1 - frac) - daily * period * 7",
+      "raw_output": "total * (1 - frac) - daily * period * 7",
+      "expected": "total - (total * frac + daily * period * 7)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 15,
+      "time_seconds": 0.6216259002685547,
+      "metadata": {
+        "total_tokens": 15
+      }
+    },
+    {
+      "source_index": 29,
+      "question": "{name1} is {age1} years old. In {years} years his {relation_type} {name2} will be {mult} times as old as {name1} is now. How old is {name2} right now?",
+      "prediction": "age1 + years * mult",
+      "raw_output": "age1 + years * mult",
+      "expected": "age1 * mult - years",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 7,
+      "time_seconds": 0.3432886600494385,
+      "metadata": {
+        "total_tokens": 7
+      }
+    },
+    {
+      "source_index": 32,
+      "question": "{name} is looking for a {property_type} that will not go beyond her ${budget} budget. She saw a property that has a selling price of ${price}. On top of that, the buyer has to pay a brokerage fee which is {brokerage_fee}% of the selling price, and also the transfer fee that is {transfer_fee}% of the selling price. How much more is the total price of the {property_type} than {name}'s budget?",
+      "prediction": "price + (price * (brokerage_fee + transfer_fee) / 100) - budget",
+      "raw_output": "price + (price * (brokerage_fee + transfer_fee) / 100) - budget",
+      "expected": "int(price * (1 + brokerage_fee/100 + transfer_fee/100) - budget)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 22,
+      "time_seconds": 0.9829764366149902,
+      "metadata": {
+        "total_tokens": 22
+      }
+    },
+    {
+      "source_index": 35,
+      "question": "{name} is raising money for a {event}. He has applied for help from the {organization}, which has decided to cover {fraction} of the cost of the {event}. How much money is {name} missing if he has {cur}{current} and the {event} costs {cur}{total}?",
+      "prediction": "total - current - (total * fraction)",
+      "raw_output": "total - current - (total * fraction)",
+      "expected": "total - (total * fraction + current)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 10,
+      "time_seconds": 0.41873741149902344,
+      "metadata": {
+        "total_tokens": 10
+      }
+    },
+    {
+      "source_index": 38,
+      "question": "A loaf of {item1} at the {shop} costs {currency}{price1}. {item2} cost {currency}{price2} each. How much more do {n1} loaves of {item1} cost than {n2} {item2}?",
+      "prediction": "n1 * price1 - n2 * price2",
+      "raw_output": "n1 * price1 - n2 * price2",
+      "expected": "n1 * price1 - n2 * price2",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 12,
+      "time_seconds": 0.4766409397125244,
+      "metadata": {
+        "total_tokens": 12
+      }
+    },
+    {
+      "source_index": 39,
+      "question": "A {job} has to clean a {building} with {n} {room}s. They have {d} days to get it done. It takes them {t} minutes per {room}. If they work {h} hours each day, what percentage of their day, on average, is spent cleaning {room}s?",
+      "prediction": "(100 * t * n) / (d * h * 60)",
+      "raw_output": "(100 * t * n) / (d * h * 60)",
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 20,
+      "time_seconds": 0.9666957855224609,
+      "metadata": {
+        "total_tokens": 20
+      }
+    },
+    {
+      "source_index": 41,
+      "question": "A {structure} is made out of {n1} {color1} {obj}s, {mult} as many {color2} {obj}s, and an unknown number of {color3} {obj}s. If there are {total} {obj}s in the {structure} in total, how many {color3} {obj}s are there?",
+      "prediction": "total - n1 - mult",
+      "raw_output": "total - n1 - mult",
+      "expected": "total - n1 - mult * n1",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 7,
+      "time_seconds": 0.2580888271331787,
+      "metadata": {
+        "total_tokens": 7
+      }
+    },
+    {
+      "source_index": 44,
+      "question": "There are {n} girls in the {place}. If there are {mult} the number of boys in the {place}, how many kids are in the {place}?",
+      "prediction": "n + mult * n",
+      "raw_output": "n + mult * n",
+      "expected": "n * (mult + 1)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 6,
+      "time_seconds": 0.3123433589935303,
+      "metadata": {
+        "total_tokens": 6
+      }
+    },
+    {
+      "source_index": 45,
+      "question": "{name} has a flower bed that is {length} {unit_length} long. {name} wants to fill her flower bed with plants. {name}'s flowers grow {plant_width} {unit_length} wide so she needs to leave {space} {unit_length} between every plant. {name} already owns {owned} flowers. Each flowering plant costs {cur}{cost} at the store, how much money will {name} spend at the store to fill up her flower bed?",
+      "prediction": "(length / (plant_width + space)) * cost - owned * cost",
+      "raw_output": "(length / (plant_width + space)) * cost - owned * cost",
+      "expected": "int((length / space - owned) * cost)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 15,
+      "time_seconds": 0.7702677249908447,
+      "metadata": {
+        "total_tokens": 15
+      }
+    },
+    {
+      "source_index": 46,
+      "question": "{school} is holding graduation in their {venue} this year which has space for {total} people. After accounting for {graduates} seats for graduates and {faculty} seats for faculty attending, how many tickets would each graduate receive to give to their friends and family if the tickets are split equally?",
+      "prediction": "(total - graduates - faculty) / graduates",
+      "raw_output": "(total - graduates - faculty) / graduates",
+      "expected": "(total - graduates - faculty) // graduates",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 9,
+      "time_seconds": 0.48015642166137695,
+      "metadata": {
+        "total_tokens": 9
+      }
+    },
+    {
+      "source_index": 47,
+      "question": "{name1} hid {n} dozen eggs in the yard for the Easter egg hunt. {name2} finds {x} eggs. {name3} finds {mult1} as many as {name2}. {name4} finds {y} less than {name3}, and {name5} finds {frac} as many as {name4}. How many eggs are still hidden in the yard?",
+      "prediction": "n*12 - x - mult1*x - (mult1*x - y) - frac*(mult1*x - y)",
+      "raw_output": "n*12 - x - mult1*x - (mult1*x - y) - frac*(mult1*x - y)",
+      "expected": "n * 12 - (x + mult1 * x + (mult1 * x - y) + frac * (mult1 * x - y)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 28,
+      "time_seconds": 1.3513033390045166,
+      "metadata": {
+        "total_tokens": 28
+      }
+    },
+    {
+      "source_index": 50,
+      "question": "The area of {name}'s rectangular {room_type} is {area} square feet. If the length of his room is {length} yards, what is the perimeter of the room in feet?",
+      "prediction": "2 * (length * 3 + area / length)",
+      "raw_output": "2 * (length * 3 + area / length)",
+      "expected": "2 * (area // (length * 3) + length * 3)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 13,
+      "time_seconds": 0.6510930061340332,
+      "metadata": {
+        "total_tokens": 13
+      }
+    },
+    {
+      "source_index": 54,
+      "question": "{name} sliced a whole {fruit} into {total} pieces. She ate {n1} slices, her {sibling1} ate {n2} more than her, and her {sibling2} ate {n3} more than her {sibling1}. How many slices of {fruit} did they all eat?",
+      "prediction": "total - n1 - (n1 + n2) - ((n1 + n2) + n3)",
+      "raw_output": "total - n1 - (n1 + n2) - ((n1 + n2) + n3)",
+      "expected": "n1 + (n1 + n2) + (n1 + n2 + n3)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 25,
+      "time_seconds": 1.2430284023284912,
+      "metadata": {
+        "total_tokens": 25
+      }
+    },
+    {
+      "source_index": 56,
+      "question": "A {container} of {liquid} is {vol} {unit}s of {liquid}. {name} drinks {num} {container}s of {liquid}. If {liquid} has {cal} calories per {unit} how many calories did he consume?",
+      "prediction": "num * vol * cal",
+      "raw_output": "num * vol * cal",
+      "expected": "vol * num * cal",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 6,
+      "time_seconds": 0.19743013381958008,
+      "metadata": {
+        "total_tokens": 6
+      }
+    },
+    {
+      "source_index": 58,
+      "question": "One {worker} can mine {base} {unit} of ore per day with {tool1}. He can mine {mult1} as much with a {tool2} and {mult2} more with a {tool3} than with a {tool2}. How many {unit} of ore can {n} {worker}s with {tool3} mine in a month with {days} days?",
+      "prediction": "base * mult2 * n * days",
+      "raw_output": "base * mult2 * n * days",
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 9,
+      "time_seconds": 0.38048362731933594,
+      "metadata": {
+        "total_tokens": 9
+      }
+    },
+    {
+      "source_index": 60,
+      "question": "{name} works a {h}-hour shift each day, {d} days a week. He earns {cur}{r} per hour and gets a {cur}{b} bonus each week if the company performs well. How much money did {name} make in {month} if the company performed very well for the whole month?",
+      "prediction": "h * d * r * month + b * month",
+      "raw_output": "h * d * r * month + b * month",
+      "expected": "h * r * d * 4 + b * 4",
+      "syntax_valid": false,
+      "is_correct": false,
+      "token_count": 12,
+      "time_seconds": 0.43914079666137695,
+      "metadata": {
+        "total_tokens": 12
+      }
+    },
+    {
+      "source_index": 62,
+      "question": "In a set of {item}'s cards, there are {n1} {c1} cards, and {p}% more {c2} cards. {c3} cards are as many as the sum of {c1} and {c2} cards. How many cards of all mentioned colors are there?",
+      "prediction": "n1 + (n1 * p / 100) + (n1 + (n1 * p / 100))",
+      "raw_output": "n1 + (n1 * p / 100) + (n1 + (n1 * p / 100))",
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 31,
+      "time_seconds": 0.9010162353515625,
+      "metadata": {
+        "total_tokens": 31
+      }
+    },
+    {
+      "source_index": 63,
+      "question": "A {person1} has {n} {item}s. His {relation} has {k} fewer {item}s than he has. How many {item}s do they have together?",
+      "prediction": "n + (n - k)",
+      "raw_output": "n + (n - k)",
+      "expected": "n + (n-k)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 8,
+      "time_seconds": 0.2543156147003174,
+      "metadata": {
+        "total_tokens": 8
+      }
+    },
+    {
+      "source_index": 64,
+      "question": "{name} has {n} jars of {item} in her {location}. Each jar of {item} can decorate {m} {food}. {name} wants to bake enough {food} to use up all of her {item}. If each {container} holds {k} {food}, how many {container}s worth of {food} should she bake?",
+      "prediction": "n * m / k",
+      "raw_output": "n * m / k",
+      "expected": "(n*m)//k",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 6,
+      "time_seconds": 0.21132755279541016,
+      "metadata": {
+        "total_tokens": 6
+      }
+    },
+    {
+      "source_index": 67,
+      "question": "{name}'s {vehicle} breaks down. The {vehicle} weighs {weight_vehicle} {unit} and he has {item} in it weighing {weight_item} {unit}. He also has his {num_passengers} young {passenger_type} who weigh {weight_passenger} {unit} each in it. If the force to move the {vehicle} is {force_percent}% of the weight, how much force does he need to push the {vehicle}?",
+      "prediction": "weight_vehicle + weight_item + (num_passengers * weight_passenger) * (force_percent / 100)",
+      "raw_output": "weight_vehicle + weight_item + (num_passengers * weight_passenger) * (force_percent / 100)",
+      "expected": "int((weight_vehicle + weight_item + num_passengers * weight_passenger) * force_percent / 100)",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 26,
+      "time_seconds": 1.2950518131256104,
+      "metadata": {
+        "total_tokens": 26
+      }
+    },
+    {
+      "source_index": 69,
+      "question": "On {day3}, {name} wants to exercise for {mult} the amount of time he did on {day2} and {day1} combined. On {day1} he exercised for {t1} minutes. On {day2} he exercised for {t2} minutes. How many minutes does he have to exercise on {day3} to reach his goal?",
+      "prediction": "mult * (t1 + t2)",
+      "raw_output": "mult * (t1 + t2)",
+      "expected": "(t1 + t2) * mult",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 10,
+      "time_seconds": 0.5275938510894775,
+      "metadata": {
+        "total_tokens": 10
+      }
+    },
+    {
+      "source_index": 72,
+      "question": "{name} was a pen pal with {n1} people. He stopped being penpals with {n2} of them. They each send {l} letters a week that are {p} pages long. He responds in kind. He can write a page every {t} minutes. How many hours does he spend writing a week?",
+      "prediction": "((n1 - n2) * l * p) / (t * 60)",
+      "raw_output": "((n1 - n2) * l * p) / (t * 60)",
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 21,
+      "time_seconds": 0.9532649517059326,
+      "metadata": {
+        "total_tokens": 21
+      }
+    },
+    {
+      "source_index": 73,
+      "question": "Comet {comet_name} orbits the sun every {orbit_period} years. {name}'s {relative} saw the Comet when he was {relative_age} years old. {name} saw the comet a second time when he was {multiple} the age his {relative} was when he saw the Comet. How old was {name} when he saw the Comet for the first time?",
+      "prediction": "relative_age + (multiple * relative_age - relative_age) / (orbit_period - 1)",
+      "raw_output": "relative_age + (multiple * relative_age - relative_age) / (orbit_period - 1)",
+      "expected": "multiple * relative_age - orbit_period",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 21,
+      "time_seconds": 0.9043776988983154,
+      "metadata": {
+        "total_tokens": 21
+      }
+    },
+    {
+      "source_index": 74,
+      "question": "There are {total} {grade}-graders at {school_name} School. {num_girls} of them are girls. On {day}, {absent_girls} {grade}-grade girls and {absent_boys} {grade}-grade bys were absent. How many {grade} grade boys were at {school_name} School on {day}?",
+      "prediction": "total - num_girls - absent_girls - absent_boys",
+      "raw_output": "total - num_girls - absent_girls - absent_boys",
+      "expected": "total - num_girls - absent_boys",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 16,
+      "time_seconds": 0.8064267635345459,
+      "metadata": {
+        "total_tokens": 16
+      }
+    },
+    {
+      "source_index": 75,
+      "question": "There are currently {n1} {c1} balls, {n2} {c2} balls, and {n3} {c3} balls in the {place}. {c1} balls cost {cur}{p1}, {c3} balls cost {cur}{p3}, and {c2} balls cost {cur}{p2}. How much will the {place} have received after all the balls are sold?",
+      "prediction": "n1*p1 + n2*p2 + n3*p3",
+      "raw_output": "n1*p1 + n2*p2 + n3*p3",
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 15,
+      "time_seconds": 0.7375180721282959,
+      "metadata": {
+        "total_tokens": 15
+      }
+    },
+    {
+      "source_index": 80,
+      "question": "The vending maches sell {item1} for {price1} cents and {item2} for {price2} cents. {name} spent {total} and got {n1} bags of {item1} and had {p}% of his money left in change. How many {item2} did he buy?",
+      "prediction": "(total - (n1 * price1)) / ((100 - p) / 100) / price2",
+      "raw_output": "(total - (n1 * price1)) / ((100 - p) / 100) / price2",
+      "expected": "int((total * (100 - p) / 100 - n1 * price1 / 100) / (price2 / 100))",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 27,
+      "time_seconds": 1.0248303413391113,
+      "metadata": {
+        "total_tokens": 27
+      }
+    },
+    {
+      "source_index": 81,
+      "question": "The {event} team hid {total} {item}. The {family} twins each found {n} {item}. All the other {item} except {m} were found by their friends. How many {item} did the friends find?",
+      "prediction": "total - 2 * n - m",
+      "raw_output": "total - 2 * n - m",
+      "expected": "total - 2*n - m",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 9,
+      "time_seconds": 0.46128368377685547,
+      "metadata": {
+        "total_tokens": 9
+      }
+    },
+    {
+      "source_index": 82,
+      "question": "At the beginning of the {event}, there were {m} {group1} and {w} {group2}. After {t}, {frac} of the total number of people left. How many {group2} are left if {m_left} {group1} stayed at the {event}?",
+      "prediction": "m_left + w * (1 - frac)",
+      "raw_output": "m_left + w * (1 - frac)",
+      "expected": "m + w - int((m + w) * frac) - m_left",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 11,
+      "time_seconds": 0.5566258430480957,
+      "metadata": {
+        "total_tokens": 11
+      }
+    },
+    {
+      "source_index": 83,
+      "question": "The {family} family is busy making {item}. So far, they've made {total} {item}. They have {n1} {flavor1} {item}, {n2} {flavor2} {item}, and some {flavor3} {item}. How many {flavor3} {item} have they made?",
+      "prediction": "total - n1 - n2",
+      "raw_output": "total - n1 - n2",
+      "expected": "total - (n1 + n2)",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 8,
+      "time_seconds": 0.248337984085083,
+      "metadata": {
+        "total_tokens": 8
+      }
+    },
+    {
+      "source_index": 84,
+      "question": "{name} buys {n} shares of a stock for {cur}{p} each. The stock price increases {r1}% the first year {name} holds it, then decreases {r2}% in the second year. What is the final value of all {name}'s shares?",
+      "prediction": "n * p * (1 + r1/100) * (1 - r2/100)",
+      "raw_output": "n * p * (1 + r1/100) * (1 - r2/100)",
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 26,
+      "time_seconds": 1.088163137435913,
+      "metadata": {
+        "total_tokens": 26
+      }
+    },
+    {
+      "source_index": 85,
+      "question": "If {name1} and {name2} have {total} {unit} of fence between them, and they agree to split it with {name2} getting {diff} {unit} more than {name1}, how much is left over for {name1}?",
+      "prediction": "total - (diff / 2)",
+      "raw_output": "total - (diff / 2)",
+      "expected": "(total - diff) // 2",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 9,
+      "time_seconds": 0.3543097972869873,
+      "metadata": {
+        "total_tokens": 9
+      }
+    },
+    {
+      "source_index": 87,
+      "question": "The biggest waterslide at {park_name} is {l1} {unit} long, and people slide down at {s1} {unit}/minute. The second biggest waterslide is {l2} {unit} long, but steeper, so people slide down at {s2} {unit}/minute. How much longer does it take to ride the biggest slide compared to the second biggest slide?",
+      "prediction": "(l1 / s1) - (l2 / s2)",
+      "raw_output": "(l1 / s1) - (l2 / s2)",
+      "expected": "l1/s1 - l2/s2",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 15,
+      "time_seconds": 0.569237470626831,
+      "metadata": {
+        "total_tokens": 15
+      }
+    },
+    {
+      "source_index": 91,
+      "question": "At {name}'s house, there are {mult} as many {food1}s as {food2}s. He has a total of {n} {food2}s in his house. {name} bought {m} more {food2}s at the store and {k} fewer {food1}s than the number of {food2}s. Find the combined total of the number of {food1}s and {food2}s {name} has in the house?",
+      "prediction": "n + m + (n - k)",
+      "raw_output": "n + m + (n - k)",
+      "expected": "n*mult+n+2*m-k",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 10,
+      "time_seconds": 0.3650791645050049,
+      "metadata": {
+        "total_tokens": 10
+      }
+    },
+    {
+      "source_index": 93,
+      "question": "When the water is cold {name} swims a {unit} in {t1} minutes. When the water is warm {name} swims a {unit} in {n} minutes more than {mult} as long. How much longer does {name} take to swim {d} {unit}s on a hot day than a cold day?",
+      "prediction": "d * (n + mult * t1 - t1)",
+      "raw_output": "d * (n + mult * t1 - t1)",
+      "expected": "d * (n + mult * t1) - d * t1",
+      "syntax_valid": true,
+      "is_correct": true,
+      "token_count": 14,
+      "time_seconds": 0.5277297496795654,
+      "metadata": {
+        "total_tokens": 14
+      }
+    },
+    {
+      "source_index": 95,
+      "question": "There are {n1} students playing {sport1} and {mult} that number playing {sport2}. There are {n2} boys and {n3} girls playing {sport3}. If each student only participates in one group, how many students are there in total?",
+      "prediction": "n1 + mult*n2 + n3",
+      "raw_output": "n1 + mult*n2 + n3",
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 10,
+      "time_seconds": 0.3558676242828369,
+      "metadata": {
+        "total_tokens": 10
+      }
+    },
+    {
+      "source_index": 96,
+      "question": "{name}'s {parent} said that she had {budget} budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of {activity1}, have {tokens} in {activity2} tokens, and get to ride the {activity3} {times}. A round of {activity1} is {cost1}. The {activity3} cost {cost2} a ride. How many friends can she invite?",
+      "prediction": "(budget - (cost1 + tokens + (cost2 * times))) / cost1",
+      "raw_output": "(budget - (cost1 + tokens + (cost2 * times))) / cost1",
+      "expected": "budget // (tokens + cost1 + cost2 * times) - 1",
+      "syntax_valid": true,
+      "is_correct": false,
+      "token_count": 19,
+      "time_seconds": 0.6389496326446533,
+      "metadata": {
+        "total_tokens": 19
+      }
+    }
+  ]
+}

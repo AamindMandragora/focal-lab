@@ -433,9 +433,10 @@ def main() -> int:
     parser.add_argument("--crane-device", default=os.environ.get("CRANE_DEVICE", "cuda:0"))
     parser.add_argument("--cars-repo", type=Path, default=default_cars_repo())
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--cars-max-attempts-per-example", type=int, default=500)
     parser.add_argument("--spider-cars-max-new-tokens", type=int, default=512)
     parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
+    parser.add_argument("--skip-cars-train-baseline", action="store_true")
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument("--max-iterations", type=int, default=100)
     parser.add_argument("--generation-model", default="gpt-5.4")
@@ -497,23 +498,13 @@ def main() -> int:
             dry_run=args.dry_run,
         )
 
-    print("[cars-train]")
-    cars_train_cmd = cars_command(args, "train", train_cars_json)
-    cars_cache = reuse_cached_baseline(
-        output_dir=args.output_dir,
-        dataset="spider",
-        method="cars",
-        identity=cars_train_cache_identity(args, "train"),
-        output_path=train_cars_json,
-        label="Spider CARS train",
-        validator=json_validator,
-        dry_run=args.dry_run,
-    )
-    if not cars_cache["hit"]:
-        rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_cars_train.log", dry_run=args.dry_run)
-        if rc != 0:
-            raise SystemExit(rc)
-        store_cached_baseline(
+    cars_train_cmd: list[str] | None = None
+    if args.skip_cars_train_baseline:
+        print("[cars-train] skipped")
+    else:
+        print("[cars-train]")
+        cars_train_cmd = cars_command(args, "train", train_cars_json)
+        cars_cache = reuse_cached_baseline(
             output_dir=args.output_dir,
             dataset="spider",
             method="cars",
@@ -523,6 +514,20 @@ def main() -> int:
             validator=json_validator,
             dry_run=args.dry_run,
         )
+        if not cars_cache["hit"]:
+            rc = run_logged(cars_train_cmd, logs_dir / f"{args.run_name}_cars_train.log", dry_run=args.dry_run)
+            if rc != 0:
+                raise SystemExit(rc)
+            store_cached_baseline(
+                output_dir=args.output_dir,
+                dataset="spider",
+                method="cars",
+                identity=cars_train_cache_identity(args, "train"),
+                output_path=train_cars_json,
+                label="Spider CARS train",
+                validator=json_validator,
+                dry_run=args.dry_run,
+            )
 
     print("[crane-train]")
     crane_train_cmd = crane_command(args, "train", train_crane_json)
@@ -558,24 +563,28 @@ def main() -> int:
 
     if args.dry_run:
         train_accuracy = 0.0
-        cars_train_accuracy = 0.0
+        cars_train_accuracy = None if args.skip_cars_train_baseline else 0.0
         crane_train_accuracy = 0.0
         crane_train_syntax_rate = 0.0
         min_accuracy = 0.0
         min_syntax_rate = args.min_syntax_rate
     else:
         train_accuracy = spider_exec_accuracy(train_itergen_json)
-        cars_train_accuracy = spider_exec_accuracy(train_cars_json)
+        cars_train_accuracy = None if args.skip_cars_train_baseline else spider_exec_accuracy(train_cars_json)
         crane_train_accuracy = spider_exec_accuracy(train_crane_json)
         crane_train_syntax_rate = syntax_rate(train_crane_json)
 
-        threshold_base_accuracy = max(train_accuracy, cars_train_accuracy, crane_train_accuracy)
+        threshold_candidates = [train_accuracy, crane_train_accuracy]
+        if cars_train_accuracy is not None:
+            threshold_candidates.append(cars_train_accuracy)
+        threshold_base_accuracy = max(threshold_candidates)
         min_accuracy = strict_next_threshold(threshold_base_accuracy, split["train_size"])
         threshold_base_syntax = max(args.min_syntax_rate, crane_train_syntax_rate)
         min_syntax_rate = synthesis_syntax_threshold(threshold_base_syntax, split["train_size"])
+    cars_accuracy_display = "skipped" if cars_train_accuracy is None else f"{cars_train_accuracy:.1%}"
     print(
         "[benchmark] train accuracy: "
-        f"IterGen={train_accuracy:.1%}, CARS={cars_train_accuracy:.1%}, CRANE={crane_train_accuracy:.1%}; "
+        f"IterGen={train_accuracy:.1%}, CARS={cars_accuracy_display}, CRANE={crane_train_accuracy:.1%}; "
         f"accuracy threshold={min_accuracy:.1%}, syntax threshold={min_syntax_rate:.1%}"
     )
 
@@ -611,7 +620,7 @@ def main() -> int:
         "split_file": str(args.split_file),
         "split": split,
         "itergen_train": str(train_itergen_json),
-        "cars_train": str(train_cars_json),
+        "cars_train": None if args.skip_cars_train_baseline else str(train_cars_json),
         "crane_train": str(train_crane_json),
         "itergen_test": str(test_itergen_json),
         "synthesis_log": str(synthesis_log),
@@ -625,7 +634,13 @@ def main() -> int:
             "itergen_test": test_itergen_cmd,
             "csd_test": csd_cmd,
         },
-        "threshold_policy": "strict_next_discrete_over_max_itergen_cars_crane_train_exec_accuracy_and_crane_syntax; syntax_uses_95_percent_when_baseline_is_100_percent",
+        "threshold_policy": (
+            "strict_next_discrete_over_max_itergen_crane_train_exec_accuracy_and_crane_syntax; "
+            "syntax_uses_95_percent_when_baseline_is_100_percent"
+            if args.skip_cars_train_baseline
+            else "strict_next_discrete_over_max_itergen_cars_crane_train_exec_accuracy_and_crane_syntax; "
+            "syntax_uses_95_percent_when_baseline_is_100_percent"
+        ),
         "min_accuracy": min_accuracy,
         "min_syntax_rate": min_syntax_rate,
         "saturated_baseline_syntax_target": SATURATED_BASELINE_SYNTAX_TARGET,

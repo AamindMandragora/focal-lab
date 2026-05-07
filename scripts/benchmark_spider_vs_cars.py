@@ -16,6 +16,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.native_libs import ensure_env_lib_first
+
+ensure_env_lib_first()
+
 from evaluations.sql_spider.dataset import load_spider
 from evaluations.sql_spider.executor import _clean_sql, execute_accuracy
 
@@ -138,7 +142,7 @@ def main() -> int:
     parser.add_argument("--model-number", choices=sorted(MODEL_MAP), default="2")
     parser.add_argument("--model-name", type=str, default=None)
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--max-attempts-per-example", type=int, default=500)
     parser.add_argument("--max-new-tokens", type=int, default=512)
     parser.add_argument("--cuda-visible-devices", type=str, default="")
     parser.add_argument("--etype", choices=["exec", "match", "all"], default="exec")

@@ -37,7 +37,13 @@ def default_gsm_source_dir() -> Path:
 
 
 def default_dafny_path() -> str:
-    return os.environ.get("DAFNY_PATH", str(Path.home() / ".dotnet" / "tools" / "dafny"))
+    env_dafny = os.environ.get("DAFNY_PATH")
+    if env_dafny:
+        return env_dafny
+    repo_dafny = Path(__file__).resolve().parent / "dafny" / "dafny"
+    if repo_dafny.exists():
+        return str(repo_dafny)
+    return str(Path.home() / ".dotnet" / "tools" / "dafny")
 
 
 def default_spider_data_dir() -> Path:

@@ -22,6 +22,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.native_libs import ensure_env_lib_first
+
+ensure_env_lib_first()
+
 from project_defaults import default_crane_repo, default_gsm_source_dir
 from scripts.gsm_baseline_prompts import crane_gsm_chat_prompt, crane_gsm_text_prompt
 from synthesis.evaluator import Evaluator
@@ -317,7 +321,9 @@ def score_output(
         }
 
     if dataset == "spider":
-        actual = evaluator._extract_answer_spider(scored_output)
+        from evaluations.sql_spider.executor import _clean_sql
+
+        actual = _clean_sql(evaluator._extract_answer_spider(scored_output))
         is_correct = evaluator._exec_match_spider(actual, expected, example)
         syntax_valid = bool(actual)
         return is_correct, syntax_valid, {
@@ -559,10 +565,10 @@ def run_smiles_class_target(
 
 def add_spider_official_scores(payload: dict[str, Any], examples: list[dict[str, Any]]) -> None:
     from evaluations.sql_spider.dataset import default_db_dir, default_tables_json
-    from evaluations.sql_spider.executor import execute_accuracy
+    from evaluations.sql_spider.executor import _clean_sql, execute_accuracy
 
     predictions = [
-        str(row.get("actual") or "")
+        _clean_sql(str(row.get("actual") or ""))
         for row in payload.get("sample_outputs", [])
     ]
     scores, error_types, rows = execute_accuracy(
@@ -576,9 +582,13 @@ def add_spider_official_scores(payload: dict[str, Any], examples: list[dict[str,
     payload["error_types"] = error_types
     payload["rows"] = rows
     payload["all_exec_accuracy"] = float(scores.get("all", {}).get("exec", 0.0) or 0.0)
+    payload["accuracy"] = payload["all_exec_accuracy"]
+    payload["num_correct"] = sum(1 for row in rows if row.get("exec") is True)
+    payload["accuracy_denominator"] = len(rows)
+    payload["accuracy_definition"] = "Spider official execution accuracy"
     validity_values = [row.get("validity") for row in rows if "validity" in row]
     if validity_values:
-        payload["syntax_rate"] = sum(1 for value in validity_values if value) / len(validity_values)
+        payload["syntax_rate"] = sum(1 for value in validity_values if value == "Valid") / len(validity_values)
         payload["syntax_definition"] = "Spider executor validity over generated SQL predictions"
 
 
@@ -627,7 +637,7 @@ def main() -> int:
     parser.add_argument("--spider-split-file", type=Path, default=None)
     parser.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="test")
     parser.add_argument("--smiles-classes", default="acrylates,chain_extenders,isocyanates")
-    parser.add_argument("--smiles-max-attempts", type=int, default=1000)
+    parser.add_argument("--smiles-max-attempts", type=int, default=500)
     parser.add_argument("--prompt-style", choices=["native", "crane"], default="native")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

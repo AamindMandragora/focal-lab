@@ -1,0 +1,12 @@
+[split] /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/spider_seed123_train50_test100.json train=50 test=100 seed=123
+[itergen-train]
+[baseline-cache] MISS Spider IterGen train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/spider/itergen_f5a827b53da494dce970e033.json
+[gpu-select] CUDA_VISIBLE_DEVICES=3
+/home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_itergen_sql_split.py --itergen-repo /home/advayth2/itergen --split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/spider_seed123_train50_test100.json --split-name train --model Qwen/Qwen2.5-Coder-7B-Instruct --device cuda:0 --seed 0 --recurrence-penalty 0.3 --max-iter 20 --source hf --output /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen7_20260507_003709_spider_metadecode_qwen25_coder_7b_instruct_gpt54_itergen_train.json
+Loaded 1034 Spider examples from HuggingFace
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]
+Loading weights:  46%|████▌     | 156/339 [00:00<00:00, 1535.92it/s]
+Loading weights:  91%|█████████▏| 310/339 [00:00<00:00, 1506.91it/s]
+Loading weights: 100%|██████████| 339/339 [00:00<00:00, 1525.61it/s]

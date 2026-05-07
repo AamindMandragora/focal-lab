@@ -200,7 +200,7 @@ def main() -> int:
     parser.add_argument("--model-name", type=str, default=None)
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
     parser.add_argument("--prompt-style", choices=["native", "crane"], default="native")
-    parser.add_argument("--max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--max-attempts-per-example", type=int, default=500)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--cuda-visible-devices", type=str, default="")
     parser.add_argument("--dry-run", action="store_true")

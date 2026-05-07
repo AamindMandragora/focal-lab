@@ -1,0 +1,45 @@
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]
+Fetching 6 files:  17%|█▋        | 1/6 [03:42<18:30, 222.01s/it]
+Fetching 6 files:  50%|█████     | 3/6 [03:45<02:56, 58.82s/it] 
+Fetching 6 files:  67%|██████▋   | 4/6 [03:45<01:17, 38.60s/it]
+Fetching 6 files: 100%|██████████| 6/6 [03:45<00:00, 37.63s/it]
+
+Loading weights:   0%|          | 0/579 [00:00<?, ?it/s]
+Loading weights:  69%|██████▉   | 401/579 [00:00<00:00, 4008.48it/s]
+Loading weights: 100%|██████████| 579/579 [00:00<00:00, 4075.11it/s]
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/run_itergen_gsm_split.py", line 304, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/run_itergen_gsm_split.py", line 214, in main
+    iter_gen = IterGen(
+               ^^^^^^^^
+  File "/home/advayth2/itergen/itergen/main.py", line 81, in __init__
+    self.model = common.load_model(model_id, device, quantize)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/itergen/itergen/syncode/syncode/common.py", line 36, in load_model
+    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16, cache_dir=HF_CACHE, token=HF_ACCESS_TOKEN, trust_remote_code=True).eval().to(device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/transformers/modeling_utils.py", line 3650, in to
+    return super().to(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1384, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 934, in _apply
+    module._apply(fn)
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 934, in _apply
+    module._apply(fn)
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 934, in _apply
+    module._apply(fn)
+  [Previous line repeated 2 more times]
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 965, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1370, in convert
+    return t.to(
+           ^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 10.00 MiB. GPU 0 has a total capacity of 39.49 GiB of which 11.69 MiB is free. Process 1031675 has 1.76 GiB memory in use. Process 3598863 has 514.00 MiB memory in use. Process 3873300 has 17.75 GiB memory in use. Including non-PyTorch memory, this process has 19.44 GiB memory in use. Of the allocated memory 19.03 GiB is allocated by PyTorch, and 882.00 KiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

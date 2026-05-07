@@ -1,0 +1,60 @@
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+[cars-batch 1/50] /home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_cars_task.py --cars-repo /home/advayth2/cars --grammar-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/gsm_cars_grammar.lark --prompt-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/prompts/gsm_0007.txt --model-name Qwen/Qwen2.5-Coder-1.5B-Instruct --sample-style cars --log-dir /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/logs/gsm_0007 --target-samples 1 --n-steps 500 --max-new-tokens 128 --device cuda
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/338 [00:00<01:28,  3.82it/s]
+Loading weights:   4%|▍         | 15/338 [00:00<00:07, 45.60it/s]
+Loading weights:  12%|█▏        | 39/338 [00:00<00:02, 100.54it/s]
+Loading weights:  15%|█▌        | 52/338 [00:00<00:02, 102.85it/s]
+Loading weights:  22%|██▏       | 73/338 [00:00<00:01, 132.79it/s]
+Loading weights:  26%|██▋       | 89/338 [00:00<00:01, 134.25it/s]
+Loading weights:  33%|███▎      | 111/338 [00:00<00:01, 154.57it/s]
+Loading weights:  38%|███▊      | 128/338 [00:01<00:01, 149.39it/s]
+Loading weights:  43%|████▎     | 144/338 [00:01<00:01, 151.82it/s]
+Loading weights:  47%|████▋     | 160/338 [00:01<00:01, 139.98it/s]
+Loading weights:  54%|█████▍    | 183/338 [00:01<00:00, 162.84it/s]
+Loading weights:  59%|█████▉    | 200/338 [00:01<00:00, 155.19it/s]
+Loading weights:  65%|██████▍   | 219/338 [00:01<00:00, 163.29it/s]
+Loading weights:  70%|██████▉   | 236/338 [00:01<00:00, 158.21it/s]
+Loading weights:  76%|███████▌  | 256/338 [00:01<00:00, 152.47it/s]
+Loading weights:  83%|████████▎ | 279/338 [00:02<00:00, 168.95it/s]
+Loading weights:  88%|████████▊ | 297/338 [00:02<00:00, 163.58it/s]
+Loading weights:  93%|█████████▎| 316/338 [00:02<00:00, 155.51it/s]
+Loading weights: 100%|██████████| 338/338 [00:02<00:00, 143.60it/s]
+Creating new oracle trie
+
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0 failed, tokens: tensor([     7,     16,     15,    488,    220,     16,     20,    488,    220,
+            16,     23,    488,    220,     17,     20,      8,    353,    320,
+            21,    608,    220,     16,     15,      8, 151645],
+       device='cuda:0') / ['(', '1', '0', ' +', ' ', '1', '5', ' +', ' ', '1', '8', ' +', ' ', '2', '5', ')', ' *', ' (', '6', ' /', ' ', '1', '0', ')', '<|im_end|>'], time: 1.50 (0.10)
+(10 + 15 + 18 + 25) * (6 / 10)<|im_end|>
+Sample 1 failed, tokens: tensor([    7, 22058,  1188], device='cuda:0') / ['(', 'ceil', '(('], time: 0.12 (0.00)
+(ceil((
+Sample 2 success: [22842, 608, 320, 86, 16, 488, 289, 17, 488, 289, 18, 488, 289, 19, 593, 151645] / ['(total', ' /', ' (', 'w', '1', ' +', ' w', '2', ' +', ' w', '3', ' +', ' w', '4', '))', '<|im_end|>'], raw_logprob: -7.226380825042725, cons_logprob: -5.072568893432617, time: 0.51 (0.05)
+(total / (w1 + w2 + w3 + w4))<|im_end|>
+Total suceeses: 1/3
+Sample time: 2.16 s
+
+100%|██████████| 1/1 [00:02<00:00,  2.16s/it]
+100%|██████████| 1/1 [00:02<00:00,  2.16s/it]
+[cars-batch 2/50] /home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_cars_task.py --cars-repo /home/advayth2/cars --grammar-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/gsm_cars_grammar.lark --prompt-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/prompts/gsm_0010.txt --model-name Qwen/Qwen2.5-Coder-1.5B-Instruct --sample-style cars --log-dir /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/logs/gsm_0010 --target-samples 1 --n-steps 500 --max-new-tokens 128 --device cuda
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:   1%|          | 3/338 [00:00<00:11, 28.79it/s]
+Loading weights:  12%|█▏        | 39/338 [00:00<00:01, 216.75it/s]
+Loading weights:  22%|██▏       | 75/338 [00:00<00:00, 273.62it/s]
+Loading weights:  33%|███▎      | 112/338 [00:00<00:00, 303.01it/s]
+Loading weights:  44%|████▍     | 148/338 [00:00<00:00, 313.12it/s]
+Loading weights:  55%|█████▍    | 185/338 [00:00<00:00, 329.30it/s]
+Loading weights:  65%|██████▌   | 220/338 [00:00<00:00, 331.66it/s]
+Loading weights:  76%|███████▌  | 257/338 [00:00<00:00, 337.95it/s]
+Loading weights:  90%|████████▉ | 303/338 [00:00<00:00, 366.74it/s]
+Loading weights: 100%|██████████| 338/338 [00:01<00:00, 325.34it/s]
+Creating new oracle trie
+
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.

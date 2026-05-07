@@ -900,7 +900,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--itergen-gsm-max-new-tokens", type=int, default=128)
     parser.add_argument("--cars-repo", type=Path, default=default_cars_repo())
     parser.add_argument("--cars-style", choices=["rs", "ars", "rsft", "cars"], default="cars")
-    parser.add_argument("--cars-max-attempts-per-example", type=int, default=2000)
+    parser.add_argument("--cars-max-attempts-per-example", type=int, default=500)
     parser.add_argument("--gsm-cars-max-new-tokens", type=int, default=128)
     parser.add_argument("--cars-cuda-visible-devices", default=os.environ.get("CARS_CUDA_VISIBLE_DEVICES", "auto"))
     parser.add_argument("--skip-itergen-train-baseline", action="store_true")

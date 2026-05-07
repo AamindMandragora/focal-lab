@@ -1,0 +1,1776 @@
+{
+  "config": {
+    "dataset": "gsm_symbolic",
+    "output": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen7_20260507_003709_gsm_metadecode_qwen25_coder_7b_instruct_gpt54_crane_train.json",
+    "output_dir": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd",
+    "crane_repo": "/home/advayth2/CRANE",
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "eval_backend": "vllm",
+    "device": "cuda",
+    "crane_device": "cuda:0",
+    "sample_size": 50,
+    "eval_max_steps": 600,
+    "eval_step_token_budget": 1,
+    "vllm_gpu_memory_utilization": 0.5,
+    "vllm_max_model_len": 8192,
+    "crane_max_model_len": 8192,
+    "recurrence_penalty": 1.0,
+    "start_symbol": "<<",
+    "gsm_source_dir": "/home/advayth2/CRANE/src/gsm_symbolic",
+    "gsm_split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json",
+    "gsm_split_name": "train",
+    "spider_split_file": null,
+    "spider_split_name": "test",
+    "smiles_classes": "acrylates,chain_extenders,isocyanates",
+    "smiles_max_attempts": 500,
+    "decoder_source": "auto",
+    "stable_mode": false,
+    "dry_run": false,
+    "method": "crane",
+    "framework": "original_crane_repo"
+  },
+  "success": true,
+  "crane_framework_source": "crane.main.CRANE (itergen_import_failed: No module named 'itergen')",
+  "decoder_config": {
+    "grammar_source": "dataset_lark_text",
+    "prompt_source": "crane.src.prompt_templates.gsm_symbolic.cot.gsm",
+    "start_symbol": "<<",
+    "start_in_grammar": true,
+    "end_symbol": ">>",
+    "end_in_grammar": true,
+    "stop_strings": []
+  },
+  "accuracy": 0.42,
+  "syntax_rate": 0.88,
+  "num_examples": 50,
+  "num_correct": 21,
+  "accuracy_denominator": 50,
+  "accuracy_definition": "correct_examples_over_all_examples",
+  "invalid_outputs_excluded_from_accuracy": 0,
+  "avg_num_tokens": 144.86,
+  "wall_time_seconds": 250.95768356323242,
+  "sample_outputs": [
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, we need to calculate the total weight of each type of feed:\n- {o1}: <<n1 * w1>> pounds\n- {o2}: <<n2 * w2>> pounds\n- {o3}: <<n3 * w3>> pounds\n- {o4}: <<n4 * w4>> pounds\n\nNext, we sum up the total weight of all the feed:\n<<n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4>> pounds\n\nFinally, we divide the total weight by the truck's capacity to find the number of trips needed. Since the number of trips must be an integer, we use the ceiling function:\n<<ceil_total_weight / total>> trips\n\nThe final answer is <<ceil_total_weight / total>> trips.",
+      "token_count": 177,
+      "time_seconds": 7.241328239440918,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "(n1*w1 + n2*w2 + n3*w3 + n4*w4)//total",
+      "actual": "ceil_total_weight / total",
+      "scored_output": "Let's think step by step. First, we need to calculate the total weight of each type of feed:\n- {o1}: <<n1 * w1>> pounds\n- {o2}: <<n2 * w2>> pounds\n- {o3}: <<n3 * w3>> pounds\n- {o4}: <<n4 * w4>> pounds\n\nNext, we sum up the total weight of all the feed:\n<<n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4>> pounds\n\nFinally, we divide the total weight by the truck's capacity to find the number of trips needed. Since the number of trips must be an integer, we use the ceiling function:\n<<ceil_total_weight / total>> trips\n\nThe final answer is <<ceil_total_weight / total>> trips.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * w1",
+          "valid": true
+        },
+        {
+          "text": "n2 * w2",
+          "valid": true
+        },
+        {
+          "text": "n3 * w3",
+          "valid": true
+        },
+        {
+          "text": "n4 * w4",
+          "valid": true
+        },
+        {
+          "text": "n1 * w1 + n2 * w2 + n3 * w3 + n4 * w4",
+          "valid": true
+        },
+        {
+          "text": "ceil_total_weight / total",
+          "valid": false
+        },
+        {
+          "text": "ceil_total_weight / total",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The cost for the first <<t>> minutes is <<t * frac1>>. The cost for the remaining <<total - t>> minutes is <<(total - t) * frac2>>. The total cost is <<t * frac1 + (total - t) * frac2>>. The final answer is <<t * frac1 + (total - t) * frac2>>.",
+      "token_count": 88,
+      "time_seconds": 3.1428239345550537,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "actual": "t * frac1 + (total - t) * frac2",
+      "scored_output": "Let's think step by step. The cost for the first <<t>> minutes is <<t * frac1>>. The cost for the remaining <<total - t>> minutes is <<(total - t) * frac2>>. The total cost is <<t * frac1 + (total - t) * frac2>>. The final answer is <<t * frac1 + (total - t) * frac2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "t",
+          "valid": true
+        },
+        {
+          "text": "t * frac1",
+          "valid": true
+        },
+        {
+          "text": "total - t",
+          "valid": true
+        },
+        {
+          "text": "(total - t) * frac2",
+          "valid": true
+        },
+        {
+          "text": "t * frac1 + (total - t) * frac2",
+          "valid": true
+        },
+        {
+          "text": "t * frac1 + (total - t) * frac2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, {name} has <<r * w>> potted plants. She received {x} new potted plants, so she now has <<r * w + x>> potted plants. She plans to give {n} potted plants from each of the {w} window ledges, which is <<n * w>> potted plants. The remaining potted plants will be <<r * w + x - n * w>>. The final answer is <<r * w + x - n * w>>.",
+      "token_count": 115,
+      "time_seconds": 4.116103172302246,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "w*r+x-w*n",
+      "actual": "r * w + x - n * w",
+      "scored_output": "Let's think step by step. Initially, {name} has <<r * w>> potted plants. She received {x} new potted plants, so she now has <<r * w + x>> potted plants. She plans to give {n} potted plants from each of the {w} window ledges, which is <<n * w>> potted plants. The remaining potted plants will be <<r * w + x - n * w>>. The final answer is <<r * w + x - n * w>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "r * w",
+          "valid": true
+        },
+        {
+          "text": "r * w + x",
+          "valid": true
+        },
+        {
+          "text": "n * w",
+          "valid": true
+        },
+        {
+          "text": "r * w + x - n * w",
+          "valid": true
+        },
+        {
+          "text": "r * w + x - n * w",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. They have {t} minutes in total. It takes them {t1} minutes to get to the corner and {t2} minutes to get to the {loc3}, which is a total of <<t1 + t2>> minutes. The time they have left is <<t - (t1 + t2)>>. The final answer is <<t - (t1 + t2)>>.",
+      "token_count": 90,
+      "time_seconds": 3.136697292327881,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "t - t1 - t2",
+      "actual": "t - (t1 + t2)",
+      "scored_output": "Let's think step by step. They have {t} minutes in total. It takes them {t1} minutes to get to the corner and {t2} minutes to get to the {loc3}, which is a total of <<t1 + t2>> minutes. The time they have left is <<t - (t1 + t2)>>. The final answer is <<t - (t1 + t2)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "t1 + t2",
+          "valid": true
+        },
+        {
+          "text": "t - (t1 + t2)",
+          "valid": true
+        },
+        {
+          "text": "t - (t1 + t2)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total number of puppies is <<n1 + n2>>. The total number of puppies with spots is <<k1 + k2>>. The percentage of puppies with spots is <<(k1 + k2) / (n1 + n2) * 100>>. The final answer is <<(k1 + k2) / (n1 + n2) * 100>>.",
+      "token_count": 95,
+      "time_seconds": 3.4189274311065674,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "actual": "(k1 + k2) / (n1 + n2) * 100",
+      "scored_output": "Let's think step by step. The total number of puppies is <<n1 + n2>>. The total number of puppies with spots is <<k1 + k2>>. The percentage of puppies with spots is <<(k1 + k2) / (n1 + n2) * 100>>. The final answer is <<(k1 + k2) / (n1 + n2) * 100>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 + n2",
+          "valid": true
+        },
+        {
+          "text": "k1 + k2",
+          "valid": true
+        },
+        {
+          "text": "(k1 + k2) / (n1 + n2) * 100",
+          "valid": true
+        },
+        {
+          "text": "(k1 + k2) / (n1 + n2) * 100",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. On {d1}, {name} sold {n1} boxes of {food} and {n1 - m1} boxes of {fruit} pie. On {d2}, {name} sold {n1 + n2} boxes of {food} and {m2} boxes of {fruit} pie. The total earnings from {food} are <<(n1 + n1 + n2) * cn>> and from {fruit} pie are <<(n1 - m1 + m2) * cm>>. The total earnings for two days are <<(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm>>. The final answer is <<(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm>>.",
+      "token_count": 185,
+      "time_seconds": 6.628448486328125,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(2*n1+n2)*cn + (2*m2-m1)*cm",
+      "actual": "(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm",
+      "scored_output": "Let's think step by step. On {d1}, {name} sold {n1} boxes of {food} and {n1 - m1} boxes of {fruit} pie. On {d2}, {name} sold {n1 + n2} boxes of {food} and {m2} boxes of {fruit} pie. The total earnings from {food} are <<(n1 + n1 + n2) * cn>> and from {fruit} pie are <<(n1 - m1 + m2) * cm>>. The total earnings for two days are <<(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm>>. The final answer is <<(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "(n1 + n1 + n2) * cn",
+          "valid": true
+        },
+        {
+          "text": "(n1 - m1 + m2) * cm",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n1 + n2) * cn + (n1 - m1 + m2) * cm",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Let the speed of {name} on the beach be <<v>> {unit}/minute. Then, the speed on the sidewalk is <<mult * v>> {unit}/minute. The distance on the beach is <<t * v>> {unit}, and the distance on the sidewalk is <<(n - t * v) / (mult * v)>> {unit}. The time spent on the sidewalk is <<(n - t * v) / (mult * v)>> minutes. The total time is <<t + (n - t * v) / (mult * v)>> minutes. The final answer is <<t + (n - t * v) / (mult * v)>>.",
+      "token_count": 149,
+      "time_seconds": 5.237392902374268,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "t + (k * t) / (mult * m)",
+      "actual": "t + (n - t * v) / (mult * v)",
+      "scored_output": "Let's think step by step. Let the speed of {name} on the beach be <<v>> {unit}/minute. Then, the speed on the sidewalk is <<mult * v>> {unit}/minute. The distance on the beach is <<t * v>> {unit}, and the distance on the sidewalk is <<(n - t * v) / (mult * v)>> {unit}. The time spent on the sidewalk is <<(n - t * v) / (mult * v)>> minutes. The total time is <<t + (n - t * v) / (mult * v)>> minutes. The final answer is <<t + (n - t * v) / (mult * v)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "v",
+          "valid": false
+        },
+        {
+          "text": "mult * v",
+          "valid": false
+        },
+        {
+          "text": "t * v",
+          "valid": false
+        },
+        {
+          "text": "(n - t * v) / (mult * v)",
+          "valid": false
+        },
+        {
+          "text": "(n - t * v) / (mult * v)",
+          "valid": false
+        },
+        {
+          "text": "t + (n - t * v) / (mult * v)",
+          "valid": false
+        },
+        {
+          "text": "t + (n - t * v) / (mult * v)",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name} bought {n1} {obj1} at <<n1 * c1>> {c1}, {n2} {obj2} at <<n2 * c2>> {c2}, and a rim of bond paper at <<c3>> {c3}. The total cost is <<n1 * c1 + n2 * c2 + c3>> {c1}. The final answer is <<n1 * c1 + n2 * c2 + c3>> {c1}.",
+      "token_count": 115,
+      "time_seconds": 4.039056301116943,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "actual": "n1 * c1 + n2 * c2 + c3",
+      "scored_output": "Let's think step by step. {name} bought {n1} {obj1} at <<n1 * c1>> {c1}, {n2} {obj2} at <<n2 * c2>> {c2}, and a rim of bond paper at <<c3>> {c3}. The total cost is <<n1 * c1 + n2 * c2 + c3>> {c1}. The final answer is <<n1 * c1 + n2 * c2 + c3>> {c1}.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * c1",
+          "valid": true
+        },
+        {
+          "text": "n2 * c2",
+          "valid": true
+        },
+        {
+          "text": "c3",
+          "valid": true
+        },
+        {
+          "text": "n1 * c1 + n2 * c2 + c3",
+          "valid": true
+        },
+        {
+          "text": "n1 * c1 + n2 * c2 + c3",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total number of questions is {n}. The number of {s1} questions is <<n * p1 / 100>>. The number of {s2} questions is <<(n - n * p1 / 100) / 2>>. The number of {s3} questions is also <<(n - n * p1 / 100) / 2>>. {name} is sure to get <<n * p1 / 100 * r1 / 100>> points from the {s1} questions. For the {s2} and {s3} questions, she is sure to get <<(n - n * p1 / 100) / 2 * frac / 100 * 2>> points. The total points she is sure to get is <<n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2>>. The final answer is <<n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2>>.",
+      "token_count": 285,
+      "time_seconds": 10.37616753578186,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(n * (p1/100) * (r1/100)) + int(n*(1-(p1/100))*frac)",
+      "actual": "n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2",
+      "scored_output": "Let's think step by step. The total number of questions is {n}. The number of {s1} questions is <<n * p1 / 100>>. The number of {s2} questions is <<(n - n * p1 / 100) / 2>>. The number of {s3} questions is also <<(n - n * p1 / 100) / 2>>. {name} is sure to get <<n * p1 / 100 * r1 / 100>> points from the {s1} questions. For the {s2} and {s3} questions, she is sure to get <<(n - n * p1 / 100) / 2 * frac / 100 * 2>> points. The total points she is sure to get is <<n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2>>. The final answer is <<n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n * p1 / 100",
+          "valid": true
+        },
+        {
+          "text": "(n - n * p1 / 100) / 2",
+          "valid": true
+        },
+        {
+          "text": "(n - n * p1 / 100) / 2",
+          "valid": true
+        },
+        {
+          "text": "n * p1 / 100 * r1 / 100",
+          "valid": true
+        },
+        {
+          "text": "(n - n * p1 / 100) / 2 * frac / 100 * 2",
+          "valid": true
+        },
+        {
+          "text": "n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2",
+          "valid": true
+        },
+        {
+          "text": "n * p1 / 100 * r1 / 100 + (n - n * p1 / 100) / 2 * frac / 100 * 2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. On {d1}, {name} picks {n1} {fruit}. On {d2}, {name} picks {n2} {fruit}. On {d3}, {name} picks <<mult * n1>> {fruit}. The total number of {fruit} is <<n1 + n2 + mult * n1>>. The final answer is <<n1 + n2 + mult * n1>>.",
+      "token_count": 96,
+      "time_seconds": 3.367293119430542,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n1 + n2 + mult * n1",
+      "actual": "n1 + n2 + mult * n1",
+      "scored_output": "Let's think step by step. On {d1}, {name} picks {n1} {fruit}. On {d2}, {name} picks {n2} {fruit}. On {d3}, {name} picks <<mult * n1>> {fruit}. The total number of {fruit} is <<n1 + n2 + mult * n1>>. The final answer is <<n1 + n2 + mult * n1>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "mult * n1",
+          "valid": true
+        },
+        {
+          "text": "n1 + n2 + mult * n1",
+          "valid": true
+        },
+        {
+          "text": "n1 + n2 + mult * n1",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. On {d1} and {d2}, {name} watched a {h1}-hour episode each night, which is <<2 * h1>> hours. On {d4}, he watched a {h2}-hour episode and a {m2}-minute show, which is <<h2 * 60 + m2>> minutes. On {d5}, he watched {n2} {h3}-hour episodes, which is <<n2 * h3 * 60>> minutes. The total time spent watching TV on {d1}, {d2}, {d4}, and {d5} is <<2 * h1 + h2 * 60 + m2 + n2 * h3 * 60>> minutes. The time spent watching TV on {d3} is <<total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)>> minutes. The number of {m1}-minute episodes watched on {d3} is <<(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1>>. The final answer is <<(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1>>.",
+      "token_count": 310,
+      "time_seconds": 12.16515564918518,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(60 * total - 120 * h1 - 60 * h2 - m2 - 60 * n2 * h3) // m1",
+      "actual": "(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1",
+      "scored_output": "Let's think step by step. On {d1} and {d2}, {name} watched a {h1}-hour episode each night, which is <<2 * h1>> hours. On {d4}, he watched a {h2}-hour episode and a {m2}-minute show, which is <<h2 * 60 + m2>> minutes. On {d5}, he watched {n2} {h3}-hour episodes, which is <<n2 * h3 * 60>> minutes. The total time spent watching TV on {d1}, {d2}, {d4}, and {d5} is <<2 * h1 + h2 * 60 + m2 + n2 * h3 * 60>> minutes. The time spent watching TV on {d3} is <<total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)>> minutes. The number of {m1}-minute episodes watched on {d3} is <<(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1>>. The final answer is <<(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "2 * h1",
+          "valid": true
+        },
+        {
+          "text": "h2 * 60 + m2",
+          "valid": true
+        },
+        {
+          "text": "n2 * h3 * 60",
+          "valid": true
+        },
+        {
+          "text": "2 * h1 + h2 * 60 + m2 + n2 * h3 * 60",
+          "valid": true
+        },
+        {
+          "text": "total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)",
+          "valid": true
+        },
+        {
+          "text": "(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1",
+          "valid": true
+        },
+        {
+          "text": "(total * 60 - (2 * h1 + h2 * 60 + m2 + n2 * h3 * 60)) / m1",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, {name} bought a package of {obj}. Her husband bought an additional package of {n1} {obj} and gave it to her. After using {n2} {obj} for sampling, she had a total of {total} {obj}. The number of {obj} in the package that {name} bought is <<total - n1 - n2 + n1>>. Simplifying, this is <<total - n2>>. The final answer is <<total - n2>>.",
+      "token_count": 114,
+      "time_seconds": 3.531930685043335,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total + n2 - n1",
+      "actual": "total - n2",
+      "scored_output": "Let's think step by step. Initially, {name} bought a package of {obj}. Her husband bought an additional package of {n1} {obj} and gave it to her. After using {n2} {obj} for sampling, she had a total of {total} {obj}. The number of {obj} in the package that {name} bought is <<total - n1 - n2 + n1>>. Simplifying, this is <<total - n2>>. The final answer is <<total - n2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "total - n1 - n2 + n1",
+          "valid": true
+        },
+        {
+          "text": "total - n2",
+          "valid": true
+        },
+        {
+          "text": "total - n2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, calculate the total calories in the bag: <<cal * n>>. Then, determine how many calories are left for the day: <<total - spent>>. Finally, calculate how many servings can be eaten with the remaining calories: <<(total - spent) // cal>>. Since we need the number of {size} {unit} bags, divide by the number of servings per bag: <<(total - spent) // (cal * n)>>. The final answer is <<(total - spent) // (cal * n)>>.",
+      "token_count": 119,
+      "time_seconds": 3.298480272293091,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "size//n * (total-spent) // (cal)",
+      "actual": "(total - spent) // (cal * n)",
+      "scored_output": "Let's think step by step. First, calculate the total calories in the bag: <<cal * n>>. Then, determine how many calories are left for the day: <<total - spent>>. Finally, calculate how many servings can be eaten with the remaining calories: <<(total - spent) // cal>>. Since we need the number of {size} {unit} bags, divide by the number of servings per bag: <<(total - spent) // (cal * n)>>. The final answer is <<(total - spent) // (cal * n)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "cal * n",
+          "valid": true
+        },
+        {
+          "text": "total - spent",
+          "valid": true
+        },
+        {
+          "text": "(total - spent) // cal",
+          "valid": true
+        },
+        {
+          "text": "(total - spent) // (cal * n)",
+          "valid": true
+        },
+        {
+          "text": "(total - spent) // (cal * n)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, calculate the number of students in {group1}: <<total * p1 / 100>>. The remaining students are <<total - total * p1 / 100>>. Out of these remaining students, {p2}% are in {group2} or {group3}: <<(total - total * p1 / 100) * p2 / 100>>. The total number of students leaving early is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>. The final answer is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>.",
+      "token_count": 175,
+      "time_seconds": 5.834817171096802,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(total*p1/100 + (total-int(total*p1/100))*p2/100)",
+      "actual": "total * p1 / 100 + (total - total * p1 / 100) * p2 / 100",
+      "scored_output": "Let's think step by step. First, calculate the number of students in {group1}: <<total * p1 / 100>>. The remaining students are <<total - total * p1 / 100>>. Out of these remaining students, {p2}% are in {group2} or {group3}: <<(total - total * p1 / 100) * p2 / 100>>. The total number of students leaving early is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>. The final answer is <<total * p1 / 100 + (total - total * p1 / 100) * p2 / 100>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "total * p1 / 100",
+          "valid": true
+        },
+        {
+          "text": "total - total * p1 / 100",
+          "valid": true
+        },
+        {
+          "text": "(total - total * p1 / 100) * p2 / 100",
+          "valid": true
+        },
+        {
+          "text": "total * p1 / 100 + (total - total * p1 / 100) * p2 / 100",
+          "valid": true
+        },
+        {
+          "text": "total * p1 / 100 + (total - total * p1 / 100) * p2 / 100",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. In one week, there are 7 {time_units}. The total {food} eaten by {name1} in one week is <<n1 * 7>>. The total {food} eaten by {name2} in one week is <<n2 * 7>>. The total {food} eaten by their {relation} in one week is <<n3 * 7>>. The total {food} eaten by the family in one week is <<n1 * 7 + n2 * 7 + n3 * 7>>. The final answer is <<n1 * 7 + n2 * 7 + n3 * 7>>.",
+      "token_count": 198,
+      "time_seconds": 5.889852523803711,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(n1 + n2 + n3) * 7",
+      "actual": "n1 * 7 + n2 * 7 + n3 * 7",
+      "scored_output": "Let's think step by step. {name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. In one week, there are 7 {time_units}. The total {food} eaten by {name1} in one week is <<n1 * 7>>. The total {food} eaten by {name2} in one week is <<n2 * 7>>. The total {food} eaten by their {relation} in one week is <<n3 * 7>>. The total {food} eaten by the family in one week is <<n1 * 7 + n2 * 7 + n3 * 7>>. The final answer is <<n1 * 7 + n2 * 7 + n3 * 7>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * 7",
+          "valid": true
+        },
+        {
+          "text": "n2 * 7",
+          "valid": true
+        },
+        {
+          "text": "n3 * 7",
+          "valid": true
+        },
+        {
+          "text": "n1 * 7 + n2 * 7 + n3 * 7",
+          "valid": true
+        },
+        {
+          "text": "n1 * 7 + n2 * 7 + n3 * 7",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name} gets {n} emails a day. {p}% of those emails don't require any response, which is <<n * (p / 100)>>. The number of emails that require a response is <<n - n * (p / 100)>>. Over a {d} day work week, the total number of emails responded to is <<(n - n * (p / 100)) * d>>. The final answer is <<(n - n * (p / 100)) * d>>.",
+      "token_count": 125,
+      "time_seconds": 4.419963121414185,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "d * (n * (100 - p) / 100)",
+      "actual": "(n - n * (p / 100)) * d",
+      "scored_output": "Let's think step by step. {name} gets {n} emails a day. {p}% of those emails don't require any response, which is <<n * (p / 100)>>. The number of emails that require a response is <<n - n * (p / 100)>>. Over a {d} day work week, the total number of emails responded to is <<(n - n * (p / 100)) * d>>. The final answer is <<(n - n * (p / 100)) * d>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n * (p / 100)",
+          "valid": true
+        },
+        {
+          "text": "n - n * (p / 100)",
+          "valid": true
+        },
+        {
+          "text": "(n - n * (p / 100)) * d",
+          "valid": true
+        },
+        {
+          "text": "(n - n * (p / 100)) * d",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, the {facility} has a capacity of {total} {item}s and {frac} of them are occupied. Therefore, the number of occupied {item}s is <<total * frac>>. The number of unoccupied {item}s initially is <<total - total * frac>>. Each day, {daily} patients are admitted, so over {period} weeks (which is <<period * 7>> days), the total number of patients admitted is <<daily * period * 7>>. The total number of unoccupied {item}s after {period} weeks is <<total - total * frac - daily * period * 7>>. The final answer is <<total - total * frac - daily * period * 7>>.",
+      "token_count": 159,
+      "time_seconds": 4.716074705123901,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total - (total * frac + daily * period * 7)",
+      "actual": "total - total * frac - daily * period * 7",
+      "scored_output": "Let's think step by step. Initially, the {facility} has a capacity of {total} {item}s and {frac} of them are occupied. Therefore, the number of occupied {item}s is <<total * frac>>. The number of unoccupied {item}s initially is <<total - total * frac>>. Each day, {daily} patients are admitted, so over {period} weeks (which is <<period * 7>> days), the total number of patients admitted is <<daily * period * 7>>. The total number of unoccupied {item}s after {period} weeks is <<total - total * frac - daily * period * 7>>. The final answer is <<total - total * frac - daily * period * 7>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "total * frac",
+          "valid": true
+        },
+        {
+          "text": "total - total * frac",
+          "valid": true
+        },
+        {
+          "text": "period * 7",
+          "valid": true
+        },
+        {
+          "text": "daily * period * 7",
+          "valid": true
+        },
+        {
+          "text": "total - total * frac - daily * period * 7",
+          "valid": true
+        },
+        {
+          "text": "total - total * frac - daily * period * 7",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, {name} has {cur}{initial_amount}. The total cost of {quantity} {item}s is <<quantity * unit_price>>. The remaining money is <<initial_amount - quantity * unit_price>>. The final answer is <<initial_amount - quantity * unit_price>>.",
+      "token_count": 66,
+      "time_seconds": 2.064265012741089,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "actual": "initial_amount - quantity * unit_price",
+      "scored_output": "Let's think step by step. Initially, {name} has {cur}{initial_amount}. The total cost of {quantity} {item}s is <<quantity * unit_price>>. The remaining money is <<initial_amount - quantity * unit_price>>. The final answer is <<initial_amount - quantity * unit_price>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "quantity * unit_price",
+          "valid": true
+        },
+        {
+          "text": "initial_amount - quantity * unit_price",
+          "valid": true
+        },
+        {
+          "text": "initial_amount - quantity * unit_price",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Currently, {name1} has {s1} signatures and {name2} has {s2} signatures, making a total of <<s1 + s2>> signatures. They have {n2} more weeks to collect signatures. To reach their goal of {goal} signatures, they need to collect <<goal - (s1 + s2)>> more signatures. The final answer is <<goal - (s1 + s2)>>.",
+      "token_count": 99,
+      "time_seconds": 2.946104049682617,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "goal - (s1 + s2)",
+      "actual": "goal - (s1 + s2)",
+      "scored_output": "Let's think step by step. Currently, {name1} has {s1} signatures and {name2} has {s2} signatures, making a total of <<s1 + s2>> signatures. They have {n2} more weeks to collect signatures. To reach their goal of {goal} signatures, they need to collect <<goal - (s1 + s2)>> more signatures. The final answer is <<goal - (s1 + s2)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "s1 + s2",
+          "valid": true
+        },
+        {
+          "text": "goal - (s1 + s2)",
+          "valid": true
+        },
+        {
+          "text": "goal - (s1 + s2)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total cost of the {event} is {total} {cur}. The {organization} will cover {fraction} of the cost, which is <<fraction * total>> {cur}. The remaining cost that {name} needs to cover is <<total - fraction * total>> {cur}. Since {name} already has {current} {cur}, the additional money he needs is <<total - fraction * total - current>> {cur}. The final answer is <<total - fraction * total - current>> {cur}.",
+      "token_count": 113,
+      "time_seconds": 3.5252113342285156,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total - (total * fraction + current)",
+      "actual": "total - fraction * total - current",
+      "scored_output": "Let's think step by step. The total cost of the {event} is {total} {cur}. The {organization} will cover {fraction} of the cost, which is <<fraction * total>> {cur}. The remaining cost that {name} needs to cover is <<total - fraction * total>> {cur}. Since {name} already has {current} {cur}, the additional money he needs is <<total - fraction * total - current>> {cur}. The final answer is <<total - fraction * total - current>> {cur}.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "fraction * total",
+          "valid": true
+        },
+        {
+          "text": "total - fraction * total",
+          "valid": true
+        },
+        {
+          "text": "total - fraction * total - current",
+          "valid": true
+        },
+        {
+          "text": "total - fraction * total - current",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The cost for {n1} dozen {item1} is <<n1 * p1>>. The cost for {n2} dozen {item2} is <<n2 * p2>>. The cost for {n3} dozen {item3} is <<n3 * p3>>. The total cost is the sum of these amounts, which is <<n1 * p1 + n2 * p2 + n3 * p3>>. The final answer is <<n1 * p1 + n2 * p2 + n3 * p3>>.",
+      "token_count": 127,
+      "time_seconds": 3.7738449573516846,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "scored_output": "Let's think step by step. The cost for {n1} dozen {item1} is <<n1 * p1>>. The cost for {n2} dozen {item2} is <<n2 * p2>>. The cost for {n3} dozen {item3} is <<n3 * p3>>. The total cost is the sum of these amounts, which is <<n1 * p1 + n2 * p2 + n3 * p3>>. The final answer is <<n1 * p1 + n2 * p2 + n3 * p3>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * p1",
+          "valid": true
+        },
+        {
+          "text": "n2 * p2",
+          "valid": true
+        },
+        {
+          "text": "n3 * p3",
+          "valid": true
+        },
+        {
+          "text": "n1 * p1 + n2 * p2 + n3 * p3",
+          "valid": true
+        },
+        {
+          "text": "n1 * p1 + n2 * p2 + n3 * p3",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The cost of {n1} loaves of {item1} is <<n1 * price1>>. The cost of {n2} {item2} is <<n2 * price2>>. The difference in cost is <<n1 * price1 - n2 * price2>>. The final answer is <<n1 * price1 - n2 * price2>>.",
+      "token_count": 88,
+      "time_seconds": 2.624870538711548,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n1 * price1 - n2 * price2",
+      "actual": "n1 * price1 - n2 * price2",
+      "scored_output": "Let's think step by step. The cost of {n1} loaves of {item1} is <<n1 * price1>>. The cost of {n2} {item2} is <<n2 * price2>>. The difference in cost is <<n1 * price1 - n2 * price2>>. The final answer is <<n1 * price1 - n2 * price2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * price1",
+          "valid": true
+        },
+        {
+          "text": "n2 * price2",
+          "valid": true
+        },
+        {
+          "text": "n1 * price1 - n2 * price2",
+          "valid": true
+        },
+        {
+          "text": "n1 * price1 - n2 * price2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, {name} had {cur}{total}. She bought {n12} {unit}s of {item1} at a discounted price. The cost of {n12} {unit}s is calculated as follows:\n- The cost of the first {n1} {unit}s is <<n1 * p1>>.\n- The cost of the next {n2} {unit}s is <<n2 * (p1 - discount)>>.\n- The total cost for {n12} {unit}s is <<n1 * p1 + n2 * (p1 - discount)>>.\n\nShe also bought a mixed bag of {item2} for {cur}{p2} and {n3} {item3} that were {cur}{p3} each. The cost of {n3} {item3} is <<n3 * p3>>.\n\nThe total amount spent is:\n<<n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3>>.\n\nThe remaining money is:\n<<total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)>>.\n\nThe final answer is:\n<<total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)>>.",
+      "token_count": 293,
+      "time_seconds": 9.147616624832153,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total-int((n1*p1+(n2*(1-discount))*p1+k*p1)+p2+n3*p3)",
+      "actual": "total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)",
+      "scored_output": "Let's think step by step. Initially, {name} had {cur}{total}. She bought {n12} {unit}s of {item1} at a discounted price. The cost of {n12} {unit}s is calculated as follows:\n- The cost of the first {n1} {unit}s is <<n1 * p1>>.\n- The cost of the next {n2} {unit}s is <<n2 * (p1 - discount)>>.\n- The total cost for {n12} {unit}s is <<n1 * p1 + n2 * (p1 - discount)>>.\n\nShe also bought a mixed bag of {item2} for {cur}{p2} and {n3} {item3} that were {cur}{p3} each. The cost of {n3} {item3} is <<n3 * p3>>.\n\nThe total amount spent is:\n<<n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3>>.\n\nThe remaining money is:\n<<total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)>>.\n\nThe final answer is:\n<<total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * p1",
+          "valid": true
+        },
+        {
+          "text": "n2 * (p1 - discount)",
+          "valid": true
+        },
+        {
+          "text": "n1 * p1 + n2 * (p1 - discount)",
+          "valid": true
+        },
+        {
+          "text": "n3 * p3",
+          "valid": true
+        },
+        {
+          "text": "n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3",
+          "valid": true
+        },
+        {
+          "text": "total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)",
+          "valid": true
+        },
+        {
+          "text": "total - (n1 * p1 + n2 * (p1 - discount) + p2 + n3 * p3)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The cost of the more expensive brand per {unit} is <<price * (1 + percent / 100)>>. {name} buys a week's worth of {item}, which is <<7 * usage>> {unit}. The total cost for the {item} is <<7 * usage * price * (1 + percent / 100)>>. Adding the cost of the {extra_item}, the total cost is <<7 * usage * price * (1 + percent / 100) + extra_price>>. The final answer is <<7 * usage * price * (1 + percent / 100) + extra_price>>.",
+      "token_count": 144,
+      "time_seconds": 4.688137769699097,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "actual": "7 * usage * price * (1 + percent / 100) + extra_price",
+      "scored_output": "Let's think step by step. The cost of the more expensive brand per {unit} is <<price * (1 + percent / 100)>>. {name} buys a week's worth of {item}, which is <<7 * usage>> {unit}. The total cost for the {item} is <<7 * usage * price * (1 + percent / 100)>>. Adding the cost of the {extra_item}, the total cost is <<7 * usage * price * (1 + percent / 100) + extra_price>>. The final answer is <<7 * usage * price * (1 + percent / 100) + extra_price>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "price * (1 + percent / 100)",
+          "valid": true
+        },
+        {
+          "text": "7 * usage",
+          "valid": true
+        },
+        {
+          "text": "7 * usage * price * (1 + percent / 100)",
+          "valid": true
+        },
+        {
+          "text": "7 * usage * price * (1 + percent / 100) + extra_price",
+          "valid": true
+        },
+        {
+          "text": "7 * usage * price * (1 + percent / 100) + extra_price",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. There are {n} {insect2}. The number of {insect1} is <<frac * n>>. The total number of insects is <<n + frac * n>>. The final answer is <<n + frac * n>>.",
+      "token_count": 59,
+      "time_seconds": 1.7752623558044434,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n + int(n * frac)",
+      "actual": "n + frac * n",
+      "scored_output": "Let's think step by step. There are {n} {insect2}. The number of {insect1} is <<frac * n>>. The total number of insects is <<n + frac * n>>. The final answer is <<n + frac * n>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "frac * n",
+          "valid": true
+        },
+        {
+          "text": "n + frac * n",
+          "valid": true
+        },
+        {
+          "text": "n + frac * n",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, we need to determine how many plants {name} can fit in the flower bed. The total space required for the plants and the gaps between them is <<(plant_width + space) * (number_of_plants - 1)>>. The number of plants that can fit is <<(length - space) // (plant_width + space) + 1>>. Since {name} already owns {owned} flowers, she needs <<number_of_plants - owned>> more flowers. Each flower costs {cost} {cur}, so the total cost is <<(number_of_plants - owned) * cost>>. The final answer is <<(number_of_plants - owned) * cost>>.",
+      "token_count": 152,
+      "time_seconds": 4.777315139770508,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "int((length / space - owned) * cost)",
+      "actual": "(number_of_plants - owned) * cost",
+      "scored_output": "Let's think step by step. First, we need to determine how many plants {name} can fit in the flower bed. The total space required for the plants and the gaps between them is <<(plant_width + space) * (number_of_plants - 1)>>. The number of plants that can fit is <<(length - space) // (plant_width + space) + 1>>. Since {name} already owns {owned} flowers, she needs <<number_of_plants - owned>> more flowers. Each flower costs {cost} {cur}, so the total cost is <<(number_of_plants - owned) * cost>>. The final answer is <<(number_of_plants - owned) * cost>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "(plant_width + space) * (number_of_plants - 1)",
+          "valid": false
+        },
+        {
+          "text": "(length - space) // (plant_width + space) + 1",
+          "valid": true
+        },
+        {
+          "text": "number_of_plants - owned",
+          "valid": false
+        },
+        {
+          "text": "(number_of_plants - owned) * cost",
+          "valid": false
+        },
+        {
+          "text": "(number_of_plants - owned) * cost",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total number of seats for graduates and faculty is <<graduates + faculty>>. The number of seats left for tickets is <<total - (graduates + faculty)>>. If these seats are split equally among the <<graduates>> graduates, each graduate would receive <<(total - (graduates + faculty)) // graduates>> tickets. The final answer is <<(total - (graduates + faculty)) // graduates>>.",
+      "token_count": 94,
+      "time_seconds": 2.9240589141845703,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(total - graduates - faculty) // graduates",
+      "actual": "(total - (graduates + faculty)) // graduates",
+      "scored_output": "Let's think step by step. The total number of seats for graduates and faculty is <<graduates + faculty>>. The number of seats left for tickets is <<total - (graduates + faculty)>>. If these seats are split equally among the <<graduates>> graduates, each graduate would receive <<(total - (graduates + faculty)) // graduates>> tickets. The final answer is <<(total - (graduates + faculty)) // graduates>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "graduates + faculty",
+          "valid": true
+        },
+        {
+          "text": "total - (graduates + faculty)",
+          "valid": true
+        },
+        {
+          "text": "graduates",
+          "valid": true
+        },
+        {
+          "text": "(total - (graduates + faculty)) // graduates",
+          "valid": true
+        },
+        {
+          "text": "(total - (graduates + faculty)) // graduates",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The first {n_first} apartment complexes each have {a} apartments, so the total number of apartments in these complexes is <<n_first * a>>. The last apartment complex has <<p * (n_first * a) / 100 + n_first * a>> apartments. The total number of apartments is <<n_first * a + p * (n_first * a) / 100 + n_first * a>>. {name} collects garbage {f} times a week from each apartment, so the total number of collections per week is <<f * (2 * n_first * a + p * (n_first * a) / 100)>>. He gets paid {r} per collection for each apartment, so his total weekly earnings are <<f * (2 * n_first * a + p * (n_first * a) / 100) * r * a>>. The final answer is <<f * (2 * n_first * a + p * (n_first * a) / 100) * r * a>>.",
+      "token_count": 233,
+      "time_seconds": 8.815574884414673,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "actual": "f * (2 * n_first * a + p * (n_first * a) / 100) * r * a",
+      "scored_output": "Let's think step by step. The first {n_first} apartment complexes each have {a} apartments, so the total number of apartments in these complexes is <<n_first * a>>. The last apartment complex has <<p * (n_first * a) / 100 + n_first * a>> apartments. The total number of apartments is <<n_first * a + p * (n_first * a) / 100 + n_first * a>>. {name} collects garbage {f} times a week from each apartment, so the total number of collections per week is <<f * (2 * n_first * a + p * (n_first * a) / 100)>>. He gets paid {r} per collection for each apartment, so his total weekly earnings are <<f * (2 * n_first * a + p * (n_first * a) / 100) * r * a>>. The final answer is <<f * (2 * n_first * a + p * (n_first * a) / 100) * r * a>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n_first * a",
+          "valid": true
+        },
+        {
+          "text": "p * (n_first * a) / 100 + n_first * a",
+          "valid": true
+        },
+        {
+          "text": "n_first * a + p * (n_first * a) / 100 + n_first * a",
+          "valid": true
+        },
+        {
+          "text": "f * (2 * n_first * a + p * (n_first * a) / 100)",
+          "valid": true
+        },
+        {
+          "text": "f * (2 * n_first * a + p * (n_first * a) / 100) * r * a",
+          "valid": true
+        },
+        {
+          "text": "f * (2 * n_first * a + p * (n_first * a) / 100) * r * a",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The price of {item1} rounded to the nearest dollar is <<round(p1)>>. The price of {item2} rounded to the nearest dollar is <<round(p2)>>. The price of {item3} rounded to the nearest dollar is <<round(p3)>>. The total earnings from selling {n1} {unit}s of {item1} is <<n1 * round(p1)>>. The total earnings from selling {n2} {unit}s of {item2} is <<n2 * round(p2)>>. The total earnings from selling {n3} {unit}s of {item3} is <<n3 * round(p3)>>. The total earnings are <<n1 * round(p1) + n2 * round(p2) + n3 * round(p3)>>. The final answer is <<n1 * round(p1) + n2 * round(p2) + n3 * round(p3)>>.",
+      "token_count": 204,
+      "time_seconds": 6.447626352310181,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "n1*int(p1) + n2*int(p2) + n3*int(p3)",
+      "actual": "n1 * round(p1) + n2 * round(p2) + n3 * round(p3)",
+      "scored_output": "Let's think step by step. The price of {item1} rounded to the nearest dollar is <<round(p1)>>. The price of {item2} rounded to the nearest dollar is <<round(p2)>>. The price of {item3} rounded to the nearest dollar is <<round(p3)>>. The total earnings from selling {n1} {unit}s of {item1} is <<n1 * round(p1)>>. The total earnings from selling {n2} {unit}s of {item2} is <<n2 * round(p2)>>. The total earnings from selling {n3} {unit}s of {item3} is <<n3 * round(p3)>>. The total earnings are <<n1 * round(p1) + n2 * round(p2) + n3 * round(p3)>>. The final answer is <<n1 * round(p1) + n2 * round(p2) + n3 * round(p3)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "round(p1)",
+          "valid": false
+        },
+        {
+          "text": "round(p2)",
+          "valid": false
+        },
+        {
+          "text": "round(p3)",
+          "valid": false
+        },
+        {
+          "text": "n1 * round(p1)",
+          "valid": false
+        },
+        {
+          "text": "n2 * round(p2)",
+          "valid": false
+        },
+        {
+          "text": "n3 * round(p3)",
+          "valid": false
+        },
+        {
+          "text": "n1 * round(p1) + n2 * round(p2) + n3 * round(p3)",
+          "valid": false
+        },
+        {
+          "text": "n1 * round(p1) + n2 * round(p2) + n3 * round(p3)",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Each {container} of {liquid} is <<vol>> {unit}s. {name} drinks <<num>> {container}s, so the total volume is <<num * vol>> {unit}s. Each {unit} of {liquid} has <<cal>> calories, so the total calories consumed are <<num * vol * cal>>. The final answer is <<num * vol * cal>>.",
+      "token_count": 89,
+      "time_seconds": 3.0819942951202393,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "vol * num * cal",
+      "actual": "num * vol * cal",
+      "scored_output": "Let's think step by step. Each {container} of {liquid} is <<vol>> {unit}s. {name} drinks <<num>> {container}s, so the total volume is <<num * vol>> {unit}s. Each {unit} of {liquid} has <<cal>> calories, so the total calories consumed are <<num * vol * cal>>. The final answer is <<num * vol * cal>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "vol",
+          "valid": true
+        },
+        {
+          "text": "num",
+          "valid": true
+        },
+        {
+          "text": "num * vol",
+          "valid": true
+        },
+        {
+          "text": "cal",
+          "valid": true
+        },
+        {
+          "text": "num * vol * cal",
+          "valid": true
+        },
+        {
+          "text": "num * vol * cal",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. One {worker} can mine {base} {unit} of ore per day with {tool1}. With {tool2}, the worker can mine <<base * mult1>> {unit} of ore per day. With {tool3}, the worker can mine <<base * mult1 + mult2>> {unit} of ore per day. For {n} {worker}s, the total daily production is <<n * (base * mult1 + mult2)>> {unit} of ore. Over {days} days, the total production is <<n * (base * mult1 + mult2) * days>> {unit} of ore. The final answer is <<n * (base * mult1 + mult2) * days>>.",
+      "token_count": 160,
+      "time_seconds": 8.243087530136108,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "actual": "n * (base * mult1 + mult2) * days",
+      "scored_output": "Let's think step by step. One {worker} can mine {base} {unit} of ore per day with {tool1}. With {tool2}, the worker can mine <<base * mult1>> {unit} of ore per day. With {tool3}, the worker can mine <<base * mult1 + mult2>> {unit} of ore per day. For {n} {worker}s, the total daily production is <<n * (base * mult1 + mult2)>> {unit} of ore. Over {days} days, the total production is <<n * (base * mult1 + mult2) * days>> {unit} of ore. The final answer is <<n * (base * mult1 + mult2) * days>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "base * mult1",
+          "valid": true
+        },
+        {
+          "text": "base * mult1 + mult2",
+          "valid": true
+        },
+        {
+          "text": "n * (base * mult1 + mult2)",
+          "valid": true
+        },
+        {
+          "text": "n * (base * mult1 + mult2) * days",
+          "valid": true
+        },
+        {
+          "text": "n * (base * mult1 + mult2) * days",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, there are <<n1 * frac1>> liters of water in the {fruit1} drink. After spilling {spill} liters of the {fruit1} drink, the remaining {fruit1} drink is <<n1 - spill>> liters. The water in the remaining {fruit1} drink is <<(n1 - spill) * frac1>> liters. The {fruit2} drink has <<n2 * frac2>> liters of water. The total water in the remaining {total} liters is <<(n1 - spill) * frac1 + n2 * frac2>>. The final answer is <<(n1 - spill) * frac1 + n2 * frac2>>.",
+      "token_count": 155,
+      "time_seconds": 6.140368461608887,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "actual": "(n1 - spill) * frac1 + n2 * frac2",
+      "scored_output": "Let's think step by step. Initially, there are <<n1 * frac1>> liters of water in the {fruit1} drink. After spilling {spill} liters of the {fruit1} drink, the remaining {fruit1} drink is <<n1 - spill>> liters. The water in the remaining {fruit1} drink is <<(n1 - spill) * frac1>> liters. The {fruit2} drink has <<n2 * frac2>> liters of water. The total water in the remaining {total} liters is <<(n1 - spill) * frac1 + n2 * frac2>>. The final answer is <<(n1 - spill) * frac1 + n2 * frac2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * frac1",
+          "valid": true
+        },
+        {
+          "text": "n1 - spill",
+          "valid": true
+        },
+        {
+          "text": "(n1 - spill) * frac1",
+          "valid": true
+        },
+        {
+          "text": "n2 * frac2",
+          "valid": true
+        },
+        {
+          "text": "(n1 - spill) * frac1 + n2 * frac2",
+          "valid": true
+        },
+        {
+          "text": "(n1 - spill) * frac1 + n2 * frac2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name} works {h} hours a day for {d} days a week, so he works <<h * d>> hours a week. In {month} (assuming {month} weeks), he works <<h * d * month>> hours. He earns {cur}{r} per hour, so his earnings from working are <<h * d * month * r>>. He also gets a {cur}{b} bonus each week, so for {month} weeks, he gets <<b * month>> bonuses. The total money made is <<h * d * month * r + b * month>>. The final answer is <<h * d * month * r + b * month>>.",
+      "token_count": 152,
+      "time_seconds": 4.3688743114471436,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "h * r * d * 4 + b * 4",
+      "actual": "h * d * month * r + b * month",
+      "scored_output": "Let's think step by step. {name} works {h} hours a day for {d} days a week, so he works <<h * d>> hours a week. In {month} (assuming {month} weeks), he works <<h * d * month>> hours. He earns {cur}{r} per hour, so his earnings from working are <<h * d * month * r>>. He also gets a {cur}{b} bonus each week, so for {month} weeks, he gets <<b * month>> bonuses. The total money made is <<h * d * month * r + b * month>>. The final answer is <<h * d * month * r + b * month>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "h * d",
+          "valid": true
+        },
+        {
+          "text": "h * d * month",
+          "valid": false
+        },
+        {
+          "text": "h * d * month * r",
+          "valid": false
+        },
+        {
+          "text": "b * month",
+          "valid": false
+        },
+        {
+          "text": "h * d * month * r + b * month",
+          "valid": false
+        },
+        {
+          "text": "h * d * month * r + b * month",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The {person1} has {n} {item}s. The {relation} has {k} fewer {item}s, so the {relation} has <<n - k>> {item}s. Together, they have <<n + (n - k)>> {item}s. The final answer is <<2* n - k>>.",
+      "token_count": 77,
+      "time_seconds": 2.5081825256347656,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n + (n-k)",
+      "actual": "2* n - k",
+      "scored_output": "Let's think step by step. The {person1} has {n} {item}s. The {relation} has {k} fewer {item}s, so the {relation} has <<n - k>> {item}s. Together, they have <<n + (n - k)>> {item}s. The final answer is <<2* n - k>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n - k",
+          "valid": true
+        },
+        {
+          "text": "n + (n - k)",
+          "valid": true
+        },
+        {
+          "text": "2* n - k",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name} spends {t1} minutes on each {game1} and {t2} minutes on each {game2}. Over {period}, she played {n1} {game1}s and {n2} {game2}s. The total time spent on {game1}s is <<n1 * t1>> and on {game2}s is <<n2 * t2>>. The total time spent is <<n1 * t1 + n2 * t2>>. The final answer is <<n1 * t1 + n2 * t2>>.",
+      "token_count": 128,
+      "time_seconds": 3.753471612930298,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "t1*n1 + t2*n2",
+      "actual": "n1 * t1 + n2 * t2",
+      "scored_output": "Let's think step by step. {name} spends {t1} minutes on each {game1} and {t2} minutes on each {game2}. Over {period}, she played {n1} {game1}s and {n2} {game2}s. The total time spent on {game1}s is <<n1 * t1>> and on {game2}s is <<n2 * t2>>. The total time spent is <<n1 * t1 + n2 * t2>>. The final answer is <<n1 * t1 + n2 * t2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 * t1",
+          "valid": true
+        },
+        {
+          "text": "n2 * t2",
+          "valid": true
+        },
+        {
+          "text": "n1 * t1 + n2 * t2",
+          "valid": true
+        },
+        {
+          "text": "n1 * t1 + n2 * t2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. On {day1}, {name} exercised for {t1} minutes. On {day2}, he exercised for {t2} minutes. Combined, he exercised for <<t1 + t2>> minutes. On {day3}, he wants to exercise for {mult} times this amount, which is <<mult * (t1 + t2)>> minutes. The final answer is <<mult * (t1 + t2)>>.",
+      "token_count": 98,
+      "time_seconds": 2.823413610458374,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(t1 + t2) * mult",
+      "actual": "mult * (t1 + t2)",
+      "scored_output": "Let's think step by step. On {day1}, {name} exercised for {t1} minutes. On {day2}, he exercised for {t2} minutes. Combined, he exercised for <<t1 + t2>> minutes. On {day3}, he wants to exercise for {mult} times this amount, which is <<mult * (t1 + t2)>> minutes. The final answer is <<mult * (t1 + t2)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "t1 + t2",
+          "valid": true
+        },
+        {
+          "text": "mult * (t1 + t2)",
+          "valid": true
+        },
+        {
+          "text": "mult * (t1 + t2)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. There are 52 weeks in a year. The {occupation} works for {w} weeks every month, so in a year, he works for <<52 / 12 * w>> weeks. Since there are 7 days in a week, he works for <<52 / 12 * w * 7>> days in a year. He gets paid {cur}{p} every day, so his total earnings for the year are <<52 / 12 * w * 7 * p>> {cur}. The final answer is <<52 / 12 * w * 7 * p>> {cur}.",
+      "token_count": 141,
+      "time_seconds": 4.107633829116821,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "w * d * p * 12",
+      "actual": "52 / 12 * w * 7 * p",
+      "scored_output": "Let's think step by step. There are 52 weeks in a year. The {occupation} works for {w} weeks every month, so in a year, he works for <<52 / 12 * w>> weeks. Since there are 7 days in a week, he works for <<52 / 12 * w * 7>> days in a year. He gets paid {cur}{p} every day, so his total earnings for the year are <<52 / 12 * w * 7 * p>> {cur}. The final answer is <<52 / 12 * w * 7 * p>> {cur}.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "52 / 12 * w",
+          "valid": true
+        },
+        {
+          "text": "52 / 12 * w * 7",
+          "valid": true
+        },
+        {
+          "text": "52 / 12 * w * 7 * p",
+          "valid": true
+        },
+        {
+          "text": "52 / 12 * w * 7 * p",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Let \\( x \\) be the age of {name} when he saw the Comet for the first time. When {name} saw the Comet for the first time, {name}'s {relative} was {relative_age} years old. The time interval between the two sightings is <<(multiple * relative_age) - relative_age>> years, which simplifies to <<(multiple - 1) * relative_age>> years. Since the Comet orbits the sun every {orbit_period} years, the time interval between sightings must be a multiple of {orbit_period}. Therefore, we have the equation:\n\n\\[ (multiple - 1) * relative_age = k * orbit_period \\]\n\nwhere \\( k \\) is an integer. Solving for \\( x \\):\n\n\\[ x = relative_age + k * orbit_period \\]\n\nSince we are looking for the age of {name} when he saw the Comet for the first time, we need to find the smallest positive integer \\( k \\) such that \\( x \\) is a valid age. The smallest \\( k \\) is 0, so:\n\n\\[ x = relative_age \\]\n\nHowever, this does not account for the fact that {name} saw the Comet a second time at a later age. We need to find the smallest \\( k \\) such that:\n\n\\[ x + (multiple - 1) * orbit_period = relative_age + k * orbit_period \\]\n\nSimplifying:\n\n\\[ (multiple - 1) * orbit_period = k * orbit_period \\]\n\nThe smallest positive integer \\( k \\) is 1, so:\n\n\\[ x = relative_age - (multiple - 1) * orbit_period \\]\n\nTherefore, the age of {name} when he saw the Comet for the first time is:\n\n\\[ x = relative_age - (multiple - 1) * orbit_period \\]\n\nThe final answer is <<relative_age - (multiple - 1) * orbit_period>>.",
+      "token_count": 403,
+      "time_seconds": 10.92055606842041,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "multiple * relative_age - orbit_period",
+      "actual": "relative_age - (multiple - 1) * orbit_period",
+      "scored_output": "Let's think step by step. Let \\( x \\) be the age of {name} when he saw the Comet for the first time. When {name} saw the Comet for the first time, {name}'s {relative} was {relative_age} years old. The time interval between the two sightings is <<(multiple * relative_age) - relative_age>> years, which simplifies to <<(multiple - 1) * relative_age>> years. Since the Comet orbits the sun every {orbit_period} years, the time interval between sightings must be a multiple of {orbit_period}. Therefore, we have the equation:\n\n\\[ (multiple - 1) * relative_age = k * orbit_period \\]\n\nwhere \\( k \\) is an integer. Solving for \\( x \\):\n\n\\[ x = relative_age + k * orbit_period \\]\n\nSince we are looking for the age of {name} when he saw the Comet for the first time, we need to find the smallest positive integer \\( k \\) such that \\( x \\) is a valid age. The smallest \\( k \\) is 0, so:\n\n\\[ x = relative_age \\]\n\nHowever, this does not account for the fact that {name} saw the Comet a second time at a later age. We need to find the smallest \\( k \\) such that:\n\n\\[ x + (multiple - 1) * orbit_period = relative_age + k * orbit_period \\]\n\nSimplifying:\n\n\\[ (multiple - 1) * orbit_period = k * orbit_period \\]\n\nThe smallest positive integer \\( k \\) is 1, so:\n\n\\[ x = relative_age - (multiple - 1) * orbit_period \\]\n\nTherefore, the age of {name} when he saw the Comet for the first time is:\n\n\\[ x = relative_age - (multiple - 1) * orbit_period \\]\n\nThe final answer is <<relative_age - (multiple - 1) * orbit_period>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "(multiple * relative_age) - relative_age",
+          "valid": true
+        },
+        {
+          "text": "(multiple - 1) * relative_age",
+          "valid": true
+        },
+        {
+          "text": "relative_age - (multiple - 1) * orbit_period",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, there are {total} {grade}-graders at {school_name} School. {num_girls} of them are girls, so the number of boys is <<total - num_girls>>. On {day}, {absent_girls} {grade}-grade girls and {absent_boys} {grade}-grade boys were absent. The number of boys present is <<total - num_girls - absent_boys>>. The final answer is <<total - num_girls - absent_boys>>.",
+      "token_count": 120,
+      "time_seconds": 3.3338100910186768,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total - num_girls - absent_boys",
+      "actual": "total - num_girls - absent_boys",
+      "scored_output": "Let's think step by step. Initially, there are {total} {grade}-graders at {school_name} School. {num_girls} of them are girls, so the number of boys is <<total - num_girls>>. On {day}, {absent_girls} {grade}-grade girls and {absent_boys} {grade}-grade boys were absent. The number of boys present is <<total - num_girls - absent_boys>>. The final answer is <<total - num_girls - absent_boys>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "total - num_girls",
+          "valid": true
+        },
+        {
+          "text": "total - num_girls - absent_boys",
+          "valid": true
+        },
+        {
+          "text": "total - num_girls - absent_boys",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total number of pages is {n}. {name} has already written <<frac * n>> pages. The number of pages left to write is <<n - frac * n>>. The final answer is <<n - frac * n>>.",
+      "token_count": 58,
+      "time_seconds": 1.6701226234436035,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n - int(n * frac)",
+      "actual": "n - frac * n",
+      "scored_output": "Let's think step by step. The total number of pages is {n}. {name} has already written <<frac * n>> pages. The number of pages left to write is <<n - frac * n>>. The final answer is <<n - frac * n>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "frac * n",
+          "valid": true
+        },
+        {
+          "text": "n - frac * n",
+          "valid": true
+        },
+        {
+          "text": "n - frac * n",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, calculate the total number of minutes {name} spends in class each day: <<n1 + n2>> periods * <<t>> minutes/period = <<(n1 + n2) * t>> minutes/day. Next, calculate the total number of minutes spent in class each week: <<(n1 + n2) * t * d>> minutes/week. Then, calculate the total number of minutes spent on extra learning time each week: <<(n1 + n2) * t * d * frac>> minutes/week. Finally, add the minutes spent in class to the minutes spent on extra learning time to get the total minutes spent learning each week: <<(n1 + n2) * t * d + (n1 + n2) * t * d * frac>> minutes/week. Convert the total minutes to hours by dividing by 60: <<(n1 + n2) * t * d * (1 + frac) / 60>> hours/week. The final answer is <<(n1 + n2) * t * d * (1 + frac) / 60>>.",
+      "token_count": 246,
+      "time_seconds": 7.128342390060425,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "actual": "(n1 + n2) * t * d * (1 + frac) / 60",
+      "scored_output": "Let's think step by step. First, calculate the total number of minutes {name} spends in class each day: <<n1 + n2>> periods * <<t>> minutes/period = <<(n1 + n2) * t>> minutes/day. Next, calculate the total number of minutes spent in class each week: <<(n1 + n2) * t * d>> minutes/week. Then, calculate the total number of minutes spent on extra learning time each week: <<(n1 + n2) * t * d * frac>> minutes/week. Finally, add the minutes spent in class to the minutes spent on extra learning time to get the total minutes spent learning each week: <<(n1 + n2) * t * d + (n1 + n2) * t * d * frac>> minutes/week. Convert the total minutes to hours by dividing by 60: <<(n1 + n2) * t * d * (1 + frac) / 60>> hours/week. The final answer is <<(n1 + n2) * t * d * (1 + frac) / 60>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n1 + n2",
+          "valid": true
+        },
+        {
+          "text": "t",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t * d",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t * d * frac",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t * d + (n1 + n2) * t * d * frac",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t * d * (1 + frac) / 60",
+          "valid": true
+        },
+        {
+          "text": "(n1 + n2) * t * d * (1 + frac) / 60",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The {event} team hid {total} {item}. The {family} twins each found {n} {item}, so together they found <<2 * n>> {item}. All the other {item} except {m} were found by their friends. The number of {item} found by the friends is <<total - 2 * n - m>>. The final answer is <<total - 2 * n - m>>.",
+      "token_count": 98,
+      "time_seconds": 2.7363877296447754,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "total - 2*n - m",
+      "actual": "total - 2 * n - m",
+      "scored_output": "Let's think step by step. The {event} team hid {total} {item}. The {family} twins each found {n} {item}, so together they found <<2 * n>> {item}. All the other {item} except {m} were found by their friends. The number of {item} found by the friends is <<total - 2 * n - m>>. The final answer is <<total - 2 * n - m>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "2 * n",
+          "valid": true
+        },
+        {
+          "text": "total - 2 * n - m",
+          "valid": true
+        },
+        {
+          "text": "total - 2 * n - m",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, there were {m} {group1} and {w} {group2}, making a total of <<m + w>> people. After {t}, <<frac>> of the total number of people left, which is <<(m + w) * frac>>. The number of {group1} left is given as {m_left}. Therefore, the number of {group2} left is <<w - ((m + w) * frac - m_left)>>. The final answer is <<w - ((m + w) * frac - m_left)>>.",
+      "token_count": 125,
+      "time_seconds": 3.6851234436035156,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "m + w - int((m + w) * frac) - m_left",
+      "actual": "w - ((m + w) * frac - m_left)",
+      "scored_output": "Let's think step by step. Initially, there were {m} {group1} and {w} {group2}, making a total of <<m + w>> people. After {t}, <<frac>> of the total number of people left, which is <<(m + w) * frac>>. The number of {group1} left is given as {m_left}. Therefore, the number of {group2} left is <<w - ((m + w) * frac - m_left)>>. The final answer is <<w - ((m + w) * frac - m_left)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "m + w",
+          "valid": true
+        },
+        {
+          "text": "frac",
+          "valid": true
+        },
+        {
+          "text": "(m + w) * frac",
+          "valid": true
+        },
+        {
+          "text": "w - ((m + w) * frac - m_left)",
+          "valid": true
+        },
+        {
+          "text": "w - ((m + w) * frac - m_left)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Let {x} be the amount of {unit} that {name1} gets. Then {name2} gets <<x + diff>> {unit}. The total fence is the sum of what both get, so <<x + (x + diff)   %  total>>. The final answer is <<x + (x + diff)  %  total>>.",
+      "token_count": 87,
+      "time_seconds": 2.4874422550201416,
+      "is_correct": false,
+      "is_syntax_valid": false,
+      "accuracy_applicable": true,
+      "expected": "(total - diff) // 2",
+      "actual": "x + (x + diff)  %  total",
+      "scored_output": "Let's think step by step. Let {x} be the amount of {unit} that {name1} gets. Then {name2} gets <<x + diff>> {unit}. The total fence is the sum of what both get, so <<x + (x + diff)   %  total>>. The final answer is <<x + (x + diff)  %  total>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "x + diff",
+          "valid": false
+        },
+        {
+          "text": "x + (x + diff)   %  total",
+          "valid": false
+        },
+        {
+          "text": "x + (x + diff)  %  total",
+          "valid": false
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The time to ride the biggest slide is <<l1 / s1>> minutes. The time to ride the second biggest slide is <<l2 / s2>> minutes. The difference in time is <<l1 / s1 - l2 / s2>> minutes. The final answer is <<l1 / s1 - l2 / s2>>.",
+      "token_count": 81,
+      "time_seconds": 2.3445091247558594,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "l1/s1 - l2/s2",
+      "actual": "l1 / s1 - l2 / s2",
+      "scored_output": "Let's think step by step. The time to ride the biggest slide is <<l1 / s1>> minutes. The time to ride the second biggest slide is <<l2 / s2>> minutes. The difference in time is <<l1 / s1 - l2 / s2>> minutes. The final answer is <<l1 / s1 - l2 / s2>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "l1 / s1",
+          "valid": true
+        },
+        {
+          "text": "l2 / s2",
+          "valid": true
+        },
+        {
+          "text": "l1 / s1 - l2 / s2",
+          "valid": true
+        },
+        {
+          "text": "l1 / s1 - l2 / s2",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. First, we need to find the running speed. Since {name} can skip at a rate of speed that is {frac_skip} as fast as she can run, and she can skip at {skip_speed} miles per hour, her running speed is <<skip_speed / frac_skip>> miles per hour. The time spent running is <<total_time * frac_run>> hours, and the time spent walking is <<total_time * frac_walk>> hours. The distance traveled while running is <<(skip_speed / frac_skip) * (total_time * frac_run)>> miles, and the distance traveled while walking is <<(skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>> miles. The total distance traveled is the sum of these two distances, which is <<(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>> miles. The final answer is <<(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>>.",
+      "token_count": 242,
+      "time_seconds": 6.987446546554565,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "int((total_time * frac_run * (skip_speed / frac_skip)) + (total_time * frac_walk * (skip_speed / frac_skip / mult_run))",
+      "actual": "(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)",
+      "scored_output": "Let's think step by step. First, we need to find the running speed. Since {name} can skip at a rate of speed that is {frac_skip} as fast as she can run, and she can skip at {skip_speed} miles per hour, her running speed is <<skip_speed / frac_skip>> miles per hour. The time spent running is <<total_time * frac_run>> hours, and the time spent walking is <<total_time * frac_walk>> hours. The distance traveled while running is <<(skip_speed / frac_skip) * (total_time * frac_run)>> miles, and the distance traveled while walking is <<(skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>> miles. The total distance traveled is the sum of these two distances, which is <<(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>> miles. The final answer is <<(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "skip_speed / frac_skip",
+          "valid": true
+        },
+        {
+          "text": "total_time * frac_run",
+          "valid": true
+        },
+        {
+          "text": "total_time * frac_walk",
+          "valid": true
+        },
+        {
+          "text": "(skip_speed / frac_skip) * (total_time * frac_run)",
+          "valid": true
+        },
+        {
+          "text": "(skip_speed / frac_skip) / mult_run * (total_time * frac_walk)",
+          "valid": true
+        },
+        {
+          "text": "(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)",
+          "valid": true
+        },
+        {
+          "text": "(skip_speed / frac_skip) * (total_time * frac_run) + (skip_speed / frac_skip) / mult_run * (total_time * frac_walk)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total time hired is <<end_time - start_time>> hours. The number of paid hours is <<end_time - start_time - free_hours>>. The cost for the first hour is ${first_hour_cost}. The cost for each subsequent hour is <<multiplier * first_hour_cost>>. The total cost is <<first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)>>. The final answer is <<first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)>>.",
+      "token_count": 131,
+      "time_seconds": 3.8666162490844727,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "actual": "first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)",
+      "scored_output": "Let's think step by step. The total time hired is <<end_time - start_time>> hours. The number of paid hours is <<end_time - start_time - free_hours>>. The cost for the first hour is ${first_hour_cost}. The cost for each subsequent hour is <<multiplier * first_hour_cost>>. The total cost is <<first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)>>. The final answer is <<first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "end_time - start_time",
+          "valid": true
+        },
+        {
+          "text": "end_time - start_time - free_hours",
+          "valid": true
+        },
+        {
+          "text": "multiplier * first_hour_cost",
+          "valid": true
+        },
+        {
+          "text": "first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)",
+          "valid": true
+        },
+        {
+          "text": "first_hour_cost + (multiplier * first_hour_cost) * (end_time - start_time - free_hours - 1)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. Initially, {name} has {n} {food2}s. He bought {m} more {food2}s, so he now has <<n + m>> {food2}s. The number of {food1}s is {mult} times the number of {food2}s, so he has <<mult * n>> {food1}s. He bought {k} fewer {food1}s than the number of {food2}s, so he now has <<mult * n - k>> {food1}s. The combined total of {food1}s and {food2}s is <<(mult * n - k) + (n + m)>>. The final answer is <<(mult * n - k) + (n + m)>>.",
+      "token_count": 163,
+      "time_seconds": 4.548951148986816,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "n*mult+n+2*m-k",
+      "actual": "(mult * n - k) + (n + m)",
+      "scored_output": "Let's think step by step. Initially, {name} has {n} {food2}s. He bought {m} more {food2}s, so he now has <<n + m>> {food2}s. The number of {food1}s is {mult} times the number of {food2}s, so he has <<mult * n>> {food1}s. He bought {k} fewer {food1}s than the number of {food2}s, so he now has <<mult * n - k>> {food1}s. The combined total of {food1}s and {food2}s is <<(mult * n - k) + (n + m)>>. The final answer is <<(mult * n - k) + (n + m)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "n + m",
+          "valid": true
+        },
+        {
+          "text": "mult * n",
+          "valid": true
+        },
+        {
+          "text": "mult * n - k",
+          "valid": true
+        },
+        {
+          "text": "(mult * n - k) + (n + m)",
+          "valid": true
+        },
+        {
+          "text": "(mult * n - k) + (n + m)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. The total cost for one friend (including {activity1}, {activity2}, and {activity3}) is <<cost1 + tokens + cost2 * times>>. To find out how many friends can be invited, we divide the budget by the cost per friend and subtract 1 (for {name} herself). The expression is <<(budget - cost1) // (cost1 + tokens + cost2 * times)>>. The final answer is <<(budget - cost1) // (cost1 + tokens + cost2 * times)>>.",
+      "token_count": 119,
+      "time_seconds": 3.414232015609741,
+      "is_correct": false,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "budget // (tokens + cost1 + cost2 * times) - 1",
+      "actual": "(budget - cost1) // (cost1 + tokens + cost2 * times)",
+      "scored_output": "Let's think step by step. The total cost for one friend (including {activity1}, {activity2}, and {activity3}) is <<cost1 + tokens + cost2 * times>>. To find out how many friends can be invited, we divide the budget by the cost per friend and subtract 1 (for {name} herself). The expression is <<(budget - cost1) // (cost1 + tokens + cost2 * times)>>. The final answer is <<(budget - cost1) // (cost1 + tokens + cost2 * times)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "cost1 + tokens + cost2 * times",
+          "valid": true
+        },
+        {
+          "text": "(budget - cost1) // (cost1 + tokens + cost2 * times)",
+          "valid": true
+        },
+        {
+          "text": "(budget - cost1) // (cost1 + tokens + cost2 * times)",
+          "valid": true
+        }
+      ]
+    },
+    {
+      "success": true,
+      "full_output": "Let's think step by step. {name2} processes {n} customers daily. Since {name1} operates the cash register exactly {mult} as fast as {name2}, {name1} processes <<mult * n>> customers daily. Together, they process <<n + mult * n>> customers daily. Over a week (7 days), their total production is <<7 * (n + mult * n)>>. The final answer is <<7 * (n + mult * n)>>.",
+      "token_count": 103,
+      "time_seconds": 2.920567274093628,
+      "is_correct": true,
+      "is_syntax_valid": true,
+      "accuracy_applicable": true,
+      "expected": "(n + n * mult) * 7",
+      "actual": "7 * (n + mult * n)",
+      "scored_output": "Let's think step by step. {name2} processes {n} customers daily. Since {name1} operates the cash register exactly {mult} as fast as {name2}, {name1} processes <<mult * n>> customers daily. Together, they process <<n + mult * n>> customers daily. Over a week (7 days), their total production is <<7 * (n + mult * n)>>. The final answer is <<7 * (n + mult * n)>>.",
+      "answer_source": "crane_original_gsm_delimiter",
+      "syntax_segments": [
+        {
+          "text": "mult * n",
+          "valid": true
+        },
+        {
+          "text": "n + mult * n",
+          "valid": true
+        },
+        {
+          "text": "7 * (n + mult * n)",
+          "valid": true
+        },
+        {
+          "text": "7 * (n + mult * n)",
+          "valid": true
+        }
+      ]
+    }
+  ],
+  "baseline_cache": {
+    "dataset": "gsm_symbolic",
+    "method": "crane",
+    "key": "86531b863d7440ad88742529",
+    "identity": {
+      "crane_repo": "/home/advayth2/CRANE",
+      "dataset": "gsm_symbolic",
+      "eval_backend": "vllm",
+      "eval_max_steps": 600,
+      "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "eval_step_token_budget": 1,
+      "gsm_source_dir": "/home/advayth2/CRANE/src/gsm_symbolic",
+      "gsm_split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json",
+      "gsm_split_name": "train",
+      "method": "crane",
+      "sample_size": 50,
+      "split_digest": "2d5c4a2bb7219842372bbe85a6438e4d495308b5c7d585b61f40fbd92627750e",
+      "vllm_max_model_len": 8192
+    },
+    "cache_path": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/crane_86531b863d7440ad88742529.json",
+    "source_path": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen7_20260507_003709_gsm_metadecode_qwen25_coder_7b_instruct_gpt54_crane_train.json",
+    "cache_hit": false,
+    "updated_at_unix": 1778115459.3016138
+  }
+}

@@ -1,0 +1,59 @@
+[prepare] absolute rubric labels in CRANE folder: updated=100 source=rubric_absolute_v1
+[prepare] wrote split: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json
+[prepare] train=50 eval=50 total=100 seed=123
+[prepare] stratified composition: train={'easy': 13, 'hard': 25, 'medium': 12} eval={'easy': 13, 'hard': 25, 'medium': 12} source=json:rubric_absolute_v1
+[prepare] original CRANE train baseline:
+[baseline-cache] HIT GSM CRANE train: reused /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/crane_62b720372a2b4110b34655e2.json
+[prepare] CRANE train: accuracy=28.0% (14/50), syntax=76.0%
+[prepare] saved benchmark: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_003709_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_crane_train.json
+[prepare] IterGen train baseline:
+[baseline-cache] HIT GSM IterGen train: reused /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/itergen_0325c4a1ba65a5849ff29cf9.json
+[prepare] strict synthesis thresholds: accuracy>max_baseline(28.0%) => 30.0%, syntax target from max_baseline(92.0%) => 94.0%
+[prepare] saved launch metadata: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_003709_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_launch.json
+[prepare] synthesis command:
+/home/advayth2/envs/vas-rdkit/bin/python run_synthesis.py --task 'Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
+
+Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.' --dataset gsm_symbolic --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --gsm-split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --gsm-split-name train --max-iterations 100 --generation-model gpt-5.4 --generation-backend openai --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --output-name gsm_split_train50_synthesis --min-accuracy 0.3 --min-syntax-rate 0.94 --eval-sample-size 50 --eval-max-steps 600 --eval-step-token-budget 1 --device cuda --dafny-path /home/advayth2/.dotnet/tools/dafny --synthesis-max-tokens 6144 --vllm-gpu-memory-utilization 0.5 --vllm-max-model-len 8192 --eval-seed 123 --eval-max-seconds-per-example 120.0 --vllm-enforce-eager
+[run-all] launching synthesis:
+/home/advayth2/envs/vas-rdkit/bin/python run_synthesis.py --task 'Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
+
+Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.' --dataset gsm_symbolic --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --gsm-split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --gsm-split-name train --max-iterations 100 --generation-model gpt-5.4 --generation-backend openai --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --output-name gsm_split_train50_synthesis --min-accuracy 0.3 --min-syntax-rate 0.94 --eval-sample-size 50 --eval-max-steps 600 --eval-step-token-budget 1 --device cuda --dafny-path /home/advayth2/.dotnet/tools/dafny --synthesis-max-tokens 6144 --vllm-gpu-memory-utilization 0.5 --vllm-max-model-len 8192 --eval-seed 123 --eval-max-seconds-per-example 120.0 --vllm-enforce-eager
+[run-all] synthesis log: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/logs/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_003709_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_synthesis.log
+Initializing synthesis pipeline...
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/verifier.py", line 163, in _check_dafny_available
+    result = subprocess.run(
+             ^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/advayth2/.dotnet/tools/dafny'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/run_synthesis.py", line 468, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/run_synthesis.py", line 369, in main
+    verifier = DafnyVerifier(
+               ^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/verifier.py", line 158, in __init__
+    self._check_dafny_available()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/verifier.py", line 174, in _check_dafny_available
+    raise RuntimeError(
+RuntimeError: Dafny not found at '/home/advayth2/.dotnet/tools/dafny'. Please install Dafny and ensure it's in your PATH.
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/gsm_split_synthesis_workflow.py", line 960, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/gsm_split_synthesis_workflow.py", line 956, in main
+    args.func(args)
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/gsm_split_synthesis_workflow.py", line 818, in run_all
+    compiled_module = run_synthesis_command(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/scripts/gsm_split_synthesis_workflow.py", line 792, in run_synthesis_command
+    raise RuntimeError(
+RuntimeError: Synthesis command failed with exit code 1. See log: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/logs/handoff_gsm_spider_remaining_metadecode_gpt54_qwen15_20260507_003709_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_synthesis.log

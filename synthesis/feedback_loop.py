@@ -2490,10 +2490,19 @@ class SynthesisPipeline:
             else:
                 self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
-            eval_result = self.evaluator.evaluate_sample(
-                compiled_module_path=compilation_result.main_module_path,
-                sample_size=self.eval_sample_size,
-            )
+            try:
+                eval_result = self.evaluator.evaluate_sample(
+                    compiled_module_path=compilation_result.main_module_path,
+                    sample_size=self.eval_sample_size,
+                    min_accuracy=self.min_accuracy,
+                )
+            except TypeError as exc:
+                if "min_accuracy" not in str(exc):
+                    raise
+                eval_result = self.evaluator.evaluate_sample(
+                    compiled_module_path=compilation_result.main_module_path,
+                    sample_size=self.eval_sample_size,
+                )
             attempt.eval_result = eval_result
 
             smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})

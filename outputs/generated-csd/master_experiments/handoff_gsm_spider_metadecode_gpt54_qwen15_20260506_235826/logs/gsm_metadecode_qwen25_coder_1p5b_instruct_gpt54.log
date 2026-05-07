@@ -1,0 +1,245 @@
+[prepare] absolute rubric labels in CRANE folder: updated=100 source=rubric_absolute_v1
+[prepare] wrote split: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json
+[prepare] train=50 eval=50 total=100 seed=123
+[prepare] stratified composition: train={'easy': 13, 'hard': 25, 'medium': 12} eval={'easy': 13, 'hard': 25, 'medium': 12} source=json:rubric_absolute_v1
+[prepare] original CRANE train baseline:
+[baseline-cache] MISS GSM CRANE train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/crane_62b720372a2b4110b34655e2.json
+[gpu-select] CUDA_VISIBLE_DEVICES=2
+/home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/benchmark_crane_baseline.py --dataset gsm_symbolic --output /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_crane_train.json --output-dir /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd --crane-repo /home/advayth2/CRANE --crane-device cuda:0 --gsm-split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --gsm-split-name train --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --sample-size 50 --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device cuda --eval-max-steps 600 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.5 --vllm-max-model-len 8192
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:  46%|████▌     | 154/338 [00:00<00:00, 1530.79it/s]
+Loading weights:  91%|█████████ | 308/338 [00:00<00:00, 1495.56it/s]
+Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1549.65it/s]
+[crane-original:gsm_symbolic] 1/50
+[crane-original:gsm_symbolic] 2/50
+[crane-original:gsm_symbolic] 3/50
+[crane-original:gsm_symbolic] 4/50
+[crane-original:gsm_symbolic] 5/50
+[crane-original:gsm_symbolic] 6/50
+[crane-original:gsm_symbolic] 7/50
+[crane-original:gsm_symbolic] 8/50
+[crane-original:gsm_symbolic] 9/50
+[crane-original:gsm_symbolic] 10/50
+[crane-original:gsm_symbolic] 11/50
+[crane-original:gsm_symbolic] 12/50
+[crane-original:gsm_symbolic] 13/50
+[crane-original:gsm_symbolic] 14/50
+[crane-original:gsm_symbolic] 15/50
+[crane-original:gsm_symbolic] 16/50
+[crane-original:gsm_symbolic] 17/50
+[crane-original:gsm_symbolic] 18/50
+[crane-original:gsm_symbolic] 19/50
+[crane-original:gsm_symbolic] 20/50
+[crane-original:gsm_symbolic] 21/50
+[crane-original:gsm_symbolic] 22/50
+[crane-original:gsm_symbolic] 23/50
+[crane-original:gsm_symbolic] 24/50
+[crane-original:gsm_symbolic] 25/50
+[crane-original:gsm_symbolic] 26/50
+[crane-original:gsm_symbolic] 27/50
+[crane-original:gsm_symbolic] 28/50
+[crane-original:gsm_symbolic] 29/50
+[crane-original:gsm_symbolic] 30/50
+[crane-original:gsm_symbolic] 31/50
+[crane-original:gsm_symbolic] 32/50
+[crane-original:gsm_symbolic] 33/50
+[crane-original:gsm_symbolic] 34/50
+[crane-original:gsm_symbolic] 35/50
+[crane-original:gsm_symbolic] 36/50
+[crane-original:gsm_symbolic] 37/50
+[crane-original:gsm_symbolic] 38/50
+[crane-original:gsm_symbolic] 39/50
+[crane-original:gsm_symbolic] 40/50
+[crane-original:gsm_symbolic] 41/50
+[crane-original:gsm_symbolic] 42/50
+[crane-original:gsm_symbolic] 43/50
+[crane-original:gsm_symbolic] 44/50
+[crane-original:gsm_symbolic] 45/50
+[crane-original:gsm_symbolic] 46/50
+[crane-original:gsm_symbolic] 47/50
+[crane-original:gsm_symbolic] 48/50
+[crane-original:gsm_symbolic] 49/50
+[crane-original:gsm_symbolic] 50/50
+[summary] wrote /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_crane_train.json
+[baseline-cache] STORED GSM CRANE train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/crane_62b720372a2b4110b34655e2.json
+[prepare] CRANE train: accuracy=28.0% (14/50), syntax=76.0%
+[prepare] saved benchmark: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_crane_train.json
+[prepare] IterGen train baseline:
+[baseline-cache] MISS GSM IterGen train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/itergen_0325c4a1ba65a5849ff29cf9.json
+[gpu-select] CUDA_VISIBLE_DEVICES=3
+/home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_itergen_gsm_split.py --itergen-repo /home/advayth2/itergen --split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --split-name train --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --model Qwen/Qwen2.5-Coder-1.5B-Instruct --device cuda:0 --seed 0 --recurrence-penalty 0.3 --max-new-tokens 128 --output /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_itergen_train.json
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:  43%|████▎     | 144/338 [00:00<00:00, 1438.99it/s]
+Loading weights:  85%|████████▌ | 288/338 [00:00<00:00, 1309.56it/s]
+Loading weights: 100%|██████████| 338/338 [00:00<00:00, 1369.65it/s]
+[1/50] GSM source_index=7
+  -> expr: (10*n1 + 10*n2 + 10*n3 + 10*n4) / 10 correct=False syntax=True
+[2/50] GSM source_index=10
+  -> expr: (total * frac1) + ((total - t) * frac2) correct=False syntax=True
+[3/50] GSM source_index=13
+  -> expr: x + r * w - n * w correct=True syntax=True
+[4/50] GSM source_index=14
+  -> expr: t1 + t2 correct=False syntax=True
+[5/50] GSM source_index=15
+  -> expr: (100 * (k1 + k2)) / (n1 + n2) correct=False syntax=True
+[6/50] GSM source_index=16
+  -> expr: (2 * (n1 * cn + m1 * cm) + (n2 * cn + m2 * cm)) correct=False syntax=True
+[7/50] GSM source_index=17
+  -> expr: n * (m + k * mult) correct=False syntax=True
+[8/50] GSM source_index=18
+  -> expr: n1*c1 + n2*c2 + c3 correct=False syntax=True
+[9/50] GSM source_index=19
+  -> expr: 0 + 0 + 0 correct=False syntax=False
+[10/50] GSM source_index=20
+  -> expr: n1 + n2 + mult * n1 correct=True syntax=True
+[11/50] GSM source_index=21
+  -> expr: total - (h1 + h2 + m2 + n2 * h3) correct=False syntax=True
+[12/50] GSM source_index=22
+  -> expr: n1 correct=False syntax=True
+[13/50] GSM source_index=24
+  -> expr: cal * size / (total - spent) correct=False syntax=True
+[14/50] GSM source_index=25
+  -> expr: 0 + (total * (1 - p1) * (1 - p2)) correct=False syntax=True
+[15/50] GSM source_index=26
+  -> expr: (2*n1 + 2*n2 + n3)*7 correct=False syntax=True
+[16/50] GSM source_index=27
+  -> expr: 0 + (n * (1 - p)) * d correct=False syntax=True
+[17/50] GSM source_index=28
+  -> expr: total - daily * period * frac correct=False syntax=True
+[18/50] GSM source_index=30
+  -> expr: initial_amount - quantity * unit_price correct=False syntax=True
+[19/50] GSM source_index=33
+  -> expr: s1 + s2 + n2 correct=False syntax=True
+[20/50] GSM source_index=35
+  -> expr: cur*total*(1-fraction) correct=False syntax=False
+[21/50] GSM source_index=36
+  -> expr: 24*n1 + 24*n2 + 24*n3 correct=False syntax=True
+[22/50] GSM source_index=38
+  -> expr: (price1 * n1) - (price2 * n2) correct=True syntax=True
+[23/50] GSM source_index=40
+  -> expr: total - (n1 * p1 * n12) - (n2 * p1 * n12 * discount) - (n3 * p2) - (n3 * p3) correct=False syntax=True
+[24/50] GSM source_index=42
+  -> expr: (1 + (percent / 100)) * price * 7 + usage * price + extra_price correct=False syntax=True
+[25/50] GSM source_index=43
+  -> expr: n + frac*n correct=False syntax=True
+[26/50] GSM source_index=45
+  -> expr: owned + (length - owned) * (plant_width + space) * cost correct=False syntax=True
+[27/50] GSM source_index=46
+  -> expr: (total - graduates - faculty) / graduates correct=False syntax=True
+[28/50] GSM source_index=49
+  -> expr: n * (n_first * a + (n - n_first) * (a + (a * (1 + p / 100)))) * f * r correct=False syntax=True
+[29/50] GSM source_index=51
+  -> expr: (100 * (p1 * n1) + 100 * (p2 * n2) + 100 * (p3 * n3)) correct=False syntax=True
+[30/50] GSM source_index=56
+  -> expr: cal * num * vol correct=True syntax=True
+[31/50] GSM source_index=58
+  -> expr: base * mult1 * days * n correct=False syntax=True
+[32/50] GSM source_index=59
+  -> expr: n1 * frac1 + n2 * frac2 - spill correct=False syntax=True
+[33/50] GSM source_index=60
+  -> expr: 1200 correct=False syntax=False
+[34/50] GSM source_index=63
+  -> expr: n - k correct=False syntax=True
+[35/50] GSM source_index=68
+  -> expr: n1*t1 + n2*t2 correct=True syntax=True
+[36/50] GSM source_index=69
+  -> expr: t1 + t2 + mult correct=False syntax=True
+[37/50] GSM source_index=70
+  -> expr: 12 * w * d * p * 52 correct=False syntax=True
+[38/50] GSM source_index=73
+  -> expr: 12 correct=False syntax=False
+[39/50] GSM source_index=74
+  -> expr: num_girls - absent_girls - absent_boys correct=False syntax=True
+[40/50] GSM source_index=77
+  -> expr: n - frac correct=False syntax=True
+[41/50] GSM source_index=78
+  -> expr: (24 * (n1 + n2) * t * d * (1 - frac)) / 60 correct=False syntax=True
+[42/50] GSM source_index=81
+  -> expr: total - n - m correct=False syntax=True
+[43/50] GSM source_index=82
+  -> expr: m - m_left * frac correct=False syntax=True
+[44/50] GSM source_index=85
+  -> expr: total - diff correct=False syntax=True
+[45/50] GSM source_index=87
+  -> expr: l1 - l2 correct=False syntax=True
+[46/50] GSM source_index=88
+  -> expr: skip_speed * total_time * frac_run correct=False syntax=True
+[47/50] GSM source_index=89
+  -> expr: (1 + multiplier) * (end_time - start_time - free_hours) * first_hour_cost correct=False syntax=True
+[48/50] GSM source_index=91
+  -> expr: n + m + k correct=False syntax=True
+[49/50] GSM source_index=96
+  -> expr: ( budget - cost1 * times - tokens ) / cost2 correct=False syntax=True
+[50/50] GSM source_index=97
+  -> expr: 28*n*mult correct=False syntax=True
+[summary] wrote /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_itergen_train.json
+[baseline-cache] STORED GSM IterGen train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/itergen_0325c4a1ba65a5849ff29cf9.json
+[prepare] CARS train baseline:
+[baseline-cache] MISS GSM CARS train: /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/gsm_symbolic/cars_940ca0a9f16b1b1e36d71572.json
+/home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/benchmark_gsm_vs_cars.py --cars-repo /home/advayth2/cars --output /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train.json --split-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/gsm_absolute_rubric_seed123_train50_eval50.json --split-name train --gsm-source-dir /home/advayth2/CRANE/src/gsm_symbolic --model-name Qwen/Qwen2.5-Coder-1.5B-Instruct --cars-style cars --max-attempts-per-example 500 --max-new-tokens 128 --cuda-visible-devices 2
+Loaded 50 examples from CRANE folder /home/advayth2/CRANE/src/gsm_symbolic
+[cars-batch 1/50] /home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_cars_task.py --cars-repo /home/advayth2/cars --grammar-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/gsm_cars_grammar.lark --prompt-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/prompts/gsm_0007.txt --model-name Qwen/Qwen2.5-Coder-1.5B-Instruct --sample-style cars --log-dir /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/logs/gsm_0007 --target-samples 1 --n-steps 500 --max-new-tokens 128 --device cuda
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:   0%|          | 1/338 [00:00<01:28,  3.82it/s]
+Loading weights:   4%|▍         | 15/338 [00:00<00:07, 45.60it/s]
+Loading weights:  12%|█▏        | 39/338 [00:00<00:02, 100.54it/s]
+Loading weights:  15%|█▌        | 52/338 [00:00<00:02, 102.85it/s]
+Loading weights:  22%|██▏       | 73/338 [00:00<00:01, 132.79it/s]
+Loading weights:  26%|██▋       | 89/338 [00:00<00:01, 134.25it/s]
+Loading weights:  33%|███▎      | 111/338 [00:00<00:01, 154.57it/s]
+Loading weights:  38%|███▊      | 128/338 [00:01<00:01, 149.39it/s]
+Loading weights:  43%|████▎     | 144/338 [00:01<00:01, 151.82it/s]
+Loading weights:  47%|████▋     | 160/338 [00:01<00:01, 139.98it/s]
+Loading weights:  54%|█████▍    | 183/338 [00:01<00:00, 162.84it/s]
+Loading weights:  59%|█████▉    | 200/338 [00:01<00:00, 155.19it/s]
+Loading weights:  65%|██████▍   | 219/338 [00:01<00:00, 163.29it/s]
+Loading weights:  70%|██████▉   | 236/338 [00:01<00:00, 158.21it/s]
+Loading weights:  76%|███████▌  | 256/338 [00:01<00:00, 152.47it/s]
+Loading weights:  83%|████████▎ | 279/338 [00:02<00:00, 168.95it/s]
+Loading weights:  88%|████████▊ | 297/338 [00:02<00:00, 163.58it/s]
+Loading weights:  93%|█████████▎| 316/338 [00:02<00:00, 155.51it/s]
+Loading weights: 100%|██████████| 338/338 [00:02<00:00, 143.60it/s]
+Creating new oracle trie
+
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0 failed, tokens: tensor([     7,     16,     15,    488,    220,     16,     20,    488,    220,
+            16,     23,    488,    220,     17,     20,      8,    353,    320,
+            21,    608,    220,     16,     15,      8, 151645],
+       device='cuda:0') / ['(', '1', '0', ' +', ' ', '1', '5', ' +', ' ', '1', '8', ' +', ' ', '2', '5', ')', ' *', ' (', '6', ' /', ' ', '1', '0', ')', '<|im_end|>'], time: 1.50 (0.10)
+(10 + 15 + 18 + 25) * (6 / 10)<|im_end|>
+Sample 1 failed, tokens: tensor([    7, 22058,  1188], device='cuda:0') / ['(', 'ceil', '(('], time: 0.12 (0.00)
+(ceil((
+Sample 2 success: [22842, 608, 320, 86, 16, 488, 289, 17, 488, 289, 18, 488, 289, 19, 593, 151645] / ['(total', ' /', ' (', 'w', '1', ' +', ' w', '2', ' +', ' w', '3', ' +', ' w', '4', '))', '<|im_end|>'], raw_logprob: -7.226380825042725, cons_logprob: -5.072568893432617, time: 0.51 (0.05)
+(total / (w1 + w2 + w3 + w4))<|im_end|>
+Total suceeses: 1/3
+Sample time: 2.16 s
+
+100%|██████████| 1/1 [00:02<00:00,  2.16s/it]
+100%|██████████| 1/1 [00:02<00:00,  2.16s/it]
+[cars-batch 2/50] /home/advayth2/envs/vas-rdkit/bin/python /home/advayth2/projects/verified-agent-synthesis/scripts/run_cars_task.py --cars-repo /home/advayth2/cars --grammar-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/gsm_cars_grammar.lark --prompt-file /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/prompts/gsm_0010.txt --model-name Qwen/Qwen2.5-Coder-1.5B-Instruct --sample-style cars --log-dir /home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/handoff_gsm_spider_metadecode_gpt54_qwen15_20260506_235826_gsm_metadecode_qwen25_coder_1p5b_instruct_gpt54_cars_train_cars/logs/gsm_0010 --target-samples 1 --n-steps 500 --max-new-tokens 128 --device cuda
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]
+Loading weights:   1%|          | 3/338 [00:00<00:11, 28.79it/s]
+Loading weights:  12%|█▏        | 39/338 [00:00<00:01, 216.75it/s]
+Loading weights:  22%|██▏       | 75/338 [00:00<00:00, 273.62it/s]
+Loading weights:  33%|███▎      | 112/338 [00:00<00:00, 303.01it/s]
+Loading weights:  44%|████▍     | 148/338 [00:00<00:00, 313.12it/s]
+Loading weights:  55%|█████▍    | 185/338 [00:00<00:00, 329.30it/s]
+Loading weights:  65%|██████▌   | 220/338 [00:00<00:00, 331.66it/s]
+Loading weights:  76%|███████▌  | 257/338 [00:00<00:00, 337.95it/s]
+Loading weights:  90%|████████▉ | 303/338 [00:00<00:00, 366.74it/s]
+Loading weights: 100%|██████████| 338/338 [00:01<00:00, 325.34it/s]
+Creating new oracle trie
+
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.

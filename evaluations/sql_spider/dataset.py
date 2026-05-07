@@ -29,6 +29,22 @@ from project_defaults import default_spider_data_dir
 DEFAULT_SPIDER_DIR = Path(
     default_spider_data_dir()
 )
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+
+def _vendored_spider_eval_dir() -> Path:
+    candidates = [
+        PROJECT_ROOT / "syncode" / "syncode" / "utils" / "sql_spider_eval",
+        default_spider_data_dir(),
+        Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval",
+        Path.home() / "itergen" / "itergen" / "syncode" / "syncode" / "utils" / "sql_spider_eval",
+    ]
+    for candidate in candidates:
+        tables_json = candidate / "evaluation_examples" / "examples" / "tables.json"
+        databases = candidate / "databases"
+        if tables_json.exists() and databases.exists():
+            return candidate
+    return candidates[0]
 
 
 def _build_db_info_from_tables_entry(entry: Dict[str, Any]) -> str:
@@ -318,7 +334,10 @@ def default_db_dir() -> Path:
     env = os.environ.get("SPIDER_DB_DIR")
     if env:
         return Path(env)
-    return DEFAULT_SPIDER_DIR / "database"
+    local = DEFAULT_SPIDER_DIR / "database"
+    if local.exists():
+        return local
+    return _vendored_spider_eval_dir() / "databases"
 
 
 def default_tables_json() -> Path:
@@ -326,4 +345,7 @@ def default_tables_json() -> Path:
     env = os.environ.get("SPIDER_TABLES_JSON")
     if env:
         return Path(env)
-    return DEFAULT_SPIDER_DIR / "tables.json"
+    local = DEFAULT_SPIDER_DIR / "tables.json"
+    if local.exists():
+        return local
+    return _vendored_spider_eval_dir() / "evaluation_examples" / "examples" / "tables.json"

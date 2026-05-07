@@ -1,0 +1,1237 @@
+{
+  "config": {
+    "method": "itergen",
+    "itergen_repo": "/home/advayth2/itergen",
+    "split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/spider_seed123_train50_test100.json",
+    "split_name": "train",
+    "indices": [
+      41,
+      91,
+      99,
+      180,
+      200,
+      203,
+      260,
+      267,
+      282,
+      292,
+      300,
+      307,
+      350,
+      354,
+      431,
+      452,
+      469,
+      479,
+      492,
+      509,
+      510,
+      536,
+      552,
+      573,
+      577,
+      581,
+      592,
+      606,
+      620,
+      622,
+      627,
+      633,
+      665,
+      668,
+      679,
+      690,
+      716,
+      732,
+      752,
+      771,
+      785,
+      791,
+      796,
+      875,
+      900,
+      918,
+      945,
+      955,
+      963,
+      985
+    ],
+    "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+    "device": "cuda:0",
+    "seed": 0,
+    "recurrence_penalty": 0.3,
+    "max_iter": 20,
+    "temperature": null
+  },
+  "scores": {
+    "easy": {
+      "count": 15,
+      "partial": {
+        "select": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "select(no AGG)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where(no OP)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group(no Having)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "order": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "and/or": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "IUEN": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "keywords": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        }
+      },
+      "exact": 0.0,
+      "exec": 0.7333333333333333
+    },
+    "medium": {
+      "count": 20,
+      "partial": {
+        "select": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "select(no AGG)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where(no OP)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group(no Having)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "order": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "and/or": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "IUEN": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "keywords": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        }
+      },
+      "exact": 0.0,
+      "exec": 0.5
+    },
+    "hard": {
+      "count": 8,
+      "partial": {
+        "select": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "select(no AGG)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where(no OP)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group(no Having)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "order": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "and/or": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "IUEN": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "keywords": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        }
+      },
+      "exact": 0.0,
+      "exec": 0.375
+    },
+    "extra": {
+      "count": 7,
+      "partial": {
+        "select": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "select(no AGG)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where(no OP)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group(no Having)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "order": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "and/or": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "IUEN": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "keywords": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        }
+      },
+      "exact": 0.0,
+      "exec": 0.14285714285714285
+    },
+    "all": {
+      "count": 50,
+      "partial": {
+        "select": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "select(no AGG)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "where(no OP)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group(no Having)": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "group": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "order": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "and/or": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "IUEN": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        },
+        "keywords": {
+          "acc": 0.0,
+          "rec": 0.0,
+          "f1": 0.0,
+          "acc_count": 0,
+          "rec_count": 0
+        }
+      },
+      "exact": 0.0,
+      "exec": 0.5
+    }
+  },
+  "error_types": {
+    "Valid": 40,
+    "Other Error": 9,
+    "Syntax Error": 1
+  },
+  "all_exec_accuracy": 0.5,
+  "avg_num_tokens": 25.94,
+  "wall_time_seconds": 90.33629846572876,
+  "question_mismatches": [],
+  "rows": [
+    {
+      "source_index": 41,
+      "db_id": "concert_singer",
+      "question": "Find the name and location of the stadiums which some concerts happened in the years of both 2014 and 2015.",
+      "prediction": "SELECT stadium.name ,  stadium.location FROM stadium JOIN concert ON stadium.stadium_id = concert.stadium_id WHERE concert.year IN (2014 , 2015)",
+      "raw_output": "SELECT stadium.name ,  stadium.location FROM stadium JOIN concert ON stadium.stadium_id = concert.stadium_id WHERE concert.year IN (2014 , 2015)",
+      "token_count": 38,
+      "time_seconds": 2.90425181388855,
+      "metadata": {
+        "total_tokens": 38
+      },
+      "gold": "select stadium.name , stadium.location from concert join stadium on concert.stadium_id = stadium.stadium_id where concert.year = 2014 intersect select stadium.name , stadium.location from concert join stadium on concert.stadium_id = stadium.stadium_id where concert.year = 2015",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 91,
+      "db_id": "car_1",
+      "question": "How many countries are listed?",
+      "prediction": "SELECT COUNT(DISTINCT continent) FROM continents",
+      "raw_output": "SELECT COUNT(DISTINCT continent) FROM continents",
+      "token_count": 10,
+      "time_seconds": 1.1666069030761719,
+      "metadata": {
+        "total_tokens": 10
+      },
+      "gold": "select count ( * ) from countries",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 99,
+      "db_id": "car_1",
+      "question": "Find the name of the makers that produced some cars in the year of 1970?",
+      "prediction": "SELECT DISTINCT maker FROM car_makers WHERE maker IN (SELECT maker FROM cars_data WHERE year = 1970)",
+      "raw_output": "SELECT DISTINCT maker FROM car_makers WHERE maker IN (SELECT maker FROM cars_data WHERE year = 1970)",
+      "token_count": 26,
+      "time_seconds": 1.8877785205841064,
+      "metadata": {
+        "total_tokens": 26
+      },
+      "gold": "select distinct car_makers.maker from car_makers join model_list on car_makers.id = model_list.maker join car_names on model_list.model = car_names.model join cars_data on car_names.makeid = cars_data.id where cars_data.year = '1970'",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 180,
+      "db_id": "flight_2",
+      "question": "What country is Jetblue Airways affiliated with?",
+      "prediction": "SELECT country FROM airlines WHERE airline = 'Jetblue Airways'",
+      "raw_output": "SELECT country FROM airlines WHERE airline = 'Jetblue Airways'",
+      "token_count": 13,
+      "time_seconds": 1.2294559478759766,
+      "metadata": {
+        "total_tokens": 13
+      },
+      "gold": "select country from airlines where airline = 'JetBlue Airways'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 200,
+      "db_id": "flight_2",
+      "question": "Return the name of the airport with code 'AKO'.",
+      "prediction": "SELECT airportname FROM airports WHERE airportcode = 'AKO'",
+      "raw_output": "SELECT airportname FROM airports WHERE airportcode = 'AKO'",
+      "token_count": 14,
+      "time_seconds": 1.6301324367523193,
+      "metadata": {
+        "total_tokens": 14
+      },
+      "gold": "select airportname from airports where airportcode = 'AKO'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 203,
+      "db_id": "flight_2",
+      "question": "How many flights depart from 'APG'?",
+      "prediction": "SELECT COUNT(*) FROM flights WHERE sourceairport = 'APG'",
+      "raw_output": "SELECT COUNT(*) FROM flights WHERE sourceairport = 'APG'",
+      "token_count": 14,
+      "time_seconds": 1.2446074485778809,
+      "metadata": {
+        "total_tokens": 14
+      },
+      "gold": "select count ( * ) from flights where sourceairport = 'APG'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 260,
+      "db_id": "employee_hire_evaluation",
+      "question": "Count the number of employees",
+      "prediction": "SELECT COUNT(*) FROM employee",
+      "raw_output": "SELECT COUNT(*) FROM employee",
+      "token_count": 6,
+      "time_seconds": 1.0098848342895508,
+      "metadata": {
+        "total_tokens": 6
+      },
+      "gold": "select count ( * ) from employee",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 267,
+      "db_id": "employee_hire_evaluation",
+      "question": "Find the number of shops in each location.",
+      "prediction": "SELECT shop.location, COUNT(*) AS number_of_shops FROM hiring JOIN shop ON hiring.shop_id = shop.shop_id GROUP BY shop.location",
+      "raw_output": "SELECT shop.location, COUNT(*) AS number_of_shops\nFROM hiring\nJOIN shop ON hiring.shop_id = shop.shop_id\nGROUP BY shop.location",
+      "token_count": 31,
+      "time_seconds": 1.9061923027038574,
+      "metadata": {
+        "total_tokens": 31
+      },
+      "gold": "select count ( * ) , location from shop group by location",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 282,
+      "db_id": "employee_hire_evaluation",
+      "question": "What are the names of the employees who never received any evaluation?",
+      "prediction": "SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)",
+      "raw_output": "SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)",
+      "token_count": 17,
+      "time_seconds": 1.3956544399261475,
+      "metadata": {
+        "total_tokens": 17
+      },
+      "gold": "select name from employee where employee_id not in ( select employee_id from evaluation )",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 292,
+      "db_id": "employee_hire_evaluation",
+      "question": "What is all the information about hiring?",
+      "prediction": "SELECT * FROM hiring",
+      "raw_output": "SELECT * FROM hiring",
+      "token_count": 5,
+      "time_seconds": 1.0657496452331543,
+      "metadata": {
+        "total_tokens": 5
+      },
+      "gold": "select * from hiring",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 300,
+      "db_id": "cre_Doc_Template_Mgt",
+      "question": "What are the ids, names, and descriptions for all documents?",
+      "prediction": "SELECT document_id, document_name, document_description FROM documents",
+      "raw_output": "SELECT document_id, document_name, document_description FROM documents",
+      "token_count": 12,
+      "time_seconds": 1.2972917556762695,
+      "metadata": {
+        "total_tokens": 12
+      },
+      "gold": "select document_id , document_name , document_description from documents",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 307,
+      "db_id": "cre_Doc_Template_Mgt",
+      "question": "How many documents are using the template with type code 'PPT'?",
+      "prediction": "SELECT COUNT(*) FROM documents WHERE template_id IN (SELECT template_id FROM templates WHERE template_type_code = 'PPT')",
+      "raw_output": "SELECT COUNT(*) FROM documents WHERE template_id IN (SELECT template_id FROM templates WHERE template_type_code = 'PPT')",
+      "token_count": 25,
+      "time_seconds": 1.7230167388916016,
+      "metadata": {
+        "total_tokens": 25
+      },
+      "gold": "select count ( * ) from documents join templates on documents.template_id = templates.template_id where templates.template_type_code = 'PPT'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 350,
+      "db_id": "cre_Doc_Template_Mgt",
+      "question": "Return the template type description of the template type with the code AD.",
+      "prediction": "SELECT template_type_description FROM ref_template_types WHERE template_type_code = 'AD'",
+      "raw_output": "SELECT template_type_description FROM ref_template_types WHERE template_type_code = 'AD'",
+      "token_count": 23,
+      "time_seconds": 1.6303462982177734,
+      "metadata": {
+        "total_tokens": 23
+      },
+      "gold": "select template_type_description from ref_template_types where template_type_code = 'AD'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 354,
+      "db_id": "cre_Doc_Template_Mgt",
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "prediction": "SELECT DISTINCT template_type_description FROM templates WHERE template_id IN (SELECT template_id FROM documents)",
+      "raw_output": "SELECT DISTINCT template_type_description FROM templates WHERE template_id IN (SELECT template_id FROM documents)",
+      "token_count": 25,
+      "time_seconds": 1.6917099952697754,
+      "metadata": {
+        "total_tokens": 25
+      },
+      "gold": "select distinct ref_template_types.template_type_description from ref_template_types join templates on ref_template_types.template_type_code = templates.template_type_code join documents on templates.template_id = documents.template_id",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 431,
+      "db_id": "wta_1",
+      "question": "Find the total number of matches.",
+      "prediction": "SELECT COUNT(*) FROM matches",
+      "raw_output": "SELECT COUNT(*) FROM matches",
+      "token_count": 6,
+      "time_seconds": 1.1847221851348877,
+      "metadata": {
+        "total_tokens": 6
+      },
+      "gold": "select count ( * ) from matches",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 452,
+      "db_id": "wta_1",
+      "question": "What are the first names and country codes for players who won both the WTA Championships and the Australian Open?",
+      "prediction": "SELECT DISTINCT players.first_name, players.country_code FROM players INNER JOIN matches ON players.player_id = matches.winner_id WHERE matches.tourney_name = 'WTA Championships' INTERSECT SELECT DISTINCT players.first_name, players.country_code FROM players INNER JOIN matches ON players.player_id = matches.winner_id WHERE matches.tourney_name = 'Australian Open'",
+      "raw_output": "SELECT DISTINCT players.first_name, players.country_code FROM players INNER JOIN matches ON players.player_id = matches.winner_id WHERE matches.tourney_name = 'WTA Championships' INTERSECT SELECT DISTINCT players.first_name, players.country_code FROM players INNER JOIN matches ON players.player_id = matches.winner_id WHERE matches.tourney_name = 'Australian Open'",
+      "token_count": 80,
+      "time_seconds": 4.231196641921997,
+      "metadata": {
+        "total_tokens": 80
+      },
+      "gold": "select players.country_code , players.first_name from players join matches on players.player_id = matches.winner_id where matches.tourney_name = 'WTA Championships' intersect select players.country_code , players.first_name from players join matches on players.player_id = matches.winner_id where matches.tourney_name = 'Australian Open'",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 469,
+      "db_id": "wta_1",
+      "question": "Find the average ranking for each player and their first name.",
+      "prediction": "SELECT players.first_name, AVG(rankings.ranking) as average_ranking FROM players JOIN rankings ON players.player_id = rankings.player_id GROUP BY players.first_name",
+      "raw_output": "SELECT players.first_name, AVG(rankings.ranking) as average_ranking\nFROM players\nJOIN rankings ON players.player_id = rankings.player_id\nGROUP BY players.first_name",
+      "token_count": 40,
+      "time_seconds": 2.226522207260132,
+      "metadata": {
+        "total_tokens": 40
+      },
+      "gold": "select avg ( ranking ) , players.first_name from players join rankings on players.player_id = rankings.player_id group by players.first_name",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 479,
+      "db_id": "wta_1",
+      "question": "Find the total number of tours for each ranking date.",
+      "prediction": "SELECT COUNT(DISTINCT tourney_id) AS total_tours, ranking_date FROM matches GROUP BY ranking_date",
+      "raw_output": "SELECT COUNT(DISTINCT tourney_id) AS total_tours, ranking_date FROM matches GROUP BY ranking_date",
+      "token_count": 23,
+      "time_seconds": 1.5621020793914795,
+      "metadata": {
+        "total_tokens": 23
+      },
+      "gold": "select sum ( tours ) , ranking_date from rankings group by ranking_date",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 492,
+      "db_id": "battle_death",
+      "question": "List the name and tonnage ordered by in descending alphaetical order for the names.",
+      "prediction": "SELECT name ,  tonnage FROM ship ORDER BY name DESC",
+      "raw_output": "SELECT name ,  tonnage FROM ship ORDER BY name DESC",
+      "token_count": 13,
+      "time_seconds": 1.251922369003296,
+      "metadata": {
+        "total_tokens": 13
+      },
+      "gold": "select name , tonnage from ship order by name desc",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 509,
+      "db_id": "student_transcripts_tracking",
+      "question": "How many courses in total are listed?",
+      "prediction": "SELECT COUNT(course_id) FROM courses",
+      "raw_output": "SELECT COUNT(course_id) FROM courses",
+      "token_count": 8,
+      "time_seconds": 1.0812311172485352,
+      "metadata": {
+        "total_tokens": 8
+      },
+      "gold": "select count ( * ) from courses",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 510,
+      "db_id": "student_transcripts_tracking",
+      "question": "How many courses are there?",
+      "prediction": "SELECT COUNT(course_id) FROM courses",
+      "raw_output": "SELECT COUNT(course_id) FROM courses",
+      "token_count": 8,
+      "time_seconds": 1.098853588104248,
+      "metadata": {
+        "total_tokens": 8
+      },
+      "gold": "select count ( * ) from courses",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 536,
+      "db_id": "student_transcripts_tracking",
+      "question": "What are the first, middle, and last names for everybody enrolled in a Bachelors program?",
+      "prediction": "SELECT DISTINCT first_name, middle_name, last_name FROM students WHERE degree_program_id IN (SELECT degree_program_id FROM degree_programs WHERE degree_summary_name = 'Bachelors')",
+      "raw_output": "SELECT DISTINCT first_name, middle_name, last_name FROM students WHERE degree_program_id IN (SELECT degree_program_id FROM degree_programs WHERE degree_summary_name = 'Bachelors')",
+      "token_count": 56,
+      "time_seconds": 2.733311176300049,
+      "metadata": {
+        "total_tokens": 56
+      },
+      "gold": "select distinct students.first_name , students.middle_name , students.last_name from students join student_enrolment on students.student_id = student_enrolment.student_id join degree_programs on student_enrolment.degree_program_id = degree_programs.degree_program_id where degree_programs.degree_summary_name = 'Bachelor'",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 552,
+      "db_id": "student_transcripts_tracking",
+      "question": "What is the date and id of the transcript with at least 2 courses listed?",
+      "prediction": "SELECT transcript_date, transcript_id FROM transcripts WHERE transcript_id IN (SELECT student_course_id FROM student_enrolment_courses GROUP BY student_course_id HAVING COUNT(*) >= 2)",
+      "raw_output": "SELECT transcript_date, transcript_id FROM transcripts WHERE transcript_id IN (SELECT student_course_id FROM student_enrolment_courses GROUP BY student_course_id HAVING COUNT(*) >= 2)",
+      "token_count": 48,
+      "time_seconds": 2.4772584438323975,
+      "metadata": {
+        "total_tokens": 48
+      },
+      "gold": "select transcripts.transcript_date , transcript_contents.transcript_id from transcript_contents join transcripts on transcript_contents.transcript_id = transcripts.transcript_id group by transcript_contents.transcript_id having count ( * ) >= 2",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 573,
+      "db_id": "student_transcripts_tracking",
+      "question": "Show the date of the transcript which shows the least number of results, also list the id.",
+      "prediction": "SELECT transcript_date, student_enrolment_id FROM transcripts GROUP BY transcript_date ORDER BY COUNT(*) ASC LIMIT 1",
+      "raw_output": "SELECT transcript_date, student_enrolment_id FROM transcripts GROUP BY transcript_date ORDER BY COUNT(*) ASC LIMIT 1",
+      "token_count": 30,
+      "time_seconds": 1.7791011333465576,
+      "metadata": {
+        "total_tokens": 30
+      },
+      "gold": "select transcripts.transcript_date , transcript_contents.transcript_id from transcript_contents join transcripts on transcript_contents.transcript_id = transcripts.transcript_id group by transcript_contents.transcript_id order by count ( * ) asc limit 1",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 577,
+      "db_id": "student_transcripts_tracking",
+      "question": "How many different addresses do the students currently live?",
+      "prediction": "SELECT COUNT(DISTINCT current_address_id) FROM students",
+      "raw_output": "SELECT COUNT(DISTINCT current_address_id) FROM students",
+      "token_count": 12,
+      "time_seconds": 1.2005360126495361,
+      "metadata": {
+        "total_tokens": 12
+      },
+      "gold": "select count ( distinct current_address_id ) from students",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 581,
+      "db_id": "student_transcripts_tracking",
+      "question": "Describe the section h.",
+      "prediction": "SELECT section_name FROM sections WHERE section_id = 'h'",
+      "raw_output": "SELECT section_name FROM sections WHERE section_id = 'h'",
+      "token_count": 13,
+      "time_seconds": 1.2477045059204102,
+      "metadata": {
+        "total_tokens": 13
+      },
+      "gold": "select section_description from sections where section_name = 'h'",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 592,
+      "db_id": "tvshow",
+      "question": "What is the name and directors of all the cartoons that are ordered by air date?",
+      "prediction": "SELECT title ,  directed_by FROM cartoon ORDER BY original_air_date",
+      "raw_output": "SELECT title ,  directed_by FROM cartoon ORDER BY original_air_date",
+      "token_count": 14,
+      "time_seconds": 1.288590669631958,
+      "metadata": {
+        "total_tokens": 14
+      },
+      "gold": "select title , directed_by from cartoon order by original_air_date asc",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 606,
+      "db_id": "tvshow",
+      "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+      "prediction": "SELECT language ,  COUNT(*) FROM tv_channel GROUP BY language ORDER BY COUNT(*) ASC LIMIT 1",
+      "raw_output": "SELECT language ,  COUNT(*) FROM tv_channel GROUP BY language ORDER BY COUNT(*) ASC LIMIT 1",
+      "token_count": 25,
+      "time_seconds": 1.6419003009796143,
+      "metadata": {
+        "total_tokens": 25
+      },
+      "gold": "select language , count ( * ) from tv_channel group by language order by count ( * ) asc limit 1",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 620,
+      "db_id": "tvshow",
+      "question": "When did the episode \"A Love of a Lifetime\" air?",
+      "prediction": "SELECT air_date FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "raw_output": "SELECT air_date FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "token_count": 17,
+      "time_seconds": 1.3545289039611816,
+      "metadata": {
+        "total_tokens": 17
+      },
+      "gold": "select air_date from tv_series where episode = 'A Love of a Lifetime'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 622,
+      "db_id": "tvshow",
+      "question": "What is the weekly rank for the episode \"A Love of a Lifetime\"?",
+      "prediction": "SELECT weekly_rank FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "raw_output": "SELECT weekly_rank FROM tv_series WHERE episode = 'A Love of a Lifetime'",
+      "token_count": 17,
+      "time_seconds": 1.3565614223480225,
+      "metadata": {
+        "total_tokens": 17
+      },
+      "gold": "select weekly_rank from tv_series where episode = 'A Love of a Lifetime'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 627,
+      "db_id": "tvshow",
+      "question": "Find the number of cartoons directed by each of the listed directors.",
+      "prediction": "SELECT cartoon.directed_by, COUNT(*) AS number_of_cartoons FROM cartoon GROUP BY cartoon.directed_by",
+      "raw_output": "SELECT cartoon.directed_by, COUNT(*) AS number_of_cartoons\nFROM cartoon\nGROUP BY cartoon.directed_by",
+      "token_count": 24,
+      "time_seconds": 1.6361002922058105,
+      "metadata": {
+        "total_tokens": 24
+      },
+      "gold": "select count ( * ) , directed_by from cartoon group by directed_by",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 633,
+      "db_id": "tvshow",
+      "question": "which countries' tv channels are playing some cartoon written by Todd Casey?",
+      "prediction": "SELECT DISTINCT country FROM tv_channel WHERE channel IN ( SELECT channel FROM cartoon WHERE written_by = 'Todd Casey' )",
+      "raw_output": "SELECT DISTINCT country FROM tv_channel WHERE channel IN ( SELECT channel FROM cartoon WHERE written_by = 'Todd Casey' )",
+      "token_count": 35,
+      "time_seconds": 1.9556524753570557,
+      "metadata": {
+        "total_tokens": 35
+      },
+      "gold": "select tv_channel.country from tv_channel join cartoon on tv_channel.id = cartoon.channel where cartoon.written_by = 'Todd Casey'",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 665,
+      "db_id": "poker_player",
+      "question": "What is the birth date of the poker player with the lowest earnings?",
+      "prediction": "SELECT people.birth_date FROM poker_player JOIN people ON poker_player.people_id = people.people_id ORDER BY poker_player.earnings ASC LIMIT 1",
+      "raw_output": "SELECT people.birth_date FROM poker_player JOIN people ON poker_player.people_id = people.people_id ORDER BY poker_player.earnings ASC LIMIT 1",
+      "token_count": 35,
+      "time_seconds": 2.1607911586761475,
+      "metadata": {
+        "total_tokens": 35
+      },
+      "gold": "select people.birth_date from people join poker_player on people.people_id = poker_player.people_id order by poker_player.earnings asc limit 1",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 668,
+      "db_id": "poker_player",
+      "question": "Return the money rank of the poker player with the greatest height.",
+      "prediction": "SELECT money_rank FROM poker_player WHERE height = ( SELECT MAX(height) FROM people )",
+      "raw_output": "SELECT money_rank FROM poker_player WHERE height = ( SELECT MAX(height) FROM people )",
+      "token_count": 18,
+      "time_seconds": 1.4719102382659912,
+      "metadata": {
+        "total_tokens": 18
+      },
+      "gold": "select poker_player.money_rank from people join poker_player on people.people_id = poker_player.people_id order by people.height desc limit 1",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 679,
+      "db_id": "poker_player",
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "prediction": "SELECT name ,  birth_date FROM people ORDER BY name ASC",
+      "raw_output": "SELECT name ,  birth_date FROM people ORDER BY name ASC",
+      "token_count": 13,
+      "time_seconds": 1.3022735118865967,
+      "metadata": {
+        "total_tokens": 13
+      },
+      "gold": "select name , birth_date from people order by name asc",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 690,
+      "db_id": "voter_1",
+      "question": "What are the maximum and minimum values of area codes?",
+      "prediction": "SELECT MAX(area_code) AS max_area_code, MIN(area_code) AS min_area_code FROM area_code_state",
+      "raw_output": "SELECT MAX(area_code) AS max_area_code, MIN(area_code) AS min_area_code FROM area_code_state",
+      "token_count": 23,
+      "time_seconds": 1.6148920059204102,
+      "metadata": {
+        "total_tokens": 23
+      },
+      "gold": "select max ( area_code ) , min ( area_code ) from area_code_state",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 716,
+      "db_id": "world_1",
+      "question": "What are the region and population of Angola?",
+      "prediction": "SELECT region ,  population FROM country WHERE code = 'AO'",
+      "raw_output": "SELECT region ,  population FROM country WHERE code = 'AO'",
+      "token_count": 18,
+      "time_seconds": 1.5344176292419434,
+      "metadata": {
+        "total_tokens": 18
+      },
+      "gold": "select population , region from country where name = 'Angola'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 732,
+      "db_id": "world_1",
+      "question": "How many unique languages are spoken in the world?",
+      "prediction": "SELECT COUNT(DISTINCT language) FROM countrylanguage",
+      "raw_output": "SELECT COUNT(DISTINCT language) FROM countrylanguage",
+      "token_count": 15,
+      "time_seconds": 1.4078152179718018,
+      "metadata": {
+        "total_tokens": 15
+      },
+      "gold": "select count ( distinct language ) from countrylanguage",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 752,
+      "db_id": "world_1",
+      "question": "What are the regions that use English or Dutch?",
+      "prediction": "SELECT DISTINCT region FROM country WHERE code2 IN ('en', 'nl')",
+      "raw_output": "SELECT DISTINCT region FROM country WHERE code2 IN ('en', 'nl')",
+      "token_count": 24,
+      "time_seconds": 1.6932237148284912,
+      "metadata": {
+        "total_tokens": 24
+      },
+      "gold": "select distinct country.region from country join countrylanguage on country.code = countrylanguage.countrycode where countrylanguage.language = 'English' or countrylanguage.language = 'Dutch'",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 771,
+      "db_id": "world_1",
+      "question": "For the countries founded before 1930, what is the total number of distinct official languages?",
+      "prediction": "SELECT COUNT(DISTINCT countrylanguage.language) FROM countrylanguage WHERE countrylanguage.isofficial = 1 AND country.indepyear < 1930",
+      "raw_output": "SELECT COUNT(DISTINCT countrylanguage.language) FROM countrylanguage WHERE countrylanguage.isofficial = 1 AND country.indepyear < 1930",
+      "token_count": 36,
+      "time_seconds": 2.176846742630005,
+      "metadata": {
+        "total_tokens": 36
+      },
+      "gold": "select count ( distinct countrylanguage.language ) from country join countrylanguage on country.code = countrylanguage.countrycode where indepyear < 1930 and countrylanguage.isofficial = 'T'",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 785,
+      "db_id": "world_1",
+      "question": "What are the names of cities in Europe for which English is not the official language?",
+      "prediction": "SELECT DISTINCT city.name FROM city JOIN country ON city.countrycode = country.code WHERE country.continent = 'Europe' AND countrylanguage.language != 'English'",
+      "raw_output": "SELECT DISTINCT city.name FROM city JOIN country ON city.countrycode = country.code WHERE country.continent = 'Europe' AND countrylanguage.language != 'English'",
+      "token_count": 43,
+      "time_seconds": 2.5398104190826416,
+      "metadata": {
+        "total_tokens": 43
+      },
+      "gold": "select distinct city.name from country join city on city.countrycode = country.code where country.continent = 'Europe' and country.name not in ( select country.name from country join countrylanguage on country.code = countrylanguage.countrycode where countrylanguage.isofficial = 'T' and countrylanguage.language = 'English' )",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 791,
+      "db_id": "world_1",
+      "question": "Give the name, population, and head of state for the country that has the largest area.",
+      "prediction": "SELECT country.name, country.population, country.headofstate FROM country JOIN countrylanguage ON country.code = countrylanguage.countrycode ORDER BY country.surfacearea DESC LIMIT 1",
+      "raw_output": "SELECT country.name, country.population, country.headofstate FROM country JOIN countrylanguage ON country.code = countrylanguage.countrycode ORDER BY country.surfacearea DESC LIMIT 1",
+      "token_count": 38,
+      "time_seconds": 2.369931936264038,
+      "metadata": {
+        "total_tokens": 38
+      },
+      "gold": "select name , population , headofstate from country order by surfacearea desc limit 1",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 796,
+      "db_id": "world_1",
+      "question": "Find the government form name and total population for each government form whose average life expectancy is longer than 72.",
+      "prediction": "SELECT governmentform ,  SUM(population) FROM countrylanguage WHERE lifeexpectancy > 72 GROUP BY governmentform",
+      "raw_output": "SELECT governmentform ,  SUM(population) FROM countrylanguage WHERE lifeexpectancy > 72 GROUP BY governmentform",
+      "token_count": 40,
+      "time_seconds": 2.24528169631958,
+      "metadata": {
+        "total_tokens": 40
+      },
+      "gold": "select sum ( population ) , governmentform from country group by governmentform having avg ( lifeexpectancy ) > 72",
+      "exec": false,
+      "validity": "Other Error"
+    },
+    {
+      "source_index": 875,
+      "db_id": "network_1",
+      "question": "Count the number of high schoolers in grades 9 or 10.",
+      "prediction": "SELECT COUNT(id) FROM highschooler WHERE grade IN (9, 10)",
+      "raw_output": "SELECT COUNT(id) FROM highschooler WHERE grade IN (9, 10)",
+      "token_count": 19,
+      "time_seconds": 1.5445356369018555,
+      "metadata": {
+        "total_tokens": 19
+      },
+      "gold": "select count ( * ) from highschooler where grade = 9 or grade = 10",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 900,
+      "db_id": "network_1",
+      "question": "Show name of all students who have some friends and also are liked by someone else.",
+      "prediction": "SELECT DISTINCT highschooler.name FROM highschooler JOIN friend ON highschooler.id = friend.student_id JOIN likes ON friend.friend_id = likes.liked_id",
+      "raw_output": "SELECT DISTINCT highschooler.name FROM highschooler JOIN friend ON highschooler.id = friend.student_id JOIN likes ON friend.friend_id = likes.liked_id",
+      "token_count": 44,
+      "time_seconds": 2.5530521869659424,
+      "metadata": {
+        "total_tokens": 44
+      },
+      "gold": "select highschooler.name from friend join highschooler on likes.student_id = highschooler.id intersect select highschooler.name from likes join highschooler on likes.liked_id = highschooler.id",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 918,
+      "db_id": "dog_kennels",
+      "question": "Which states have both owners and professionals living there?",
+      "prediction": "SELECT DISTINCT state FROM owners WHERE owner_id IN (SELECT owner_id FROM professionals)",
+      "raw_output": "SELECT DISTINCT state FROM owners WHERE owner_id IN (SELECT owner_id FROM professionals)",
+      "token_count": 24,
+      "time_seconds": 1.6417269706726074,
+      "metadata": {
+        "total_tokens": 24
+      },
+      "gold": "select state from owners intersect select state from professionals",
+      "exec": false,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 945,
+      "db_id": "dog_kennels",
+      "question": "Which professionals have operated a treatment that costs less than the average? Give me theor first names and last names.",
+      "prediction": "SELECT professionals.first_name, professionals.last_name FROM professionals JOIN treatments ON professionals.professional_id = treatments.professional_id WHERE treatments.cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM treatments)",
+      "raw_output": "SELECT professionals.first_name, professionals.last_name FROM professionals JOIN treatments ON professionals.professional_id = treatments.professional_id WHERE treatments.cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM treatments)",
+      "token_count": 46,
+      "time_seconds": 2.476011276245117,
+      "metadata": {
+        "total_tokens": 46
+      },
+      "gold": "select distinct professionals.first_name , professionals.last_name from professionals join treatments where cost_of_treatment < ( select avg ( cost_of_treatment ) from treatments )",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 955,
+      "db_id": "dog_kennels",
+      "question": "Which dogs are of the rarest breed? Show their names and treatment dates.",
+      "prediction": "SELECT dogs.name, treatments.date_of_treatment FROM dogs JOIN treatments ON dogs.dog_id = treatments.dog_id JOIN breeds ON dogs.breed_code = breeds.breed_code WHERE breeds.breed_name NOT IN (     SELECT breed_name     FROM breeds     GROUP BY breed_name     HAVING COUNT(*) = (         SELECT MAX(cnt)",
+      "raw_output": "SELECT dogs.name, treatments.date_of_treatment\nFROM dogs\nJOIN treatments ON dogs.dog_id = treatments.dog_id\nJOIN breeds ON dogs.breed_code = breeds.breed_code\nWHERE breeds.breed_name NOT IN (\n    SELECT breed_name\n    FROM breeds\n    GROUP BY breed_name\n    HAVING COUNT(*) = (\n        SELECT MAX(cnt)\n",
+      "token_count": 88,
+      "time_seconds": 5.029099464416504,
+      "metadata": {
+        "total_tokens": 88
+      },
+      "gold": "select dogs.name , treatments.date_of_treatment from dogs join treatments on dogs.dog_id = treatments.dog_id where dogs.breed_code = ( select breed_code from dogs group by breed_code order by count ( * ) asc limit 1 )",
+      "exec": false,
+      "validity": "Syntax Error"
+    },
+    {
+      "source_index": 963,
+      "db_id": "dog_kennels",
+      "question": "What are the emails of the professionals living in either the state of Hawaii or the state of Wisconsin?",
+      "prediction": "SELECT DISTINCT email_address FROM professionals WHERE state = 'Hawaii' OR state = 'Wisconsin'",
+      "raw_output": "SELECT DISTINCT email_address FROM professionals WHERE state = 'Hawaii' OR state = 'Wisconsin'",
+      "token_count": 26,
+      "time_seconds": 1.6415596008300781,
+      "metadata": {
+        "total_tokens": 26
+      },
+      "gold": "select email_address from professionals where state = 'Hawaii' or state = 'Wisconsin'",
+      "exec": true,
+      "validity": "Valid"
+    },
+    {
+      "source_index": 985,
+      "db_id": "dog_kennels",
+      "question": "What are the dog name, age and weight of the dogs that were abandoned? Note that 1 stands for yes, and 0 stands for no in the tables.",
+      "prediction": "SELECT dogs.name, dogs.age, dogs.weight FROM dogs WHERE abandoned_yn = 1",
+      "raw_output": "SELECT dogs.name, dogs.age, dogs.weight FROM dogs WHERE abandoned_yn = 1",
+      "token_count": 19,
+      "time_seconds": 1.511000156402588,
+      "metadata": {
+        "total_tokens": 19
+      },
+      "gold": "select name , age , weight from dogs where abandoned_yn = 1",
+      "exec": true,
+      "validity": "Valid"
+    }
+  ],
+  "baseline_cache": {
+    "dataset": "spider",
+    "method": "itergen",
+    "key": "06761a5f163928ab3cf6fc5b",
+    "identity": {
+      "dataset": "spider",
+      "itergen_repo": "/home/advayth2/itergen",
+      "max_iter": 20,
+      "method": "itergen",
+      "model": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
+      "recurrence_penalty": 0.3,
+      "seed": 0,
+      "source": "hf",
+      "spider_dir": null,
+      "split_digest": "26391777f76d5d379dab620b2e334ed19f99f01ac4225daafd899a74f0d3331f",
+      "split_file": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/splits/spider_seed123_train50_test100.json",
+      "split_name": "train"
+    },
+    "cache_path": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/spider/itergen_06761a5f163928ab3cf6fc5b.json",
+    "source_path": "/home/advayth2/projects/verified-agent-synthesis/outputs/generated-csd/benchmarks/baseline_cache/spider/itergen_06761a5f163928ab3cf6fc5b.json",
+    "cache_hit": true,
+    "updated_at_unix": 1778114246.7232022
+  }
+}

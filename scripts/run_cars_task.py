@@ -34,7 +34,7 @@ def main() -> int:
     parser.add_argument("--sample-style", type=str, default="cars")
     parser.add_argument("--log-dir", type=Path, required=True)
     parser.add_argument("--target-samples", type=int, default=1)
-    parser.add_argument("--n-steps", type=int, default=2000)
+    parser.add_argument("--n-steps", type=int, default=500)
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--device", type=str, default="cuda")
     args = parser.parse_args()
