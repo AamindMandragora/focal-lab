@@ -1,635 +1,0 @@
-Initializing synthesis pipeline...
-Setting up evaluator for dataset: gsm_symbolic
-  Generation model: gpt-5.4
-  Evaluation model: Qwen/Qwen2.5-Coder-7B-Instruct
-Generating initial strategy for: Math word problem solving where the model reasons in natural language and writes arithmetic expressions inside << >> delimiters. The parser validates expression syntax automatically.
-
-============================================================
-Attempt 1/3
-============================================================
-Strategy: // CSD_RATIONALE_BEGIN
-// Math-word-problem CSD with two tracked modes: free-form natural-language
-// generation outside delimiters, and parser-validated arithmetic generation
-// inside delimiters. The strategy tracks whether it is currently inside a
-// constrained span (`insideConstrainedOut`) and the current arithmetic suffix
-// inside that span (`currentConstrainedOut`).
-//
-// Outside a span, it uses chunked unconstrained decoding so the model can
-// explain its reasoning naturally until it emits "<<" or EOS. Inside a span,
-// it adaptively chooses between a tight one-token constrained step when the
-// parser's valid-next set is narrow, and a wider `ConstrainedSymbol` step when
-// many continuations are valid. As soon as the parser reports the arithmetic
-// prefix is complete, it closes the span with ">>".
-//
-// This tracked state supports validity because `currentConstrainedOut` always
-// mirrors exactly the generated suffix between delimiters, so parser queries
-// are made on the true arithmetic prefix. The parser therefore governs only
-// the arithmetic expression region, while the model remains unconstrained on
-// surrounding natural-language reasoning.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span chunk branch, either we remain outside
-//   (implication vacuous) or we enter a span only when stoppedOnOpen is true,
-//   setting currentConstrainedOut := [], which is valid by precondition. In
-//   the complete-prefix branch, CloseConstrainedSpan sets insideConstrainedOut
-//   to false, so the implication becomes vacuous. In the tight constrained
-//   branch, ConstrainedStep returns a parser-valid next token (or EOS, which
-//   breaks), and AppendConstrainedToken preserves validity. In the wide
-//   constrained branch, ConstrainedSymbol returns currentOut that is itself a
-//   valid parser prefix.
-// suffix: In the outside-span branch, when we stay outside the implication is
-//   vacuous; when we enter on "<<", currentConstrainedOut becomes [], and the
-//   length-0 suffix of generated matches []. In the complete-prefix branch,
-//   CloseConstrainedSpan appends ">>" and resets currentConstrainedOut to [],
-//   so the implication is vacuous afterward. In the tight constrained branch,
-//   AppendConstrainedToken appends the same token to both generated and
-//   currentConstrainedOut. In the wide constrained branch, we keep
-//   stablePrefix := generated[..|generated|-|currentConstrainedOut|] and then
-//   set generated := stablePrefix + symbolOut and currentConstrainedOut :=
-//   symbolOut, so the generated suffix is exactly currentConstrainedOut.
-// cost accounting: `cost` is kept at 0 throughout the loop and assigned only
-//   once at the end as `steps`. Every non-break branch increases `steps` by the
-//   exact amount of generation work performed: +stepsUsed for UnconstrainedChunk,
-//   +1 for CloseConstrainedSpan and tight ConstrainedStep, and +stepsUsed for
-//   ConstrainedSymbol. Since the loop guard enforces steps < maxSteps and each
-//   increment is bounded by the remaining budget passed to the helper, the
-//   final assigned cost satisfies cost <= maxSteps.
-// progress: Outside-span chunk branch appends at most stepsUsed tokens and then
-//   does steps := steps + stepsUsed. CloseConstrainedSpan appends one token and
-//   increments steps by 1. Tight constrained branch appends one token exactly
-//   when it does not break on EOS, and steps increases by 1. Wide constrained
-//   branch replaces the old constrained suffix by a longer valid symbolOut and
-//   increases steps by stepsUsed; the helper's symbol budget is capped by the
-//   remaining step budget, so linear arithmetic gives
-//   |generated| <= |generatedPrefix| + steps after every branch.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var narrowThreshold: nat := 12;
-var steps: nat := 0;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
-  invariant |generated| <= |generatedPrefix| + steps
-  invariant cost == 0
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var chunkBudget: nat := maxSteps - steps;
-    var chunkedGenerated, stoppedOnOpen, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
-      lm, prompt, generated, chunkBudget, "<<", eosToken
-    );
-    generated := chunkedGenerated;
-    steps := steps + stepsUsed;
-    if stoppedOnEos {
-      break;
-    } else if stoppedOnOpen {
-      insideConstrainedOut := true;
-      currentConstrainedOut := [];
-    }
-  } else {
-    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
-    if isComplete {
-      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-        lm, parser, generated, currentConstrainedOut
-      );
-      generated := closedGenerated;
-      insideConstrainedOut := closedInside;
-      currentConstrainedOut := closedCurrent;
-      steps := steps + 1;
-    } else {
-      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-      var constrainedPrompt := prompt + stablePrefix;
-      var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-      if validCount <= narrowThreshold {
-        var next := helpers.ConstrainedStep(
-          lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-        );
-        steps := steps + 1;
-        if next == eosToken {
-          break;
-        } else {
-          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-            lm, parser, generated, currentConstrainedOut, next
-          );
-          generated := appendedGenerated;
-          insideConstrainedOut := appendedInside;
-          currentConstrainedOut := appendedCurrent;
-        }
-      } else {
-        var remaining: nat := maxSteps - steps;
-        var localBudget: nat := stepTokenBudget;
-        if remaining < localBudget {
-          localBudget := remaining;
-        }
-        var symbolOut, hitEos, stepsUsed2 := helpers.ConstrainedSymbol(
-          lm, parser, constrainedPrompt, currentConstrainedOut, localBudget, eosToken
-        );
-        generated := stablePrefix + symbolOut;
-        insideConstrainedOut := true;
-        currentConstrainedOut := symbolOut;
-        steps := steps + stepsUsed2;
-        if hitEos {
-          break;
-        }
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✗ Verification failed
-  Error: GeneratedCSD.dfy(170,70): Error: a precondition for this call could not be proved
-    |
-170 |         var symbolOut, hitEos, stepsUsed2 := helpers.ConstrainedSymbol(
-    |                                                                       ^
-
-VerifiedAgentSynthesis.dfy(392,31): Related location: t
-  Refining based on verification error...
-
-============================================================
-Attempt 2/3
-============================================================
-Strategy: // CSD_RATIONALE_BEGIN
-// Math-word-problem CSD with two tracked modes: free-form natural-language
-// generation outside delimiters, and parser-validated arithmetic generation
-// inside delimiters. The strategy tracks whether it is currently inside a
-// constrained span (`insideConstrainedOut`) and the current arithmetic suffix
-// inside that span (`currentConstrainedOut`).
-//
-// Outside a span, it uses chunked unconstrained decoding so the model can
-// explain its reasoning naturally until it emits "<<" or EOS. Inside a span,
-// it adaptively chooses between a tight one-token constrained step when the
-// parser's valid-next set is narrow, and a wider `ConstrainedSymbol` step when
-// many continuations are valid. As soon as the parser reports the arithmetic
-// prefix is complete, it closes the span with ">>".
-//
-// The only refinement from the previous version is a guard on the
-// `ConstrainedSymbol` call: that helper requires a strictly positive symbol
-// budget, so the wide constrained branch now calls it only when the computed
-// `localBudget` is greater than 0, and otherwise breaks. This preserves the
-// original strategy while making the helper precondition explicit.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span chunk branch, either we remain outside
-//   (implication vacuous) or we enter a span only when stoppedOnOpen is true,
-//   setting currentConstrainedOut := [], which is valid by precondition. In
-//   the complete-prefix branch, CloseConstrainedSpan sets insideConstrainedOut
-//   to false, so the implication becomes vacuous. In the tight constrained
-//   branch, ConstrainedStep returns a parser-valid next token (or EOS, which
-//   breaks), and AppendConstrainedToken preserves validity. In the wide
-//   constrained branch, when localBudget == 0 we break without changing state;
-//   otherwise ConstrainedSymbol returns currentOut that is itself a valid
-//   parser prefix.
-// suffix: In the outside-span branch, when we stay outside the implication is
-//   vacuous; when we enter on "<<", currentConstrainedOut becomes [], and the
-//   length-0 suffix of generated matches []. In the complete-prefix branch,
-//   CloseConstrainedSpan appends ">>" and resets currentConstrainedOut to [],
-//   so the implication is vacuous afterward. In the tight constrained branch,
-//   AppendConstrainedToken appends the same token to both generated and
-//   currentConstrainedOut. In the wide constrained branch, if localBudget == 0
-//   we break with no state change; otherwise we keep stablePrefix :=
-//   generated[..|generated|-|currentConstrainedOut|] and then set generated :=
-//   stablePrefix + symbolOut and currentConstrainedOut := symbolOut, so the
-//   generated suffix is exactly currentConstrainedOut.
-// cost accounting: `cost` is kept at 0 throughout the loop and assigned only
-//   once at the end as `steps`. Every non-break branch increases `steps` by the
-//   exact amount of generation work performed: +stepsUsed for UnconstrainedChunk,
-//   +1 for CloseConstrainedSpan and tight ConstrainedStep, and +stepsUsed for
-//   ConstrainedSymbol. The new localBudget==0 branch is a pure break with no
-//   state change and no cost increase. Since the loop guard enforces
-//   steps < maxSteps and each increment is bounded by the remaining budget
-//   passed to the helper, the final assigned cost satisfies cost <= maxSteps.
-// progress: Outside-span chunk branch appends at most stepsUsed tokens and then
-//   does steps := steps + stepsUsed. CloseConstrainedSpan appends one token and
-//   increments steps by 1. Tight constrained branch appends one token exactly
-//   when it does not break on EOS, and steps increases by 1. In the wide
-//   constrained branch, localBudget==0 breaks immediately; otherwise the helper
-//   appends stepsUsed tokens to the constrained suffix and we increase steps by
-//   the same amount, so linear arithmetic preserves
-//   |generated| <= |generatedPrefix| + steps.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var narrowThreshold: nat := 12;
-var steps: nat := 0;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
-  invariant |generated| <= |generatedPrefix| + steps
-  invariant cost == 0
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var chunkBudget: nat := maxSteps - steps;
-    var chunkedGenerated, stoppedOnOpen, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
-      lm, prompt, generated, chunkBudget, "<<", eosToken
-    );
-    generated := chunkedGenerated;
-    steps := steps + stepsUsed;
-    if stoppedOnEos {
-      break;
-    } else if stoppedOnOpen {
-      insideConstrainedOut := true;
-      currentConstrainedOut := [];
-    }
-  } else {
-    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
-    if isComplete {
-      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-        lm, parser, generated, currentConstrainedOut
-      );
-      generated := closedGenerated;
-      insideConstrainedOut := closedInside;
-      currentConstrainedOut := closedCurrent;
-      steps := steps + 1;
-    } else {
-      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-      var constrainedPrompt := prompt + stablePrefix;
-      var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-      if validCount <= narrowThreshold {
-        var next := helpers.ConstrainedStep(
-          lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-        );
-        steps := steps + 1;
-        if next == eosToken {
-          break;
-        } else {
-          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-            lm, parser, generated, currentConstrainedOut, next
-          );
-          generated := appendedGenerated;
-          insideConstrainedOut := appendedInside;
-          currentConstrainedOut := appendedCurrent;
-        }
-      } else {
-        var remaining: nat := maxSteps - steps;
-        var localBudget: nat := stepTokenBudget;
-        if remaining < localBudget {
-          localBudget := remaining;
-        }
-        if localBudget == 0 {
-          break;
-        } else {
-          var symbolOut, hitEos, stepsUsed2 := helpers.ConstrainedSymbol(
-            lm, parser, constrainedPrompt, currentConstrainedOut, localBudget, eosToken
-          );
-          generated := stablePrefix + symbolOut;
-          insideConstrainedOut := true;
-          currentConstrainedOut := symbolOut;
-          steps := steps + stepsUsed2;
-          if hitEos {
-            break;
-          }
-        }
-      }
-    }
-  }
-}
-
-cost := steps;2026-04-27 20:25:44.333056: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-04-27 20:25:44.353735: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1777321544.372286 2561613 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1777321544.378076 2561613 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1777321544.396213 2561613 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1777321544.396231 2561613 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1777321544.396234 2561613 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1777321544.396246 2561613 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-04-27 20:25:44.400911: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260427_202452_6fe09c/gsm_regression
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 124
-Loading GSM-Symbolic dataset (config=main, split=test (limit=3) (random sample) (seed=124))...
-Loaded 3 examples
-Loading model: Qwen/Qwen2.5-Coder-7B-Instruct on cuda... (4-bit)
-Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:05<00:15,  5.10s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:11<00:11,  5.77s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:16<00:05,  5.54s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:16<00:00,  3.49s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:16<00:00,  4.24s/it]
-Model loaded across 1 GPU(s), inputs go to cuda:0
-  [EVAL] Processing example 1/3...
-  [EVAL]   Running CSD strategy (max_steps=256)...
-Creating DFA mask store for Qwen2TokenizerFast and custom, may take more than 10 minutes. Caching at /home/aadivyar/csd-generation/cache/mask_stores/Qwen2TokenizerFast/grammar_mask_8064515656_151643.pkl.
-Ignore whitespace tokens is True
-  0%|          | 0/63 [00:00<?, ?it/s]  2%|▏         | 1/63 [00:01<01:40,  1.62s/it]  3%|▎         | 2/63 [00:05<02:46,  2.73s/it]  5%|▍         | 3/63 [00:08<03:05,  3.09s/it]  6%|▋         | 4/63 [00:09<02:01,  2.06s/it]  8%|▊         | 5/63 [00:09<01:26,  1.49s/it] 10%|▉         | 6/63 [00:10<01:05,  1.14s/it] 11%|█         | 7/63 [00:10<00:51,  1.08it/s] 13%|█▎        | 8/63 [00:11<00:42,  1.28it/s] 14%|█▍        | 9/63 [00:11<00:36,  1.46it/s] 16%|█▌        | 10/63 [00:11<00:32,  1.62it/s] 17%|█▋        | 11/63 [00:12<00:29,  1.75it/s] 19%|█▉        | 12/63 [00:12<00:27,  1.84it/s] 21%|██        | 13/63 [00:13<00:26,  1.92it/s] 22%|██▏       | 14/63 [00:13<00:24,  1.98it/s] 24%|██▍       | 15/63 [00:14<00:23,  2.02it/s] 25%|██▌       | 16/63 [00:14<00:22,  2.06it/s] 27%|██▋       | 17/63 [00:15<00:22,  2.07it/s] 29%|██▊       | 18/63 [00:15<00:21,  2.08it/s] 30%|███       | 19/63 [00:16<00:21,  2.08it/s] 32%|███▏      | 20/63 [00:16<00:20,  2.08it/s] 33%|███▎      | 21/63 [00:17<00:20,  2.10it/s] 35%|███▍      | 22/63 [00:20<00:57,  1.39s/it] 37%|███▋      | 23/63 [00:21<00:44,  1.11s/it] 38%|███▊      | 24/63 [00:21<00:36,  1.07it/s] 40%|███▉      | 25/63 [00:25<01:04,  1.70s/it] 41%|████▏     | 26/63 [00:25<00:49,  1.33s/it] 43%|████▎     | 27/63 [00:26<00:38,  1.08s/it] 44%|████▍     | 28/63 [00:29<01:02,  1.79s/it] 46%|████▌     | 29/63 [00:33<01:18,  2.30s/it] 48%|████▊     | 30/63 [00:33<00:57,  1.75s/it] 49%|████▉     | 31/63 [00:33<00:43,  1.36s/it] 51%|█████     | 32/63 [00:34<00:33,  1.09s/it] 52%|█████▏    | 33/63 [00:34<00:27,  1.10it/s] 54%|█████▍    | 34/63 [00:35<00:22,  1.29it/s] 56%|█████▌    | 35/63 [00:38<00:44,  1.61s/it] 57%|█████▋    | 36/63 [00:39<00:34,  1.28s/it] 59%|█████▊    | 37/63 [00:42<00:51,  1.96s/it] 60%|██████    | 38/63 [00:43<00:37,  1.52s/it] 62%|██████▏   | 39/63 [00:47<00:51,  2.13s/it] 63%|██████▎   | 40/63 [00:47<00:37,  1.63s/it] 65%|██████▌   | 41/63 [00:51<00:48,  2.20s/it] 67%|██████▋   | 42/63 [00:54<00:54,  2.60s/it] 68%|██████▊   | 43/63 [00:55<00:39,  1.98s/it] 70%|██████▉   | 44/63 [00:58<00:46,  2.45s/it] 71%|███████▏  | 45/63 [00:59<00:34,  1.90s/it] 73%|███████▎  | 46/63 [01:02<00:40,  2.39s/it] 75%|███████▍  | 47/63 [01:03<00:29,  1.83s/it] 76%|███████▌  | 48/63 [01:06<00:35,  2.36s/it] 78%|███████▊  | 49/63 [01:07<00:25,  1.81s/it] 79%|███████▉  | 50/63 [01:11<00:30,  2.34s/it] 81%|████████  | 51/63 [01:11<00:21,  1.80s/it] 83%|████████▎ | 52/63 [01:12<00:15,  1.41s/it] 84%|████████▍ | 53/63 [01:15<00:20,  2.08s/it] 86%|████████▌ | 54/63 [01:16<00:14,  1.62s/it] 87%|████████▋ | 55/63 [01:19<00:17,  2.21s/it] 89%|████████▉ | 56/63 [01:20<00:12,  1.72s/it] 90%|█████████ | 57/63 [01:23<00:13,  2.27s/it] 92%|█████████▏| 58/63 [01:24<00:08,  1.75s/it] 94%|█████████▎| 59/63 [01:28<00:09,  2.30s/it] 95%|█████████▌| 60/63 [01:28<00:05,  1.79s/it] 97%|█████████▋| 61/63 [01:29<00:02,  1.40s/it] 98%|█████████▊| 62/63 [01:29<00:01,  1.14s/it]100%|██████████| 63/63 [01:33<00:00,  1.90s/it]100%|██████████| 63/63 [01:33<00:00,  1.48s/it]
-[STEP_BREAKDOWN] wall=6.82s  lm_callbacks=0.00s  parser_callbacks=0.06s  dafny_internal=6.76s  (99.1% in dafny/uninstrumented)
-[TIMING] end_of_example (cumulative) total=0.00s
-  MaskValidNextAndEos               0.00s  ( 97.9%)  calls=1     avg=   3.40ms
-  ChooseNextToken                   0.00s  (  2.1%)  calls=1     avg=   0.07ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.06s
-  IsValidPrefix.dafny                   0.01s  ( 20.5%)  calls=20    avg=   0.59ms
-  is_valid_prefix.total                 0.01s  ( 19.2%)  calls=25    avg=   0.44ms
-  is_valid_prefix.inc_parser            0.01s  ( 19.0%)  calls=20    avg=   0.55ms
-  ValidNextTokenCount.dafny             0.01s  ( 15.0%)  calls=6     avg=   1.44ms
-  accept_mask.total                     0.01s  ( 11.1%)  calls=7     avg=   0.92ms
-  accept_mask.dfa_lookup                0.00s  (  7.6%)  calls=6     avg=   0.74ms
-  IsCompletePrefix.dafny                0.00s  (  4.3%)  calls=6     avg=   0.42ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.3%)  calls=6     avg=   0.32ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=1     avg=   0.00ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.06s
-  IsValidPrefix.dafny                   0.01s  ( 20.5%)  calls=20    avg=   0.59ms
-  is_valid_prefix.total                 0.01s  ( 19.2%)  calls=25    avg=   0.44ms
-  is_valid_prefix.inc_parser            0.01s  ( 19.0%)  calls=20    avg=   0.55ms
-  ValidNextTokenCount.dafny             0.01s  ( 15.0%)  calls=6     avg=   1.44ms
-  accept_mask.total                     0.01s  ( 11.1%)  calls=7     avg=   0.92ms
-  accept_mask.dfa_lookup                0.00s  (  7.6%)  calls=6     avg=   0.74ms
-  IsCompletePrefix.dafny                0.00s  (  4.3%)  calls=6     avg=   0.42ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.3%)  calls=6     avg=   0.32ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=1     avg=   0.00ms
-  [EVAL]   Generated 61 tokens in 104.01s
-  [EVAL] Processing example 2/3...
-  [EVAL]   Running CSD strategy (max_steps=256)...
-Creating DFA mask store for Qwen2TokenizerFast and custom, may take more than 10 minutes. Caching at /home/aadivyar/csd-generation/cache/mask_stores/Qwen2TokenizerFast/grammar_mask_8900310015_151643.pkl.
-Ignore whitespace tokens is True
-  0%|          | 0/84 [00:00<?, ?it/s]  1%|          | 1/84 [00:01<02:16,  1.65s/it]  2%|▏         | 2/84 [00:05<03:48,  2.79s/it]  4%|▎         | 3/84 [00:08<04:14,  3.14s/it]  5%|▍         | 4/84 [00:09<02:47,  2.09s/it]  6%|▌         | 5/84 [00:09<01:59,  1.51s/it]  7%|▋         | 6/84 [00:10<01:29,  1.15s/it]  8%|▊         | 7/84 [00:10<01:11,  1.07it/s] 10%|▉         | 8/84 [00:11<00:59,  1.28it/s] 11%|█         | 9/84 [00:11<00:53,  1.41it/s] 12%|█▏        | 10/84 [00:12<00:46,  1.58it/s] 13%|█▎        | 11/84 [00:12<00:43,  1.67it/s] 14%|█▍        | 12/84 [00:13<00:40,  1.78it/s] 15%|█▌        | 13/84 [00:13<00:37,  1.87it/s] 17%|█▋        | 14/84 [00:14<00:36,  1.94it/s] 18%|█▊        | 15/84 [00:14<00:35,  1.94it/s] 19%|█▉        | 16/84 [00:15<00:34,  1.98it/s] 20%|██        | 17/84 [00:15<00:33,  2.01it/s] 21%|██▏       | 18/84 [00:16<00:32,  2.04it/s] 23%|██▎       | 19/84 [00:16<00:31,  2.05it/s] 24%|██▍       | 20/84 [00:17<00:31,  2.04it/s] 25%|██▌       | 21/84 [00:17<00:30,  2.06it/s] 26%|██▌       | 22/84 [00:17<00:29,  2.08it/s] 27%|██▋       | 23/84 [00:18<00:29,  2.06it/s] 29%|██▊       | 24/84 [00:18<00:28,  2.07it/s] 30%|██▉       | 25/84 [00:19<00:28,  2.08it/s] 31%|███       | 26/84 [00:19<00:27,  2.09it/s] 32%|███▏      | 27/84 [00:20<00:27,  2.08it/s] 33%|███▎      | 28/84 [00:20<00:28,  1.98it/s] 35%|███▍      | 29/84 [00:21<00:27,  2.01it/s] 36%|███▌      | 30/84 [00:21<00:27,  1.97it/s] 37%|███▋      | 31/84 [00:22<00:27,  1.92it/s] 38%|███▊      | 32/84 [00:23<00:27,  1.91it/s] 39%|███▉      | 33/84 [00:23<00:27,  1.85it/s] 40%|████      | 34/84 [00:24<00:27,  1.82it/s] 42%|████▏     | 35/84 [00:24<00:27,  1.78it/s] 43%|████▎     | 36/84 [00:25<00:27,  1.75it/s] 44%|████▍     | 37/84 [00:25<00:26,  1.75it/s] 45%|████▌     | 38/84 [00:26<00:26,  1.76it/s] 46%|████▋     | 39/84 [00:26<00:24,  1.85it/s] 48%|████▊     | 40/84 [00:27<00:23,  1.91it/s] 49%|████▉     | 41/84 [00:31<01:01,  1.43s/it] 50%|█████     | 42/84 [00:31<00:48,  1.15s/it] 51%|█████     | 43/84 [00:31<00:38,  1.06it/s] 52%|█████▏    | 44/84 [00:32<00:32,  1.22it/s] 54%|█████▎    | 45/84 [00:32<00:28,  1.38it/s] 55%|█████▍    | 46/84 [00:33<00:24,  1.54it/s] 56%|█████▌    | 47/84 [00:33<00:22,  1.66it/s] 57%|█████▋    | 48/84 [00:37<00:53,  1.49s/it] 58%|█████▊    | 49/84 [00:41<01:13,  2.10s/it] 60%|█████▉    | 50/84 [00:41<00:54,  1.62s/it] 61%|██████    | 51/84 [00:45<01:11,  2.18s/it] 62%|██████▏   | 52/84 [00:45<00:53,  1.67s/it] 63%|██████▎   | 53/84 [00:45<00:40,  1.31s/it] 64%|██████▍   | 54/84 [00:46<00:31,  1.06s/it] 65%|██████▌   | 55/84 [00:46<00:25,  1.13it/s] 67%|██████▋   | 56/84 [00:50<00:47,  1.69s/it] 68%|██████▊   | 57/84 [00:50<00:36,  1.34s/it] 69%|██████▉   | 58/84 [00:54<00:52,  2.00s/it] 70%|███████   | 59/84 [00:55<00:38,  1.54s/it] 71%|███████▏  | 60/84 [00:58<00:51,  2.16s/it] 73%|███████▎  | 61/84 [00:59<00:38,  1.65s/it] 74%|███████▍  | 62/84 [01:02<00:49,  2.23s/it] 75%|███████▌  | 63/84 [01:06<00:55,  2.66s/it] 76%|███████▌  | 64/84 [01:06<00:40,  2.03s/it] 77%|███████▋  | 65/84 [01:10<00:47,  2.49s/it] 79%|███████▊  | 66/84 [01:11<00:34,  1.91s/it] 80%|███████▉  | 67/84 [01:14<00:41,  2.42s/it] 81%|████████  | 68/84 [01:15<00:29,  1.85s/it] 82%|████████▏ | 69/84 [01:18<00:35,  2.38s/it] 83%|████████▎ | 70/84 [01:19<00:25,  1.83s/it] 85%|████████▍ | 71/84 [01:22<00:30,  2.37s/it] 86%|████████▌ | 72/84 [01:23<00:21,  1.81s/it] 87%|████████▋ | 73/84 [01:23<00:15,  1.43s/it] 88%|████████▊ | 74/84 [01:27<00:20,  2.08s/it] 89%|████████▉ | 75/84 [01:28<00:14,  1.62s/it] 90%|█████████ | 76/84 [01:31<00:17,  2.22s/it] 92%|█████████▏| 77/84 [01:32<00:12,  1.73s/it] 93%|█████████▎| 78/84 [01:35<00:13,  2.29s/it] 94%|█████████▍| 79/84 [01:36<00:08,  1.76s/it] 95%|█████████▌| 80/84 [01:40<00:09,  2.31s/it] 96%|█████████▋| 81/84 [01:40<00:05,  1.78s/it] 98%|█████████▊| 82/84 [01:41<00:02,  1.40s/it] 99%|█████████▉| 83/84 [01:41<00:01,  1.13s/it]100%|██████████| 84/84 [01:45<00:00,  1.89s/it]100%|██████████| 84/84 [01:45<00:00,  1.25s/it]
-[STEP_BREAKDOWN] wall=5.84s  lm_callbacks=0.01s  parser_callbacks=0.07s  dafny_internal=5.76s  (98.7% in dafny/uninstrumented)
-[TIMING] end_of_example (cumulative) total=0.01s
-  MaskValidNextAndEos               0.01s  ( 97.9%)  calls=2     avg=   3.07ms
-  ChooseNextToken                   0.00s  (  2.1%)  calls=2     avg=   0.07ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.07s
-  IsValidPrefix.dafny                   0.01s  ( 19.5%)  calls=24    avg=   0.55ms
-  is_valid_prefix.total                 0.01s  ( 18.3%)  calls=30    avg=   0.41ms
-  is_valid_prefix.inc_parser            0.01s  ( 18.1%)  calls=24    avg=   0.51ms
-  ValidNextTokenCount.dafny             0.01s  ( 15.7%)  calls=8     avg=   1.32ms
-  accept_mask.total                     0.01s  ( 11.7%)  calls=10    avg=   0.79ms
-  accept_mask.dfa_lookup                0.01s  (  8.2%)  calls=8     avg=   0.69ms
-  IsCompletePrefix.dafny                0.00s  (  5.1%)  calls=8     avg=   0.43ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.4%)  calls=8     avg=   0.29ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=2     avg=   0.00ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.07s
-  IsValidPrefix.dafny                   0.01s  ( 19.5%)  calls=24    avg=   0.55ms
-  is_valid_prefix.total                 0.01s  ( 18.3%)  calls=30    avg=   0.41ms
-  is_valid_prefix.inc_parser            0.01s  ( 18.1%)  calls=24    avg=   0.51ms
-  ValidNextTokenCount.dafny             0.01s  ( 15.7%)  calls=8     avg=   1.32ms
-  accept_mask.total                     0.01s  ( 11.7%)  calls=10    avg=   0.79ms
-  accept_mask.dfa_lookup                0.01s  (  8.2%)  calls=8     avg=   0.69ms
-  IsCompletePrefix.dafny                0.00s  (  5.1%)  calls=8     avg=   0.43ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.4%)  calls=8     avg=   0.29ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=2     avg=   0.00ms
-  [EVAL]   Generated 44 tokens in 114.64s
-  [EVAL] Processing example 3/3...
-  [EVAL]   Running CSD strategy (max_steps=256)...
-Creating DFA mask store for Qwen2TokenizerFast and custom, may take more than 10 minutes. Caching at /home/aadivyar/csd-generation/cache/mask_stores/Qwen2TokenizerFast/grammar_mask_1023081046_151643.pkl.
-Ignore whitespace tokens is True
-  0%|          | 0/35 [00:00<?, ?it/s]  3%|▎         | 1/35 [00:01<00:56,  1.66s/it]  6%|▌         | 2/35 [00:05<01:34,  2.87s/it]  9%|▊         | 3/35 [00:09<01:44,  3.27s/it] 11%|█▏        | 4/35 [00:09<01:08,  2.20s/it] 14%|█▍        | 5/35 [00:13<01:21,  2.72s/it] 17%|█▋        | 6/35 [00:16<01:27,  3.02s/it] 20%|██        | 7/35 [00:20<01:30,  3.25s/it] 23%|██▎       | 8/35 [00:21<01:04,  2.38s/it] 26%|██▌       | 9/35 [00:24<01:12,  2.79s/it] 29%|██▊       | 10/35 [00:25<00:51,  2.08s/it] 31%|███▏      | 11/35 [00:28<01:01,  2.55s/it] 34%|███▍      | 12/35 [00:29<00:44,  1.93s/it] 37%|███▋      | 13/35 [00:33<00:53,  2.45s/it] 40%|████      | 14/35 [00:36<00:58,  2.80s/it] 43%|████▎     | 15/35 [00:37<00:42,  2.11s/it] 46%|████▌     | 16/35 [00:40<00:48,  2.57s/it] 49%|████▊     | 17/35 [00:41<00:35,  1.97s/it] 51%|█████▏    | 18/35 [00:45<00:42,  2.48s/it] 54%|█████▍    | 19/35 [00:45<00:30,  1.89s/it] 57%|█████▋    | 20/35 [00:49<00:36,  2.45s/it] 60%|██████    | 21/35 [00:49<00:26,  1.88s/it] 63%|██████▎   | 22/35 [00:53<00:31,  2.43s/it] 66%|██████▌   | 23/35 [00:54<00:22,  1.86s/it] 69%|██████▊   | 24/35 [00:54<00:16,  1.47s/it] 71%|███████▏  | 25/35 [00:58<00:21,  2.13s/it] 74%|███████▍  | 26/35 [00:58<00:14,  1.65s/it] 77%|███████▋  | 27/35 [01:02<00:18,  2.26s/it] 80%|████████  | 28/35 [01:03<00:12,  1.76s/it] 83%|████████▎ | 29/35 [01:06<00:13,  2.33s/it] 86%|████████▌ | 30/35 [01:07<00:08,  1.79s/it] 89%|████████▊ | 31/35 [01:11<00:09,  2.36s/it] 91%|█████████▏| 32/35 [01:11<00:05,  1.81s/it] 94%|█████████▍| 33/35 [01:12<00:02,  1.41s/it] 97%|█████████▋| 34/35 [01:12<00:01,  1.14s/it]100%|██████████| 35/35 [01:16<00:00,  1.89s/it]100%|██████████| 35/35 [01:16<00:00,  2.18s/it]
-[STEP_BREAKDOWN] wall=5.06s  lm_callbacks=0.01s  parser_callbacks=0.11s  dafny_internal=4.94s  (97.6% in dafny/uninstrumented)
-[TIMING] end_of_example (cumulative) total=0.01s
-  MaskValidNextAndEos               0.01s  ( 97.5%)  calls=3     avg=   2.70ms
-  ChooseNextToken                   0.00s  (  2.5%)  calls=3     avg=   0.07ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.11s
-  ValidNextTokenCount.dafny             0.02s  ( 17.9%)  calls=12    avg=   1.70ms
-  IsValidPrefix.dafny                   0.02s  ( 16.8%)  calls=36    avg=   0.53ms
-  is_valid_prefix.total                 0.02s  ( 15.8%)  calls=45    avg=   0.40ms
-  is_valid_prefix.inc_parser            0.02s  ( 15.7%)  calls=36    avg=   0.49ms
-  accept_mask.total                     0.02s  ( 14.8%)  calls=15    avg=   1.12ms
-  accept_mask.dfa_lookup                0.01s  ( 11.6%)  calls=12    avg=   1.09ms
-  IsCompletePrefix.dafny                0.00s  (  4.3%)  calls=12    avg=   0.41ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.1%)  calls=12    avg=   0.29ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=3     avg=   0.00ms
-[PARSER_TIMING] end_of_example (cumulative) total=0.11s
-  ValidNextTokenCount.dafny             0.02s  ( 17.9%)  calls=12    avg=   1.70ms
-  IsValidPrefix.dafny                   0.02s  ( 16.8%)  calls=36    avg=   0.53ms
-  is_valid_prefix.total                 0.02s  ( 15.8%)  calls=45    avg=   0.40ms
-  is_valid_prefix.inc_parser            0.02s  ( 15.7%)  calls=36    avg=   0.49ms
-  accept_mask.total                     0.02s  ( 14.8%)  calls=15    avg=   1.12ms
-  accept_mask.dfa_lookup                0.01s  ( 11.6%)  calls=12    avg=   1.09ms
-  IsCompletePrefix.dafny                0.00s  (  4.3%)  calls=12    avg=   0.41ms
-  accept_mask.inc_parser_accepts        0.00s  (  3.1%)  calls=12    avg=   0.29ms
-  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=3     avg=   0.00ms
-  [EVAL]   Generated 36 tokens in 84.45s
-  ✗ Evaluation below threshold:
-    Accuracy: 0.0% (min: 99.0%)
-    Contains << >>: yes (required: yes)
-    Syntax: 66.7% (min: 0.0%)
-  Refining based on evaluation results...
-
-============================================================
-Attempt 3/3
-============================================================
-Strategy: // CSD_RATIONALE_BEGIN
-// Revised strategy for math word problems: force the answer to contain a
-// constrained arithmetic span early, and make the constrained generation much
-// more conservative to avoid malformed expressions. The previous strategy let
-// long unconstrained reasoning dominate and used multi-token constrained
-// generation, which produced low accuracy and occasional malformed spans.
-//
-// New design:
-// 1. If generation starts outside a constrained span, emit at most one
-//    unconstrained token. If that token is not "<<" and we still have budget,
-//    immediately open a constrained span ourselves. This guarantees presence of
-//    << >> and prevents long free-form rambling from consuming the budget.
-// 2. Inside a constrained span, never use wide multi-token constrained
-//    generation. Instead, generate exactly one parser-valid token at a time
-//    with `ConstrainedStep`, append it with `AppendConstrainedToken`, and close
-//    the span as soon as the parser says the expression is complete.
-// 3. EOS remains terminal everywhere.
-//
-// This trades some natural-language richness for much stronger syntax control
-// and much earlier commitment to a parser-validated arithmetic expression,
-// directly targeting the observed malformed constrained content and poor task
-// accuracy.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside branch, `UnconstrainedStep` either yields EOS
-//   and we break, or appends one free token while staying outside, so the
-//   implication is vacuous; if we then call `OpenConstrainedSpan`, it sets
-//   `currentConstrainedOut := []`, which is a valid parser prefix by
-//   precondition. In the inside-complete branch, `CloseConstrainedSpan` exits
-//   constrained mode, so the implication is vacuous. In the inside-incomplete
-//   branch, `ConstrainedStep` chooses a parser-valid next token (or EOS, which
-//   breaks), and `AppendConstrainedToken` preserves parser validity.
-// suffix: Outside constrained mode, the implication is vacuous after either a
-//   break or a free-token append; when `OpenConstrainedSpan` is called, the new
-//   constrained suffix is empty, and the length-0 suffix property holds. In the
-//   complete branch, `CloseConstrainedSpan` leaves constrained mode, so the
-//   implication is vacuous. In the one-token constrained branch,
-//   `AppendConstrainedToken` appends the same token to both `generated` and the
-//   constrained suffix, preserving exact suffix equality.
-// cost accounting: We keep `cost == 0` during the loop and assign `cost :=
-//   steps` at the end. Each non-break helper branch increments `steps` by the
-//   exact amount of generated tokens: +1 for `UnconstrainedStep`,
-//   `OpenConstrainedSpan`, `CloseConstrainedSpan`, and the constrained
-//   step+append branch. Break branches do not change `steps`. Since the loop
-//   guard enforces `steps < maxSteps` before any +1 action, final `cost <=
-//   maxSteps`.
-// progress: Every generating branch appends exactly one token and increments
-//   `steps` by 1: `UnconstrainedStep`, `OpenConstrainedSpan`,
-//   `CloseConstrainedSpan`, and the constrained single-token append branch. EOS
-//   branches break immediately without changing state. Therefore
-//   `|generated| <= |generatedPrefix| + steps` is preserved by simple linear
-//   arithmetic in all branches.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant insideConstrainedOut ==> generated[|generated| - |currentConstrainedOut|..] == currentConstrainedOut
-  invariant |generated| <= |generatedPrefix| + steps
-  invariant cost == 0
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var nextFree := helpers.UnconstrainedStep(lm, prompt, generated);
-    steps := steps + 1;
-    if nextFree == eosToken {
-      break;
-    } else if nextFree == "<<" {
-      generated := generated + [nextFree];
-      insideConstrainedOut := true;
-      currentConstrainedOut := [];
-    } else {
-      generated := generated + [nextFree];
-      if steps < maxSteps {
-        var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-        generated := openedGenerated;
-        insideConstrainedOut := openedInside;
-        currentConstrainedOut := openedCurrent;
-        steps := steps + 1;
-      }
-    }
-  } else {
-    var isComplete := parser.IsCompletePrefix(currentConstrainedOut);
-    if isComplete {
-      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-        lm, parser, generated, currentConstrainedOut
-      );
-      generated := closedGenerated;
-      insideConstrainedOut := closedInside;
-      currentConstrainedOut := closedCurrent;
-      steps := steps + 1;
-    } else {
-      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-      var constrainedPrompt := prompt + stablePrefix;
-      var next := helpers.ConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-      );
-      if next == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, next
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-        steps := steps + 1;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260427_202452_6fe09c/gsm_regression_20260427_203137_b9fb46
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 125
-Loading GSM-Symbolic dataset (config=main, split=test (limit=3) (random sample) (seed=125))...
-Loaded 3 examples
-Loading model: Qwen/Qwen2.5-Coder-7B-Instruct on cuda... (4-bit)
-  ✗ Evaluation failed: Some modules are dispatched on the CPU or the disk. Make sure you have enough GPU RAM to fit the quantized model. If you want to dispatch the model on the CPU or the disk while keeping these modules in 32-bit, you need to set `llm_int8_enable_fp32_cpu_offload=True` and pass a custom `device_map` to `from_pretrained`. Check https://huggingface.co/docs/transformers/main/en/main_classes/quantization#offload-between-cpu-and-gpu for more details. 
-  Refining based on evaluation error...
-
-============================================================
-FAILED after 3 attempts
-Total time: 421677.9ms
-============================================================
-Failure report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260427_202452_6fe09c/failure_report.json
-Latest run link (failed) updated: /home/aadivyar/csd-generation/outputs/generated-csd/runs/latest
-Synthesis failed after 3 attempt(s):
-
-Failure breakdown by stage:
-  - verification: 1
-  - evaluation: 2
-
-Individual attempt summaries:
-  Attempt 1: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(170,70): Error: a precondition for this call could not be proved
-    |
-170 |         var symbolOut, hitEos, stepsUsed2 := helpers.ConstrainedSymbol(
-    |                             ...
-  Attempt 2: ✗ Failed at evaluation
-    Error: Evaluation Results (3 examples):
-  Accuracy: 0.0% (0/3)
-  Contains << >>: yes
-  Syntax Rate: 66.7%
-  Total Time: 331.13s
-  Slowest Example Time: 6.82s
-
-Primary Failure Modes:
-  - other_observed_failur...
-  Attempt 3: ✗ Failed at evaluation
-    Error: Some modules are dispatched on the CPU or the disk. Make sure you have enough GPU RAM to fit the quantized model. If you want to dispatch the model on the CPU or the disk while keeping these modules i...
-
-Full report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260427_202452_6fe09c/failure_report.json
-
-============================================================
-SYNTHESIS FAILED
-============================================================
-Synthesis failed after 3 attempt(s):
-
-Failure breakdown by stage:
-  - verification: 1
-  - evaluation: 2
-
-Individual attempt summaries:
-  Attempt 1: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(170,70): Error: a precondition for this call could not be proved
-    |
-170 |         var symbolOut, hitEos, stepsUsed2 := helpers.ConstrainedSymbol(
-    |                             ...
-  Attempt 2: ✗ Failed at evaluation
-    Error: Evaluation Results (3 examples):
-  Accuracy: 0.0% (0/3)
-  Contains << >>: yes
-  Syntax Rate: 66.7%
-  Total Time: 331.13s
-  Slowest Example Time: 6.82s
-
-Primary Failure Modes:
-  - other_observed_failur...
-  Attempt 3: ✗ Failed at evaluation
-    Error: Some modules are dispatched on the CPU or the disk. Make sure you have enough GPU RAM to fit the quantized model. If you want to dispatch the model on the CPU or the disk while keeping these modules i...
-
-Full report saved to: /home/aadivyar/csd-generation/outputs/generated-csd/runs/20260427_202452_6fe09c/failure_report.json

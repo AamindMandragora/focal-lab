@@ -2701,7 +2701,7 @@ class SynthesisPipeline:
         with open(dafny_path, "w") as f:
             f.write(full_code)
 
-        # NOTE: We do NOT overwrite dafny/GeneratedCSD.dfy here because it contains
+        # NOTE: We do NOT overwrite library/GeneratedCSD.dfy here because it contains
         # the template markers (QWEN_INSERT_STRATEGY_HERE) needed for future runs.
         # The final Dafny code is saved in the run directory instead.
 

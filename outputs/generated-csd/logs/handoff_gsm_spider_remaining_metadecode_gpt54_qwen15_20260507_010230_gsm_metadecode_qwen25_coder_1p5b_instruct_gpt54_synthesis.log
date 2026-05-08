@@ -1,7 +1,0 @@
-Initializing synthesis pipeline...
-Setting up evaluator for dataset: gsm_symbolic
-  Generation model: gpt-5.4
-  Evaluation model: Qwen/Qwen2.5-Coder-1.5B-Instruct
-Generating initial strategy for: Solve GSM-Symbolic math word problems. Natural-language reasoning may stay outside constrained spans; for scoring, the required constrained region is the final answer only. The last <<...>> span must contain one valid symbolic arithmetic expression that answers the question. Do not require every intermediate calculation to be wrapped.
-
-Syntax salvage rule: if the strategy cannot confidently keep the next answer-producing computation semantically correct, prefer emitting a minimal grammar-valid constrained fallback such as <<0>> and closing the span rather than allowing malformed or unclosed constrained text. A wrong but grammar-valid fallback is better than an invalid span for this synthesis objective.
