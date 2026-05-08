@@ -41,7 +41,7 @@ class StrategyGenerator:
     DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct"
     
     # Path to the template file
-    TEMPLATE_PATH = Path(__file__).parent.parent / "dafny" / "GeneratedCSD.dfy"
+    TEMPLATE_PATH = Path(__file__).parent.parent / "library" / "GeneratedCSD.dfy"
     
     # Marker in template to replace
     STRATEGY_MARKER = "// QWEN_INSERT_STRATEGY_HERE"
@@ -192,7 +192,7 @@ class StrategyGenerator:
         if not self.TEMPLATE_PATH.exists():
             raise FileNotFoundError(
                 f"Template not found at {self.TEMPLATE_PATH}. "
-                "Make sure GeneratedCSD.dfy exists in the dafny/ directory."
+                "Make sure GeneratedCSD.dfy exists in the library/ directory."
             )
         return self.TEMPLATE_PATH.read_text()
     

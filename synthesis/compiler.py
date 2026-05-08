@@ -167,9 +167,9 @@ class DafnyCompiler:
             
             # Copy the VerifiedAgentSynthesis.dfy
             source_proof = self.PROOFS_DIR / "VerifiedAgentSynthesis.dfy"
-            # Fallback: check dafny/ directory if not in proofs/
+            # Fallback: check library/ directory if not in proofs/
             if not source_proof.exists():
-                source_proof = Path(__file__).parent.parent / "dafny" / "VerifiedAgentSynthesis.dfy"
+                source_proof = Path(__file__).parent.parent / "library" / "VerifiedAgentSynthesis.dfy"
 
             if source_proof.exists():
                 (proofs_dir / "VerifiedAgentSynthesis.dfy").write_text(
@@ -312,4 +312,3 @@ class DafnyCompiler:
         
         output_name = output_name or file_path.stem
         return self.compile(file_path.read_text(), output_name)
-

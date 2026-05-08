@@ -323,9 +323,9 @@ class DafnyVerifier:
             
             # Copy the VerifiedAgentSynthesis.dfy to temp location
             source_proof = self.PROOFS_DIR / "VerifiedAgentSynthesis.dfy"
-            # Fallback: check dafny/ directory if not in proofs/
+            # Fallback: check library/ directory if not in proofs/
             if not source_proof.exists():
-                source_proof = Path(__file__).parent.parent / "dafny" / "VerifiedAgentSynthesis.dfy"
+                source_proof = Path(__file__).parent.parent / "library" / "VerifiedAgentSynthesis.dfy"
             
             proof_source_text = ""
             if source_proof.exists():
@@ -346,7 +346,7 @@ class DafnyVerifier:
                     success=False,
                     errors=[VerificationError(
                         file="System", line=0, column=0,
-                        message=f"VerifiedAgentSynthesis.dfy not found in proofs/ or dafny/"
+                        message=f"VerifiedAgentSynthesis.dfy not found in proofs/ or library/"
                     )],
                     return_code=-1
                 )
@@ -431,4 +431,3 @@ class DafnyVerifier:
             )
         
         return self.verify(file_path.read_text())
-
