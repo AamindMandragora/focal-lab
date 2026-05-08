@@ -17,11 +17,11 @@ The project is organized so the core workflow is explicit:
 - `synthesis/verify/library/`: Dafny template/library used for generated strategies.
 - `synthesis/evaluate/`: evaluator, feedback loop orchestration, runtime helpers, and benchmarks.
 - `synthesis/evaluate/benchmarks/`: benchmark-specific dataset, environment, generation, and metrics code.
+- `synthesis/evaluate/benchmarks/*/eval_logic.py`: benchmark-specific evaluation delegation logic.
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
-- `dafny/`: local Dafny runtime/tooling bundle.
-- `generated/`: synthesis outputs (one folder per synthesized CSD run).
-- `baselines/`: baseline result artifacts (organized by old CSD/model/benchmark pairs).
+- `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
+- `outputs/baselines/`: baseline result artifacts.
 
 ## Pipeline Stages
 
@@ -35,18 +35,28 @@ The synthesis loop runs these stages repeatedly until thresholds are met or iter
 
 ## Output Contract
 
-Runtime artifacts now live at the repo root under two durable directories:
+Runtime artifacts now live under `outputs/`:
 
-- `generated/`
-- `baselines/`
+- `outputs/generated/`
+- `outputs/baselines/`
 
-Each synthesis run creates a dedicated folder inside `generated/`:
+Each synthesis run creates a dedicated folder inside `outputs/generated/`:
 
-- `generated/<output_name>_<timestamp>_<token>/dafny/`
-- `generated/<output_name>_<timestamp>_<token>/python/`
-- `generated/<output_name>_<timestamp>_<token>/results/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/dafny/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/python/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/results/`
 
 This makes it easy to inspect strategy source, compiled runtime code, and reports without mixing files across runs.
+
+Baseline storage is intentionally minimal:
+
+- One JSON file per `(baseline_strategy, model, benchmark)` pair under `outputs/baselines/`.
+- Only `accuracy`, `syntax_rate`, and per-question generated answers are stored.
+
+Fixed-strategy baselines use legacy codepaths:
+- `unconstrained` / `crane`: `legacy/CRANE`
+- `itergen`: `legacy/itergen`
+- `cars`: `legacy/cars` (SMILES)
 
 ## Quick Start
 
@@ -88,3 +98,19 @@ CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
 - Keep synthesis prompts as controlled-study inputs: task + formal tool contracts only.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
+
+## Path Configuration
+
+Path defaults are intentionally overrideable. Use CLI flags where available and env vars for runtime/config paths:
+
+- `--output-dir` / `CSD_OUTPUT_DIR`
+- `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
+- `--grammars-dir` / `CSD_GRAMMARS_DIR`
+- `--dafny-path` / `DAFNY_PATH`
+- `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)
+- `VERIFIED_AGENT_SYNTHESIS_DFY` / `DAFNY_PROOFS_DIR`
+- `CSD_SYNCODE_DIR`
+- `SPIDER_DATA_DIR`, `SPIDER_DB_DIR`, `SPIDER_TABLES_JSON`
+- `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY`
+- `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
+- `CSD_JSON_GRAMMAR_PATH`

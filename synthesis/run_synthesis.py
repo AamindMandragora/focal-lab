@@ -113,7 +113,14 @@ Examples:
         "--output-dir",
         type=Path,
         default=None,
-        help="Base output directory (default: generated/). Each run writes into a unique subfolder."
+        help="Base output directory (default: outputs/generated/). Each run writes into a unique subfolder."
+    )
+
+    parser.add_argument(
+        "--baseline-output-dir",
+        type=Path,
+        default=None,
+        help="Directory for baseline benchmark summaries (default: outputs/baselines/)"
     )
     
     parser.add_argument(
@@ -256,6 +263,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--grammars-dir",
+        type=Path,
+        default=None,
+        help="Optional override for built-in grammar directory (default: synthesis/evaluate/grammars or CSD_GRAMMARS_DIR)"
+    )
+
+    parser.add_argument(
         "--smiles-samples-per-class",
         type=int,
         default=10,
@@ -332,13 +346,27 @@ Examples:
     if args.output_dir:
         args.output_dir = Path(str(args.output_dir).replace("\\", "/"))
     else:
-        args.output_dir = Path(__file__).resolve().parent.parent / "generated"
+        args.output_dir = Path(
+            os.environ.get(
+                "CSD_OUTPUT_DIR",
+                str(Path(__file__).resolve().parent.parent / "outputs" / "generated"),
+            )
+        )
+    if args.baseline_output_dir:
+        args.baseline_output_dir = Path(str(args.baseline_output_dir).replace("\\", "/"))
+    else:
+        args.baseline_output_dir = Path(
+            os.environ.get(
+                "CSD_BASELINE_OUTPUT_DIR",
+                str(Path(__file__).resolve().parent.parent / "outputs" / "baselines"),
+            )
+        )
 
     # Root output layout:
-    # - generated/: synthesis run artifacts (dafny/python/results)
-    # - baselines/: benchmark runs for fixed baseline strategies/models
+    # - outputs/generated/: synthesis run artifacts (dafny/python/results)
+    # - outputs/baselines/: baseline benchmark summaries
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    (Path(__file__).resolve().parent.parent / "baselines").mkdir(parents=True, exist_ok=True)
+    args.baseline_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Import here to avoid loading heavy dependencies if just showing help
     from synthesis.generate.generator import StrategyGenerator
@@ -409,6 +437,7 @@ Examples:
         spider_split_file=args.spider_split_file,
         spider_split_name=args.spider_split_name,
         smiles_classes=args.smiles_classes,
+        grammars_dir=args.grammars_dir,
     )
 
     pipeline = SynthesisPipeline(

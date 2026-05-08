@@ -33,12 +33,17 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 def _vendored_spider_eval_dir() -> Path:
-    candidates = [
+    override = os.environ.get("SPIDER_EVAL_DIR")
+    candidates = []
+    if override:
+        override_path = Path(override).expanduser()
+        candidates.append(override_path.parent if override_path.name == "evaluation.py" else override_path)
+    candidates.extend([
         PROJECT_ROOT / "syncode" / "syncode" / "utils" / "sql_spider_eval",
         default_spider_data_dir(),
         Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval",
         Path.home() / "itergen" / "itergen" / "syncode" / "syncode" / "utils" / "sql_spider_eval",
-    ]
+    ])
     for candidate in candidates:
         tables_json = candidate / "evaluation_examples" / "examples" / "tables.json"
         databases = candidate / "databases"

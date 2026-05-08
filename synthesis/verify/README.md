@@ -31,8 +31,8 @@ Compilation is intentionally grouped here because:
 
 Compiled outputs are staged by the pipeline under each run directory in:
 
-- `generated/<run_id>/python/`
+- `outputs/generated/<run_id>/python/`
 
 The corresponding Dafny source snapshot is preserved in:
 
-- `generated/<run_id>/dafny/`
+- `outputs/generated/<run_id>/dafny/`
