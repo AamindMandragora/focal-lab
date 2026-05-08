@@ -32,9 +32,25 @@ Compile is implemented under `verify` because compilation is only valid after ve
 
 ## Artifact Ownership
 
-- Successful and failed run artifacts are written under repo-root `generated/`.
-- Baseline experiment artifacts are written under repo-root `baselines/`.
+- Successful and failed run artifacts are written under `outputs/generated/`.
+- Baseline experiment artifacts are written under `outputs/baselines/`.
 - `synthesis/` itself contains implementation, not experiment outputs.
+
+## Path Overrides
+
+Common filesystem/tool paths can be overridden via CLI flags or environment variables:
+
+- `--output-dir` or `CSD_OUTPUT_DIR`
+- `--baseline-output-dir` or `CSD_BASELINE_OUTPUT_DIR`
+- `--grammars-dir` or `CSD_GRAMMARS_DIR`
+- `--dafny-path` or `DAFNY_PATH`
+- `DAFNY_EXTRA_PATH` (colon-separated PATH entries for Dafny subprocesses)
+- `VERIFIED_AGENT_SYNTHESIS_DFY` or `DAFNY_PROOFS_DIR` (override proof include source)
+- `CSD_SYNCODE_DIR` (vendored Syncode root)
+- `SPIDER_DATA_DIR`, `SPIDER_DB_DIR`, `SPIDER_TABLES_JSON`
+- `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY` (Spider evaluator location)
+- `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
+- `CSD_JSON_GRAMMAR_PATH` (JSON grammar for smoke-test runner)
 
 ## Design Philosophy
 

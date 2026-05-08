@@ -7,6 +7,7 @@ Supports both permissive testing mode and real JSON parsing mode.
 """
 
 import importlib.util
+import os
 import sys
 import traceback
 import inspect
@@ -312,7 +313,10 @@ class StrategyRunner:
 
                 # Reuse the Syncode-backed parser utility used by evaluation.
                 from synthesis.evaluate.parser_utils import create_lark_dafny_parser
-                grammar_path = str(Path(__file__).parent / "grammars" / "json.lark")
+                grammar_path = os.environ.get(
+                    "CSD_JSON_GRAMMAR_PATH",
+                    str(Path(__file__).parent / "grammars" / "json.lark"),
+                )
                 ParserCls = create_lark_dafny_parser(
                     grammar_path,
                     VerifiedDecoderAgent,

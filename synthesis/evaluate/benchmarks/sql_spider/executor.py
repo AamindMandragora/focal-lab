@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from synthesis.evaluate.benchmarks.sql_spider.dataset import (
+    _vendored_spider_eval_dir,
     default_db_dir,
     default_tables_json,
     write_gold_file,
@@ -49,11 +50,16 @@ def _ensure_syncode_import_path() -> None:
 def _load_spider_evaluate():
     """Load the vendored Spider evaluator without relying on `syncode` package resolution."""
     repo_root = Path(__file__).parent.parent.parent
+    eval_override = os.environ.get("SPIDER_EVAL_PY")
+    eval_override_dir = os.environ.get("SPIDER_EVAL_DIR")
     candidates = [
+        Path(eval_override).expanduser() if eval_override else None,
+        (Path(eval_override_dir).expanduser() / "evaluation.py") if eval_override_dir else None,
+        _vendored_spider_eval_dir() / "evaluation.py",
         repo_root / "syncode" / "syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
         Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval" / "evaluation.py",
     ]
-    eval_path = next((path for path in candidates if path.exists()), None)
+    eval_path = next((path for path in candidates if path is not None and path.exists()), None)
     if eval_path is None:
         candidate_text = "\n".join(f"  - {path}" for path in candidates)
         raise FileNotFoundError(f"Could not find Spider evaluator. Checked:\n{candidate_text}")

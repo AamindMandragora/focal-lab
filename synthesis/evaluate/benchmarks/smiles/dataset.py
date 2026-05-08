@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence
 
 SMILES_CLASSES: tuple[str, ...] = ("acrylates", "chain_extenders", "isocyanates")
-DATA_DIR = Path(__file__).resolve().parent / "data"
+DATA_DIR = Path(
+    os.environ.get("SMILES_DATA_DIR", str(Path(__file__).resolve().parent / "data"))
+).expanduser()
+GRAMMAR_DIR = Path(
+    os.environ.get("SMILES_GRAMMAR_DIR", str(Path(__file__).resolve().parents[2] / "grammars"))
+).expanduser()
 
 
 def _normalize_classes(classes: Sequence[str] | str | None) -> list[str]:
@@ -40,7 +46,7 @@ def get_smiles_task(class_name: str) -> Dict[str, Any]:
     class_name = class_name.strip()
     if class_name not in SMILES_CLASSES:
         raise ValueError(f"Unknown SMILES class: {class_name}")
-    grammar_path = DATA_DIR / f"{class_name}.lark"
+    grammar_path = GRAMMAR_DIR / f"smiles_{class_name}.lark"
     prompt_path = DATA_DIR / f"{class_name}.txt"
     grammar_text = grammar_path.read_text()
     prompt = prompt_path.read_text()

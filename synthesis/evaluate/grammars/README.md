@@ -10,10 +10,13 @@ This directory stores Lark grammar files used to constrain token generation duri
 
 ## Active Grammar Families
 
-- GSM-Symbolic grammars (`gsm*.lark`, `math.lark`)
+- GSM-Symbolic grammar (`gsm.lark`)
 - SQL grammar (`sql.lark`)
-- SMILES grammar (`smiles.lark`)
-- Utility grammar variants (`json*.lark`) for parser/runtime support
+- SMILES class grammars:
+  - `smiles_acrylates.lark`
+  - `smiles_chain_extenders.lark`
+  - `smiles_isocyanates.lark`
+- Utility grammar for parser/runtime support (`json.lark`)
 
 ## Performance Note
 

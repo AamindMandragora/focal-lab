@@ -280,7 +280,7 @@ class SynthesisPipeline:
     6. Feedback-based refinement on failure
     """
 
-    DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "generated"
+    DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
 
     def __init__(
         self,
@@ -2261,7 +2261,7 @@ class SynthesisPipeline:
             runner = self.runner
 
         # Create an isolated output directory for this run. The directory layout is:
-        #   generated/<output_name>_<run_id>/
+        #   outputs/generated/<output_name>_<run_id>/
         #     - dafny/
         #     - python/
         #     - results/

@@ -65,7 +65,12 @@ def _tokenizer_cache_fingerprint(tokenizer) -> tuple[str, int]:
 
 
 def _ensure_syncode_import_path() -> None:
-    syncode_dir = Path(__file__).parent.parent.parent / "syncode"
+    syncode_dir = Path(
+        os.environ.get(
+            "CSD_SYNCODE_DIR",
+            str(Path(__file__).parent.parent.parent / "syncode"),
+        )
+    ).expanduser()
     # Vendored layout is synthesis/evaluate/syncode/syncode. We need
     # synthesis/evaluate/syncode on sys.path so imports like
     # `syncode.parsers` resolve correctly.

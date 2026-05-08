@@ -8,6 +8,7 @@ to enable feedback-driven refinement based on actual performance metrics.
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections import Counter
 
@@ -1170,6 +1171,7 @@ class Evaluator:
         spider_split_file: str | Path | None = None,
         spider_split_name: str = "train",
         smiles_classes: Optional[List[str]] = None,
+        grammars_dir: str | Path | None = None,
     ):
         """
         Initialize the evaluator.
@@ -1224,6 +1226,7 @@ class Evaluator:
         self.spider_split_file = Path(spider_split_file) if spider_split_file is not None else None
         self.spider_split_name = spider_split_name
         self.smiles_classes = smiles_classes
+        self.grammars_dir = Path(grammars_dir).expanduser() if grammars_dir is not None else None
 
         # Lazy-loaded components
         self._dataset = None
@@ -1298,36 +1301,23 @@ class Evaluator:
     def _get_grammar_file(self) -> Path:
         """Get the grammar file path for the dataset."""
         if self._grammar_file is None:
-            grammars_dir = Path(__file__).parent / "grammars"
-            if self.dataset_name == "gsm_symbolic":
-                self._grammar_file = grammars_dir / "gsm.lark"
-            elif self.dataset_name == "spider":
-                self._grammar_file = grammars_dir / "sql.lark"
-            elif self.dataset_name == "smiles":
-                from synthesis.evaluate.benchmarks.smiles.dataset import get_smiles_task
+            grammars_dir = self.grammars_dir or Path(
+                os.environ.get(
+                    "CSD_GRAMMARS_DIR",
+                    str(Path(__file__).parent / "grammars"),
+                )
+            ).expanduser()
+            from synthesis.evaluate.benchmarks.registry import get_logic
 
-                classes = self._normalize_smiles_classes()
-                if len(classes) != 1:
-                    raise ValueError(
-                        "SMILES CSD evaluation uses class-specific grammars; "
-                        "pass exactly one class via --smiles-classes."
-                    )
-                self._grammar_file = Path(get_smiles_task(classes[0])["grammar_path"])
-            else:
-                raise ValueError(f"Unknown dataset: {self.dataset_name}")
+            logic = get_logic(self.dataset_name)
+            self._grammar_file = logic.get_grammar_file(self, grammars_dir)
         return self._grammar_file
 
     def _normalize_smiles_classes(self) -> List[str]:
         """Return the selected SMILES classes as a normalized list."""
-        if self.smiles_classes is None:
-            from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES
+        from synthesis.evaluate.benchmarks.smiles.eval_logic import normalize_classes
 
-            return list(SMILES_CLASSES)
-        if isinstance(self.smiles_classes, str):
-            raw = [part.strip() for part in self.smiles_classes.split(",")]
-        else:
-            raw = [str(part).strip() for part in self.smiles_classes]
-        return [part for part in raw if part]
+        return normalize_classes(self)
 
     def _get_grammar_text(self) -> str:
         """Load and cache the active grammar text."""
@@ -1335,224 +1325,19 @@ class Evaluator:
             self._base_grammar_text = self._get_grammar_file().read_text()
         return self._base_grammar_text
 
-    def _get_gsm_allowed_variables(self, example: dict) -> List[str]:
-        """Return the numeric variable names allowed for one GSM example."""
-        if self.dataset_name != "gsm_symbolic":
-            return []
-
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import extract_variables_from_mapping
-
-        variable_types = example.get("variable_types") or {}
-        if not isinstance(variable_types, dict):
-            return []
-        return extract_variables_from_mapping(variable_types)
-
-    def _build_gsm_dynamic_parser(self, env: Dict[str, Any], example: dict):
-        """Create a per-example GSM parser restricted to CRANE's allowed variables."""
-        if self.dataset_name != "gsm_symbolic":
-            return None
-
-        allowed_variables = self._get_gsm_allowed_variables(example)
-        if not allowed_variables:
-            return None
-
-        from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_dynamic_grammar
-
-        cache_key = tuple(sorted(allowed_variables))
-        parser_factory = self._dynamic_parser_factory_cache.get(cache_key)
-        if parser_factory is None:
-            grammar_text = build_dynamic_grammar(self._get_grammar_text(), list(cache_key))
-            parser_factory = create_lark_dafny_parser(
-                grammar_text,
-                env["VerifiedDecoderAgent"],
-                env["_dafny"],
-                start="csd_start",
-                tokenizer=env["tokenizer"],
-            )
-            self._dynamic_parser_factory_cache[cache_key] = parser_factory
-
-        return parser_factory(env["lm"]._Tokens)
-
-    def _build_spider_dynamic_parser(self, env: Dict[str, Any], example: dict):
-        """
-        Return a SQL parser for CRANE/CSD generation on Spider.
-
-        Historically this narrowed the grammar per-example to the schema's
-        exact tables/columns. That was correct but catastrophically slow:
-        every unseen schema triggers a fresh syncode DFA mask store build
-        (O(vocab_size × grammar_states), 15-30 min per schema). Across 50
-        Spider examples × many iterations that's hours of rebuild time.
-
-        itergen's faster design uses a single base SQL grammar (cached
-        mask store) and enforces schema-awareness by runtime backtracking
-        in the iterator. We do the same here: return None so run_crane_csd
-        falls back to building a single parser from the base grammar_file,
-        whose DFA mask store is built once and cached forever.
-
-        Schema correctness is still measured: _exec_match_spider executes
-        the predicted query against the SQLite database and compares to
-        the gold query's rows, so invalid column/table references are
-        caught at scoring time regardless of the grammar used for decode.
-        """
-        return None
-
-    def _build_smiles_dynamic_parser(self, env: Dict[str, Any], example: dict):
-        if self.dataset_name != "smiles":
-            return None
-
-        from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
-
-        grammar_text = example.get("grammar_text", self._get_grammar_text())
-        class_name = str(example.get("class_name", "smiles"))
-        cache_key = ("smiles", class_name, grammar_text)
-        parser_factory = self._dynamic_parser_factory_cache.get(cache_key)
-        if parser_factory is None:
-            parser_factory = create_lark_dafny_parser(
-                grammar_text,
-                env["VerifiedDecoderAgent"],
-                env["_dafny"],
-                start="start",
-                tokenizer=env["tokenizer"],
-            )
-            self._dynamic_parser_factory_cache[cache_key] = parser_factory
-        return parser_factory(env["lm"]._Tokens)
-
-    def _extract_answer_spider(self, output: str) -> Optional[str]:
-        """Extract a SQL query: take the raw output up to the first blank line.
-
-        We no longer require <<...>> delimiters for Spider — the entire output
-        is the SQL query. If <<...>> happens to be present (legacy from the
-        old contract or strategy-imposed), we still strip them so the SQL
-        executes cleanly against SQLite.
-        """
-        if not output:
-            return None
-        raw = output.split("\n\n")[0]
-        cleaned = raw.replace("\n", " ").replace("\r", " ").strip()
-        # Strip stray legacy delimiters anywhere they appear.
-        cleaned = cleaned.replace("<<", " ").replace(">>", " ")
-        cleaned = " ".join(cleaned.split()).rstrip(";").strip()
-        return cleaned or None
-
-    def _exec_match_spider(
-        self,
-        pred_sql: Optional[str],
-        gold_sql: Optional[str],
-        example: dict,
-    ) -> bool:
-        """
-        Cheap per-example execution-match for the synthesis feedback loop.
-
-        Executes pred and gold on the example's SQLite database and compares
-        result sets (order-insensitive). Not as thorough as Spider's official
-        evaluator, but fast enough for per-iteration scoring. The CLI still
-        calls the full Spider evaluator at batch time.
-        """
-        if not pred_sql or not gold_sql:
-            return False
-
-        import sqlite3
-        from synthesis.evaluate.benchmarks.sql_spider.dataset import default_db_dir
-
-        db_id = example.get("db_id", "")
-        if not db_id:
-            return False
-        db_path = default_db_dir() / db_id / f"{db_id}.sqlite"
-        if not db_path.exists():
-            return False
-
-        def _run(sql: str):
-            try:
-                con = sqlite3.connect(str(db_path))
-                con.text_factory = lambda b: b.decode("utf-8", errors="ignore")
-                cur = con.cursor()
-                cur.execute(sql)
-                rows = cur.fetchall()
-                con.close()
-                return rows
-            except Exception:
-                return None
-
-        pred_rows = _run(pred_sql)
-        gold_rows = _run(gold_sql)
-        if pred_rows is None or gold_rows is None:
-            return False
-
-        # Order-insensitive bag comparison (matches Spider's default behavior
-        # unless the gold query has ORDER BY; we keep it simple here).
-        try:
-            return sorted(map(tuple, pred_rows)) == sorted(map(tuple, gold_rows))
-        except TypeError:
-            return list(map(tuple, pred_rows)) == list(map(tuple, gold_rows))
-
     def _get_syntax_parser(self, example: Optional[dict] = None):
         """Create or reuse a syntax parser for one example's allowed variables."""
-        from lark import Lark
-
-        if self.dataset_name == "smiles":
-            grammar_text = (
-                example.get("grammar_text", self._get_grammar_text())
-                if isinstance(example, dict)
-                else self._get_grammar_text()
-            )
-            cache_key = ("smiles", grammar_text)
-            parser = self._syntax_parser_cache.get(cache_key)
-            if parser is None:
-                parser = Lark(grammar_text, start="start", parser="lalr")
-                self._syntax_parser_cache[cache_key] = parser
-            return parser
-
-        if self.dataset_name != "gsm_symbolic" or example is None:
-            return Lark(self._get_grammar_text(), start="start", parser="lalr")
-
-        allowed_variables = self._get_gsm_allowed_variables(example)
-        if not allowed_variables:
-            return Lark(self._get_grammar_text(), start="start", parser="lalr")
-
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_dynamic_grammar
-
-        cache_key = tuple(sorted(allowed_variables))
-        parser = self._syntax_parser_cache.get(cache_key)
-        if parser is None:
-            grammar_text = build_dynamic_grammar(self._get_grammar_text(), list(cache_key))
-            parser = Lark(grammar_text, start="start", parser="lalr")
-            self._syntax_parser_cache[cache_key] = parser
-        return parser
+        logic = self._benchmark_logic()
+        return logic.get_syntax_parser(self, example)
 
     def _load_dataset_sample(self) -> list:
         """Load a sample of the dataset for evaluation."""
         if self._dataset is not None:
             return self._dataset
+        from synthesis.evaluate.benchmarks.registry import get_logic
 
-        if self.dataset_name == "gsm_symbolic":
-            from synthesis.evaluate.benchmarks.gsm_symbolic.dataset import load_gsm_from_crane_folder
-            ds = load_gsm_from_crane_folder(
-                crane_dir=self.gsm_source_dir,
-                limit=self.sample_size,
-                indices=self._load_gsm_split_indices(),
-            )
-            self._dataset = list(ds)
-        elif self.dataset_name == "spider":
-            from synthesis.evaluate.benchmarks.sql_spider.dataset import load_spider
-            split_indices = self._load_spider_split_indices()
-            ds = load_spider(
-                source="auto",
-                limit=self.sample_size,
-                random_sample=split_indices is None,
-                seed=self.sample_seed,
-                indices=split_indices,
-            )
-            self._dataset = list(ds)
-        elif self.dataset_name == "smiles":
-            from synthesis.evaluate.benchmarks.smiles.dataset import load_smiles
-
-            self._dataset = load_smiles(
-                classes=self._normalize_smiles_classes(),
-                samples_per_class=self.sample_size,
-            )
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset_name}")
+        logic = get_logic(self.dataset_name)
+        self._dataset = logic.load_dataset_sample(self)
 
         return self._dataset
 
@@ -1921,51 +1706,17 @@ class Evaluator:
 
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
-        if self.dataset_name == "gsm_symbolic":
-            symbolic = example.get("answer_parsed", "")
-            if symbolic:
-                return symbolic
-            answer_str = example.get("answer", "")
-            match = re.search(r"####\s*([-+]?\d*\.?\d+)", answer_str)
-            if match:
-                return match.group(1)
-            return answer_str
-        elif self.dataset_name == "spider":
-            return (example.get("query") or "").strip()
-        elif self.dataset_name == "smiles":
-            return str(example.get("class_name", ""))
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset_name}")
+        from synthesis.evaluate.benchmarks.registry import get_logic
+
+        logic = get_logic(self.dataset_name)
+        return logic.expected_answer(self, example)
 
     def _format_prompt(self, example: dict) -> Union[str, List[dict]]:
         """Format a dataset example as a prompt."""
-        if self.dataset_name == "gsm_symbolic":
-            from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
+        from synthesis.evaluate.benchmarks.registry import get_logic
 
-            question = example.get("question_parsed") or example.get("question", "")
-            return reasoning_with_symbolic_expr_prompt(question)
-        elif self.dataset_name == "spider":
-            db_id = example.get("db_id", "")
-            db_info = example.get("db_info", "")
-            question = example.get("question", "")
-            return (
-                "You are given a database schema and a question. "
-                "Write a SINGLE SQL query answering the question, using ONLY the tables and columns in the schema. "
-                "Emit the SQL on a single line. Stop after the query — no explanation, no code fences.\n\n"
-                "Example:\n"
-                "db_id: concert_singer\n"
-                "db_info: # singer ( singer_id , name , country , age )\n"
-                "question: How many singers do we have?\n"
-                "SQL: SELECT count(*) FROM singer\n\n"
-                f"db_id: {db_id}\n"
-                f"db_info: {db_info}\n"
-                f"question: {question}\n"
-                "SQL: "
-            )
-        elif self.dataset_name == "smiles":
-            return example.get("prompt", "")
-        else:
-            raise ValueError(f"Unknown dataset: {self.dataset_name}")
+        logic = get_logic(self.dataset_name)
+        return logic.format_prompt(self, example)
 
     def _contains_delimiters(self, output: str) -> bool:
         """Check if the output contains at least one non-empty << >> segment."""
@@ -2023,76 +1774,58 @@ class Evaluator:
         return all_valid, segments
 
     def _ensure_smiles_rdkit_available(self) -> None:
-        if self.dataset_name != "smiles":
-            return
-        from synthesis.evaluate.benchmarks.smiles.metrics import rdkit_available
-
-        if not rdkit_available():
-            raise RuntimeError(
-                "SMILES evaluation requires RDKit but it is not available in this environment. "
-                "Install RDKit before running smiles synthesis/evaluation."
-            )
+        logic = self._benchmark_logic()
+        logic.ensure_runtime_prereqs(self)
 
     def _compute_smiles_aux_metrics(
         self,
         sample_outputs: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        from synthesis.evaluate.benchmarks.smiles.metrics import smiles_trial_metrics
+        logic = self._benchmark_logic()
+        return logic.compute_aux_metrics(self, sample_outputs)
 
-        paper_metrics = smiles_trial_metrics(
-            sample_outputs,
-            target_unique_valid=100,
-            sample_cap=1000,
-        )
+    def _benchmark_logic(self):
+        from synthesis.evaluate.benchmarks.registry import get_logic
 
-        helper_events = [
-            event
-            for sample in sample_outputs
-            for event in (sample.get("helper_trace") or [])
-            if isinstance(event, dict)
-        ]
-        helper_count = len(helper_events)
-        open_close_helpers = {
-            "OpenConstrainedSpan",
-            "CloseConstrainedSpan",
-            "EnterObservedConstrainedSpan",
-        }
-        churn_calls = sum(
-            1 for event in helper_events if event.get("helper") in open_close_helpers
-        )
-        delimiter_churn_ratio = churn_calls / max(1, helper_count)
+        return get_logic(self.dataset_name)
 
-        tiny_spans = 0
-        for sample in sample_outputs:
-            smiles_eval = sample.get("smiles_eval") or {}
-            smiles = str(smiles_eval.get("smiles") or "")
-            if smiles and len(smiles) <= 3:
-                tiny_spans += 1
-        tiny_span_rate = tiny_spans / max(1, len(sample_outputs))
+    def _extract_actual_for_example(
+        self,
+        scored_output: str,
+        example: dict[str, Any],
+    ) -> tuple[Optional[str], str, Optional[dict[str, Any]]]:
+        logic = self._benchmark_logic()
+        actual, answer_source, aux = logic.extract_actual(self, scored_output, example)
+        return actual, answer_source, aux
 
-        max_steps_hits = sum(1 for sample in sample_outputs if sample.get("hit_max_steps"))
-        max_steps_hit_rate = max_steps_hits / max(1, len(sample_outputs))
+    def _is_correct_for_example(
+        self,
+        actual: Optional[str],
+        expected: str,
+        example: dict[str, Any],
+        aux: Optional[dict[str, Any]],
+        scored_output: str,
+    ) -> bool:
+        logic = self._benchmark_logic()
+        return bool(logic.is_correct(self, actual, expected, example, aux, scored_output))
 
-        penalty = min(
-            0.60,
-            0.35 * delimiter_churn_ratio
-            + 0.35 * tiny_span_rate
-            + 0.30 * max_steps_hit_rate,
-        )
-        membership = float(paper_metrics.get("membership", 0.0) or 0.0)
-        adjusted_membership = max(0.0, membership - penalty)
+    def _uses_hidden_chunks(self) -> bool:
+        logic = self._benchmark_logic()
+        return bool(logic.uses_hidden_chunks())
 
-        anti = {
-            "delimiter_churn_ratio": delimiter_churn_ratio,
-            "tiny_span_rate": tiny_span_rate,
-            "max_steps_hit_rate": max_steps_hit_rate,
-            "penalty": penalty,
-            "adjusted_membership_score": adjusted_membership,
-        }
-        return {
-            "smiles_paper_trial": paper_metrics,
-            "anti_degeneracy": anti,
-        }
+    def _example_syntax_pass(
+        self,
+        all_valid_syntax: bool,
+        segments: list[tuple[str, bool]],
+        used_hidden_chunk: bool,
+        aux: Optional[dict[str, Any]],
+    ) -> bool:
+        logic = self._benchmark_logic()
+        return bool(logic.example_syntax_pass(all_valid_syntax, segments, used_hidden_chunk, aux))
+
+    def _accuracy_applicable_for_example(self, aux: Optional[dict[str, Any]]) -> bool:
+        logic = self._benchmark_logic()
+        return bool(logic.accuracy_applicable(aux))
 
     def evaluate_sample(
         self,
@@ -2127,14 +1860,8 @@ class Evaluator:
             dataset = self._load_dataset_sample()
             env = self._setup_environment(compiled_module_path)
 
-            if self.dataset_name == "gsm_symbolic":
-                from synthesis.evaluate.benchmarks.gsm_symbolic.generation import run_crane_csd
-            elif self.dataset_name == "spider":
-                from synthesis.evaluate.benchmarks.sql_spider.generation import run_crane_csd
-            elif self.dataset_name == "smiles":
-                from synthesis.evaluate.benchmarks.smiles.generation import run_crane_csd
-            else:
-                raise ValueError(f"Unknown dataset: {self.dataset_name}")
+            logic = self._benchmark_logic()
+            run_crane_csd = logic.get_generation_runner()
 
             num_correct = 0
             all_examples_contain_delimiters = True
@@ -2144,12 +1871,12 @@ class Evaluator:
 
             def _accuracy_upper_bound() -> float:
                 remaining = max(0, total_planned_examples - len(sample_outputs))
-                if self.dataset_name == "smiles":
-                    # SMILES accuracy excludes syntax-invalid molecules from
-                    # the denominator, so the best future case is that every
-                    # remaining attempt is syntax-valid and class-correct.
-                    return (num_correct + remaining) / max(1, num_accuracy_examples + remaining)
-                return (num_correct + remaining) / max(1, total_planned_examples)
+                return logic.accuracy_upper_bound(
+                    num_correct,
+                    remaining,
+                    num_accuracy_examples,
+                    total_planned_examples,
+                )
 
             def _target_unreachable() -> bool:
                 return min_accuracy is not None and min_accuracy > 0.0 and _accuracy_upper_bound() < min_accuracy
@@ -2161,20 +1888,17 @@ class Evaluator:
                     (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
                     default=0.0,
                 )
-                if self.dataset_name == "smiles":
-                    accuracy_denominator = num_accuracy_examples
-                    accuracy_definition = "class_membership_among_syntax_valid_molecules"
-                    invalid_excluded = evaluated_count - num_accuracy_examples
-                else:
-                    accuracy_denominator = total_planned_examples
-                    accuracy_definition = "correct_examples_over_all_examples"
-                    invalid_excluded = 0
-                upper_bound = _accuracy_upper_bound()
-                aux_metrics = (
-                    self._compute_smiles_aux_metrics(sample_outputs)
-                    if self.dataset_name == "smiles"
-                    else {}
+                accuracy_denominator = logic.final_accuracy_denominator(
+                    total_planned_examples,
+                    num_accuracy_examples,
                 )
+                accuracy_definition = logic.accuracy_definition()
+                invalid_excluded = logic.invalid_outputs_excluded(
+                    evaluated_count,
+                    num_accuracy_examples,
+                )
+                upper_bound = _accuracy_upper_bound()
+                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
                 aux_metrics["early_stop"] = {
                     "reason": "target_accuracy_unreachable",
                     "target_accuracy": min_accuracy,
@@ -2209,7 +1933,7 @@ class Evaluator:
                 example_start = time.time()
                 prompt = self._format_prompt(example)
                 expected = self._get_expected_answer(example)
-                smiles_eval: Optional[dict[str, Any]] = None
+                benchmark_aux: Optional[dict[str, Any]] = None
 
                 try:
                     print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
@@ -2220,15 +1944,7 @@ class Evaluator:
                             max_steps=self.max_steps,
                             step_token_budget=self.step_token_budget,
                             grammar_file=self._get_grammar_file(),
-                            dynamic_parser=(
-                                self._build_gsm_dynamic_parser(env, example)
-                                if self.dataset_name == "gsm_symbolic"
-                                else self._build_spider_dynamic_parser(env, example)
-                                if self.dataset_name == "spider"
-                                else self._build_smiles_dynamic_parser(env, example)
-                                if self.dataset_name == "smiles"
-                                else None
-                            ),
+                            dynamic_parser=logic.build_dynamic_parser(self, env, example),
                         )
                     example_time = time.time() - example_start
                     print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
@@ -2239,62 +1955,21 @@ class Evaluator:
                         else output_text
                     )
 
-                    if self.dataset_name == "gsm_symbolic":
-                        expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
-                        actual = expr_matches[-1].strip() if expr_matches else None
-                        answer_source = "last_visible_span" if expr_matches else "none"
-                    elif self.dataset_name == "smiles":
-                        from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
-
-                        class_name = example.get("class_name", "smiles")
-                        smiles_eval = evaluate_smiles_output(
-                            class_name,
-                            scored_output,
-                            example.get("grammar_text", self._get_grammar_text()),
-                            example.get("prompt_exemplars", []),
-                            require_rdkit=True,
-                        )
-                        actual = smiles_eval["smiles"] or None
-                        answer_source = "smiles_eval"
-                    elif self.dataset_name == "spider":
-                        actual = self._extract_answer_spider(scored_output)
-                        answer_source = "hidden_or_task_extractor" if actual is not None else "none"
-                    else:
-                        raise ValueError(f"Unknown dataset: {self.dataset_name}")
-
-                    if self.dataset_name == "gsm_symbolic":
-                        vt = example.get("variable_types", {})
-                        if isinstance(vt, str):
-                            try:
-                                vt = eval(vt)
-                            except Exception:
-                                vt = {}
-                        if vt and example.get("answer_parsed"):
-                            is_correct = self._gsm_symbolic_equivalence(actual, expected, vt)
-                        else:
-                            numeric_actual = self._extract_answer_gsm(scored_output)
-                            if actual is None and numeric_actual is not None:
-                                answer_source = "text_fallback"
-                            numeric_expected = re.search(r"####\s*([-+]?\d*\.?\d+)", example.get("answer", ""))
-                            if numeric_expected:
-                                is_correct = self._answers_match(numeric_actual, numeric_expected.group(1))
-                            else:
-                                is_correct = self._answers_match(numeric_actual, expected)
-                    elif self.dataset_name == "smiles":
-                        is_correct = bool(smiles_eval and smiles_eval.get("unique_valid_candidate"))
-                    elif self.dataset_name == "spider":
-                        is_correct = self._exec_match_spider(actual, expected, example)
-                    else:
-                        raise ValueError(f"Unknown dataset: {self.dataset_name}")
+                    actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
+                    is_correct = self._is_correct_for_example(
+                        actual,
+                        expected,
+                        example,
+                        benchmark_aux,
+                        scored_output,
+                    )
 
                     visible_delimiters = self._contains_delimiters(scored_output)
                     used_hidden_chunk = bool(constrained_segments) or any(
                         event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
                         for event in (helper_trace or [])
                     )
-                    contains_delimiters = (
-                        used_hidden_chunk if self.dataset_name in {"spider", "smiles"} else visible_delimiters
-                    )
+                    contains_delimiters = used_hidden_chunk if self._uses_hidden_chunks() else visible_delimiters
                     all_examples_contain_delimiters = (
                         all_examples_contain_delimiters and contains_delimiters
                     )
@@ -2305,25 +1980,21 @@ class Evaluator:
                     # - SMILES: the full output is the generated molecule string.
                     # - Spider: chunks are internal/hidden; visible delimiter tokens are not
                     #   part of the answer contract, so count parser-governed chunk usage.
-                    if self.dataset_name == "spider":
-                        example_syntax_pass = used_hidden_chunk
-                    elif self.dataset_name == "smiles":
-                        example_syntax_pass = bool(smiles_eval and smiles_eval.get("syntax_valid"))
-                    else:
-                        example_syntax_pass = bool(segments) and all_valid_syntax
-                    accuracy_applicable = (
-                        bool(smiles_eval.get("accuracy_applicable"))
-                        if self.dataset_name == "smiles"
-                        else True
+                    example_syntax_pass = self._example_syntax_pass(
+                        all_valid_syntax,
+                        segments,
+                        used_hidden_chunk,
+                        benchmark_aux,
                     )
+                    accuracy_applicable = self._accuracy_applicable_for_example(benchmark_aux)
                     if accuracy_applicable:
                         num_accuracy_examples += 1
                     if is_correct:
                         num_correct += 1
                     num_examples_syntax_pass += int(example_syntax_pass)
                     example_syntax_rate = 1.0 if example_syntax_pass else 0.0
-                    if self.dataset_name == "smiles":
-                        visible_span_lengths = [len((smiles_eval or {}).get("smiles", "").split())] if actual else []
+                    if self._uses_hidden_chunks() and self.dataset_name == "smiles":
+                        visible_span_lengths = [len((benchmark_aux or {}).get("smiles", "").split())] if actual else []
                         valid_visible_span_lengths = visible_span_lengths if example_syntax_pass else []
                         num_valid_visible_spans = 1 if example_syntax_pass and actual else 0
                         segments = [(actual or "", example_syntax_pass)] if actual else []
@@ -2355,7 +2026,7 @@ class Evaluator:
                         "contains_delimiters": contains_delimiters,
                         "visible_delimiters": visible_delimiters,
                         "used_constrained_chunk": used_hidden_chunk,
-                        "uses_hidden_chunks": self.dataset_name in {"spider", "smiles"},
+                        "uses_hidden_chunks": self._uses_hidden_chunks(),
                         "is_syntax_valid": example_syntax_pass,
                         "syntax_rate": example_syntax_rate,
                         "num_visible_spans": len(segments),
@@ -2370,10 +2041,10 @@ class Evaluator:
                             and gen_time > self.max_seconds_per_example
                         ),
                         "helper_trace": helper_trace,
-                        "smiles_eval": smiles_eval,
+                        "smiles_eval": benchmark_aux if self.dataset_name == "smiles" else None,
                     }
                     if self.dataset_name == "smiles":
-                        sample["smiles_eval"] = smiles_eval
+                        sample["smiles_eval"] = benchmark_aux
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
                     if _target_unreachable():
                         upper_bound = _accuracy_upper_bound()
@@ -2403,11 +2074,11 @@ class Evaluator:
                         "answer_source": "none",
                         "has_extracted_answer": False,
                         "is_correct": False,
-                        "accuracy_applicable": self.dataset_name != "smiles",
+                        "accuracy_applicable": self._accuracy_applicable_for_example(None),
                         "contains_delimiters": False,
                         "visible_delimiters": False,
                         "used_constrained_chunk": False,
-                        "uses_hidden_chunks": self.dataset_name in {"spider", "smiles"},
+                        "uses_hidden_chunks": self._uses_hidden_chunks(),
                         "is_syntax_valid": False,
                         "syntax_rate": 0.0,
                         "num_visible_spans": 0,
@@ -2443,29 +2114,22 @@ class Evaluator:
                         )
                         return EvaluationResult(
                             success=True,
-                            accuracy=(
-                                num_correct / max(1, num_accuracy_examples)
-                                if self.dataset_name == "smiles"
-                                else num_correct / max(1, evaluated_count)
+                            accuracy=num_correct / max(
+                                1,
+                                logic.final_accuracy_denominator(evaluated_count, num_accuracy_examples),
                             ),
                             contains_delimiters=False,
                             syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
                             num_examples=evaluated_count,
                             num_correct=num_correct,
-                            accuracy_denominator=(
-                                num_accuracy_examples
-                                if self.dataset_name == "smiles"
-                                else evaluated_count
+                            accuracy_denominator=logic.final_accuracy_denominator(
+                                evaluated_count,
+                                num_accuracy_examples,
                             ),
-                            accuracy_definition=(
-                                "class_membership_among_syntax_valid_molecules"
-                                if self.dataset_name == "smiles"
-                                else "correct_examples_over_all_examples"
-                            ),
-                            invalid_outputs_excluded_from_accuracy=(
-                                evaluated_count - num_accuracy_examples
-                                if self.dataset_name == "smiles"
-                                else 0
+                            accuracy_definition=logic.accuracy_definition(),
+                            invalid_outputs_excluded_from_accuracy=logic.invalid_outputs_excluded(
+                                evaluated_count,
+                                num_accuracy_examples,
                             ),
                             total_time_seconds=total_time,
                             max_sample_time_seconds=max_sample_time,
@@ -2474,31 +2138,21 @@ class Evaluator:
                                 f"the {self.max_seconds_per_example:.2f}s runtime budget."
                             ),
                             sample_outputs=sample_outputs,
-                            aux_metrics=(
-                                self._compute_smiles_aux_metrics(sample_outputs)
-                                if self.dataset_name == "smiles"
-                                else {}
-                            ),
+                            aux_metrics=self._compute_smiles_aux_metrics(sample_outputs),
                         )
 
             total_time = time.time() - start_time
             num_examples = len(dataset)
             max_sample_time = max((float(sample.get("time_seconds", 0.0)) for sample in sample_outputs), default=0.0)
-            aux_metrics = (
-                self._compute_smiles_aux_metrics(sample_outputs)
-                if self.dataset_name == "smiles"
-                else {}
+            aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
+            accuracy_denominator = logic.final_accuracy_denominator(
+                num_examples,
+                num_accuracy_examples,
             )
-            accuracy_denominator = (
-                num_accuracy_examples if self.dataset_name == "smiles" else num_examples
-            )
-            accuracy_definition = (
-                "class_membership_among_syntax_valid_molecules"
-                if self.dataset_name == "smiles"
-                else "correct_examples_over_all_examples"
-            )
-            invalid_excluded = (
-                num_examples - num_accuracy_examples if self.dataset_name == "smiles" else 0
+            accuracy_definition = logic.accuracy_definition()
+            invalid_excluded = logic.invalid_outputs_excluded(
+                num_examples,
+                num_accuracy_examples,
             )
 
             return EvaluationResult(

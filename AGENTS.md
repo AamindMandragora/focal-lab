@@ -37,6 +37,7 @@ Disallowed prompt content:
 
 - Always compare synthesized strategy performance against a CRANE baseline on the same model/split/sample settings before claiming success.
 - Maintain high syntax/format validity while improving accuracy.
+- Keep benchmark-specific evaluation behavior in `synthesis/evaluate/benchmarks/*/eval_logic.py` and keep `synthesis/evaluate/evaluator.py` focused on orchestration/delegation.
 
 ## Performance Constraint
 
@@ -44,6 +45,7 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 
 ## Operational Defaults
 
-- Prefer GPUs `1,2` for local runs unless intentionally using another allocation.
+- Prefer GPUs `2,3` for local runs unless intentionally using another allocation.
 - Keep changes minimal and localized.
 - Do not remove or alter formal contracts in Dafny files unless required by the task.
+- Always update the `README.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes.

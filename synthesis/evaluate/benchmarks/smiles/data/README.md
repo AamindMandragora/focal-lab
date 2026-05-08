@@ -4,8 +4,12 @@ This directory holds class-specific assets used by the SMILES benchmark implemen
 
 ## Asset Types
 
-- `.lark` files: grammar definitions for each molecule class.
 - `.txt` files: class exemplars and data snippets used during prompting/evaluation.
+
+Class grammars live in `synthesis/evaluate/grammars/` as:
+- `smiles_acrylates.lark`
+- `smiles_chain_extenders.lark`
+- `smiles_isocyanates.lark`
 
 ## Current Classes
 

@@ -12,22 +12,39 @@ import tempfile
 
 
 def _dafny_subprocess_env() -> dict:
-    """Return env for dafny subprocesses with /opt/anaconda/bin prepended to PATH.
+    """Return env for Dafny subprocesses with optional extra PATH entries.
 
-    Dafny 4.x requires a `z3` binary discoverable on PATH (or next to the dafny
-    binary). Our install has no bundled z3; /opt/anaconda/bin/z3 (4.12.2) works.
+    Configure via `DAFNY_EXTRA_PATH`, a colon-separated list of directories
+    prepended to PATH before running Dafny. If unset, we keep the historical
+    default `/opt/anaconda/bin` for compatibility with local z3 installs.
     """
     env = os.environ.copy()
-    extra = "/opt/anaconda/bin"
+    extra = os.environ.get("DAFNY_EXTRA_PATH", "/opt/anaconda/bin")
+    extra_entries = [entry for entry in extra.split(":") if entry]
     current = env.get("PATH", "")
-    if extra not in current.split(":"):
-        env["PATH"] = f"{extra}:{current}" if current else extra
+    current_entries = current.split(":") if current else []
+    prepend_entries = [entry for entry in extra_entries if entry not in current_entries]
+    if prepend_entries:
+        env["PATH"] = ":".join(prepend_entries + current_entries)
     return env
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 import secrets
 from typing import Optional
+
+
+def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
+    """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
+    explicit_file = os.environ.get("VERIFIED_AGENT_SYNTHESIS_DFY")
+    if explicit_file:
+        return Path(explicit_file).expanduser()
+
+    proofs_dir_override = os.environ.get("DAFNY_PROOFS_DIR")
+    if proofs_dir_override:
+        return Path(proofs_dir_override).expanduser() / "VerifiedAgentSynthesis.dfy"
+
+    return default_proofs_dir / "VerifiedAgentSynthesis.dfy"
 
 
 @dataclass
@@ -78,7 +95,7 @@ class DafnyCompiler:
     PROOFS_DIR = Path(__file__).parent.parent.parent / "proofs"
     
     # Default output directory (run-specific compiler directories are set by the pipeline).
-    DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "generated"
+    DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
     
     # Regex pattern for parsing Dafny errors
     ERROR_PATTERN = re.compile(
@@ -166,7 +183,7 @@ class DafnyCompiler:
             proofs_dir.mkdir()
             
             # Copy the VerifiedAgentSynthesis.dfy
-            source_proof = self.PROOFS_DIR / "VerifiedAgentSynthesis.dfy"
+            source_proof = _resolve_verified_agent_synthesis_path(self.PROOFS_DIR)
             # Fallback: check library/ directory if not in proofs/
             if not source_proof.exists():
                 source_proof = Path(__file__).parent / "library" / "VerifiedAgentSynthesis.dfy"
