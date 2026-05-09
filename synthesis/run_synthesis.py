@@ -337,6 +337,105 @@ Examples:
         help="Disable torch.compile and CUDA graphs in vLLM for stability (default: true)"
     )
 
+    parser.add_argument(
+        "--adaptive-helper-mask",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable empirical helper-call masking/pruning in synthesis prompts (default: true)"
+    )
+
+    parser.add_argument(
+        "--helper-selection-policy",
+        type=str,
+        choices=["utility", "bandit"],
+        default="utility",
+        help="Helper selection policy for adaptive masking (default: utility)"
+    )
+
+    parser.add_argument(
+        "--helper-mask-min-evals",
+        type=int,
+        default=4,
+        help="Minimum evaluated attempts before helper pruning activates (default: 4)"
+    )
+
+    parser.add_argument(
+        "--helper-mask-min-uses",
+        type=int,
+        default=2,
+        help="Minimum helper usage count before that helper can be pruned (default: 2)"
+    )
+
+    parser.add_argument(
+        "--helper-mask-margin",
+        type=float,
+        default=0.25,
+        help="Prune helpers whose mean utility is below run mean by this margin (default: 0.25)"
+    )
+
+    parser.add_argument(
+        "--helper-mask-max-disabled",
+        type=int,
+        default=6,
+        help="Maximum helpers disabled by empirical pruning in a run (default: 6)"
+    )
+
+    parser.add_argument(
+        "--helper-bandit-min-evals",
+        type=int,
+        default=3,
+        help="Minimum evaluated attempts before bandit helper selection activates (default: 3)"
+    )
+
+    parser.add_argument(
+        "--helper-bandit-top-k",
+        type=int,
+        default=6,
+        help="Number of prunable helpers kept active under bandit selection (default: 6)"
+    )
+
+    parser.add_argument(
+        "--helper-bandit-ucb-c",
+        type=float,
+        default=0.35,
+        help="UCB exploration coefficient for bandit helper selection (default: 0.35)"
+    )
+
+    parser.add_argument(
+        "--helper-bandit-explore-untried",
+        type=int,
+        default=1,
+        help="Number of unseen helpers to force-explore per selection step (default: 1)"
+    )
+
+    parser.add_argument(
+        "--refinement-beam-size",
+        type=int,
+        default=1,
+        help="Number of refinement candidates sampled per failure (default: 1)"
+    )
+
+    parser.add_argument(
+        "--local-neighborhood-refinement",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Prefer local strategy edits when selecting among beam candidates (default: true)"
+    )
+
+    parser.add_argument(
+        "--max-local-edit-ratio",
+        type=float,
+        default=0.65,
+        help="Soft local-edit bound for beam selection as changed-lines ratio (default: 0.65)"
+    )
+
+    parser.add_argument(
+        "--beam-verify-candidates",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Verify beam candidates before selecting one (default: true)"
+    )
+
     args = parser.parse_args()
 
     if args.generation_backend == "vllm" or args.eval_backend == "vllm":
@@ -455,6 +554,20 @@ Examples:
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
+        adaptive_helper_mask=args.adaptive_helper_mask,
+        helper_selection_policy=args.helper_selection_policy,
+        helper_mask_min_evals=args.helper_mask_min_evals,
+        helper_mask_min_uses=args.helper_mask_min_uses,
+        helper_mask_margin=args.helper_mask_margin,
+        helper_mask_max_disabled=args.helper_mask_max_disabled,
+        helper_bandit_min_evals=args.helper_bandit_min_evals,
+        helper_bandit_top_k=args.helper_bandit_top_k,
+        helper_bandit_ucb_c=args.helper_bandit_ucb_c,
+        helper_bandit_explore_untried=args.helper_bandit_explore_untried,
+        refinement_beam_size=args.refinement_beam_size,
+        local_neighborhood_refinement=args.local_neighborhood_refinement,
+        max_local_edit_ratio=args.max_local_edit_ratio,
+        beam_verify_candidates=args.beam_verify_candidates,
     )
     
     # Run synthesis

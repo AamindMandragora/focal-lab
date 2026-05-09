@@ -1,4 +1,4 @@
-include "VerifiedAgentSynthesis.dfy"
+include "/home/advayth2/projects/verified-agent-synthesis/synthesis/verify/library/VerifiedAgentSynthesis.dfy"
 
 module GeneratedCSD {
   import opened VerifiedDecoderAgent

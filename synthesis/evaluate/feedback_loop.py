@@ -6,6 +6,7 @@ iterative refinement based on errors.
 """
 
 import json
+import math
 import os
 import re
 import secrets
@@ -14,11 +15,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from ..verify.compiler import CompilationResult, DafnyCompiler
 from .evaluator import Evaluator, EvaluationResult
 from ..generate.generator import StrategyGenerator
+from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
 from .runner import RuntimeResult, StrategyRunner
 from ..verify.verifier import DafnyVerifier, VerificationResult
@@ -27,6 +29,7 @@ from ..verify.verifier import DafnyVerifier, VerificationResult
 class FailureStage(Enum):
     """Stage where synthesis attempt failed."""
 
+    SEARCH_CONTRACT = "search_contract"
     VERIFICATION = "verification"
     COMPILATION = "compilation"
     RUNTIME = "runtime"
@@ -281,6 +284,39 @@ class SynthesisPipeline:
     """
 
     DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
+    NON_PRUNABLE_HELPERS = {
+        "UnconstrainedStep",
+        "ConstrainedStep",
+        "AppendConstrainedToken",
+        "OpenConstrainedSpan",
+        "EnterObservedConstrainedSpan",
+        "CloseConstrainedSpan",
+        "IsTokenValidNext",
+        "ValidTokenCount",
+        "DeadEndDetection",
+        "TopValidCandidates",
+        "RollbackConstrainedSuffix",
+        "FlattenTokenGroups",
+        "GroupContaining",
+        "IntersectTokenSets",
+        "SubtractTokenSets",
+        "ExtractAfterKeyword",
+        "LastTokenBefore",
+    }
+    PRUNABLE_HELPERS = {
+        "UnconstrainedChunk",
+        "ConstrainedSymbol",
+        "ConstrainedSymbolInGenerated",
+        "ConfidenceGatedStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
+        "SafeSoftConstrainedStep",
+        "GroupBoostedConstrainedStep",
+        "AdaptiveConstrainedStep",
+        "RollbackConstrainedSuffix",
+    }
 
     def __init__(
         self,
@@ -298,6 +334,20 @@ class SynthesisPipeline:
         require_delimiters: bool = True,
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = None,
+        adaptive_helper_mask: bool = True,
+        helper_selection_policy: str = "utility",
+        helper_mask_min_evals: int = 4,
+        helper_mask_min_uses: int = 2,
+        helper_mask_margin: float = 0.25,
+        helper_mask_max_disabled: int = 6,
+        helper_bandit_min_evals: int = 3,
+        helper_bandit_top_k: int = 6,
+        helper_bandit_ucb_c: float = 0.35,
+        helper_bandit_explore_untried: int = 1,
+        refinement_beam_size: int = 1,
+        local_neighborhood_refinement: bool = True,
+        max_local_edit_ratio: float = 0.65,
+        beam_verify_candidates: bool = True,
     ):
         """
         Initialize the synthesis pipeline.
@@ -316,6 +366,20 @@ class SynthesisPipeline:
             require_delimiters: Whether evaluated outputs must contain << >> spans
             eval_sample_size: Number of examples to evaluate on
             eval_max_seconds_per_example: Optional runtime budget per example in seconds
+            adaptive_helper_mask: Enable empirical helper pruning contract
+            helper_selection_policy: Helper selection policy (`utility` or `bandit`)
+            helper_mask_min_evals: Evaluated attempts before pruning can start
+            helper_mask_min_uses: Minimum helper usage count before pruning
+            helper_mask_margin: Margin below run-wide mean utility to prune a helper
+            helper_mask_max_disabled: Maximum helpers disabled in one run
+            helper_bandit_min_evals: Evaluated attempts before bandit selection starts
+            helper_bandit_top_k: Number of prunable helpers to keep active under bandit
+            helper_bandit_ucb_c: UCB exploration coefficient
+            helper_bandit_explore_untried: Number of unseen helpers to force-explore
+            refinement_beam_size: Number of refinement candidates to sample per step
+            local_neighborhood_refinement: Prefer local edits during refinement
+            max_local_edit_ratio: Soft bound on changed-line ratio for local edits
+            beam_verify_candidates: Verify beam candidates before selecting one
         """
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
@@ -332,6 +396,26 @@ class SynthesisPipeline:
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
+        self.adaptive_helper_mask = adaptive_helper_mask
+        normalized_policy = helper_selection_policy.strip().lower()
+        if normalized_policy not in {"utility", "bandit"}:
+            raise ValueError(
+                "helper_selection_policy must be 'utility' or 'bandit'"
+            )
+        self.helper_selection_policy = normalized_policy
+        self.helper_mask_min_evals = max(1, helper_mask_min_evals)
+        self.helper_mask_min_uses = max(1, helper_mask_min_uses)
+        self.helper_mask_margin = helper_mask_margin
+        self.helper_mask_max_disabled = max(0, helper_mask_max_disabled)
+        self.helper_bandit_min_evals = max(1, helper_bandit_min_evals)
+        self.helper_bandit_top_k = max(1, helper_bandit_top_k)
+        self.helper_bandit_ucb_c = max(0.0, helper_bandit_ucb_c)
+        self.helper_bandit_explore_untried = max(0, helper_bandit_explore_untried)
+        self.refinement_beam_size = max(1, refinement_beam_size)
+        self.local_neighborhood_refinement = local_neighborhood_refinement
+        self.max_local_edit_ratio = max(0.0, max_local_edit_ratio)
+        self.beam_verify_candidates = beam_verify_candidates
+        self._helper_universe = self._extract_helper_universe_from_prompts()
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -407,6 +491,308 @@ class SynthesisPipeline:
         body = self._get_strategy_body_for_evaluation_history(strategy_code)
         calls = re.findall(r"\bhelpers\.([A-Za-z_][A-Za-z0-9_]*)\s*\(", body)
         return sorted(set(calls))
+
+    @staticmethod
+    def _extract_helper_universe_from_prompts() -> set[str]:
+        """Extract helper method names referenced in the system tool API docs."""
+        calls = re.findall(
+            r"\bhelpers\.([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+            generation_prompts.SYSTEM_PROMPT,
+        )
+        return set(calls)
+
+    def _evaluation_scalar_score(self, result: EvaluationResult) -> float:
+        """Scalar score used for helper utility estimates."""
+        delimiter_score = 1.0 if (result.contains_delimiters or not self.require_delimiters) else 0.0
+        runtime_score = (
+            1.0
+            if self.eval_max_seconds_per_example is None
+            or result.max_sample_time_seconds <= self.eval_max_seconds_per_example
+            else 0.0
+        )
+        return result.accuracy + result.syntax_rate + delimiter_score + runtime_score
+
+    def _collect_prunable_helper_scores(
+        self,
+        evaluated_attempts: list[SynthesisAttempt],
+    ) -> dict[str, list[float]]:
+        """Collect scalar rewards for each prunable helper across evaluated attempts."""
+        helper_scores: dict[str, list[float]] = {}
+        for attempt in evaluated_attempts:
+            score = self._evaluation_scalar_score(attempt.eval_result)
+            used_helpers = set(self._get_helper_calls_for_evaluation_history(attempt.strategy_code))
+            for helper in used_helpers:
+                if helper not in self.PRUNABLE_HELPERS:
+                    continue
+                if helper not in self._helper_universe:
+                    continue
+                helper_scores.setdefault(helper, []).append(score)
+        return helper_scores
+
+    def _compute_allowed_helpers_utility(
+        self,
+        evaluated_attempts: list[SynthesisAttempt],
+    ) -> tuple[list[str], str]:
+        """Empirical threshold-based helper pruning (existing policy)."""
+        allowed_helpers = set(self._helper_universe)
+        if len(evaluated_attempts) < self.helper_mask_min_evals:
+            return sorted(allowed_helpers), (
+                f"helper mask warm-up ({len(evaluated_attempts)}/{self.helper_mask_min_evals} evaluated attempts)"
+            )
+
+        best_attempt = max(
+            evaluated_attempts,
+            key=lambda attempt: self._evaluation_scalar_score(attempt.eval_result),
+        )
+        best_helpers = set(self._get_helper_calls_for_evaluation_history(best_attempt.strategy_code))
+        baseline_scores = [
+            self._evaluation_scalar_score(attempt.eval_result)
+            for attempt in evaluated_attempts
+        ]
+        baseline_mean = sum(baseline_scores) / max(1, len(baseline_scores))
+
+        helper_scores = self._collect_prunable_helper_scores(evaluated_attempts)
+        low_utility: list[tuple[float, int, str]] = []
+        for helper, scores in helper_scores.items():
+            if helper in self.NON_PRUNABLE_HELPERS or helper in best_helpers:
+                continue
+            if len(scores) < self.helper_mask_min_uses:
+                continue
+            mean_score = sum(scores) / len(scores)
+            if mean_score <= baseline_mean - self.helper_mask_margin:
+                low_utility.append((mean_score, len(scores), helper))
+
+        low_utility.sort(key=lambda item: (item[0], -item[1], item[2]))
+        disabled: list[str] = []
+        for _mean_score, _uses, helper in low_utility:
+            if len(disabled) >= self.helper_mask_max_disabled:
+                break
+            disabled.append(helper)
+
+        allowed_helpers -= set(disabled)
+        if disabled:
+            status = (
+                "helper mask active (utility); disabled low-utility helpers: "
+                + ", ".join(disabled)
+            )
+        else:
+            status = "helper mask active (utility); no helpers disabled by utility yet"
+        return sorted(allowed_helpers), status
+
+    def _compute_allowed_helpers_bandit(
+        self,
+        evaluated_attempts: list[SynthesisAttempt],
+    ) -> tuple[list[str], str]:
+        """Bandit-style helper selection using UCB over prunable helpers."""
+        allowed_helpers = set(self._helper_universe)
+        if len(evaluated_attempts) < self.helper_bandit_min_evals:
+            return sorted(allowed_helpers), (
+                f"helper mask warm-up ({len(evaluated_attempts)}/{self.helper_bandit_min_evals} evaluated attempts for bandit)"
+            )
+
+        prunable_pool = sorted(self.PRUNABLE_HELPERS & self._helper_universe)
+        if not prunable_pool:
+            return sorted(allowed_helpers), "helper bandit active; no prunable helpers in universe"
+
+        helper_scores = self._collect_prunable_helper_scores(evaluated_attempts)
+        pulls = {helper: len(helper_scores.get(helper, [])) for helper in prunable_pool}
+        means = {
+            helper: (
+                sum(helper_scores.get(helper, [])) / pulls[helper]
+                if pulls[helper] > 0
+                else 0.0
+            )
+            for helper in prunable_pool
+        }
+
+        best_attempt = max(
+            evaluated_attempts,
+            key=lambda attempt: self._evaluation_scalar_score(attempt.eval_result),
+        )
+        best_helpers = set(self._get_helper_calls_for_evaluation_history(best_attempt.strategy_code))
+        keep_prunable = set(best_helpers & set(prunable_pool))
+
+        total_pulls = max(1, sum(pulls.values()))
+        untried = [helper for helper in prunable_pool if pulls[helper] == 0 and helper not in keep_prunable]
+        explore_count = min(self.helper_bandit_explore_untried, len(untried))
+        keep_prunable.update(untried[:explore_count])
+
+        ranked_tried = sorted(
+            (helper for helper in prunable_pool if pulls[helper] > 0 and helper not in keep_prunable),
+            key=lambda helper: (
+                means[helper]
+                + self.helper_bandit_ucb_c
+                * math.sqrt(math.log(total_pulls + 1.0) / pulls[helper])
+            ),
+            reverse=True,
+        )
+
+        target_size = min(max(self.helper_bandit_top_k, len(keep_prunable)), len(prunable_pool))
+        for helper in ranked_tried:
+            if len(keep_prunable) >= target_size:
+                break
+            keep_prunable.add(helper)
+
+        disabled = sorted(set(prunable_pool) - keep_prunable)
+        allowed_helpers -= set(disabled)
+        status = (
+            "helper mask active (bandit/UCB); "
+            f"kept {len(keep_prunable)}/{len(prunable_pool)} prunable helpers "
+            f"(top_k={self.helper_bandit_top_k}, explore_untried={self.helper_bandit_explore_untried})"
+        )
+        return sorted(allowed_helpers), status
+
+    def _compute_allowed_helpers(self, attempts: list[SynthesisAttempt]) -> tuple[list[str] | None, str]:
+        """
+        Build a per-attempt helper-call contract from empirical policy.
+
+        Returns:
+            (allowed_helpers, status_text). `allowed_helpers=None` disables the
+            contract block in prompts.
+        """
+        if not self.adaptive_helper_mask or not self._helper_universe:
+            return None, ""
+
+        evaluated = [attempt for attempt in attempts if attempt.eval_result is not None]
+        if self.helper_selection_policy == "bandit":
+            return self._compute_allowed_helpers_bandit(evaluated)
+        return self._compute_allowed_helpers_utility(evaluated)
+
+    def _get_disallowed_helper_calls(
+        self,
+        strategy_code: str,
+        allowed_helpers: list[str] | None,
+    ) -> list[str]:
+        """Return helper calls in strategy_code that violate the active contract."""
+        if not allowed_helpers:
+            return []
+        allowed = set(allowed_helpers)
+        used = set(self._get_helper_calls_for_evaluation_history(strategy_code))
+        return sorted(used - allowed)
+
+    @staticmethod
+    def _strategy_change_ratio(before: str, after: str) -> float:
+        """Return an approximate changed-line ratio between two strategy bodies."""
+        before_lines = before.splitlines()
+        after_lines = after.splitlines()
+        diff_lines = list(
+            unified_diff(
+                before_lines,
+                after_lines,
+                fromfile="before",
+                tofile="after",
+                lineterm="",
+                n=0,
+            )
+        )
+        changed = sum(
+            1
+            for line in diff_lines
+            if line and line[0] in {"+", "-"} and not line.startswith(("+++", "---"))
+        )
+        denom = max(1, len(before_lines))
+        return changed / denom
+
+    @staticmethod
+    def _normalized_strategy_key(strategy_code: str) -> str:
+        """Normalize strategy text for duplicate suppression in beam search."""
+        return re.sub(r"\s+", " ", strategy_code).strip()
+
+    def _helper_overlap_ratio(self, before: str, after: str) -> float:
+        """Jaccard overlap of helper call sets between strategies."""
+        before_set = set(self._get_helper_calls_for_evaluation_history(before))
+        after_set = set(self._get_helper_calls_for_evaluation_history(after))
+        union = before_set | after_set
+        if not union:
+            return 1.0
+        return len(before_set & after_set) / len(union)
+
+    def _refine_with_beam(
+        self,
+        *,
+        stage_label: str,
+        previous_strategy: str,
+        allowed_helpers: list[str] | None,
+        refine_once: Callable[[], str],
+    ) -> str:
+        """
+        Sample multiple local refinements and select the best candidate.
+
+        Ranking preference:
+        1) helper-call contract satisfaction,
+        2) optional pre-verification success (if enabled),
+        3) local-neighborhood preference,
+        4) helper-set overlap with previous strategy,
+        5) smaller edit ratio.
+        """
+        beam_size = max(1, self.refinement_beam_size)
+        if beam_size == 1:
+            return refine_once()
+
+        candidates: list[dict] = []
+        seen: set[str] = {self._normalized_strategy_key(previous_strategy)}
+
+        for _ in range(beam_size):
+            candidate = refine_once()
+            key = self._normalized_strategy_key(candidate)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+
+            disallowed = self._get_disallowed_helper_calls(candidate, allowed_helpers)
+            contract_ok = len(disallowed) == 0
+            change_ratio = self._strategy_change_ratio(previous_strategy, candidate)
+            locality_ok = (not self.local_neighborhood_refinement) or (
+                change_ratio <= self.max_local_edit_ratio
+            )
+            overlap = self._helper_overlap_ratio(previous_strategy, candidate)
+
+            verification_ok = False
+            if self.beam_verify_candidates:
+                try:
+                    verification_ok = self.verifier.verify(
+                        self.generator.inject_strategy(candidate)
+                    ).success
+                except Exception:
+                    verification_ok = False
+
+            score = (
+                1 if contract_ok else 0,
+                1 if verification_ok else 0,
+                1 if locality_ok else 0,
+                overlap,
+                -change_ratio,
+                -len(disallowed),
+            )
+            candidates.append(
+                {
+                    "strategy": candidate,
+                    "score": score,
+                    "contract_ok": contract_ok,
+                    "verification_ok": verification_ok,
+                    "locality_ok": locality_ok,
+                    "change_ratio": change_ratio,
+                    "disallowed": disallowed,
+                }
+            )
+
+        if not candidates:
+            return refine_once()
+
+        best = max(candidates, key=lambda item: item["score"])
+        print(
+            f"  Beam {stage_label}: {len(candidates)} candidate(s), "
+            f"selected contract_ok={best['contract_ok']} "
+            f"verify_ok={best['verification_ok']} "
+            f"local={best['locality_ok']} "
+            f"edit_ratio={best['change_ratio']:.2f}"
+        )
+        if best["disallowed"]:
+            print(
+                "  Beam selected candidate still violates helper contract: "
+                + ", ".join(best["disallowed"])
+            )
+        return best["strategy"]
 
     @staticmethod
     def _truncate_words(text: str, max_words: int) -> str:
@@ -2279,7 +2665,7 @@ class SynthesisPipeline:
         # tooling can still override this path when needed.
         os.environ.setdefault(
             "CSD_PROMPT_LOG_DIR",
-            str(Path.cwd() / "prompt_logs" / output_name),
+            str(Path.cwd() / "logs" / output_name),
         )
 
         # Update a convenience pointer to the most recent run
@@ -2298,7 +2684,13 @@ class SynthesisPipeline:
 
         # Initial generation
         print(f"Generating initial strategy for: {task_description}")
-        strategy_code = self.generator.generate_initial(task_description)
+        allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
+        if helper_status:
+            print(f"Helper policy: {helper_status}")
+        strategy_code = self.generator.generate_initial(
+            task_description,
+            allowed_helpers=allowed_helpers,
+        )
 
         # Index in `attempts` after which we last performed a fresh restart.
         # Used to bound the "consecutive verification failures since last restart"
@@ -2307,9 +2699,12 @@ class SynthesisPipeline:
 
         for iteration in range(self.max_iterations):
             attempt_num = iteration + 1
+            allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
             print(f"\n{'='*60}")
             print(f"Attempt {attempt_num}/{self.max_iterations}")
             print(f"{'='*60}")
+            if helper_status:
+                print(f"Helper policy: {helper_status}")
             print(f"Strategy: {strategy_code}")
 
             # Create full Dafny code
@@ -2322,6 +2717,39 @@ class SynthesisPipeline:
                 full_dafny_code=full_code,
                 timestamp=datetime.now().isoformat(),
             )
+
+            disallowed_helpers = self._get_disallowed_helper_calls(strategy_code, allowed_helpers)
+            if disallowed_helpers:
+                print("  ✗ Helper-call contract violation")
+                error_msg = (
+                    "Helper-call contract violation.\n"
+                    f"Disallowed helper calls: {', '.join(disallowed_helpers)}"
+                )
+                attempt.failed_at = FailureStage.SEARCH_CONTRACT
+                attempt.error_summary = error_msg
+                attempts.append(attempt)
+
+                print("  Refining based on helper-call contract violation...")
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                search_memory = self._get_compact_search_memory(
+                    attempts,
+                    current_attempt=attempt,
+                    repair_stage="search_contract",
+                )
+                strategy_code = self._refine_with_beam(
+                    stage_label="search_contract",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_verification_error(
+                        strategy_code,
+                        error_msg,
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
+                )
+                continue
 
             # Stage 1: Verification
             print("\n[1/4] Verifying with Dafny...")
@@ -2347,7 +2775,13 @@ class SynthesisPipeline:
                 if consecutive_same >= 2:
                     # After 3+ identical errors, abandon refinement and start fresh
                     print(f"  Stuck on same error for {consecutive_same + 1} attempts — restarting with fresh generation...")
-                    strategy_code = self.generator.generate_initial(task_description)
+                    next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                    if next_helper_status:
+                        print(f"  Helper policy: {next_helper_status}")
+                    strategy_code = self.generator.generate_initial(
+                        task_description,
+                        allowed_helpers=next_allowed_helpers,
+                    )
                     last_restart_index = len(attempts)
                     continue
 
@@ -2369,7 +2803,13 @@ class SynthesisPipeline:
                         f"  {consecutive_verif_failures} consecutive verification failures "
                         f"since last restart — restarting with fresh generation..."
                     )
-                    strategy_code = self.generator.generate_initial(task_description)
+                    next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                    if next_helper_status:
+                        print(f"  Helper policy: {next_helper_status}")
+                    strategy_code = self.generator.generate_initial(
+                        task_description,
+                        allowed_helpers=next_allowed_helpers,
+                    )
                     last_restart_index = len(attempts)
                     continue
 
@@ -2384,14 +2824,23 @@ class SynthesisPipeline:
                     current_attempt=attempt,
                     repair_stage="verification",
                 )
-                strategy_code = self.generator.refine_after_verification_error(
-                    strategy_code,
-                    error_msg,
-                    behavioral_context,
-                    structured_feedback,
-                    error_history,
-                    strategy_context,
-                    search_memory,
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                strategy_code = self._refine_with_beam(
+                    stage_label="verification",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_verification_error(
+                        strategy_code,
+                        error_msg,
+                        behavioral_context=behavioral_context,
+                        structured_feedback=structured_feedback,
+                        error_history=error_history,
+                        strategy_context=strategy_context,
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
                 )
                 continue
 
@@ -2415,10 +2864,19 @@ class SynthesisPipeline:
                     current_attempt=attempt,
                     repair_stage="compilation",
                 )
-                strategy_code = self.generator.refine_after_compilation_error(
-                    strategy_code,
-                    compilation_result.get_error_summary(),
-                    search_memory,
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                strategy_code = self._refine_with_beam(
+                    stage_label="compilation",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_compilation_error(
+                        strategy_code,
+                        compilation_result.get_error_summary(),
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
                 )
                 continue
 
@@ -2435,10 +2893,19 @@ class SynthesisPipeline:
                     current_attempt=attempt,
                     repair_stage="runtime",
                 )
-                strategy_code = self.generator.refine_after_runtime_error(
-                    strategy_code,
-                    "Compilation succeeded but no Python module was generated",
-                    search_memory,
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                strategy_code = self._refine_with_beam(
+                    stage_label="runtime",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_runtime_error(
+                        strategy_code,
+                        "Compilation succeeded but no Python module was generated",
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
                 )
                 continue
 
@@ -2548,12 +3015,21 @@ class SynthesisPipeline:
                 working_hypothesis = self._get_working_hypothesis_state(attempts, attempt)
                 evaluation_feedback = eval_result.get_feedback_summary()
                 search_memory = self._get_compact_search_memory(attempts, current_attempt=attempt)
-                strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code,
-                    evaluation_feedback,
-                    eval_history,
-                    working_hypothesis,
-                    search_memory,
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_error",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                        strategy_code,
+                        evaluation_feedback,
+                        evaluation_history=eval_history,
+                        working_hypothesis=working_hypothesis,
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
                 )
                 continue
 
@@ -2600,12 +3076,21 @@ class SynthesisPipeline:
                 eval_history = self._get_evaluation_history_summary(attempts)
                 working_hypothesis = self._get_working_hypothesis_state(attempts, attempt)
                 search_memory = self._get_compact_search_memory(attempts, current_attempt=attempt)
-                strategy_code = self.generator.refine_after_evaluation_failure(
-                    strategy_code,
-                    threshold_feedback,
-                    eval_history,
-                    working_hypothesis,
-                    search_memory,
+                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
+                if next_helper_status:
+                    print(f"  Helper policy: {next_helper_status}")
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_threshold",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                        strategy_code,
+                        threshold_feedback,
+                        evaluation_history=eval_history,
+                        working_hypothesis=working_hypothesis,
+                        search_memory=search_memory,
+                        allowed_helpers=next_allowed_helpers,
+                    ),
                 )
                 continue
 
@@ -2768,6 +3253,7 @@ class SynthesisPipeline:
     def _analyze_failure_patterns(self, attempts: list[SynthesisAttempt]) -> dict:
         """Analyze common failure patterns across attempts."""
         patterns = {
+            "search_contract_failures": 0,
             "verification_failures": 0,
             "compilation_failures": 0,
             "runtime_failures": 0,
@@ -2777,7 +3263,9 @@ class SynthesisPipeline:
         error_counts: dict[str, int] = {}
 
         for attempt in attempts:
-            if attempt.failed_at == FailureStage.VERIFICATION:
+            if attempt.failed_at == FailureStage.SEARCH_CONTRACT:
+                patterns["search_contract_failures"] += 1
+            elif attempt.failed_at == FailureStage.VERIFICATION:
                 patterns["verification_failures"] += 1
             elif attempt.failed_at == FailureStage.COMPILATION:
                 patterns["compilation_failures"] += 1
