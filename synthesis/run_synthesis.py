@@ -28,7 +28,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies using HuggingFace, vLLM, or API backends",
+        description="Synthesize constrained decoding strategies (default generation: OpenAI gpt-5.4; eval often vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -61,16 +61,16 @@ Examples:
     parser.add_argument(
         "--generation-model",
         type=str,
-        default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="Model identifier for CSD generation (local HuggingFace or API model name)"
+        default="gpt-5.4",
+        help="Model identifier for CSD generation (local HuggingFace id or API model name; default: gpt-5.4)"
     )
 
     parser.add_argument(
         "--generation-backend",
         type=str,
         choices=["huggingface", "vllm", "openai", "anthropic", "gemini"],
-        default="vllm",
-        help="Backend for strategy generation (default: vllm)"
+        default="openai",
+        help="Backend for strategy generation (default: openai)"
     )
 
     parser.add_argument(
@@ -142,8 +142,8 @@ Examples:
         "--max-tokens",
         dest="synthesis_max_tokens",
         type=int,
-        default=1024,
-        help="Maximum tokens for CSD synthesis generation per attempt (default: 1024)"
+        default=2048,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 2048)"
     )
     
     parser.add_argument(
@@ -390,8 +390,8 @@ Examples:
     parser.add_argument(
         "--helper-bandit-top-k",
         type=int,
-        default=6,
-        help="Number of prunable helpers kept active under bandit selection (default: 6)"
+        default=12,
+        help="Number of prunable helpers kept active under bandit selection (default: 12)"
     )
 
     parser.add_argument(

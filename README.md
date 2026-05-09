@@ -11,7 +11,7 @@ The project is organized so the core workflow is explicit:
 
 ## Repository Layout
 
-- `synthesis/`: core pipeline package.
+- `synthesis/`: core pipeline package. First-party subfolders include paired **`README.md`** and **`AGENTS.md`** for docs and agent rules (`synthesis/README.md` summarizes).
 - `synthesis/generate/`: generation prompts, rationale extraction, and generator logic.
 - `synthesis/verify/`: Dafny verification/compilation wrappers.
 - `synthesis/verify/library/`: Dafny template/library used for generated strategies.
@@ -74,11 +74,12 @@ dafny --version
 
 3. Run synthesis.
 
+Strategy generation defaults to OpenAI `gpt-5.4` (`OPENAI_API_KEY` in the environment or `.env`). Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
   --dataset gsm_symbolic \
-  --generation-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
   --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
   --max-iterations 5 \
   --min-accuracy 0.3 \
@@ -112,6 +113,7 @@ Optional local-beam refinement controls:
   - Template that receives generated strategy code.
 - `synthesis/verify/library/VerifiedAgentSynthesis.dfy`
   - Core verified interfaces/contracts/helpers strategies rely on.
+  - Member summaries: `synthesis/verify/library/README.md` (contracts in the `.dfy` file are authoritative).
 
 ## Notes for Contributors
 
