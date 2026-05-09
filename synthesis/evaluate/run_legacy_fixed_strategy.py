@@ -231,6 +231,97 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
+    """GCD baseline via vendored SynCode (grammar_strict mode = pure hard-mask constrained decoding)."""
+    import sys
+
+    dataset = _normalize_dataset(args.dataset)
+    repo_root = Path(__file__).resolve().parents[2]
+
+    syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
+    syncode_pkg = syncode_root / "syncode"
+    for p in [str(syncode_root), str(syncode_pkg)]:
+        if p not in sys.path:
+            sys.path.insert(0, p)
+
+    from syncode.infer import Syncode
+    from synthesis.evaluate.benchmarks.registry import get_logic
+
+    logic = get_logic(dataset)
+
+    from synthesis.evaluate.evaluator import Evaluator
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+    )
+    examples = logic.load_dataset_sample(eval_runtime)
+
+    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+
+    def _grammar_for_example(example: dict[str, Any]) -> str:
+        if dataset == "gsm_symbolic":
+            return (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+        if dataset == "spider":
+            return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+        if dataset == "smiles":
+            return str(example.get("grammar_text", ""))
+        raise ValueError(f"Unsupported dataset for GCD adapter: {dataset}")
+
+    syncode_cache: dict[str, Any] = {}
+    rows: list[dict[str, Any]] = []
+
+    for example in examples:
+        grammar_text = _grammar_for_example(example)
+        cache_key = f"{dataset}:{hash(grammar_text)}"
+        if cache_key not in syncode_cache:
+            syncode_cache[cache_key] = Syncode(
+                model=args.eval_model,
+                mode="grammar_strict",
+                quantize=False,
+                device=device,
+                grammar=grammar_text,
+                parse_output_only=True,
+                log_level=0,
+                max_new_tokens=max(32, int(args.eval_max_steps)),
+                do_sample=False,
+                num_return_sequences=1,
+            )
+        sc = syncode_cache[cache_key]
+        prompt = logic.format_prompt(eval_runtime, example)
+        completions = sc.infer(prompt)
+        output_text = completions[0] if completions else ""
+        scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
+        expected = logic.expected_answer(eval_runtime, example)
+        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+        if dataset == "spider":
+            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+        if dataset == "smiles":
+            syntax_valid = bool(aux and aux.get("syntax_valid"))
+
+        question = str(example.get("question") or example.get("prompt") or expected)
+        rows.append(
+            {
+                "question": question,
+                "llm_response": output_text,
+                "correct": bool(is_correct),
+                "syntax_valid": bool(syntax_valid),
+            }
+        )
+
+    _build_minimal_json(rows, args.output_json)
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
 def _itergen_add_import_paths(itergen_root: Path) -> None:
     candidates = [
         itergen_root,
@@ -407,18 +498,105 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
+    """Run CRANE-style adaptive constrained decoding via vendored AdaptiveSynCode.
+
+    Used for benchmarks where the legacy CRANE codebase lacks grammar support
+    (e.g. SMILES). AdaptiveSynCode implements the same << >> switching logic.
+    """
+    import sys as _sys
+
+    repo_root = Path(__file__).resolve().parents[2]
+    syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
+    syncode_pkg = syncode_root / "syncode"
+    for p in [str(syncode_root), str(syncode_pkg)]:
+        if p not in _sys.path:
+            _sys.path.insert(0, p)
+
+    from syncode.infer import AdaptiveSynCode
+    from synthesis.evaluate.benchmarks.registry import get_logic
+
+    logic = get_logic(dataset)
+
+    from synthesis.evaluate.evaluator import Evaluator
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+    )
+    examples = logic.load_dataset_sample(eval_runtime)
+
+    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+
+    def _grammar_for_example(example: dict[str, Any]) -> str:
+        if dataset == "smiles":
+            return str(example.get("grammar_text", ""))
+        if dataset == "spider":
+            return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+        raise ValueError(f"Unsupported dataset for AdaptiveSynCode adapter: {dataset}")
+
+    syncode_cache: dict[str, Any] = {}
+    rows: list[dict[str, Any]] = []
+
+    for example in examples:
+        grammar_text = _grammar_for_example(example)
+        cache_key = f"{dataset}:{hash(grammar_text)}"
+        if cache_key not in syncode_cache:
+            syncode_cache[cache_key] = AdaptiveSynCode(
+                model=args.eval_model,
+                mode="grammar_strict",
+                quantize=False,
+                device=device,
+                grammar=grammar_text,
+                parse_output_only=True,
+                log_level=0,
+                start_symbol="<<",
+                end_symbol=">>",
+                max_new_tokens=max(32, int(args.eval_max_steps)),
+                do_sample=False,
+                num_return_sequences=1,
+            )
+        sc = syncode_cache[cache_key]
+        prompt = logic.format_prompt(eval_runtime, example)
+        completions = sc.infer(prompt)
+        output_text = completions[0] if completions else ""
+        scored_output = output_text
+        expected = logic.expected_answer(eval_runtime, example)
+        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+        if dataset == "smiles":
+            syntax_valid = bool(aux and aux.get("syntax_valid"))
+
+        question = str(example.get("question") or example.get("prompt") or expected)
+        rows.append(
+            {
+                "question": question,
+                "llm_response": output_text,
+                "correct": bool(is_correct),
+                "syntax_valid": bool(syntax_valid),
+            }
+        )
+
+    _build_minimal_json(rows, args.output_json)
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
 def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     dataset = _normalize_dataset(args.dataset)
-    if dataset == "smiles" and args.strategy == "crane":
-        print(
-            f"[warn] Legacy CRANE does not support SMILES (no delimiter-based switching for full-output constrained tasks). "
-            f"Writing empty baseline JSON to {args.output_json}."
-        )
-        _write_empty_baseline(args.output_json)
-        return 0
 
     if dataset == "smiles" and args.strategy == "unconstrained":
         return run_unconstrained_smiles_adapter(args)
+
+    if dataset == "smiles" and args.strategy == "crane":
+        return _crane_via_adaptive_syncode(args, dataset)
 
     mode, do_cot = _mode_for_strategy(args.strategy)
     grammar = _crane_grammar_name(dataset)
@@ -472,7 +650,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run legacy fixed strategy code and export minimal baseline JSON"
     )
-    parser.add_argument("--strategy", required=True, choices=["unconstrained", "crane", "itergen", "cars"])
+    parser.add_argument("--strategy", required=True, choices=["unconstrained", "gcd", "crane", "itergen", "cars"])
     parser.add_argument("--dataset", required=True, choices=["gsm", "gsm_symbolic", "spider", "smiles"])
     parser.add_argument("--eval-model", required=True)
     parser.add_argument("--eval-sample-size", type=int, default=10)
@@ -485,6 +663,8 @@ def main() -> None:
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
     args = parser.parse_args()
 
+    if args.strategy == "gcd":
+        raise SystemExit(run_gcd_legacy_adapter(args))
     if args.strategy == "itergen":
         raise SystemExit(run_itergen_legacy_adapter(args))
     if args.strategy == "cars":

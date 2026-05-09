@@ -31,13 +31,15 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     question = example.get("question", "")
     return (
         "You are given a database schema and a question. "
-        "Write a SINGLE SQL query answering the question, using ONLY the tables and columns in the schema. "
-        "Emit the SQL on a single line. Stop after the query — no explanation, no code fences.\n\n"
+        "Write a SINGLE SQL query answering the question, using ONLY the tables and columns in the schema.\n\n"
+        "You may optionally reason about the problem first. "
+        "Then, wrap your final SQL query in << >> delimiters. "
+        "Stop after the closing >>.\n\n"
         "Example:\n"
         "db_id: concert_singer\n"
         "db_info: # singer ( singer_id , name , country , age )\n"
         "question: How many singers do we have?\n"
-        "SQL: SELECT count(*) FROM singer\n\n"
+        "SQL: <<SELECT count(*) FROM singer>>\n\n"
         f"db_id: {db_id}\n"
         f"db_info: {db_info}\n"
         f"question: {question}\n"
@@ -54,13 +56,21 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
 
 
 def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) -> tuple[str | None, str, dict[str, Any] | None]:
+    import re
     if not scored_output:
         return None, "none", None
+    # Prefer extracting from << >> delimiters (CRANE, IterGen, CARS, GCD).
+    expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
+    if expr_matches:
+        cleaned = expr_matches[-1].replace("\n", " ").replace("\r", " ").strip()
+        cleaned = " ".join(cleaned.split()).rstrip(";").strip()
+        return (cleaned or None), "last_visible_span", None
+    # Fallback: treat the raw first paragraph as the query (e.g. unconstrained).
     raw = scored_output.split("\n\n")[0]
     cleaned = raw.replace("\n", " ").replace("\r", " ").strip()
     cleaned = cleaned.replace("<<", " ").replace(">>", " ")
     cleaned = " ".join(cleaned.split()).rstrip(";").strip()
-    return (cleaned or None), ("hidden_or_task_extractor" if cleaned else "none"), None
+    return (cleaned or None), ("raw_text_fallback" if cleaned else "none"), None
 
 
 def is_correct(
@@ -105,7 +115,7 @@ def is_correct(
 
 
 def uses_hidden_chunks() -> bool:
-    return True
+    return False
 
 
 def example_syntax_pass(
@@ -114,7 +124,7 @@ def example_syntax_pass(
     used_hidden_chunk: bool,
     aux: dict[str, Any] | None,
 ) -> bool:
-    return used_hidden_chunk
+    return bool(segments) and all_valid_syntax
 
 
 def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
