@@ -4,6 +4,8 @@ Verified **example** strategies that mirror baseline families (CRANE, IterGen, C
 
 Each file defines its own module (`crane`, `itergen`, `cars`) so they can be verified together without duplicate `GeneratedCSD` names. To use with the pipeline, copy `MyCSDStrategy` into `library/GeneratedCSD.dfy` under `module GeneratedCSD`.
 
+For a concise index of every `LM`, `Parser`, and `CSDHelpers` member (and module-level helpers), see [`../library/README.md`](../library/README.md).
+
 ## Files
 
 | File | Role |

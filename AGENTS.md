@@ -25,7 +25,7 @@ Disallowed prompt content:
 ## Core Files
 
 - `synthesis/verify/library/GeneratedCSD.dfy`
-- `synthesis/verify/library/VerifiedAgentSynthesis.dfy`
+- `synthesis/verify/library/VerifiedAgentSynthesis.dfy` (member index: `synthesis/verify/library/README.md`)
 - `synthesis/generate/generator.py`
 - `synthesis/verify/verifier.py`
 - `synthesis/verify/compiler.py`
