@@ -1,5 +1,7 @@
 # Synthesis Package
 
+Each first-party subdirectory under `synthesis/` includes **`AGENTS.md`** (automation/agent constraints) alongside **`README.md`** (human-oriented overview) where applicable. Vendored Syncode under `evaluate/syncode/` uses a single **`AGENTS.md`** at that root; do not blanket nested vendor trees.
+
 The `synthesis/` package is the operational center of the repository.
 It provides an end-to-end loop that produces candidate CSD strategies, proves correctness properties in Dafny, compiles those strategies to executable Python modules, evaluates them on target benchmarks, and feeds failures back into the next generation attempt.
 
@@ -26,6 +28,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Prompt construction and strategy body generation/refinement.
 - `verify/`
   - Dafny verification and Dafny-to-Python compilation wrappers.
+  - `verify/reference/` holds verified example strategies (CRANE / IterGen / CARS-style); see `verify/reference/README.md`.
 - `evaluate/`
   - Runtime environment setup, benchmark evaluation, parser integration, and feedback-loop orchestration.
 

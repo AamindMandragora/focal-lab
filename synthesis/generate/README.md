@@ -15,6 +15,7 @@ The generate stage is responsible for producing candidate Dafny strategy bodies 
   - Main generation/refinement orchestration.
 - `prompts.py`
   - Prompt templates used for initial generation and iterative refinement.
+  - Keep tool documentation here aligned with `synthesis/verify/library/README.md` and `VerifiedAgentSynthesis.dfy` when the strategy API changes.
 - `rationale.py`
   - Utilities for extracting or normalizing rationale sections embedded in strategy text.
 

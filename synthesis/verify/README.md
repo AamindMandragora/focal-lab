@@ -17,7 +17,7 @@ It has two tightly coupled jobs: formal verification and compilation.
 - `compiler.py`
   - Dafny build wrapper (`--target:py`) with output capture and error parsing.
 - `library/`
-  - Dafny source files used as synthesis substrate.
+  - Dafny source files used as synthesis substrate; see `library/README.md` for a member-by-member index of `VerifiedAgentSynthesis.dfy`.
 
 ## Verification and Compile Relationship
 

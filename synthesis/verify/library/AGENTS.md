@@ -1,0 +1,15 @@
+# AGENTS.md — `synthesis/verify/library/`
+
+## Scope
+
+**Dafny** template, primitive library, and contracts that define admissible synthesized strategies (`GeneratedCSD.dfy`, `VerifiedAgentSynthesis.dfy`, etc.).
+
+## Rules
+
+- **Contracts are authoritative:** pre/postconditions and lemmas are not optional documentation; changing them requires proof updates and explicit intent.
+- Generated strategy bodies plug into a **fixed template**; keep extension points and `extern` axioms aligned with **`evaluate/`** runtime behavior.
+- Coordinate with **`generate/`** if template placeholders or allowed call patterns change.
+
+## See also
+
+- **`README.md`** in this folder for file map and verification commands.

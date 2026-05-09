@@ -112,9 +112,30 @@ var next := helpers.SafeTemperatureConstrainedStep(lm, parser, prompt, currentCo
 var next, usedFallback := helpers.SafeSoftConstrainedStep(lm, parser, prompt, currentConstrained, 8.0, eosToken);
 var next := helpers.GroupBoostedConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, eosToken);
 var next := helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, 12, eosToken);
+var nextPen := helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, penaltyTokens, 4.0, 12, eosToken);
+var gap := helpers.GetLogitGap(lm);
+var topK := helpers.GetTopKTokens(lm, k);
+helpers.MaskTokensInPrefix(lm, generated);
+var candTok, candPre, hitComplete, hitEos, stepsUsed := helpers.SpeculativeConstrainedRollout(lm, parser, prompt, currentConstrained, numSpecSteps, eosToken);
 var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(lm, prompt, generated, maxChunkTokens, openSpanToken, eosToken);
 var currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbol(lm, parser, constrainedPrompt, currentConstrained, stepTokenBudget, eosToken);
 var generatedOut, currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbolInGenerated(lm, parser, constrainedPrompt, generated, currentConstrained, stepTokenBudget, eosToken);
+var nextSoft, softOk := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, boostAmount, eosToken);
+var nextPenRaw := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToPenalize, penaltyAmount, eosToken);
+var nextBoostRaw := helpers.BoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToBoost, boostAmount, eosToken);
+var nextRep := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, penaltyAmount, eosToken);
+var nextTemp := helpers.TemperatureConstrainedStep(lm, parser, prompt, currentConstrained, temperature, eosToken);
+var rolloutGen, rolloutSteps, rolloutEos := helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, budget, penalties, penaltyAmount, eosToken);
+var topTok := helpers.GetHighestLogitToken(lm);
+var logitOne := helpers.GetTokenLogit(lm, token);
+helpers.ScaleAllLogits(lm, scalar);
+helpers.BoostTokenLogits(lm, tokensInVocab, amount);
+helpers.PenalizeTokenLogits(lm, tokensInVocab, amount);
+var subCount := helpers.CountSubstring(text, sub);
+var s := helpers.PrefixToString(prefix);
+var between := helpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
+var anyInGroup := helpers.GroupHasValidMember(parser, prefix, group);
+var rolledGen, rolledCurrent := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 ```
 `OpenConstrainedSpan` appends a new `"<<"` token and costs 1 step. If `"<<"`
 was already emitted by `UnconstrainedStep` or `UnconstrainedChunk`, use
@@ -128,10 +149,13 @@ var count := helpers.ValidTokenCount(parser, currentConstrained);
 var valid := helpers.IsTokenValidNext(parser, currentConstrained, token);
 var candidates := helpers.TopValidCandidates(lm, parser, prompt, currentConstrained, maxCandidates, eosToken);
 var rolled := helpers.RollbackToValidPrefix(parser, constrainedPrefix);
+var generatedOut, currentOut := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 var generatedOut, currentOut := helpers.RollbackConstrainedSuffix(parser, generated, currentConstrained);
 var flat := helpers.FlattenTokenGroups(validTokenGroups);
 var groupIdx := helpers.GroupContaining(validTokenGroups, token);
 var prevTok, foundPrev := helpers.LastTokenBefore(generated, ">>");
+var occ := helpers.CountTokenOccurrences(generated, tok);
+var since := helpers.TokensSinceLastOccurrence(generated, tok);
 var following := helpers.ExtractAfterKeyword(prefix, keyword);
 var intersection := helpers.IntersectTokenSets(a, b);
 var difference := helpers.SubtractTokenSets(a, b);
@@ -247,6 +271,14 @@ consume token budget by themselves.
   Cost: +1 token-step, including EOS.
   Control profile: hard parser control with conditional soft preference.
 
+- `helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, boostGroups, boostAmount, penaltyTokens, penaltyAmount, narrowThreshold, eosToken)`
+  Role: same adaptive group boosts as `AdaptiveConstrainedStep`, plus safe token
+  penalties before the hard mask.
+  Mechanics: `GenerateLogits`, conditional `BoostValidGroups`, `SafePenalizeTokenLogits`,
+  `MaskValidNextAndEos`, `ChooseNextToken`.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with conditional boosts and penalties.
+
 - `helpers.SafeBoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokens, amount, eosToken)`
   Role: one parser-valid token choice with a soft boost for a caller-supplied
   token set.
@@ -300,6 +332,30 @@ consume token budget by themselves.
   Control profile: soft logit preference only; relevant only to later choices
   that read the modified logits rather than regenerating fresh logits first.
 
+- `helpers.GetLogitGap(lm)`
+  Role: measure spread between the top two **unmasked** vocabulary logits.
+  Mechanics: single scan over `lm.Logits` with `lm.IsMasked`; returns `0.0` if
+  fewer than two unmasked positions exist.
+  Cost: +0.
+
+- `helpers.GetTopKTokens(lm, k)`
+  Role: return the `k` vocabulary tokens with highest current logits (no LM call).
+  Mechanics: greedy index selection with lower-index tie-break; requires
+  `1 <= k <= |lm.Tokens|`.
+  Cost: +0.
+
+- `helpers.MaskTokensInPrefix(lm, prefix)`
+  Role: hard-mask every vocabulary token that appears anywhere in `prefix`.
+  Mechanics: walks `prefix` and calls `lm.MaskToken` for in-vocabulary entries.
+  Cost: +0.
+
+- `helpers.SpeculativeConstrainedRollout(lm, parser, prompt, constrainedPrefix, numTokens, eosToken)`
+  Role: run up to `numTokens` `ConstrainedStep` calls from `constrainedPrefix`, then
+  restore logits from a snapshot so the caller can inspect the candidate without
+  committing logits state (cost still includes the speculative forward steps).
+  Mechanics: internal `SaveLogitsSnapshot` / `RestoreLogitsSnapshot`.
+  Cost: +`stepsUsed` token-steps (`stepsUsed <= numTokens`).
+
 ### Parser queries, repair, and context extraction
 
 - `helpers.ValidTokenCount(parser, currentConstrained)` and
@@ -339,6 +395,15 @@ consume token budget by themselves.
   Cost: +0.
   Control profile: context information only.
 
+- `helpers.CountTokenOccurrences(prefix, target)` (static)
+  Role: count how many times `target` appears as a token element of `prefix`.
+  Cost: +0.
+
+- `helpers.TokensSinceLastOccurrence(prefix, target)` (static)
+  Role: distance in tokens from the end of `prefix` back to the last occurrence
+  of `target`; returns `|prefix|` if `target` never occurs.
+  Cost: +0.
+
 - `helpers.FlattenTokenGroups`, `helpers.GroupContaining`,
   `helpers.IntersectTokenSets`, and `helpers.SubtractTokenSets`
   Role: transform token sets or groups.
@@ -346,6 +411,78 @@ consume token budget by themselves.
   or state transition.
   Cost: +0.
   Control profile: token-set bookkeeping only.
+
+- `helpers.GroupHasValidMember(parser, prefix, group)`
+  Role: test whether any token in `group` is parser-valid at `prefix`.
+  Mechanics: linear scan over `group`; no LM call or logit change.
+  Cost: +0.
+
+- `helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained)`
+  Role: repair constrained text when `generated == stablePrefix + currentConstrained`.
+  Mechanics: rolls back `currentConstrained` with `RollbackToValidPrefix`, then
+  reattaches `stablePrefix`.
+  Cost: +0.
+
+- `helpers.SoftConstrainedStep(lm, parser, prompt, constrainedPrefix, boostAmount, eosToken)`
+  Role: one step that boosts grammar-valid logits (and EOS) then samples without a hard mask.
+  Mechanics: `BoostValidNextAndEos`, `ChooseNextTokenUnconstrained`; `isValid` reports
+  EOS or parser-valid extension.
+  Cost: +1 token-step.
+
+- `helpers.PenalizedConstrainedStep` / `helpers.BoostedConstrainedStep`
+  Role: `ConstrainedStep` with explicit penalize/boost lists that must already be in `lm.Tokens`.
+  Mechanics: same hard mask and postconditions as `ConstrainedStep` after logit edit.
+  Cost: +1 token-step.
+
+- `helpers.BoostTokenLogits` / `helpers.PenalizeTokenLogits`
+  Role: direct logit nudge for a vocabulary-known token list.
+  Mechanics: requires `forall t in list :: t in lm.Tokens`; clamped arithmetic; no LM call.
+  Cost: +0.
+
+- `helpers.RepetitionPenaltyStep` / `helpers.TemperatureConstrainedStep`
+  Role: constrained steps with repetition penalty on a token bag or temperature scaling
+  before masking (non-safe variants impose the same membership/range proofs as the
+  underlying penalize/scale helpers).
+  Cost: +1 token-step.
+
+- `helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, totalBudget, penalties, penaltyAmount, eosToken)`
+  Role: bounded loop of `SafePenalizedConstrainedStep` until completion, EOS, or budget.
+  Mechanics: extends `generatedOut` token by token; `cost` increases by `stepsUsed`.
+  Cost: +`stepsUsed` token-steps (each inner step +1).
+
+- `helpers.GetHighestLogitToken(lm)` / `helpers.GetTokenLogit(lm, token)`
+  Role: read argmax or one coordinate from the current logit vector.
+  Mechanics: no forward pass; assumes logits already match the intended prefix.
+  Cost: +0.
+
+- `helpers.ScaleAllLogits(lm, scalar)`
+  Role: multiply every vocabulary logit by a positive scalar with bounds clamping.
+  Mechanics: no LM call; use before a sampling helper that reads the same logits.
+  Cost: +0.
+
+- `helpers.SaveLogitsSnapshot(lm)` / `helpers.RestoreLogitsSnapshot(lm, snapshot)`
+  Role: copy logits for branching or speculation.
+  Mechanics: full-array read/write; pairing restores prior logits without changing `cost` by itself.
+  Cost: +0 for snapshot ops alone.
+
+- `helpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
+  Role: count non-overlapping occurrences of `sub` in string `s`.
+  Cost: +0.
+
+- `helpers.PrefixToString(prefix)` / `helpers.ExtractContentBetweenDelimiters(input, startDelim, endDelim)` (static)
+  Role: stringify a token prefix or extract delimited substring content per contract.
+  Cost: +0.
+
+## LM and `Parser` surface (for calls inside the strategy body)
+
+Strategy code may also invoke `lm` and `parser` members directly when proofs permit.
+Summaries align with `synthesis/verify/library/README.md`; the `.dfy` file states full contracts.
+
+- **`lm`:** `GenerateLogits`, `ChooseNextToken`, `ChooseNextTokenUnconstrained`, `GenerateUnconstrainedChunk`,
+  `MaskValidNextAndEos`, `BoostValidNextAndEos`, `MaskToken` / `MaskTokens` / `MaskTokensExcept`,
+  `IdToToken`, `TokenToId`, logit readers, `IsMasked`, `HasUnmaskedToken`.
+- **`parser`:** `IsValidPrefix`, `IsCompletePrefix`, `IsDeadPrefix`, `ValidNextTokenCount`, `ValidNextToken`,
+  `ValidNextTokens`, `ParseG`.
 
 ## Proof sketch discipline
 
