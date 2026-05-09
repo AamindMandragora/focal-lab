@@ -927,7 +927,7 @@ def load_gsm_symbolic(
         ValueError: If config is not one of the valid options
     """
     try:
-        from datasets import load_dataset
+        from datasets import DownloadConfig, load_dataset
     except ImportError as e:
         raise RuntimeError(
             'Missing dependency `datasets`. Install with: pip install datasets'
@@ -943,15 +943,65 @@ def load_gsm_symbolic(
     limit_str = f' (limit={limit})' if limit else ''
     print(f'Loading GSM-Symbolic dataset (config={config}, split={split}{limit_str}{sample_str})...')
 
-    try:
-        ds = load_dataset('apple/GSM-Symbolic', name=config, split=split)
-    except Exception:
-        print(f"Failed to load split '{split}', trying 'test'...")
+    def _candidate_splits(primary: str) -> list[str]:
+        candidates = [primary]
+        for fallback in ("test", "train"):
+            if fallback not in candidates:
+                candidates.append(fallback)
+        return candidates
+
+    def _try_load(split_name: str, local_only: bool):
+        cfg = DownloadConfig(local_files_only=local_only)
+        return load_dataset(
+            'apple/GSM-Symbolic',
+            name=config,
+            split=split_name,
+            download_config=cfg,
+        )
+
+    ds = None
+    candidates = _candidate_splits(split)
+
+    # Try cache first, then online HF.
+    for split_name in candidates:
         try:
-            ds = load_dataset('apple/GSM-Symbolic', name=config, split='test')
+            ds = _try_load(split_name, local_only=True)
+            if split_name == split:
+                print(f"Loaded GSM-Symbolic split '{split_name}' from local HF cache.")
+            else:
+                print(
+                    f"Loaded GSM-Symbolic fallback split '{split_name}' "
+                    "from local HF cache."
+                )
+            break
         except Exception:
-            print("Failed to load 'test', trying 'train'...")
-            ds = load_dataset('apple/GSM-Symbolic', name=config, split='train')
+            continue
+
+    if ds is None:
+        print(
+            "No local HF cache entry found for requested GSM-Symbolic split(s); "
+            "falling back to online HuggingFace load."
+        )
+        last_error: Exception | None = None
+        for split_name in candidates:
+            try:
+                ds = _try_load(split_name, local_only=False)
+                if split_name == split:
+                    print(f"Loaded GSM-Symbolic split '{split_name}' from HuggingFace.")
+                else:
+                    print(
+                        f"Requested split '{split}' unavailable; loaded fallback split "
+                        f"'{split_name}' from HuggingFace."
+                    )
+                break
+            except Exception as e:
+                last_error = e
+                continue
+        if ds is None:
+            raise RuntimeError(
+                f"Failed to load GSM-Symbolic for config={config} "
+                f"with candidate splits {candidates}"
+            ) from last_error
 
     if limit is not None and limit > 0:
         if random_sample:

@@ -1652,6 +1652,138 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
+    // Snapshot current LM logits so search can branch/retry without losing state.
+    method SaveLogitsSnapshot(lm: LM) returns (snapshot: seq<Logit>)
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures |snapshot| == lm.Logits.Length
+      ensures forall i :: 0 <= i < lm.Logits.Length ==> snapshot[i] == lm.Logits[i]
+      ensures cost == old(cost)
+    {
+      snapshot := lm.Logits[0..lm.Logits.Length];
+    }
+
+    // Restore LM logits from a prior snapshot.
+    method RestoreLogitsSnapshot(lm: LM, snapshot: seq<Logit>)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires |snapshot| == lm.Logits.Length
+      ensures lm.ValidTokensIdsLogits()
+      ensures forall i :: 0 <= i < lm.Logits.Length ==> lm.Logits[i] == snapshot[i]
+      ensures cost == old(cost)
+    {
+      var i := 0;
+      while i < lm.Logits.Length
+        invariant 0 <= i <= lm.Logits.Length
+        invariant lm.ValidTokensIdsLogits()
+        invariant forall j :: 0 <= j < i ==> lm.Logits[j] == snapshot[j]
+        decreases lm.Logits.Length - i
+      {
+        lm.Logits[i] := snapshot[i];
+        i := i + 1;
+      }
+    }
+
+    // Rollout helper for search-style strategies: constrained decoding from a
+    // valid start prefix under a single local budget.
+    method RolloutConstrainedWithPenalties(
+      lm: LM, parser: Parser, prompt: Prefix, startPrefix: Prefix,
+      totalBudget: nat, penalties: seq<Token>, penaltyAmount: real, eosToken: Token
+    ) returns (generatedOut: Prefix, stepsUsed: nat, terminatedByEos: bool)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(startPrefix)
+      requires eosToken in lm.Tokens
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
+      ensures lm.ValidTokensIdsLogits()
+      ensures parser.IsValidPrefix(generatedOut)
+      ensures |startPrefix| <= |generatedOut| <= |startPrefix| + totalBudget
+      ensures stepsUsed <= totalBudget
+      ensures cost == old(cost) + stepsUsed
+    {
+      generatedOut := startPrefix;
+      stepsUsed := 0;
+      terminatedByEos := false;
+      while stepsUsed < totalBudget && !parser.IsCompletePrefix(generatedOut)
+        invariant 0 <= stepsUsed <= totalBudget
+        invariant lm.ValidTokensIdsLogits()
+        invariant parser.IsValidPrefix(generatedOut)
+        invariant |startPrefix| <= |generatedOut| <= |startPrefix| + stepsUsed
+        invariant !terminatedByEos
+        invariant cost == old(cost) + stepsUsed
+        decreases totalBudget - stepsUsed
+      {
+        var next := SafePenalizedConstrainedStep(
+          lm, parser, prompt, generatedOut, penalties, penaltyAmount, eosToken
+        );
+        if next == eosToken {
+          terminatedByEos := true;
+          stepsUsed := stepsUsed + 1;
+          break;
+        }
+        generatedOut := generatedOut + [next];
+        stepsUsed := stepsUsed + 1;
+      }
+    }
+
+    // CARS-style retry search:
+    // - attempt constrained rollout
+    // - if unfinished and retries remain, penalize the first newly emitted token
+    //   on the next try
+    // - operate under one global token budget so total cost stays bounded
+    method CarsRetryConstrainedGeneration(
+      lm: LM, parser: Parser, prompt: Prefix, startPrefix: Prefix,
+      totalBudget: nat, maxRetries: nat, penaltyAmount: real, eosToken: Token
+    ) returns (best: Prefix, retriesUsed: nat, terminatedByEos: bool)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(startPrefix)
+      requires eosToken in lm.Tokens
+      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
+      ensures lm.ValidTokensIdsLogits()
+      ensures parser.IsValidPrefix(best)
+      ensures |startPrefix| <= |best| <= |startPrefix| + totalBudget
+      ensures retriesUsed <= maxRetries
+      ensures cost <= old(cost) + totalBudget
+    {
+      best := startPrefix;
+      retriesUsed := 0;
+      terminatedByEos := false;
+      var penalties: seq<Token> := [];
+      var budgetUsed: nat := 0;
+      var done := false;
+
+      while !done && budgetUsed < totalBudget
+        invariant lm.ValidTokensIdsLogits()
+        invariant parser.IsValidPrefix(best)
+        invariant |startPrefix| <= |best| <= |startPrefix| + budgetUsed
+        invariant retriesUsed <= maxRetries
+        invariant budgetUsed <= totalBudget
+        invariant cost == old(cost) + budgetUsed
+        decreases totalBudget - budgetUsed, (if done then 0 else 1)
+      {
+        var remaining := totalBudget - budgetUsed;
+        var trial: Prefix;
+        var used: nat;
+        var hitEos: bool;
+        trial, used, hitEos := RolloutConstrainedWithPenalties(
+          lm, parser, prompt, startPrefix, remaining, penalties, penaltyAmount, eosToken
+        );
+        best := trial;
+        budgetUsed := budgetUsed + used;
+        terminatedByEos := hitEos;
+
+        if hitEos || parser.IsCompletePrefix(trial) {
+          done := true;
+        } else if retriesUsed < maxRetries && |trial| > |startPrefix| {
+          penalties := penalties + [trial[|startPrefix|]];
+          retriesUsed := retriesUsed + 1;
+        } else {
+          done := true;
+        }
+      }
+    }
+
     // Strategy 7: CRANE-style generation (Reasoning-Math-Reasoning).
     // Starts unconstrained. When "<<" is seen, switches to constrained.
     // When ">>" is seen, switches back to unconstrained.

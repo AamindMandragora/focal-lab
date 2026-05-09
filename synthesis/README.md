@@ -8,6 +8,15 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
 - `run_synthesis.py`
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
+  - Includes empirical helper-mask controls to constrain helper-call search space:
+    `--adaptive-helper-mask`, `--helper-selection-policy`,
+    `--helper-mask-min-evals`, `--helper-mask-min-uses`,
+    `--helper-mask-margin`, `--helper-mask-max-disabled`,
+    `--helper-bandit-min-evals`, `--helper-bandit-top-k`,
+    `--helper-bandit-ucb-c`, `--helper-bandit-explore-untried`.
+  - Includes local-beam refinement controls:
+    `--refinement-beam-size`, `--local-neighborhood-refinement`,
+    `--max-local-edit-ratio`, `--beam-verify-candidates`.
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
 

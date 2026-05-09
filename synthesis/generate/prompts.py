@@ -375,6 +375,7 @@ Generate a complete Dafny method body for this use-case.
 
 Task:
 {task_description}
+{allowed_helpers_block}
 
 Output ONLY the Dafny method body. Do NOT output a method signature, outer wrapper text, or markdown code fences.
 
@@ -1327,6 +1328,7 @@ Your previous method body failed Dafny verification.
 
 Task:
 {task_description}
+{allowed_helpers_block}
 
 {search_memory_block}
 Previous attempt:
@@ -1383,6 +1385,7 @@ Your method body passed Dafny verification but failed at runtime.
 
 Task:
 {task_description}
+{allowed_helpers_block}
 
 {search_memory_block}
 Previous attempt:
@@ -1404,6 +1407,7 @@ The corrected body must include the required rationale and proof sketch blocks a
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
+{allowed_helpers_block}
 {search_memory_block}
 Previous attempt:
 ```dafny
@@ -1425,6 +1429,7 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
+{allowed_helpers_block}
 {search_memory_block}
 Content to rewrite:
 ```dafny
@@ -1445,6 +1450,7 @@ Treat the evaluation results below as factual observations of generated outputs.
 
 Task:
 {task_description}
+{allowed_helpers_block}
 
 {search_memory_block}
 ## Strategy Context
@@ -1509,9 +1515,26 @@ The revised rationale should explain what changed in response to the evaluation 
 """
 
 
-def build_initial_prompt(task_description: str) -> tuple[str, str]:
+def _build_allowed_helpers_block(allowed_helpers: list[str] | None) -> str:
+    """Build a hard helper-call contract block for the current attempt."""
+    if not allowed_helpers:
+        return ""
+    helper_names = ", ".join(f"`{name}`" for name in sorted(set(allowed_helpers)))
+    return (
+        "Helper-call contract for this attempt:\n"
+        "Only these `helpers.<Method>(...)` calls are allowed:\n"
+        f"{helper_names}\n"
+        "Calls to helper methods outside this set are invalid for this attempt.\n\n"
+    )
+
+
+def build_initial_prompt(
+    task_description: str,
+    allowed_helpers: list[str] | None = None,
+) -> tuple[str, str]:
     user_prompt = INITIAL_GENERATION_PROMPT.format(
         task_description=task_description,
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         verified_examples=VERIFIED_EXAMPLES,
     )
     return SYSTEM_PROMPT, user_prompt
@@ -1526,6 +1549,7 @@ def build_verification_error_prompt(
     error_history: str = "",
     strategy_context: str = "",
     search_memory: str = "",
+    allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     behavioral_context_block = ""
     structured_feedback_block = ""
@@ -1559,6 +1583,7 @@ def build_verification_error_prompt(
         )
     user_prompt = VERIFICATION_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_message=error_message,
         strategy_context_block=strategy_context_block,
@@ -1576,10 +1601,12 @@ def build_runtime_error_prompt(
     error_traceback: str,
     task_description: str = "Unknown task",
     search_memory: str = "",
+    allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_traceback=error_traceback,
         search_memory_block=search_memory_block,
@@ -1591,9 +1618,11 @@ def build_compilation_error_prompt(
     previous_strategy: str,
     error_message: str,
     search_memory: str = "",
+    allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_message=error_message,
         search_memory_block=search_memory_block,
@@ -1601,9 +1630,14 @@ def build_compilation_error_prompt(
     return SYSTEM_PROMPT, user_prompt
 
 
-def build_format_repair_prompt(previous_strategy: str, search_memory: str = "") -> tuple[str, str]:
+def build_format_repair_prompt(
+    previous_strategy: str,
+    search_memory: str = "",
+    allowed_helpers: list[str] | None = None,
+) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = FORMAT_REPAIR_PROMPT.format(
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         previous_strategy=previous_strategy,
         search_memory_block=search_memory_block,
     )
@@ -1617,6 +1651,7 @@ def build_evaluation_failure_prompt(
     evaluation_history: str = "",
     working_hypothesis: str = "",
     search_memory: str = "",
+    allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     evaluation_history_block = ""
     working_hypothesis_block = ""
@@ -1636,6 +1671,7 @@ def build_evaluation_failure_prompt(
         )
     user_prompt = EVALUATION_FAILURE_REFINEMENT_PROMPT.format(
         task_description=task_description,
+        allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         previous_strategy=previous_strategy,
         working_hypothesis_block=working_hypothesis_block,
         evaluation_feedback=evaluation_feedback,

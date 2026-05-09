@@ -12,12 +12,55 @@ def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
 
 
 def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
-    from synthesis.evaluate.benchmarks.gsm_symbolic.dataset import load_gsm_from_crane_folder
+    from synthesis.evaluate.benchmarks.gsm_symbolic.dataset import (
+        load_gsm_from_crane_folder,
+        load_gsm_symbolic,
+    )
 
-    ds = load_gsm_from_crane_folder(
-        crane_dir=evaluator.gsm_source_dir,
+    indices = evaluator._load_gsm_split_indices()
+
+    # Only use local CRANE JSONs when explicitly requested.
+    if evaluator.gsm_source_dir is not None:
+        ds = load_gsm_from_crane_folder(
+            crane_dir=evaluator.gsm_source_dir,
+            limit=evaluator.sample_size,
+            indices=indices,
+        )
+        return list(ds)
+
+    # Default path: HuggingFace GSM-Symbolic.
+    split = "train" if evaluator.gsm_split_name == "train" else "test"
+
+    if indices is not None:
+        needed = max(indices) + 1 if indices else 0
+        ds = load_gsm_symbolic(
+            config="main",
+            split=split,
+            limit=needed if needed > 0 else None,
+            random_sample=False,
+        )
+        selected: list[dict[str, Any]] = []
+        for idx in indices:
+            if idx < 0 or idx >= len(ds):
+                raise IndexError(
+                    f"GSM split index {idx} is out of range for HF split "
+                    f"{split} (size={len(ds)})."
+                )
+            selected.append(ds[idx])
+        if evaluator.sample_size is not None and evaluator.sample_size > 0:
+            selected = selected[: evaluator.sample_size]
+        print(
+            f"Loaded {len(selected)} examples from HuggingFace GSM-Symbolic "
+            f"(split={split}) using split manifest indices"
+        )
+        return selected
+
+    ds = load_gsm_symbolic(
+        config="main",
+        split=split,
         limit=evaluator.sample_size,
-        indices=evaluator._load_gsm_split_indices(),
+        random_sample=evaluator.sample_seed is not None,
+        seed=evaluator.sample_seed,
     )
     return list(ds)
 

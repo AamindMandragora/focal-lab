@@ -86,6 +86,26 @@ CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --eval-sample-size 10
 ```
 
+Optional search-space controls for helper-call pruning:
+
+- `--adaptive-helper-mask` / `--no-adaptive-helper-mask`
+- `--helper-selection-policy` (`utility` or `bandit`)
+- `--helper-mask-min-evals`
+- `--helper-mask-min-uses`
+- `--helper-mask-margin`
+- `--helper-mask-max-disabled`
+- `--helper-bandit-min-evals`
+- `--helper-bandit-top-k`
+- `--helper-bandit-ucb-c`
+- `--helper-bandit-explore-untried`
+
+Optional local-beam refinement controls:
+
+- `--refinement-beam-size`
+- `--local-neighborhood-refinement` / `--no-local-neighborhood-refinement`
+- `--max-local-edit-ratio`
+- `--beam-verify-candidates` / `--no-beam-verify-candidates`
+
 ## Dafny Files Used by Synthesis
 
 - `synthesis/verify/library/GeneratedCSD.dfy`
