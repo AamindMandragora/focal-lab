@@ -32,15 +32,7 @@ MODELS = [
     ("Qwen/Qwen2.5-Coder-14B-Instruct", "14B"),
 ]
 BENCHMARKS = ["gsm_symbolic", "spider", "smiles"]
-STRATEGIES = ["unconstrained", "crane", "itergen", "cars", "metadecode"]
-
-STRATEGY_BENCHMARK_APPLICABLE = {
-    "unconstrained": {"gsm_symbolic", "spider", "smiles"},
-    "crane": {"gsm_symbolic", "spider"},
-    "itergen": {"gsm_symbolic", "spider", "smiles"},
-    "cars": {"smiles"},
-    "metadecode": {"gsm_symbolic", "spider", "smiles"},
-}
+STRATEGIES = ["unconstrained", "gcd", "crane", "itergen", "cars", "metadecode"]
 
 
 def _slugify(s: str) -> str:
@@ -123,9 +115,6 @@ def emit_main_table(baselines_dir: Path, generated_dir: Path) -> str:
         for strategy in STRATEGIES:
             row_cells: list[str] = []
             for benchmark in BENCHMARKS:
-                if benchmark not in STRATEGY_BENCHMARK_APPLICABLE.get(strategy, set()):
-                    row_cells.extend(["--", "--"])
-                    continue
                 if strategy == "metadecode":
                     data = _load_metadecode(generated_dir, benchmark, model_full)
                 else:
@@ -138,6 +127,7 @@ def emit_main_table(baselines_dir: Path, generated_dir: Path) -> str:
 
             strategy_label = {
                 "unconstrained": "Unconstr.",
+                "gcd": r"\GCD",
                 "crane": r"\Crane",
                 "itergen": r"\IterGen",
                 "cars": r"\CARS",
@@ -157,10 +147,12 @@ def emit_step_budget_table(baselines_dir: Path, generated_dir: Path, step_budget
     lines: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
-    for strategy in ["crane", "itergen", "metadecode"]:
+    for strategy in ["gcd", "crane", "itergen", "cars", "metadecode"]:
         strategy_label = {
+            "gcd": r"\GCD",
             "crane": r"\Crane",
             "itergen": r"\IterGen",
+            "cars": r"\CARS",
             "metadecode": r"\Tool",
         }.get(strategy, strategy)
 

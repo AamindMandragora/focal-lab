@@ -6,7 +6,7 @@ cd "$ROOT_DIR"
 
 DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct"
 DEFAULT_BENCHMARKS="smiles,gsm,spider"
-DEFAULT_STRATEGIES="unconstrained,crane,itergen,cars,metadecode"
+DEFAULT_STRATEGIES="unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS="1,2,4"
 DEFAULT_SYNTH_ITERS="3,5,10"
 DEFAULT_GEN_MODELS="gpt5.4,opus4.7,gemini-pro"
@@ -41,18 +41,15 @@ Runs strategy x model x benchmark matrix, plus ablations.
 Without arguments, defaults to:
 - eval models: Qwen2.5-Coder {1.5B, 7B, 14B}
 - benchmarks: smiles, gsm, spider
-- strategies: unconstrained, crane, itergen, cars, metadecode
+- strategies: unconstrained, gcd, crane, itergen, cars, metadecode
 - eval token-budget ablation: 1,2,4
 - metadecode synthesis-iteration ablation: 3,5,10
 - metadecode generation-model ablation: gpt5.4, opus4.7, gemini-pro
 - step-budget ablation: 256,512,1024
 
-Strategy-benchmark applicability:
-  crane:         gsm, spider (not smiles — no delimiter-based switching)
-  cars:          smiles only (full-output constrained rejection sampling)
-  unconstrained: all benchmarks
-  itergen:       all benchmarks
-  metadecode:    all benchmarks
+All strategies are evaluated on all benchmarks via legacy external
+codebases (crane, itergen, cars, gcd/syncode) or the synthesis
+pipeline (metadecode). Unconstrained uses the legacy adapter.
 
 Options:
   --models CSV                  Eval models list
@@ -141,23 +138,6 @@ slugify() {
   echo "$s"
 }
 
-# Returns 0 (true) if strategy applies to benchmark, 1 (false) otherwise.
-strategy_applies() {
-  local strategy="$1"
-  local benchmark="$2"
-  case "$strategy" in
-    crane)
-      [[ "$benchmark" == "gsm_symbolic" || "$benchmark" == "spider" ]]
-      ;;
-    cars)
-      [[ "$benchmark" == "smiles" ]]
-      ;;
-    *)
-      return 0
-      ;;
-  esac
-}
-
 metadecode_task() {
   local benchmark="$1"
   case "$benchmark" in
@@ -210,17 +190,13 @@ run_fixed_strategy_case() {
   local token_budget="$4"
   local max_steps="$5"
 
-  if ! strategy_applies "$strategy" "$benchmark"; then
-    echo "[skip] strategy=$strategy not applicable to benchmark=$benchmark"
-    return 0
-  fi
-
   local model_slug
   model_slug="$(slugify "$eval_model")"
 
   local out_json="${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark}__tb${token_budget}__ms${max_steps}.json"
   mkdir -p "$(dirname "$out_json")"
 
+  # All fixed strategies (unconstrained, gcd, crane, itergen, cars) use legacy adapters.
   local cmd=(
     python -m synthesis.evaluate.run_legacy_fixed_strategy
     --strategy "$strategy"
@@ -367,7 +343,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
   for raw_benchmark in "gsm" "spider"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for step_budget in "${STEP_BUDGETS_ARR[@]}"; do
-      for strategy in "crane" "itergen" "metadecode"; do
+      for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
         if [[ "$strategy" == "metadecode" ]]; then
           run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
             "${SYNTH_ITERS_ARR[-1]}" "${GEN_MODELS_ARR[0]}" "$step_budget"
@@ -404,7 +380,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
   for raw_benchmark in "gsm" "spider"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for token_budget in "${TOKEN_BUDGETS_ARR[@]}"; do
-      for strategy in "crane" "itergen" "metadecode"; do
+      for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
         if [[ "$strategy" == "metadecode" ]]; then
           run_metadecode_case "$benchmark" "$ABLATION_MODEL" "$token_budget" \
             "${SYNTH_ITERS_ARR[-1]}" "${GEN_MODELS_ARR[0]}" "$EVAL_MAX_STEPS"

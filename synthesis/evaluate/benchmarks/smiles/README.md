@@ -17,6 +17,10 @@ This module evaluates synthesized CSD strategies on constrained molecular-string
 - `metrics.py`: RDKit-based validity and membership metrics.
 - `data/`: per-class assets (grammars, exemplars, reference sets).
 
+## Constraint mode
+
+Strategies decide their own constraint behaviour. The prompt appends `<< >>` delimiter instructions — CRANE can reason before emitting `<<SMILES>>`, while GCD constrains from token 1. The evaluator prefers extracting from `<< >>` when present and falls back to `clean_smiles_output` on the raw text otherwise.
+
 ## Evaluation Behavior
 
 SMILES scoring treats syntax validity and class-membership quality as separate signals.

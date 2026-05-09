@@ -37,7 +37,12 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    return example.get("prompt", "")
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nWrap your answer molecule in << >> delimiters, e.g. <<CC(=O)OC=C>>.\n"
+        "Molecule: "
+    )
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
@@ -68,14 +73,22 @@ def extract_actual(
     scored_output: str,
     example: dict[str, Any],
 ) -> tuple[str | None, str, dict[str, Any] | None]:
+    import re
     from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
 
     class_name = example.get("class_name", "smiles")
+    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
+    prompt_exemplars = example.get("prompt_exemplars", [])
+
+    # Prefer extracting from << >> delimiters when present.
+    expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
+    candidate = expr_matches[-1].strip() if expr_matches else scored_output
+
     smiles_eval = evaluate_smiles_output(
         class_name,
-        scored_output,
-        example.get("grammar_text", evaluator._get_grammar_text()),
-        example.get("prompt_exemplars", []),
+        candidate,
+        grammar_text,
+        prompt_exemplars,
         require_rdkit=True,
     )
     return smiles_eval["smiles"] or None, "smiles_eval", smiles_eval
@@ -93,7 +106,7 @@ def is_correct(
 
 
 def uses_hidden_chunks() -> bool:
-    return True
+    return False
 
 
 def example_syntax_pass(
