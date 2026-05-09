@@ -111,11 +111,14 @@ var next := helpers.SafeRepetitionPenaltyStep(lm, parser, prompt, currentConstra
 var next := helpers.SafeTemperatureConstrainedStep(lm, parser, prompt, currentConstrained, 0.8, eosToken);
 var next, usedFallback := helpers.SafeSoftConstrainedStep(lm, parser, prompt, currentConstrained, 8.0, eosToken);
 var next := helpers.GroupBoostedConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, eosToken);
+helpers.BoostValidGroups(lm, parser, currentConstrained, groups, amount);
 var next := helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, 12, eosToken);
 var nextPen := helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, penaltyTokens, 4.0, 12, eosToken);
 var gap := helpers.GetLogitGap(lm);
 var topK := helpers.GetTopKTokens(lm, k);
 helpers.MaskTokensInPrefix(lm, generated);
+var snap := helpers.SaveLogitsSnapshot(lm);
+helpers.RestoreLogitsSnapshot(lm, snap);
 var candTok, candPre, hitComplete, hitEos, stepsUsed := helpers.SpeculativeConstrainedRollout(lm, parser, prompt, currentConstrained, numSpecSteps, eosToken);
 var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(lm, prompt, generated, maxChunkTokens, openSpanToken, eosToken);
 var currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbol(lm, parser, constrainedPrompt, currentConstrained, stepTokenBudget, eosToken);
@@ -262,6 +265,12 @@ consume token budget by themselves.
   hard-masks to parser-valid next tokens plus EOS.
   Cost: +1 token-step, including EOS.
   Control profile: hard parser control with soft preference among legal choices.
+
+- `helpers.BoostValidGroups(lm, parser, prefix, groups, amount)`
+  Role: apply the same per-group soft boost used inside group-boosted steps, without sampling.
+  Mechanics: for each `groups[i]` such that `GroupHasValidMember` is true at `prefix`, calls `SafeBoostTokenLogits(lm, groups[i], amount)` (non-vocabulary tokens in the group are ignored).
+  Cost: +0 (no `GenerateLogits` / `ChooseNextToken` in this helper).
+  Control profile: logit shaping only; call after `GenerateLogits` if logits must reflect the current prefix.
 
 - `helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, amount, narrowThreshold, eosToken)`
   Role: one parser-valid token choice with group preferences applied only at

@@ -12,4 +12,5 @@
 
 ## See also
 
-- **`README.md`** in this folder for file map and verification commands.
+- **`README.md`** in this folder for file map, per-member summaries of `VerifiedAgentSynthesis.dfy`, and editing guidance.
+- **`../reference/README.md`** for verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`).

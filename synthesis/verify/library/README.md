@@ -5,7 +5,7 @@ These files are the foundation for both verification and runtime compilation.
 
 ## Files
 
-- Verified baseline-style examples live under `../reference/` (`ReferenceCraneCSD.dfy`, `ReferenceIterGenCSD.dfy`, `ReferenceCarsCSD.dfy`); copy `MyCSDStrategy` into `GeneratedCSD.dfy` to run them in the pipeline.
+- Verified baseline-style examples live under `../reference/` (`crane.dfy`, `itergen.dfy`, `cars.dfy`); see `../reference/README.md`. Copy `MyCSDStrategy` into `GeneratedCSD.dfy` to run them in the pipeline.
 - `GeneratedCSD.dfy`
   - Template file containing insertion markers where generated strategy logic is placed.
   - Treated as a reusable scaffold; synthesis should not permanently overwrite template semantics.
@@ -19,6 +19,7 @@ Types: **`Token`** is `string`; **`Prefix`** is `seq<Token>`; **`Id`** is `nat`;
 
 ### `LM` (extern-backed language model)
 
+- **`Tokens` / `Ids` / `Logits`** — Immutable vocabulary and id sequences plus mutable per-step logit array (lengths tied by `ValidTokensIdsLogits`).
 - **`ValidTokensIdsLogits`** — Predicate: vocabulary, ids, and logits lengths align, ids are 0..n-1, tokens are unique, every token has a logit in a fixed finite range.
 - **Constructor** — Establishes `ValidTokensIdsLogits()` for a fresh model instance.
 - **`IdToToken` / `TokenToId` / `TokenToIdRecursive`** — Bijective lookup between ids and vocabulary tokens (`Recursive` is the spec implementation helper).

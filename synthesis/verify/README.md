@@ -18,6 +18,8 @@ It has two tightly coupled jobs: formal verification and compilation.
   - Dafny build wrapper (`--target:py`) with output capture and error parsing.
 - `library/`
   - Dafny source files used as synthesis substrate; see `library/README.md` for a member-by-member index of `VerifiedAgentSynthesis.dfy`.
+- `reference/`
+  - Verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`); see `reference/README.md`.
 
 ## Verification and Compile Relationship
 
