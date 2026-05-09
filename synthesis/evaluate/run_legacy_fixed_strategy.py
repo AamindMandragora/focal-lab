@@ -338,15 +338,87 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
+    """Unconstrained SMILES generation: generate without grammar masking, then score."""
+    from synthesis.evaluate.benchmarks.smiles.dataset import load_smiles, SMILES_CLASSES
+    from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
+
+    examples = load_smiles(classes=list(SMILES_CLASSES), samples_per_class=max(1, args.eval_sample_size))
+
+    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+
+    if args.eval_backend == "vllm":
+        from vllm import LLM, SamplingParams
+
+        llm = LLM(
+            model=args.eval_model,
+            gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+            max_model_len=4096,
+            trust_remote_code=True,
+        )
+        sampling_params = SamplingParams(
+            max_tokens=args.eval_max_steps,
+            temperature=0.0,
+            stop=["\n\n"],
+        )
+
+        prompts = [ex.get("prompt", "") for ex in examples]
+        outputs = llm.generate(prompts, sampling_params)
+        generated_texts = [out.outputs[0].text for out in outputs]
+    else:
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        import torch
+
+        tokenizer = AutoTokenizer.from_pretrained(args.eval_model, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            args.eval_model, device_map=device, torch_dtype=torch.float16, trust_remote_code=True
+        )
+        generated_texts = []
+        for ex in examples:
+            prompt = ex.get("prompt", "")
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                out_ids = model.generate(**inputs, max_new_tokens=args.eval_max_steps, do_sample=False)
+            generated_texts.append(tokenizer.decode(out_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True))
+
+    rows: list[dict[str, Any]] = []
+    for example, gen_text in zip(examples, generated_texts):
+        class_name = example.get("class_name", "smiles")
+        grammar_text = example.get("grammar_text", "")
+        prompt_exemplars = example.get("prompt_exemplars", [])
+        smiles_eval = evaluate_smiles_output(
+            class_name=class_name,
+            output=gen_text,
+            grammar_text=grammar_text,
+            prompt_exemplars=prompt_exemplars,
+            require_rdkit=True,
+        )
+        rows.append(
+            {
+                "question": class_name,
+                "llm_response": gen_text,
+                "correct": bool(smiles_eval.get("unique_valid_candidate", False)),
+                "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
+            }
+        )
+
+    _build_minimal_json(rows, args.output_json)
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
 def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     dataset = _normalize_dataset(args.dataset)
-    if dataset == "smiles" and args.strategy in {"unconstrained", "crane"}:
+    if dataset == "smiles" and args.strategy == "crane":
         print(
-            f"[warn] Legacy CRANE does not support dataset={dataset} for strategy={args.strategy}. "
+            f"[warn] Legacy CRANE does not support SMILES (no delimiter-based switching for full-output constrained tasks). "
             f"Writing empty baseline JSON to {args.output_json}."
         )
         _write_empty_baseline(args.output_json)
         return 0
+
+    if dataset == "smiles" and args.strategy == "unconstrained":
+        return run_unconstrained_smiles_adapter(args)
 
     mode, do_cot = _mode_for_strategy(args.strategy)
     grammar = _crane_grammar_name(dataset)
