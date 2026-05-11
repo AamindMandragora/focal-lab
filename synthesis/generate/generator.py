@@ -126,6 +126,7 @@ class StrategyGenerator:
         self._vllm = None
         self._current_task_description: Optional[str] = None
         self._prompt_log_counter = 0
+        self._synthesis_context: Optional[dict[str, str]] = None
 
         # Load template
         self._template = self._load_template()
@@ -195,6 +196,33 @@ class StrategyGenerator:
                 "Make sure GeneratedCSD.dfy exists in synthesis/verify/library/."
             )
         return self.TEMPLATE_PATH.read_text()
+
+    def set_synthesis_context(
+        self,
+        eval_model: str,
+        dataset: str,
+        max_steps: int,
+        step_token_budget: int,
+    ) -> None:
+        """Store runtime evaluation context for inclusion in synthesis prompts."""
+        self._synthesis_context = {
+            "eval_model": eval_model,
+            "dataset": dataset,
+            "max_steps": str(max_steps),
+            "step_token_budget": str(step_token_budget),
+        }
+
+    def _synthesis_context_block(self) -> str:
+        if not self._synthesis_context:
+            return ""
+        ctx = self._synthesis_context
+        return (
+            "\n\n## Runtime Context\n"
+            f"- Evaluation model: {ctx['eval_model']}\n"
+            f"- Dataset: {ctx['dataset']}\n"
+            f"- maxSteps budget: {ctx['max_steps']}\n"
+            f"- stepTokenBudget: {ctx['step_token_budget']}\n"
+        )
     
     def _ensure_backend_loaded(self) -> None:
         """Lazy-load the selected backend."""
@@ -316,7 +344,8 @@ class StrategyGenerator:
         """
         self._ensure_backend_loaded()
 
-        # Format as chat messages
+        system_prompt = system_prompt + self._synthesis_context_block()
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}

@@ -4,7 +4,7 @@ set -u
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct"
+DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct,meta-llama/Llama-3.1-8B-Instruct"
 DEFAULT_BENCHMARKS="smiles,gsm,spider"
 DEFAULT_STRATEGIES="unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS="1,2,4"
@@ -39,7 +39,7 @@ Usage: ./run_all_tests.sh [options]
 
 Runs strategy x model x benchmark matrix, plus ablations.
 Without arguments, defaults to:
-- eval models: Qwen2.5-Coder {1.5B, 7B, 14B}
+- eval models: Qwen2.5-Coder {1.5B, 7B, 14B}, Llama-3.1-8B-Instruct
 - benchmarks: smiles, gsm, spider
 - strategies: unconstrained, gcd, crane, itergen, cars, metadecode
 - eval token-budget ablation: 1,2,4
@@ -340,7 +340,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
 
   # --- Ablation A: Step budget (max_steps) ---
   echo "--- Ablation A: Step budget ---"
-  for raw_benchmark in "gsm" "spider"; do
+  for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for step_budget in "${STEP_BUDGETS_ARR[@]}"; do
       for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
@@ -357,7 +357,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
 
   # --- Ablation B: Synthesis iterations K ---
   echo "--- Ablation B: Synthesis iterations ---"
-  for raw_benchmark in "gsm" "spider"; do
+  for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for synth_iter in "${SYNTH_ITERS_ARR[@]}"; do
       run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
@@ -367,7 +367,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
 
   # --- Ablation C: Synthesizer model ---
   echo "--- Ablation C: Synthesizer model ---"
-  for raw_benchmark in "gsm" "spider"; do
+  for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for gen_profile in "${GEN_MODELS_ARR[@]}"; do
       run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
@@ -377,7 +377,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
 
   # --- Ablation D: Per-step token budget ---
   echo "--- Ablation D: Per-step token budget ---"
-  for raw_benchmark in "gsm" "spider"; do
+  for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for token_budget in "${TOKEN_BUDGETS_ARR[@]}"; do
       for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
@@ -389,6 +389,81 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
             "$token_budget" "$EVAL_MAX_STEPS"
         fi
       done
+    done
+  done
+
+  # --- Ablation E: Beam refinement x helper selection policy ---
+  echo "--- Ablation E: Beam refinement x helper selection policy ---"
+  for raw_benchmark in "gsm" "spider" "smiles"; do
+    benchmark="$(normalize_benchmark "$raw_benchmark")"
+    for beam_size in 1 2 4; do
+      for policy in "utility" "bandit"; do
+        task_e="$(metadecode_task "$benchmark")"
+        run_name_e="ablat_beam${beam_size}_${policy}_${benchmark}"
+        cmd_e=(
+          python -m synthesis.run_synthesis
+          --task "$task_e"
+          --dataset "$benchmark"
+          --generation-backend "openai"
+          --generation-model "gpt-5.4"
+          --eval-model "$ABLATION_MODEL"
+          --eval-backend "$EVAL_BACKEND"
+          --max-iterations "${SYNTH_ITERS_ARR[-1]}"
+          --output-name "$run_name_e"
+          --min-accuracy "0.0"
+          --min-syntax-rate "0.0"
+          --eval-sample-size "$EVAL_SAMPLE_SIZE"
+          --eval-max-steps "$EVAL_MAX_STEPS"
+          --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
+          --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
+          --device "$DEVICE"
+          --output-dir "$GENERATED_OUTPUT_DIR"
+          --refinement-beam-size "$beam_size"
+          --helper-selection-policy "$policy"
+        )
+        if [[ -n "$DAFNY_PATH" ]]; then
+          cmd_e+=(--dafny-path "$DAFNY_PATH")
+        fi
+        run_cmd "${cmd_e[@]}"
+      done
+    done
+  done
+
+  # --- Ablation F: Adaptive helper masking on/off ---
+  echo "--- Ablation F: Adaptive helper masking ---"
+  for mask_flag in "--adaptive-helper-mask" "--no-adaptive-helper-mask"; do
+    for raw_benchmark in "gsm" "spider" "smiles"; do
+      benchmark="$(normalize_benchmark "$raw_benchmark")"
+      task_f="$(metadecode_task "$benchmark")"
+      mask_label="mask_on"
+      if [[ "$mask_flag" == "--no-adaptive-helper-mask" ]]; then
+        mask_label="mask_off"
+      fi
+      run_name_f="ablat_${mask_label}_${benchmark}"
+      cmd_f=(
+        python -m synthesis.run_synthesis
+        --task "$task_f"
+        --dataset "$benchmark"
+        --generation-backend "openai"
+        --generation-model "gpt-5.4"
+        --eval-model "$ABLATION_MODEL"
+        --eval-backend "$EVAL_BACKEND"
+        --max-iterations "${SYNTH_ITERS_ARR[-1]}"
+        --output-name "$run_name_f"
+        --min-accuracy "0.0"
+        --min-syntax-rate "0.0"
+        --eval-sample-size "$EVAL_SAMPLE_SIZE"
+        --eval-max-steps "$EVAL_MAX_STEPS"
+        --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
+        --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
+        --device "$DEVICE"
+        --output-dir "$GENERATED_OUTPUT_DIR"
+        "$mask_flag"
+      )
+      if [[ -n "$DAFNY_PATH" ]]; then
+        cmd_f+=(--dafny-path "$DAFNY_PATH")
+      fi
+      run_cmd "${cmd_f[@]}"
     done
   done
 
