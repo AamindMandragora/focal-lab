@@ -2707,7 +2707,13 @@ class SynthesisPipeline:
             extra_args=list(self.compiler.extra_args),
         )
 
-        # Initial generation
+        self.generator.set_synthesis_context(
+            eval_model=self.evaluator.model_name,
+            dataset=self.evaluator.dataset_name,
+            max_steps=self.evaluator.max_steps,
+            step_token_budget=self.evaluator.step_token_budget,
+        )
+
         print(f"Generating initial strategy for: {task_description}")
         allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
         if helper_status:

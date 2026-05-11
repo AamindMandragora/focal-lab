@@ -1,6 +1,7 @@
 include "../library/VerifiedAgentSynthesis.dfy"
 
-// Reference reconstruction: unconstrained chunk + longest valid-prefix acceptance inside << ... >> (IterGen-style).
+// Reference reconstruction: speculative unconstrained step with grammar-mask
+// fallback at every constrained token (IterGen-style).
 module ReferenceIterGenCSD {
   import opened VerifiedDecoderAgent
 
@@ -75,23 +76,15 @@ module ReferenceIterGenCSD {
           cur := [];
         }
       } else {
-        var remaining := maxSteps - helpers.cost;
-        if remaining == 0 {
+        var next: Token;
+        var fb: bool;
+        next, fb := helpers.SafeSoftConstrainedStep(
+          lm, parser, prompt, cur, 0.0, eosToken
+        );
+        if next == eosToken {
           break;
         }
-        var symBudget := if stepTokenBudget > 0 then stepTokenBudget else 1;
-        if symBudget > remaining {
-          symBudget := remaining;
-        }
-        var stableLen := |g| - |cur|;
-        var stablePrefix := g[..stableLen];
-        var curOut, hitEos, stepsUsed :=
-          helpers.ConstrainedSymbol(lm, parser, prompt, cur, symBudget, eosToken);
-        g := stablePrefix + curOut;
-        cur := curOut;
-        if hitEos {
-          break;
-        }
+        g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
       }
     }
 

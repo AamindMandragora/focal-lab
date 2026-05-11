@@ -5,13 +5,10 @@ module VerifiedDecoderAgent {
   type Logit = real
 
   class LM {
-    // Library functions to be implemented in Python using TensorFlow.
-
     const Tokens: seq<Token>
     const Ids: seq<Id>
     var Logits: array<Logit>
 
-    // This predicate ensures that there's a bijection from Ids to Tokens, that the set of Ids are just a subsequence of the natural numbers (like indices in an array), and that each token has a corresponding logit between some upper and lower bound (pre-softmax).
     predicate ValidTokensIdsLogits()
       reads this
       reads this.Logits
@@ -23,11 +20,9 @@ module VerifiedDecoderAgent {
       (forall i :: (0 <= i < Logits.Length) ==> (-1000000000.0 <= Logits[i] && Logits[i] <= 1000000000.0))
     }
 
-    // The constructor for this LM wrapper class will create lists of Tokens, Ids, and Logits according to the above standards.
     constructor {:extern} {:axiom} ()
       ensures ValidTokensIdsLogits()
 
-    // Function for getting an id's corresponding token.
     function IdToToken(id: Id) : (token: Token)
       reads this
       reads this.Logits
@@ -41,7 +36,6 @@ module VerifiedDecoderAgent {
       Tokens[id]
     }
 
-    // Function for getting a token's corresponding id.
     function TokenToId(token: Token) : (id: Id)
       reads this
       reads this.Logits
@@ -55,7 +49,6 @@ module VerifiedDecoderAgent {
       TokenToIdRecursive(token, 0)
     }
 
-    // Helper function for the above method, actual implementation will not be recursive.
     function TokenToIdRecursive(token: Token, offset: nat) : (id: Id)
       reads this
       reads this.Logits
@@ -73,7 +66,6 @@ module VerifiedDecoderAgent {
       else TokenToIdRecursive(token, offset + 1)
     }
 
-    // Function for getting an id's corresponding logit. 
     function IdToLogit(id: Id) : (logit: Logit)
       reads this
       reads this.Logits
@@ -85,7 +77,6 @@ module VerifiedDecoderAgent {
       Logits[id]
     }
 
-    // Function for getting a token's corresponding logit.
     function TokenToLogit(token: Token): (logit: Logit)
       reads this
       reads this.Logits
@@ -96,7 +87,6 @@ module VerifiedDecoderAgent {
       IdToLogit(TokenToId(token))
     }
 
-    // Function for getting the corresponding logits for a list of tokens.
     function TokensToLogits(tokens: seq<Token>): (logits: seq<Logit>)
       reads this
       reads this.Logits
@@ -109,7 +99,6 @@ module VerifiedDecoderAgent {
       else [TokenToLogit(tokens[0])] + TokensToLogits(tokens[1..])
     }
 
-    // Function for getting the corresponding logits for a list of ids.
     function IdsToLogits(ids: seq<Id>): (logits: seq<Logit>)
       reads this
       reads this.Logits
@@ -122,7 +111,6 @@ module VerifiedDecoderAgent {
       else [IdToLogit(ids[0])] + IdsToLogits(ids[1..])
     }
 
-    // Method that sets a token's logit to -1000000000.0, ensuring it is never chosen.
     method MaskToken(token: Token)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -136,7 +124,6 @@ module VerifiedDecoderAgent {
       Logits[id] := -1000000000.0;
     }
 
-    // Method that masks a list of tokens, ensuring none of them are chosen.
     method MaskTokens(tokens: seq<Token>)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -160,7 +147,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Method that masks every token except for a list of tokens, ensuring only one of them is chosen.
     method MaskTokensExcept(tokens: seq<Token>)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -193,7 +179,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Function that checks if a specific token is masked.
     predicate IsMasked(token: Token)
       reads this
       reads this.Logits
@@ -204,7 +189,6 @@ module VerifiedDecoderAgent {
       Logits[TokenToId(token)] == -1000000000.0
     }
 
-    // Function that checks if an unmasked token exists to choose from.
     predicate HasUnmaskedToken()
       reads this
       reads this.Logits
@@ -214,26 +198,21 @@ module VerifiedDecoderAgent {
       exists t: Token :: t in Tokens && !IsMasked(t)
     }
 
-    // Extern method that calculates the logits for next possible tokens given an input string.
     method {:extern} {:axiom} GenerateLogits(input: Prefix)
       modifies this.Logits
       requires ValidTokensIdsLogits()
       ensures ValidTokensIdsLogits()
 
-    // Extern method choosing the next token using the calculated logits.
     method {:extern} {:axiom} ChooseNextToken() returns (token: Token)
       requires ValidTokensIdsLogits()
       ensures token in Tokens
       ensures !IsMasked(token)
       ensures ValidTokensIdsLogits()
 
-    // Extern method choosing the next token from the FULL vocabulary.
     method {:extern} {:axiom} ChooseNextTokenUnconstrained() returns (token: Token)
       ensures token in Tokens
       ensures ValidTokensIdsLogits()
 
-    // Extern method generating a short unconstrained continuation in one runtime call.
-    // The returned chunk excludes EOS, but includes openSpanToken when that token ended the chunk.
     method {:extern} {:axiom} GenerateUnconstrainedChunk(
       input: Prefix, maxNewTokens: nat, openSpanToken: Token, eosToken: Token
     ) returns (chunk: Prefix, stoppedOnOpenSpan: bool, stoppedOnEos: bool, stepsUsed: nat)
@@ -250,8 +229,6 @@ module VerifiedDecoderAgent {
       ensures !stoppedOnEos ==> stepsUsed == |chunk|
       ensures maxNewTokens > 0 ==> stepsUsed > 0
 
-    // Bulk hard-mask using the parser's valid-next set plus EOS.
-    // Runtime implementations may use DFA masks directly instead of materializing tokens.
     method {:extern} {:axiom} MaskValidNextAndEos(parser: Parser, prefix: Prefix, eosToken: Token)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -260,8 +237,6 @@ module VerifiedDecoderAgent {
       ensures ValidTokensIdsLogits()
       ensures forall t :: t in Tokens && !parser.ValidNextToken(prefix, t) && t != eosToken ==> IsMasked(t)
 
-    // Bulk soft-boost using the parser's valid-next set plus EOS.
-    // Runtime implementations may apply the boost from a DFA mask directly.
     method {:extern} {:axiom} BoostValidNextAndEos(parser: Parser, prefix: Prefix, amount: real, eosToken: Token)
       modifies this.Logits
       requires ValidTokensIdsLogits()
@@ -272,41 +247,30 @@ module VerifiedDecoderAgent {
   }
 
   class Parser {
-    // Library functions to be implemented in Python using Lark.
-
-    // Extern function checking if the given prefix is valid under the grammar.
     predicate {:extern} {:axiom} IsValidPrefix(prefix: Prefix)
       ensures forall k: nat :: 0 <= k < |prefix| - 1 ==> IsValidPrefix(prefix[k..])
 
-    // Extern function checking if the given prefix is complete under the grammar.
     predicate {:extern} {:axiom} IsCompletePrefix(prefix: Prefix)
       ensures IsValidPrefix(prefix)
 
-    // Extern function returning the exact number of valid continuations without
-    // materializing the entire continuation set.
     function {:extern} {:axiom} ValidNextTokenCount(prefix: Prefix): nat
       requires IsValidPrefix(prefix)
       ensures ValidNextTokenCount(prefix) == |ValidNextTokens(prefix)|
 
-    // Function checking if the prefix isn't complete and cannot be completed.
     predicate IsDeadPrefix(prefix: Prefix)
     {
       !IsCompletePrefix(prefix) && ValidNextTokenCount(prefix) == 0
     }
 
-    // Function checking if the given token is a valid continuation of the prefix.
     predicate {:extern} {:axiom} ValidNextToken(prefix: Prefix, token: Token)
       requires IsValidPrefix(prefix)
       ensures ValidNextToken(prefix, token) <==> token in ValidNextTokens(prefix)
 
-    // Extern function returning the set of next tokens valid under the grammar.
     function {:extern} {:axiom} ValidNextTokens(prefix: Prefix): seq<Token>
       requires IsValidPrefix(prefix)
       ensures forall t :: t in ValidNextTokens(prefix) ==> IsValidPrefix(prefix + [t])
       ensures (IsCompletePrefix(prefix) || |ValidNextTokens(prefix)| > 0)
 
-    // Parses a raw string using the grammar.
-    // isSuccess: true if the string is fully valid under the grammar, false otherwise.
     method {:extern} {:axiom} ParseG(input: string) returns (isSuccess: bool)
   }
 
@@ -316,8 +280,6 @@ module VerifiedDecoderAgent {
   }
 
   class CSDHelpers {
-    // Library functions that QWEN must directly use to synthesize the constrained decoding agent.
-
     var cost: int
 
     constructor()
@@ -326,7 +288,6 @@ module VerifiedDecoderAgent {
       cost := 0;
     }
 
-    // Performs a single unconstrained decoding step and returns the next token.
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
@@ -338,9 +299,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Generates a short unconstrained continuation in one runtime call.
-    // The emitted chunk excludes EOS; if stoppedOnOpenSpan is true, the returned
-    // generatedOut already ends with openSpanToken.
     method UnconstrainedChunk(
       lm: LM, prompt: Prefix, generated: Prefix, maxChunkTokens: nat, openSpanToken: Token, eosToken: Token
     ) returns (generatedOut: Prefix, stoppedOnOpenSpan: bool, stoppedOnEos: bool, stepsUsed: nat)
@@ -368,19 +326,8 @@ module VerifiedDecoderAgent {
       cost := cost + stepsUsed;
     }
 
-    // Generates one "symbol" worth of tokens by issuing one multi-token LM call,
-    // then accepting the longest valid-parser-prefix of that chunk.
-    //
-    // Unlike ConstrainedStep (one token, hard-masked), this lets the LM generate
-    // naturally for up to maxSymbolTokens tokens in a single forward pass.
-    // Only the longest valid prefix is kept, so multi-subword identifiers like
-    // "highschooler" can be emitted as a natural unit and validated holistically.
-    //
-    // Cost: bumps helpers.cost by stepsUsed (tokens generated, which may exceed
-    // the number of tokens accepted into currentOut).
-    //
-    // Use: replace ConstrainedStep when token-level hard-masking breaks the
-    // model's natural multi-token identifiers or clause boundaries.
+    // Generates one symbol worth of tokens via a multi-token LM call,
+    // then accepts the longest parser-valid prefix of the emitted chunk.
     method ConstrainedSymbol(
       lm: LM, parser: Parser, constrainedPrompt: Prefix, currentConstrained: Prefix,
       maxSymbolTokens: nat, eosToken: Token
@@ -402,14 +349,11 @@ module VerifiedDecoderAgent {
       var chunk: Prefix;
       var stoppedOnOpen: bool;
       var stoppedOnEos: bool;
-      // Use "<<" as the open-span sentinel — it should not appear in valid SQL
-      // or arithmetic content, so generation runs until EOS or budget exhausted.
       chunk, stoppedOnOpen, stoppedOnEos, stepsUsed := lm.GenerateUnconstrainedChunk(
         constrainedPrompt + currentConstrained, maxSymbolTokens, "<<", eosToken
       );
       cost := cost + stepsUsed;
       hitEos := stoppedOnEos;
-      // Walk the chunk accepting tokens that extend a valid parser prefix.
       currentOut := currentConstrained;
       var i := 0;
       while i < |chunk|
@@ -430,9 +374,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // ConstrainedSymbol wrapper that updates the full generated output.
-    // This packages the stable-prefix slice used by many generated strategies
-    // so callers only need the length bound, not suffix-equality invariants.
     method ConstrainedSymbolInGenerated(
       lm: LM, parser: Parser, constrainedPrompt: Prefix, generated: Prefix,
       currentConstrained: Prefix, maxSymbolTokens: nat, eosToken: Token
@@ -534,7 +475,7 @@ module VerifiedDecoderAgent {
       ensures cost == old(cost) + 1
     {
       if |currentConstrained| > 0 && currentConstrained[|currentConstrained|-1] == ">>" {
-        generatedOut := generated;  // >> already appended by constrained step (csd_start grammar)
+        generatedOut := generated;
       } else {
         generatedOut := generated + [">>"];
       }
@@ -543,8 +484,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Performs a single constrained decoding step and returns the next token.
-    // EOS token is always allowed as a valid choice, enabling early termination.
     method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix, eosToken: Token) returns (next: Token)
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
@@ -569,8 +508,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Returns true iff at least one token in group is parser-valid at prefix.
-    // Cost: 0 (pure parser queries, no LM call).
     method GroupHasValidMember(parser: Parser, prefix: Prefix, group: seq<Token>) returns (anyValid: bool)
       requires parser.IsValidPrefix(prefix)
       ensures anyValid <==> (exists t :: t in group && parser.ValidNextToken(prefix, t))
@@ -589,8 +526,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Boosts any externally supplied token group that has a valid member at prefix.
-    // Tokens outside lm.Tokens are ignored by SafeBoostTokenLogits.
     method BoostValidGroups(lm: LM, parser: Parser, prefix: Prefix, groups: seq<seq<Token>>, amount: real)
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
@@ -614,8 +549,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // One constrained token step with soft boosts from caller-supplied token groups
-    // before hard grammar masking.
     method GroupBoostedConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       groups: seq<seq<Token>>, boostAmount: real, eosToken: Token
@@ -648,8 +581,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Group-boosted constrained step that only applies boosts when the grammar
-    // is narrow enough that valid-token groups are likely to be informative.
     method AdaptiveConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       groups: seq<seq<Token>>, boostAmount: real, narrowThreshold: nat, eosToken: Token
@@ -685,7 +616,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Adaptive group boosting plus token penalties in one constrained step.
     method AdaptiveConstrainedStepWithPenalties(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       boostGroups: seq<seq<Token>>, boostAmount: real,
@@ -725,11 +655,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // ConstrainedStep variant that applies logit penalties before grammar masking.
-    // Penalizes specified tokens (e.g. [">>"] to discourage premature closing),
-    // then hard-masks invalid tokens and selects the best grammar-valid token.
-    // EOS token is always allowed as a valid choice, enabling early termination.
-    // Has identical postconditions to ConstrainedStep — maintains the full loop invariant.
     method PenalizedConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       tokensToPenalize: seq<Token>, penaltyAmount: real, eosToken: Token
@@ -760,11 +685,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // ConstrainedStep variant that boosts specified tokens before grammar masking.
-    // Boost tokens (e.g. [">>"] to force closing after long expressions),
-    // then hard-masks invalid tokens and selects the best grammar-valid token.
-    // EOS token is always allowed as a valid choice, enabling early termination.
-    // Has identical postconditions to ConstrainedStep — maintains the full loop invariant.
     method BoostedConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       tokensToBoost: seq<Token>, boostAmount: real, eosToken: Token
@@ -795,9 +715,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Safe public wrapper for synthesized strategies. Tokens outside the LM
-    // vocabulary are ignored before boosting, so callers do not need to prove
-    // token membership for literal or context-derived token lists.
     method SafeBoostedConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       tokensToBoost: seq<Token>, boostAmount: real, eosToken: Token
@@ -827,9 +744,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Safe public wrapper for synthesized strategies. Tokens outside the LM
-    // vocabulary are ignored before penalizing, so callers do not need to prove
-    // token membership for literal or context-derived token lists.
     method SafePenalizedConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       tokensToPenalize: seq<Token>, penaltyAmount: real, eosToken: Token
@@ -859,7 +773,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // A lemma that lets us say if the LM can generate all next valid tokens, then if we append one of those to the end, the LM can still generate all next valid tokens for the new prefix.
     static lemma {:axiom} ConstrainedStepNextValid(lm: LM, parser: Parser, generated: Prefix, next: Token)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
@@ -867,11 +780,6 @@ module VerifiedDecoderAgent {
       requires parser.IsValidPrefix(generated + [next])
       ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
 
-
-    // Returns the tokens in `prefix` that appear immediately after `keyword`.
-    // Use: extract which tokens the model has emitted after a specific keyword
-    // (e.g., table names after "FROM", variable names after "LET", etc.) so
-    // a strategy can maintain its own semantic context across loop iterations.
     static method ExtractAfterKeyword(prefix: Prefix, keyword: Token) returns (following: seq<Token>)
       ensures forall t :: t in following ==> t in prefix
     {
@@ -889,9 +797,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns tokens present in both a and b (set intersection over seqs).
-    // Use: narrow a parser-valid candidate set to tokens also in a
-    // strategy-maintained semantic context (e.g., in-scope table columns).
     static method IntersectTokenSets(a: seq<Token>, b: seq<Token>) returns (result: seq<Token>)
       ensures forall t :: t in result ==> t in a && t in b
       ensures |result| <= |a|
@@ -911,8 +816,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns tokens in a that are not in b (set difference over seqs).
-    // Use: after boosting context-relevant tokens, penalize the rest.
     static method SubtractTokenSets(a: seq<Token>, b: seq<Token>) returns (result: seq<Token>)
       ensures forall t :: t in result ==> t in a && t !in b
       ensures |result| <= |a|
@@ -932,7 +835,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Deletes invalid tokens from the end of the generated prefix until it becomes valid, then returns.
     static method RollbackToValidPrefix(parser: Parser, generated: Prefix) returns (repaired: Prefix)
       requires parser.IsValidPrefix([])
       ensures parser.IsValidPrefix(repaired)
@@ -962,8 +864,6 @@ module VerifiedDecoderAgent {
       generatedOut := stablePrefix + currentOut;
     }
 
-    // Roll back only the active constrained suffix, computing the stable prefix
-    // internally from the maintained length invariant.
     method RollbackConstrainedSuffix(
       parser: Parser, generated: Prefix, currentConstrained: Prefix
     ) returns (generatedOut: Prefix, currentOut: Prefix)
@@ -984,7 +884,6 @@ module VerifiedDecoderAgent {
       assert |currentOut| <= |generatedOut|;
     }
 
-    // Flattens a sequence of token groups into a single token bag.
     static method FlattenTokenGroups(groups: seq<seq<Token>>) returns (flat: seq<Token>)
       ensures forall t :: t in flat ==> exists g :: g in groups && t in g
     {
@@ -1000,7 +899,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns the index of a group containing tok, or -1 if no group contains it.
     static method GroupContaining(groups: seq<seq<Token>>, tok: Token) returns (idx: int)
       ensures -1 <= idx < |groups|
       ensures idx >= 0 ==> tok in groups[idx]
@@ -1021,7 +919,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns the token immediately preceding the last occurrence of sep in s.
     method LastTokenBefore(s: Prefix, sep: Token) returns (tok: Token, found: bool)
       ensures found ==> exists i :: 1 <= i < |s| && s[i] == sep && tok == s[i-1]
     {
@@ -1042,21 +939,17 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Lemma: After rollback, valid next tokens are still in LM vocabulary
     static lemma {:axiom} RollbackPreservesTokenInvariant(lm: LM, parser: Parser, prefix: Prefix)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       ensures forall t: Token :: t in parser.ValidNextTokens(prefix) ==> t in lm.Tokens
 
-    // Helper: Convert Prefix (seq<Token>) to a single string
     static function PrefixToString(p: Prefix): string
     {
       if |p| == 0 then ""
       else p[0] + PrefixToString(p[1..])
     }
 
-    // New library function for extracting content between delimiters
-    // Defined as a function to allow reasoning in specifications
     static function ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string): (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
     {
@@ -1065,15 +958,6 @@ module VerifiedDecoderAgent {
 
     static function {:extern} {:axiom} ExtractContentExtern(input: string, startDelim: string, endDelim: string): (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
-    // =========================================================================
-    // PER-TOKEN CSD BUILDING BLOCKS
-    // These operate at the single-token level and can be composed into
-    // novel constrained decoding strategies different from CRANE.
-    // =========================================================================
-
-    // Adds `amount` to logits of specified tokens. Clamped to 1000000000.0 upper bound.
-    // Cost: 0 (no LM call, just logit array modification).
-    // Use: boost grammar-valid tokens for soft constraining, or boost << to encourage expressions.
     method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1099,8 +983,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Safe public wrapper for synthesized strategies. Tokens outside the LM
-    // vocabulary are ignored instead of becoming a proof obligation for callers.
     method SafeBoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1111,9 +993,6 @@ module VerifiedDecoderAgent {
       BoostTokenLogits(lm, validTokens, amount);
     }
 
-    // Subtracts `amount` from logits of specified tokens. Clamped to -1000000000.0 lower bound.
-    // Cost: 0 (no LM call).
-    // Use: penalize >> to prevent premature expression closing, penalize << to force reasoning.
     method PenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1139,8 +1018,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Safe public wrapper for synthesized strategies. Tokens outside the LM
-    // vocabulary are ignored instead of becoming a proof obligation for callers.
     method SafePenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1151,7 +1028,6 @@ module VerifiedDecoderAgent {
       PenalizeTokenLogits(lm, validTokens, amount);
     }
 
-    // Hard-masks every vocabulary token that appears at least once in prefix.
     method MaskTokensInPrefix(lm: LM, prefix: Prefix)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1178,10 +1054,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns the token with the highest logit from current logits (argmax).
-    // Cost: 0 (no LM call, just reads the logit array).
-    // Assumes GenerateLogits was already called by the caller.
-    // Use: inspect model's preference before deciding whether to constrain.
     method GetHighestLogitToken(lm: LM) returns (token: Token)
       requires lm.ValidTokensIdsLogits()
       requires |lm.Tokens| > 0
@@ -1204,8 +1076,6 @@ module VerifiedDecoderAgent {
       token := lm.IdToToken(bestIdx);
     }
 
-    // Gap between the top two unmasked logits (argmax and runner-up among !IsMasked).
-    // If fewer than two unmasked positions exist, returns 0.0.
     method GetLogitGap(lm: LM) returns (gap: real)
       requires lm.ValidTokensIdsLogits()
       requires |lm.Tokens| >= 2
@@ -1239,7 +1109,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Pigeonhole: while fewer than k <= n indices are chosen from 0..n-1, some index remains.
     static lemma {:axiom} UnchosenIndexExists(n: nat, chosenIdx: seq<int>, k: nat, picked: nat)
       requires picked < k <= n
       requires forall u :: u in chosenIdx ==> 0 <= u < n
@@ -1253,8 +1122,6 @@ module VerifiedDecoderAgent {
       requires forall i, j :: 0 <= i < j < |idx| ==> idx[i] != idx[j]
       ensures lm.ValidTokensIdsLogits()
 
-    // The k highest-logit vocabulary tokens from the current logits (no LM call).
-    // Tie-break: lower vocabulary index wins.
     method GetTopKTokens(lm: LM, k: nat) returns (tokens: seq<Token>)
       requires lm.ValidTokensIdsLogits()
       requires 1 <= k <= |lm.Tokens|
@@ -1317,9 +1184,6 @@ module VerifiedDecoderAgent {
       DistinctChosenSeq(lm, chosenIdx);
     }
 
-    // Returns true if the number of valid grammar continuations is below threshold.
-    // Cost: 0 (pure parser query, no LM call).
-    // Use: detect when grammar is forcing output (model has no real choice), bail out.
     method DeadEndDetection(parser: Parser, prefix: Prefix, minValidCount: nat) returns (isNarrow: bool)
       requires parser.IsValidPrefix(prefix)
       ensures isNarrow <==> parser.ValidNextTokenCount(prefix) < minValidCount
@@ -1328,12 +1192,6 @@ module VerifiedDecoderAgent {
       isNarrow := validCount < minValidCount;
     }
 
-    // One token generation step with soft grammar constraint.
-    // Instead of hard-masking invalid tokens to -inf, boosts valid tokens' logits.
-    // EOS token is always boosted to ensure it can be selected for early termination.
-    // The model can still pick invalid tokens (very unlikely with large boost).
-    // Cost: 1 (one GenerateLogits + one ChooseNextToken).
-    // Returns (token, isValid) so caller can decide what to do if invalid.
     method SoftConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       boostAmount: real, eosToken: Token
@@ -1360,9 +1218,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Soft grammar preference with a hard fallback. This gives the LM one
-    // softly biased choice, but if that choice would not preserve parser
-    // validity, it falls back to the same hard mask used by ConstrainedStep.
     method SafeSoftConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       boostAmount: real, eosToken: Token
@@ -1402,12 +1257,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // One token generation step with confidence-gated constraining.
-    // Generates logits, checks if model's top choice is grammar-valid.
-    // If valid: uses model's choice directly (preserves model quality).
-    // If invalid: applies hard grammar constraint (like CRANE).
-    // EOS token is always allowed as a valid choice, enabling early termination.
-    // Cost: 1 (one GenerateLogits + one ChooseNextToken).
     method ConfidenceGatedStep(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, eosToken: Token
     ) returns (next: Token, wasConstrained: bool)
@@ -1446,9 +1295,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Counts non-overlapping occurrences of `sub` in `s`.
-    // Cost: 0 (pure function, no LM call).
-    // Use: count >> occurrences to track expression count, enable adaptive behavior.
     static function CountSubstring(s: string, sub: string): nat
       requires |sub| > 0
       decreases |s|
@@ -1458,7 +1304,6 @@ module VerifiedDecoderAgent {
       else CountSubstring(s[1..], sub)
     }
 
-    // Counts occurrences of `target` in prefix[0..hi) (inductive helper).
     static function OccurrencesInRange(prefix: Prefix, target: Token, hi: nat): nat
       requires hi <= |prefix|
     {
@@ -1466,7 +1311,6 @@ module VerifiedDecoderAgent {
       else OccurrencesInRange(prefix, target, hi - 1) + (if prefix[hi - 1] == target then 1 else 0)
     }
 
-    // Counts how many times `target` occurs as an element of prefix (token equality).
     static method CountTokenOccurrences(prefix: Prefix, target: Token) returns (count: nat)
       ensures count == OccurrencesInRange(prefix, target, |prefix|)
     {
@@ -1484,8 +1328,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Distance (in tokens) from the end of prefix to the last occurrence of target.
-    // If target never appears, returns |prefix|.
     static method TokensSinceLastOccurrence(prefix: Prefix, target: Token) returns (dist: nat)
       ensures dist <= |prefix|
       ensures dist == |prefix| ==> forall i :: 0 <= i < |prefix| ==> prefix[i] != target
@@ -1501,10 +1343,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns the current logit value for a specific token.
-    // Cost: 0 (reads logit array, no forward pass).
-    // Requires GenerateLogits was already called. Does not modify state.
-    // Use: inspect confidence for one specific token (e.g. ">>" or "<<") before deciding to constrain.
     method GetTokenLogit(lm: LM, token: Token) returns (logit: real)
       requires lm.ValidTokensIdsLogits()
       requires token in lm.Tokens
@@ -1514,10 +1352,6 @@ module VerifiedDecoderAgent {
       logit := lm.Logits[lm.TokenToId(token)];
     }
 
-    // Multiplies every logit by scalar, clamped to [-1000000000.0, 1000000000.0].
-    // Cost: 0 (no forward pass, just array modification).
-    // scalar > 0: temperature scaling. scalar < 1 sharpens distribution, scalar > 1 flattens it.
-    // Use: apply temperature before sampling without re-running the model.
     method ScaleAllLogits(lm: LM, scalar: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -1543,10 +1377,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Returns the exact number of grammar-valid continuations from prefix.
-    // Cost: 0 (pure parser query, no LM call).
-    // More precise than DeadEndDetection — returns a count, not a boolean.
-    // Use: implement continuous constraint policies (e.g. hard-constrain when count < 5, soft when count < 50).
     method ValidTokenCount(parser: Parser, prefix: Prefix) returns (count: nat)
       requires parser.IsValidPrefix(prefix)
       ensures count == parser.ValidNextTokenCount(prefix)
@@ -1554,10 +1384,6 @@ module VerifiedDecoderAgent {
       count := parser.ValidNextTokenCount(prefix);
     }
 
-    // Returns up to maxCandidates highest-logit legal continuations from prefix.
-    // Generates logits once, then repeatedly scans the valid set to collect distinct top-scoring tokens.
-    // EOS token is included as an admissible candidate.
-    // Cost: 1 (one GenerateLogits; selection only reads current logits).
     method TopValidCandidates(
       lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, maxCandidates: nat, eosToken: Token
     ) returns (candidates: seq<Token>)
@@ -1658,10 +1484,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Returns whether a specific token is a valid grammar continuation of prefix.
-    // Cost: 0 (pure parser query, no LM call).
-    // Cheaper than ValidNextTokens when you only care about one token.
-    // Use: check if ">>" or "<<" is currently valid before deciding whether to boost or penalize it.
     method IsTokenValidNext(parser: Parser, prefix: Prefix, token: Token) returns (isValid: bool)
       requires parser.IsValidPrefix(prefix)
       ensures isValid <==> parser.ValidNextToken(prefix, token)
@@ -1669,12 +1491,6 @@ module VerifiedDecoderAgent {
       isValid := parser.ValidNextToken(prefix, token);
     }
 
-    // Constrained step with penalty on tokens already present in generated.
-    // Penalizes repeated tokens before hard-masking, then samples grammar-valid token.
-    // EOS token is always allowed as a valid choice, enabling early termination.
-    // Cost: 1 (one GenerateLogits + one ChooseNextToken).
-    // Grammar validity guaranteed (same postconditions as ConstrainedStep).
-    // Use: prevent the model from regenerating the same subexpression (e.g. <<a*b>><<a*b>>...).
     method RepetitionPenaltyStep(
       lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix,
       generated: Prefix, penaltyAmount: real, eosToken: Token
@@ -1705,9 +1521,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Safe public wrapper for synthesized strategies. Repeated-token penalties
-    // are filtered through the LM vocabulary, so callers do not need to prove
-    // every visible token is in lm.Tokens.
     method SafeRepetitionPenaltyStep(
       lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix,
       generated: Prefix, penaltyAmount: real, eosToken: Token
@@ -1737,14 +1550,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Constrained step with temperature scaling applied before hard-masking.
-    // Divides all logits by temperature (i.e. scales by 1/temperature), then hard-masks invalid tokens.
-    // EOS token is always allowed as a valid choice, enabling early termination.
-    // Cost: 1 (one GenerateLogits + one ChooseNextToken).
-    // Grammar validity guaranteed (same postconditions as ConstrainedStep).
-    // temperature < 1: sharpens distribution (more deterministic).
-    // temperature > 1: flattens distribution (more exploratory).
-    // Use: tune sampling sharpness independently per phase without re-running the model.
     method TemperatureConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, temperature: real, eosToken: Token
     ) returns (next: Token)
@@ -1775,8 +1580,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Safe public wrapper for synthesized strategies. Temperature is clamped to
-    // the range accepted by ScaleAllLogits before hard parser masking.
     method SafeTemperatureConstrainedStep(
       lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, temperature: real, eosToken: Token
     ) returns (next: Token)
@@ -1818,7 +1621,6 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
-    // Snapshot current LM logits so search can branch/retry without losing state.
     method SaveLogitsSnapshot(lm: LM) returns (snapshot: seq<Logit>)
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
@@ -1831,7 +1633,6 @@ module VerifiedDecoderAgent {
       snapshot := lm.Logits[0..lm.Logits.Length];
     }
 
-    // Restore LM logits from a prior snapshot.
     method RestoreLogitsSnapshot(lm: LM, snapshot: seq<Logit>)
       modifies lm.Logits, this
       requires lm.ValidTokensIdsLogits()
@@ -1855,8 +1656,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Rollout helper for search-style strategies: constrained decoding from a
-    // valid start prefix under a single local budget.
     method RolloutConstrainedWithPenalties(
       lm: LM, parser: Parser, prompt: Prefix, startPrefix: Prefix,
       totalBudget: nat, penalties: seq<Token>, penaltyAmount: real, eosToken: Token
@@ -1898,8 +1697,6 @@ module VerifiedDecoderAgent {
       }
     }
 
-    // Speculative constrained continuation: run up to numTokens constrained steps,
-    // then restore logits so callers can inspect candidatePrefix without committing.
     method SpeculativeConstrainedRollout(
       lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
       numTokens: nat, eosToken: Token
