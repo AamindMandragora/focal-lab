@@ -2982,20 +2982,15 @@ class SynthesisPipeline:
                 torch.cuda.empty_cache()
                 print("  Generator vllm engine unloaded to free GPU memory")
 
-            # For SMILES synthesis inner-loop, keep eval seed fixed across
-            # attempts so candidate strategies are compared on the same gate.
-            # For other datasets, rotate each iteration to reduce overfitting
-            # to a single sampled slice.
+            # Rotate eval seed each iteration so the gate moves and the
+            # synthesis loop can't local-search a single sample's quirks.
             if not hasattr(self, "_eval_base_seed"):
                 self._eval_base_seed = (
                     int(self.evaluator.sample_seed)
                     if self.evaluator.sample_seed is not None
                     else 0
                 )
-            if self.evaluator.dataset_name == "smiles":
-                self.evaluator.sample_seed = self._eval_base_seed
-            else:
-                self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
+            self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
             try:
                 eval_result = self.evaluator.evaluate_sample(

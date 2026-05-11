@@ -275,6 +275,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
     syncode_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    smiles_prompt_suffix: dict[str, str] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
@@ -293,6 +294,11 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 num_return_sequences=1,
             )
         sc = syncode_cache[cache_key]
+
+        if dataset == "smiles":
+            cls = str(example.get("class_name", ""))
+            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+
         prompt = logic.format_prompt(eval_runtime, example)
         completions = sc.infer(prompt)
         output_text = completions[0] if completions else ""
@@ -306,6 +312,9 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
+            if syntax_valid and actual:
+                cls = str(example.get("class_name", ""))
+                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -383,6 +392,7 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
 
     itergen_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    smiles_prompt_suffix: dict[str, str] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
@@ -401,6 +411,11 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
                 stop_strings=["\n\n"],
             )
         iter_gen = itergen_cache[cache_key]
+
+        if dataset == "smiles":
+            cls = str(example.get("class_name", ""))
+            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+
         prompt = logic.format_prompt(eval_runtime, example)
         output_text = _itergen_generate(iter_gen, prompt)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
@@ -413,6 +428,9 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
+            if syntax_valid and actual:
+                cls = str(example.get("class_name", ""))
+                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -430,13 +448,21 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
 
 
 def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
-    """Unconstrained SMILES generation: generate without grammar masking, then score."""
-    from synthesis.evaluate.benchmarks.smiles.dataset import load_smiles, SMILES_CLASSES
-    from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
+    """Unconstrained SMILES generation: generate without grammar masking, then score.
 
-    examples = load_smiles(classes=list(SMILES_CLASSES), samples_per_class=max(1, args.eval_sample_size))
+    Each sample appends all previously generated valid molecules to the prompt
+    so the model is nudged to produce novel strings (matching the CARS paper
+    protocol).  Temperature 0.8 gives diversity; greedy would repeat the same
+    molecule every time.
+    """
+    from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, get_smiles_task
+    from synthesis.evaluate.benchmarks.smiles.metrics import (
+        clean_smiles_output,
+        evaluate_smiles_output,
+    )
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    n_per_class = max(1, args.eval_sample_size)
 
     if args.eval_backend == "vllm":
         from vllm import LLM, SamplingParams
@@ -447,15 +473,6 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
             max_model_len=4096,
             trust_remote_code=True,
         )
-        sampling_params = SamplingParams(
-            max_tokens=args.eval_max_steps,
-            temperature=0.0,
-            stop=["\n\n"],
-        )
-
-        prompts = [ex.get("prompt", "") for ex in examples]
-        outputs = llm.generate(prompts, sampling_params)
-        generated_texts = [out.outputs[0].text for out in outputs]
     else:
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
@@ -464,34 +481,63 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         model = AutoModelForCausalLM.from_pretrained(
             args.eval_model, device_map=device, torch_dtype=torch.float16, trust_remote_code=True
         )
-        generated_texts = []
-        for ex in examples:
-            prompt = ex.get("prompt", "")
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-            with torch.no_grad():
-                out_ids = model.generate(**inputs, max_new_tokens=args.eval_max_steps, do_sample=False)
-            generated_texts.append(tokenizer.decode(out_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True))
 
     rows: list[dict[str, Any]] = []
-    for example, gen_text in zip(examples, generated_texts):
-        class_name = example.get("class_name", "smiles")
-        grammar_text = example.get("grammar_text", "")
-        prompt_exemplars = example.get("prompt_exemplars", [])
-        smiles_eval = evaluate_smiles_output(
-            class_name=class_name,
-            output=gen_text,
-            grammar_text=grammar_text,
-            prompt_exemplars=prompt_exemplars,
-            require_rdkit=True,
-        )
-        rows.append(
-            {
-                "question": class_name,
-                "llm_response": gen_text,
-                "correct": bool(smiles_eval.get("unique_valid_candidate", False)),
-                "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
-            }
-        )
+    seen_per_class: dict[str, set[str]] = {}
+
+    for class_name in SMILES_CLASSES:
+        task = get_smiles_task(class_name)
+        base_prompt = task["prompt"]
+        grammar_text = str(task["grammar_text"])
+        prompt_exemplars = list(task.get("prompt_exemplars", []))
+        seen_per_class[class_name] = set(prompt_exemplars)
+        running_prompt = base_prompt
+
+        for _i in range(n_per_class):
+            if args.eval_backend == "vllm":
+                from vllm import SamplingParams as _SP
+
+                sp = _SP(max_tokens=args.eval_max_steps, temperature=0.8, stop=["\n\n"])
+                outputs = llm.generate([running_prompt], sp)
+                gen_text = outputs[0].outputs[0].text
+            else:
+                inputs = tokenizer(running_prompt, return_tensors="pt").to(model.device)
+                with torch.no_grad():
+                    out_ids = model.generate(
+                        **inputs, max_new_tokens=args.eval_max_steps,
+                        do_sample=True, temperature=0.8,
+                    )
+                gen_text = tokenizer.decode(
+                    out_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
+                )
+
+            smiles_eval = evaluate_smiles_output(
+                class_name=class_name,
+                output=gen_text,
+                grammar_text=grammar_text,
+                prompt_exemplars=prompt_exemplars,
+                require_rdkit=True,
+            )
+            cleaned = clean_smiles_output(gen_text)
+            is_novel = bool(
+                smiles_eval.get("syntax_valid")
+                and cleaned
+                and cleaned not in seen_per_class[class_name]
+            )
+            if cleaned and smiles_eval.get("syntax_valid"):
+                seen_per_class[class_name].add(cleaned)
+                running_prompt = running_prompt.rstrip() + f" {cleaned}\nMolecule: "
+
+            rows.append(
+                {
+                    "question": class_name,
+                    "llm_response": gen_text,
+                    "correct": bool(
+                        is_novel and smiles_eval.get("class_membership")
+                    ),
+                    "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
+                }
+            )
 
     _build_minimal_json(rows, args.output_json)
     print(f"Saved baseline JSON: {args.output_json}")
@@ -542,6 +588,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
 
     syncode_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    smiles_prompt_suffix: dict[str, str] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
@@ -562,6 +609,11 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 num_return_sequences=1,
             )
         sc = syncode_cache[cache_key]
+
+        if dataset == "smiles":
+            cls = str(example.get("class_name", ""))
+            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+
         prompt = logic.format_prompt(eval_runtime, example)
         completions = sc.infer(prompt)
         output_text = completions[0] if completions else ""
@@ -573,6 +625,9 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
+            if syntax_valid and actual:
+                cls = str(example.get("class_name", ""))
+                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -661,6 +716,14 @@ def main() -> None:
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
     parser.add_argument("--dafny-path", default="")
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
+    parser.add_argument("--gsm-split-file", type=str, default=None,
+                        help="Optional GSM train/eval split manifest JSON")
+    parser.add_argument("--gsm-split-name", type=str, choices=["train", "eval"], default="eval",
+                        help="Which split from --gsm-split-file to use (default: eval)")
+    parser.add_argument("--spider-split-file", type=str, default=None,
+                        help="Optional Spider train/test split manifest JSON")
+    parser.add_argument("--spider-split-name", type=str, choices=["train", "test", "eval"], default="eval",
+                        help="Which split from --spider-split-file to use (default: eval)")
     args = parser.parse_args()
 
     if args.strategy == "gcd":

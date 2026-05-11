@@ -6,10 +6,11 @@ reference implementations, ensuring consistent evaluation infrastructure
 across all strategy-benchmark combinations.
 
 Available strategies:
-  gcd       Pure hard-mask constrained decoding (SynCode-style)
-  crane     Adaptive constrained-unconstrained switching (CRANE-style)
-  itergen   Chunked constrained symbol generation (IterGen-style)
-  cars      Adaptive group-boosted constrained steps (CARS-style)
+  unconstrained  Pure unconstrained decoding (no grammar enforcement)
+  gcd            Pure hard-mask constrained decoding (SynCode-style)
+  crane          Adaptive constrained-unconstrained switching (CRANE-style)
+  itergen        Chunked constrained symbol generation (IterGen-style)
+  cars           Adaptive group-boosted constrained steps (CARS-style)
 
 Usage:
   python -m synthesis.evaluate.run_reference_strategy \\
@@ -29,6 +30,7 @@ from typing import Any
 
 
 STRATEGY_DFY: dict[str, str] = {
+    "unconstrained": "unconstrained.dfy",
     "gcd": "gcd.dfy",
     "crane": "crane.dfy",
     "itergen": "itergen.dfy",

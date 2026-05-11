@@ -22,13 +22,16 @@ STEP_BUDGETS="$DEFAULT_STEP_BUDGETS"
 
 EVAL_BACKEND="vllm"
 DEVICE="auto"
-EVAL_SAMPLE_SIZE="10"
+EVAL_SAMPLE_SIZE="100"
+SYNTH_FEEDBACK_SAMPLE_SIZE="20"
 EVAL_MAX_STEPS="900"
 VLLM_GPU_MEM_UTIL="0.8"
 DAFNY_PATH="$ROOT_DIR/dafny/dafny"
 GENERATED_OUTPUT_DIR="${CSD_OUTPUT_DIR:-outputs/generated}"
 BASELINE_OUTPUT_DIR="${CSD_BASELINE_OUTPUT_DIR:-outputs/baselines}"
 ABLATION_OUTPUT_DIR="${CSD_ABLATION_OUTPUT_DIR:-outputs/ablations}"
+GSM_SPLIT_FILE=""
+SPIDER_SPLIT_FILE=""
 DRY_RUN=0
 SKIP_MAIN=0
 SKIP_ABLATIONS=0
@@ -61,8 +64,11 @@ Options:
   --generation-models CSV       Metadecode synthesis generation model profiles
   --eval-backend NAME           huggingface|vllm (default: vllm)
   --device NAME                 auto|cuda|cpu|mps (default: auto)
-  --eval-sample-size N          Evaluation sample size (default: 10)
+  --eval-sample-size N          Final evaluation sample size (default: 100)
+  --synth-feedback-sample-size N  Synthesis feedback sample size (default: 20)
   --eval-max-steps N            Eval max steps for main matrix (default: 900)
+  --gsm-split-file PATH         Train/eval split manifest for GSM (disjoint splits)
+  --spider-split-file PATH      Train/eval split manifest for Spider (disjoint splits)
   --vllm-gpu-memory-utilization FLOAT
   --dafny-path PATH
   --generated-output-dir PATH    Synthesis output directory (default: outputs/generated/ or CSD_OUTPUT_DIR)
@@ -92,7 +98,10 @@ while [[ $# -gt 0 ]]; do
     --eval-backend) EVAL_BACKEND="$2"; shift 2 ;;
     --device) DEVICE="$2"; shift 2 ;;
     --eval-sample-size) EVAL_SAMPLE_SIZE="$2"; shift 2 ;;
+    --synth-feedback-sample-size) SYNTH_FEEDBACK_SAMPLE_SIZE="$2"; shift 2 ;;
     --eval-max-steps) EVAL_MAX_STEPS="$2"; shift 2 ;;
+    --gsm-split-file) GSM_SPLIT_FILE="$2"; shift 2 ;;
+    --spider-split-file) SPIDER_SPLIT_FILE="$2"; shift 2 ;;
     --vllm-gpu-memory-utilization) VLLM_GPU_MEM_UTIL="$2"; shift 2 ;;
     --dafny-path) DAFNY_PATH="$2"; shift 2 ;;
     --generated-output-dir) GENERATED_OUTPUT_DIR="$2"; shift 2 ;;
@@ -166,7 +175,7 @@ resolve_gen_profile() {
       echo "anthropic|claude-opus-4-7"
       ;;
     gemini-pro)
-      echo "gemini|gemini-2.5-pro"
+      echo "gemini|gemini-3.1-pro"
       ;;
     *)
       echo "openai|$profile"
@@ -215,6 +224,13 @@ run_fixed_strategy_case() {
     cmd+=(--dafny-path "$DAFNY_PATH")
   fi
 
+  if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
+    cmd+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
+  fi
+  if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
+    cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
+  fi
+
   run_cmd "${cmd[@]}"
 }
 
@@ -249,13 +265,20 @@ run_metadecode_case() {
     --output-name "$run_name"
     --min-accuracy "0.0"
     --min-syntax-rate "0.0"
-    --eval-sample-size "$EVAL_SAMPLE_SIZE"
+    --eval-sample-size "$SYNTH_FEEDBACK_SAMPLE_SIZE"
     --eval-max-steps "$max_steps"
     --eval-step-token-budget "$token_budget"
     --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
     --device "$DEVICE"
     --output-dir "$GENERATED_OUTPUT_DIR"
   )
+
+  if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
+    synth_cmd+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name train)
+  fi
+  if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
+    synth_cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name train)
+  fi
 
   if [[ -n "$DAFNY_PATH" ]]; then
     synth_cmd+=(--dafny-path "$DAFNY_PATH")
