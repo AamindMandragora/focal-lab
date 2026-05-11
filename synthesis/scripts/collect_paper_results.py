@@ -30,6 +30,7 @@ MODELS = [
     ("Qwen/Qwen2.5-Coder-1.5B-Instruct", "1.5B"),
     ("Qwen/Qwen2.5-Coder-7B-Instruct", "7B"),
     ("Qwen/Qwen2.5-Coder-14B-Instruct", "14B"),
+    ("meta-llama/Llama-3.1-8B-Instruct", "Llama-8B"),
 ]
 BENCHMARKS = ["gsm_symbolic", "spider", "smiles"]
 STRATEGIES = ["unconstrained", "gcd", "crane", "itergen", "cars", "metadecode"]
@@ -158,15 +159,16 @@ def emit_step_budget_table(baselines_dir: Path, generated_dir: Path, step_budget
 
         gsm_cells: list[str] = []
         spider_cells: list[str] = []
+        smiles_cells: list[str] = []
         for ms in step_budgets:
-            for benchmark, cells in [("gsm_symbolic", gsm_cells), ("spider", spider_cells)]:
+            for benchmark, cells in [("gsm_symbolic", gsm_cells), ("spider", spider_cells), ("smiles", smiles_cells)]:
                 if strategy == "metadecode":
                     data = _load_metadecode(generated_dir, benchmark, ablation_model, max_steps=ms)
                 else:
                     data = _load_baseline(baselines_dir, strategy, ablation_model, benchmark)
                 cells.append(_fmt(data.get("accuracy") if data else None))
 
-        all_cells = " & ".join(gsm_cells + spider_cells)
+        all_cells = " & ".join(gsm_cells + spider_cells + smiles_cells)
         lines.append(f"{strategy_label:<12s} & {all_cells} \\\\")
 
     return "\n".join(lines)
@@ -177,7 +179,7 @@ def emit_synth_iter_table(generated_dir: Path, synth_iters: list[int]) -> str:
     lines_acc: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
-    for benchmark in ["gsm_symbolic", "spider"]:
+    for benchmark in ["gsm_symbolic", "spider", "smiles"]:
         verif_cells: list[str] = []
         acc_cells: list[str] = []
         for k in synth_iters:
@@ -203,7 +205,7 @@ def emit_synth_model_table(generated_dir: Path, gen_profiles: list[str]) -> str:
 
     for profile in gen_profiles:
         cells: list[str] = []
-        for benchmark in ["gsm_symbolic", "spider"]:
+        for benchmark in ["gsm_symbolic", "spider", "smiles"]:
             data = _load_metadecode(
                 generated_dir, benchmark, ablation_model, gen_profile=profile
             )

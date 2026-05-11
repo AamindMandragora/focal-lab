@@ -22,6 +22,11 @@ Disallowed prompt content:
 - Baseline-comparison hints that imply structure.
 - Procedural “NOTE” hints about when or why to apply a tool.
 
+## Key Paths
+
+- Dafny binary: `dafny/dafny`
+- OpenAI API key: `synthesis/.env`
+
 ## Core Files
 
 - `synthesis/verify/library/GeneratedCSD.dfy`

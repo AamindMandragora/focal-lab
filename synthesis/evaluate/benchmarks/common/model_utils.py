@@ -715,9 +715,7 @@ def create_huggingface_lm(
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
-                    do_sample=True,
-                    temperature=1.0,
-                    top_p=1.0,
+                    do_sample=False,
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -826,8 +824,7 @@ def create_vllm_lm(
             full_prompt = self.instruction_text + prefix_text
             sampling_params = SamplingParams(
                 max_tokens=max_new_tokens,
-                temperature=1.0,
-                top_p=1.0,
+                temperature=0.0,
                 detokenize=False,
             )
             outputs = self.engine.generate([full_prompt], sampling_params=sampling_params, use_tqdm=False)
