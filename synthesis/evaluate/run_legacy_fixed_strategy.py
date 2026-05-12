@@ -41,6 +41,19 @@ def _normalize_dataset(dataset: str) -> str:
     return "gsm_symbolic" if dataset == "gsm" else dataset
 
 
+def _baseline_row_question(dataset: str, example: dict[str, Any], fallback: str) -> str:
+    """Question string stored in baseline JSON and used for GSM example lookup."""
+    if dataset == "gsm_symbolic":
+        text = (
+            example.get("question_parsed")
+            or example.get("original_question")
+            or example.get("question")
+            or example.get("prompt")
+        )
+        return str(text or fallback)
+    return str(example.get("question") or example.get("prompt") or fallback)
+
+
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
     if dataset == "gsm_symbolic":
         repo_root = Path(__file__).resolve().parents[2]
@@ -173,10 +186,23 @@ def _annotate_legacy_rows_with_syntax(
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
-    examples_by_question = {
-        str(example.get("question") or example.get("prompt") or ""): example
-        for example in examples
-    }
+    examples_by_question: dict[str, dict[str, Any]] = {}
+    for example in examples:
+        if dataset == "gsm_symbolic":
+            keys = [
+                example.get("question_parsed"),
+                example.get("original_question"),
+                example.get("question"),
+                example.get("prompt"),
+                example.get("question_instantiated"),
+            ]
+            for key in keys:
+                if key:
+                    examples_by_question[str(key)] = example
+        else:
+            q = str(example.get("question") or example.get("prompt") or "")
+            if q:
+                examples_by_question[q] = example
 
     for idx, row in enumerate(rows):
         question = str(row.get("question") or row.get("prompt") or "")
@@ -401,7 +427,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
                 cls = str(example.get("class_name", ""))
                 smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
-        question = str(example.get("question") or example.get("prompt") or expected)
+        question = _baseline_row_question(dataset, example, expected)
         rows.append(
             {
                 "question": question,
@@ -569,7 +595,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 cls = str(example.get("class_name", ""))
                 smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
-        question = str(example.get("question") or example.get("prompt") or expected)
+        question = _baseline_row_question(dataset, example, expected)
         rows.append(
             {
                 "question": question,
@@ -686,7 +712,7 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
                 cls = str(example.get("class_name", ""))
                 smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
-        question = str(example.get("question") or example.get("prompt") or expected)
+        question = _baseline_row_question(dataset, example, expected)
         rows.append(
             {
                 "question": question,
@@ -885,7 +911,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 cls = str(example.get("class_name", ""))
                 smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
-        question = str(example.get("question") or example.get("prompt") or expected)
+        question = _baseline_row_question(dataset, example, expected)
         rows.append(
             {
                 "question": question,

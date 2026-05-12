@@ -262,7 +262,7 @@ class HuggingFaceModel:
         """
         if generation_config.constraints is not None or generation_config.force_words_ids is not None:
             generation_mode = GenerationMode.CONSTRAINED_BEAM_SEARCH
-        elif generation_config.num_beams == 1:
+        elif (generation_config.num_beams or 1) == 1:
             if generation_config.do_sample is False:
                 if (
                     generation_config.top_k is not None
@@ -276,7 +276,7 @@ class HuggingFaceModel:
             else:
                 generation_mode = GenerationMode.SAMPLE
         else:
-            if generation_config.num_beam_groups > 1:
+            if (generation_config.num_beam_groups or 1) > 1:
                 generation_mode = GenerationMode.GROUP_BEAM_SEARCH
             elif generation_config.do_sample is True:
                 generation_mode = GenerationMode.BEAM_SAMPLE

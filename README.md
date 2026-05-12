@@ -56,7 +56,7 @@ Baseline storage is intentionally minimal:
 Fixed-strategy baselines use legacy codepaths:
 - `unconstrained` / `crane`: `legacy/CRANE`
 - `itergen`: `legacy/itergen`
-- `cars`: `legacy/cars` (SMILES)
+- `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
 ## Quick Start
 
@@ -74,7 +74,7 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to OpenAI `gpt-5.4` (`OPENAI_API_KEY` in the environment or `.env`). Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to OpenAI `gpt-5.4` (`OPENAI_API_KEY` in the environment or `.env`). You can also use Bedrock with `--generation-backend bedrock --generation-model <bedrock-model-id>`; Bedrock auth reads `AWS_BEARER_TOKEN_BEDROCK`. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -120,6 +120,15 @@ Optional local-beam refinement controls:
 - Keep synthesis prompts as controlled-study inputs: task + formal tool contracts only.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
+- `run_all_tests.sh` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn.
+- `run_all_tests.sh` must run inside the RDKit-capable conda environment. It activates `/home/advayth2/envs/vas-rdkit` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Override with `VAS_RDKIT_CONDA_ENV` only when intentionally using a different compatible environment.
+- Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
+- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
+- Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
+- CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
+- The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
+- GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
+- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. When `AWS_BEARER_TOKEN_BEDROCK` is set, the `gpt5.4` profile uses Bedrock by default. Override the Bedrock model with `BEDROCK_GENERATION_MODEL` or disable this with `CSD_USE_BEDROCK_FOR_GPT54=0`.
 
 ## Path Configuration
 

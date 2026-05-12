@@ -145,7 +145,8 @@ def load_gsm_from_crane_folder(
 
     Returns:
         List of example dicts with the same fields the evaluator expects:
-        question, answer, variable_types, question_parsed, etc.
+        ``question`` is the symbolic template (``question_parsed``) when present,
+        with instantiated prose available as ``question_instantiated``.
     """
     crane_dir = Path(crane_dir) if crane_dir is not None else DEFAULT_CRANE_GSM_DIR
     if not crane_dir.exists():
@@ -168,11 +169,16 @@ def load_gsm_from_crane_folder(
             payload = json.loads(path.read_text())
         except Exception:
             continue
+        # Prefer symbolic placeholders `{var}` (question_parsed) over instantiated prose so GSM-Symbolic
+        # prompts, scoring rows, and CRANE subprocess alignment use one representation.
+        symbolic_q = payload.get('question_parsed') or ''
+        instantiated_q = payload.get('question', '')
         rows.append({
-            'question': payload.get('question', ''),
+            'question': symbolic_q or instantiated_q,
+            'question_instantiated': instantiated_q,
             'answer': payload.get('answer', ''),
             'variable_types': payload.get('variable_types') or {},
-            'question_parsed': payload.get('question_parsed') or '',
+            'question_parsed': symbolic_q or '',
             'question_annotated': payload.get('question_annotated') or '',
             'answer_parsed': payload.get('answer_parsed') or '',
             'id_orig': payload.get('id_orig'),

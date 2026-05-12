@@ -68,7 +68,12 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
 
-    question = example.get("question_parsed") or example.get("question", "")
+    # Prefer symbolic `{placeholder}` text over instantiated HF `question` when both exist.
+    question = (
+        example.get("question_parsed")
+        or example.get("original_question")
+        or example.get("question", "")
+    )
     return reasoning_with_symbolic_expr_prompt(question)
 
 

@@ -736,7 +736,7 @@ def create_vllm_lm(
     tensor_parallel_size: int | None = None,
     pipeline_parallel_size: int = 1,
     gpu_memory_utilization: float = 0.8,
-    max_model_len: int = 4096,
+    max_model_len: int = 16384,
     enforce_eager: bool = True,
 ):
     """Create a vLLM-backed LM wrapper with tensorized logits capture."""
@@ -849,7 +849,7 @@ def create_runtime_lm(
     vllm_tensor_parallel_size: int | None = None,
     vllm_pipeline_parallel_size: int = 1,
     vllm_gpu_memory_utilization: float = 0.8,
-    vllm_max_model_len: int = 4096,
+    vllm_max_model_len: int = 16384,
     vllm_enforce_eager: bool = True,
 ):
     """Create the requested runtime LM backend."""

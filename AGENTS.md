@@ -54,15 +54,24 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Generate valid molecules in the requested class." --dataset smiles --smiles-classes acrylates,chain_extenders,isocyanates --smiles-samples-per-class 10 --min-accuracy 0.5 --min-syntax-rate 1.0 --max-iterations 5 --output-name smiles_main`
 - Local generation with vLLM (override default OpenAI generation):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend vllm --generation-model Qwen/Qwen2.5-Coder-7B-Instruct --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name vllm_run`
-- API generation with a non-default model (default generation is already OpenAI `gpt-5.4`):
+- API generation with a non-default model (default generation is already OpenAI `gpt-5.4` unless `run_all_tests.sh` auto-selects Bedrock via `AWS_BEARER_TOKEN_BEDROCK`):
   `python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend openai --generation-model <api-model> --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name api_gen_run`
+- Bedrock generation with bearer-token auth:
+ `python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend bedrock --generation-model <bedrock-model-id> --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name bedrock_gen_run`
+- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. If `AWS_BEARER_TOKEN_BEDROCK` is set, its `gpt5.4` generation profile uses Bedrock by default; set `BEDROCK_GENERATION_MODEL` to choose the Bedrock model id or `CSD_USE_BEDROCK_FOR_GPT54=0` to keep OpenAI for that profile.
 - Full repository test sweep:
   `bash run_all_tests.sh`
+- `run_all_tests.sh` activates `/home/advayth2/envs/vas-rdkit` by default and verifies RDKit import before starting the matrix. Override only with `VAS_RDKIT_CONDA_ENV` when using another compatible environment.
 
 ## Evaluation Expectations
 
 - Always compare synthesized strategy performance against a CRANE baseline on the same model/split/sample settings before claiming success.
 - Maintain high syntax/format validity while improving accuracy.
+- Fixed-strategy GSM baselines should use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so comparisons are row-aligned.
+- For fixed-strategy baseline JSONs, do not infer valid syntax from missing legacy metadata. Annotate rows with benchmark parser checks or treat missing syntax booleans as invalid.
+- For CRANE-backed GSM rows that lack `variable_types`, infer numeric symbolic identifiers from `gold_answer` before syntax checking.
+- Keep the GCD GSM-Symbolic adapter scoped to constrained expression bodies after `<<`; wrap those bodies for scoring, finalize the longest parseable expression prefix, and restrict identifiers to numeric placeholders from the evaluation sample.
+- For instantiated GSM rows without symbolic numeric variables, use numeric-only syntax checks; do not let arbitrary identifiers satisfy GSM expression syntax.
 - Keep benchmark-specific evaluation behavior in `synthesis/evaluate/benchmarks/*/eval_logic.py` and keep `synthesis/evaluate/evaluator.py` focused on orchestration/delegation.
 
 ## Performance Constraint
