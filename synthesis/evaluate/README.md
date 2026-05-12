@@ -39,3 +39,12 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
   - `accuracy`
   - `syntax_rate`
   - one generated answer per benchmark question
+- Fixed-strategy GSM baselines use the local CRANE GSM source rows so
+  `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` are compared on the
+  same questions.
+- The GCD adapter uses Syncode DFA-mask decoding but keeps GSM-Symbolic generation scoped to expression bodies: it starts after `<<`, wraps the generated body for scoring, caps expression length, finalizes the longest parseable expression prefix, and restricts GSM variables to numeric placeholders observed in the evaluation sample.
+- GSM syntax checks use a numeric-only grammar when examples do not expose numeric symbolic variables; arbitrary identifiers such as `reasoning` must not pass syntax on instantiated GSM rows.
+- The legacy CARS adapter runs through the same benchmark registry as the other fixed strategies and raises on failed runs so incomplete artifacts are not mistaken for valid zero-score baselines.
+- Baseline exports may contain empty generated strings; those still count as answer rows. Corrupt fixed-strategy artifacts are the ones with no answer rows or missing `generated_answer` fields.
+- Legacy rows that do not report a syntax boolean are treated as syntax-invalid unless the adapter can annotate them with benchmark parser checks before export.
+- CRANE-backed GSM rows do not carry `variable_types`; the exporter infers numeric symbolic identifiers from `gold_answer` before applying the GSM syntax parser.

@@ -170,6 +170,7 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
     from lark import Lark
     from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
         build_dynamic_grammar,
+        build_numeric_only_grammar,
         extract_variables_from_mapping,
     )
 
@@ -178,10 +179,12 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
 
     variable_types = example.get("variable_types") or {}
     if not isinstance(variable_types, dict):
-        return Lark(evaluator._get_grammar_text(), start="start", parser="lalr")
+        grammar_text = build_numeric_only_grammar(evaluator._get_grammar_text())
+        return Lark(grammar_text, start="start", parser="lalr")
     allowed_variables = extract_variables_from_mapping(variable_types)
     if not allowed_variables:
-        return Lark(evaluator._get_grammar_text(), start="start", parser="lalr")
+        grammar_text = build_numeric_only_grammar(evaluator._get_grammar_text())
+        return Lark(grammar_text, start="start", parser="lalr")
 
     cache_key = tuple(sorted(allowed_variables))
     parser = evaluator._syntax_parser_cache.get(cache_key)

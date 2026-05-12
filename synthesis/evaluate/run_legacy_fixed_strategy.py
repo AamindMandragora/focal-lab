@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -11,8 +12,49 @@ from pathlib import Path
 from typing import Any
 
 
+_MAX_PROMPT_CHARS = 50000  # ~12.5K tokens; leaves room for generation within 16384-token context
+_MAX_SUFFIX_CHARS = 45000
+
+
+def _truncate_prompt(prompt: str, base_prompt: str) -> str:
+    """Keep *prompt* within ``_MAX_PROMPT_CHARS`` by dropping the oldest appended molecules."""
+    if len(prompt) <= _MAX_PROMPT_CHARS:
+        return prompt
+    suffix = prompt[len(base_prompt):]
+    lines = suffix.split("\n")
+    while len(base_prompt) + len("\n".join(lines)) > _MAX_PROMPT_CHARS and len(lines) > 1:
+        lines.pop(0)
+    return base_prompt + "\n".join(lines)
+
+
+def _cap_suffix(suffix: str) -> str:
+    """Drop the oldest appended molecules if suffix exceeds ``_MAX_SUFFIX_CHARS``."""
+    if len(suffix) <= _MAX_SUFFIX_CHARS:
+        return suffix
+    lines = suffix.split("\n")
+    while len("\n".join(lines)) > _MAX_SUFFIX_CHARS and len(lines) > 1:
+        lines.pop(0)
+    return "\n".join(lines)
+
+
 def _normalize_dataset(dataset: str) -> str:
     return "gsm_symbolic" if dataset == "gsm" else dataset
+
+
+def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
+    if dataset == "gsm_symbolic":
+        repo_root = Path(__file__).resolve().parents[2]
+        env_gsm = os.environ.get("CRANE_GSM_SYMBOLIC_DIR")
+        eval_runtime.gsm_source_dir = (
+            Path(env_gsm).expanduser()
+            if env_gsm
+            else repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
+        )
+        eval_runtime.gsm_split_file = args.gsm_split_file
+        eval_runtime.gsm_split_name = args.gsm_split_name
+    if dataset == "spider":
+        eval_runtime.spider_split_file = args.spider_split_file
+        eval_runtime.spider_split_name = args.spider_split_name
 
 
 def _crane_grammar_name(dataset: str) -> str:
@@ -29,12 +71,6 @@ def _mode_for_strategy(strategy: str) -> tuple[str, bool]:
     if strategy == "crane":
         return "adaptive", True
     raise ValueError(f"Unsupported CRANE-backed strategy: {strategy}")
-
-
-def _write_empty_baseline(output_json: Path) -> None:
-    payload = {"accuracy": 0.0, "syntax_rate": 0.0, "answers": []}
-    output_json.parent.mkdir(parents=True, exist_ok=True)
-    output_json.write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def _build_minimal_json(rows: list[dict[str, Any]], output_json: Path) -> None:
@@ -65,7 +101,7 @@ def _build_minimal_json(rows: list[dict[str, Any]], output_json: Path) -> None:
                 syntax_value = 1.0 if row[key] else 0.0
                 break
         if syntax_value is None:
-            syntax_value = 1.0
+            syntax_value = 0.0
         syntax_vals.append(syntax_value)
 
         question = str(row.get("question") or row.get("prompt") or "")
@@ -110,15 +146,87 @@ def _load_latest_crane_results(crane_src_dir: Path, dataset: str) -> list[dict[s
     return rows
 
 
-def _cars_model_num(eval_model: str) -> str | None:
-    model = eval_model.lower()
-    if "qwen" in model and "14b" in model:
-        return "3"
-    if "qwen" in model and "7b" in model:
-        return "2"
-    if "llama" in model and "8b" in model:
-        return "1"
-    return None
+def _annotate_legacy_rows_with_syntax(
+    rows: list[dict[str, Any]],
+    args: argparse.Namespace,
+    dataset: str,
+) -> list[dict[str, Any]]:
+    """Add benchmark syntax booleans to legacy rows that only report correctness."""
+    if not rows:
+        return rows
+    if any(isinstance(row.get("syntax_valid"), bool) for row in rows):
+        return rows
+
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.evaluator import Evaluator
+
+    logic = get_logic(dataset)
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+    )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
+    examples = logic.load_dataset_sample(eval_runtime)
+    examples_by_question = {
+        str(example.get("question") or example.get("prompt") or ""): example
+        for example in examples
+    }
+
+    for idx, row in enumerate(rows):
+        question = str(row.get("question") or row.get("prompt") or "")
+        example = examples_by_question.get(question)
+        if example is None and idx < len(examples):
+            example = examples[idx]
+        if dataset == "gsm_symbolic" and example is not None:
+            example = dict(example)
+            if not isinstance(example.get("variable_types"), dict):
+                gold_answer = str(row.get("gold_answer") or "")
+                numeric_vars = sorted(
+                    set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", gold_answer))
+                    - {"int", "ToInt", "z3_floor_div"}
+                )
+                if numeric_vars:
+                    example["variable_types"] = {name: "int" for name in numeric_vars}
+        output_text = str(
+            row.get("parsed_completion")
+            or row.get("llm_response")
+            or row.get("response")
+            or row.get("pred")
+            or ""
+        )
+        scored_output = (
+            eval_runtime._truncate_gsm_output(output_text)
+            if dataset == "gsm_symbolic"
+            else output_text
+        )
+        all_valid, segments = eval_runtime._check_syntax_validity(
+            scored_output,
+            example=example,
+        )
+        if dataset == "spider":
+            actual, _answer_source, _aux = logic.extract_actual(
+                eval_runtime,
+                scored_output,
+                example or {},
+            )
+            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+        else:
+            syntax_valid = bool(
+                logic.example_syntax_pass(all_valid, segments, False, None)
+            )
+        row["syntax_valid"] = syntax_valid
+    return rows
+
+
+def _cars_model_id(eval_model: str) -> str:
+    """Return the HuggingFace model ID to pass to CARS's run_task.py."""
+    return eval_model
 
 
 def _load_latest_cars_results(cars_root_dir: Path, class_name: str) -> list[dict[str, Any]]:
@@ -142,6 +250,43 @@ def _load_latest_cars_results(cars_root_dir: Path, class_name: str) -> list[dict
     return []
 
 
+def _load_cars_results_from_log_dir(log_dir: Path) -> list[dict[str, Any]]:
+    candidates = sorted(log_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for candidate in candidates:
+        try:
+            payload = json.loads(candidate.read_text())
+        except json.JSONDecodeError:
+            continue
+        steps = payload.get("steps")
+        if isinstance(steps, list):
+            return steps
+    return []
+
+
+def _extract_cars_log_dir(stdout: str, cars_root_dir: Path) -> Path | None:
+    for line in stdout.splitlines():
+        match = re.search(r"Saving results in folder\s+(.+)$", line.strip())
+        if match:
+            return cars_root_dir / match.group(1)
+    return None
+
+
+def _cars_add_import_paths(cars_root_dir: Path) -> None:
+    candidate_str = str(cars_root_dir.resolve())
+    if candidate_str not in sys.path:
+        sys.path.insert(0, candidate_str)
+
+
+def _cars_grammar_for_example(repo_root: Path, dataset: str, example: dict[str, Any]) -> str:
+    if dataset == "gsm_symbolic":
+        return (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+    if dataset == "spider":
+        return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+    if dataset == "smiles":
+        return str(example.get("grammar_text", ""))
+    raise ValueError(f"Unsupported dataset for CARS adapter: {dataset}")
+
+
 def _cars_tokens_to_text(tokens: list[Any]) -> str:
     eos_markers = {"<|eot_id|>", "<|im_end|>", "<|endoftext|>"}
     text_tokens: list[str] = []
@@ -153,78 +298,121 @@ def _cars_tokens_to_text(tokens: list[Any]) -> str:
     return "".join(text_tokens).strip()
 
 
+def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_attempts: int) -> str:
+    formatted_prompt = cars_model._format_prompt(prompt)
+    prompt_ids = cars_model.tokenizer.encode(
+        formatted_prompt,
+        return_tensors="pt",
+        add_special_tokens=False,
+    ).to(cars_model.model.device)
+    cars_model.reset_sampling(learn_level=3, constrain_first=True)
+
+    for _attempt in range(max(1, max_attempts)):
+        try:
+            current_ids, _current_scores, _current_raw_logprob = cars_model._generate(
+                prompt_ids,
+                max_new_tokens=max_new_tokens,
+            )
+        except ValueError:
+            continue
+        tokens = [cars_model.tokenizer.decode(token_id) for token_id in current_ids[0]]
+        return _cars_tokens_to_text(tokens)
+    return ""
+
+
+def _cars_set_cached_grammar(
+    cars_model: Any,
+    grammar_text: str,
+    grammar_cache: dict[str, Any],
+) -> None:
+    cached = grammar_cache.get(grammar_text)
+    if cached is None:
+        cars_model._set_grammar_constraint(grammar_text)
+        grammar_cache[grammar_text] = cars_model.grammar_constraint
+    else:
+        cars_model.grammar_constraint = cached
+
+
 def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     dataset = _normalize_dataset(args.dataset)
-    if dataset != "smiles":
-        print(
-            f"[warn] Legacy CARS adapter currently supports smiles only (got {dataset}). "
-            f"Writing empty baseline JSON to {args.output_json}."
-        )
-        _write_empty_baseline(args.output_json)
-        return 0
 
-    model_num = _cars_model_num(args.eval_model)
-    if model_num is None:
-        print(
-            f"[warn] Legacy CARS supports model presets for 7B/14B Qwen or Llama-3.1-8B. "
-            f"Received eval model '{args.eval_model}'. Writing empty baseline JSON to {args.output_json}."
-        )
-        _write_empty_baseline(args.output_json)
-        return 0
+    model_id = _cars_model_id(args.eval_model)
 
     repo_root = Path(__file__).resolve().parents[2]
     cars_root = repo_root / "legacy" / "cars"
     if not cars_root.exists():
         raise RuntimeError(f"Legacy cars directory not found: {cars_root}")
 
-    from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, get_smiles_task
-    from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
+    _cars_add_import_paths(cars_root)
+
+    import torch
+    from cars.lib import ConstrainedModel
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.evaluator import Evaluator
+
+    logic = get_logic(dataset)
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+    )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
+
+    examples = logic.load_dataset_sample(eval_runtime)
+    cars_model = ConstrainedModel(model_id, None, torch_dtype=torch.bfloat16)
 
     rows: list[dict[str, Any]] = []
-    for class_name in SMILES_CLASSES:
-        grammar_path = cars_root / "datasets" / "smiles" / f"{class_name}.lark"
-        prompt_path = cars_root / "datasets" / "smiles" / f"{class_name}.txt"
-        if not grammar_path.exists() or not prompt_path.exists():
-            print(
-                f"[warn] Missing legacy CARS assets for class={class_name}; skipping."
-            )
-            continue
+    smiles_prompt_suffix: dict[str, str] = {}
+    grammar_cache: dict[str, Any] = {}
+    max_attempts = max(20, min(2000, int(args.eval_max_steps) * 2))
+    max_new_tokens = max(32, int(args.eval_max_steps))
 
-        cmd = [
-            "python",
-            "run_task.py",
-            str(grammar_path.relative_to(cars_root)),
-            str(prompt_path.relative_to(cars_root)),
-            "cars",
-            model_num,
-        ]
-        subprocess.run(cmd, cwd=cars_root, check=True)
+    for example in examples:
+        grammar_text = _cars_grammar_for_example(repo_root, dataset, example)
+        _cars_set_cached_grammar(cars_model, grammar_text, grammar_cache)
 
-        task = get_smiles_task(class_name)
-        class_steps = _load_latest_cars_results(cars_root, class_name)
-        if not class_steps:
-            continue
+        if dataset == "smiles":
+            cls = str(example.get("class_name", ""))
+            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        for step in class_steps[: args.eval_sample_size]:
-            tokens = step.get("tokens")
-            if not isinstance(tokens, list):
-                continue
-            generated = _cars_tokens_to_text(tokens)
-            smiles_eval = evaluate_smiles_output(
-                class_name=class_name,
-                output=generated,
-                grammar_text=str(task["grammar_text"]),
-                prompt_exemplars=task.get("prompt_exemplars", []),
-                require_rdkit=True,
-            )
-            rows.append(
-                {
-                    "question": class_name,
-                    "llm_response": generated,
-                    "correct": bool(smiles_eval.get("valid_class_membership", False)),
-                    "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
-                }
-            )
+        prompt = logic.format_prompt(eval_runtime, example)
+        output_text = _cars_generate_text(
+            cars_model,
+            prompt,
+            max_new_tokens=max_new_tokens,
+            max_attempts=max_attempts,
+        )
+        scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
+        expected = logic.expected_answer(eval_runtime, example)
+        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+        if dataset == "spider":
+            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+        if dataset == "smiles":
+            syntax_valid = bool(aux and aux.get("syntax_valid"))
+            if syntax_valid and actual:
+                cls = str(example.get("class_name", ""))
+                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+
+        question = str(example.get("question") or example.get("prompt") or expected)
+        rows.append(
+            {
+                "question": question,
+                "llm_response": output_text,
+                "correct": bool(is_correct),
+                "syntax_valid": bool(syntax_valid),
+            }
+        )
+
+    if not rows:
+        raise RuntimeError("CARS produced no rows; refusing to write an empty baseline JSON")
 
     _build_minimal_json(rows, args.output_json)
     print(f"Saved baseline JSON: {args.output_json}")
@@ -260,18 +448,76 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
     )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    base_gsm_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+    gsm_allowed_variables: list[str] = []
+    if dataset == "gsm_symbolic":
+        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
+            build_dynamic_grammar,
+            build_numeric_only_grammar,
+            extract_variables_from_mapping,
+        )
+
+        variable_names: set[str] = set()
+        for ex in examples:
+            vt = ex.get("variable_types") or {}
+            if isinstance(vt, dict):
+                variable_names.update(extract_variables_from_mapping(vt))
+        gsm_allowed_variables = sorted(variable_names)
+        if gsm_allowed_variables:
+            base_gsm_grammar = build_dynamic_grammar(base_gsm_grammar, gsm_allowed_variables)
+        else:
+            base_gsm_grammar = build_numeric_only_grammar(base_gsm_grammar)
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
-            return (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+            return base_gsm_grammar
         if dataset == "spider":
             return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
         if dataset == "smiles":
             return str(example.get("grammar_text", ""))
         raise ValueError(f"Unsupported dataset for GCD adapter: {dataset}")
+
+    def _gcd_max_new_tokens() -> int:
+        if dataset == "gsm_symbolic":
+            return min(96, max(32, int(args.eval_max_steps)))
+        if dataset == "smiles":
+            return min(256, max(64, int(args.eval_max_steps)))
+        return max(32, int(args.eval_max_steps))
+
+    def _gcd_prompt(prompt: str) -> str:
+        if dataset == "gsm_symbolic":
+            return prompt.rstrip() + "<<"
+        return prompt
+
+    def _gcd_output(completion: str, example: dict[str, Any]) -> str:
+        if dataset != "gsm_symbolic":
+            return completion
+        expr = completion.splitlines()[0].strip()
+        if expr.startswith("<<"):
+            wrapped = expr if ">>" in expr else f"{expr}>>"
+            expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
+            expr = expr[-1] if expr else ""
+        if expr.endswith(">>"):
+            expr = expr[:-2].strip()
+        if not expr:
+            return ""
+
+        for end in range(len(expr), 0, -1):
+            candidate = expr[:end].strip()
+            if not candidate:
+                continue
+            wrapped = f"<<{candidate}>>"
+            all_valid, segments = eval_runtime._check_syntax_validity(
+                wrapped,
+                example=example,
+            )
+            if logic.example_syntax_pass(all_valid, segments, False, None):
+                return wrapped
+        return f"<<{expr}>>"
 
     syncode_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
@@ -289,7 +535,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 grammar=grammar_text,
                 parse_output_only=True,
                 log_level=0,
-                max_new_tokens=max(32, int(args.eval_max_steps)),
+                max_new_tokens=_gcd_max_new_tokens(),
                 do_sample=False,
                 num_return_sequences=1,
             )
@@ -300,8 +546,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = logic.format_prompt(eval_runtime, example)
-        completions = sc.infer(prompt)
-        output_text = completions[0] if completions else ""
+        completions = sc.infer(_gcd_prompt(prompt), stop_words=["\n", ">>"] if dataset == "gsm_symbolic" else None)
+        output_text = _gcd_output(completions[0] if completions else "", example)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
@@ -314,7 +560,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
+                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -377,6 +623,7 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
     )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
@@ -430,7 +677,7 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
+                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -470,7 +717,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         llm = LLM(
             model=args.eval_model,
             gpu_memory_utilization=args.vllm_gpu_memory_utilization,
-            max_model_len=4096,
+            max_model_len=16384,
             trust_remote_code=True,
         )
     else:
@@ -494,6 +741,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         running_prompt = base_prompt
 
         for _i in range(n_per_class):
+            running_prompt = _truncate_prompt(running_prompt, base_prompt)
             if args.eval_backend == "vllm":
                 from vllm import SamplingParams as _SP
 
@@ -575,6 +823,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
     )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
@@ -627,7 +876,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
                 cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:"
+                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
 
         question = str(example.get("question") or example.get("prompt") or expected)
         rows.append(
@@ -693,9 +942,22 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     if dataset == "gsm_symbolic":
         cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
 
-    subprocess.run(cmd, cwd=crane_src_dir, check=True)
+    repo_syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
+    repo_syncode_pkg = repo_syncode_root / "syncode"
+    env = os.environ.copy()
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    syncode_paths = [str(repo_syncode_root), str(repo_syncode_pkg)]
+    env["PYTHONPATH"] = os.pathsep.join(
+        syncode_paths + ([existing_pythonpath] if existing_pythonpath else [])
+    )
 
-    rows = _load_latest_crane_results(crane_src_dir, dataset)
+    subprocess.run(cmd, cwd=crane_src_dir, check=True, env=env)
+
+    rows = _annotate_legacy_rows_with_syntax(
+        _load_latest_crane_results(crane_src_dir, dataset),
+        args,
+        dataset,
+    )
     _build_minimal_json(rows, args.output_json)
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
