@@ -1,0 +1,406 @@
+{
+  "accuracy": 0.62,
+  "syntax_rate": 1.0,
+  "answers": [
+    {
+      "question": "Find the average ranking for each player and their first name.",
+      "generated_answer": "SELECT p.first_name, AVG(r.ranking) AS avg_ranking FROM players p JOIN rankings r ON p.player_id = r.player_id GROUP BY p.first_name"
+    },
+    {
+      "question": "What is the zip code of the address in the city Port Chelsea?",
+      "generated_answer": "SELECT T2.zip_postcode FROM addresses AS T1 INNER JOIN student_addresses AS T2 ON T1.address_id = T2.address_id WHERE T1.city = 'Port Chelsea'"
+    },
+    {
+      "question": "Which dogs are of the rarest breed? Show their names and treatment dates.",
+      "generated_answer": "SELECT dogs.name, treatments.date_of_treatment FROM dogs JOIN treatments ON dogs.dog_id = treatments.dog_id JOIN breeds ON dogs.breed_code = breeds.breed_code WHERE breeds.breed_name IN ( SELECT breed_name FROM breeds ORDER BY COUNT(*) ASC LIMIT 1 )"
+    },
+    {
+      "question": "List singer names and number of concerts for each singer.",
+      "generated_answer": "SELECT s.name ,  COUNT(c.concert_name) AS num_concerts FROM singer s JOIN singer_in_concert sc ON s.singer_id = sc.singer_id JOIN concert c ON sc.concert_id = c.concert_id GROUP BY s.name"
+    },
+    {
+      "question": "What is the minimum weight of the car with 8 cylinders produced in 1974 ?",
+      "generated_answer": "SELECT MIN(weight) FROM cars_data WHERE cylinders = 8 AND year = 1974"
+    },
+    {
+      "question": "What are airlines that have flights arriving at airport 'AHD'?",
+      "generated_answer": "SELECT DISTINCT T1.airline FROM flights AS T1 INNER JOIN airports AS T2 ON T1.destairport = T2.airportcode WHERE T2.city = 'AHD'"
+    },
+    {
+      "question": "What is the horsepower of the car with the greatest accelerate?",
+      "generated_answer": "SELECT T2.horsepower FROM car_makers AS T1 INNER JOIN cars_data AS T2 ON T1.id = T2.maker WHERE T2.accelerate = ( SELECT MAX(accelerate) FROM cars_data )"
+    },
+    {
+      "question": "Give me the description of the treatment type whose total cost is the lowest.",
+      "generated_answer": "SELECT T2.treatment_type_description FROM treatments AS T1 INNER JOIN treatment_types AS T2 ON T1.treatment_type_code = T2.treatment_type_code GROUP BY T2.treatment_type_code ORDER BY SUM(T1.cost_of_treatment) ASC LIMIT 1"
+    },
+    {
+      "question": "Find number of pets owned by students who are older than 20.",
+      "generated_answer": "SELECT COUNT(DISTINCT p.petid) FROM pets AS p JOIN has_pet AS hp ON p.petid = hp.petid JOIN student AS s ON hp.stuid = s.stuid WHERE s.age > 20"
+    },
+    {
+      "question": "How many museums were opened after 2013 or before 2008?",
+      "generated_answer": "SELECT count(*) FROM museum WHERE open_year > 2013 OR open_year < 2008"
+    },
+    {
+      "question": "find the number of distinct country codes of all players.",
+      "generated_answer": "SELECT count(DISTINCT country_code) FROM players"
+    },
+    {
+      "question": "Find the id of the pet owned by student whose last name is 'Smith'.",
+      "generated_answer": "SELECT T2.petid FROM students AS T1 INNER JOIN has_pet AS T2 ON T1.stuid = T2.stuid WHERE T1.lname = 'Smith'"
+    },
+    {
+      "question": "Which makers designed more than 3 car models? List full name and the id.",
+      "generated_answer": "SELECT c.fullname, cm.id FROM car_makers cm JOIN car_names cn ON cm.id = cn.maker JOIN model_list ml ON cn.model = ml.model GROUP BY cm.id HAVING COUNT(ml.model) > 3"
+    },
+    {
+      "question": "Who is the first student to register? List the first name, middle name and last name.",
+      "generated_answer": "SELECT first_name ,  middle_name ,  last_name FROM students ORDER BY date_first_registered ASC LIMIT 1"
+    },
+    {
+      "question": "What is the id and type code for the template used by the most documents?",
+      "generated_answer": "SELECT T1.template_id ,  T2.template_type_code FROM templates AS T1 JOIN ref_template_types AS T2 ON T1.template_type_code = T2.template_type_code ORDER BY COUNT(T1.template_id) DESC LIMIT 1"
+    },
+    {
+      "question": "Which language is the most popular in Aruba?",
+      "generated_answer": "SELECT T3.language FROM city AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code INNER JOIN countrylanguage AS T3 ON T2.code = T3.countrycode WHERE T1.name = 'Aruba' ORDER BY T3.percentage DESC LIMIT 1"
+    },
+    {
+      "question": "Show the names of all of the high schooler Kyle's friends.",
+      "generated_answer": "SELECT T2.name FROM highschooler AS T1 JOIN friend AS T2 ON T1.id = T2.friend_id WHERE T1.name = 'Kyle'"
+    },
+    {
+      "question": "Give the total surface area covered by countries in Asia or Europe.",
+      "generated_answer": "SELECT SUM(surfacearea) FROM country WHERE region IN ('Asia', 'Europe')"
+    },
+    {
+      "question": "What is minimum and maximum share of TV series?",
+      "generated_answer": "SELECT min(share) ,  max(share) FROM tv_series"
+    },
+    {
+      "question": "Find the districts in which there are both shops selling less than 3000 products and shops selling more than 10000 products.",
+      "generated_answer": "SELECT T2.district FROM shop AS T1 JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.number_products < 3000 INTERSECT SELECT T2.district FROM shop AS T1 JOIN district AS T2 ON T1.district_id = T2.district_id WHERE T1.number_products > 10000"
+    },
+    {
+      "question": "Show ids of all students who do not have any friends.",
+      "generated_answer": "SELECT id FROM highschooler WHERE id NOT IN ( SELECT friend_id FROM friend ) AND id NOT IN ( SELECT student_id FROM likes )"
+    },
+    {
+      "question": "What is the average edispl of the cars of model volvo?",
+      "generated_answer": "SELECT AVG(edispl) FROM car_names WHERE model = 'volvo'"
+    },
+    {
+      "question": "What are  the different countries with singers above age 20?",
+      "generated_answer": "SELECT DISTINCT T1.country FROM singer AS T1 INNER JOIN singer_in_concert AS T2 ON T1.singer_id = T2.singer_id WHERE T2.age > 20"
+    },
+    {
+      "question": "How many high schoolers are there?",
+      "generated_answer": "SELECT count(DISTINCT id) FROM highschooler"
+    },
+    {
+      "question": "Give the language that is spoken in the most countries.",
+      "generated_answer": "SELECT T1.language FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T2.language ORDER BY COUNT(T2.countrycode) DESC LIMIT 1"
+    },
+    {
+      "question": "What major is every student who does not own a cat as a pet, and also how old are they?",
+      "generated_answer": "SELECT T2.major ,  T1.age FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid  =  T2.stuid WHERE T2.pettype  !=  'cat'"
+    },
+    {
+      "question": "Return the names of the 3 most populated countries.",
+      "generated_answer": "SELECT T1.name FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode ORDER BY T2.population DESC LIMIT 3"
+    },
+    {
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "generated_answer": "SELECT T2.language ,  COUNT(T1.channel) FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel GROUP BY T2.language ORDER BY COUNT(T1.channel) ASC LIMIT 1"
+    },
+    {
+      "question": "Which city has most number of departing flights?",
+      "generated_answer": "SELECT T1.city FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport GROUP BY T1.city ORDER BY COUNT(T2.flightno) DESC LIMIT 1"
+    },
+    {
+      "question": "Find the kind of program which most number of students are enrolled in?",
+      "generated_answer": "SELECT T2.degree_summary_name FROM student_enrolment AS T1 INNER JOIN degree_programs AS T2 ON T1.degree_program_id = T2.degree_program_id GROUP BY T2.degree_summary_name ORDER BY COUNT(T1.student_id) DESC LIMIT 1"
+    },
+    {
+      "question": "Return the names of cities that have a population between 160000 and 900000 .",
+      "generated_answer": "SELECT T1.name FROM city AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T1.population BETWEEN 160000 AND 900000"
+    },
+    {
+      "question": "Find the names of stores whose number products is more than the average number of products.",
+      "generated_answer": "SELECT shop.name FROM shop WHERE number_products > ( SELECT avg(number_products) FROM shop )"
+    },
+    {
+      "question": "What is the total population and maximum GNP in Asia?",
+      "generated_answer": "SELECT sum(population) ,  max(gnp) FROM country WHERE continent = 'Asia'"
+    },
+    {
+      "question": "Find the id and cell phone of the professionals who operate two or more types of treatments.",
+      "generated_answer": "SELECT DISTINCT T1.professional_id ,  T2.cell_number FROM professionals AS T1 JOIN treatments AS T2 ON T1.professional_id = T2.professional_id GROUP BY T1.professional_id HAVING COUNT(DISTINCT T2.treatment_type_code) >= 2"
+    },
+    {
+      "question": "Return the birth date of the poker player with the lowest earnings.",
+      "generated_answer": "SELECT T1.birth_date FROM poker_player AS T1 INNER JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T1.earnings ASC LIMIT 1"
+    },
+    {
+      "question": "Show the names and grades of each high schooler.",
+      "generated_answer": "SELECT name ,  grade FROM highschooler"
+    },
+    {
+      "question": "What are flight numbers of flights departing from City \"Aberdeen \"?",
+      "generated_answer": "SELECT DISTINCT T1.flightno FROM flights AS T1 INNER JOIN airports AS T2 ON T1.sourceairport = T2.airportcode WHERE T2.city = 'Aberdeen'"
+    },
+    {
+      "question": "Show all template type codes and number of templates for each.",
+      "generated_answer": "SELECT rt.template_type_code ,  COUNT(t.template_id) FROM ref_template_types rt JOIN templates t ON rt.template_type_code = t.template_type_code GROUP BY rt.template_type_code"
+    },
+    {
+      "question": "What are the earnings of poker players, ordered descending by value?",
+      "generated_answer": "SELECT p.earnings FROM poker_player p ORDER BY p.earnings DESC"
+    },
+    {
+      "question": "How many flights land in Aberdeen or Abilene?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.flightno) FROM flights AS T1 INNER JOIN airports AS T2 ON T1.sourceairport = T2.airportcode WHERE T2.city IN ('Aberdeen', 'Abilene')"
+    },
+    {
+      "question": "What are the average ages of losers and winners across matches?",
+      "generated_answer": "SELECT AVG(loser_age) AS avg_loser_age, AVG(winner_age) AS avg_winner_age FROM matches"
+    },
+    {
+      "question": "How many friends does each student have?",
+      "generated_answer": "SELECT h.name ,  COUNT(f.friend_id) FROM highschooler AS h JOIN friend AS f ON h.id = f.student_id GROUP BY h.name"
+    },
+    {
+      "question": "What are the names of the countries with no car makers?",
+      "generated_answer": "SELECT T2.countryname FROM countries AS T1 JOIN car_makers AS T2 ON T1.countryid = T2.country WHERE T2.id IS NULL"
+    },
+    {
+      "question": "Return the number of United Airlines flights leaving from AHD Airport.",
+      "generated_answer": "SELECT COUNT(*) FROM flights WHERE airline = 'United Airlines' AND sourceairport = 'AHD Airport'"
+    },
+    {
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "generated_answer": "SELECT DISTINCT T2.template_type_description FROM documents AS T1 INNER JOIN templates AS T2 ON T1.template_id = T2.template_id"
+    },
+    {
+      "question": "Show the name and theme for all concerts and the number of singers in each concert.",
+      "generated_answer": "SELECT c.concert_name ,  c.theme ,  COUNT(s.singer_id) as num_singers FROM concert c JOIN singer_in_concert sic ON c.concert_id = sic.concert_id JOIN singer s ON sic.singer_id = s.singer_id GROUP BY c.concert_name ,  c.theme"
+    },
+    {
+      "question": "Who is enrolled in a Bachelor degree program? List the first name, middle name, last name.",
+      "generated_answer": "SELECT T2.first_name ,  T2.middle_name ,  T2.last_name FROM student_enrolment AS T1 INNER JOIN students AS T2 ON T1.student_id = T2.student_id WHERE T1.degree_program_id IN ( SELECT degree_program_id FROM degree_programs WHERE degree_summary_name LIKE 'Bachelor' )"
+    },
+    {
+      "question": "Count the number of different nationalities of conductors.",
+      "generated_answer": "SELECT count(DISTINCT nationality) FROM conductor"
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT T2.song_name FROM singer AS T1 JOIN singer_in_concert AS T3 ON T1.singer_id = T3.singer_id JOIN concert AS T4 ON T3.concert_id = T4.concert_id JOIN stadium AS T5 ON T4.stadium_id = T5.stadium_id JOIN song AS T2 ON T2.singer_id = T1.singer_id WHERE T1.age > ( SELECT avg(age) FROM singer )"
+    },
+    {
+      "question": "What is the name of the series that has the episode \"A Love of a Lifetime\"?",
+      "generated_answer": "SELECT T2.series_name FROM tv_series AS T1 INNER JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.episode = 'A Love of a Lifetime'"
+    },
+    {
+      "question": "What is the total surface area of the continents Asia and Europe?",
+      "generated_answer": "SELECT sum(surfacearea) FROM country WHERE continent IN ('Asia', 'Europe')"
+    },
+    {
+      "question": "Find the name of the makers that produced some cars in the year of 1970?",
+      "generated_answer": "SELECT DISTINCT cm.fullname FROM car_makers cm JOIN model_list ml ON cm.id = ml.maker WHERE ml.year = 1970"
+    },
+    {
+      "question": "Give the average life expectancy for countries in Africa which are republics?",
+      "generated_answer": "SELECT avg(lifeexpectancy) FROM country WHERE continent = 'Africa' AND governmentform = 'Republic'"
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM model_list WHERE weight < ( SELECT AVG(weight) FROM cars_data )"
+    },
+    {
+      "question": "How many conductors are there?",
+      "generated_answer": "SELECT count(DISTINCT conductor_name) FROM conductor"
+    },
+    {
+      "question": "When is the first transcript released? List the date and details.",
+      "generated_answer": "SELECT transcript_date, other_details FROM transcripts ORDER BY transcript_date ASC LIMIT 1"
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SELECT DISTINCT T2.model FROM car_makers AS T1 INNER JOIN model_list AS T2 ON T1.id = T2.maker WHERE T1.fullname != 'Ford Motor Company' AND T2.weight < 3500"
+    },
+    {
+      "question": "Show names of teachers and the courses they are arranged to teach in ascending alphabetical order of the teacher's name.",
+      "generated_answer": "SELECT T1.name AS teacher_name, T2.course_name FROM teacher AS T1 JOIN course_arrange AS T2 ON T1.teacher_id = T2.teacher_id ORDER BY T1.name ASC"
+    },
+    {
+      "question": "What is the average age for all students who do not own any pets ?",
+      "generated_answer": "SELECT avg(age) FROM student WHERE stuid NOT IN ( SELECT stuid FROM has_pet )"
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "SELECT p.name, p.birth_date FROM people AS p ORDER BY p.name ASC"
+    },
+    {
+      "question": "List the vote ids, phone numbers and states of all votes.",
+      "generated_answer": "SELECT vote_id ,  phone_number ,  state FROM votes"
+    },
+    {
+      "question": "What are the codes of countries where Spanish is spoken by the largest percentage of people?",
+      "generated_answer": "SELECT T1.code FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language = 'Spanish' ORDER BY T2.percentage DESC LIMIT 1"
+    },
+    {
+      "question": "Show the number of high schoolers for each grade.",
+      "generated_answer": "SELECT grade ,  COUNT(*) AS num_students FROM highschooler GROUP BY grade"
+    },
+    {
+      "question": "How many different forms of governments are there in Africa?",
+      "generated_answer": "SELECT count(DISTINCT governmentform) FROM country WHERE region = 'Africa'"
+    },
+    {
+      "question": "Return the number of flights arriving in Aberdeen.",
+      "generated_answer": "SELECT count(*) FROM flights WHERE destairport = 'ABERDEEN'"
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1"
+    },
+    {
+      "question": "how many cars were produced in 1980?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE YEAR = 1980"
+    },
+    {
+      "question": "List each language and the number of TV Channels using it.",
+      "generated_answer": "SELECT T2.language ,  COUNT(T1.id) FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel GROUP BY T2.language"
+    },
+    {
+      "question": "What is the last transcript release date?",
+      "generated_answer": "SELECT MAX(transcript_date) FROM transcripts"
+    },
+    {
+      "question": "Find the id, last name and cell phone of the professionals who live in the state of Indiana or have performed more than two treatments.",
+      "generated_answer": "SELECT T1.professional_id ,  T2.last_name ,  T2.cell_number FROM professionals AS T1 JOIN owners AS T2 ON T1.owner_id = T2.owner_id WHERE T2.state = 'Indiana' OR (T1.professional_id IN ( SELECT professional_id FROM treatments GROUP BY professional_id HAVING COUNT(treatment_id) > 2 ))"
+    },
+    {
+      "question": "What is the birth date of the poker player with the lowest earnings?",
+      "generated_answer": "SELECT T1.birth_date FROM poker_player AS T1 INNER JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T1.earnings ASC LIMIT 1"
+    },
+    {
+      "question": "What is the name of the high schooler who has the greatest number of likes?",
+      "generated_answer": "SELECT T1.name FROM highschooler AS T1 JOIN likes AS T2 ON T1.id = T2.student_id GROUP BY T1.id ORDER BY COUNT(T2.student_id) DESC LIMIT 1"
+    },
+    {
+      "question": "What is the number of cartoones written by Joseph Kuhr?",
+      "generated_answer": "SELECT COUNT(*) FROM cartoon WHERE written_by = 'Joseph Kuhr'"
+    },
+    {
+      "question": "Give the name of the student with the most likes.",
+      "generated_answer": "SELECT T2.name FROM highschooler AS T1 JOIN likes AS T2 ON T1.id = T2.student_id GROUP BY T1.name ORDER BY COUNT(T2.liked_id) DESC LIMIT 1"
+    },
+    {
+      "question": "What are the countries having at least one car maker? List name and id.",
+      "generated_answer": "SELECT T2.continent ,  T2.countryid FROM countries AS T1 JOIN car_makers AS T2 ON T1.countryid = T2.country WHERE T1.continent IN ( SELECT DISTINCT continent FROM countries )"
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "generated_answer": "SELECT DISTINCT T4.last_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id INNER JOIN degree_programs AS T3 ON T1.degree_program_id = T3.degree_program_id WHERE T2.state_province_county = 'North Carolina' AND T3.degree_program_id IS NULL"
+    },
+    {
+      "question": "Give the code of the airport with the least flights.",
+      "generated_answer": "SELECT airportcode FROM airports ORDER BY COUNT(*) ASC LIMIT 1"
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT stadium.name ,  stadium.capacity FROM stadium WHERE stadium.average = ( SELECT max(average) FROM stadium )"
+    },
+    {
+      "question": "How many cars has over 6 cylinders?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE cylinders > 6"
+    },
+    {
+      "question": "Which city and country is the Alton airport at?",
+      "generated_answer": "SELECT T1.city ,  T1.country FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T2.flightno = 'ALTN'"
+    },
+    {
+      "question": "Find the owner id and zip code of the owner who spent the most money in total for his or her dogs.",
+      "generated_answer": "SELECT T1.owner_id ,  T2.zip_code FROM owners AS T1 INNER JOIN dogs AS T2 ON T1.owner_id = T2.owner_id GROUP BY T1.owner_id ORDER BY SUM(T2.weight * T3.cost_of_treatment) DESC LIMIT 1"
+    },
+    {
+      "question": "Find all airlines that have flights from airport 'CVO' but not from 'APG'.",
+      "generated_answer": "SELECT DISTINCT a1.name FROM airlines AS a1 INNER JOIN flights AS f1 ON a1.uid = f1.airline INNER JOIN airports AS a2 ON f1.sourceairport = a2.airportcode WHERE a2.city = 'CVO' AND a2.countryabbrev != 'APG'"
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT avg(weight) ,  avg(year) FROM cars_data GROUP BY year"
+    },
+    {
+      "question": "Show the names of all high schoolers in grade 10.",
+      "generated_answer": "SELECT name FROM highschooler WHERE grade = '10'"
+    },
+    {
+      "question": "List the title of all cartoons in alphabetical order.",
+      "generated_answer": "SELECT title FROM cartoon ORDER BY title ASC"
+    },
+    {
+      "question": "What languages are only used by a single country with a republic government?",
+      "generated_answer": "SELECT T1.language FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T1.governmentform = 'republic' GROUP BY T2.language HAVING COUNT(T1.code) = 1"
+    },
+    {
+      "question": "How many likes correspond to each student id?",
+      "generated_answer": "SELECT likes.student_id, COUNT(*) AS like_count FROM likes GROUP BY likes.student_id"
+    },
+    {
+      "question": "Show different citizenship of singers and the number of singers of each citizenship.",
+      "generated_answer": "SELECT citizenship ,  COUNT(singer_id) FROM singer GROUP BY citizenship"
+    },
+    {
+      "question": "What are flight numbers of flights arriving at Airport \"APG\"?",
+      "generated_answer": "SELECT DISTINCT flightno FROM flights WHERE destairport = 'APG'"
+    },
+    {
+      "question": "How many singers are there?",
+      "generated_answer": "SELECT count(*) FROM singer"
+    },
+    {
+      "question": "What is the airport name for airport 'AKO'?",
+      "generated_answer": "SELECT airportname FROM airports WHERE airportcode = 'AKO'"
+    },
+    {
+      "question": "Which unique cities are in Asian countries where Chinese is the official language ?",
+      "generated_answer": "SELECT DISTINCT T3.name FROM city AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code INNER JOIN countrylanguage AS T3 ON T2.code = T3.countrycode WHERE T2.continent = 'Asia' AND T3.isofficial = 'yes' AND T3.language = 'Chinese'"
+    },
+    {
+      "question": "Find the id and name of the museum that has the most staff members?",
+      "generated_answer": "SELECT museum_id ,  name FROM museum ORDER BY num_of_staff DESC LIMIT 1"
+    },
+    {
+      "question": "How many TV Channels use the English language?",
+      "generated_answer": "SELECT COUNT(T2.id) FROM tv_channel AS T1 INNER JOIN tv_series AS T2 ON T1.id = T2.channel WHERE T1.language = 'English'"
+    },
+    {
+      "question": "What are the names of poker players whose earnings is higher than 300000?",
+      "generated_answer": "SELECT p.name FROM poker_player AS p JOIN people AS pe ON p.people_id = pe.people_id WHERE p.earnings > 300000"
+    },
+    {
+      "question": "What is the name of the singer who is worth the most?",
+      "generated_answer": "SELECT T2.name FROM singer AS T1 INNER JOIN song AS T2 ON T1.singer_id = T2.singer_id ORDER BY T1.net_worth_millions DESC LIMIT 1"
+    },
+    {
+      "question": "What is the average expected life expectancy for countries in the region of Central Africa?",
+      "generated_answer": "SELECT AVG(lifeexpectancy) FROM country WHERE region = 'Central Africa'"
+    },
+    {
+      "question": "Return the codes of countries for which Spanish is the predominantly spoken language.",
+      "generated_answer": "SELECT T2.code FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language = 'Spanish'"
+    },
+    {
+      "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+      "generated_answer": "SELECT DISTINCT T1.name FROM battle AS T1 INNER JOIN death AS T2 ON T1.id = T2.caused_by_ship_id WHERE T2.killed > 0 AND T2.injured > 0 AND T1.bulgarian_commander LIKE '%Kaloyan%' AND T1.latin_commander LIKE '%Baldwin I%'"
+    },
+    {
+      "question": "what are the different names of the singers that have sales more than 300000?",
+      "generated_answer": "SELECT DISTINCT name FROM singer WHERE singer_id IN ( SELECT singer_id FROM song WHERE sales > 300000 )"
+    }
+  ]
+}

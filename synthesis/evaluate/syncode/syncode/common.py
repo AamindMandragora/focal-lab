@@ -2,10 +2,40 @@ import os
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+
+def _vas_resolve_repo_cache_root() -> str:
+    """Prefer ``CSD_CACHE_ROOT``, else walk up to verified-agent-synthesis ``cache/``."""
+    if os.environ.get("CSD_CACHE_ROOT"):
+        path = os.path.abspath(os.path.expanduser(os.environ["CSD_CACHE_ROOT"]))
+        os.makedirs(path, exist_ok=True)
+        return path
+    here = os.path.dirname(os.path.abspath(__file__))
+    cur = here
+    for _ in range(24):
+        if os.path.isfile(os.path.join(cur, "synthesis", "run_synthesis.py")):
+            root_cache = os.path.join(cur, "cache")
+            os.makedirs(root_cache, exist_ok=True)
+            return os.path.abspath(root_cache)
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    fallback = os.path.abspath(os.path.join(os.getcwd(), "cache"))
+    os.makedirs(fallback, exist_ok=True)
+    return fallback
+
+
+_repo_cache = _vas_resolve_repo_cache_root()
+
 # Remove this in future and add instruction to set the HF_CACHE env variable
 RESULTS_DIR = os.environ['RESULTS_DIR'] if 'RESULTS_DIR' in os.environ else 'results/'
-HF_CACHE = os.environ['HF_CACHE'] if 'HF_CACHE' in os.environ else 'cache/'
-SYNCODE_CACHE = os.environ['SYNCODE_CACHE'] if 'SYNCODE_CACHE' in os.environ else 'cache/'
+HF_CACHE = os.environ.get('HF_CACHE') or _repo_cache
+_syn_raw = (
+    os.environ.get('SYNCODE_CACHE')
+    or os.environ.get('ITER_SYNCODE_CACHE')
+    or _repo_cache
+)
+SYNCODE_CACHE = _syn_raw if _syn_raw.endswith(os.sep) else _syn_raw + os.sep
 HF_ACCESS_TOKEN = os.environ['HF_ACCESS_TOKEN'] if 'HF_ACCESS_TOKEN' in os.environ else None
 
 def get_vocab_from_tokenizer(tokenizer):

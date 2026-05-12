@@ -37,6 +37,37 @@ def _cap_suffix(suffix: str) -> str:
     return "\n".join(lines)
 
 
+def _ensure_repo_cache_env() -> Path:
+    """Point HF + SynCode pickles at a single repo-local ``cache/`` directory.
+
+    Legacy CRANE/IterGen historically defaulted to ``legacy/CRANE/src/iter_cache/``
+    (cwd-relative), duplicating multi‑GB model snapshots. Setting ``CSD_CACHE_ROOT``
+    (or these defaults) keeps Hugging Face checkpoints and ``mask_stores/`` / ``parsers/``
+    together under ``<repo>/cache/``.
+    """
+    repo_root = Path(__file__).resolve().parents[2]
+    cache_root = Path(os.environ.get("CSD_CACHE_ROOT", str(repo_root / "cache"))).expanduser().resolve()
+    cache_root.mkdir(parents=True, exist_ok=True)
+    root_s = str(cache_root)
+
+    os.environ.setdefault("CSD_CACHE_ROOT", root_s)
+    os.environ.setdefault("HF_HOME", root_s)
+    os.environ.setdefault("HF_CACHE", root_s)
+    os.environ.setdefault("TRANSFORMERS_CACHE", root_s)
+
+    syn_existing = os.environ.get("SYNCODE_CACHE") or os.environ.get("ITER_SYNCODE_CACHE")
+    if syn_existing:
+        syn = syn_existing if syn_existing.endswith(os.sep) else syn_existing + os.sep
+        os.environ.setdefault("SYNCODE_CACHE", syn)
+        os.environ.setdefault("ITER_SYNCODE_CACHE", syn)
+    else:
+        syn = root_s if root_s.endswith(os.sep) else root_s + os.sep
+        os.environ.setdefault("SYNCODE_CACHE", syn)
+        os.environ.setdefault("ITER_SYNCODE_CACHE", syn)
+
+    return cache_root
+
+
 def _normalize_dataset(dataset: str) -> str:
     return "gsm_symbolic" if dataset == "gsm" else dataset
 
@@ -346,6 +377,22 @@ def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_a
     return ""
 
 
+def _cars_normalize_gsm_symbolic_output(raw: str) -> str:
+    """Wrap bare GSM expressions so benchmark scoring can see them.
+
+    GSM-Symbolic ``extract_actual`` only reads ``<< ... >>`` spans. Legacy CARS often
+    emits a grammar-valid expression body with no delimiters, which yields
+    ``actual is None`` and zero accuracy despite plausible-looking output.
+    """
+    text = (raw or "").strip()
+    if not text:
+        return raw
+    if re.findall(r"<<\s*([^<>]+?)\s*>>", text):
+        return raw
+    expr = text.splitlines()[0].strip()
+    return f"<<{expr}>>" if expr else raw
+
+
 def _cars_set_cached_grammar(
     cars_model: Any,
     grammar_text: str,
@@ -413,6 +460,8 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             max_new_tokens=max_new_tokens,
             max_attempts=max_attempts,
         )
+        if dataset == "gsm_symbolic":
+            output_text = _cars_normalize_gsm_symbolic_output(output_text)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
@@ -608,7 +657,6 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     _build_minimal_json(rows, args.output_json)
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
-
 
 def _itergen_add_import_paths(itergen_root: Path) -> None:
     candidates = [
@@ -1020,6 +1068,8 @@ def main() -> None:
     parser.add_argument("--spider-split-name", type=str, choices=["train", "test", "eval"], default="eval",
                         help="Which split from --spider-split-file to use (default: eval)")
     args = parser.parse_args()
+
+    _ensure_repo_cache_env()
 
     if args.strategy == "gcd":
         raise SystemExit(run_gcd_legacy_adapter(args))

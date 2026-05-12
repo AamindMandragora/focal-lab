@@ -1,0 +1,3021 @@
+[env] using conda environment: /apps/conda/advayth2/envs/advayth2
+=== run_all_tests matrix ===
+models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
+benchmarks: gsm spider smiles
+strategies: unconstrained gcd crane itergen cars metadecode
+token budgets: 1 2 4
+step budgets (ablation): 256 512 1024
+synthesis iters (metadecode): 3 5 10
+generation models (metadecode): gpt5.4 opus4.7 gemini-pro
+eval max steps (main): 900
+
+=== Phase 1: Main experiment matrix ===
+[skip] outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
+[skip] outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
+[skip] outputs/baselines/crane/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy itergen --dataset gsm_symbolic --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/itergen/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Loaded 100 examples from CRANE folder /home/advayth2/projects/verified-agent-synthesis/legacy/CRANE/src/gsm_symbolic
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 5321.16it/s]
+Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.
+Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.
+Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.
+Exception while parsing: maximum recursion depth exceeded
+Traceback (most recent call last):
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 1085, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 1078, in main
+    raise SystemExit(run_itergen_legacy_adapter(args))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 749, in run_itergen_legacy_adapter
+    output_text = _itergen_generate(iter_gen, prompt)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 676, in _itergen_generate
+    generated = iter_gen.forward()
+                ^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 303, in forward
+    raise e
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 300, in forward
+    parse_results[idx] = ip.get_acceptable_next_terminals(next_gen[idx])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/parsers/incremental_parser.py", line 223, in get_acceptable_next_terminals
+    self.next_ac_terminals = self._accepts(interactive)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/parsers/incremental_parser.py", line 301, in _accepts
+    accepts = interactive_parser.accepts()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/parsers/lalr_interactive_parser.py", line 120, in accepts
+    new_cursor = copy(self)
+                 ^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 79, in copy
+    return copier(x)
+           ^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/parsers/lalr_interactive_parser.py", line 68, in __copy__
+    copy(self.parser_state),
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 79, in copy
+    return copier(x)
+           ^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/parsers/lalr_parser_state.py", line 61, in __copy__
+    deepcopy(self.value_stack),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/tree.py", line 214, in __deepcopy__
+    dup.children = deepcopy(self.children, memo)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 136, in deepcopy
+    y = copier(x, memo)
+        ^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 196, in _deepcopy_list
+    append(deepcopy(a, memo))
+           ^^^^^^^^^^^^^^^^^
+  File "/apps/conda/advayth2/envs/advayth2/lib/python3.12/copy.py", line 143, in deepcopy
+    y = copier(memo)
+        ^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/lexer.py", line 263, in __deepcopy__
+    return Token(self.type, self.value, self.start_pos, self.line, self.column, self.end_line, self.end_column, self.end_pos)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/syncode/syncode/larkm/lexer.py", line 210, in __new__
+    return cls._future_new(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RecursionError: maximum recursion depth exceeded

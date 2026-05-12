@@ -26,6 +26,7 @@ Disallowed prompt content:
 
 - Dafny binary: `dafny/dafny`
 - OpenAI API key: `synthesis/.env`
+- Hugging Face checkpoints and SynCode mask/parser pickles: repository `cache/` (set `CSD_CACHE_ROOT` to relocate; legacy CRANE/IterGen/GCD paths resolve here when unset).
 
 ## Core Files
 
@@ -61,7 +62,7 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
 - `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. If `AWS_BEARER_TOKEN_BEDROCK` is set, its `gpt5.4` generation profile uses Bedrock by default; set `BEDROCK_GENERATION_MODEL` to choose the Bedrock model id or `CSD_USE_BEDROCK_FOR_GPT54=0` to keep OpenAI for that profile.
 - Full repository test sweep:
   `bash run_all_tests.sh`
-- `run_all_tests.sh` activates `/home/advayth2/envs/vas-rdkit` by default and verifies RDKit import before starting the matrix. Override only with `VAS_RDKIT_CONDA_ENV` when using another compatible environment.
+- `run_all_tests.sh` activates `/apps/conda/advayth2/envs/advayth2` by default and verifies RDKit import before starting the matrix. Partners using a different prefix should `export VAS_CONDA_ENV=/path/to/env`; `VAS_RDKIT_CONDA_ENV` remains as a legacy alias. The script prepends `CONDA_PREFIX/lib` to `LD_LIBRARY_PATH` so SciPy/transformers wheels resolve `libstdc++` correctly; Syncode needs **`mxeval`** with bundled **`data/`** — run **`bash environment/install_mxeval_into_env.sh`** once per env (see **`environment/README.md`**).
 
 ## Evaluation Expectations
 
@@ -81,11 +82,11 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 ## Operational Defaults
 
 - Prefer GPUs `2,3` for local runs unless intentionally using another allocation.
-- Keep changes minimal and localized.
+- Keep changes minimal and localized. Occasionally scan through the repo and cut fat, because bloat is the enemy of progress.
 - Do not remove or alter formal contracts in Dafny files unless required by the task.
 - Do not create, edit, delete, or commit files under `paper/` unless the user explicitly requests changes there (the paper tree is out of scope for routine agent work).
 - When asked to modify files under `paper/`, do not run paper compilation checks; after making the requested edits, always automatically proceed with `git add`, `git commit`, and `git push` within the subdirectory to update Overleaf.
 - When using adaptive helper masking or beam refinement, keep selection rules empirical/contract-based (measured metrics, verifier checks), not heuristic strategy advice in prompts.
 - For bandit-style helper selection, keep exploration/exploitation policy in pipeline code/CLI knobs (e.g., UCB parameters), not in synthesis prompt prose.
-- Always update the `README.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes.
+- Always update the `README.md` and `AGENTS.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes. Occasionally scan the repo at the end of a request to ensure they are up-to-date.
 - Under `synthesis/`, update the nearest subdirectory **`README.md`** / **`AGENTS.md`** when behavior or conventions change (see `synthesis/README.md` for the layout); do not add documentation inside vendored `synthesis/evaluate/syncode/syncode/` except via the root `evaluate/syncode/AGENTS.md` policy unless upgrading the vendor drop.

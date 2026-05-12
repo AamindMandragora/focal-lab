@@ -11,7 +11,11 @@ if [[ -f "$ROOT_DIR/synthesis/.env" ]]; then
 fi
 
 # Activate the conda environment that has RDKit (needed for SMILES evaluation).
-CONDA_ENV_PATH="${VAS_RDKIT_CONDA_ENV:-/home/advayth2/envs/vas-rdkit}"
+# Default: shared lab prefix. Override for another compatible env:
+#   export VAS_CONDA_ENV="/path/to/your/env"    # preferred name
+#   export VAS_RDKIT_CONDA_ENV="$VAS_CONDA_ENV" # legacy alias (still honored)
+_DEFAULT_VAS_CONDA_ENV="/apps/conda/advayth2/envs/advayth2"
+CONDA_ENV_PATH="${VAS_CONDA_ENV:-${VAS_RDKIT_CONDA_ENV:-${_DEFAULT_VAS_CONDA_ENV}}}"
 if ! command -v conda >/dev/null 2>&1; then
   echo "conda is required to run the matrix in $CONDA_ENV_PATH" >&2
   exit 1
@@ -19,15 +23,27 @@ fi
 CONDA_BASE="$(conda info --base)"
 source "$CONDA_BASE/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV_PATH"
-if [[ "${CONDA_PREFIX:-}" != "$CONDA_ENV_PATH" ]]; then
+_expected="$(cd "$CONDA_ENV_PATH" && pwd -P)"
+_actual="$(cd "${CONDA_PREFIX:-}" && pwd -P 2>/dev/null || echo "")"
+if [[ -z "$_actual" || "$_actual" != "$_expected" ]]; then
   echo "failed to activate required conda environment: $CONDA_ENV_PATH" >&2
-  echo "current CONDA_PREFIX: ${CONDA_PREFIX:-<unset>}" >&2
+  echo "current CONDA_PREFIX (canonical): ${_actual:-<unset>}" >&2
+  echo "expected canonical path: $_expected" >&2
   exit 1
 fi
 python - <<'PY'
 import rdkit
 PY
 echo "[env] using conda environment: $CONDA_PREFIX"
+
+# SciPy / PyTorch wheels link against a newer libstdc++ than some distro defaults expose.
+# Prepend conda's runtime libs so imports resolve CXXABI (e.g. CXXABI_1.3.15) correctly.
+if [[ -n "${CONDA_PREFIX:-}" && -d "${CONDA_PREFIX}/lib" ]]; then
+  export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+
+# Help redirected logs show tqdm/Python subprocess lines promptly during matrix runs.
+export PYTHONUNBUFFERED=1
 
 DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct,meta-llama/Llama-3.1-8B-Instruct"
 DEFAULT_BENCHMARKS="gsm,spider,smiles"
@@ -78,6 +94,11 @@ Without arguments, defaults to:
 All strategies are evaluated on all benchmarks via legacy external
 codebases (crane, itergen, cars, gcd/syncode) or the synthesis
 pipeline (metadecode). Unconstrained uses the legacy adapter.
+
+Environment:
+  Default conda prefix /apps/conda/advayth2/envs/advayth2 (must include RDKit).
+  Override with VAS_CONDA_ENV or legacy VAS_RDKIT_CONDA_ENV (see environment/README.md).
+  Prepends CONDA_PREFIX/lib to LD_LIBRARY_PATH for SciPy/transformers wheels vs system libstdc++.
 
 Options:
   --models CSV                  Eval models list
