@@ -61,6 +61,16 @@ def build_dynamic_grammar(base_grammar: str, variables: List[str]) -> str:
     return result
 
 
+def build_numeric_only_grammar(base_grammar: str) -> str:
+    """Build a GSM grammar variant that accepts numeric expressions only."""
+    return re.sub(
+        r'\?any_expr: s_expr\s*\n\s*\|\s*n_expr',
+        '?any_expr: n_expr',
+        base_grammar,
+        count=1,
+    )
+
+
 def extract_variables_from_mapping(
     variable_mapping: dict,
     include_string_variables: bool = False,

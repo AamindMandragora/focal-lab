@@ -16,6 +16,12 @@ Each JSON should contain only:
 - `syntax_rate`
 - `answers` (every generated answer keyed or listed by benchmark question)
 
+## Preservation Notes
+
+`unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json`
+is a known-good GSM baseline result and should not be deleted unless it is
+explicitly being regenerated or the user asks to remove it.
+
 You can generate this file from a synthesis success report with:
 
 ```bash
