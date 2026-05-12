@@ -1398,3 +1398,351 @@ while steps < maxSteps
 }
 
 cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✗ Verification failed
+  Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
+    |
+113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrainedOut| >= rollbackLimit {
+    |                     ^^^^^^^^^^^^^^^^
+
+GeneratedCSD.dfy(113,36): Erro
+  Refining based on verification error...
+  Helper policy: helper mask active (utility); no helpers disabled by utility yet
+
+============================================================
+Attempt 9/10
+============================================================
+Helper policy: helper mask active (utility); no helpers disabled by utility yet
+Strategy: // CSD_RATIONALE_BEGIN
+// The immediate failure source was purely verification-level: a helper method
+// was invoked directly inside a boolean expression. This repair keeps the same
+// evidence-backed control ingredients from the prior revision—guaranteed
+// explicit span entry, mixed inside decoding with symbol progress in wider
+// states, hard token control in narrow states, immediate close on complete
+// prefixes, and rollback repair—but rewrites the dead-end check into a
+// statement-bound local before branching. That is a surgical verification fix
+// rather than a behavioral reset, which preserves search continuity while
+// removing the Dafny-specific method-in-expression error.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
+//   insideConstrainedOut := true and currentConstrainedOut := [], which is
+//   parser-valid by the precondition parser.IsValidPrefix([]). In the close
+//   branch, CloseConstrainedSpan exits constrained mode, so the implication is
+//   vacuous. In the rollback branch, RollbackConstrainedSuffix returns a
+//   repaired constrained prefix that is parser-valid. In the narrow token-step
+//   branch, ConstrainedStep returns EOS or a parser-valid next token; on the
+//   non-EOS path, AppendConstrainedToken preserves validity. In the wide
+//   symbol-progress branch, ConstrainedSymbolInGenerated returns currentOut that
+//   is a valid parser prefix, so assigning it preserves the invariant.
+// progress: The explicit-open branch consumes one token-step for the visible
+//   opener and appends one token, so |generated| stays within
+//   |generatedPrefix| + steps. The close branch consumes one token-step and
+//   appends at most one visible delimiter. The rollback branch increments steps
+//   by 1 while generated may shrink, so the bound is preserved. The narrow
+//   token-step branch consumes one token-step and appends at most one visible
+//   token. The wide symbol-progress branch consumes stepsUsed token-steps;
+//   visible growth is at most the accepted valid prefix length, which is no
+//   more than stepsUsed, so |generated| <= |generatedPrefix| + steps remains
+//   true.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var narrowThreshold: nat := 10;
+var rollbackLimit: nat := 48;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+    generated := openedGenerated;
+    insideConstrainedOut := openedInside;
+    currentConstrainedOut := openedCurrent;
+    steps := steps + 1;
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+    break;
+  } else {
+    var deadEnd := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
+    if deadEnd || |currentConstrainedOut| >= rollbackLimit {
+      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+        parser, generated, currentConstrainedOut
+      );
+      generated := rolledGenerated;
+      insideConstrainedOut := true;
+      currentConstrainedOut := rolledCurrent;
+      steps := steps + 1;
+    } else {
+      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
+      var constrainedPrompt := prompt + stablePrefix;
+      var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+
+      if validCount <= narrowThreshold {
+        var next := helpers.ConstrainedStep(
+          lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
+        );
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        } else {
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }
+      } else {
+        var remaining: nat := maxSteps - steps;
+        var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
+        var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
+          lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
+        );
+        generated := symbolGenerated;
+        insideConstrainedOut := true;
+        currentConstrainedOut := symbolOut;
+        steps := steps + symbolSteps;
+        if hitEos {
+          break;
+        }
+      }
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085836_319c53
+
+[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: 8
+  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Evaluator runtime unloaded to free GPU memory
+  Refining based on evaluation error...
+  Helper policy: helper mask active (utility); no helpers disabled by utility yet
+
+============================================================
+Attempt 10/10
+============================================================
+Helper policy: helper mask active (utility); no helpers disabled by utility yet
+Strategy: // CSD_RATIONALE_BEGIN
+// The search is in a zero-information basin: both chunked-outside and explicit-
+// open families repeatedly produced no extracted outputs, so another small swap
+// inside the same symbol-chunk/rollback template is unlikely to move metrics.
+// This revision makes a causal structural change on the answer-production axis:
+// if we are outside, we immediately open a visible constrained span and then
+// stay inside until either the parser says the SMILES is complete or budget is
+// exhausted. Inside the span, generation is purely token-by-token with hard
+// parser control, but the token policy changes by stage: very early prefixes use
+// group-boosted constrained stepping to encourage chemically plausible starts,
+// narrower states use adaptive constrained stepping, and broader states use
+// confidence-gated stepping to let the LM keep momentum when already parser-
+// compatible. Immediate close on parser-complete prefixes is preserved because
+// it is a contract-safe ingredient with clear utility for producing a final
+// visible answer span.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
+//   insideConstrainedOut := true and currentConstrainedOut := [], which is
+//   parser-valid by the precondition parser.IsValidPrefix([]). In the complete-
+//   prefix branch, CloseConstrainedSpan exits constrained mode, so the
+//   implication becomes vacuous. In each inside token-selection branch,
+//   GroupBoostedConstrainedStep, AdaptiveConstrainedStep, and
+//   ConfidenceGatedStep return EOS or a token whose extension preserves parser
+//   validity; on the non-EOS path, AppendConstrainedToken updates
+//   currentConstrainedOut to that valid extended prefix.
+// progress: The explicit-open branch consumes one token-step for the visible
+//   opener and appends one token, so |generated| remains within
+//   |generatedPrefix| + steps. The close branch consumes one token-step and
+//   appends at most one visible delimiter. Each inside token-selection branch
+//   consumes exactly one token-step; if EOS is returned, visible output does not
+//   grow, and if a non-EOS token is returned, AppendConstrainedToken appends at
+//   most one visible token. Therefore visible growth is always at most the
+//   token budget consumed in that branch, preserving
+//   |generated| <= |generatedPrefix| + steps.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var earlyThreshold: nat := 2;
+var narrowThreshold: nat := 12;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+    generated := openedGenerated;
+    insideConstrainedOut := openedInside;
+    currentConstrainedOut := openedCurrent;
+    steps := steps + 1;
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+    break;
+  } else {
+    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
+    var constrainedPrompt := prompt + stablePrefix;
+    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+    var next := eosToken;
+
+    if |currentConstrainedOut| <= earlyThreshold {
+      next := helpers.GroupBoostedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, eosToken
+      );
+    } else if validCount <= narrowThreshold {
+      next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
+      );
+    } else {
+      var nextCg, wasConstrained := helpers.ConfidenceGatedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
+      );
+      next := nextCg;
+    }
+
+    steps := steps + 1;
+    if next == eosToken {
+      break;
+    } else {
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085900_cd298a
+
+[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: 9
+  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Evaluator runtime unloaded to free GPU memory
+  Refining based on evaluation error...
+  Helper policy: helper mask active (utility); no helpers disabled by utility yet
+
+============================================================
+FAILED after 10 attempts
+Total time: 284385.4ms
+============================================================
+Failure report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json
+Latest run link (failed) updated: outputs/generated/latest
+Synthesis failed after 10 attempt(s):
+
+Failure breakdown by stage:
+  - verification: 2
+  - evaluation: 8
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at verification
+    Error: GeneratedCSD.dfy(145,15): Error: expression is not allowed to invoke a method (CountTokenOccurrences)
+    |
+145 |     if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenO...
+  Attempt 2: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 3: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 4: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 5: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 6: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 7: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 8: ✗ Failed at verification
+    Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
+    |
+113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrain...
+  Attempt 9: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 10: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+
+Full report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json
+
+============================================================
+SYNTHESIS FAILED
+============================================================
+Synthesis failed after 10 attempt(s):
+
+Failure breakdown by stage:
+  - verification: 2
+  - evaluation: 8
+
+Individual attempt summaries:
+  Attempt 1: ✗ Failed at verification
+    Error: GeneratedCSD.dfy(145,15): Error: expression is not allowed to invoke a method (CountTokenOccurrences)
+    |
+145 |     if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenO...
+  Attempt 2: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 3: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 4: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 5: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 6: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 7: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 8: ✗ Failed at verification
+    Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
+    |
+113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrain...
+  Attempt 9: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+  Attempt 10: ✗ Failed at evaluation
+    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
+
+Full report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json

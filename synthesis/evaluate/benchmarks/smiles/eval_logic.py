@@ -52,7 +52,7 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
 
-    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
+    grammar_text = example.get("grammar_text", "")
     class_name = str(example.get("class_name", "smiles"))
     cache_key = ("smiles", class_name, grammar_text)
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
@@ -77,7 +77,7 @@ def extract_actual(
     from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
 
     class_name = example.get("class_name", "smiles")
-    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
+    grammar_text = example.get("grammar_text", "")
     prompt_exemplars = example.get("prompt_exemplars", [])
 
     # Prefer extracting from << >> delimiters when present.
@@ -132,9 +132,9 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
     from lark import Lark
 
     grammar_text = (
-        example.get("grammar_text", evaluator._get_grammar_text())
+        example.get("grammar_text", "")
         if isinstance(example, dict)
-        else evaluator._get_grammar_text()
+        else ""
     )
     cache_key = ("smiles", grammar_text)
     parser = evaluator._syntax_parser_cache.get(cache_key)

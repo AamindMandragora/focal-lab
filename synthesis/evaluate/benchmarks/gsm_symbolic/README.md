@@ -22,3 +22,4 @@ This module evaluates synthesized CSD strategies on GSM-Symbolic style arithmeti
 
 - Variable-aware grammar specialization is used for faithful constrained decoding.
 - This benchmark is the primary synthesis target in current workflows.
+- Local CRANE JSON loads use the symbolic template (`question_parsed`) as the primary `question` field; instantiated prose is kept as `question_instantiated`. HuggingFace rows prefer `question_parsed`, then `original_question`, then `question` when building prompts.

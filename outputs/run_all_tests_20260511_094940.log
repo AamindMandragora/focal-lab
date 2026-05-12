@@ -1,0 +1,91 @@
+/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
+  warnings.warn(
+=== run_all_tests matrix ===
+models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
+benchmarks: smiles gsm spider
+strategies: unconstrained gcd crane itergen cars metadecode
+token budgets: 1 2 4
+step budgets (ablation): 256 512 1024
+synthesis iters (metadecode): 3 5 10
+generation models (metadecode): gpt5.4 opus4.7 gemini-pro
+eval max steps (main): 900
+
+=== Phase 1: Main experiment matrix ===
+[skip] outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json already exists (1206 lines). Delete it to re-run.
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy gcd --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 4606.76it/s]
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 758, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 749, in main
+    raise SystemExit(run_gcd_legacy_adapter(args))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 325, in run_gcd_legacy_adapter
+    actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 80, in extract_actual
+    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1325, in _get_grammar_text
+    self._base_grammar_text = self._get_grammar_file().read_text()
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1313, in _get_grammar_file
+    self._grammar_file = logic.get_grammar_file(self, grammars_dir)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 26, in get_grammar_file
+    raise ValueError(
+ValueError: SMILES CSD evaluation uses class-specific grammars; pass exactly one class via --smiles-classes.
+WARNING: Opportunistic mode requires SAMPLE or GREEDY_SEARCH generation mode.
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy crane --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/crane/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 5396.02it/s]
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 758, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 754, in main
+    raise SystemExit(run_crane_legacy_adapter(args))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 673, in run_crane_legacy_adapter
+    return _crane_via_adaptive_syncode(args, dataset)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 641, in _crane_via_adaptive_syncode
+    actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 80, in extract_actual
+    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1325, in _get_grammar_text
+    self._base_grammar_text = self._get_grammar_file().read_text()
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1313, in _get_grammar_file
+    self._grammar_file = logic.get_grammar_file(self, grammars_dir)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 26, in get_grammar_file
+    raise ValueError(
+ValueError: SMILES CSD evaluation uses class-specific grammars; pass exactly one class via --smiles-classes.
+WARNING: Opportunistic mode requires SAMPLE or GREEDY_SEARCH generation mode.
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy itergen --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/itergen/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 4044.64it/s]
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 758, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 751, in main
+    raise SystemExit(run_itergen_legacy_adapter(args))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 419, in run_itergen_legacy_adapter
+    itergen_cache[cache_key] = IterGen(
+                               ^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 102, in __init__
+    self.update_gen_args(**gen_args)
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 111, in update_gen_args
+    self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1968, in __getattr__
+    raise AttributeError(
+AttributeError: 'Qwen2ForCausalLM' object has no attribute '_get_logits_warper'. Did you mean: '_get_logits_processor'?
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy cars --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/cars/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny

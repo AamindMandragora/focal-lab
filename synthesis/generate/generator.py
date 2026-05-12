@@ -142,6 +142,12 @@ class StrategyGenerator:
                 "GEMINI_BASE_URL",
                 "https://generativelanguage.googleapis.com/v1beta",
             )
+        if backend == "bedrock":
+            region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+            return os.environ.get(
+                "BEDROCK_BASE_URL",
+                f"https://bedrock-runtime.{region}.amazonaws.com",
+            )
         return None
 
     @staticmethod
@@ -152,6 +158,8 @@ class StrategyGenerator:
             return os.environ.get("ANTHROPIC_API_KEY")
         if backend == "gemini":
             return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if backend == "bedrock":
+            return os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
         return None
 
     def _get_vllm_quantization_kwargs(self) -> dict:
@@ -240,9 +248,13 @@ class StrategyGenerator:
                 self._client = OpenAI(**client_kwargs)
             return
 
-        if self.backend in {"anthropic", "gemini"}:
+        if self.backend in {"anthropic", "gemini", "bedrock"}:
             if not self.api_key:
-                env_name = "ANTHROPIC_API_KEY" if self.backend == "anthropic" else "GEMINI_API_KEY or GOOGLE_API_KEY"
+                env_name = {
+                    "anthropic": "ANTHROPIC_API_KEY",
+                    "gemini": "GEMINI_API_KEY or GOOGLE_API_KEY",
+                    "bedrock": "AWS_BEARER_TOKEN_BEDROCK",
+                }[self.backend]
                 raise ValueError(
                     f"{env_name} is required when --generation-backend={self.backend}"
                 )
@@ -374,6 +386,11 @@ class StrategyGenerator:
             self._log_prompt_io(system_prompt, user_prompt, output)
             return output
 
+        if self.backend == "bedrock":
+            output = self._generate_bedrock(system_prompt, user_prompt)
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
         if self.backend == "vllm":
             from vllm import SamplingParams
 
@@ -485,6 +502,35 @@ class StrategyGenerator:
         if not candidates:
             return ""
         parts = candidates[0].get("content", {}).get("parts") or []
+        return "".join(part.get("text", "") for part in parts).strip()
+
+    def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
+        base_url = (self.api_base_url or self._default_api_base_url("bedrock") or "").rstrip("/")
+        model = urllib.parse.quote(self.model_name, safe="")
+        url = f"{base_url}/model/{model}/converse"
+        payload = {
+            "system": [{"text": system_prompt}],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"text": user_prompt}],
+                }
+            ],
+            "inferenceConfig": {
+                "maxTokens": self.max_new_tokens,
+                "temperature": self.temperature,
+                "topP": self.top_p,
+            },
+        }
+        data = self._post_json(
+            url,
+            {
+                "Authorization": f"Bearer {self.api_key or ''}",
+                "Accept": "application/json",
+            },
+            payload,
+        )
+        parts = data.get("output", {}).get("message", {}).get("content") or []
         return "".join(part.get("text", "") for part in parts).strip()
 
     def _log_prompt_io(self, system_prompt: str, user_prompt: str, output: str) -> None:

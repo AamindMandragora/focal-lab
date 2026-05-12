@@ -715,7 +715,7 @@ def setup_dafny_environment(
     vllm_tensor_parallel_size: int | None = None,
     vllm_pipeline_parallel_size: int = 1,
     vllm_gpu_memory_utilization: float = 0.8,
-    vllm_max_model_len: int = 4096,
+    vllm_max_model_len: int = 16384,
     vllm_enforce_eager: bool = True,
 ) -> Dict[str, Any]:
     """

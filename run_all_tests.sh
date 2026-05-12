@@ -4,8 +4,33 @@ set -u
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+if [[ -f "$ROOT_DIR/synthesis/.env" ]]; then
+  set -a
+  source "$ROOT_DIR/synthesis/.env"
+  set +a
+fi
+
+# Activate the conda environment that has RDKit (needed for SMILES evaluation).
+CONDA_ENV_PATH="${VAS_RDKIT_CONDA_ENV:-/home/advayth2/envs/vas-rdkit}"
+if ! command -v conda >/dev/null 2>&1; then
+  echo "conda is required to run the matrix in $CONDA_ENV_PATH" >&2
+  exit 1
+fi
+CONDA_BASE="$(conda info --base)"
+source "$CONDA_BASE/etc/profile.d/conda.sh"
+conda activate "$CONDA_ENV_PATH"
+if [[ "${CONDA_PREFIX:-}" != "$CONDA_ENV_PATH" ]]; then
+  echo "failed to activate required conda environment: $CONDA_ENV_PATH" >&2
+  echo "current CONDA_PREFIX: ${CONDA_PREFIX:-<unset>}" >&2
+  exit 1
+fi
+python - <<'PY'
+import rdkit
+PY
+echo "[env] using conda environment: $CONDA_PREFIX"
+
 DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct,meta-llama/Llama-3.1-8B-Instruct"
-DEFAULT_BENCHMARKS="smiles,gsm,spider"
+DEFAULT_BENCHMARKS="gsm,spider,smiles"
 DEFAULT_STRATEGIES="unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS="1,2,4"
 DEFAULT_SYNTH_ITERS="3,5,10"
@@ -43,7 +68,7 @@ Usage: ./run_all_tests.sh [options]
 Runs strategy x model x benchmark matrix, plus ablations.
 Without arguments, defaults to:
 - eval models: Qwen2.5-Coder {1.5B, 7B, 14B}, Llama-3.1-8B-Instruct
-- benchmarks: smiles, gsm, spider
+- benchmarks: gsm, spider, smiles
 - strategies: unconstrained, gcd, crane, itergen, cars, metadecode
 - eval token-budget ablation: 1,2,4
 - metadecode synthesis-iteration ablation: 3,5,10
@@ -57,7 +82,7 @@ pipeline (metadecode). Unconstrained uses the legacy adapter.
 Options:
   --models CSV                  Eval models list
   --benchmarks CSV              Benchmarks list (gsm,gsm_symbolic,spider,smiles)
-  --strategies CSV              Strategies list (unconstrained,crane,itergen,cars,metadecode)
+  --strategies CSV              Strategies list (unconstrained,gcd,crane,itergen,cars,metadecode)
   --token-budgets CSV           Eval step token budgets (per-step)
   --step-budgets CSV            Max-steps budget ablation values (total generation budget)
   --synthesis-iterations CSV    Metadecode synthesis-iteration ablation values
@@ -167,15 +192,26 @@ metadecode_task() {
 
 resolve_gen_profile() {
   local profile="$1"
+  local bedrock_model="${BEDROCK_GENERATION_MODEL:-${AWS_BEDROCK_GENERATION_MODEL:-anthropic.claude-3-5-sonnet-20241022-v2:0}}"
   case "$profile" in
     gpt5.4)
-      echo "openai|gpt-5.4"
+      if [[ -n "${AWS_BEARER_TOKEN_BEDROCK:-}" ]] && [[ "${CSD_USE_BEDROCK_FOR_GPT54:-1}" -eq 1 ]]; then
+        echo "bedrock|$bedrock_model"
+      else
+        echo "openai|gpt-5.4"
+      fi
       ;;
     opus4.7)
       echo "anthropic|claude-opus-4-7"
       ;;
     gemini-pro)
       echo "gemini|gemini-3.1-pro"
+      ;;
+    bedrock)
+      echo "bedrock|$bedrock_model"
+      ;;
+    bedrock:*)
+      echo "bedrock|${profile#bedrock:}"
       ;;
     *)
       echo "openai|$profile"
@@ -192,6 +228,30 @@ run_cmd() {
   "$@"
 }
 
+baseline_json_complete() {
+  local path="$1"
+  python - "$path" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    payload = json.loads(path.read_text())
+except Exception:
+    raise SystemExit(1)
+answers = payload.get("answers")
+if not isinstance(answers, list) or len(answers) == 0:
+    raise SystemExit(1)
+for row in answers:
+    if not isinstance(row, dict):
+        raise SystemExit(1)
+    if "generated_answer" not in row:
+        raise SystemExit(1)
+raise SystemExit(0)
+PY
+}
+
 run_fixed_strategy_case() {
   local strategy="$1"
   local benchmark="$2"
@@ -204,6 +264,13 @@ run_fixed_strategy_case() {
 
   local out_json="${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark}__tb${token_budget}__ms${max_steps}.json"
   mkdir -p "$(dirname "$out_json")"
+
+  if [[ -f "$out_json" ]] && [[ "$(wc -c < "$out_json")" -gt 20 ]] && baseline_json_complete "$out_json"; then
+    echo "[skip] $out_json already exists ($(wc -l < "$out_json") lines). Delete it to re-run."
+    return 0
+  elif [[ -f "$out_json" ]]; then
+    echo "[rerun] $out_json exists but is incomplete or corrupt."
+  fi
 
   # All fixed strategies (unconstrained, gcd, crane, itergen, cars) use legacy adapters.
   local cmd=(
@@ -329,14 +396,14 @@ echo "eval max steps (main): ${EVAL_MAX_STEPS}"
 echo ""
 
 # ========================================================
-# Phase 1: Main matrix (strategy x model x benchmark)
+# Phase 1: Main matrix (model x benchmark x strategy)
 # Uses EVAL_MAX_STEPS for all runs, first token budget only
 # ========================================================
 if [[ "$SKIP_MAIN" -eq 0 ]]; then
   echo "=== Phase 1: Main experiment matrix ==="
-  for raw_benchmark in "${BENCHMARKS_ARR[@]}"; do
-    benchmark="$(normalize_benchmark "$raw_benchmark")"
-    for eval_model in "${MODELS_ARR[@]}"; do
+  for eval_model in "${MODELS_ARR[@]}"; do
+    for raw_benchmark in "${BENCHMARKS_ARR[@]}"; do
+      benchmark="$(normalize_benchmark "$raw_benchmark")"
       for strategy in "${STRATEGIES_ARR[@]}"; do
         if [[ "$strategy" == "metadecode" ]]; then
           run_metadecode_case "$benchmark" "$eval_model" "${TOKEN_BUDGETS_ARR[0]}" \
@@ -423,12 +490,15 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
       for policy in "utility" "bandit"; do
         task_e="$(metadecode_task "$benchmark")"
         run_name_e="ablat_beam${beam_size}_${policy}_${benchmark}"
+        resolved_gen_e="$(resolve_gen_profile "gpt5.4")"
+        backend_e="${resolved_gen_e%%|*}"
+        generation_model_e="${resolved_gen_e##*|}"
         cmd_e=(
           python -m synthesis.run_synthesis
           --task "$task_e"
           --dataset "$benchmark"
-          --generation-backend "openai"
-          --generation-model "gpt-5.4"
+          --generation-backend "$backend_e"
+          --generation-model "$generation_model_e"
           --eval-model "$ABLATION_MODEL"
           --eval-backend "$EVAL_BACKEND"
           --max-iterations "${SYNTH_ITERS_ARR[-1]}"
@@ -463,12 +533,15 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
         mask_label="mask_off"
       fi
       run_name_f="ablat_${mask_label}_${benchmark}"
+      resolved_gen_f="$(resolve_gen_profile "gpt5.4")"
+      backend_f="${resolved_gen_f%%|*}"
+      generation_model_f="${resolved_gen_f##*|}"
       cmd_f=(
         python -m synthesis.run_synthesis
         --task "$task_f"
         --dataset "$benchmark"
-        --generation-backend "openai"
-        --generation-model "gpt-5.4"
+        --generation-backend "$backend_f"
+        --generation-model "$generation_model_f"
         --eval-model "$ABLATION_MODEL"
         --eval-backend "$EVAL_BACKEND"
         --max-iterations "${SYNTH_ITERS_ARR[-1]}"

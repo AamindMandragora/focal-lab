@@ -68,7 +68,7 @@ Examples:
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "anthropic", "gemini"],
+        choices=["huggingface", "vllm", "openai", "anthropic", "gemini", "bedrock"],
         default="openai",
         help="Backend for strategy generation (default: openai)"
     )
@@ -77,14 +77,14 @@ Examples:
         "--generation-api-base-url",
         type=str,
         default=None,
-        help="Optional base URL for an OpenAI-compatible generation API"
+        help="Optional base URL for an API generation backend"
     )
 
     parser.add_argument(
         "--generation-api-key",
         type=str,
         default=None,
-        help="Optional API key for generation. Defaults to OPENAI_API_KEY."
+        help="Optional API key for generation. Defaults to the selected backend's environment variable."
     )
 
     parser.add_argument(

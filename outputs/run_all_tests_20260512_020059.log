@@ -1,0 +1,85 @@
+/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
+  warnings.warn(
+=== run_all_tests matrix ===
+models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
+benchmarks: gsm spider smiles
+strategies: unconstrained gcd crane itergen cars metadecode
+token budgets: 1 2 4
+step budgets (ablation): 256 512 1024
+synthesis iters (metadecode): 3 5 10
+generation models (metadecode): gpt5.4 opus4.7 gemini-pro
+eval max steps (main): 900
+
+=== Phase 1: Main experiment matrix ===
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy unconstrained --dataset gsm_symbolic --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Traceback (most recent call last):
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/CRANE/src/main.py", line 7, in <module>
+    from models import *
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/CRANE/src/models/__init__.py", line 1, in <module>
+    from .base_model import BaseLM
+  File "/home/advayth2/projects/verified-agent-synthesis/legacy/CRANE/src/models/base_model.py", line 1, in <module>
+    from syncode import Syncode, AdaptiveSynCode
+ModuleNotFoundError: No module named 'syncode'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 836, in <module>
+    main()
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 832, in main
+    raise SystemExit(run_crane_legacy_adapter(args))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 793, in run_crane_legacy_adapter
+    subprocess.run(cmd, cwd=crane_src_dir, check=True)
+  File "/home/advayth2/envs/vas-rdkit/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['python', 'main.py', '--dataset', 'gsm_symbolic', '--num_examples', '100', '--num_shots', '1', '--overwrite_results', 'True', '--write_file', 'True', '--regex_parser', 'True', '--modify_system_prompt', 'True', '--cot_model', 'Qwen/Qwen2.5-Coder-1.5B-Instruct', '--cot_grammar_mode', 'original', '--cot_grammar', 'text', '--out_grammar', 'text', '--start_symbol', '<<', '--end_symbol', '>>']' returned non-zero exit status 1.
+[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy gcd --dataset gsm_symbolic --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
+Loading GSM-Symbolic dataset (config=main, split=train (limit=100))...
+Loaded GSM-Symbolic fallback split 'test' from local HF cache.
+Loaded 100 examples
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 5249.34it/s]
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+--------------------------------------------------
+Parsing failed! Falling back to unconstrained decoding.
+Exception: Unexpected token Token('NUMBER', '-100') at line 3, column 1.
+Expected one of: 
+	* SLASH
+	* PERCENT
+	* $END
+	* RPAR
+	* STAR
+	* PLUS
+	* MINUS
+	* __ANON_2
+
+Partial code: Let_me_think_step_by_step
+100 * (36 / 90) * 3
+-100 *
+Parsed lexical tokens: [Token('VARIABLE', 'Let_me_think_step_by_step'), Token('NUMBER', '100'), Token('STAR', '*'), Token('LPAR', '('), Token('NUMBER', '36'), Token('SLASH', '/'), Token('NUMBER', '90'), Token('RPAR', ')'), Token('STAR', '*'), Token('NUMBER', '3'), Token('NUMBER', '-100')]
+--------------------------------------------------
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
+[transformers] The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+[transformers] Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.

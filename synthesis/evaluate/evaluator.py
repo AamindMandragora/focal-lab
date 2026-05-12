@@ -1160,7 +1160,7 @@ class Evaluator:
         vllm_tensor_parallel_size: Optional[int] = None,
         vllm_pipeline_parallel_size: int = 1,
         vllm_gpu_memory_utilization: float = 0.8,
-        vllm_max_model_len: int = 4096,
+        vllm_max_model_len: int = 16384,
         vllm_enforce_eager: bool = True,
         sample_seed: Optional[int] = None,
         max_seconds_per_example: Optional[float] = None,
@@ -1740,7 +1740,7 @@ class Evaluator:
 
             class_name = (example or {}).get("class_name", "smiles")
             prompt_exemplars = (example or {}).get("prompt_exemplars", [])
-            grammar_text = (example or {}).get("grammar_text", self._get_grammar_text())
+            grammar_text = (example or {}).get("grammar_text", "")
             eval_row = evaluate_smiles_output(
                 class_name,
                 output,
