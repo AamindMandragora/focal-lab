@@ -471,6 +471,12 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             base_gsm_grammar = build_dynamic_grammar(base_gsm_grammar, gsm_allowed_variables)
         else:
             base_gsm_grammar = build_numeric_only_grammar(base_gsm_grammar)
+        # The prompt already ends with "<<"; constrain the expression body plus closing marker.
+        base_gsm_grammar = base_gsm_grammar.replace(
+            'syncode: "<<" start ">>"',
+            'syncode: start ">>"',
+            1,
+        )
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
@@ -496,7 +502,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     def _gcd_output(completion: str, example: dict[str, Any]) -> str:
         if dataset != "gsm_symbolic":
             return completion
-        expr = completion.splitlines()[0].strip()
+        expr = completion.strip().splitlines()[0].strip()
         if expr.startswith("<<"):
             wrapped = expr if ">>" in expr else f"{expr}>>"
             expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
@@ -538,6 +544,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 max_new_tokens=_gcd_max_new_tokens(),
                 do_sample=False,
                 num_return_sequences=1,
+                opp=False,
             )
         sc = syncode_cache[cache_key]
 
@@ -546,7 +553,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = logic.format_prompt(eval_runtime, example)
-        completions = sc.infer(_gcd_prompt(prompt), stop_words=["\n", ">>"] if dataset == "gsm_symbolic" else None)
+        completions = sc.infer(_gcd_prompt(prompt), stop_words=[">>"] if dataset == "gsm_symbolic" else None)
         output_text = _gcd_output(completions[0] if completions else "", example)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
