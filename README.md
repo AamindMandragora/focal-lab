@@ -121,7 +121,7 @@ Optional local-beam refinement controls:
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
 - `run_all_tests.sh` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn.
-- `run_all_tests.sh` must run inside the RDKit-capable conda environment. It activates `/home/advayth2/envs/vas-rdkit` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Override with `VAS_RDKIT_CONDA_ENV` only when intentionally using a different compatible environment.
+- `run_all_tests.sh` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
@@ -138,6 +138,7 @@ Path defaults are intentionally overrideable. Use CLI flags where available and 
 - `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` / `CSD_GRAMMARS_DIR`
 - `--dafny-path` / `DAFNY_PATH`
+- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.sh`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
 - `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)
 - `VERIFIED_AGENT_SYNTHESIS_DFY` / `DAFNY_PROOFS_DIR`
 - `CSD_SYNCODE_DIR`
