@@ -45,12 +45,19 @@ fi
 # Help redirected logs show tqdm/Python subprocess lines promptly during matrix runs.
 export PYTHONUNBUFFERED=1
 
+# Pin visible GPUs after sourcing synthesis/.env (it may set busy cards 0/1).
+# Default 2,3 matches typical shared nodes where 0/1 host other vLLM jobs.
+# Override: RUN_ALL_TESTS_CUDA_DEVICES=0,1 ./run_all_tests.sh
+RUN_ALL_TESTS_CUDA_DEVICES="${RUN_ALL_TESTS_CUDA_DEVICES:-2,3}"
+export CUDA_VISIBLE_DEVICES="$RUN_ALL_TESTS_CUDA_DEVICES"
+echo "[env] CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (set RUN_ALL_TESTS_CUDA_DEVICES to override)"
+
 DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct,meta-llama/Llama-3.1-8B-Instruct"
 DEFAULT_BENCHMARKS="gsm,spider,smiles"
 DEFAULT_STRATEGIES="unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS="1,2,4"
 DEFAULT_SYNTH_ITERS="3,5,10"
-DEFAULT_GEN_MODELS="gpt5.4,opus4.7,gemini-pro"
+DEFAULT_GEN_MODELS="gpt5.4,opus4.7"
 DEFAULT_STEP_BUDGETS="256,512,1024"
 
 MODELS="$DEFAULT_MODELS"
@@ -88,7 +95,7 @@ Without arguments, defaults to:
 - strategies: unconstrained, gcd, crane, itergen, cars, metadecode
 - eval token-budget ablation: 1,2,4
 - metadecode synthesis-iteration ablation: 3,5,10
-- metadecode generation-model ablation: gpt5.4, opus4.7, gemini-pro
+- metadecode generation-model ablation: gpt5.4, opus4.7 (gemini-pro omitted until wired)
 - step-budget ablation: 256,512,1024
 
 All strategies are evaluated on all benchmarks via legacy external
@@ -99,6 +106,8 @@ Environment:
   Default conda prefix /apps/conda/advayth2/envs/advayth2 (must include RDKit).
   Override with VAS_CONDA_ENV or legacy VAS_RDKIT_CONDA_ENV (see environment/README.md).
   Prepends CONDA_PREFIX/lib to LD_LIBRARY_PATH for SciPy/transformers wheels vs system libstdc++.
+  Forces CUDA_VISIBLE_DEVICES=2,3 after loading synthesis/.env unless you set RUN_ALL_TESTS_CUDA_DEVICES.
+  Metadecode: profile gpt5.4 uses OpenAI (--generation-backend openai, OPENAI_API_KEY); opus4.7 uses Bedrock (AWS_BEARER_TOKEN_BEDROCK, BEDROCK_OPUS_MODEL). Profile gemini-pro is disabled in the default GEN_MODELS list; set GEMINI_BEDROCK_MODEL if you pass gemini-pro explicitly.
 
 Options:
   --models CSV                  Eval models list
@@ -211,22 +220,23 @@ metadecode_task() {
   esac
 }
 
+# Resolve synthesis/generation profile labels used by metadecode ablations.
+# gpt5.4 → OpenAI (GPT-5 class models not on Bedrock). opus4.7 → Bedrock Claude.
+# gemini-pro: omitted from DEFAULT_GEN_MODELS; add --generation-models gemini-pro when wired.
 resolve_gen_profile() {
   local profile="$1"
   local bedrock_model="${BEDROCK_GENERATION_MODEL:-${AWS_BEDROCK_GENERATION_MODEL:-anthropic.claude-3-5-sonnet-20241022-v2:0}}"
+  local opus_model="${BEDROCK_OPUS_MODEL:-${BEDROCK_PROFILE_OPUS:-us.anthropic.claude-opus-4-1-20250514-v1:0}}"
+  local openai_gpt="${OPENAI_GENERATION_MODEL:-gpt-5.4}"
   case "$profile" in
     gpt5.4)
-      if [[ -n "${AWS_BEARER_TOKEN_BEDROCK:-}" ]] && [[ "${CSD_USE_BEDROCK_FOR_GPT54:-1}" -eq 1 ]]; then
-        echo "bedrock|$bedrock_model"
-      else
-        echo "openai|gpt-5.4"
-      fi
+      echo "openai|$openai_gpt"
       ;;
     opus4.7)
-      echo "anthropic|claude-opus-4-7"
+      echo "bedrock|$opus_model"
       ;;
     gemini-pro)
-      echo "gemini|gemini-3.1-pro"
+      echo "bedrock|${GEMINI_BEDROCK_MODEL:?Set GEMINI_BEDROCK_MODEL for gemini-pro (partner-owned wiring)}"
       ;;
     bedrock)
       echo "bedrock|$bedrock_model"
@@ -235,7 +245,7 @@ resolve_gen_profile() {
       echo "bedrock|${profile#bedrock:}"
       ;;
     *)
-      echo "openai|$profile"
+      echo "bedrock|$profile"
       ;;
   esac
 }

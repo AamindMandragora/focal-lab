@@ -74,7 +74,7 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to OpenAI `gpt-5.4` (`OPENAI_API_KEY` in the environment or `.env`). You can also use Bedrock with `--generation-backend bedrock --generation-model <bedrock-model-id>`; Bedrock auth reads `AWS_BEARER_TOKEN_BEDROCK`. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Use **`--generation-backend bedrock`** with `AWS_BEARER_TOKEN_BEDROCK` for Claude-on-Bedrock (e.g. metadecode `opus4.7` in `run_all_tests.sh`). Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -128,7 +128,7 @@ Optional local-beam refinement controls:
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. When `AWS_BEARER_TOKEN_BEDROCK` is set, the `gpt5.4` profile uses Bedrock by default. Override the Bedrock model with `BEDROCK_GENERATION_MODEL` or disable this with `CSD_USE_BEDROCK_FOR_GPT54=0`.
+- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. **`gpt5.4`** uses **OpenAI**; **`opus4.7`** uses **Bedrock** (`BEDROCK_OPUS_MODEL` / `AWS_BEARER_TOKEN_BEDROCK`). **`gemini-pro`** is not in the default generation-model list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
 
 ## Path Configuration
 

@@ -47,6 +47,51 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     )
 
 
+def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
+    """Hard-mask / constrained decoders: emit only ``SQL: <<query>>``."""
+    db_id = example.get("db_id", "")
+    db_info = example.get("db_info", "")
+    question = example.get("question", "")
+    return (
+        "You are given a database schema and a question. "
+        "Write ONE SQL query using ONLY tables and columns shown in the schema.\n\n"
+        "Output a single line of the form SQL: <<YOUR QUERY>> — no reasoning or other text.\n\n"
+        "Example:\n"
+        "db_id: concert_singer\n"
+        "db_info: # singer ( singer_id , name , country , age )\n"
+        "question: How many singers do we have?\n"
+        "SQL: <<SELECT count(*) FROM singer>>\n\n"
+        f"db_id: {db_id}\n"
+        f"db_info: {db_info}\n"
+        f"question: {question}\n"
+        "SQL: "
+    )
+
+
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
+    """Legacy CRANE-style runs: require explicit reasoning before the delimited query."""
+    db_id = example.get("db_id", "")
+    db_info = example.get("db_info", "")
+    question = example.get("question", "")
+    return (
+        "You are given a database schema and a question. "
+        "Write a SINGLE SQL query answering the question, using ONLY the tables and columns in the schema.\n\n"
+        "Reason step by step (tables, joins, filters). "
+        "Then output SQL: followed by your query wrapped in << >>. "
+        "Stop after the closing >>.\n\n"
+        "Example:\n"
+        "db_id: concert_singer\n"
+        "db_info: # singer ( singer_id , name , country , age )\n"
+        "question: How many singers do we have?\n"
+        "Let's think step by step. We only need the singer table. "
+        "SQL: <<SELECT count(*) FROM singer>>\n\n"
+        f"db_id: {db_id}\n"
+        f"db_info: {db_info}\n"
+        f"question: {question}\n"
+        "SQL: "
+    )
+
+
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
     return (example.get("query") or "").strip()
 

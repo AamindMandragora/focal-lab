@@ -15,3 +15,16 @@ def reasoning_with_symbolic_expr_prompt(question: str) -> str:
         f"Problem: {question}\n"
         "Response:\n"
     )
+
+
+def symbolic_expression_only_prompt(question: str) -> str:
+    """Prompt for constrained decoders: single final expression, no chain-of-thought."""
+    return (
+        "You solve grade-school math word problems that use symbolic variables.\n\n"
+        "Respond with only the final symbolic expression, wrapped once in << >>. "
+        "Use numbers and the variables from the problem. "
+        "Allowed operations: +, -, /, //, %, (), and int().\n"
+        "Do not include reasoning, labels, or text outside the << >> span.\n\n"
+        f"Problem: {question}\n"
+        "Answer:\n"
+    )

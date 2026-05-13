@@ -10,10 +10,10 @@ Example (local vLLM, small eval for a quick grid):
   PYTHONPATH=. CUDA_VISIBLE_DEVICES=2,3 python synthesis/scripts/ablation_beam_bandit.py \\
     --eval-sample-size 8 --max-iterations 3
 
-OpenAI generation (requires OPENAI_API_KEY / synthesis/.env):
+Bedrock generation (requires `AWS_BEARER_TOKEN_BEDROCK` / `BEDROCK_GENERATION_MODEL` in `.env`):
 
   PYTHONPATH=. CUDA_VISIBLE_DEVICES=2,3 python synthesis/scripts/ablation_beam_bandit.py \\
-    --generation-backend openai --generation-model gpt-5.4 \\
+    --generation-backend bedrock \\
     --eval-sample-size 15 --max-iterations 5 --min-accuracy 0.4 --min-syntax-rate 0.8
 """
 from __future__ import annotations

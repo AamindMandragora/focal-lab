@@ -28,7 +28,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies (default generation: OpenAI gpt-5.4; eval often vLLM)",
+        description="Synthesize constrained decoding strategies (default generation: OpenAI; Bedrock optional for Claude; eval often vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -61,16 +61,18 @@ Examples:
     parser.add_argument(
         "--generation-model",
         type=str,
-        default="gpt-5.4",
-        help="Model identifier for CSD generation (local HuggingFace id or API model name; default: gpt-5.4)"
+        default=None,
+        help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
+        "Bedrock model id when using bedrock; HF id for huggingface/vllm). "
+        "OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4; Bedrock from BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL.",
     )
 
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "anthropic", "gemini", "bedrock"],
+        choices=["huggingface", "vllm", "openai", "bedrock"],
         default="openai",
-        help="Backend for strategy generation (default: openai)"
+        help="Backend for strategy generation (default: openai)",
     )
 
     parser.add_argument(
@@ -437,6 +439,24 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    if args.generation_model is None:
+        if args.generation_backend == "bedrock":
+            resolved = os.environ.get("BEDROCK_GENERATION_MODEL") or os.environ.get(
+                "AWS_BEDROCK_GENERATION_MODEL"
+            )
+            if not resolved:
+                parser.error(
+                    "Bedrock synthesis requires --generation-model or "
+                    "BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL in the environment."
+                )
+            args.generation_model = resolved
+        elif args.generation_backend == "openai":
+            args.generation_model = os.environ.get("OPENAI_GENERATION_MODEL") or "gpt-5.4"
+        else:
+            from synthesis.generate.generator import StrategyGenerator as _StrategyGenerator
+
+            args.generation_model = _StrategyGenerator.DEFAULT_MODEL
 
     if args.generation_backend == "vllm" or args.eval_backend == "vllm":
         os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")

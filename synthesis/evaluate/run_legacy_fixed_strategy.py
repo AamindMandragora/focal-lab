@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import time
 import subprocess
 import sys
 from pathlib import Path
@@ -85,6 +86,26 @@ def _baseline_row_question(dataset: str, example: dict[str, Any], fallback: str)
     return str(example.get("question") or example.get("prompt") or fallback)
 
 
+def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any], profile: str) -> str:
+    """User-message text for legacy fixed strategies (not used by metadecode).
+
+    profile:
+      - ``expression_only``: one delimited answer; used by IterGen and GCD.
+      - ``chain_of_thought``: explicit reasoning then answer; used by CRANE adaptive SMILES.
+      - ``evaluator_default``: ``logic.format_prompt`` (optional Spider reasoning; historical CARS).
+    """
+    if profile == "evaluator_default":
+        return logic.format_prompt(evaluator, example)
+    if profile == "expression_only":
+        return logic.format_prompt_expression_only(evaluator, example)
+    if profile == "chain_of_thought":
+        cot = getattr(logic, "format_prompt_chain_of_thought", None)
+        if callable(cot):
+            return cot(evaluator, example)
+        return logic.format_prompt(evaluator, example)
+    raise ValueError(f"Unknown legacy prompt profile: {profile}")
+
+
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
     if dataset == "gsm_symbolic":
         repo_root = Path(__file__).resolve().parents[2]
@@ -111,22 +132,67 @@ def _crane_grammar_name(dataset: str) -> str:
 
 def _mode_for_strategy(strategy: str) -> tuple[str, bool]:
     if strategy == "unconstrained":
-        return "original", False
+        # Match CRANE GSM/SQL protocol: always request chain-of-thought from the subprocess model.
+        return "original", True
     if strategy == "crane":
         return "adaptive", True
     raise ValueError(f"Unsupported CRANE-backed strategy: {strategy}")
 
 
-def _build_minimal_json(rows: list[dict[str, Any]], output_json: Path) -> None:
+def _compose_baseline_answer_row(question: str, generated: str, row: dict[str, Any]) -> dict[str, Any]:
+    entry: dict[str, Any] = {"question": question, "generated_answer": generated}
+    if row.get("num_tokens") is not None:
+        entry["num_tokens"] = int(row["num_tokens"])
+    if row.get("generation_seconds") is not None:
+        entry["generation_seconds"] = round(float(row["generation_seconds"]), 6)
+    return entry
+
+
+def _aggregate_run_metrics(
+    rows: list[dict[str, Any]],
+    *,
+    run_wall_time_seconds: float | None,
+) -> dict[str, Any]:
+    metrics: dict[str, Any] = {"num_examples": len(rows)}
+    times = [
+        float(r["generation_seconds"])
+        for r in rows
+        if r.get("generation_seconds") is not None
+    ]
+    toks = [int(r["num_tokens"]) for r in rows if r.get("num_tokens") is not None]
+    if times:
+        metrics["total_generation_seconds"] = round(sum(times), 4)
+        metrics["mean_generation_seconds_per_example"] = round(sum(times) / len(times), 6)
+        metrics["examples_with_generation_timing"] = len(times)
+    if toks:
+        metrics["total_output_tokens"] = int(sum(toks))
+        metrics["mean_output_tokens_per_example"] = round(sum(toks) / len(toks), 4)
+        metrics["examples_with_token_counts"] = len(toks)
+    if run_wall_time_seconds is not None:
+        metrics["run_wall_time_seconds"] = round(float(run_wall_time_seconds), 4)
+    return metrics
+
+
+def _build_minimal_json(
+    rows: list[dict[str, Any]],
+    output_json: Path,
+    *,
+    run_wall_time_seconds: float | None = None,
+) -> None:
     if not rows:
-        payload = {"accuracy": 0.0, "syntax_rate": 0.0, "answers": []}
+        payload = {
+            "accuracy": 0.0,
+            "syntax_rate": 0.0,
+            "metrics": _aggregate_run_metrics([], run_wall_time_seconds=run_wall_time_seconds),
+            "answers": [],
+        }
         output_json.parent.mkdir(parents=True, exist_ok=True)
         output_json.write_text(json.dumps(payload, indent=2) + "\n")
         return
 
     correct_vals: list[float] = []
     syntax_vals: list[float] = []
-    answers: list[dict[str, str]] = []
+    answers: list[dict[str, Any]] = []
 
     syntax_keys = [
         "is_syntax_valid",
@@ -156,11 +222,12 @@ def _build_minimal_json(rows: list[dict[str, Any]], output_json: Path) -> None:
             generated = row.get("pred")
         if generated is None:
             generated = ""
-        answers.append({"question": question, "generated_answer": str(generated)})
+        answers.append(_compose_baseline_answer_row(question, str(generated), row))
 
     payload = {
         "accuracy": sum(correct_vals) / max(1, len(correct_vals)),
         "syntax_rate": sum(syntax_vals) / max(1, len(syntax_vals)),
+        "metrics": _aggregate_run_metrics(rows, run_wall_time_seconds=run_wall_time_seconds),
         "answers": answers,
     }
 
@@ -407,6 +474,7 @@ def _cars_set_cached_grammar(
 
 
 def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
+    run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
 
     model_id = _cars_model_id(args.eval_model)
@@ -454,12 +522,14 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = logic.format_prompt(eval_runtime, example)
+        gen_started = time.perf_counter()
         output_text = _cars_generate_text(
             cars_model,
             prompt,
             max_new_tokens=max_new_tokens,
             max_attempts=max_attempts,
         )
+        gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
@@ -483,19 +553,25 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
                 "llm_response": output_text,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
+                "generation_seconds": gen_seconds,
             }
         )
 
     if not rows:
         raise RuntimeError("CARS produced no rows; refusing to write an empty baseline JSON")
 
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
 
 def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     """GCD baseline via vendored SynCode (grammar_strict mode = pure hard-mask constrained decoding)."""
+    run_started = time.perf_counter()
     import sys
 
     dataset = _normalize_dataset(args.dataset)
@@ -627,8 +703,10 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = logic.format_prompt(eval_runtime, example)
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        gen_started = time.perf_counter()
         completions = sc.infer(_gcd_prompt(prompt), stop_words=[">>"] if dataset == "gsm_symbolic" else None)
+        gen_seconds = time.perf_counter() - gen_started
         output_text = _gcd_output(completions[0] if completions else "", example)
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
@@ -651,10 +729,15 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
                 "llm_response": output_text,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
+                "generation_seconds": gen_seconds,
             }
         )
 
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -681,6 +764,16 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
 
 
 def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
+    prev_recursion = sys.getrecursionlimit()
+    sys.setrecursionlimit(max(prev_recursion, 50_000))
+    try:
+        return _run_itergen_legacy_adapter_inner(args)
+    finally:
+        sys.setrecursionlimit(prev_recursion)
+
+
+def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
+    run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
     repo_root = Path(__file__).resolve().parents[2]
     itergen_root = repo_root / "legacy" / "itergen"
@@ -744,8 +837,10 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = logic.format_prompt(eval_runtime, example)
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        gen_started = time.perf_counter()
         output_text = _itergen_generate(iter_gen, prompt)
+        gen_seconds = time.perf_counter() - gen_started
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
@@ -767,10 +862,15 @@ def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
                 "llm_response": output_text,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
+                "generation_seconds": gen_seconds,
             }
         )
 
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -789,8 +889,13 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         evaluate_smiles_output,
     )
 
+    run_started = time.perf_counter()
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
     n_per_class = max(1, args.eval_sample_size)
+    uc_smiles_cot_prefix = (
+        "For each molecule requested below, give brief step-by-step reasoning about the "
+        "constraints, then write the SMILES string.\n\n"
+    )
 
     if args.eval_backend == "vllm":
         from vllm import LLM, SamplingParams
@@ -819,26 +924,33 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         grammar_text = str(task["grammar_text"])
         prompt_exemplars = list(task.get("prompt_exemplars", []))
         seen_per_class[class_name] = set(prompt_exemplars)
-        running_prompt = base_prompt
+        seed_prompt = uc_smiles_cot_prefix + base_prompt
+        running_prompt = seed_prompt
 
         for _i in range(n_per_class):
-            running_prompt = _truncate_prompt(running_prompt, base_prompt)
+            running_prompt = _truncate_prompt(running_prompt, seed_prompt)
             if args.eval_backend == "vllm":
                 from vllm import SamplingParams as _SP
 
+                gen_started = time.perf_counter()
                 sp = _SP(max_tokens=args.eval_max_steps, temperature=0.8, stop=["\n\n"])
                 outputs = llm.generate([running_prompt], sp)
-                gen_text = outputs[0].outputs[0].text
+                gen_seconds = time.perf_counter() - gen_started
+                completion = outputs[0].outputs[0]
+                gen_text = completion.text
+                num_toks = len(completion.token_ids) if getattr(completion, "token_ids", None) else None
             else:
                 inputs = tokenizer(running_prompt, return_tensors="pt").to(model.device)
+                gen_started = time.perf_counter()
                 with torch.no_grad():
                     out_ids = model.generate(
                         **inputs, max_new_tokens=args.eval_max_steps,
                         do_sample=True, temperature=0.8,
                     )
-                gen_text = tokenizer.decode(
-                    out_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
-                )
+                gen_seconds = time.perf_counter() - gen_started
+                new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
+                num_toks = int(new_ids.numel())
+                gen_text = tokenizer.decode(new_ids, skip_special_tokens=True)
 
             smiles_eval = evaluate_smiles_output(
                 class_name=class_name,
@@ -857,18 +969,133 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 seen_per_class[class_name].add(cleaned)
                 running_prompt = running_prompt.rstrip() + f" {cleaned}\nMolecule: "
 
-            rows.append(
-                {
-                    "question": class_name,
-                    "llm_response": gen_text,
-                    "correct": bool(
-                        is_novel and smiles_eval.get("class_membership")
-                    ),
-                    "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
-                }
-            )
+            row_out: dict[str, Any] = {
+                "question": class_name,
+                "llm_response": gen_text,
+                "correct": bool(
+                    is_novel and smiles_eval.get("class_membership")
+                ),
+                "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
+                "generation_seconds": gen_seconds,
+            }
+            if num_toks is not None:
+                row_out["num_tokens"] = num_toks
+            rows.append(row_out)
 
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
+def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
+    """Unconstrained Spider baseline without legacy CRANE ``main.py``.
+
+    CRANE's ``PARSE_MAP`` only registers ``gsm_symbolic`` and ``fol``, so
+    ``--dataset spider`` crashes with ``KeyError``. This path uses the same
+    chain-of-thought Spider prompt as other legacy adapters and scores via
+    ``benchmarks/sql_spider`` execution logic.
+    """
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.evaluator import Evaluator
+
+    run_started = time.perf_counter()
+    logic = get_logic("spider")
+    eval_runtime = Evaluator(
+        dataset_name="spider",
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+    )
+    _configure_fixed_eval_runtime(eval_runtime, args, "spider")
+    examples = logic.load_dataset_sample(eval_runtime)
+
+    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+
+    if args.eval_backend == "vllm":
+        from vllm import LLM
+
+        llm = LLM(
+            model=args.eval_model,
+            gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+            max_model_len=16384,
+            trust_remote_code=True,
+        )
+    else:
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        import torch
+
+        tokenizer = AutoTokenizer.from_pretrained(args.eval_model, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            args.eval_model,
+            device_map=device,
+            dtype=torch.float16,
+            trust_remote_code=True,
+        )
+
+    rows: list[dict[str, Any]] = []
+    max_new = max(32, int(args.eval_max_steps))
+
+    for example in examples:
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
+        num_toks: int | None = None
+        if args.eval_backend == "vllm":
+            from vllm import SamplingParams as _SP
+
+            gen_started = time.perf_counter()
+            sp = _SP(max_tokens=max_new, temperature=0.0)
+            outputs = llm.generate([prompt], sp)
+            gen_seconds = time.perf_counter() - gen_started
+            completion = outputs[0].outputs[0]
+            suffix = completion.text
+            num_toks = len(completion.token_ids) if getattr(completion, "token_ids", None) else None
+        else:
+            import torch
+
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            gen_started = time.perf_counter()
+            with torch.no_grad():
+                out_ids = model.generate(
+                    **inputs,
+                    max_new_tokens=max_new,
+                    do_sample=False,
+                )
+            gen_seconds = time.perf_counter() - gen_started
+            new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
+            num_toks = int(new_ids.numel())
+            suffix = tokenizer.decode(new_ids, skip_special_tokens=True)
+
+        output_text = prompt + suffix
+        scored_output = output_text
+        expected = logic.expected_answer(eval_runtime, example)
+        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+        syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+
+        question = _baseline_row_question("spider", example, expected)
+        row_out: dict[str, Any] = {
+            "question": question,
+            "llm_response": output_text,
+            "correct": bool(is_correct),
+            "syntax_valid": bool(syntax_valid),
+            "generation_seconds": gen_seconds,
+        }
+        if num_toks is not None:
+            row_out["num_tokens"] = num_toks
+        rows.append(row_out)
+
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -879,6 +1106,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     Used for benchmarks where the legacy CRANE codebase lacks grammar support
     (e.g. SMILES). AdaptiveSynCode implements the same << >> switching logic.
     """
+    run_started = time.perf_counter()
     import sys as _sys
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -944,8 +1172,10 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = logic.format_prompt(eval_runtime, example)
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
+        gen_started = time.perf_counter()
         completions = sc.infer(prompt)
+        gen_seconds = time.perf_counter() - gen_started
         output_text = completions[0] if completions else ""
         scored_output = output_text
         expected = logic.expected_answer(eval_runtime, example)
@@ -966,10 +1196,15 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
                 "llm_response": output_text,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
+                "generation_seconds": gen_seconds,
             }
         )
 
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -979,6 +1214,9 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     if dataset == "smiles" and args.strategy == "unconstrained":
         return run_unconstrained_smiles_adapter(args)
+
+    if dataset == "spider" and args.strategy == "unconstrained":
+        return run_unconstrained_spider_adapter(args)
 
     if dataset == "smiles" and args.strategy == "crane":
         return _crane_via_adaptive_syncode(args, dataset)
@@ -1032,6 +1270,7 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         syncode_paths + ([existing_pythonpath] if existing_pythonpath else [])
     )
 
+    crane_run_started = time.perf_counter()
     subprocess.run(cmd, cwd=crane_src_dir, check=True, env=env)
 
     rows = _annotate_legacy_rows_with_syntax(
@@ -1039,7 +1278,11 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         args,
         dataset,
     )
-    _build_minimal_json(rows, args.output_json)
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - crane_run_started,
+    )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 

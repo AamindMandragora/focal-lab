@@ -45,6 +45,28 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     )
 
 
+def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
+    """Grammar-masked legacy adapters: single SMILES span, no reasoning."""
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nOutput only one SMILES string inside << >> (example: <<CC(=O)OC=C>>). "
+        "Do not write explanations.\n"
+        "Molecule: "
+    )
+
+
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
+    """CRANE-style adaptive SMILES: reasoning allowed before the delimited molecule."""
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nThink step by step about how to satisfy the structural constraints, "
+        "then wrap your final SMILES in << >> delimiters.\n"
+        "Molecule: "
+    )
+
+
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
     return str(example.get("class_name", ""))
 

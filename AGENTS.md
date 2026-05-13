@@ -41,7 +41,7 @@ Disallowed prompt content:
 
 ## Pipeline Run Modes
 
-Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE_DEVICES=2,3` unless intentionally using another allocation. By default, **generation** uses OpenAI `gpt-5.4` (`OPENAI_API_KEY`); **evaluation** still defaults to local vLLM with Qwen unless you pass other flags.
+Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE_DEVICES=2,3` unless intentionally using another allocation. By default, **generation** uses **Amazon Bedrock** (`AWS_BEARER_TOKEN_BEDROCK` and `BEDROCK_GENERATION_MODEL` / `--generation-model`); **evaluation** still defaults to local vLLM with Qwen unless you pass other flags.
 
 - Quick smoke run (fast sanity check, low sample count):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --min-accuracy 0.0 --min-syntax-rate 0.0 --max-iterations 1 --eval-sample-size 1 --eval-max-steps 256 --output-name smoke_gsm`
@@ -53,13 +53,9 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Generate executable SQL queries from natural language questions." --dataset spider --spider-split-file <path/to/split.json> --spider-split-name train --min-accuracy 0.6 --min-syntax-rate 0.95 --max-iterations 5 --eval-sample-size 20 --output-name spider_split`
 - SMILES synthesis run (all classes or class subset):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Generate valid molecules in the requested class." --dataset smiles --smiles-classes acrylates,chain_extenders,isocyanates --smiles-samples-per-class 10 --min-accuracy 0.5 --min-syntax-rate 1.0 --max-iterations 5 --output-name smiles_main`
-- Local generation with vLLM (override default OpenAI generation):
+- Local generation with vLLM (override default Bedrock generation):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend vllm --generation-model Qwen/Qwen2.5-Coder-7B-Instruct --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name vllm_run`
-- API generation with a non-default model (default generation is already OpenAI `gpt-5.4` unless `run_all_tests.sh` auto-selects Bedrock via `AWS_BEARER_TOKEN_BEDROCK`):
-  `python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend openai --generation-model <api-model> --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name api_gen_run`
-- Bedrock generation with bearer-token auth:
- `python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend bedrock --generation-model <bedrock-model-id> --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name bedrock_gen_run`
-- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. If `AWS_BEARER_TOKEN_BEDROCK` is set, its `gpt5.4` generation profile uses Bedrock by default; set `BEDROCK_GENERATION_MODEL` to choose the Bedrock model id or `CSD_USE_BEDROCK_FOR_GPT54=0` to keep OpenAI for that profile.
+- Hosted generation defaults to **OpenAI** (`OPENAI_API_KEY`, model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). **`gpt5.4`** in `run_all_tests.sh` uses OpenAI. **`opus4.7`** uses **Bedrock** (`AWS_BEARER_TOKEN_BEDROCK`, `BEDROCK_OPUS_MODEL`). The **`gemini-pro`** matrix profile is omitted until a partner wires it; pass `--generation-models gemini-pro` and set **`GEMINI_BEDROCK_MODEL`** when ready.
 - Full repository test sweep:
   `bash run_all_tests.sh`
 - `run_all_tests.sh` activates `/apps/conda/advayth2/envs/advayth2` by default and verifies RDKit import before starting the matrix. Partners using a different prefix should `export VAS_CONDA_ENV=/path/to/env`; `VAS_RDKIT_CONDA_ENV` remains as a legacy alias. The script prepends `CONDA_PREFIX/lib` to `LD_LIBRARY_PATH` so SciPy/transformers wheels resolve `libstdc++` correctly; Syncode needs **`mxeval`** with bundled **`data/`** — run **`bash environment/install_mxeval_into_env.sh`** once per env (see **`environment/README.md`**).
