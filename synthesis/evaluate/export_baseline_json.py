@@ -6,34 +6,16 @@ import argparse
 import json
 from pathlib import Path
 
+from synthesis.evaluate.baseline_store import baseline_payload_from_success_report
+
 
 def _build_minimal_payload(report: dict) -> dict:
-    evaluation = report.get("evaluation_result") or {}
-    samples = report.get("sample_outputs") or []
-
-    answers = []
-    for sample in samples:
-        question = str(sample.get("question", ""))
-        generated_answer = sample.get("actual")
-        if generated_answer is None:
-            generated_answer = sample.get("full_output", "")
-        answers.append(
-            {
-                "question": question,
-                "generated_answer": str(generated_answer),
-            }
-        )
-
-    return {
-        "accuracy": float(evaluation.get("accuracy", 0.0)),
-        "syntax_rate": float(evaluation.get("syntax_rate", 0.0)),
-        "answers": answers,
-    }
+    return baseline_payload_from_success_report(report)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Export a minimal baseline JSON (accuracy, syntax_rate, answers)"
+        description="Export a minimal baseline JSON (accuracy, syntax_rate, metrics, answers)"
     )
     parser.add_argument(
         "--success-report",

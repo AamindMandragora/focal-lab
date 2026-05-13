@@ -35,10 +35,10 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - The parser path depends on Syncode DFA-mask caching for practical performance.
 - Evaluation backends currently support runtime modes that provide token-level control (`huggingface`, `vllm`).
 - Output artifacts from this stage are saved under per-run `results/` folders in `outputs/generated/`.
-- Baseline snapshots should be written as minimal JSON files in `outputs/baselines/` containing only:
-  - `accuracy`
-  - `syntax_rate`
-  - one generated answer per benchmark question
+- Baseline snapshots are JSON files in `outputs/baselines/` with:
+  - `accuracy`, `syntax_rate`
+  - `metrics` (counts, optional sums/means for `generation_seconds` / `num_tokens`, optional `run_wall_time_seconds` or evaluator totals)
+  - `answers[]` with `question`, `generated_answer`, and optional `generation_seconds` / `num_tokens` per row
 - Fixed-strategy GSM baselines use the local CRANE GSM source rows so
   `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` are compared on the
   same questions.

@@ -13,7 +13,7 @@ The generate stage is responsible for producing candidate Dafny strategy bodies 
 
 - `generator.py`
   - Main generation/refinement orchestration.
-  - Supports local HuggingFace/vLLM generation and API backends: OpenAI, Anthropic, Gemini, and Bedrock.
+  - Supports local HuggingFace/vLLM generation plus OpenAI and Amazon Bedrock hosted APIs.
 - `prompts.py`
   - Prompt templates used for initial generation and iterative refinement.
   - Keep tool documentation here aligned with `synthesis/verify/library/README.md` and `VerifiedAgentSynthesis.dfy` when the strategy API changes.
@@ -34,14 +34,13 @@ Output:
 
 ## API Backends
 
-Generation API credentials are read from backend-specific environment variables:
+- **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Default model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Used by the **`gpt5.4`** profile in `run_all_tests.sh`.
 
-- `OPENAI_API_KEY` for `--generation-backend openai`
-- `ANTHROPIC_API_KEY` for `--generation-backend anthropic`
-- `GEMINI_API_KEY` or `GOOGLE_API_KEY` for `--generation-backend gemini`
-- `AWS_BEARER_TOKEN_BEDROCK` for `--generation-backend bedrock`
+- **Amazon Bedrock** (`--generation-backend bedrock`): **`AWS_BEARER_TOKEN_BEDROCK`** and a Bedrock model id via **`--generation-model`** or **`BEDROCK_GENERATION_MODEL`**. Used by the **`opus4.7`** profile (see **`BEDROCK_OPUS_MODEL`** in `run_all_tests.sh`).
 
-For Bedrock, pass a Bedrock model id via `--generation-model`; `BEDROCK_BASE_URL` can override the runtime endpoint, otherwise the generator derives it from `AWS_REGION` / `AWS_DEFAULT_REGION` and defaults to `us-east-1`.
+For local runs use **`--generation-backend huggingface`** or **`vllm`**.
+
+Direct Gemini / Vertex APIs are not wired in the generator; Gemini matrix profiling is partner-owned (`GEMINI_BEDROCK_MODEL` placeholder in `run_all_tests.sh` when `gemini-pro` is enabled).
 
 ## Important Constraint
 

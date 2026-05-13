@@ -10,7 +10,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
 - `run_synthesis.py`
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
-  - Generation backends include local HuggingFace/vLLM plus OpenAI, Anthropic, Gemini, and Bedrock APIs.
+  - Generation backends: local HuggingFace/vLLM, **OpenAI** (default for CLI), or **Amazon Bedrock** (e.g. metadecode `opus4.7` profile).
   - Includes empirical helper-mask controls to constrain helper-call search space:
     `--adaptive-helper-mask`, `--helper-selection-policy`,
     `--helper-mask-min-evals`, `--helper-mask-min-uses`,
@@ -64,7 +64,8 @@ Common filesystem/tool paths can be overridden via CLI flags or environment vari
 - `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY` (Spider evaluator location)
 - `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
 - `CSD_JSON_GRAMMAR_PATH` (JSON grammar for smoke-test runner)
-- `AWS_BEARER_TOKEN_BEDROCK` for Bedrock generation auth when `--generation-backend bedrock` is used.
+- `OPENAI_API_KEY` / `OPENAI_GENERATION_MODEL` for OpenAI (default `--generation-backend openai` in `run_synthesis`, model `gpt-5.4` unless overridden).
+- `AWS_BEARER_TOKEN_BEDROCK` and Bedrock model ids when using `--generation-backend bedrock`.
 
 ## Design Philosophy
 

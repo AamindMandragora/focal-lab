@@ -1,19 +1,0 @@
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-=== run_all_tests matrix ===
-models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
-benchmarks: smiles gsm spider
-strategies: unconstrained gcd crane itergen cars metadecode
-token budgets: 1 2 4
-step budgets (ablation): 256 512 1024
-synthesis iters (metadecode): 3 5 10
-generation models (metadecode): gpt5.4 opus4.7 gemini-pro
-eval max steps (main): 900
-
-=== Phase 1: Main experiment matrix ===
-[skip] outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json already exists (1206 lines). Delete it to re-run.
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy gcd --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 5074.12it/s]
-Terminated
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy crane --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/crane/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 4956.21it/s]

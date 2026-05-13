@@ -1,1748 +1,0 @@
-=== run_all_tests matrix ===
-models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
-benchmarks: smiles gsm spider
-strategies: unconstrained gcd crane itergen cars metadecode
-token budgets: 1 2 4
-step budgets (ablation): 256 512 1024
-synthesis iters (metadecode): 3 5 10
-generation models (metadecode): gpt5.4 opus4.7 gemini-pro
-eval max steps (main): 900
-
-=== Phase 1: Main experiment matrix ===
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy unconstrained --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-2026-05-11 08:43:14.534627: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-05-11 08:43:14.558543: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1778488994.583549 3970712 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1778488994.590396 3970712 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1778488994.610246 3970712 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778488994.610273 3970712 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778488994.610277 3970712 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778488994.610280 3970712 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-05-11 08:43:14.615366: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-INFO 05-11 08:43:20 [utils.py:233] non-default args: {'trust_remote_code': True, 'max_model_len': 4096, 'gpu_memory_utilization': 0.8, 'disable_log_stats': True, 'model': 'Qwen/Qwen2.5-Coder-1.5B-Instruct'}
-INFO 05-11 08:43:20 [model.py:549] Resolved architecture: Qwen2ForCausalLM
-INFO 05-11 08:43:20 [model.py:1678] Using max model len 4096
-INFO 05-11 08:43:20 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
-INFO 05-11 08:43:20 [vllm.py:790] Asynchronous scheduling is enabled.
-(EngineCore pid=3971417) INFO 05-11 08:43:22 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen2.5-Coder-1.5B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-Coder-1.5B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4096, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-Coder-1.5B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 512, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
-(EngineCore pid=3971417) INFO 05-11 08:43:23 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:56923 backend=nccl
-(EngineCore pid=3971417) INFO 05-11 08:43:23 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
-(EngineCore pid=3971417) INFO 05-11 08:43:24 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-Coder-1.5B-Instruct...
-(EngineCore pid=3971417) INFO 05-11 08:43:25 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
-(EngineCore pid=3971417) INFO 05-11 08:43:25 [flash_attn.py:596] Using FlashAttention version 2
-(EngineCore pid=3971417) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.
-(EngineCore pid=3971417) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.
-(EngineCore pid=3971417) INFO 05-11 08:43:26 [weight_utils.py:625] No model.safetensors.index.json found in remote.
-(EngineCore pid=3971417) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
-(EngineCore pid=3971417) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.93s/it]
-(EngineCore pid=3971417) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:01<00:00,  1.93s/it]
-(EngineCore pid=3971417) 
-(EngineCore pid=3971417) INFO 05-11 08:43:28 [default_loader.py:384] Loading weights took 2.01 seconds
-(EngineCore pid=3971417) INFO 05-11 08:43:28 [gpu_model_runner.py:4820] Model loading took 2.89 GiB memory and 2.710796 seconds
-(EngineCore pid=3971417) INFO 05-11 08:43:35 [backends.py:1051] Using cache directory: /home/advayth2/.cache/vllm/torch_compile_cache/ac2df62655/rank_0_0/backbone for vLLM's torch.compile
-(EngineCore pid=3971417) INFO 05-11 08:43:35 [backends.py:1111] Dynamo bytecode transform time: 6.28 s
-(EngineCore pid=3971417) INFO 05-11 08:43:40 [backends.py:372] Cache the graph of compile range (1, 8192) for later use
-(EngineCore pid=3971417) INFO 05-11 08:43:44 [backends.py:390] Compiling a graph for compile range (1, 8192) takes 8.34 s
-(EngineCore pid=3971417) INFO 05-11 08:43:45 [decorators.py:640] saved AOT compiled function to /home/advayth2/.cache/vllm/torch_compile_cache/torch_aot_compile/104672aadc87f9c2e03c2a4455f04b398317a6d98379c500c64b7a8edd10368c/rank_0_0/model
-(EngineCore pid=3971417) INFO 05-11 08:43:45 [monitor.py:48] torch.compile took 16.38 s in total
-(EngineCore pid=3971417) INFO 05-11 08:43:46 [monitor.py:76] Initial profiling/warmup run took 0.42 s
-(EngineCore pid=3971417) INFO 05-11 08:43:46 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=512
-(EngineCore pid=3971417) INFO 05-11 08:43:46 [gpu_model_runner.py:5876] Profiling CUDA graph memory: PIECEWISE=51 (largest=512), FULL=35 (largest=256)
-(EngineCore pid=3971417) INFO 05-11 08:43:48 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.49 GiB total
-(EngineCore pid=3971417) INFO 05-11 08:43:49 [gpu_worker.py:436] Available KV cache memory: 27.97 GiB
-(EngineCore pid=3971417) INFO 05-11 08:43:49 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.8000 to 0.8124 to maintain the same effective KV cache size.
-(EngineCore pid=3971417) INFO 05-11 08:43:49 [kv_cache_utils.py:1319] GPU KV cache size: 1,047,600 tokens
-(EngineCore pid=3971417) INFO 05-11 08:43:49 [kv_cache_utils.py:1324] Maximum concurrency for 4,096 tokens per request: 255.76x
-(EngineCore pid=3971417) Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/51 [00:00<?, ?it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   6%|▌         | 3/51 [00:00<00:01, 26.25it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  12%|█▏        | 6/51 [00:00<00:01, 26.99it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  18%|█▊        | 9/51 [00:00<00:01, 27.49it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  24%|██▎       | 12/51 [00:00<00:01, 28.33it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  29%|██▉       | 15/51 [00:00<00:01, 28.73it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  37%|███▋      | 19/51 [00:00<00:01, 28.90it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  43%|████▎     | 22/51 [00:00<00:01, 28.95it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  51%|█████     | 26/51 [00:00<00:00, 29.57it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  59%|█████▉    | 30/51 [00:01<00:00, 29.39it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  67%|██████▋   | 34/51 [00:01<00:00, 29.66it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  73%|███████▎  | 37/51 [00:01<00:00, 29.14it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  78%|███████▊  | 40/51 [00:01<00:00, 29.26it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  86%|████████▋ | 44/51 [00:01<00:00, 27.72it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  92%|█████████▏| 47/51 [00:01<00:00, 28.13it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 51/51 [00:01<00:00, 26.41it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 51/51 [00:01<00:00, 28.11it/s]
-(EngineCore pid=3971417) Capturing CUDA graphs (decode, FULL):   0%|          | 0/35 [00:00<?, ?it/s]Capturing CUDA graphs (decode, FULL):   9%|▊         | 3/35 [00:00<00:01, 29.81it/s]Capturing CUDA graphs (decode, FULL):  17%|█▋        | 6/35 [00:00<00:01, 28.60it/s]Capturing CUDA graphs (decode, FULL):  26%|██▌       | 9/35 [00:00<00:00, 28.77it/s]Capturing CUDA graphs (decode, FULL):  34%|███▍      | 12/35 [00:00<00:00, 28.90it/s]Capturing CUDA graphs (decode, FULL):  43%|████▎     | 15/35 [00:00<00:00, 29.05it/s]Capturing CUDA graphs (decode, FULL):  54%|█████▍    | 19/35 [00:00<00:00, 29.74it/s]Capturing CUDA graphs (decode, FULL):  63%|██████▎   | 22/35 [00:00<00:00, 29.25it/s]Capturing CUDA graphs (decode, FULL):  71%|███████▏  | 25/35 [00:00<00:00, 27.20it/s]Capturing CUDA graphs (decode, FULL):  80%|████████  | 28/35 [00:01<00:00, 25.60it/s]Capturing CUDA graphs (decode, FULL):  89%|████████▊ | 31/35 [00:01<00:00, 24.44it/s]Capturing CUDA graphs (decode, FULL):  97%|█████████▋| 34/35 [00:01<00:00, 22.92it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 35/35 [00:01<00:00, 26.05it/s]
-(EngineCore pid=3971417) INFO 05-11 08:43:53 [gpu_model_runner.py:6046] Graph capturing finished in 4 secs, took 0.42 GiB
-(EngineCore pid=3971417) INFO 05-11 08:43:53 [gpu_worker.py:597] CUDA graph pool memory: 0.42 GiB (actual), 0.49 GiB (estimated), difference: 0.07 GiB (16.3%).
-(EngineCore pid=3971417) INFO 05-11 08:43:53 [core.py:283] init engine (profile, create kv cache, warmup model) took 24.47 seconds
-Rendering prompts:   0%|          | 0/300 [00:00<?, ?it/s]Rendering prompts:  17%|█▋        | 51/300 [00:00<00:00, 504.18it/s]Rendering prompts:  52%|█████▏    | 157/300 [00:00<00:00, 826.49it/s]Rendering prompts:  98%|█████████▊| 295/300 [00:00<00:00, 1075.71it/s]Rendering prompts: 100%|██████████| 300/300 [00:00<00:00, 979.19it/s] 
-Processed prompts:   0%|          | 0/300 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s]Processed prompts:   0%|          | 1/300 [00:09<48:35,  9.75s/it, est. speed input: 81.74 toks/s, output: 92.31 toks/s]Processed prompts:  76%|███████▌  | 227/300 [00:09<00:02, 32.72it/s, est. speed input: 11463.11 toks/s, output: 20735.09 toks/s]Processed prompts: 100%|██████████| 300/300 [00:14<00:00, 32.72it/s, est. speed input: 9834.31 toks/s, output: 18952.60 toks/s] Processed prompts: 100%|██████████| 300/300 [00:14<00:00, 21.06it/s, est. speed input: 9834.31 toks/s, output: 18952.60 toks/s]
-(EngineCore pid=3971417) INFO 05-11 08:44:08 [core.py:1210] Shutdown initiated (timeout=0)
-(EngineCore pid=3971417) INFO 05-11 08:44:08 [core.py:1233] Shutdown complete
-Saved baseline JSON: outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy gcd --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-2026-05-11 08:44:17.696190: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-05-11 08:44:17.717610: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1778489057.739384 3973806 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1778489057.746513 3973806 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1778489057.764711 3973806 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489057.764737 3973806 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489057.764741 3973806 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489057.764743 3973806 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-05-11 08:44:17.769339: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-Creating DFA mask store for Qwen2TokenizerFast and custom, may take more than 10 minutes. Caching at /home/advayth2/projects/verified-agent-synthesis/cache/mask_stores/Qwen2TokenizerFast/grammar_strict_1637164452_151643.pkl.
-Ignore whitespace tokens is False
-  0%|          | 0/158 [00:00<?, ?it/s]  1%|          | 1/158 [00:00<02:04,  1.26it/s]  1%|▏         | 2/158 [00:05<07:51,  3.02s/it]  2%|▏         | 3/158 [00:10<09:43,  3.76s/it]  3%|▎         | 4/158 [00:14<10:33,  4.11s/it]  3%|▎         | 5/158 [00:19<11:00,  4.31s/it]  4%|▍         | 6/158 [00:24<11:23,  4.49s/it]  4%|▍         | 7/158 [00:28<11:30,  4.58s/it]  5%|▌         | 8/158 [00:33<11:30,  4.60s/it]  6%|▌         | 9/158 [00:38<11:28,  4.62s/it]  6%|▋         | 10/158 [00:42<11:27,  4.64s/it]  7%|▋         | 11/158 [00:47<11:23,  4.65s/it]  8%|▊         | 12/158 [00:52<11:20,  4.66s/it]  8%|▊         | 13/158 [00:57<11:30,  4.76s/it]  9%|▉         | 14/158 [01:01<11:20,  4.73s/it]  9%|▉         | 15/158 [01:06<11:14,  4.71s/it] 10%|█         | 16/158 [01:11<11:07,  4.70s/it] 11%|█         | 17/158 [01:11<08:03,  3.43s/it] 11%|█▏        | 18/158 [01:12<05:55,  2.54s/it] 12%|█▏        | 19/158 [01:16<07:21,  3.17s/it] 13%|█▎        | 20/158 [01:17<05:26,  2.36s/it] 13%|█▎        | 21/158 [01:17<04:05,  1.79s/it] 14%|█▍        | 22/158 [01:22<06:01,  2.66s/it] 15%|█▍        | 23/158 [01:22<04:30,  2.00s/it] 15%|█▌        | 24/158 [01:23<03:26,  1.54s/it] 16%|█▌        | 25/158 [01:23<02:41,  1.22s/it] 16%|█▋        | 26/158 [01:24<02:10,  1.01it/s] 17%|█▋        | 27/158 [01:24<01:49,  1.20it/s] 18%|█▊        | 28/158 [01:25<01:33,  1.38it/s] 18%|█▊        | 29/158 [01:25<01:23,  1.55it/s] 19%|█▉        | 30/158 [01:26<01:15,  1.69it/s] 20%|█▉        | 31/158 [01:26<01:10,  1.80it/s] 20%|██        | 32/158 [01:27<01:06,  1.88it/s] 21%|██        | 33/158 [01:27<01:03,  1.96it/s] 22%|██▏       | 34/158 [01:28<01:01,  2.02it/s] 22%|██▏       | 35/158 [01:28<00:59,  2.06it/s] 23%|██▎       | 36/158 [01:29<00:58,  2.09it/s] 23%|██▎       | 37/158 [01:29<00:57,  2.10it/s] 24%|██▍       | 38/158 [01:29<00:56,  2.12it/s] 25%|██▍       | 39/158 [01:30<00:55,  2.13it/s] 25%|██▌       | 40/158 [01:30<00:55,  2.14it/s] 26%|██▌       | 41/158 [01:31<00:54,  2.15it/s] 27%|██▋       | 42/158 [01:31<00:53,  2.15it/s] 27%|██▋       | 43/158 [01:32<00:53,  2.14it/s] 28%|██▊       | 44/158 [01:32<00:53,  2.14it/s] 28%|██▊       | 45/158 [01:33<00:52,  2.16it/s] 29%|██▉       | 46/158 [01:33<00:51,  2.16it/s] 30%|██▉       | 47/158 [01:34<00:51,  2.15it/s] 30%|███       | 48/158 [01:34<00:51,  2.14it/s] 31%|███       | 49/158 [01:35<00:50,  2.15it/s] 32%|███▏      | 50/158 [01:35<00:51,  2.11it/s] 32%|███▏      | 51/158 [01:36<00:50,  2.11it/s] 33%|███▎      | 52/158 [01:36<00:50,  2.08it/s] 34%|███▎      | 53/158 [01:36<00:49,  2.10it/s] 34%|███▍      | 54/158 [01:37<00:49,  2.12it/s] 35%|███▍      | 55/158 [01:42<02:57,  1.72s/it] 35%|███▌      | 56/158 [01:46<04:26,  2.62s/it] 36%|███▌      | 57/158 [01:47<03:19,  1.97s/it] 37%|███▋      | 58/158 [01:51<04:39,  2.80s/it] 37%|███▋      | 59/158 [01:52<03:27,  2.10s/it] 38%|███▊      | 60/158 [01:57<04:50,  2.96s/it] 39%|███▊      | 61/158 [01:57<03:35,  2.22s/it] 39%|███▉      | 62/158 [01:58<02:42,  1.70s/it] 40%|███▉      | 63/158 [01:58<02:06,  1.33s/it] 41%|████      | 64/158 [01:59<01:40,  1.07s/it] 41%|████      | 65/158 [02:04<03:20,  2.15s/it] 42%|████▏     | 66/158 [02:08<04:28,  2.91s/it] 42%|████▏     | 67/158 [02:13<05:12,  3.44s/it] 43%|████▎     | 68/158 [02:17<05:41,  3.80s/it] 44%|████▎     | 69/158 [02:18<04:17,  2.90s/it] 44%|████▍     | 70/158 [02:23<05:01,  3.42s/it] 45%|████▍     | 71/158 [02:28<05:29,  3.78s/it] 46%|████▌     | 72/158 [02:32<05:47,  4.04s/it] 46%|████▌     | 73/158 [02:37<05:59,  4.23s/it] 47%|████▋     | 74/158 [02:42<06:08,  4.38s/it] 47%|████▋     | 75/158 [02:46<06:13,  4.50s/it] 48%|████▊     | 76/158 [02:51<06:12,  4.54s/it] 49%|████▊     | 77/158 [02:56<06:10,  4.58s/it] 49%|████▉     | 78/158 [02:56<04:31,  3.40s/it] 50%|█████     | 79/158 [03:01<04:58,  3.78s/it] 51%|█████     | 80/158 [03:06<05:14,  4.03s/it] 51%|█████▏    | 81/158 [03:10<05:24,  4.21s/it] 52%|█████▏    | 82/158 [03:15<05:30,  4.35s/it] 53%|█████▎    | 83/158 [03:20<05:34,  4.46s/it] 53%|█████▎    | 84/158 [03:24<05:36,  4.55s/it] 54%|█████▍    | 85/158 [03:25<04:03,  3.34s/it] 54%|█████▍    | 86/158 [03:30<04:29,  3.74s/it] 55%|█████▌    | 87/158 [03:30<03:22,  2.85s/it] 56%|█████▌    | 88/158 [03:35<03:56,  3.38s/it] 56%|█████▋    | 89/158 [03:40<04:18,  3.75s/it] 57%|█████▋    | 90/158 [03:40<03:08,  2.77s/it] 58%|█████▊    | 91/158 [03:45<03:44,  3.35s/it] 58%|█████▊    | 92/158 [03:45<02:44,  2.49s/it] 59%|█████▉    | 93/158 [03:50<03:25,  3.16s/it] 59%|█████▉    | 94/158 [03:55<03:52,  3.64s/it] 60%|██████    | 95/158 [03:55<02:51,  2.73s/it] 61%|██████    | 96/158 [04:00<03:29,  3.38s/it] 61%|██████▏   | 97/158 [04:05<03:50,  3.77s/it] 62%|██████▏   | 98/158 [04:05<02:46,  2.78s/it] 63%|██████▎   | 99/158 [04:06<02:03,  2.09s/it] 63%|██████▎   | 100/158 [04:06<01:33,  1.61s/it] 64%|██████▍   | 101/158 [04:07<01:12,  1.27s/it] 65%|██████▍   | 102/158 [04:07<00:57,  1.03s/it] 65%|██████▌   | 103/158 [04:08<00:47,  1.15it/s] 66%|██████▌   | 104/158 [04:08<00:40,  1.34it/s] 66%|██████▋   | 105/158 [04:09<00:35,  1.50it/s] 67%|██████▋   | 106/158 [04:09<00:31,  1.65it/s] 68%|██████▊   | 107/158 [04:14<01:32,  1.82s/it] 68%|██████▊   | 108/158 [04:19<02:13,  2.68s/it] 69%|██████▉   | 109/158 [04:23<02:40,  3.28s/it] 70%|██████▉   | 110/158 [04:28<02:56,  3.68s/it] 70%|███████   | 111/158 [04:32<03:06,  3.97s/it] 71%|███████   | 112/158 [04:37<03:12,  4.18s/it] 72%|███████▏  | 113/158 [04:42<03:13,  4.31s/it] 72%|███████▏  | 114/158 [04:47<03:15,  4.43s/it] 73%|███████▎  | 115/158 [04:51<03:14,  4.51s/it] 73%|███████▎  | 116/158 [04:56<03:16,  4.68s/it] 74%|███████▍  | 117/158 [05:01<03:11,  4.67s/it] 75%|███████▍  | 118/158 [05:06<03:06,  4.66s/it] 75%|███████▌  | 119/158 [05:10<03:01,  4.65s/it] 76%|███████▌  | 120/158 [05:15<02:56,  4.64s/it] 77%|███████▋  | 121/158 [05:15<02:06,  3.41s/it] 77%|███████▋  | 122/158 [05:20<02:16,  3.79s/it] 78%|███████▊  | 123/158 [05:25<02:21,  4.05s/it] 78%|███████▊  | 124/158 [05:29<02:23,  4.22s/it] 79%|███████▉  | 125/158 [05:34<02:23,  4.33s/it] 80%|███████▉  | 126/158 [05:39<02:21,  4.42s/it] 80%|████████  | 127/158 [05:43<02:20,  4.53s/it] 81%|████████  | 128/158 [05:48<02:18,  4.60s/it] 82%|████████▏ | 129/158 [05:53<02:15,  4.68s/it] 82%|████████▏ | 130/158 [05:58<02:13,  4.77s/it] 83%|████████▎ | 131/158 [06:03<02:07,  4.74s/it] 84%|████████▎ | 132/158 [06:07<02:02,  4.71s/it] 84%|████████▍ | 133/158 [06:12<01:57,  4.69s/it] 85%|████████▍ | 134/158 [06:12<01:22,  3.44s/it] 85%|████████▌ | 135/158 [06:17<01:27,  3.82s/it] 86%|████████▌ | 136/158 [06:22<01:30,  4.10s/it] 87%|████████▋ | 137/158 [06:22<01:03,  3.02s/it] 87%|████████▋ | 138/158 [06:23<00:45,  2.26s/it] 88%|████████▊ | 139/158 [06:28<00:57,  3.01s/it] 89%|████████▊ | 140/158 [06:32<01:03,  3.51s/it] 89%|████████▉ | 141/158 [06:33<00:44,  2.60s/it] 90%|████████▉ | 142/158 [06:37<00:51,  3.22s/it] 91%|█████████ | 143/158 [06:42<00:54,  3.65s/it] 91%|█████████ | 144/158 [06:47<00:55,  3.97s/it] 92%|█████████▏| 145/158 [06:47<00:38,  2.96s/it] 92%|█████████▏| 146/158 [06:52<00:41,  3.49s/it] 93%|█████████▎| 147/158 [06:53<00:28,  2.62s/it] 94%|█████████▎| 148/158 [06:58<00:33,  3.32s/it] 94%|█████████▍| 149/158 [06:58<00:22,  2.48s/it] 95%|█████████▍| 150/158 [07:03<00:24,  3.12s/it] 96%|█████████▌| 151/158 [07:03<00:16,  2.34s/it] 96%|█████████▌| 152/158 [07:08<00:18,  3.04s/it] 97%|█████████▋| 153/158 [07:08<00:11,  2.28s/it] 97%|█████████▋| 154/158 [07:09<00:07,  1.75s/it] 98%|█████████▊| 155/158 [07:14<00:07,  2.61s/it] 99%|█████████▊| 156/158 [07:14<00:03,  1.98s/it] 99%|█████████▉| 157/158 [07:15<00:01,  1.53s/it]100%|██████████| 158/158 [07:19<00:00,  2.48s/it]100%|██████████| 158/158 [07:19<00:00,  2.78s/it]
-The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
-Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
-The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 684, in <module>
-    args.eval_model,
-^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 675, in main
-    "--overwrite_results",
-                     ^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 301, in run_gcd_legacy_adapter
-    if dataset == "smiles":
-                            
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 80, in extract_actual
-    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
-                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1325, in _get_grammar_text
-    self._base_grammar_text = self._get_grammar_file().read_text()
-                              ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1313, in _get_grammar_file
-    self._grammar_file = logic.get_grammar_file(self, grammars_dir)
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 26, in get_grammar_file
-    raise ValueError(
-ValueError: SMILES CSD evaluation uses class-specific grammars; pass exactly one class via --smiles-classes.
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy crane --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/crane/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-2026-05-11 08:53:44.684959: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-05-11 08:53:44.708253: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1778489624.729407 3999229 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1778489624.736543 3999229 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1778489624.754991 3999229 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489624.755015 3999229 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489624.755027 3999229 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489624.755046 3999229 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-05-11 08:53:44.759680: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-The attention mask and the pad token id were not set. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
-Setting `pad_token_id` to `eos_token_id`:151645 for open-end generation.
-The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 741, in <module>
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 737, in main
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 656, in run_crane_legacy_adapter
-    "--cot_grammar_mode",
-           ^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 627, in _crane_via_adaptive_syncode
-    return _crane_via_adaptive_syncode(args, dataset)
-                                  ^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 80, in extract_actual
-    grammar_text = example.get("grammar_text", evaluator._get_grammar_text())
-                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1325, in _get_grammar_text
-    self._base_grammar_text = self._get_grammar_file().read_text()
-                              ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/evaluator.py", line 1313, in _get_grammar_file
-    self._grammar_file = logic.get_grammar_file(self, grammars_dir)
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/benchmarks/smiles/eval_logic.py", line 26, in get_grammar_file
-    raise ValueError(
-ValueError: SMILES CSD evaluation uses class-specific grammars; pass exactly one class via --smiles-classes.
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy itergen --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/itergen/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-2026-05-11 08:54:26.595462: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-05-11 08:54:26.617721: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
-WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-E0000 00:00:1778489666.638422 4001354 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-E0000 00:00:1778489666.645216 4001354 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-W0000 00:00:1778489666.663120 4001354 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489666.663147 4001354 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489666.663150 4001354 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-W0000 00:00:1778489666.663153 4001354 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-2026-05-11 08:54:26.667722: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 712, in <module>
-    main()
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 705, in main
-    raise SystemExit(run_itergen_legacy_adapter(args))
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/synthesis/evaluate/run_legacy_fixed_strategy.py", line 391, in run_itergen_legacy_adapter
-    itergen_cache[cache_key] = IterGen(
-                               ^^^^^^^^
-  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 102, in __init__
-    self.update_gen_args(**gen_args)
-  File "/home/advayth2/projects/verified-agent-synthesis/legacy/itergen/itergen/main.py", line 111, in update_gen_args
-    self.logit_warper = self.model._get_logits_warper(self.generation_config, device=self.device)
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/anaconda/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1965, in __getattr__
-    raise AttributeError(
-AttributeError: 'Qwen2ForCausalLM' object has no attribute '_get_logits_warper'. Did you mean: '_get_logits_processor'?
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy cars --dataset smiles --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/cars/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-[warn] Legacy CARS supports model presets for 7B/14B Qwen or Llama-3.1-8B. Received eval model 'Qwen/Qwen2.5-Coder-1.5B-Instruct'. Writing empty baseline JSON to outputs/baselines/cars/Qwen_Qwen2.5_Coder_1.5B_Instruct/smiles__tb1__ms900.json.
-[run] python -m synthesis.run_synthesis --task Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output. --dataset smiles --generation-model gpt-5.4 --generation-backend openai --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --max-iterations 10 --output-name metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900 --min-accuracy 0.0 --min-syntax-rate 0.0 --eval-sample-size 20 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --device auto --output-dir outputs/generated --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-/opt/anaconda/lib/python3.12/site-packages/requests/__init__.py:113: RequestsDependencyWarning: urllib3 (2.4.0) or chardet (7.4.3)/charset_normalizer (3.4.2) doesn't match a supported version!
-  warnings.warn(
-Initializing synthesis pipeline...
-Setting up evaluator for dataset: smiles
-  Generation model: gpt-5.4
-  Evaluation model: Qwen/Qwen2.5-Coder-1.5B-Instruct
-Generating initial strategy for: Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output.
-Helper policy: helper mask warm-up (0/4 evaluated attempts)
-
-============================================================
-Attempt 1/10
-============================================================
-Helper policy: helper mask warm-up (0/4 evaluated attempts)
-Strategy: // CSD_RATIONALE_BEGIN
-// This strategy tracks the visible output (`generated`), whether decoding is
-// currently inside a visible constrained span, and the active constrained SMILES
-// prefix (`currentConstrainedOut`). Outside a span it uses short unconstrained
-// chunk generation so the model can naturally emit ordinary wrapper text and the
-// visible opener `"<<"`; if that opener is observed, the strategy switches into
-// constrained mode without duplicating the delimiter.
-// Inside a span, the parser is the hard authority. The strategy chooses among
-// three constrained actions based on simple observations of the current SMILES
-// prefix: when the parser state is narrow it uses an adaptive hard-constrained
-// step with group preferences; when the branch factor is wider it uses a
-// bounded constrained-symbol step to accept the longest valid prefix from a
-// short LM chunk; and when the constrained prefix is getting repetitive it uses
-// a repetition-penalized hard-constrained step. If a repair situation is ever
-// needed, rollback shortens only the active constrained suffix back to a valid
-// prefix. This tracked state keeps the visible output synchronized with the
-// parser-valid SMILES prefix throughout generation.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span chunk branch, insideConstrainedOut stays
-//   false unless UnconstrainedChunk stops on the already-emitted opener `"<<"`;
-//   then EnterObservedConstrainedSpan sets currentConstrainedOut := [], which is
-//   valid by the method precondition parser.IsValidPrefix([]). In the close
-//   branch, CloseConstrainedSpan sets insideConstrainedOut to false, so the
-//   implication is vacuous afterward. In the rollback branch,
-//   RollbackConstrainedSuffix returns a repaired constrained prefix that is
-//   parser-valid, so keeping insideConstrainedOut == true preserves the
-//   invariant. In the one-token constrained branches, the helper returns EOS or
-//   a token preserving parser validity; on non-EOS we commit it with
-//   AppendConstrainedToken, which keeps currentConstrainedOut parser-valid. In
-//   the symbol branch, ConstrainedSymbolInGenerated returns a longest accepted
-//   parser-valid prefix, so assigning currentConstrainedOut := symbolOut
-//   preserves the invariant.
-// progress: In the outside-span chunk branch, steps increases by stepsUsed and
-//   UnconstrainedChunk appends at most that many visible tokens, so
-//   |generated| <= |generatedPrefix| + steps is preserved. In the close branch,
-//   CloseConstrainedSpan consumes one token-step and appends at most one visible
-//   delimiter, so steps := steps + 1 preserves the bound. In the rollback
-//   branch, generated may shrink, never grow, while steps increases by 1, so
-//   the bound is immediate. In the one-token constrained branches,
-//   ConstrainedStep / AdaptiveConstrainedStep / SafeRepetitionPenaltyStep each
-//   consume one token-step, and AppendConstrainedToken appends at most one
-//   visible token, so the bound is preserved. In the symbol branch,
-//   ConstrainedSymbolInGenerated consumes stepsUsed token-steps, possibly
-//   including EOS or rejected suffix tokens, while visible growth is at most
-//   stepsUsed because only the accepted valid prefix is committed; therefore
-//   |generated| <= |generatedPrefix| + steps remains true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 12;
-var rollbackLimit: nat := 64;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var chunkBudget: nat := maxSteps - steps;
-    var chunkGenerated, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
-      lm, prompt, generated, chunkBudget, "<<", eosToken
-    );
-    generated := chunkGenerated;
-    steps := steps + stepsUsed;
-    if stoppedOnEos {
-      break;
-    } else if stoppedOnOpenSpan {
-      var enteredGenerated, enteredInside, enteredCurrent := helpers.EnterObservedConstrainedSpan(lm, generated);
-      generated := enteredGenerated;
-      insideConstrainedOut := enteredInside;
-      currentConstrainedOut := enteredCurrent;
-    }
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-
-    if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenOccurrences(currentConstrainedOut, ")")
-       && |currentConstrainedOut| > 8 {
-      var nextRep := helpers.SafeRepetitionPenaltyStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, generated, 2.0, eosToken
-      );
-      steps := steps + 1;
-      if nextRep == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextRep
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else if validCount <= narrowThreshold {
-      var nextAdaptive := helpers.AdaptiveConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
-      );
-      steps := steps + 1;
-      if nextAdaptive == eosToken {
-        break;
-      } else {
-        var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextAdaptive
-        );
-        generated := appendedGenerated2;
-        insideConstrainedOut := appendedInside2;
-        currentConstrainedOut := appendedCurrent2;
-      }
-    } else {
-      var remaining: nat := maxSteps - steps;
-      var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-      var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-        lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-      );
-      generated := symbolGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := symbolOut;
-      steps := steps + symbolSteps;
-      if hitEos {
-        break;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✗ Verification failed
-  Error: GeneratedCSD.dfy(145,15): Error: expression is not allowed to invoke a method (CountTokenOccurrences)
-    |
-145 |     if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenOccurrences(currentConstrainedOut, ")")
-    |                ^^^^^^^^^^^^^^^^^^^^^
-
-GeneratedCSD.dfy(
-  Refining based on verification error...
-  Helper policy: helper mask warm-up (0/4 evaluated attempts)
-
-============================================================
-Attempt 2/10
-============================================================
-Helper policy: helper mask warm-up (0/4 evaluated attempts)
-Strategy: // CSD_RATIONALE_BEGIN
-// This revision keeps the prior strategy structure because the reported failure
-// was purely a Dafny expression-context issue, not a control-policy issue.
-// Outside a span, the strategy uses short unconstrained chunk generation so the
-// model can naturally emit wrapper text and the visible opener `"<<"`; if that
-// opener is observed, the strategy switches into constrained mode without
-// duplicating the delimiter.
-// Inside a span, the parser remains the hard authority. The strategy queries
-// the current SMILES prefix shape using helper methods bound to locals first,
-// then chooses among three constrained actions: a repetition-penalized
-// constrained step when open parentheses outnumber closes in a longer prefix,
-// an adaptive hard-constrained step when the parser state is narrow, and a
-// bounded constrained-symbol step otherwise. If the constrained suffix grows
-// too long before completion, rollback repairs only that suffix back to a valid
-// parser prefix. The key verification repair is that helper-returning methods
-// are called only in statement context and their results stored in locals before
-// conditions use them.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span chunk branch, insideConstrainedOut stays
-//   false unless UnconstrainedChunk stops on the already-emitted opener `"<<"`;
-//   then EnterObservedConstrainedSpan sets currentConstrainedOut := [], which is
-//   valid by the precondition parser.IsValidPrefix([]). In the close branch,
-//   CloseConstrainedSpan sets insideConstrainedOut to false, so the implication
-//   is vacuous afterward. In the rollback branch, RollbackConstrainedSuffix
-//   returns a repaired constrained prefix that is parser-valid, so keeping
-//   insideConstrainedOut == true preserves the invariant. In the one-token
-//   constrained branches, the chosen helper returns EOS or a token preserving
-//   parser validity; on non-EOS we commit it with AppendConstrainedToken, which
-//   keeps currentConstrainedOut parser-valid. In the symbol branch,
-//   ConstrainedSymbolInGenerated returns a longest accepted parser-valid prefix,
-//   so assigning currentConstrainedOut := symbolOut preserves the invariant.
-// progress: In the outside-span chunk branch, steps increases by stepsUsed and
-//   UnconstrainedChunk appends at most that many visible tokens, so
-//   |generated| <= |generatedPrefix| + steps is preserved. In the close branch,
-//   CloseConstrainedSpan consumes one token-step and appends at most one visible
-//   delimiter, so steps := steps + 1 preserves the bound. In the rollback
-//   branch, generated may shrink or stay the same while steps increases by 1,
-//   so the bound is immediate. In the one-token constrained branches,
-//   SafeRepetitionPenaltyStep and AdaptiveConstrainedStep each consume one
-//   token-step, and AppendConstrainedToken appends at most one visible token,
-//   so the bound is preserved. In the symbol branch,
-//   ConstrainedSymbolInGenerated consumes stepsUsed token-steps, possibly
-//   including EOS or rejected suffix tokens, while visible growth is at most
-//   stepsUsed because only the accepted valid prefix is committed; therefore
-//   |generated| <= |generatedPrefix| + steps remains true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 12;
-var rollbackLimit: nat := 64;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var chunkBudget: nat := maxSteps - steps;
-    var chunkGenerated, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
-      lm, prompt, generated, chunkBudget, "<<", eosToken
-    );
-    generated := chunkGenerated;
-    steps := steps + stepsUsed;
-    if stoppedOnEos {
-      break;
-    } else if stoppedOnOpenSpan {
-      var enteredGenerated, enteredInside, enteredCurrent := helpers.EnterObservedConstrainedSpan(lm, generated);
-      generated := enteredGenerated;
-      insideConstrainedOut := enteredInside;
-      currentConstrainedOut := enteredCurrent;
-    }
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-    var openParens := helpers.CountTokenOccurrences(currentConstrainedOut, "(");
-    var closeParens := helpers.CountTokenOccurrences(currentConstrainedOut, ")");
-    var useRepPenalty: bool := false;
-    if |currentConstrainedOut| > 8 {
-      if openParens > closeParens {
-        useRepPenalty := true;
-      }
-    }
-
-    if useRepPenalty {
-      var nextRep := helpers.SafeRepetitionPenaltyStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, generated, 2.0, eosToken
-      );
-      steps := steps + 1;
-      if nextRep == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextRep
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else if validCount <= narrowThreshold {
-      var nextAdaptive := helpers.AdaptiveConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
-      );
-      steps := steps + 1;
-      if nextAdaptive == eosToken {
-        break;
-      } else {
-        var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextAdaptive
-        );
-        generated := appendedGenerated2;
-        insideConstrainedOut := appendedInside2;
-        currentConstrainedOut := appendedCurrent2;
-      }
-    } else {
-      var remaining: nat := maxSteps - steps;
-      var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-      var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-        lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-      );
-      generated := symbolGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := symbolOut;
-      steps := steps + symbolSteps;
-      if hitEos {
-        break;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 1
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask warm-up (1/4 evaluated attempts)
-
-============================================================
-Attempt 3/10
-============================================================
-Helper policy: helper mask warm-up (1/4 evaluated attempts)
-Strategy: // CSD_RATIONALE_BEGIN
-// The measured failure source is answer non-production: the prior strategy
-// waited for the model to emit an opening delimiter naturally from the
-// unconstrained region, which can yield no visible constrained span at all.
-// This revision makes a structural change on that causal axis: if generation
-// starts outside a span, it immediately opens a visible constrained span with
-// OpenConstrainedSpan instead of relying on observed entry. That guarantees
-// constrained activity and a visible answer surface while preserving the useful
-// ingredients that were previously evidence-backed inside the span: symbol-level
-// progress in wider parser states, hard one-token control in narrow states,
-// immediate close on parser-complete prefixes, and rollback repair on long
-// active suffixes. For SMILES, the main additional preference change is to use
-// group-aware/adaptive constrained decoding as the default inside-span policy so
-// caller-supplied token groups can softly bias chemistry-like continuations
-// while the parser remains the hard authority.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span open branch, OpenConstrainedSpan sets
-//   currentConstrainedOut := [], which is parser-valid by the precondition
-//   parser.IsValidPrefix([]). In the close branch, CloseConstrainedSpan sets
-//   insideConstrainedOut to false, so the implication is vacuous afterward. In
-//   the rollback branch, RollbackConstrainedSuffix returns a repaired
-//   constrained prefix that is parser-valid, so keeping insideConstrainedOut
-//   true preserves the invariant. In the one-token constrained branches,
-//   ConfidenceGatedStep, GroupBoostedConstrainedStep, and
-//   SafeRepetitionPenaltyStep each return EOS or a token that preserves parser
-//   validity; on non-EOS we commit with AppendConstrainedToken, which keeps
-//   currentConstrainedOut parser-valid. In the symbol branch,
-//   ConstrainedSymbolInGenerated returns the longest accepted parser-valid
-//   prefix, so assigning currentConstrainedOut := symbolOut preserves the
-//   invariant.
-// progress: In the outside-span open branch, OpenConstrainedSpan consumes one
-//   token-step and appends one visible delimiter, so
-//   |generated| <= |generatedPrefix| + steps is preserved when steps := steps +
-//   1. In the close branch, CloseConstrainedSpan consumes one token-step and
-//   appends at most one visible delimiter. In the rollback branch, generated
-//   may shrink or stay the same while steps increases by 1, so the bound still
-//   holds. In the one-token constrained branches, each generation helper
-//   consumes one token-step, and AppendConstrainedToken appends at most one
-//   visible token, so the bound is preserved. In the symbol branch,
-//   ConstrainedSymbolInGenerated consumes stepsUsed token-steps, possibly
-//   including EOS or rejected suffix tokens, while visible growth is at most
-//   stepsUsed because only the accepted valid prefix is committed; therefore
-//   the output-length bound remains true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 10;
-var rollbackLimit: nat := 96;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-    var openParens := helpers.CountTokenOccurrences(currentConstrainedOut, "(");
-    var closeParens := helpers.CountTokenOccurrences(currentConstrainedOut, ")");
-    var useRepPenalty: bool := false;
-    if |currentConstrainedOut| > 8 && openParens > closeParens {
-      useRepPenalty := true;
-    }
-
-    if useRepPenalty {
-      var nextRep := helpers.SafeRepetitionPenaltyStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, generated, 2.0, eosToken
-      );
-      steps := steps + 1;
-      if nextRep == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextRep
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else if validCount <= 2 {
-      var nextConf, wasConstrained := helpers.ConfidenceGatedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-      );
-      steps := steps + 1;
-      if nextConf == eosToken {
-        break;
-      } else {
-        var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextConf
-        );
-        generated := appendedGenerated2;
-        insideConstrainedOut := appendedInside2;
-        currentConstrainedOut := appendedCurrent2;
-      }
-    } else if validCount <= narrowThreshold {
-      var nextGroup := helpers.GroupBoostedConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, eosToken
-      );
-      steps := steps + 1;
-      if nextGroup == eosToken {
-        break;
-      } else {
-        var appendedGenerated3, appendedInside3, appendedCurrent3 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextGroup
-        );
-        generated := appendedGenerated3;
-        insideConstrainedOut := appendedInside3;
-        currentConstrainedOut := appendedCurrent3;
-      }
-    } else {
-      var remaining: nat := maxSteps - steps;
-      var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-      var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-        lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-      );
-      generated := symbolGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := symbolOut;
-      steps := steps + symbolSteps;
-      if hitEos {
-        break;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085615_20fd8b
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 2
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask warm-up (2/4 evaluated attempts)
-
-============================================================
-Attempt 4/10
-============================================================
-Helper policy: helper mask warm-up (2/4 evaluated attempts)
-Strategy: // CSD_RATIONALE_BEGIN
-// The recent evaluations provide no evidence of any successful answer-production
-// path, and the previous two families differed only in how they entered the
-// constrained span. Because both remained at the same zero-result basin, this
-// revision changes a different causal axis: it removes dependence on long
-// symbol-chunk progress and instead uses a simple always-inside, token-by-token
-// constrained construction with immediate explicit opening when outside. That
-// makes the visible answer surface deterministic and keeps every interior step
-// under hard parser control, which is appropriate for SMILES syntax. To retain
-// some soft task bias without reintroducing brittle chunk behavior, the policy
-// uses adaptive/group-aware constrained steps in wider states, a repetition
-// penalty when ring/branch structure is already active, immediate close on
-// complete prefixes, and rollback repair only as a bounded safety valve.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span branch, OpenConstrainedSpan sets
-//   currentConstrainedOut := [], which is parser-valid by the precondition
-//   parser.IsValidPrefix([]). In the close branch, CloseConstrainedSpan sets
-//   insideConstrainedOut to false, so the implication becomes vacuous. In the
-//   rollback branch, RollbackConstrainedSuffix returns a repaired constrained
-//   prefix that is parser-valid, so keeping insideConstrainedOut true preserves
-//   the invariant. In each one-token inside branch,
-//   SafeRepetitionPenaltyStep, ConfidenceGatedStep, and AdaptiveConstrainedStep
-//   return either EOS or a token that preserves parser validity; on non-EOS we
-//   commit with AppendConstrainedToken, which keeps currentConstrainedOut valid.
-// progress: OpenConstrainedSpan consumes one token-step and appends one visible
-//   delimiter, so the bound is preserved when steps increases by 1. The close
-//   branch also consumes one token-step and appends at most one visible
-//   delimiter. The rollback branch may shrink generated while steps increases by
-//   1, so |generated| <= |generatedPrefix| + steps still holds. Each one-token
-//   constrained generation helper consumes exactly one token-step, and
-//   AppendConstrainedToken appends at most one visible token; if EOS is chosen,
-//   no visible token is appended, so the bound is preserved as well.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 12;
-var rollbackLimit: nat := 80;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-    var openParens := helpers.CountTokenOccurrences(currentConstrainedOut, "(");
-    var closeParens := helpers.CountTokenOccurrences(currentConstrainedOut, ")");
-    var ringDigits := helpers.CountTokenOccurrences(currentConstrainedOut, "1");
-    var useRepPenalty: bool := false;
-
-    if |currentConstrainedOut| > 6 && (openParens > closeParens || ringDigits > 1) {
-      useRepPenalty := true;
-    }
-
-    if useRepPenalty {
-      var nextRep := helpers.SafeRepetitionPenaltyStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, generated, 2.0, eosToken
-      );
-      steps := steps + 1;
-      if nextRep == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextRep
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else if validCount <= 2 {
-      var nextConf, wasConstrained := helpers.ConfidenceGatedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-      );
-      steps := steps + 1;
-      if nextConf == eosToken {
-        break;
-      } else {
-        var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextConf
-        );
-        generated := appendedGenerated2;
-        insideConstrainedOut := appendedInside2;
-        currentConstrainedOut := appendedCurrent2;
-      }
-    } else {
-      var nextAdaptive := helpers.AdaptiveConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
-      );
-      steps := steps + 1;
-      if nextAdaptive == eosToken {
-        break;
-      } else {
-        var appendedGenerated3, appendedInside3, appendedCurrent3 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextAdaptive
-        );
-        generated := appendedGenerated3;
-        insideConstrainedOut := appendedInside3;
-        currentConstrainedOut := appendedCurrent3;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085650_9f7dd3
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 3
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask warm-up (3/4 evaluated attempts)
-
-============================================================
-Attempt 5/10
-============================================================
-Helper policy: helper mask warm-up (3/4 evaluated attempts)
-Strategy: // CSD_RATIONALE_BEGIN
-// The evaluations still show an answer non-production basin, and two recent
-// explicit-open variants stayed there while differing only in inside-span token
-// policy. That suggests the main causal issue is not narrow-vs-adaptive token
-// choice, but the lack of a robust answer-production path that can both emit
-// visible content and naturally detect an already-produced opener. This revision
-// returns to the evidence-backed outside-chunk + observed-entry family, but
-// changes the inside-span axis in a substantive way: when the parser state is
-// wide, it uses symbol-level constrained progress; when the state is narrow, it
-// falls back to one-token hard control. This preserves the previously useful
-// ingredients of bounded free chunks outside constrained regions, observed span
-// entry, parser-complete close, and rollback repair, while restoring multi-token
-// inside progress instead of the repeated always-token-by-token family that did
-// not move metrics.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the outside-span chunk branch, insideConstrainedOut stays
-//   false unless UnconstrainedChunk reports that "<<" was already emitted; then
-//   EnterObservedConstrainedSpan sets currentConstrainedOut := [], which is
-//   parser-valid by the method precondition. In the close branch,
-//   CloseConstrainedSpan exits constrained mode, so the implication becomes
-//   vacuous. In the rollback branch, RollbackConstrainedSuffix returns a
-//   repaired constrained prefix that is parser-valid. In the narrow inside
-//   branch, AdaptiveConstrainedStep returns EOS or a parser-valid next token;
-//   on non-EOS, AppendConstrainedToken preserves validity. In the wide inside
-//   branch, ConstrainedSymbolInGenerated returns currentConstrainedOut that is
-//   parser-valid by helper contract.
-// progress: In the outside chunk branch, steps increases by stepsUsed and the
-//   helper appends at most that many visible tokens, so |generated| remains
-//   bounded by |generatedPrefix| + steps. In the close branch, one delimiter is
-//   appended and steps increases by 1. In the rollback branch, generated may
-//   shrink while steps still increases by 1, so the bound is preserved. In the
-//   narrow inside branch, AdaptiveConstrainedStep consumes one token-step and
-//   AppendConstrainedToken appends at most one visible token. In the wide
-//   symbol branch, steps increases by symbolSteps, while visible growth is at
-//   most the accepted prefix length and therefore at most the consumed token
-//   budget even if EOS or rejected suffix tokens were charged.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 10;
-var rollbackLimit: nat := 64;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var chunkBudget: nat := maxSteps - steps;
-    var chunkGenerated, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
-      lm, prompt, generated, chunkBudget, "<<", eosToken
-    );
-    generated := chunkGenerated;
-    steps := steps + stepsUsed;
-    if stoppedOnEos {
-      break;
-    } else if stoppedOnOpenSpan {
-      var enteredGenerated, enteredInside, enteredCurrent := helpers.EnterObservedConstrainedSpan(lm, generated);
-      generated := enteredGenerated;
-      insideConstrainedOut := enteredInside;
-      currentConstrainedOut := enteredCurrent;
-    }
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-
-    if validCount <= narrowThreshold {
-      var nextAdaptive := helpers.AdaptiveConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
-      );
-      steps := steps + 1;
-      if nextAdaptive == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextAdaptive
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else {
-      var remaining: nat := maxSteps - steps;
-      var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-      var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-        lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-      );
-      generated := symbolGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := symbolOut;
-      steps := steps + symbolSteps;
-      if hitEos {
-        break;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085715_896bc3
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 4
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-Attempt 6/10
-============================================================
-Helper policy: helper mask active (utility); no helpers disabled by utility yet
-Strategy: // CSD_RATIONALE_BEGIN
-// The measured failure source is answer non-production: multiple variants that
-// relied on outside free generation or on waiting for an observed opener all
-// stayed in the same zero-output basin. So this revision makes a structural
-// change on that causal axis: if we start outside a constrained span, we open
-// one immediately instead of depending on unconstrained text first. To avoid
-// merely repeating the earlier explicit-open family, the inside policy is also
-// changed to a simple token-level regime that prefers parser-valid candidates
-// directly: use TopValidCandidates in narrow states, use group-boosted hard
-// constrained decoding in wider states, close immediately on parser-complete
-// prefixes, and keep rollback repair as a safety valve for overlong unfinished
-// spans. This preserves the evidence-backed complete-close and rollback
-// mechanics while replacing the non-productive outside behavior with guaranteed
-// visible span entry.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
-//   insideConstrainedOut := true and currentConstrainedOut := [], which is
-//   parser-valid by the method precondition parser.IsValidPrefix([]). In the
-//   close branch, CloseConstrainedSpan exits constrained mode, so the
-//   implication becomes vacuous. In the rollback branch,
-//   RollbackConstrainedSuffix returns a repaired constrained prefix that is
-//   parser-valid. In the TopValidCandidates branch, we append only a non-EOS
-//   candidate returned from the helper, which is parser-valid next, so
-//   AppendConstrainedToken preserves validity. In the wider-state branch,
-//   GroupBoostedConstrainedStep returns EOS or a parser-valid next token; on
-//   non-EOS, AppendConstrainedToken preserves validity.
-// progress: The explicit-open branch consumes one token-step for the visible
-//   opener and appends one token, so |generated| stays within
-//   |generatedPrefix| + steps. The close branch also consumes one token-step
-//   and appends at most one visible delimiter. The rollback branch increments
-//   steps by 1 while generated may shrink, so the bound is preserved. The
-//   TopValidCandidates branch consumes one token-step and appends at most one
-//   visible token after selecting a non-EOS candidate. The group-boosted
-//   branch likewise consumes one token-step and appends at most one visible
-//   token, so each branch preserves |generated| <= |generatedPrefix| + steps.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 8;
-var rollbackLimit: nat := 64;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-
-    if validCount <= narrowThreshold {
-      var candidates := helpers.TopValidCandidates(
-        lm, parser, constrainedPrompt, currentConstrainedOut, 4, eosToken
-      );
-      var next := candidates[0];
-      if next == eosToken && |candidates| > 1 {
-        next := candidates[1];
-      }
-      steps := steps + 1;
-      if next == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, next
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else {
-      var nextWide := helpers.GroupBoostedConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, eosToken
-      );
-      steps := steps + 1;
-      if nextWide == eosToken {
-        break;
-      } else {
-        var appendedGenerated2, appendedInside2, appendedCurrent2 := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, nextWide
-        );
-        generated := appendedGenerated2;
-        insideConstrainedOut := appendedInside2;
-        currentConstrainedOut := appendedCurrent2;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085739_1990d3
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 5
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-Attempt 7/10
-============================================================
-Helper policy: helper mask active (utility); no helpers disabled by utility yet
-Strategy: // CSD_RATIONALE_BEGIN
-// The evaluation history provides no usable basin at all: every recent family,
-// including explicit-open, observed-open, symbol-chunk, and candidate-list
-// variants, remained in the same zero-information outcome band. That means
-// small inside-policy swaps are not evidence-backed. This revision therefore
-// makes a structural simplification while preserving only the two ingredients
-// with clear contract value: guaranteed visible span entry and immediate close
-// on parser-complete prefixes. Once inside, it uses a single robust hard-valid
-// policy throughout: bounded symbol-level constrained progress, with rollback
-// repair only if the active span grows too long without reaching completion.
-// This changes the causal axis from many per-token policy branches to a simpler
-// always-hard-valid symbol progression, reducing opportunities for stalled
-// branch logic while still guaranteeing parser-valid constrained state.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
-//   insideConstrainedOut := true and currentConstrainedOut := [], which is
-//   parser-valid by the precondition parser.IsValidPrefix([]). In the close
-//   branch, CloseConstrainedSpan exits constrained mode, so the implication is
-//   vacuous. In the rollback branch, RollbackConstrainedSuffix returns a
-//   repaired constrained prefix that is parser-valid. In the symbol-progress
-//   branch, ConstrainedSymbolInGenerated returns currentOut that is a valid
-//   parser prefix, so assigning it to currentConstrainedOut preserves the
-//   invariant.
-// progress: The explicit-open branch consumes one token-step for the visible
-//   opener and appends one token, so |generated| stays within
-//   |generatedPrefix| + steps. The close branch consumes one token-step and
-//   appends at most one visible delimiter. The rollback branch increments
-//   steps by 1 while generated may shrink, so the bound is preserved. The
-//   symbol-progress branch consumes stepsUsed token-steps; visible growth is at
-//   most the accepted valid prefix length, which is no more than stepsUsed, so
-//   |generated| <= |generatedPrefix| + steps remains true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var rollbackLimit: nat := 64;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var remaining: nat := maxSteps - steps;
-    var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-    var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-      lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-    );
-    generated := symbolGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := symbolOut;
-    steps := steps + symbolSteps;
-    if hitEos {
-      break;
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085759_02eaab
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 6
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-Attempt 8/10
-============================================================
-Helper policy: helper mask active (utility); no helpers disabled by utility yet
-Strategy: // CSD_RATIONALE_BEGIN
-// The evaluation history shows a total non-production plateau: both outside-first
-// and explicit-open families stayed in the same zero-information band, and the
-// run metadata reported no visible answer spans at all. Because delimiter
-// production itself appears to be the blocking causal axis, this revision makes
-// a stronger structural change: it always opens a constrained span immediately,
-// then stays entirely inside hard parser control until it can close. To avoid
-// repeating the prior always-symbol-chunk variant, the inside policy is now
-// mixed by parser state: use symbol-level progress only in wider states, but
-// switch to single-token hard-valid decoding in narrow states and add rollback
-// repair on dead-end pressure or long unfinished spans. This preserves the only
-// evidence-backed contract ingredients—guaranteed visible span entry, immediate
-// close on complete prefixes, and rollback repair—while changing the stalled
-// inside progression axis.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
-//   insideConstrainedOut := true and currentConstrainedOut := [], which is
-//   parser-valid by the precondition parser.IsValidPrefix([]). In the close
-//   branch, CloseConstrainedSpan exits constrained mode, so the implication is
-//   vacuous. In the rollback branch, RollbackConstrainedSuffix returns a
-//   repaired constrained prefix that is parser-valid. In the narrow token-step
-//   branch, ConstrainedStep returns EOS or a parser-valid next token; on the
-//   non-EOS path, AppendConstrainedToken preserves validity. In the wide
-//   symbol-progress branch, ConstrainedSymbolInGenerated returns currentOut that
-//   is a valid parser prefix, so assigning it preserves the invariant.
-// progress: The explicit-open branch consumes one token-step for the visible
-//   opener and appends one token, so |generated| stays within
-//   |generatedPrefix| + steps. The close branch consumes one token-step and
-//   appends at most one visible delimiter. The rollback branch increments steps
-//   by 1 while generated may shrink, so the bound is preserved. The narrow
-//   token-step branch consumes one token-step and appends at most one visible
-//   token. The wide symbol-progress branch consumes stepsUsed token-steps;
-//   visible growth is at most the accepted valid prefix length, which is no
-//   more than stepsUsed, so |generated| <= |generatedPrefix| + steps remains
-//   true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 10;
-var rollbackLimit: nat := 48;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrainedOut| >= rollbackLimit {
-    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-      parser, generated, currentConstrainedOut
-    );
-    generated := rolledGenerated;
-    insideConstrainedOut := true;
-    currentConstrainedOut := rolledCurrent;
-    steps := steps + 1;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-
-    if validCount <= narrowThreshold {
-      var next := helpers.ConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-      );
-      steps := steps + 1;
-      if next == eosToken {
-        break;
-      } else {
-        var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-          lm, parser, generated, currentConstrainedOut, next
-        );
-        generated := appendedGenerated;
-        insideConstrainedOut := appendedInside;
-        currentConstrainedOut := appendedCurrent;
-      }
-    } else {
-      var remaining: nat := maxSteps - steps;
-      var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-      var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-        lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-      );
-      generated := symbolGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := symbolOut;
-      steps := steps + symbolSteps;
-      if hitEos {
-        break;
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✗ Verification failed
-  Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
-    |
-113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrainedOut| >= rollbackLimit {
-    |                     ^^^^^^^^^^^^^^^^
-
-GeneratedCSD.dfy(113,36): Erro
-  Refining based on verification error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-Attempt 9/10
-============================================================
-Helper policy: helper mask active (utility); no helpers disabled by utility yet
-Strategy: // CSD_RATIONALE_BEGIN
-// The immediate failure source was purely verification-level: a helper method
-// was invoked directly inside a boolean expression. This repair keeps the same
-// evidence-backed control ingredients from the prior revision—guaranteed
-// explicit span entry, mixed inside decoding with symbol progress in wider
-// states, hard token control in narrow states, immediate close on complete
-// prefixes, and rollback repair—but rewrites the dead-end check into a
-// statement-bound local before branching. That is a surgical verification fix
-// rather than a behavioral reset, which preserves search continuity while
-// removing the Dafny-specific method-in-expression error.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
-//   insideConstrainedOut := true and currentConstrainedOut := [], which is
-//   parser-valid by the precondition parser.IsValidPrefix([]). In the close
-//   branch, CloseConstrainedSpan exits constrained mode, so the implication is
-//   vacuous. In the rollback branch, RollbackConstrainedSuffix returns a
-//   repaired constrained prefix that is parser-valid. In the narrow token-step
-//   branch, ConstrainedStep returns EOS or a parser-valid next token; on the
-//   non-EOS path, AppendConstrainedToken preserves validity. In the wide
-//   symbol-progress branch, ConstrainedSymbolInGenerated returns currentOut that
-//   is a valid parser prefix, so assigning it preserves the invariant.
-// progress: The explicit-open branch consumes one token-step for the visible
-//   opener and appends one token, so |generated| stays within
-//   |generatedPrefix| + steps. The close branch consumes one token-step and
-//   appends at most one visible delimiter. The rollback branch increments steps
-//   by 1 while generated may shrink, so the bound is preserved. The narrow
-//   token-step branch consumes one token-step and appends at most one visible
-//   token. The wide symbol-progress branch consumes stepsUsed token-steps;
-//   visible growth is at most the accepted valid prefix length, which is no
-//   more than stepsUsed, so |generated| <= |generatedPrefix| + steps remains
-//   true.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var narrowThreshold: nat := 10;
-var rollbackLimit: nat := 48;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else {
-    var deadEnd := helpers.DeadEndDetection(parser, currentConstrainedOut, 1);
-    if deadEnd || |currentConstrainedOut| >= rollbackLimit {
-      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
-        parser, generated, currentConstrainedOut
-      );
-      generated := rolledGenerated;
-      insideConstrainedOut := true;
-      currentConstrainedOut := rolledCurrent;
-      steps := steps + 1;
-    } else {
-      var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-      var constrainedPrompt := prompt + stablePrefix;
-      var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-
-      if validCount <= narrowThreshold {
-        var next := helpers.ConstrainedStep(
-          lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-        );
-        steps := steps + 1;
-        if next == eosToken {
-          break;
-        } else {
-          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-            lm, parser, generated, currentConstrainedOut, next
-          );
-          generated := appendedGenerated;
-          insideConstrainedOut := appendedInside;
-          currentConstrainedOut := appendedCurrent;
-        }
-      } else {
-        var remaining: nat := maxSteps - steps;
-        var symbolBudget: nat := if stepTokenBudget == 0 || stepTokenBudget > remaining then remaining else stepTokenBudget;
-        var symbolGenerated, symbolOut, hitEos, symbolSteps := helpers.ConstrainedSymbolInGenerated(
-          lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
-        );
-        generated := symbolGenerated;
-        insideConstrainedOut := true;
-        currentConstrainedOut := symbolOut;
-        steps := steps + symbolSteps;
-        if hitEos {
-          break;
-        }
-      }
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085836_319c53
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 8
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-Attempt 10/10
-============================================================
-Helper policy: helper mask active (utility); no helpers disabled by utility yet
-Strategy: // CSD_RATIONALE_BEGIN
-// The search is in a zero-information basin: both chunked-outside and explicit-
-// open families repeatedly produced no extracted outputs, so another small swap
-// inside the same symbol-chunk/rollback template is unlikely to move metrics.
-// This revision makes a causal structural change on the answer-production axis:
-// if we are outside, we immediately open a visible constrained span and then
-// stay inside until either the parser says the SMILES is complete or budget is
-// exhausted. Inside the span, generation is purely token-by-token with hard
-// parser control, but the token policy changes by stage: very early prefixes use
-// group-boosted constrained stepping to encourage chemically plausible starts,
-// narrower states use adaptive constrained stepping, and broader states use
-// confidence-gated stepping to let the LM keep momentum when already parser-
-// compatible. Immediate close on parser-complete prefixes is preserved because
-// it is a contract-safe ingredient with clear utility for producing a final
-// visible answer span.
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// parser_validity: In the explicit-open branch, OpenConstrainedSpan sets
-//   insideConstrainedOut := true and currentConstrainedOut := [], which is
-//   parser-valid by the precondition parser.IsValidPrefix([]). In the complete-
-//   prefix branch, CloseConstrainedSpan exits constrained mode, so the
-//   implication becomes vacuous. In each inside token-selection branch,
-//   GroupBoostedConstrainedStep, AdaptiveConstrainedStep, and
-//   ConfidenceGatedStep return EOS or a token whose extension preserves parser
-//   validity; on the non-EOS path, AppendConstrainedToken updates
-//   currentConstrainedOut to that valid extended prefix.
-// progress: The explicit-open branch consumes one token-step for the visible
-//   opener and appends one token, so |generated| remains within
-//   |generatedPrefix| + steps. The close branch consumes one token-step and
-//   appends at most one visible delimiter. Each inside token-selection branch
-//   consumes exactly one token-step; if EOS is returned, visible output does not
-//   grow, and if a non-EOS token is returned, AppendConstrainedToken appends at
-//   most one visible token. Therefore visible growth is always at most the
-//   token budget consumed in that branch, preserving
-//   |generated| <= |generatedPrefix| + steps.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-var steps: nat := 0;
-var earlyThreshold: nat := 2;
-var narrowThreshold: nat := 12;
-
-while steps < maxSteps
-  invariant 0 <= steps <= maxSteps
-  invariant lm.ValidTokensIdsLogits()
-  invariant !insideConstrainedOut ==> currentConstrainedOut == []
-  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-  invariant |generated| <= |generatedPrefix| + steps
-  decreases maxSteps - steps
-{
-  if !insideConstrainedOut {
-    var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
-    generated := openedGenerated;
-    insideConstrainedOut := openedInside;
-    currentConstrainedOut := openedCurrent;
-    steps := steps + 1;
-  } else if parser.IsCompletePrefix(currentConstrainedOut) {
-    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-      lm, parser, generated, currentConstrainedOut
-    );
-    generated := closedGenerated;
-    insideConstrainedOut := closedInside;
-    currentConstrainedOut := closedCurrent;
-    steps := steps + 1;
-    break;
-  } else {
-    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
-    var constrainedPrompt := prompt + stablePrefix;
-    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
-    var next := eosToken;
-
-    if |currentConstrainedOut| <= earlyThreshold {
-      next := helpers.GroupBoostedConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, eosToken
-      );
-    } else if validCount <= narrowThreshold {
-      next := helpers.AdaptiveConstrainedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
-      );
-    } else {
-      var nextCg, wasConstrained := helpers.ConfidenceGatedStep(
-        lm, parser, constrainedPrompt, currentConstrainedOut, eosToken
-      );
-      next := nextCg;
-    }
-
-    steps := steps + 1;
-    if next == eosToken {
-      break;
-    } else {
-      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-        lm, parser, generated, currentConstrainedOut, next
-      );
-      generated := appendedGenerated;
-      insideConstrainedOut := appendedInside;
-      currentConstrainedOut := appendedCurrent;
-    }
-  }
-}
-
-cost := steps;
-
-[1/4] Verifying with Dafny...
-  ✓ Verification passed
-
-[2/4] Compiling to Python...
-  ✓ Compiled to outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/python/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085900_cd298a
-
-[3/4] Skipping runtime smoke test (removed; eval catches the same failures).
-
-[4/4] Evaluating on dataset sample...
-  [synthesis] eval seed for this iteration: 9
-  ✗ Evaluation failed: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Evaluator runtime unloaded to free GPU memory
-  Refining based on evaluation error...
-  Helper policy: helper mask active (utility); no helpers disabled by utility yet
-
-============================================================
-FAILED after 10 attempts
-Total time: 284385.4ms
-============================================================
-Failure report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json
-Latest run link (failed) updated: outputs/generated/latest
-Synthesis failed after 10 attempt(s):
-
-Failure breakdown by stage:
-  - verification: 2
-  - evaluation: 8
-
-Individual attempt summaries:
-  Attempt 1: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(145,15): Error: expression is not allowed to invoke a method (CountTokenOccurrences)
-    |
-145 |     if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenO...
-  Attempt 2: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 3: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 4: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 5: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 6: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 7: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 8: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
-    |
-113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrain...
-  Attempt 9: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 10: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-
-Full report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json
-
-============================================================
-SYNTHESIS FAILED
-============================================================
-Synthesis failed after 10 attempt(s):
-
-Failure breakdown by stage:
-  - verification: 2
-  - evaluation: 8
-
-Individual attempt summaries:
-  Attempt 1: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(145,15): Error: expression is not allowed to invoke a method (CountTokenOccurrences)
-    |
-145 |     if helpers.CountTokenOccurrences(currentConstrainedOut, "(") > helpers.CountTokenO...
-  Attempt 2: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 3: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 4: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 5: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 6: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 7: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 8: ✗ Failed at verification
-    Error: GeneratedCSD.dfy(113,20): Error: expression is not allowed to invoke a method (DeadEndDetection)
-    |
-113 |   } else if helpers.DeadEndDetection(parser, currentConstrainedOut, 1) || |currentConstrain...
-  Attempt 9: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-  Attempt 10: ✗ Failed at evaluation
-    Error: SMILES evaluation requires RDKit but it is not available in this environment. Install RDKit before running smiles synthesis/evaluation.
-
-Full report saved to: outputs/generated/metadecode_smiles_Qwen_Qwen2.5_Coder_1.5B_Instruct_gpt5.4_iter10_tb1_ms900_20260511_085441_939c49/results/failure_report.json

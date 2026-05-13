@@ -65,16 +65,31 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
     return list(ds)
 
 
-def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
-
+def _gsm_question_text(example: dict[str, Any]) -> str:
     # Prefer symbolic `{placeholder}` text over instantiated HF `question` when both exist.
-    question = (
+    return (
         example.get("question_parsed")
         or example.get("original_question")
         or example.get("question", "")
     )
-    return reasoning_with_symbolic_expr_prompt(question)
+
+
+def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
+
+    return reasoning_with_symbolic_expr_prompt(_gsm_question_text(example))
+
+
+def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
+    """GSM prompt without CoT instructions (e.g. legacy IterGen grammar-masked generation)."""
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import symbolic_expression_only_prompt
+
+    return symbolic_expression_only_prompt(_gsm_question_text(example))
+
+
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
+    """Same instructions as ``format_prompt``: reasoning then ``<<expression>>``."""
+    return format_prompt(evaluator, example)
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:

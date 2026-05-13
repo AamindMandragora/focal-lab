@@ -1,7 +1,7 @@
 """
 Strategy generator for CSD synthesis.
 
-Supports HuggingFace, vLLM, and OpenAI-compatible chat APIs.
+Supports HuggingFace, vLLM, OpenAI Chat Completions, and Amazon Bedrock Converse.
 """
 
 import os
@@ -33,8 +33,8 @@ class StrategyGenerator:
     """
     Generates Dafny CSD strategies.
 
-    Supports local HuggingFace inference, local vLLM inference, or an
-    OpenAI-compatible API.
+    Supports local HuggingFace inference, local vLLM inference, OpenAI-hosted
+    models, or Amazon Bedrock Converse (e.g. Claude where configured).
     """
 
     # Default model - can be overridden
@@ -70,7 +70,7 @@ class StrategyGenerator:
         
         Args:
             model_name: HuggingFace model name (default: Qwen2.5-Coder-7B-Instruct)
-            backend: Inference backend ("huggingface", "vllm", or "openai")
+            backend: Inference backend ("huggingface", "vllm", "openai", or "bedrock")
             device: Device to run on ('cuda', 'mps', 'cpu', or None for auto)
             torch_dtype: Torch dtype for model (default: auto based on device)
             max_new_tokens: Maximum tokens to generate
@@ -83,8 +83,8 @@ class StrategyGenerator:
             vllm_gpu_memory_utilization: GPU memory fraction reserved by vLLM
             vllm_max_model_len: Max context length passed to vLLM
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
-            api_base_url: Optional base URL for an OpenAI-compatible API
-            api_key: Optional API key (falls back to environment)
+            api_base_url: Optional base URL override (OpenAI: OPENAI_BASE_URL; Bedrock: BEDROCK_BASE_URL)
+            api_key: Optional API key (OpenAI: OPENAI_API_KEY; Bedrock: AWS_BEARER_TOKEN_BEDROCK)
         """
         self.model_name = model_name or self.DEFAULT_MODEL
         self.backend = backend
@@ -135,13 +135,6 @@ class StrategyGenerator:
     def _default_api_base_url(backend: str) -> Optional[str]:
         if backend == "openai":
             return os.environ.get("OPENAI_BASE_URL")
-        if backend == "anthropic":
-            return os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1")
-        if backend == "gemini":
-            return os.environ.get(
-                "GEMINI_BASE_URL",
-                "https://generativelanguage.googleapis.com/v1beta",
-            )
         if backend == "bedrock":
             region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
             return os.environ.get(
@@ -154,10 +147,6 @@ class StrategyGenerator:
     def _default_api_key(backend: str) -> Optional[str]:
         if backend == "openai":
             return os.environ.get("OPENAI_API_KEY")
-        if backend == "anthropic":
-            return os.environ.get("ANTHROPIC_API_KEY")
-        if backend == "gemini":
-            return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if backend == "bedrock":
             return os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
         return None
@@ -248,15 +237,10 @@ class StrategyGenerator:
                 self._client = OpenAI(**client_kwargs)
             return
 
-        if self.backend in {"anthropic", "gemini", "bedrock"}:
+        if self.backend == "bedrock":
             if not self.api_key:
-                env_name = {
-                    "anthropic": "ANTHROPIC_API_KEY",
-                    "gemini": "GEMINI_API_KEY or GOOGLE_API_KEY",
-                    "bedrock": "AWS_BEARER_TOKEN_BEDROCK",
-                }[self.backend]
                 raise ValueError(
-                    f"{env_name} is required when --generation-backend={self.backend}"
+                    "AWS_BEARER_TOKEN_BEDROCK is required when --generation-backend=bedrock"
                 )
             return
 
@@ -376,16 +360,6 @@ class StrategyGenerator:
             self._log_prompt_io(system_prompt, user_prompt, output)
             return output
 
-        if self.backend == "anthropic":
-            output = self._generate_anthropic(messages)
-            self._log_prompt_io(system_prompt, user_prompt, output)
-            return output
-
-        if self.backend == "gemini":
-            output = self._generate_gemini(system_prompt, user_prompt)
-            self._log_prompt_io(system_prompt, user_prompt, output)
-            return output
-
         if self.backend == "bedrock":
             output = self._generate_bedrock(system_prompt, user_prompt)
             self._log_prompt_io(system_prompt, user_prompt, output)
@@ -454,55 +428,6 @@ class StrategyGenerator:
                 f"{self.backend} generation API returned HTTP {exc.code}: {error_body[:1000]}"
             ) from exc
         return json.loads(body)
-
-    def _generate_anthropic(self, messages: list[dict[str, str]]) -> str:
-        url = (self.api_base_url or "https://api.anthropic.com/v1").rstrip("/") + "/messages"
-        system_prompt = messages[0]["content"] if messages and messages[0]["role"] == "system" else ""
-        user_messages = [message for message in messages if message["role"] != "system"]
-        payload = {
-            "model": self.model_name,
-            "max_tokens": self.max_new_tokens,
-            "system": system_prompt,
-            "messages": user_messages,
-        }
-        if not self._anthropic_uses_fixed_sampling():
-            payload["temperature"] = self.temperature
-            payload["top_p"] = self.top_p
-        data = self._post_json(
-            url,
-            {
-                "x-api-key": self.api_key or "",
-                "anthropic-version": os.environ.get("ANTHROPIC_VERSION", "2023-06-01"),
-            },
-            payload,
-        )
-        parts = data.get("content") or []
-        text = "".join(part.get("text", "") for part in parts if part.get("type") == "text")
-        return text.strip()
-
-    def _anthropic_uses_fixed_sampling(self) -> bool:
-        return self.model_name.startswith("claude-opus-4-7")
-
-    def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
-        base_url = (self.api_base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
-        model = urllib.parse.quote(self.model_name, safe="")
-        key = urllib.parse.quote(self.api_key or "", safe="")
-        url = f"{base_url}/models/{model}:generateContent?key={key}"
-        payload = {
-            "systemInstruction": {"parts": [{"text": system_prompt}]},
-            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-            "generationConfig": {
-                "maxOutputTokens": self.max_new_tokens,
-                "temperature": self.temperature,
-                "topP": self.top_p,
-            },
-        }
-        data = self._post_json(url, {}, payload)
-        candidates = data.get("candidates") or []
-        if not candidates:
-            return ""
-        parts = candidates[0].get("content", {}).get("parts") or []
-        return "".join(part.get("text", "") for part in parts).strip()
 
     def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
         base_url = (self.api_base_url or self._default_api_base_url("bedrock") or "").rstrip("/")

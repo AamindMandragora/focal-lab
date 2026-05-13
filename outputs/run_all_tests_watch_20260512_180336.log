@@ -1,22 +1,0 @@
-[env] using conda environment: /apps/conda/advayth2/envs/advayth2
-=== run_all_tests matrix ===
-models: Qwen/Qwen2.5-Coder-1.5B-Instruct Qwen/Qwen2.5-Coder-7B-Instruct Qwen/Qwen2.5-Coder-14B-Instruct meta-llama/Llama-3.1-8B-Instruct
-benchmarks: gsm spider smiles
-strategies: unconstrained gcd crane itergen cars metadecode
-token budgets: 1 2 4
-step budgets (ablation): 256 512 1024
-synthesis iters (metadecode): 3 5 10
-generation models (metadecode): gpt5.4 opus4.7 gemini-pro
-eval max steps (main): 900
-
-=== Phase 1: Main experiment matrix ===
-[skip] outputs/baselines/unconstrained/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
-[skip] outputs/baselines/gcd/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
-[skip] outputs/baselines/crane/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json already exists (406 lines). Delete it to re-run.
-[run] python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy itergen --dataset gsm_symbolic --eval-model Qwen/Qwen2.5-Coder-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 900 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.8 --output-json outputs/baselines/itergen/Qwen_Qwen2.5_Coder_1.5B_Instruct/gsm_symbolic__tb1__ms900.json --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny
-Loaded 100 examples from CRANE folder /home/advayth2/projects/verified-agent-synthesis/legacy/CRANE/src/gsm_symbolic
-Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 4773.94it/s]
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.
-Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.
-Warning: Exact lookup not found for (LPAR, 1) in the DFA mask store. This could be an error.

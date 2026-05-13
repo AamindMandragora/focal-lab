@@ -28,6 +28,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.baseline_store import build_metrics_from_eval_samples
+from synthesis.evaluate.evaluator import Evaluator
+
 
 STRATEGY_DFY: dict[str, str] = {
     "unconstrained": "unconstrained.dfy",
@@ -87,8 +90,6 @@ def _evaluate(
     vllm_max_model_len: int | None,
     smiles_classes: str | None,
 ) -> dict[str, Any]:
-    from synthesis.evaluate.evaluator import Evaluator
-
     kwargs: dict[str, Any] = dict(
         dataset_name=dataset,
         model_name=eval_model,
@@ -110,17 +111,29 @@ def _evaluate(
     finally:
         evaluator.unload_runtime()
 
-    answers: list[dict[str, str]] = []
+    answers: list[dict[str, Any]] = []
     for sample in result.sample_outputs or []:
         question = str(sample.get("question", ""))
         generated = sample.get("actual")
         if generated is None:
             generated = sample.get("full_output", "")
-        answers.append({"question": question, "generated_answer": str(generated)})
+        row: dict[str, Any] = {"question": question, "generated_answer": str(generated)}
+        if sample.get("token_count") is not None:
+            row["num_tokens"] = int(sample["token_count"])
+        if sample.get("time_seconds") is not None:
+            row["generation_seconds"] = round(float(sample["time_seconds"]), 6)
+        answers.append(row)
+
+    metrics = build_metrics_from_eval_samples(
+        result.sample_outputs or [],
+        evaluator_total_time_seconds=result.total_time_seconds,
+        evaluator_max_sample_time_seconds=result.max_sample_time_seconds,
+    )
 
     return {
         "accuracy": float(result.accuracy),
         "syntax_rate": float(result.syntax_rate),
+        "metrics": metrics,
         "num_correct": result.num_correct,
         "num_examples": result.num_examples,
         "contains_delimiters": result.contains_delimiters,
