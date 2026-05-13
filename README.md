@@ -58,6 +58,8 @@ Fixed-strategy baselines use legacy codepaths:
 - `itergen`: `legacy/itergen`
 - `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
+Those three `legacy/*` trees are **gitignored** (large upstream copies); install them locally — see `legacy/README.md`.
+
 ## Quick Start
 
 1. Install Python dependencies.
