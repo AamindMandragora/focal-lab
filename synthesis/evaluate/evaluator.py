@@ -125,6 +125,7 @@ class EvaluationResult:
     early_stopped: bool = False
     early_stop_reason: Optional[str] = None
     planned_num_examples: Optional[int] = None
+    task_guidance: List[str] = field(default_factory=list)
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
     sample_outputs: List[Dict[str, Any]] = field(default_factory=list)
@@ -184,6 +185,10 @@ class EvaluationResult:
                 "  Invalid outputs excluded from accuracy denominator: "
                 f"{self.invalid_outputs_excluded_from_accuracy}"
             )
+        if self.task_guidance:
+            lines.extend(["", "Prompt guidance used by this attempt:"])
+            for guidance in self.task_guidance:
+                lines.append(f"  - {guidance}")
 
         smiles_trial = self.aux_metrics.get("smiles_paper_trial")
         if isinstance(smiles_trial, dict):
@@ -1941,6 +1946,11 @@ class Evaluator:
                         "total_examples": planned_num_examples,
                         "remaining_examples": max(0, planned_num_examples - evaluated_count),
                     }
+                task_guidance = sorted({
+                    sample.get("task_guidance")
+                    for sample in sample_outputs
+                    if sample.get("task_guidance")
+                })
                 return EvaluationResult(
                     success=True,
                     accuracy=num_correct / max(1, accuracy_denominator),
@@ -1958,6 +1968,7 @@ class Evaluator:
                     planned_num_examples=planned_num_examples,
                     error=early_stop_reason,
                     sample_outputs=sample_outputs,
+                    task_guidance=task_guidance,
                     aux_metrics=aux_metrics,
                 )
 
@@ -2122,6 +2133,7 @@ class Evaluator:
                             and gen_time > self.max_seconds_per_example
                         ),
                         "helper_trace": helper_trace,
+                        "task_guidance": getattr(env.get("lm"), "task_guidance", None),
                         "smiles_eval": benchmark_aux if self.dataset_name == "smiles" else None,
                     }
                     if self.dataset_name == "smiles":
@@ -2170,6 +2182,7 @@ class Evaluator:
                         ),
                         "error": str(e),
                         "helper_trace": [],
+                        "task_guidance": getattr(env.get("lm"), "task_guidance", None),
                     }
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
                     all_examples_contain_delimiters = False
@@ -2198,4 +2211,9 @@ class Evaluator:
                 total_time_seconds=time.time() - start_time,
                 error=str(e),
                 sample_outputs=sample_outputs,
+                task_guidance=sorted({
+                    sample.get("task_guidance")
+                    for sample in sample_outputs
+                    if sample.get("task_guidance")
+                }),
             )

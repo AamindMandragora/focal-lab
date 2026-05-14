@@ -97,6 +97,7 @@ outside `lm.Tokens`; safe helpers internally ignore non-vocabulary tokens.
 
 ### Helper methods
 ```
+helpers.AppendTaskGuidance(lm, guidance);
 var next := helpers.UnconstrainedStep(lm, prompt, generated);
 var generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);
 var generated, insideConstrainedOut, currentConstrainedOut := helpers.EnterObservedConstrainedSpan(lm, generated);
@@ -180,6 +181,20 @@ calls. LM-generated tokens count even if the token is EOS or later rejected from
 visible output. A delimiter token appended by a helper counts as one token-step.
 Bookkeeping, parser queries, token-set transforms, and logit edits do not
 consume token budget by themselves.
+
+### Task prompt guidance
+
+- `helpers.AppendTaskGuidance(lm, guidance)`
+  Role: append a CSD-chosen guidance block to the evaluator's existing task
+  prompt before generation begins.
+  Mechanics: forwards `guidance` to the runtime LM wrapper. The evaluator keeps
+  its normal prompt, examples, schema, question, and output contract; the
+  guidance is appended as an extra block. Runtime semantics are append-only and
+  first-call-wins for the current CSD invocation; empty guidance is ignored.
+  Cost: +0.
+  Control profile: prompt policy only; call only at the start of the CSD, after
+  output initialization and before the first LM generation helper. Do not use it
+  as a mid-generation control action.
 
 ### Outside-span generation
 
@@ -562,6 +577,80 @@ Use them as a palette of mechanisms: span entry, constrained progression,
 closing/termination, repair, chunking, and preference shaping. Adapt or combine
 only the parts whose control behavior matches the current task contract and
 measured failures; do not copy an example shape just because it verifies.
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Task-guidance-first CSD. The strategy appends a single evaluator prompt
+// guidance block before any LM generation helper, then proceeds with ordinary
+// delimiter-triggered decoding.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: AppendTaskGuidance does not change generated state or
+//   constrained-span state, so it preserves the initial implication. Outside
+//   the span, the implication remains vacuous unless "<<" is observed, which
+//   resets currentConstrainedOut to the valid empty prefix. CloseConstrainedSpan
+//   exits constrained mode, and ConstrainedStep plus AppendConstrainedToken
+//   preserves parser-valid currentConstrainedOut.
+// progress: AppendTaskGuidance costs 0 and appends no output, so the initial
+//   output-length bound is unchanged. Each later generation or delimiter helper
+//   consumes one token-step and appends at most one visible token.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+helpers.AppendTaskGuidance(lm, "Follow the task instructions exactly and preserve the required output format.");
+
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if next == "<<" {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
 
 ```dafny
 // CSD_RATIONALE_BEGIN

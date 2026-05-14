@@ -80,6 +80,8 @@ def run_crane_csd(
     lm.instruction_text = lm.tokenizer.apply_chat_template(
         chat_messages, tokenize=False, add_generation_prompt=True
     )
+    if hasattr(lm, "ResetTaskGuidance"):
+        lm.ResetTaskGuidance()
     start_time = time.time()
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
@@ -155,6 +157,9 @@ def run_crane_csd(
 
     constrained_segments: List[Tuple[str, bool]] = []
     helper_trace = list(trace_state.get("events", [])) if isinstance(trace_state, dict) else []
+    task_guidance = getattr(lm, "task_guidance", None)
+    if task_guidance:
+        helper_trace.append({"helper": "AppendTaskGuidance", "detail": task_guidance})
 
     final_chunk_tokens = [
         dafny_seq_to_str(final_current_constrained[i])

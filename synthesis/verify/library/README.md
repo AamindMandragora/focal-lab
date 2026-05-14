@@ -27,6 +27,9 @@ Types: **`Token`** is `string`; **`Prefix`** is `seq<Token>`; **`Id`** is `nat`;
 - **`MaskToken` / `MaskTokens` / `MaskTokensExcept`** — Set selected logits to the hard-mask sentinel so those tokens cannot be chosen.
 - **`IsMasked` / `HasUnmaskedToken`** — Query whether a token is masked or any vocabulary choice remains unmasked.
 - **`GenerateLogits`** — Recompute next-step logits from the given prefix (extern).
+- **`AppendTaskGuidance`** — Append a CSD-authored evaluator prompt guidance
+  block in the runtime wrapper; first non-empty call wins and the Dafny cost is
+  unchanged.
 - **`ChooseNextToken`** — Sample/argmax one **unmasked** token (extern).
 - **`ChooseNextTokenUnconstrained`** — Sample from the full vocabulary without respecting masks (extern).
 - **`GenerateUnconstrainedChunk`** — Emit up to `maxNewTokens` tokens without grammar masking, stopping on open-span or EOS (extern).
@@ -50,6 +53,9 @@ Instance field **`cost`** — Accumulated token-step budget; the constructor set
 
 **Unconstrained and chunking**
 
+- **`AppendTaskGuidance`** — Start-of-CSD prompt policy hook; appends guidance
+  before generation begins, keeps `cost` unchanged, and should not be used as a
+  mid-generation control action.
 - **`UnconstrainedStep`** — One full-vocabulary step: forward pass + `ChooseNextTokenUnconstrained`; increments `cost` by 1.
 - **`UnconstrainedChunk`** — One call that extends output with a short unconstrained continuation (EOS/open-span semantics per contract); increments `cost` by `stepsUsed`.
 

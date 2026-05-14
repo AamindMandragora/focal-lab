@@ -8,6 +8,8 @@
 
 - Prefer **small, reusable** utilities; avoid importing benchmark-specific modules from sibling folders in ways that create cycles.
 - Parser helpers must stay compatible with **DFA-mask** incremental parsing used elsewhere in evaluation.
+- Runtime LM prompt-guidance state should stay benchmark-agnostic and
+  first-call-wins so evaluation metrics remain interpretable.
 
 ## See also
 

@@ -15,6 +15,8 @@ This module evaluates synthesized CSD strategies on GSM-Symbolic style arithmeti
 - `prompts.py`: prompt formatting helpers.
 - `grammar.py`: grammar adaptation helpers for dynamic variable restrictions.
 - `generation.py`: benchmark generation wrappers used by evaluator.
+  Resets task-guidance state before each example and records accepted guidance
+  after the compiled CSD runs.
 - `environment.py`: runtime setup for compiled Dafny strategy execution.
 - `metrics.py`: GSM-oriented scoring and metrics utilities.
 
