@@ -34,6 +34,9 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 
 - The parser path depends on Syncode DFA-mask caching for practical performance.
 - Evaluation backends currently support runtime modes that provide token-level control (`huggingface`, `vllm`).
+- Runtime LM wrappers support `AppendTaskGuidance`: the first non-empty CSD
+  guidance block is appended to the evaluator prompt for that example, later
+  calls are ignored, and accepted guidance is surfaced in evaluation feedback.
 - Output artifacts from this stage are saved under per-run `results/` folders in `outputs/generated/`.
 - Baseline snapshots are JSON files in `outputs/baselines/` with:
   - `accuracy`, `syntax_rate`
