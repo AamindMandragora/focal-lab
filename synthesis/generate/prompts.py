@@ -70,6 +70,7 @@ You must output ONLY the Dafny method body for:
 - Assign `cost` before returning.
 - Do NOT redeclare out-parameters as locals.
 - Use the provided `helpers` instance (type `CSDHelpers`). Do NOT write `var helpers := new CSDHelpers();`.
+- Call static entries listed as `CSDHelpers.<Method>` with that qualifier.
 - Do NOT use `CSDHelpers.<Method>` for instance methods.
 
 ## API Guidance
@@ -129,14 +130,17 @@ var nextBoostRaw := helpers.BoostedConstrainedStep(lm, parser, prompt, currentCo
 var nextRep := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, penaltyAmount, eosToken);
 var nextTemp := helpers.TemperatureConstrainedStep(lm, parser, prompt, currentConstrained, temperature, eosToken);
 var rolloutGen, rolloutSteps, rolloutEos := helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, budget, penalties, penaltyAmount, eosToken);
+var freeGenerated := helpers.UnconstrainedGeneration(lm, prompt, maxSteps);
+var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken);
+var craneGenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken);
 var topTok := helpers.GetHighestLogitToken(lm);
 var logitOne := helpers.GetTokenLogit(lm, token);
 helpers.ScaleAllLogits(lm, scalar);
 helpers.BoostTokenLogits(lm, tokensInVocab, amount);
 helpers.PenalizeTokenLogits(lm, tokensInVocab, amount);
-var subCount := helpers.CountSubstring(text, sub);
-var s := helpers.PrefixToString(prefix);
-var between := helpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
+var subCount := CSDHelpers.CountSubstring(text, sub);
+var s := CSDHelpers.PrefixToString(prefix);
+var between := CSDHelpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
 var anyInGroup := helpers.GroupHasValidMember(parser, prefix, group);
 var rolledGen, rolledCurrent := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 ```
@@ -151,17 +155,18 @@ var narrow := helpers.DeadEndDetection(parser, currentConstrained, minValidCount
 var count := helpers.ValidTokenCount(parser, currentConstrained);
 var valid := helpers.IsTokenValidNext(parser, currentConstrained, token);
 var candidates := helpers.TopValidCandidates(lm, parser, prompt, currentConstrained, maxCandidates, eosToken);
-var rolled := helpers.RollbackToValidPrefix(parser, constrainedPrefix);
+var rolled := CSDHelpers.RollbackToValidPrefix(parser, constrainedPrefix);
 var generatedOut, currentOut := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 var generatedOut, currentOut := helpers.RollbackConstrainedSuffix(parser, generated, currentConstrained);
-var flat := helpers.FlattenTokenGroups(validTokenGroups);
-var groupIdx := helpers.GroupContaining(validTokenGroups, token);
+var flat := CSDHelpers.FlattenTokenGroups(validTokenGroups);
+var groupIdx := CSDHelpers.GroupContaining(validTokenGroups, token);
 var prevTok, foundPrev := helpers.LastTokenBefore(generated, ">>");
-var occ := helpers.CountTokenOccurrences(generated, tok);
-var since := helpers.TokensSinceLastOccurrence(generated, tok);
-var following := helpers.ExtractAfterKeyword(prefix, keyword);
-var intersection := helpers.IntersectTokenSets(a, b);
-var difference := helpers.SubtractTokenSets(a, b);
+var occ := CSDHelpers.CountTokenOccurrences(generated, tok);
+var occPrefix := CSDHelpers.OccurrencesInRange(generated, tok, hi);
+var since := CSDHelpers.TokensSinceLastOccurrence(generated, tok);
+var following := CSDHelpers.ExtractAfterKeyword(prefix, keyword);
+var intersection := CSDHelpers.IntersectTokenSets(a, b);
+var difference := CSDHelpers.SubtractTokenSets(a, b);
 ```
 
 ## Tool API Reference
@@ -192,6 +197,20 @@ consume token budget by themselves.
   `stoppedOnOpenSpan` is true, `generatedOut` already ends with `"<<"`.
   Cost: +`stepsUsed`; EOS counts in `stepsUsed` but is not appended.
   Control profile: free-LM continuation with delimiter observation.
+
+- `helpers.UnconstrainedGeneration(lm, prompt, maxSteps)`
+  Role: bounded free-LM generation helper.
+  Mechanics: returns exactly `maxSteps` tokens sampled without parser control.
+  Cost: +`maxSteps`.
+  Control profile: full free generation with no EOS special case.
+
+- `helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken)`
+  Role: CRANE-style baseline generation with free text outside constrained spans
+  and parser-aware decoding inside observed spans.
+  Mechanics: emits free tokens until constrained-span state is reached, then
+  uses confidence-gated parser control inside that span.
+  Cost: at most +`maxSteps`.
+  Control profile: free outer continuation plus parser fallback inside spans.
 
 - `helpers.OpenConstrainedSpan(lm, generated)`
   Role: explicit transition from free generation into constrained generation.
@@ -248,6 +267,12 @@ consume token budget by themselves.
   Cost: +`stepsUsed`, which may exceed visible output growth.
   Control profile: chunk-level LM continuation plus generated/current state
   reconstruction.
+
+- `helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken)`
+  Role: bounded parser-valid generation from an empty constrained prefix.
+  Mechanics: loops `ConstrainedStep` until parser completeness, EOS, or budget.
+  Cost: +`|generated|`, plus one additional step when terminated by EOS.
+  Control profile: full hard-parser generation.
 
 - `helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrained)`
   Role: exit a complete constrained span.
@@ -397,24 +422,29 @@ consume token budget by themselves.
   Control profile: parser repair by deletion.
 
 - `helpers.LastTokenBefore(generated, sep)` and
-  `helpers.ExtractAfterKeyword(prefix, keyword)`
+  `CSDHelpers.ExtractAfterKeyword(prefix, keyword)`
   Role: read lightweight context from existing generated tokens.
   Mechanics: scan token sequences and return matching context tokens; no LM
   call and no state change.
   Cost: +0.
   Control profile: context information only.
 
-- `helpers.CountTokenOccurrences(prefix, target)` (static)
+- `CSDHelpers.CountTokenOccurrences(prefix, target)` (static)
   Role: count how many times `target` appears as a token element of `prefix`.
   Cost: +0.
 
-- `helpers.TokensSinceLastOccurrence(prefix, target)` (static)
+- `CSDHelpers.OccurrencesInRange(prefix, target, hi)` (static function)
+  Role: count how many times `target` appears before index `hi`.
+  Contract: requires `hi <= |prefix|`.
+  Cost: +0.
+
+- `CSDHelpers.TokensSinceLastOccurrence(prefix, target)` (static)
   Role: distance in tokens from the end of `prefix` back to the last occurrence
   of `target`; returns `|prefix|` if `target` never occurs.
   Cost: +0.
 
-- `helpers.FlattenTokenGroups`, `helpers.GroupContaining`,
-  `helpers.IntersectTokenSets`, and `helpers.SubtractTokenSets`
+- `CSDHelpers.FlattenTokenGroups`, `CSDHelpers.GroupContaining`,
+  `CSDHelpers.IntersectTokenSets`, and `CSDHelpers.SubtractTokenSets`
   Role: transform token sets or groups.
   Mechanics: operate on sequences only; no LM call, parser query, output append,
   or state transition.
@@ -474,11 +504,11 @@ consume token budget by themselves.
   Mechanics: full-array read/write; pairing restores prior logits without changing `cost` by itself.
   Cost: +0 for snapshot ops alone.
 
-- `helpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
+- `CSDHelpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
   Role: count non-overlapping occurrences of `sub` in string `s`.
   Cost: +0.
 
-- `helpers.PrefixToString(prefix)` / `helpers.ExtractContentBetweenDelimiters(input, startDelim, endDelim)` (static)
+- `CSDHelpers.PrefixToString(prefix)` / `CSDHelpers.ExtractContentBetweenDelimiters(input, startDelim, endDelim)` (static)
   Role: stringify a token prefix or extract delimited substring content per contract.
   Cost: +0.
 
@@ -1247,7 +1277,7 @@ while steps < maxSteps
     steps := steps + 1;
   }} else {{
     // Update semantic context from accumulated span content
-    semanticContext := helpers.ExtractAfterKeyword(currentConstrainedOut, scopeKeyword);
+    semanticContext := CSDHelpers.ExtractAfterKeyword(currentConstrainedOut, scopeKeyword);
 
     var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
     var groups := validTokenGroups;

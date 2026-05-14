@@ -39,10 +39,10 @@ class StrategyGenerator:
 
     # Default model - can be overridden
     DEFAULT_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct"
-    
+
     # Path to the template file
     TEMPLATE_PATH = Path(__file__).parent.parent / "verify" / "library" / "GeneratedCSD.dfy"
-    
+
     # Marker in template to replace
     STRATEGY_MARKER = "// QWEN_INSERT_STRATEGY_HERE"
 
@@ -67,7 +67,7 @@ class StrategyGenerator:
     ):
         """
         Initialize the strategy generator.
-        
+
         Args:
             model_name: HuggingFace model name (default: Qwen2.5-Coder-7B-Instruct)
             backend: Inference backend ("huggingface", "vllm", "openai", or "bedrock")
@@ -100,7 +100,7 @@ class StrategyGenerator:
         self.vllm_enforce_eager = vllm_enforce_eager
         self.api_base_url = api_base_url or self._default_api_base_url(backend)
         self.api_key = api_key or self._default_api_key(backend)
-        
+
         # Auto-detect device
         if device is None:
             if torch.cuda.is_available():
@@ -110,7 +110,7 @@ class StrategyGenerator:
             else:
                 device = "cpu"
         self.device = device
-        
+
         # Auto-detect dtype
         if torch_dtype is None:
             if device == "cuda":
@@ -118,7 +118,7 @@ class StrategyGenerator:
             else:
                 torch_dtype = torch.float32
         self.torch_dtype = torch_dtype
-        
+
         # Lazy loading - model loaded on first use
         self._model = None
         self._tokenizer = None
@@ -184,7 +184,7 @@ class StrategyGenerator:
                 "quantization_config": quant_config,
             },
         }
-    
+
     def _load_template(self) -> str:
         """Load the GeneratedCSD.dfy template."""
         if not self.TEMPLATE_PATH.exists():
@@ -326,15 +326,15 @@ class StrategyGenerator:
                     print(f"Model loaded on {self.device} (CPU fallback)")
                 else:
                     raise
-    
+
     def _generate_text(self, system_prompt: str, user_prompt: str) -> str:
         """
         Generate text using Qwen.
-        
+
         Args:
             system_prompt: System message
             user_prompt: User message
-            
+
         Returns:
             Generated text
         """
@@ -413,20 +413,35 @@ class StrategyGenerator:
         return output
 
     def _post_json(self, url: str, headers: dict[str, str], payload: dict) -> dict:
-        request = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", **headers},
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=300) as response:
-                body = response.read().decode("utf-8")
-        except urllib.error.HTTPError as exc:
-            error_body = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(
-                f"{self.backend} generation API returned HTTP {exc.code}: {error_body[:1000]}"
-            ) from exc
+        max_retries = int(os.environ.get("CSD_API_MAX_RETRIES", "5"))
+        retry_base_seconds = float(os.environ.get("CSD_API_RETRY_BASE_SECONDS", "20"))
+        retryable_statuses = {408, 409, 429, 500, 502, 503, 504, 529}
+        for attempt in range(max_retries + 1):
+            request = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", **headers},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=300) as response:
+                    body = response.read().decode("utf-8")
+                break
+            except urllib.error.HTTPError as exc:
+                error_body = exc.read().decode("utf-8", errors="replace")
+                if exc.code in retryable_statuses and attempt < max_retries:
+                    sleep_seconds = retry_base_seconds * (2 ** attempt)
+                    print(
+                        f"[api-retry] {self.backend} HTTP {exc.code}; "
+                        f"retry {attempt + 1}/{max_retries} after {sleep_seconds:.1f}s: "
+                        f"{error_body[:300]}",
+                        flush=True,
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+                raise RuntimeError(
+                    f"{self.backend} generation API returned HTTP {exc.code}: {error_body[:1000]}"
+                ) from exc
         return json.loads(body)
 
     def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
@@ -478,16 +493,16 @@ class StrategyGenerator:
         }
         with (path / "prompt_io.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
-    
+
     def _extract_strategy(self, raw_output: str) -> str:
         """
         Extract the strategy expression from Qwen's output.
-        
+
         Handles cases where Qwen includes extra text, code blocks, etc.
-        
+
         Args:
             raw_output: Raw text from Qwen
-            
+
         Returns:
             Cleaned strategy expression
         """
@@ -503,7 +518,7 @@ class StrategyGenerator:
             match = re.search(truncated_pattern, raw_output.strip())
             if match:
                 raw_output = match.group(1)
-        
+
         # Remove leading/trailing whitespace
         strategy = raw_output.strip()
 
@@ -511,7 +526,7 @@ class StrategyGenerator:
         # Replace `++` when it is used like an operator (surrounded by optional whitespace).
         # This avoids touching tokens like "C++" inside words.
         strategy = re.sub(r"\s*\+\+\s*", " + ", strategy)
-        
+
         # If it looks like a full function/method definition, extract just the body.
         # We match the *final* '}' so nested braces inside the body are preserved.
         lowered = strategy.lower()
@@ -527,7 +542,7 @@ class StrategyGenerator:
             last_char = strategy.rstrip()[-1]
             if last_char not in {";", "}"}:
                 strategy = strategy.rstrip() + ";"
-        
+
         return strategy
 
     def _ensure_rationale_block(
@@ -586,7 +601,7 @@ class StrategyGenerator:
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
         return self._ensure_rationale_block(strategy, allowed_helpers=allowed_helpers)
-    
+
     def refine_after_verification_error(
         self,
         previous_strategy: str,
@@ -600,11 +615,11 @@ class StrategyGenerator:
     ) -> str:
         """
         Generate a refined strategy after verification failure.
-        
+
         Args:
             previous_strategy: The strategy that failed
             error_message: Dafny verification error
-            
+
         Returns:
             New strategy expression
         """
@@ -627,7 +642,7 @@ class StrategyGenerator:
             search_memory=search_memory,
             allowed_helpers=allowed_helpers,
         )
-    
+
     def refine_after_runtime_error(
         self,
         previous_strategy: str,
@@ -637,11 +652,11 @@ class StrategyGenerator:
     ) -> str:
         """
         Generate a refined strategy after runtime failure.
-        
+
         Args:
             previous_strategy: The strategy that failed
             error_traceback: Python traceback
-            
+
         Returns:
             New strategy expression
         """
@@ -660,7 +675,7 @@ class StrategyGenerator:
             search_memory=search_memory,
             allowed_helpers=allowed_helpers,
         )
-    
+
     def refine_after_compilation_error(
         self,
         previous_strategy: str,
@@ -670,11 +685,11 @@ class StrategyGenerator:
     ) -> str:
         """
         Generate a refined strategy after compilation failure.
-        
+
         Args:
             previous_strategy: The strategy that failed
             error_message: Dafny compilation error
-            
+
         Returns:
             New strategy expression
         """
@@ -747,7 +762,7 @@ class StrategyGenerator:
             Complete Dafny source code
         """
         return self._template.replace(self.STRATEGY_MARKER, strategy)
-    
+
     def get_template(self) -> str:
         """Get the raw template content."""
         return self._template

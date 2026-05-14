@@ -34,30 +34,26 @@ def build_dynamic_grammar(base_grammar: str, variables: List[str]) -> str:
         '... VARIABLE: "x" | "y" ...'
     """
     if not variables:
-        # Fallback if no variables found (shouldn't happen in valid GSM)
         return base_grammar
 
-    # Sort by length descending to ensure longer vars match first (e.g. n10 before n1)
     sorted_vars = sorted(variables, key=len, reverse=True)
     var_rule_body = " | ".join(f'"{v}"' for v in sorted_vars)
-    
-    result = base_grammar
-    
-    # Replace VARIABLE rule
     new_var_rule = f'VARIABLE: {var_rule_body}'
+
+    result = base_grammar
+
+    # Replace explicit VARIABLE rule (e.g. VARIABLE: /regex/)
     pattern_var = r'^VARIABLE:.*$'
     if re.search(pattern_var, result, re.MULTILINE):
         result = re.sub(pattern_var, new_var_rule, result, flags=re.MULTILINE)
     else:
-        result = result + "\n" + new_var_rule
-    
-    # Replace VAR_LETTERS rule - must also only allow the specific variables
-    # This prevents arbitrary letter sequences from being accepted
-    new_var_letters_rule = f'VAR_LETTERS: {var_rule_body}'
-    pattern_var_letters = r'^VAR_LETTERS:.*$'
-    if re.search(pattern_var_letters, result, re.MULTILINE):
-        result = re.sub(pattern_var_letters, new_var_letters_rule, result, flags=re.MULTILINE)
-    
+        # Replace %import common.CNAME -> VARIABLE with an explicit rule
+        import_pattern = r'^%import\s+common\.CNAME\s*->\s*VARIABLE\s*$'
+        if re.search(import_pattern, result, re.MULTILINE):
+            result = re.sub(import_pattern, new_var_rule, result, flags=re.MULTILINE)
+        else:
+            result = result + "\n" + new_var_rule
+
     return result
 
 
