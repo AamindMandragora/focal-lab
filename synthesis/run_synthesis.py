@@ -43,7 +43,7 @@ Examples:
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
     )
-    
+
     parser.add_argument(
         "--task", "-t",
         type=str,
@@ -57,7 +57,7 @@ Examples:
         default=5,
         help="Maximum refinement iterations (default: 5)"
     )
-    
+
     parser.add_argument(
         "--generation-model",
         type=str,
@@ -103,14 +103,14 @@ Examples:
         default="vllm",
         help="Backend for evaluation runtime (default: vllm; openai is unsupported for constrained runtime)."
     )
-    
+
     parser.add_argument(
         "--output-name", "-o",
         type=str,
         default="generated_csd",
         help="Name for the output module (default: generated_csd)"
     )
-    
+
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -124,21 +124,35 @@ Examples:
         default=None,
         help="Directory for baseline benchmark summaries (default: outputs/baselines/)"
     )
-    
+
+    parser.add_argument(
+        "--initial-strategy-file",
+        type=Path,
+        default=None,
+        help="Optional strategy body to use as the first attempt instead of asking the generation model for a fresh initial strategy.",
+    )
+
+    parser.add_argument(
+        "--initial-attempt-offset",
+        type=int,
+        default=0,
+        help="Attempt number offset for recovery runs seeded from an earlier synthesis attempt.",
+    )
+
     parser.add_argument(
         "--dafny-path",
         type=str,
         default=default_dafny_path(),
         help="Path to Dafny executable"
     )
-    
+
     parser.add_argument(
         "--temperature",
         type=float,
         default=0.7,
         help="Sampling temperature for Qwen (default: 0.7)"
     )
-    
+
     parser.add_argument(
         "--synthesis-max-tokens",
         "--max-tokens",
@@ -147,13 +161,13 @@ Examples:
         default=2048,
         help="Maximum tokens for CSD synthesis generation per attempt (default: 2048)"
     )
-    
+
     parser.add_argument(
         "--no-save-reports",
         action="store_true",
         help="Don't save failure/success reports to disk"
     )
-    
+
     parser.add_argument(
         "--device",
         type=str,
@@ -161,7 +175,7 @@ Examples:
         default="auto",
         help="Device for model inference (default: auto)"
     )
-    
+
     # Evaluation arguments (required - evaluation is part of the synthesis loop)
     parser.add_argument(
         "--dataset", "-d",
@@ -589,14 +603,21 @@ Examples:
         max_local_edit_ratio=args.max_local_edit_ratio,
         beam_verify_candidates=args.beam_verify_candidates,
     )
-    
+
+    initial_strategy_code = None
+    if args.initial_strategy_file:
+        initial_strategy_code = args.initial_strategy_file.read_text()
+        print(f"Loaded initial strategy seed from: {args.initial_strategy_file}")
+
     # Run synthesis
     try:
         result = pipeline.synthesize(
             task_description=args.task,
             output_name=args.output_name,
+            initial_strategy_code=initial_strategy_code,
+            initial_attempt_offset=args.initial_attempt_offset,
         )
-        
+
         print("\n" + "=" * 60)
         print("SYNTHESIS COMPLETE")
         print("=" * 60)
@@ -609,19 +630,19 @@ Examples:
         print(f"Total time: {result.total_time_ms:.1f}ms")
 
         sys.exit(0)
-        
+
     except SynthesisExhaustionError as e:
         print("\n" + "=" * 60)
         print("SYNTHESIS FAILED")
         print("=" * 60)
         print(e.get_failure_summary())
-        
+
         sys.exit(1)
-        
+
     except KeyboardInterrupt:
         print("\n\nSynthesis interrupted by user")
         sys.exit(130)
-        
+
     except Exception as e:
         print(f"\nUnexpected error: {e}")
         import traceback

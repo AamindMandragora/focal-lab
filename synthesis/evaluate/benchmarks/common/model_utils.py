@@ -637,6 +637,18 @@ def create_huggingface_lm(
         model = AutoModelForCausalLM.from_pretrained(**kwargs)
         input_device = get_model_input_device(model)
         print(f"Model loaded across {torch.cuda.device_count()} GPU(s), inputs go to {input_device}")
+    elif device == "mps" and torch.backends.mps.is_available():
+        # Apple Silicon path: FP16 on Metal. bitsandbytes is unsupported on MPS,
+        # so load_in_4bit/load_in_8bit flags are ignored if requested here.
+        if load_in_4bit or load_in_8bit:
+            print("⚠️  4/8-bit quantization is not supported on MPS — loading FP16 instead.")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            trust_remote_code=True,
+            torch_dtype=torch.float16,
+        )
+        model = model.to("mps")
+        input_device = torch.device("mps")
     else:
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
