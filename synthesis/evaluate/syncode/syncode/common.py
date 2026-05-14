@@ -62,10 +62,22 @@ def load_model(model_name, device, quantize):
         elif model_name == 'test-instruct':
             model = AutoModelForCausalLM.from_pretrained("rahuldshetty/tiny-starcoder-instruct")
         else:
-            if (quantize):
-                model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16, cache_dir=HF_CACHE, token=HF_ACCESS_TOKEN, trust_remote_code=True).eval().to(device)
+            dm = os.environ.get("CRANE_DEVICE_MAP")
+            common_kw = dict(cache_dir=HF_CACHE, token=HF_ACCESS_TOKEN, trust_remote_code=True)
+            if dm:
+                common_kw["device_map"] = dm
+                torch_dtype = torch.bfloat16 if quantize else torch.float16
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name, torch_dtype=torch_dtype, **common_kw
+                ).eval()
+            elif quantize:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name, torch_dtype=torch.bfloat16, **common_kw
+                ).eval().to(device)
             else:
-                model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=HF_CACHE, token=HF_ACCESS_TOKEN, trust_remote_code=True).eval().to(device)
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name, **common_kw
+                ).eval().to(device)
         return model
 
 def load_tokenizer(model_name):
