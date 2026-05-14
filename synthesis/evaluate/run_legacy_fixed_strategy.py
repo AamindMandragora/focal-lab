@@ -92,7 +92,7 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
     profile:
       - ``expression_only``: one delimited answer; used by IterGen and GCD.
       - ``chain_of_thought``: explicit reasoning then answer; used by CRANE adaptive SMILES.
-      - ``evaluator_default``: ``logic.format_prompt`` (optional Spider reasoning; historical CARS).
+      - ``evaluator_default``: ``logic.format_prompt`` (optional Spider reasoning for unconstrained paths).
     """
     if profile == "evaluator_default":
         return logic.format_prompt(evaluator, example)
@@ -104,6 +104,64 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
             return cot(evaluator, example)
         return logic.format_prompt(evaluator, example)
     raise ValueError(f"Unknown legacy prompt profile: {profile}")
+
+
+def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, Any]]) -> str:
+    """Tighten ``gsm.lark`` from a batch (allowed vars / numeric-only), matching GCD semantics.
+
+    Returns grammar text still using ``syncode: \"<<\" start \">>\"`` (full delimited span).
+    """
+    from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
+        build_dynamic_grammar,
+        build_numeric_only_grammar,
+        extract_variables_from_mapping,
+    )
+
+    base_gsm_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+    variable_names: set[str] = set()
+    for ex in examples:
+        vt = ex.get("variable_types") or {}
+        if isinstance(vt, dict):
+            variable_names.update(extract_variables_from_mapping(vt))
+    gsm_allowed_variables = sorted(variable_names)
+    if gsm_allowed_variables:
+        return build_dynamic_grammar(base_gsm_grammar, gsm_allowed_variables)
+    return build_numeric_only_grammar(base_gsm_grammar)
+
+
+def _gsm_symbolic_completion_to_delimited(
+    completion: str,
+    example: dict[str, Any],
+    eval_runtime: Any,
+    logic: Any,
+) -> str:
+    """Normalize raw GSM completion (prompt already ends with ``<<``) to ``<<expr>>`` for scoring.
+
+    Matches GCD's ``_gcd_output`` so IterGen and Syncode GSM baselines use the same delimited form
+    and syntax checks as ``benchmarks/gsm_symbolic/eval_logic.py`` extraction.
+    """
+    expr = completion.strip().splitlines()[0].strip()
+    if expr.startswith("<<"):
+        wrapped = expr if ">>" in expr else f"{expr}>>"
+        expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
+        expr = expr[-1] if expr else ""
+    if expr.endswith(">>"):
+        expr = expr[:-2].strip()
+    if not expr:
+        return ""
+
+    for end in range(len(expr), 0, -1):
+        candidate = expr[:end].strip()
+        if not candidate:
+            continue
+        wrapped = f"<<{candidate}>>"
+        all_valid, segments = eval_runtime._check_syntax_validity(
+            wrapped,
+            example=example,
+        )
+        if logic.example_syntax_pass(all_valid, segments, False, None):
+            return wrapped
+    return f"<<{expr}>>"
 
 
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
@@ -127,7 +185,9 @@ def _crane_grammar_name(dataset: str) -> str:
         return "gsm"
     if dataset == "spider":
         return "sql"
-    raise ValueError(f"CRANE adapter currently supports gsm_symbolic/spider, got {dataset}")
+    if dataset == "smiles":
+        return "text"
+    raise ValueError(f"CRANE adapter supports gsm_symbolic/spider/smiles, got {dataset}")
 
 
 def _mode_for_strategy(strategy: str) -> tuple[str, bool]:
@@ -401,16 +461,6 @@ def _cars_add_import_paths(cars_root_dir: Path) -> None:
         sys.path.insert(0, candidate_str)
 
 
-def _cars_grammar_for_example(repo_root: Path, dataset: str, example: dict[str, Any]) -> str:
-    if dataset == "gsm_symbolic":
-        return (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
-    if dataset == "spider":
-        return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
-    if dataset == "smiles":
-        return str(example.get("grammar_text", ""))
-    raise ValueError(f"Unsupported dataset for CARS adapter: {dataset}")
-
-
 def _cars_tokens_to_text(tokens: list[Any]) -> str:
     eos_markers = {"<|eot_id|>", "<|im_end|>", "<|endoftext|>"}
     text_tokens: list[str] = []
@@ -513,15 +563,29 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     max_attempts = max(20, min(2000, int(args.eval_max_steps) * 2))
     max_new_tokens = max(32, int(args.eval_max_steps))
 
+    gsm_cars_grammar = ""
+    if dataset == "gsm_symbolic":
+        gsm_cars_grammar = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
+    spider_cars_grammar = ""
+    if dataset == "spider":
+        spider_cars_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+
     for example in examples:
-        grammar_text = _cars_grammar_for_example(repo_root, dataset, example)
+        if dataset == "gsm_symbolic":
+            grammar_text = gsm_cars_grammar
+        elif dataset == "spider":
+            grammar_text = spider_cars_grammar
+        elif dataset == "smiles":
+            grammar_text = str(example.get("grammar_text", ""))
+        else:
+            raise ValueError(f"Unsupported dataset for CARS adapter: {dataset}")
         _cars_set_cached_grammar(cars_model, grammar_text, grammar_cache)
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = logic.format_prompt(eval_runtime, example)
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
         output_text = _cars_generate_text(
             cars_model,
@@ -603,25 +667,9 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     examples = logic.load_dataset_sample(eval_runtime)
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
-    base_gsm_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
-    gsm_allowed_variables: list[str] = []
+    base_gsm_grammar = ""
     if dataset == "gsm_symbolic":
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
-            build_dynamic_grammar,
-            build_numeric_only_grammar,
-            extract_variables_from_mapping,
-        )
-
-        variable_names: set[str] = set()
-        for ex in examples:
-            vt = ex.get("variable_types") or {}
-            if isinstance(vt, dict):
-                variable_names.update(extract_variables_from_mapping(vt))
-        gsm_allowed_variables = sorted(variable_names)
-        if gsm_allowed_variables:
-            base_gsm_grammar = build_dynamic_grammar(base_gsm_grammar, gsm_allowed_variables)
-        else:
-            base_gsm_grammar = build_numeric_only_grammar(base_gsm_grammar)
+        base_gsm_grammar = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         # The prompt already ends with "<<"; constrain the expression body plus closing marker.
         base_gsm_grammar = base_gsm_grammar.replace(
             'syncode: "<<" start ">>"',
@@ -653,28 +701,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     def _gcd_output(completion: str, example: dict[str, Any]) -> str:
         if dataset != "gsm_symbolic":
             return completion
-        expr = completion.strip().splitlines()[0].strip()
-        if expr.startswith("<<"):
-            wrapped = expr if ">>" in expr else f"{expr}>>"
-            expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
-            expr = expr[-1] if expr else ""
-        if expr.endswith(">>"):
-            expr = expr[:-2].strip()
-        if not expr:
-            return ""
-
-        for end in range(len(expr), 0, -1):
-            candidate = expr[:end].strip()
-            if not candidate:
-                continue
-            wrapped = f"<<{candidate}>>"
-            all_valid, segments = eval_runtime._check_syntax_validity(
-                wrapped,
-                example=example,
-            )
-            if logic.example_syntax_pass(all_valid, segments, False, None):
-                return wrapped
-        return f"<<{expr}>>"
+        return _gsm_symbolic_completion_to_delimited(completion, example, eval_runtime, logic)
 
     syncode_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
@@ -765,7 +792,7 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
 
 def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
     prev_recursion = sys.getrecursionlimit()
-    sys.setrecursionlimit(max(prev_recursion, 50_000))
+    sys.setrecursionlimit(max(prev_recursion, 100_000))
     try:
         return _run_itergen_legacy_adapter_inner(args)
     finally:
@@ -802,9 +829,32 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
 
+    base_gsm_grammar_text = ""
+    if dataset == "gsm_symbolic":
+        base_gsm_grammar_text = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
+        # GCD alignment: constrain body after the prompt's ``<<`` through closing ``>>``.
+        base_gsm_grammar_text = base_gsm_grammar_text.replace(
+            'syncode: "<<" start ">>"',
+            'syncode: start ">>"',
+            1,
+        )
+
+    def _itergen_max_new_tokens() -> int:
+        """Match GCD caps so the incremental parser stack cannot grow with eval_max_steps."""
+        ms = int(args.eval_max_steps)
+        if dataset == "gsm_symbolic":
+            return min(96, max(32, ms))
+        if dataset == "smiles":
+            return min(256, max(64, ms))
+        if dataset == "spider":
+            return min(512, max(64, ms))
+        return max(32, ms)
+
+    _new_tok = _itergen_max_new_tokens()
+
     def _grammar_for_example(example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
-            return (repo_root / "synthesis" / "evaluate" / "grammars" / "gsm.lark").read_text()
+            return base_gsm_grammar_text
         if dataset == "spider":
             return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
         if dataset == "smiles":
@@ -819,17 +869,21 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         grammar_text = _grammar_for_example(example)
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in itergen_cache:
+            # Session ceiling must cover prompt + capped decode (``_new_tok``), not ``eval_max_steps`` alone.
+            _session_ceiling = min(16384, max(2048, _new_tok + 4096))
+            # Do not use ``stop_strings`` here: ``["\\n\\n"]`` fires HuggingFace stopping criteria and ends
+            # generation before the LALR parser can reach a complete / EOF-ready state (e.g. GSM expr cut
+            # mid-expression). Rely on grammar ``start`` completion + ``max_new_tokens`` instead.
             itergen_cache[cache_key] = IterGen(
                 grammar=grammar_text,
                 model_id=args.eval_model,
                 device=device,
                 parse_output_only=True,
                 quantize=False,
-                max_tokens=max(256, int(args.eval_max_steps) + 64),
+                max_tokens=_session_ceiling,
                 do_sample=False,
-                max_new_tokens=max(32, int(args.eval_max_steps)),
+                max_new_tokens=_new_tok,
                 num_return_sequences=1,
-                stop_strings=["\n\n"],
             )
         iter_gen = itergen_cache[cache_key]
 
@@ -838,8 +892,15 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        if dataset == "gsm_symbolic":
+            prompt = prompt.rstrip() + "<<"
+
         gen_started = time.perf_counter()
-        output_text = _itergen_generate(iter_gen, prompt)
+        raw_completion = _itergen_generate(iter_gen, prompt)
+        if dataset == "gsm_symbolic":
+            output_text = _gsm_symbolic_completion_to_delimited(raw_completion, example, eval_runtime, logic)
+        else:
+            output_text = raw_completion
         gen_seconds = time.perf_counter() - gen_started
         scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
         expected = logic.expected_answer(eval_runtime, example)
@@ -992,12 +1053,10 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
 
 
 def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
-    """Unconstrained Spider baseline without legacy CRANE ``main.py``.
+    """Unconstrained Spider baseline without grammar masking in legacy CRANE ``main.py``.
 
-    CRANE's ``PARSE_MAP`` only registers ``gsm_symbolic`` and ``fol``, so
-    ``--dataset spider`` crashes with ``KeyError``. This path uses the same
-    chain-of-thought Spider prompt as other legacy adapters and scores via
-    ``benchmarks/sql_spider`` execution logic.
+    Uses the same chain-of-thought Spider prompt as other legacy adapters and scores via
+    execution match against the local Spider databases (``SPIDER_DB_DIR`` or repository layout).
     """
     from synthesis.evaluate.benchmarks.registry import get_logic
     from synthesis.evaluate.evaluator import Evaluator
@@ -1218,9 +1277,6 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     if dataset == "spider" and args.strategy == "unconstrained":
         return run_unconstrained_spider_adapter(args)
 
-    if dataset == "smiles" and args.strategy == "crane":
-        return _crane_via_adaptive_syncode(args, dataset)
-
     mode, do_cot = _mode_for_strategy(args.strategy)
     grammar = _crane_grammar_name(dataset)
 
@@ -1260,14 +1316,24 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     if dataset == "gsm_symbolic":
         cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
+    elif dataset in ("spider", "smiles"):
+        cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
+
+    if dataset == "smiles":
+        smiles_classes = getattr(args, "smiles_classes", None) or "acrylates,chain_extenders,isocyanates"
+        spc = getattr(args, "smiles_samples_per_class", None)
+        if spc is None:
+            spc = args.eval_sample_size
+        cmd.extend(["--smiles_classes", smiles_classes])
+        cmd.extend(["--smiles_samples_per_class", str(spc)])
 
     repo_syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
     repo_syncode_pkg = repo_syncode_root / "syncode"
     env = os.environ.copy()
     existing_pythonpath = env.get("PYTHONPATH", "")
-    syncode_paths = [str(repo_syncode_root), str(repo_syncode_pkg)]
+    prefix_paths = [str(repo_root), str(repo_syncode_root), str(repo_syncode_pkg)]
     env["PYTHONPATH"] = os.pathsep.join(
-        syncode_paths + ([existing_pythonpath] if existing_pythonpath else [])
+        prefix_paths + ([existing_pythonpath] if existing_pythonpath else [])
     )
 
     crane_run_started = time.perf_counter()
@@ -1310,6 +1376,18 @@ def main() -> None:
                         help="Optional Spider train/test split manifest JSON")
     parser.add_argument("--spider-split-name", type=str, choices=["train", "test", "eval"], default="eval",
                         help="Which split from --spider-split-file to use (default: eval)")
+    parser.add_argument(
+        "--smiles-classes",
+        type=str,
+        default=None,
+        help="Comma-separated SMILES classes for legacy CRANE main.py (default: all three)",
+    )
+    parser.add_argument(
+        "--smiles-samples-per-class",
+        type=int,
+        default=None,
+        help="Samples per class for legacy CRANE main.py (default: eval-sample-size)",
+    )
     args = parser.parse_args()
 
     _ensure_repo_cache_env()

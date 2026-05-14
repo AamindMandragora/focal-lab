@@ -10,6 +10,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
 - `run_synthesis.py`
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
+  - **GSM-Symbolic:** unless `--gsm-instantiated-hf` is set, an unset `--gsm-source-dir` defaults to vendored `legacy/CRANE/src/gsm_symbolic` JSONs so feedback uses `{placeholder}` questions (HF `apple/GSM-Symbolic` `question` / `original_question` fields are numeric prose only).
   - Generation backends: local HuggingFace/vLLM, **OpenAI** (default for CLI), or **Amazon Bedrock** (e.g. metadecode `opus4.7` profile).
   - Includes empirical helper-mask controls to constrain helper-call search space:
     `--adaptive-helper-mask`, `--helper-selection-policy`,

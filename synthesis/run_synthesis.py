@@ -158,8 +158,8 @@ Examples:
         "--max-tokens",
         dest="synthesis_max_tokens",
         type=int,
-        default=2048,
-        help="Maximum tokens for CSD synthesis generation per attempt (default: 2048)"
+        default=8192,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 8192)"
     )
 
     parser.add_argument(
@@ -245,7 +245,16 @@ Examples:
         "--gsm-source-dir",
         type=str,
         default=None,
-        help="Load GSM-Symbolic examples from this local folder of JSON files (e.g. CRANE's gsm_symbolic/) instead of HuggingFace"
+        help="Load GSM-Symbolic examples from this folder of CRANE-style JSON files ({placeholder} questions). "
+        "When omitted for --dataset gsm_symbolic, defaults to vendored legacy/CRANE/src/gsm_symbolic if present "
+        "(not HuggingFace: HF rows only have numeric prose in question fields)."
+    )
+
+    parser.add_argument(
+        "--gsm-instantiated-hf",
+        action="store_true",
+        help="For gsm_symbolic only: load apple/GSM-Symbolic from HuggingFace (numeric stories) and skip the "
+        "default local CRANE JSON folder.",
     )
 
     parser.add_argument(
@@ -342,8 +351,8 @@ Examples:
     parser.add_argument(
         "--vllm-max-model-len",
         type=int,
-        default=4096,
-        help="Maximum model context length passed to vLLM (default: 4096)"
+        default=16384,
+        help="Maximum model context length passed to vLLM (default: 16384; must fit prompts plus synthesis output)"
     )
 
     parser.add_argument(
@@ -453,6 +462,33 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    # GSM-Symbolic: HF ``question`` / ``original_question`` are numeric prose only. Use CRANE JSONs (question_parsed)
+    # for {placeholder} prompts unless the user opts into HF via --gsm-instantiated-hf.
+    if args.dataset == "gsm_symbolic" and not args.gsm_instantiated_hf and args.gsm_source_dir is None:
+        repo_root = Path(__file__).resolve().parent.parent
+        vendored = repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
+        if vendored.is_dir():
+            args.gsm_source_dir = str(vendored)
+        else:
+            try:
+                from synthesis.project_defaults import default_gsm_source_dir
+            except ImportError:
+                from project_defaults import default_gsm_source_dir
+            fb = default_gsm_source_dir()
+            if fb.is_dir():
+                args.gsm_source_dir = str(fb)
+        if args.gsm_source_dir:
+            print(
+                f"[gsm_symbolic] Using local JSON folder for symbolic {{var}} prompts: {args.gsm_source_dir}"
+            )
+        else:
+            print(
+                "[gsm_symbolic] Warning: no local CRANE-style GSM folder found; "
+                "using HuggingFace apple/GSM-Symbolic (numeric prose in question fields only). "
+                "Set --gsm-source-dir or CRANE_GSM_SYMBOLIC_DIR, or pass --gsm-instantiated-hf to silence.",
+                file=sys.stderr,
+            )
 
     if args.generation_model is None:
         if args.generation_backend == "bedrock":

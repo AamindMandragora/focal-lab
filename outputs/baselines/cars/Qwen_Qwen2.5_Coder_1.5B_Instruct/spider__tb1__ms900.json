@@ -1,0 +1,513 @@
+{
+  "accuracy": 0.66,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 167.864,
+    "mean_generation_seconds_per_example": 1.67864,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 179.8367
+  },
+  "answers": [
+    {
+      "question": "Find the first name of the students who permanently live in the country Haiti or have the cell phone number 09700166582 .",
+      "generated_answer": "SELECT T1.first_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T2.country = 'Haiti' OR T1.cell_mobile_number = '09700166582'",
+      "generation_seconds": 3.251185
+    },
+    {
+      "question": "Give the total population and average surface area corresponding to countries in North America that have a surface area greater than 3000 .",
+      "generated_answer": "SELECT sum(population) ,  avg(surfacearea) FROM country WHERE region LIKE 'North America' AND surfacearea > 3000",
+      "generation_seconds": 1.232466
+    },
+    {
+      "question": "List all document ids with at least two paragraphs.",
+      "generated_answer": "SELECT document_id FROM documents WHERE document_id IN ( SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(paragraph_id) >= 2 )",
+      "generation_seconds": 1.253217
+    },
+    {
+      "question": "Give the average life expectancy for countries in Africa which are republics?",
+      "generated_answer": "SELECT AVG(lifeexpectancy) FROM country WHERE region = 'Africa' AND governmentform = 'Republic'",
+      "generation_seconds": 0.934121
+    },
+    {
+      "question": "How many museums were opened after 2013 or before 2008?",
+      "generated_answer": "SELECT count(*) FROM museum WHERE open_year > 2013 OR open_year < 2008",
+      "generation_seconds": 3.191482
+    },
+    {
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "generated_answer": "SELECT T2.template_id ,  COUNT(T1.paragraph_id) AS count FROM paragraphs AS T1 JOIN templates AS T2 ON T1.template_id = T2.template_id GROUP BY T2.template_id",
+      "generation_seconds": 1.723278
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT MAX(weight) AS max_weight, pettype FROM pets GROUP BY pettype",
+      "generation_seconds": 0.684138
+    },
+    {
+      "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+      "generated_answer": "SELECT location ,  name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 0.965339
+    },
+    {
+      "question": "Find the id of students who do not have a cat pet.",
+      "generated_answer": "SELECT student.stuid FROM student WHERE student.stuid NOT IN ( SELECT has_pet.stuid FROM has_pet JOIN pets ON has_pet.petid = pets.petid WHERE pets.pettype = 'cat' )",
+      "generation_seconds": 1.728645
+    },
+    {
+      "question": "How many car models were produced by the maker with full name American Motor Company?",
+      "generated_answer": "SELECT COUNT(DISTINCT T3.model) FROM car_makers AS T1 INNER JOIN model_list AS T2 ON T1.id = T2.maker INNER JOIN car_names AS T3 ON T2.model = T3.model WHERE T1.fullname = 'American Motor Company'",
+      "generation_seconds": 2.418903
+    },
+    {
+      "question": "Show all paragraph ids and texts for the document with name 'Welcome to NY'.",
+      "generated_answer": "SELECT T1.paragraph_id ,  T2.paragraph_text FROM paragraphs AS T1 JOIN documents AS T2 ON T1.document_id = T2.document_id WHERE T2.document_name = 'Welcome to NY'",
+      "generation_seconds": 1.804788
+    },
+    {
+      "question": "Which country has the most of TV Channels? List the country and number of TV Channels it has.",
+      "generated_answer": "SELECT T2.country ,  COUNT(T1.id) FROM tv_channel AS T1 JOIN country AS T2 ON T1.country = T2.id GROUP BY T2.country ORDER BY COUNT(T1.id) DESC LIMIT 1",
+      "generation_seconds": 1.880379
+    },
+    {
+      "question": "Find the first name and gender of student who have more than one pet.",
+      "generated_answer": "SELECT s.fname ,  s.sex FROM student s JOIN has_pet hp ON s.stuid = hp.stuid GROUP BY s.stuid HAVING count(hp.petid) > 1",
+      "generation_seconds": 1.63813
+    },
+    {
+      "question": "What are the codes of template types that are not used for any document?",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types WHERE template_type_code NOT IN ( SELECT template_type_code FROM templates )",
+      "generation_seconds": 0.948533
+    },
+    {
+      "question": "List the vote ids, phone numbers and states of all votes.",
+      "generated_answer": "SELECT vote_id ,  phone_number ,  state FROM votes",
+      "generation_seconds": 0.54453
+    },
+    {
+      "question": "Find the average life expectancy and total population for each continent where the average life expectancy is shorter than 72?",
+      "generated_answer": "SELECT T1.continent ,  AVG(T2.lifeexpectancy) ,  SUM(T3.population) FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode JOIN city AS T3 ON T1.code = T3.countrycode WHERE AVG(T2.lifeexpectancy) < 72 GROUP BY T1.continent",
+      "generation_seconds": 2.981698
+    },
+    {
+      "question": "how many cars were produced in 1980?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data WHERE year = 1980",
+      "generation_seconds": 0.592785
+    },
+    {
+      "question": "What are the names and descriptions of all the sections?",
+      "generated_answer": "SELECT section_name ,  course_name FROM sections",
+      "generation_seconds": 0.416995
+    },
+    {
+      "question": "Show the names of all of the high schooler Kyle's friends.",
+      "generated_answer": "SELECT T2.name FROM friend AS T1 JOIN highschooler AS T2 ON T1.friend_id = T2.id WHERE T1.student_id = ( SELECT id FROM highschooler WHERE name = 'Kyle' )",
+      "generation_seconds": 1.879159
+    },
+    {
+      "question": "List the cost of each treatment and the corresponding treatment type description.",
+      "generated_answer": "SELECT T3.cost_of_treatment ,  T2.treatment_type_description FROM treatments AS T1 JOIN treatment_types AS T2 ON T1.treatment_type_code = T2.treatment_type_code JOIN dogs AS T3 ON T1.dog_id = T3.dog_id",
+      "generation_seconds": 2.31117
+    },
+    {
+      "question": "Show names of teachers and the courses they are arranged to teach.",
+      "generated_answer": "SELECT T1.name AS Teacher_Name, T2.course_name AS Course_Name FROM teacher AS T1 JOIN course_arrange AS T2 ON T1.teacher_id = T2.teacher_id",
+      "generation_seconds": 1.568404
+    },
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "SELECT min(version_number) ,  template_type_code FROM templates",
+      "generation_seconds": 0.532099
+    },
+    {
+      "question": "Show the names of high schoolers who have likes, and numbers of likes for each.",
+      "generated_answer": "SELECT h.name ,  COUNT(l.liked_id) FROM highschooler AS h JOIN likes AS l ON h.id = l.student_id GROUP BY h.name",
+      "generation_seconds": 2.052006
+    },
+    {
+      "question": "How many official languages does Afghanistan have?",
+      "generated_answer": "SELECT count(DISTINCT T2.language) FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T1.name = 'Afghanistan'",
+      "generation_seconds": 1.627545
+    },
+    {
+      "question": "Find the first name of students who have cat or dog pet.",
+      "generated_answer": "SELECT fname FROM student WHERE stuid IN ( SELECT stuid FROM has_pet WHERE pettype IN ('cat', 'dog') )",
+      "generation_seconds": 1.106725
+    },
+    {
+      "question": "Show ids for all templates not used by any document.",
+      "generated_answer": "SELECT T1.template_id FROM templates AS T1 WHERE T1.template_id NOT IN ( SELECT T2.template_id FROM documents AS T2 JOIN paragraphs AS T3 ON T2.document_id = T3.document_id JOIN templates AS T4 ON T3.template_id = T4.template_id )",
+      "generation_seconds": 2.399132
+    },
+    {
+      "question": "What is the semester which most student registered in? Show both the name and the id.",
+      "generated_answer": "SELECT T2.semester_name ,  T2.semester_id FROM semesters AS T1 JOIN student_enrolment AS T2 ON T1.semester_id  =  T2.semester_id GROUP BY T2.semester_id ORDER BY count(*) DESC LIMIT 1",
+      "generation_seconds": 2.429693
+    },
+    {
+      "question": "What is the series name and country of all TV channels that are playing cartoons directed by Ben Jones and cartoons directed by Michael Chang?",
+      "generated_answer": "SELECT T2.series_name ,  T2.country FROM cartoon AS T1 INNER JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.directed_by = 'Ben Jones' OR T1.directed_by = 'Michael Chang'",
+      "generation_seconds": 2.156276
+    },
+    {
+      "question": "What are the minimum and maximum number of products across all the shops?",
+      "generated_answer": "SELECT min(number_products) ,  max(number_products) FROM shop",
+      "generation_seconds": 0.571948
+    },
+    {
+      "question": "What are the names of poker players?",
+      "generated_answer": "SELECT name FROM poker_player",
+      "generation_seconds": 0.249203
+    },
+    {
+      "question": "Show the stadium names without any concert.",
+      "generated_answer": "SELECT T1.name FROM stadium AS T1 WHERE T1.stadium_id NOT IN ( SELECT T2.stadium_id FROM concert AS T2 JOIN singer_in_concert AS T3 ON T2.concert_id = T3.concert_id JOIN singer AS T4 ON T3.singer_id = T4.singer_id )",
+      "generation_seconds": 2.771239
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT T2.continent ,  count(T1.id) FROM car_makers AS T1 JOIN countries AS T2 ON T1.country = T2.countryid GROUP BY T2.continent",
+      "generation_seconds": 1.623397
+    },
+    {
+      "question": "How many airlines are from USA?",
+      "generated_answer": "SELECT count(DISTINCT T1.uid) FROM airlines AS T1 INNER JOIN airports AS T2 ON T1.countryabbrev = T2.country WHERE T2.country = 'USA'",
+      "generation_seconds": 1.517664
+    },
+    {
+      "question": "What is the first, middle, and last name of the first student to register?",
+      "generated_answer": "SELECT first_name ,  middle_name ,  last_name FROM students WHERE date_first_registered = ( SELECT min(date_first_registered) FROM students )",
+      "generation_seconds": 1.213449
+    },
+    {
+      "question": "How many visitors below age 30 are there?",
+      "generated_answer": "SELECT count(*) FROM visitor WHERE age < 30",
+      "generation_seconds": 0.494588
+    },
+    {
+      "question": "What are the names of students who have 2 or more likes?",
+      "generated_answer": "SELECT T3.name FROM student AS T1 JOIN likes AS T2 ON T1.id = T2.student_id JOIN highschooler AS T3 ON T1.id = T3.id GROUP BY T3.name HAVING COUNT(T2.liked_id) >= 2",
+      "generation_seconds": 4.052358
+    },
+    {
+      "question": "What are the names of all courses that have some students enrolled?",
+      "generated_answer": "SELECT T1.course_name FROM courses AS T1 JOIN student_enrolment_courses AS T2 ON T1.course_id = T2.course_id",
+      "generation_seconds": 1.232986
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "SELECT document_id FROM paragraphs WHERE document_id IN ( SELECT document_id FROM documents WHERE paragraph_id BETWEEN 1 AND 2 )",
+      "generation_seconds": 1.061332
+    },
+    {
+      "question": "Which airports do not have departing or arriving flights?",
+      "generated_answer": "SELECT city FROM airports WHERE airportcode NOT IN ( SELECT destairport FROM flights UNION SELECT sourceairport FROM flights )",
+      "generation_seconds": 0.921571
+    },
+    {
+      "question": "What is the first name and country code of the oldest player?",
+      "generated_answer": "SELECT first_name ,  country_code FROM players ORDER BY birth_date ASC LIMIT 1",
+      "generation_seconds": 0.718191
+    },
+    {
+      "question": "What are the id, name and membership level of visitors who have spent the largest amount of money in total in all museum tickets?",
+      "generated_answer": "SELECT v.id ,  v.name ,  v.level_of_membership FROM visitor AS v JOIN visit AS vi ON v.id = vi.visitor_id GROUP BY v.id ,  v.name ,  v.level_of_membership ORDER BY SUM(vi.total_spent) DESC LIMIT 1",
+      "generation_seconds": 2.737889
+    },
+    {
+      "question": "Show different citizenships and the maximum net worth of singers of each citizenship.",
+      "generated_answer": "SELECT citizenship ,  MAX(net_worth_millions) FROM singer GROUP BY citizenship",
+      "generation_seconds": 1.01849
+    },
+    {
+      "question": "find the names of museums which have more staff than the minimum staff number of all museums opened after 2010.",
+      "generated_answer": "SELECT name FROM museum WHERE num_of_staff > ( SELECT min(num_of_staff) FROM museum WHERE open_year > 2010 )",
+      "generation_seconds": 2.083313
+    },
+    {
+      "question": "What is the content of TV Channel with serial name \"Sky Radio\"?",
+      "generated_answer": "SELECT content FROM tv_channel WHERE series_name = 'Sky Radio'",
+      "generation_seconds": 0.707085
+    },
+    {
+      "question": "Return the money rank of the poker player with the greatest height.",
+      "generated_answer": "SELECT money_rank FROM poker_player WHERE height = ( SELECT max(height) FROM people )",
+      "generation_seconds": 1.056426
+    },
+    {
+      "question": "How many degrees does the engineering department have?",
+      "generated_answer": "SELECT COUNT(DISTINCT degree_program_id) FROM degree_programs WHERE department_id IN (SELECT department_id FROM departments WHERE department_name = 'Engineering')",
+      "generation_seconds": 1.619994
+    },
+    {
+      "question": "What is minimum and maximum share of TV series?",
+      "generated_answer": "SELECT min(share) ,  max(share) FROM tv_series",
+      "generation_seconds": 0.767386
+    },
+    {
+      "question": "List the first name of all the professionals along with the description of the treatment they have done.",
+      "generated_answer": "SELECT T1.first_name ,  T2.treatment_type_description FROM professionals AS T1 JOIN treatments AS T2 ON T1.professional_id = T2.professional_id",
+      "generation_seconds": 1.818271
+    },
+    {
+      "question": "Find the id and weight of all pets whose age is older than 1.",
+      "generated_answer": "SELECT petid ,  weight FROM pets WHERE pet_age > 1",
+      "generation_seconds": 1.717106
+    },
+    {
+      "question": "How many different templates do all document use?",
+      "generated_answer": "SELECT count(DISTINCT T1.template_type_code) FROM templates AS T1 INNER JOIN ref_template_types AS T2 ON T1.template_type_code = T2.template_type_code",
+      "generation_seconds": 1.829387
+    },
+    {
+      "question": "What are the different years in which there were cars produced that weighed less than 4000 and also cars that weighted more than 3000 ?",
+      "generated_answer": "SELECT DISTINCT YEAR FROM cars_data WHERE weight < 4000 INTERSECT SELECT DISTINCT YEAR FROM cars_data WHERE weight > 3000",
+      "generation_seconds": 1.643528
+    },
+    {
+      "question": "What is the total population and maximum GNP in Asia?",
+      "generated_answer": "SELECT sum(population) ,  max(gnp) FROM country WHERE region  =  'Asia'",
+      "generation_seconds": 1.139803
+    },
+    {
+      "question": "find the name of employee who was awarded the most times in the evaluation.",
+      "generated_answer": "SELECT T2.name FROM employee AS T1 JOIN evaluation AS T2 ON T1.employee_id = T2.employee_id GROUP BY T2.employee_id ORDER BY COUNT(T2.employee_id) DESC LIMIT 1",
+      "generation_seconds": 2.667457
+    },
+    {
+      "question": "What are the distinct template type descriptions for the templates ever used by any document?",
+      "generated_answer": "SELECT DISTINCT T1.template_type_description FROM ref_template_types AS T1 INNER JOIN templates AS T2 ON T1.template_type_code = T2.template_type_code INNER JOIN documents AS T3 ON T2.template_id = T3.template_id",
+      "generation_seconds": 2.586655
+    },
+    {
+      "question": "Find the number of professionals who have not treated any dogs.",
+      "generated_answer": "SELECT count(*) FROM professionals WHERE professional_id NOT IN ( SELECT DISTINCT t.professional_id FROM treatments AS t JOIN dogs AS d ON t.dog_id = d.dog_id )",
+      "generation_seconds": 1.852252
+    },
+    {
+      "question": "How many cartoons did each director create?",
+      "generated_answer": "SELECT cartoon.directed_by ,  COUNT(cartoon.title) FROM cartoon GROUP BY cartoon.directed_by",
+      "generation_seconds": 1.077628
+    },
+    {
+      "question": "What is the average edispl for all volvos?",
+      "generated_answer": "SELECT AVG(edispl) FROM cars_data WHERE maker = 'Volvo'",
+      "generation_seconds": 0.872911
+    },
+    {
+      "question": "Which cities do more than one employee under age 30 come from?",
+      "generated_answer": "SELECT city FROM employee WHERE age < 30 GROUP BY city HAVING COUNT(employee_id) > 1",
+      "generation_seconds": 1.162571
+    },
+    {
+      "question": "Find the name, population and expected life length of asian country with the largest area?",
+      "generated_answer": "SELECT T1.name ,  T1.population ,  T3.lifeexpectancy FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode JOIN city AS T3 ON T1.code = T3.countrycode WHERE T1.continent = 'Asia' ORDER BY T1.surfacearea DESC LIMIT 1",
+      "generation_seconds": 3.633585
+    },
+    {
+      "question": "What is the name of the winner with the most rank points who participated in the Australian Open tournament?",
+      "generated_answer": "SELECT T2.first_name ,  T2.last_name FROM rankings AS T1 JOIN players AS T2 ON T1.player_id = T2.player_id WHERE T1.tourney_name = 'Australian Open' ORDER BY T1.ranking_points DESC LIMIT 1",
+      "generation_seconds": 2.863565
+    },
+    {
+      "question": "Count the number of paragraphs.",
+      "generated_answer": "SELECT count(*) FROM paragraphs",
+      "generation_seconds": 0.354772
+    },
+    {
+      "question": "What is the first name and gender of the all the students who have more than one pet?",
+      "generated_answer": "SELECT T2.fname ,  T2.sex FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid = T2.stuid GROUP BY T2.stuid HAVING count(T2.stuid) > 1",
+      "generation_seconds": 2.427561
+    },
+    {
+      "question": "What are the names and id of courses having at most 2 sections?",
+      "generated_answer": "SELECT course_name ,  course_id FROM courses WHERE course_id IN ( SELECT course_id FROM sections GROUP BY course_id HAVING count(*) <= 2 )",
+      "generation_seconds": 1.347767
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "SELECT count(*) FROM paragraphs",
+      "generation_seconds": 0.632448
+    },
+    {
+      "question": "Show the names of conductors that have conducted more than one orchestras.",
+      "generated_answer": "SELECT c.name FROM conductor c JOIN performance p ON c.conductor_id = p.conductor_id GROUP BY c.conductor_id HAVING COUNT(DISTINCT p.orchestra_id) > 1",
+      "generation_seconds": 3.724404
+    },
+    {
+      "question": "Sort employee names by their age in ascending order.",
+      "generated_answer": "SELECT name FROM employee ORDER BY age ASC",
+      "generation_seconds": 0.441541
+    },
+    {
+      "question": "Find the type and weight of the youngest pet.",
+      "generated_answer": "SELECT pettype ,  weight FROM pets ORDER BY petage ASC LIMIT 1",
+      "generation_seconds": 4.090204
+    },
+    {
+      "question": "How many dogs went through any treatments?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.dog_id) FROM dogs AS T1 INNER JOIN treatments AS T2 ON T1.dog_id = T2.dog_id",
+      "generation_seconds": 1.441825
+    },
+    {
+      "question": "What is the description for the section named h?",
+      "generated_answer": "SELECT section_description FROM sections WHERE section_name = 'h'",
+      "generation_seconds": 0.549731
+    },
+    {
+      "question": "Find the arriving date and the departing date of the dogs that received a treatment.",
+      "generated_answer": "SELECT T1.date_arrived ,  T2.date_departed FROM dogs AS T1 JOIN treatments AS T2 ON T1.dog_id = T2.dog_id",
+      "generation_seconds": 1.510189
+    },
+    {
+      "question": "Show paragraph details for paragraph with text 'Korea ' .",
+      "generated_answer": "SELECT T1.paragraph_text FROM paragraphs AS T1 INNER JOIN documents AS T2 ON T1.document_id = T2.document_id WHERE T2.template_id IN ( SELECT T3.template_id FROM templates AS T3 INNER JOIN ref_template_types AS T4 ON T3.template_type_code = T4.template_type_code WHERE T4.template_type_description = 'Document' AND T3.date_effective_from <= CURRENT_DATE AND T3.date_effective_to >= CURRENT_DATE ) AND T1.paragraph_text LIKE '%Korea%'",
+      "generation_seconds": 4.579872
+    },
+    {
+      "question": "Find the number of dog pets that are raised by female students (with sex F).",
+      "generated_answer": "SELECT COUNT(petid) FROM pets WHERE pettype = 'dog' AND EXISTS ( SELECT 1 FROM student WHERE sex = 'F' AND id IN ( SELECT stuid FROM has_pet ) )",
+      "generation_seconds": 1.852058
+    },
+    {
+      "question": "What are the id and name of the museum visited most times?",
+      "generated_answer": "SELECT museum_id ,  name FROM museum ORDER BY count(*) DESC LIMIT 1",
+      "generation_seconds": 0.846382
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "SELECT COUNT(dog_id) FROM dogs WHERE age < ( SELECT AVG(age) FROM dogs )",
+      "generation_seconds": 1.02097
+    },
+    {
+      "question": "What are the ids of templates with template type code PP or PPT?",
+      "generated_answer": "SELECT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 0.928716
+    },
+    {
+      "question": "Return the version numbers and template type codes of templates with a version number greater than 5.",
+      "generated_answer": "SELECT version_number ,  template_type_code FROM templates WHERE version_number  >  5",
+      "generation_seconds": 0.95346
+    },
+    {
+      "question": "For model volvo, how many cylinders does the car with the least accelerate have?",
+      "generated_answer": "SELECT T2.cylinders FROM car_names AS T1 INNER JOIN cars_data AS T2 ON T1.makeid = T2.id WHERE T1.model = 'volvo' ORDER BY T2.accelerate ASC LIMIT 1",
+      "generation_seconds": 2.440258
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "generated_answer": "SELECT T2.last_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T2.city = 'North Carolina' AND T1.date_first_registered IS NULL",
+      "generation_seconds": 2.409822
+    },
+    {
+      "question": "What is the date and id of the transcript with the least number of results?",
+      "generated_answer": "SELECT T1.transcript_date, T1.transcript_id FROM transcripts AS T1 JOIN transcript_contents AS T2 ON T1.transcript_id = T2.transcript_id GROUP BY T1.transcript_date ORDER BY COUNT(T2.student_course_id) ASC LIMIT 1",
+      "generation_seconds": 2.835528
+    },
+    {
+      "question": "What are all distinct countries where singers above age 20 are from?",
+      "generated_answer": "SELECT DISTINCT T1.country FROM singer AS T1 INNER JOIN concert_singer AS T2 ON T1.singer_id = T2.singer_id WHERE T1.age > 20",
+      "generation_seconds": 1.959954
+    },
+    {
+      "question": "List the dog name, age and weight of the dogs who have been abandoned? 1 stands for yes, and 0 stands for no.",
+      "generated_answer": "SELECT dogs.name ,  dogs.age ,  dogs.weight FROM dogs WHERE abandoned_yn = '1'",
+      "generation_seconds": 1.109037
+    },
+    {
+      "question": "Show the stadium name and capacity with most number of concerts in year 2014 or after.",
+      "generated_answer": "SELECT stadium.name ,  stadium.capacity FROM stadium WHERE stadium.stadium_id IN ( SELECT DISTINCT T3.stadium_id FROM concert AS T1 JOIN concert_singer AS T2 ON T1.concert_id = T2.concert_id JOIN singer AS T3 ON T2.singer_id = T3.singer_id WHERE T1.year >= 2014 GROUP BY T3.stadium_id ORDER BY COUNT(T1.concert_id) DESC LIMIT 1 )",
+      "generation_seconds": 4.837249
+    },
+    {
+      "question": "For each singer name, what is the total sales for their songs?",
+      "generated_answer": "SELECT singer.name ,  SUM(song.sales) AS total_sales FROM singer JOIN song ON singer.singer_id = song.singer_id GROUP BY singer.name",
+      "generation_seconds": 2.946889
+    },
+    {
+      "question": "What are the number of votes from state 'NY' or 'CA'?",
+      "generated_answer": "SELECT count(*) FROM votes WHERE state IN ('NY', 'CA')",
+      "generation_seconds": 0.791213
+    },
+    {
+      "question": "Give the city and country for the Alton airport.",
+      "generated_answer": "SELECT city ,  country FROM airports WHERE airportname = 'Alton'",
+      "generation_seconds": 0.823615
+    },
+    {
+      "question": "Find the role, street, city and state of the professionals living in a city that contains the substring 'West'.",
+      "generated_answer": "SELECT T1.role_code ,  T2.street ,  T2.city ,  T2.state FROM professionals AS T1 INNER JOIN owners AS T2 ON T1.owner_id = T2.owner_id WHERE T2.city LIKE '%West%'",
+      "generation_seconds": 2.475851
+    },
+    {
+      "question": "What is the mobile phone number of the student named Timmothy Ward ?",
+      "generated_answer": "SELECT T1.cell_mobile_number FROM STUDENTS AS T1 INNER JOIN ADDRESS AS T2 ON T1.permanent_address_id = T2.address_id WHERE T1.first_name = 'Timmy' AND T1.last_name = 'Ward'",
+      "generation_seconds": 2.137786
+    },
+    {
+      "question": "What is the average grade of students who have friends?",
+      "generated_answer": "SELECT avg(grade) FROM highschooler WHERE id IN (SELECT friend_id FROM friend)",
+      "generation_seconds": 0.837966
+    },
+    {
+      "question": "What are flight numbers of flights arriving at Airport \"APG\"?",
+      "generated_answer": "SELECT DISTINCT T1.flightno FROM flights AS T1 INNER JOIN airports AS T2 ON T1.sourceairport = T2.airportcode WHERE T2.airportname = 'APG'",
+      "generation_seconds": 1.675669
+    },
+    {
+      "question": "What are airport names at City 'Aberdeen'?",
+      "generated_answer": "SELECT T1.airportname FROM airports AS T1 INNER JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T1.city = 'Aberdeen'",
+      "generation_seconds": 2.211354
+    },
+    {
+      "question": "Show the citizenship shared by singers with birth year before 1945 and after 1955.",
+      "generated_answer": "SELECT T2.citizenship FROM singer AS T1 JOIN song AS T2 ON T1.singer_id = T2.singer_id WHERE T1.birth_year < 1945 INTERSECT SELECT T2.citizenship FROM singer AS T1 JOIN song AS T2 ON T1.singer_id = T2.singer_id WHERE T1.birth_year > 1955",
+      "generation_seconds": 3.597659
+    },
+    {
+      "question": "What is the most commmon hometowns for teachers?",
+      "generated_answer": "SELECT hometown FROM teacher GROUP BY hometown ORDER BY count(*) DESC LIMIT 1",
+      "generation_seconds": 2.793013
+    },
+    {
+      "question": "How many type of governments are in Africa?",
+      "generated_answer": "SELECT count(DISTINCT governmentform) FROM country WHERE continent = 'Africa'",
+      "generation_seconds": 0.69685
+    },
+    {
+      "question": "List the names of the dogs of the rarest breed and the treatment dates of them.",
+      "generated_answer": "SELECT T1.name ,  T3.date_of_treatment FROM dogs AS T1 JOIN breeds AS T2 ON T1.breed_code = T2.breed_code JOIN treatments AS T3 ON T1.dog_id = T3.dog_id ORDER BY COUNT(T1.dog_id) ASC LIMIT 1",
+      "generation_seconds": 2.635093
+    },
+    {
+      "question": "What is the average earnings of poker players?",
+      "generated_answer": "SELECT avg(money_rank) FROM poker_player",
+      "generation_seconds": 0.417315
+    },
+    {
+      "question": "What are the birth years and citizenships of the singers?",
+      "generated_answer": "SELECT birth_year ,  citizenship FROM singer",
+      "generation_seconds": 0.37453
+    },
+    {
+      "question": "Return the type code of the template type with the description \"Book\".",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types WHERE template_type_description = 'Book'",
+      "generation_seconds": 0.704873
+    },
+    {
+      "question": "Show names of all high school students who do not have any friends.",
+      "generated_answer": "SELECT name FROM highschooler WHERE id NOT IN ( SELECT friend_id FROM friend )",
+      "generation_seconds": 0.746602
+    },
+    {
+      "question": "Find the names of employees who never won any award in the evaluation.",
+      "generated_answer": "SELECT name FROM employee WHERE employee_id NOT IN ( SELECT employee_id FROM evaluation )",
+      "generation_seconds": 0.690278
+    },
+    {
+      "question": "What is the hometown of the youngest teacher?",
+      "generated_answer": "SELECT T2.hometown FROM teacher AS T1 JOIN course_arrange AS T2 ON T1.teacher_id = T2.teacher_id ORDER BY T1.age ASC LIMIT 1",
+      "generation_seconds": 1.477656
+    }
+  ]
+}
