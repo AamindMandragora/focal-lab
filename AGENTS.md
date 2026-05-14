@@ -11,20 +11,30 @@ Synthesize Dafny CSD strategies that verify, compile, and evaluate successfully,
 ## Critical Prompting Rule
 
 Do not include strategy guidance in synthesis prompts or task descriptions.
+Neutral API reference is tool/contract content, not strategy guidance.
 
 Allowed prompt content:
 - Task objective.
-- Tool signatures and formal contracts (preconditions, postconditions, types, ranges).
+- Tool signatures, neutral API reference, and formal contracts
+  (preconditions, postconditions, types, ranges, mechanics, cost/state effects,
+  proof obligations).
+- Verified method-body examples as contract/format examples, not benchmark
+  answers or task-specific strategy prescriptions.
+- Empirical refinement context from the current synthesis run, including
+  measured failures, search memory, helper usage, and evaluation history,
+  without prescriptive strategy advice.
 
 Disallowed prompt content:
 - Recommendations about which tool to use.
 - Preferred or forbidden strategy patterns.
 - Baseline-comparison hints that imply structure.
-- Procedural “NOTE” hints about when or why to apply a tool.
+- Benchmark-specific answer hints, dataset shortcuts, or evaluation leaks.
+- Procedural "NOTE" hints about when or why to apply a tool.
 
 ## Key Paths
 
-- Dafny binary: `dafny/dafny`
+- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
+- Dafny binary: set `DAFNY_PATH` when needed; otherwise the runner uses repo-local `dafny/dafny` only if present, then falls back to `dafny` on `PATH` or `~/.dotnet/tools/dafny`.
 - OpenAI API key: `synthesis/.env`
 - Hugging Face checkpoints and SynCode mask/parser pickles: repository `cache/` (set `CSD_CACHE_ROOT` to relocate; legacy CRANE/IterGen/GCD paths resolve here when unset).
 

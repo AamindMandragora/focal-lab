@@ -773,6 +773,30 @@ module VerifiedDecoderAgent {
       cost := cost + 1;
     }
 
+    // Performs unconstrained decoding until we run out of steps.
+    method UnconstrainedGeneration(lm: LM, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| == maxSteps
+      ensures cost == old(cost) + |generated|
+    {
+      generated := [];
+      var steps := 0;
+      while steps < maxSteps
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant cost == old(cost) + steps
+        decreases maxSteps - steps
+      {
+        var next := UnconstrainedStep(lm, prompt, generated);
+        generated := generated + [next];
+        steps := steps + 1;
+      }
+    }
+
+    // A lemma that lets us say if the LM can generate all next valid tokens, then if we append one of those to the end, the LM can still generate all next valid tokens for the new prefix.
     static lemma {:axiom} ConstrainedStepNextValid(lm: LM, parser: Parser, generated: Prefix, next: Token)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
@@ -780,6 +804,46 @@ module VerifiedDecoderAgent {
       requires parser.IsValidPrefix(generated + [next])
       ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
 
+    // Performs constrained decoding until we run out of steps or the generated string is complete in the grammar.
+    method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, eosToken: Token) returns (generated: Prefix, terminatedByEos: bool)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix([])
+      requires eosToken in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures parser.IsValidPrefix(generated)
+      ensures terminatedByEos ==> (cost == old(cost) + |generated| + 1)
+      ensures !terminatedByEos ==> (cost == old(cost) + |generated|)
+    {
+      generated := [];
+      var steps := 0;
+      terminatedByEos := false;
+      while steps < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant 0 <= steps <= maxSteps
+        invariant lm.ValidTokensIdsLogits()
+        invariant steps == |generated|
+        invariant parser.IsValidPrefix(generated)
+        invariant cost == old(cost) + steps
+        invariant !terminatedByEos
+        decreases maxSteps - steps
+      {
+        var next := ConstrainedStep(lm, parser, prompt, generated, eosToken);
+        if next == eosToken {
+          steps := steps + 1;
+          terminatedByEos := true;
+          break;
+        }
+        generated := generated + [next];
+        steps := steps + 1;
+      }
+    }
+
+
+    // Returns the tokens in `prefix` that appear immediately after `keyword`.
+    // Use: extract which tokens the model has emitted after a specific keyword
+    // (e.g., table names after "FROM", variable names after "LET", etc.) so
+    // a strategy can maintain its own semantic context across loop iterations.
     static method ExtractAfterKeyword(prefix: Prefix, keyword: Token) returns (following: seq<Token>)
       ensures forall t :: t in following ==> t in prefix
     {
@@ -1746,6 +1810,76 @@ module VerifiedDecoderAgent {
       RestoreLogitsSnapshot(lm, snap);
       candidatePrefix := cur;
       hitComplete := parser.IsCompletePrefix(cur);
+    }
+
+    // CRANE-style generation with free text outside constrained spans.
+    method CraneGeneration(
+      lm: LM,
+      parser: Parser,
+      prompt: Prefix,
+      maxSteps: nat,
+      minReasoningSteps: nat,
+      eosToken: Token
+    ) returns (generated: Prefix)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires "<<" in lm.Tokens && ">>" in lm.Tokens
+      requires eosToken in lm.Tokens
+      requires parser.IsValidPrefix([])
+      ensures lm.ValidTokensIdsLogits()
+      ensures |generated| <= maxSteps
+      ensures cost <= old(cost) + maxSteps
+    {
+      generated := [];
+      var steps := 0;
+      var insideConstrained := false;
+      var currentConstrained: Prefix := [];
+
+      while steps < maxSteps
+        invariant 0 <= steps <= maxSteps
+        invariant steps == |generated|
+        invariant |currentConstrained| <= |generated|
+        invariant lm.ValidTokensIdsLogits()
+        invariant !insideConstrained ==> currentConstrained == []
+        invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)
+        invariant cost == old(cost) + steps
+        decreases maxSteps - steps, (if insideConstrained then 1 else 0)
+      {
+        if !insideConstrained {
+          var next := UnconstrainedStep(lm, prompt, generated);
+          if next == eosToken {
+            break;
+          }
+          generated := generated + [next];
+          steps := steps + 1;
+          if Contains(next, "<<") {
+            insideConstrained := true;
+            currentConstrained := [];
+          }
+        } else {
+          if parser.IsCompletePrefix(currentConstrained) {
+            insideConstrained := false;
+            currentConstrained := [];
+          } else {
+            var constrainedPrompt := prompt + generated[..|generated| - |currentConstrained|];
+            var next, wasConstrained := ConfidenceGatedStep(
+              lm, parser, constrainedPrompt, currentConstrained, eosToken
+            );
+            if next == eosToken {
+              break;
+            }
+            generated := generated + [next];
+            steps := steps + 1;
+
+            if Contains(next, ">>") {
+              insideConstrained := false;
+              currentConstrained := [];
+            } else {
+              currentConstrained := currentConstrained + [next];
+            }
+          }
+        }
+      }
     }
   }
 }

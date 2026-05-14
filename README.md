@@ -11,6 +11,7 @@ The project is organized so the core workflow is explicit:
 
 ## Repository Layout
 
+- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
 - `synthesis/`: core pipeline package. First-party subfolders include paired **`README.md`** and **`AGENTS.md`** for docs and agent rules (`synthesis/README.md` summarizes).
 - `synthesis/generate/`: generation prompts, rationale extraction, and generator logic.
 - `synthesis/verify/`: Dafny verification/compilation wrappers.
@@ -20,6 +21,9 @@ The project is organized so the core workflow is explicit:
 - `synthesis/evaluate/benchmarks/*/eval_logic.py`: benchmark-specific evaluation delegation logic.
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
+- `environment/`: environment setup and dependency installation notes/scripts.
+- `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
+- `outputs/`: generated runs, baselines, prompt logs, and preserved local experiment artifacts.
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
 
@@ -119,7 +123,7 @@ Optional local-beam refinement controls:
 
 ## Notes for Contributors
 
-- Keep synthesis prompts as controlled-study inputs: task + formal tool contracts only.
+- Keep synthesis prompts as controlled-study inputs: task objectives, neutral tool/API reference, formal contracts, verified contract/format examples, and factual measured refinement context are allowed; strategy guidance, benchmark hints, and unmeasured heuristics are not.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
 - `run_all_tests.sh` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn.

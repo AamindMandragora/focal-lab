@@ -533,6 +533,9 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "AppendConstrainedToken",
         "CloseConstrainedSpan",
         "ConstrainedStep",
+        "UnconstrainedGeneration",
+        "ConstrainedGeneration",
+        "CraneGeneration",
         "ConfidenceGatedStep",
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
@@ -636,13 +639,13 @@ def _attach_lm_trace(lm: Any, trace_state: Dict[str, Any]) -> None:
 def resolve_run_dir(run_dir: Path) -> Path:
     """
     Resolve a run directory path, handling 'latest' shortcut.
-    
+
     If run_dir ends with 'latest' and doesn't exist as a directory,
     reads the actual path from 'latest_run.txt' in the parent directory.
-    
+
     Args:
         run_dir: Path to the synthesis run directory (may be 'latest' shortcut)
-        
+
     Returns:
         Resolved actual path to the run directory
     """
@@ -658,19 +661,19 @@ def resolve_run_dir(run_dir: Path) -> Path:
 def load_compiled_modules(run_dir: Path):
     """
     Load compiled CSD modules from a synthesis run directory.
-    
+
     Args:
         run_dir: Path to the synthesis run directory
-        
+
     Returns:
         Tuple of (_dafny, VerifiedDecoderAgent, GeneratedCSD) modules
-        
+
     Raises:
         FileNotFoundError: If compiled modules are not found
     """
     # Resolve 'latest' shortcut if needed
     run_dir = resolve_run_dir(run_dir)
-    
+
     module_dir = run_dir / "generated_csd"
     if not module_dir.exists():
         # Check if GeneratedCSD.py is directly in run_dir
@@ -686,7 +689,7 @@ def load_compiled_modules(run_dir: Path):
                     module_dir = found[0].parent
                 else:
                     raise FileNotFoundError(f"Compiled module directory not found in {run_dir}")
-    
+
     if str(module_dir) not in sys.path:
         sys.path.insert(0, str(module_dir))
 

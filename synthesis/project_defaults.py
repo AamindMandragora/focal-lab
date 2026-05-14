@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from shutil import which
 
 
 def default_repo_path(env_var: str, fallback_name: str) -> Path:
@@ -43,6 +44,9 @@ def default_dafny_path() -> str:
     repo_dafny = Path(__file__).resolve().parent.parent / "dafny" / "dafny"
     if repo_dafny.exists():
         return str(repo_dafny)
+    path_dafny = which("dafny")
+    if path_dafny:
+        return path_dafny
     return str(Path.home() / ".dotnet" / "tools" / "dafny")
 
 

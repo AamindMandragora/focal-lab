@@ -14,4 +14,3 @@ def get_logic(dataset_name: str) -> Any:
     if dataset_name == "smiles":
         return import_module("synthesis.evaluate.benchmarks.smiles.eval_logic")
     raise ValueError(f"Unknown dataset: {dataset_name}")
-

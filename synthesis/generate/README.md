@@ -45,4 +45,6 @@ Direct Gemini / Vertex APIs are not wired in the generator; Gemini matrix profil
 ## Important Constraint
 
 This repository treats synthesis as a controlled study.
-Prompt content must avoid hidden strategy coaching and should remain limited to allowed task/tool context as described in `AGENTS.md`.
+Prompt content must avoid strategy guidance, benchmark-specific answer hints,
+and unmeasured heuristics. Neutral tool/API reference is allowed as contract
+content as described in `AGENTS.md`.

@@ -122,6 +122,9 @@ class EvaluationResult:
     accuracy_definition: str = "correct_examples_over_all_examples"
     invalid_outputs_excluded_from_accuracy: int = 0
     max_sample_time_seconds: float = 0.0
+    early_stopped: bool = False
+    early_stop_reason: Optional[str] = None
+    planned_num_examples: Optional[int] = None
 
     # Sample outputs for feedback (question, expected, actual, is_correct)
     sample_outputs: List[Dict[str, Any]] = field(default_factory=list)
@@ -140,6 +143,8 @@ class EvaluationResult:
         """Check if aggregate metrics meet the specified thresholds."""
         if not self.sample_outputs:
             return False
+        if self.early_stopped:
+            return False
         runtime_ok = True
         if max_seconds_per_example is not None:
             runtime_ok = self.max_sample_time_seconds <= max_seconds_per_example
@@ -151,8 +156,13 @@ class EvaluationResult:
 
     def get_feedback_summary(self) -> str:
         """Generate a summary for feedback to the generator."""
+        eval_count_label = (
+            f"{self.num_examples}/{self.planned_num_examples}"
+            if self.early_stopped and self.planned_num_examples
+            else str(self.num_examples)
+        )
         lines = [
-            f"Evaluation Results ({self.num_examples} examples):",
+            f"Evaluation Results ({eval_count_label} examples):",
             (
                 "  Accuracy: "
                 f"{self.accuracy:.1%} "
@@ -163,6 +173,10 @@ class EvaluationResult:
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
+        if self.early_stopped:
+            lines.append("  Early Stop: yes")
+            if self.early_stop_reason:
+                lines.append(f"  Early Stop Reason: {self.early_stop_reason}")
         if self.accuracy_definition != "correct_examples_over_all_examples":
             lines.append(f"  Accuracy Definition: {self.accuracy_definition}")
         if self.invalid_outputs_excluded_from_accuracy:
@@ -1136,6 +1150,9 @@ class EvaluationResult:
             "invalid_outputs_excluded_from_accuracy": self.invalid_outputs_excluded_from_accuracy,
             "total_time_seconds": self.total_time_seconds,
             "max_sample_time_seconds": self.max_sample_time_seconds,
+            "early_stopped": self.early_stopped,
+            "early_stop_reason": self.early_stop_reason,
+            "planned_num_examples": self.planned_num_examples,
             "error": self.error,
             "sample_outputs": self.sample_outputs,
             "aux_metrics": self.aux_metrics,
@@ -1832,6 +1849,9 @@ class Evaluator:
         compiled_module_path: Path,
         sample_size: Optional[int] = None,
         min_accuracy: Optional[float] = None,
+        early_stop_min_accuracy: Optional[float] = None,
+        early_stop_min_syntax_rate: Optional[float] = None,
+        early_stop_runtime_failures: Optional[int] = None,
     ) -> EvaluationResult:
         """
         Evaluate the compiled CSD on a sample of the dataset.
@@ -1839,9 +1859,10 @@ class Evaluator:
         Args:
             compiled_module_path: Path to the compiled GeneratedCSD.py module
             sample_size: Number of examples to evaluate (overrides init value)
-            min_accuracy: Optional target accuracy. If provided, evaluation
-                stops once even a perfect score on every remaining example
-                cannot reach this target.
+            min_accuracy: Backward-compatible target accuracy for early stop.
+            early_stop_min_accuracy: Optional target accuracy for early stop.
+            early_stop_min_syntax_rate: Optional target syntax rate for early stop.
+            early_stop_runtime_failures: Optional runtime-failure count for early stop.
 
         Returns:
             EvaluationResult with metrics and sample outputs
@@ -1867,29 +1888,41 @@ class Evaluator:
             all_examples_contain_delimiters = True
             num_examples_syntax_pass = 0
             num_accuracy_examples = 0
-            total_planned_examples = len(dataset)
+            planned_num_examples = len(dataset)
+            target_min_accuracy = (
+                early_stop_min_accuracy
+                if early_stop_min_accuracy is not None
+                else min_accuracy
+            )
+            early_stop_enabled = (
+                target_min_accuracy is not None
+                or early_stop_min_syntax_rate is not None
+                or early_stop_runtime_failures is not None
+            )
 
             def _accuracy_upper_bound() -> float:
-                remaining = max(0, total_planned_examples - len(sample_outputs))
+                remaining = max(0, planned_num_examples - len(sample_outputs))
                 return logic.accuracy_upper_bound(
                     num_correct,
                     remaining,
                     num_accuracy_examples,
-                    total_planned_examples,
+                    planned_num_examples,
                 )
 
-            def _target_unreachable() -> bool:
-                return min_accuracy is not None and min_accuracy > 0.0 and _accuracy_upper_bound() < min_accuracy
-
-            def _partial_result_for_unreachable_target() -> EvaluationResult:
+            def build_result(early_stop_reason: Optional[str] = None) -> EvaluationResult:
                 total_time = time.time() - start_time
                 evaluated_count = len(sample_outputs)
                 max_sample_time = max(
                     (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
                     default=0.0,
                 )
+                denominator_basis = (
+                    planned_num_examples
+                    if early_stop_reason and "target accuracy" in early_stop_reason
+                    else evaluated_count
+                )
                 accuracy_denominator = logic.final_accuracy_denominator(
-                    total_planned_examples,
+                    denominator_basis,
                     num_accuracy_examples,
                 )
                 accuracy_definition = logic.accuracy_definition()
@@ -1897,16 +1930,17 @@ class Evaluator:
                     evaluated_count,
                     num_accuracy_examples,
                 )
-                upper_bound = _accuracy_upper_bound()
                 aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
-                aux_metrics["early_stop"] = {
-                    "reason": "target_accuracy_unreachable",
-                    "target_accuracy": min_accuracy,
-                    "max_possible_accuracy": upper_bound,
-                    "evaluated_examples": evaluated_count,
-                    "total_examples": total_planned_examples,
-                    "remaining_examples": max(0, total_planned_examples - evaluated_count),
-                }
+                if early_stop_reason is not None:
+                    aux_metrics["early_stop"] = {
+                        "reason": early_stop_reason,
+                        "target_accuracy": target_min_accuracy,
+                        "target_syntax_rate": early_stop_min_syntax_rate,
+                        "max_possible_accuracy": _accuracy_upper_bound(),
+                        "evaluated_examples": evaluated_count,
+                        "total_examples": planned_num_examples,
+                        "remaining_examples": max(0, planned_num_examples - evaluated_count),
+                    }
                 return EvaluationResult(
                     success=True,
                     accuracy=num_correct / max(1, accuracy_denominator),
@@ -1919,14 +1953,61 @@ class Evaluator:
                     invalid_outputs_excluded_from_accuracy=invalid_excluded,
                     total_time_seconds=total_time,
                     max_sample_time_seconds=max_sample_time,
-                    error=(
-                        "Evaluation stopped early because target accuracy is "
-                        f"unreachable: best possible is {upper_bound:.1%}, "
-                        f"target is {float(min_accuracy or 0.0):.1%}."
-                    ),
+                    early_stopped=early_stop_reason is not None,
+                    early_stop_reason=early_stop_reason,
+                    planned_num_examples=planned_num_examples,
+                    error=early_stop_reason,
                     sample_outputs=sample_outputs,
                     aux_metrics=aux_metrics,
                 )
+
+            def early_stop_reason_if_any() -> Optional[str]:
+                if not early_stop_enabled or not sample_outputs:
+                    return None
+
+                evaluated_count = len(sample_outputs)
+                remaining = planned_num_examples - evaluated_count
+                runtime_failures = sum(
+                    1 for sample in sample_outputs if sample.get("runtime_budget_exceeded")
+                )
+                if (
+                    early_stop_runtime_failures is not None
+                    and runtime_failures >= early_stop_runtime_failures
+                ):
+                    return (
+                        "threshold-impossible early stop: "
+                        f"{runtime_failures} example(s) exceeded the per-example runtime budget."
+                    )
+
+                # SMILES excludes invalid molecules from the accuracy denominator, so
+                # an accuracy upper bound is not comparable until all syntax outcomes
+                # are known. Keep this synthesis gate to fixed-denominator tasks.
+                if self.dataset_name == "smiles":
+                    return None
+
+                if target_min_accuracy is not None:
+                    best_possible_accuracy = _accuracy_upper_bound()
+                    if best_possible_accuracy < target_min_accuracy:
+                        return (
+                            "target accuracy unreachable: "
+                            f"best possible accuracy is {best_possible_accuracy:.1%} "
+                            f"after {evaluated_count}/{planned_num_examples} examples, "
+                            f"below required {target_min_accuracy:.1%}."
+                        )
+
+                if early_stop_min_syntax_rate is not None:
+                    best_possible_syntax = (
+                        num_examples_syntax_pass + remaining
+                    ) / max(1, planned_num_examples)
+                    if best_possible_syntax < early_stop_min_syntax_rate:
+                        return (
+                            "threshold-impossible early stop: "
+                            f"best possible syntax is {best_possible_syntax:.1%} "
+                            f"after {evaluated_count}/{planned_num_examples} examples, "
+                            f"below required {early_stop_min_syntax_rate:.1%}."
+                        )
+
+                return None
 
             for i, example in enumerate(dataset):
                 print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
@@ -2046,15 +2127,10 @@ class Evaluator:
                     if self.dataset_name == "smiles":
                         sample["smiles_eval"] = benchmark_aux
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
-                    if _target_unreachable():
-                        upper_bound = _accuracy_upper_bound()
-                        print(
-                            "  [EVAL]   Stopping early: target accuracy "
-                            f"{float(min_accuracy or 0.0):.1%} is unreachable "
-                            f"(best possible {upper_bound:.1%}).",
-                            flush=True,
-                        )
-                        return _partial_result_for_unreachable_target()
+                    early_reason = early_stop_reason_if_any()
+                    if early_reason:
+                        print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
+                        return build_result(early_reason)
 
                 except Exception as e:
                     if hasattr(example, "conclusion"):
@@ -2096,80 +2172,20 @@ class Evaluator:
                         "helper_trace": [],
                     }
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
-                    if _target_unreachable():
-                        upper_bound = _accuracy_upper_bound()
-                        print(
-                            "  [EVAL]   Stopping early: target accuracy "
-                            f"{float(min_accuracy or 0.0):.1%} is unreachable "
-                            f"(best possible {upper_bound:.1%}).",
-                            flush=True,
+                    all_examples_contain_delimiters = False
+                    early_reason = early_stop_reason_if_any()
+                    if early_reason:
+                        print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
+                        return build_result(early_reason)
+                    if timed_out and early_stop_enabled:
+                        reason = (
+                            "Evaluation stopped early because one example exceeded "
+                            f"the {self.max_seconds_per_example:.2f}s runtime budget."
                         )
-                        return _partial_result_for_unreachable_target()
-                    if timed_out:
-                        total_time = time.time() - start_time
-                        evaluated_count = len(sample_outputs)
-                        max_sample_time = max(
-                            (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
-                            default=0.0,
-                        )
-                        return EvaluationResult(
-                            success=True,
-                            accuracy=num_correct / max(
-                                1,
-                                logic.final_accuracy_denominator(evaluated_count, num_accuracy_examples),
-                            ),
-                            contains_delimiters=False,
-                            syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
-                            num_examples=evaluated_count,
-                            num_correct=num_correct,
-                            accuracy_denominator=logic.final_accuracy_denominator(
-                                evaluated_count,
-                                num_accuracy_examples,
-                            ),
-                            accuracy_definition=logic.accuracy_definition(),
-                            invalid_outputs_excluded_from_accuracy=logic.invalid_outputs_excluded(
-                                evaluated_count,
-                                num_accuracy_examples,
-                            ),
-                            total_time_seconds=total_time,
-                            max_sample_time_seconds=max_sample_time,
-                            error=(
-                                "Evaluation stopped early because one example exceeded "
-                                f"the {self.max_seconds_per_example:.2f}s runtime budget."
-                            ),
-                            sample_outputs=sample_outputs,
-                            aux_metrics=self._compute_smiles_aux_metrics(sample_outputs),
-                        )
+                        print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
+                        return build_result(reason)
 
-            total_time = time.time() - start_time
-            num_examples = len(dataset)
-            max_sample_time = max((float(sample.get("time_seconds", 0.0)) for sample in sample_outputs), default=0.0)
-            aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
-            accuracy_denominator = logic.final_accuracy_denominator(
-                num_examples,
-                num_accuracy_examples,
-            )
-            accuracy_definition = logic.accuracy_definition()
-            invalid_excluded = logic.invalid_outputs_excluded(
-                num_examples,
-                num_accuracy_examples,
-            )
-
-            return EvaluationResult(
-                success=True,
-                accuracy=num_correct / max(1, accuracy_denominator),
-                contains_delimiters=all_examples_contain_delimiters,
-                syntax_rate=num_examples_syntax_pass / max(1, num_examples),
-                num_examples=num_examples,
-                num_correct=num_correct,
-                accuracy_denominator=accuracy_denominator,
-                accuracy_definition=accuracy_definition,
-                invalid_outputs_excluded_from_accuracy=invalid_excluded,
-                total_time_seconds=total_time,
-                max_sample_time_seconds=max_sample_time,
-                sample_outputs=sample_outputs,
-                aux_metrics=aux_metrics,
-            )
+            return build_result()
 
         except Exception as e:
             return EvaluationResult(
