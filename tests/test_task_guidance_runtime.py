@@ -74,10 +74,10 @@ def test_feedback_summary_reports_prompt_guidance():
 
 
 def test_prompt_api_documents_append_task_guidance_start_only():
-    system_prompt = prompts.SYSTEM_PROMPT
+    tool_reference = prompts.TOOL_REFERENCE
 
-    assert "helpers.AppendTaskGuidance(lm, guidance);" in system_prompt
-    assert "call only at the start of the CSD" in system_prompt
+    assert "helpers.AppendTaskGuidance(lm, guidance);" in tool_reference
+    assert "call only at the start of the CSD" in tool_reference
 
 
 def test_verified_examples_place_guidance_before_generation_helpers():
