@@ -296,14 +296,12 @@ class SynthesisPipeline:
         "DeadEndDetection",
         "TopValidCandidates",
         "RollbackConstrainedSuffix",
-        "FlattenTokenGroups",
-        "GroupContaining",
-        "IntersectTokenSets",
-        "SubtractTokenSets",
-        "ExtractAfterKeyword",
         "LastTokenBefore",
     }
     PRUNABLE_HELPERS = {
+        "UnconstrainedGeneration",
+        "ConstrainedGeneration",
+        "CraneGeneration",
         "UnconstrainedChunk",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
@@ -338,6 +336,18 @@ class SynthesisPipeline:
         "RepetitionPenaltyStep",
         "TemperatureConstrainedStep",
         "RollbackConstrainedSpan",
+        "ExtractAfterKeyword",
+        "IntersectTokenSets",
+        "SubtractTokenSets",
+        "RollbackToValidPrefix",
+        "FlattenTokenGroups",
+        "GroupContaining",
+        "PrefixToString",
+        "ExtractContentBetweenDelimiters",
+        "CountSubstring",
+        "CountTokenOccurrences",
+        "OccurrencesInRange",
+        "TokensSinceLastOccurrence",
     }
 
     def __init__(
@@ -509,17 +519,25 @@ class SynthesisPipeline:
         return body.strip()
 
     def _get_helper_calls_for_evaluation_history(self, strategy_code: str) -> list[str]:
-        """Return model-facing helper calls used by a strategy body."""
+        """Return model-facing helper/CSDHelpers calls used by a strategy body."""
         body = self._get_strategy_body_for_evaluation_history(strategy_code)
-        calls = re.findall(r"\bhelpers\.([A-Za-z_][A-Za-z0-9_]*)\s*\(", body)
+        calls = re.findall(r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\s*\(", body)
         return sorted(set(calls))
 
     @staticmethod
     def _extract_helper_universe_from_prompts() -> set[str]:
-        """Extract helper method names referenced in the system tool API docs."""
-        calls = re.findall(
-            r"\bhelpers\.([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+        """Extract helper method names referenced in the prompt tool API docs."""
+        prompt_helper_names = getattr(generation_prompts, "_ALL_HELPER_NAMES", None)
+        if prompt_helper_names is not None:
+            return set(prompt_helper_names)
+        tool_reference = getattr(
+            generation_prompts,
+            "TOOL_REFERENCE",
             generation_prompts.SYSTEM_PROMPT,
+        )
+        calls = re.findall(
+            r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\b",
+            tool_reference,
         )
         return set(calls)
 

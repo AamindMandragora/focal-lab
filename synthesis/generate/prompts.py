@@ -13,6 +13,8 @@ The generator expects these entrypoints:
 - build_format_repair_prompt(previous_strategy)
 """
 
+import re
+
 # NOTE:
 # The synthesized output is injected into
 # `synthesis/verify/library/GeneratedCSD.dfy` as the BODY
@@ -356,12 +358,19 @@ consume token budget by themselves.
   Cost: +1 token-step by helper contract, including EOS.
   Control profile: soft grammar preference with hard parser fallback.
 
-- `helpers.SafeBoostTokenLogits(lm, tokens, amount)` and
-  `helpers.SafePenalizeTokenLogits(lm, tokens, amount)`
-  Role: adjust soft preference in the current logits.
-  Mechanics: filter `tokens` through `lm.Tokens`, then add to or subtract from
-  their existing logits. They do not call the LM, sample, append output, or
-  inspect the parser.
+- `helpers.SafeBoostTokenLogits(lm, tokens, amount)`
+  Role: raise soft preference for a caller-supplied token set in the current logits.
+  Mechanics: filters `tokens` through `lm.Tokens`, then adds to their existing
+  logits. It does not call the LM, sample, append output, or inspect the parser.
+  Cost: +0.
+  Control profile: soft logit preference only; relevant only to later choices
+  that read the modified logits rather than regenerating fresh logits first.
+
+- `helpers.SafePenalizeTokenLogits(lm, tokens, amount)`
+  Role: lower soft preference for a caller-supplied token set in the current logits.
+  Mechanics: filters `tokens` through `lm.Tokens`, then subtracts from their
+  existing logits. It does not call the LM, sample, append output, or inspect
+  the parser.
   Cost: +0.
   Control profile: soft logit preference only; relevant only to later choices
   that read the modified logits rather than regenerating fresh logits first.
@@ -392,11 +401,16 @@ consume token budget by themselves.
 
 ### Parser queries, repair, and context extraction
 
-- `helpers.ValidTokenCount(parser, currentConstrained)` and
-  `helpers.DeadEndDetection(parser, currentConstrained, minValidCount)`
+- `helpers.ValidTokenCount(parser, currentConstrained)`
   Role: inspect parser branching at the current constrained prefix.
-  Mechanics: return a count or thresholded boolean; no LM call and no state
-  change.
+  Mechanics: returns the valid-next-token count; no LM call and no state change.
+  Cost: +0.
+  Control profile: parser information only.
+
+- `helpers.DeadEndDetection(parser, currentConstrained, minValidCount)`
+  Role: detect whether parser branching is below a caller-supplied threshold.
+  Mechanics: returns a thresholded boolean from the valid-next-token count; no
+  LM call and no state change.
   Cost: +0.
   Control profile: parser information only.
 
@@ -468,20 +482,38 @@ consume token budget by themselves.
   EOS or parser-valid extension.
   Cost: +1 token-step.
 
-- `helpers.PenalizedConstrainedStep` / `helpers.BoostedConstrainedStep`
-  Role: `ConstrainedStep` with explicit penalize/boost lists that must already be in `lm.Tokens`.
-  Mechanics: same hard mask and postconditions as `ConstrainedStep` after logit edit.
+- `helpers.PenalizedConstrainedStep`
+  Role: `ConstrainedStep` with an explicit penalize list that must already be in `lm.Tokens`.
+  Mechanics: same hard mask and postconditions as `ConstrainedStep` after the
+  penalty edit.
   Cost: +1 token-step.
 
-- `helpers.BoostTokenLogits` / `helpers.PenalizeTokenLogits`
+- `helpers.BoostedConstrainedStep`
+  Role: `ConstrainedStep` with an explicit boost list that must already be in `lm.Tokens`.
+  Mechanics: same hard mask and postconditions as `ConstrainedStep` after the
+  boost edit.
+  Cost: +1 token-step.
+
+- `helpers.BoostTokenLogits`
+  Role: direct positive logit nudge for a vocabulary-known token list.
+  Mechanics: requires `forall t in list :: t in lm.Tokens`; clamped arithmetic; no LM call.
+  Cost: +0.
+
+- `helpers.PenalizeTokenLogits`
   Role: direct logit nudge for a vocabulary-known token list.
   Mechanics: requires `forall t in list :: t in lm.Tokens`; clamped arithmetic; no LM call.
   Cost: +0.
 
-- `helpers.RepetitionPenaltyStep` / `helpers.TemperatureConstrainedStep`
-  Role: constrained steps with repetition penalty on a token bag or temperature scaling
-  before masking (non-safe variants impose the same membership/range proofs as the
-  underlying penalize/scale helpers).
+- `helpers.RepetitionPenaltyStep`
+  Role: constrained step with repetition penalty on a token bag before masking.
+  Mechanics: non-safe variant imposes the same membership proofs as the
+  underlying penalize helper.
+  Cost: +1 token-step.
+
+- `helpers.TemperatureConstrainedStep`
+  Role: constrained step with temperature scaling before masking.
+  Mechanics: non-safe variant imposes the same range proofs as the underlying
+  scale helper.
   Cost: +1 token-step.
 
 - `helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, totalBudget, penalties, penaltyAmount, eosToken)`
@@ -489,8 +521,13 @@ consume token budget by themselves.
   Mechanics: extends `generatedOut` token by token; `cost` increases by `stepsUsed`.
   Cost: +`stepsUsed` token-steps (each inner step +1).
 
-- `helpers.GetHighestLogitToken(lm)` / `helpers.GetTokenLogit(lm, token)`
-  Role: read argmax or one coordinate from the current logit vector.
+- `helpers.GetHighestLogitToken(lm)`
+  Role: read the argmax from the current logit vector.
+  Mechanics: no forward pass; assumes logits already match the intended prefix.
+  Cost: +0.
+
+- `helpers.GetTokenLogit(lm, token)`
+  Role: read one coordinate from the current logit vector.
   Mechanics: no forward pass; assumes logits already match the intended prefix.
   Cost: +0.
 
@@ -499,9 +536,15 @@ consume token budget by themselves.
   Mechanics: no LM call; use before a sampling helper that reads the same logits.
   Cost: +0.
 
-- `helpers.SaveLogitsSnapshot(lm)` / `helpers.RestoreLogitsSnapshot(lm, snapshot)`
+- `helpers.SaveLogitsSnapshot(lm)`
   Role: copy logits for branching or speculation.
-  Mechanics: full-array read/write; pairing restores prior logits without changing `cost` by itself.
+  Mechanics: full-array read; use with a later restore when a speculative path
+  should not commit logit state.
+  Cost: +0 for snapshot ops alone.
+
+- `helpers.RestoreLogitsSnapshot(lm, snapshot)`
+  Role: restore copied logits after branching or speculation.
+  Mechanics: full-array write; restores prior logits without changing `cost` by itself.
   Cost: +0 for snapshot ops alone.
 
 - `CSDHelpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
@@ -546,12 +589,122 @@ The proof sketch should explain preservation of the listed invariants.
 """
 
 
+_TOOL_REFERENCE_START = "\n## Available Tools\n"
+_PROOF_DISCIPLINE_START = "\n## Proof sketch discipline\n"
+_TOOL_REFERENCE_START_INDEX = SYSTEM_PROMPT.index(_TOOL_REFERENCE_START)
+_PROOF_DISCIPLINE_START_INDEX = SYSTEM_PROMPT.index(_PROOF_DISCIPLINE_START)
+TOOL_REFERENCE = SYSTEM_PROMPT[
+    _TOOL_REFERENCE_START_INDEX:_PROOF_DISCIPLINE_START_INDEX
+].strip()
+SYSTEM_PROMPT = (
+    SYSTEM_PROMPT[:_TOOL_REFERENCE_START_INDEX].rstrip()
+    + "\n\n"
+    + SYSTEM_PROMPT[_PROOF_DISCIPLINE_START_INDEX:].lstrip()
+)
+
+_HELPER_CALL_RE = re.compile(
+    r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\s*\("
+)
+_HELPER_REF_RE = re.compile(
+    r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\b"
+)
+_ALL_HELPER_NAMES = set(_HELPER_REF_RE.findall(TOOL_REFERENCE))
+
+
+def _filter_code_fence_lines(text: str, allowed: set[str]) -> str:
+    """Drop helper signatures that are outside the active helper contract."""
+    lines = []
+    for line in text.splitlines():
+        helper_names = set(_HELPER_REF_RE.findall(line))
+        if helper_names and helper_names.isdisjoint(allowed):
+            continue
+        lines.append(line)
+    return "\n".join(lines).rstrip()
+
+
+def _iter_helper_doc_blocks(section_body: str):
+    block: list[str] = []
+    for line in section_body.splitlines():
+        if line.startswith("- `"):
+            if block:
+                yield block
+            block = [line]
+        elif block:
+            block.append(line)
+    if block:
+        yield block
+
+
+def _filter_tool_api_reference(text: str, allowed: set[str]) -> str:
+    """Keep API reference bullets only for helpers visible this attempt."""
+    lm_parser_surface = ""
+    lm_parser_header = "\n## LM and `Parser` surface"
+    if lm_parser_header in text:
+        text, lm_parser_surface = text.split(lm_parser_header, 1)
+        lm_parser_surface = lm_parser_header.strip() + lm_parser_surface.rstrip()
+
+    lines = text.splitlines()
+    section_starts = [
+        index for index, line in enumerate(lines) if line.startswith("### ")
+    ]
+    if not section_starts:
+        parts = [text.rstrip()] if text.rstrip() else []
+        if lm_parser_surface:
+            parts.append(lm_parser_surface)
+        return "\n\n".join(parts)
+
+    intro = "\n".join(lines[:section_starts[0]]).rstrip()
+    rendered_sections = []
+
+    for start_index, next_start_index in zip(
+        section_starts,
+        section_starts[1:] + [len(lines)],
+    ):
+        header = lines[start_index]
+        body = "\n".join(lines[start_index + 1:next_start_index])
+        kept_blocks = []
+        for block in _iter_helper_doc_blocks(body):
+            helper_names = set(_HELPER_REF_RE.findall("\n".join(block)))
+            if helper_names and helper_names.issubset(allowed):
+                kept_blocks.append("\n".join(block).rstrip())
+        if kept_blocks:
+            rendered_sections.append(
+                header + "\n\n" + "\n\n".join(kept_blocks)
+            )
+
+    parts = [intro] if intro else []
+    parts.extend(rendered_sections)
+    if lm_parser_surface:
+        parts.append(lm_parser_surface)
+    return "\n\n".join(parts).rstrip()
+
+
+def _filter_tool_reference(allowed_helpers: list[str]) -> str:
+    """Render a reduced tool catalog for the currently allowed helper set."""
+    allowed = set(allowed_helpers)
+    if _ALL_HELPER_NAMES and _ALL_HELPER_NAMES.issubset(allowed):
+        return TOOL_REFERENCE
+
+    if "\n## Tool API Reference\n" not in TOOL_REFERENCE:
+        return _filter_code_fence_lines(TOOL_REFERENCE, allowed)
+
+    available_tools, api_reference = TOOL_REFERENCE.split(
+        "\n## Tool API Reference\n",
+        1,
+    )
+    return (
+        _filter_code_fence_lines(available_tools, allowed)
+        + "\n\n## Tool API Reference\n\n"
+        + _filter_tool_api_reference(api_reference, allowed)
+    ).rstrip()
+
+
 INITIAL_GENERATION_PROMPT = """\
 Generate a complete Dafny method body for this use-case.
 
 Task:
 {task_description}
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 
 Output ONLY the Dafny method body. Do NOT output a method signature, outer wrapper text, or markdown code fences.
 
@@ -1504,7 +1657,7 @@ Your previous method body failed Dafny verification.
 
 Task:
 {task_description}
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 
 {search_memory_block}
 Previous attempt:
@@ -1521,7 +1674,7 @@ Verification error:
 Revise the method body so it verifies.
 
 Dafny constraint reminder:
-- Methods cannot be called directly inside expression contexts (e.g., `if A && helpers.SomeMethod(...)`).
+- Methods cannot be called directly inside expression contexts.
 - Call the method first, bind its result to a local variable, then use that variable in the condition.
 
 ## Verified Examples
@@ -1552,7 +1705,7 @@ the measured failure source and avoid repeating a broad behavior profile unless
 the next change alters the causal axis that failed.
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
-Use only the contracts and tools already available in the system prompt.
+Use only the contracts and tools provided above.
 """
 
 
@@ -1561,7 +1714,7 @@ Your method body passed Dafny verification but failed at runtime.
 
 Task:
 {task_description}
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 
 {search_memory_block}
 Previous attempt:
@@ -1583,7 +1736,7 @@ The corrected body must include the required rationale and proof sketch blocks a
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 {search_memory_block}
 Previous attempt:
 ```dafny
@@ -1605,7 +1758,7 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 {search_memory_block}
 Content to rewrite:
 ```dafny
@@ -1626,7 +1779,7 @@ Treat the evaluation results below as factual observations of generated outputs.
 
 Task:
 {task_description}
-{allowed_helpers_block}
+{allowed_helpers_block}{tool_reference_block}
 
 {search_memory_block}
 ## Strategy Context
@@ -1698,9 +1851,41 @@ def _build_allowed_helpers_block(allowed_helpers: list[str] | None) -> str:
     helper_names = ", ".join(f"`{name}`" for name in sorted(set(allowed_helpers)))
     return (
         "Helper-call contract for this attempt:\n"
-        "Only these `helpers.<Method>(...)` calls are allowed:\n"
+        "Only these `helpers.<Method>(...)` and `CSDHelpers.<Method>(...)` calls are allowed:\n"
         f"{helper_names}\n"
-        "Calls to helper methods outside this set are invalid for this attempt.\n\n"
+        "Calls to helper or CSDHelpers methods outside this set are invalid for this attempt.\n\n"
+    )
+
+
+def _build_tool_reference_block(allowed_helpers: list[str] | None) -> str:
+    """Build the helper/API reference the model sees for this attempt."""
+    if not allowed_helpers:
+        return TOOL_REFERENCE + "\n\n"
+    return _filter_tool_reference(allowed_helpers) + "\n\n"
+
+
+def _build_verified_examples_block(allowed_helpers: list[str] | None) -> str:
+    """Keep only verified examples compatible with the active helper contract."""
+    if not allowed_helpers:
+        return VERIFIED_EXAMPLES
+    allowed = set(allowed_helpers)
+    if _ALL_HELPER_NAMES and _ALL_HELPER_NAMES.issubset(allowed):
+        return VERIFIED_EXAMPLES
+
+    chunks = re.split(r"(?=// CSD_RATIONALE_BEGIN)", VERIFIED_EXAMPLES)
+    kept_chunks = []
+    for chunk in chunks:
+        if "// CSD_RATIONALE_BEGIN" not in chunk:
+            continue
+        helper_names = set(_HELPER_CALL_RE.findall(chunk))
+        if helper_names.issubset(allowed):
+            kept_chunks.append(chunk.strip())
+
+    if kept_chunks:
+        return "\n\n".join(kept_chunks).strip()
+    return (
+        "// No verified examples are compatible with the active helper-call "
+        "contract for this attempt."
     )
 
 
@@ -1711,7 +1896,8 @@ def build_initial_prompt(
     user_prompt = INITIAL_GENERATION_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
-        verified_examples=VERIFIED_EXAMPLES,
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        verified_examples=_build_verified_examples_block(allowed_helpers),
     )
     return SYSTEM_PROMPT, user_prompt
 
@@ -1760,13 +1946,14 @@ def build_verification_error_prompt(
     user_prompt = VERIFICATION_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_message=error_message,
         strategy_context_block=strategy_context_block,
         structured_feedback_block=structured_feedback_block,
         error_history_block=error_history_block,
         behavioral_context_block=behavioral_context_block,
-        verified_examples=VERIFIED_EXAMPLES,
+        verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
@@ -1783,6 +1970,7 @@ def build_runtime_error_prompt(
     user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_traceback=error_traceback,
         search_memory_block=search_memory_block,
@@ -1799,6 +1987,7 @@ def build_compilation_error_prompt(
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_message=error_message,
         search_memory_block=search_memory_block,
@@ -1814,6 +2003,7 @@ def build_format_repair_prompt(
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = FORMAT_REPAIR_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         search_memory_block=search_memory_block,
     )
@@ -1848,11 +2038,12 @@ def build_evaluation_failure_prompt(
     user_prompt = EVALUATION_FAILURE_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
+        tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         working_hypothesis_block=working_hypothesis_block,
         evaluation_feedback=evaluation_feedback,
         evaluation_history_block=evaluation_history_block,
-        verified_examples=VERIFIED_EXAMPLES,
+        verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
     )
     return SYSTEM_PROMPT, user_prompt
