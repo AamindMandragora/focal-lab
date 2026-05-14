@@ -18,6 +18,8 @@ Allowed prompt content:
 - Tool signatures, neutral API reference, and formal contracts
   (preconditions, postconditions, types, ranges, mechanics, cost/state effects,
   proof obligations).
+- Neutral documentation for CSD-authored evaluator prompt guidance, including
+  `AppendTaskGuidance` placement and first-call-wins semantics.
 - Verified method-body examples as contract/format examples, not benchmark
   answers or task-specific strategy prescriptions.
 - Empirical refinement context from the current synthesis run, including

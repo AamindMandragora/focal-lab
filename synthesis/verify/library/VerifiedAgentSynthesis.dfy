@@ -203,6 +203,10 @@ module VerifiedDecoderAgent {
       requires ValidTokensIdsLogits()
       ensures ValidTokensIdsLogits()
 
+    method {:extern} {:axiom} AppendTaskGuidance(guidance: string)
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+
     method {:extern} {:axiom} ChooseNextToken() returns (token: Token)
       requires ValidTokensIdsLogits()
       ensures token in Tokens
@@ -286,6 +290,14 @@ module VerifiedDecoderAgent {
       ensures cost == 0
     {
       cost := 0;
+    }
+
+    method AppendTaskGuidance(lm: LM, guidance: string)
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures cost == old(cost)
+    {
+      lm.AppendTaskGuidance(guidance);
     }
 
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)

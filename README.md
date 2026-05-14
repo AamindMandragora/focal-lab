@@ -124,6 +124,7 @@ Optional local-beam refinement controls:
 ## Notes for Contributors
 
 - Keep synthesis prompts as controlled-study inputs: task objectives, neutral tool/API reference, formal contracts, verified contract/format examples, and factual measured refinement context are allowed; strategy guidance, benchmark hints, and unmeasured heuristics are not.
+- Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
 - `run_all_tests.sh` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn.
