@@ -71,10 +71,12 @@ STEP_BUDGETS="$DEFAULT_STEP_BUDGETS"
 EVAL_BACKEND="vllm"
 DEVICE="auto"
 EVAL_SAMPLE_SIZE="100"
-SYNTH_FEEDBACK_SAMPLE_SIZE="20"
 EVAL_MAX_STEPS="900"
 VLLM_GPU_MEM_UTIL="0.8"
-DAFNY_PATH="$ROOT_DIR/dafny/dafny"
+DAFNY_PATH="${DAFNY_PATH:-}"
+if [[ -z "$DAFNY_PATH" && -x "$ROOT_DIR/dafny/dafny" ]]; then
+  DAFNY_PATH="$ROOT_DIR/dafny/dafny"
+fi
 GENERATED_OUTPUT_DIR="${CSD_OUTPUT_DIR:-outputs/generated}"
 BASELINE_OUTPUT_DIR="${CSD_BASELINE_OUTPUT_DIR:-outputs/baselines}"
 ABLATION_OUTPUT_DIR="${CSD_ABLATION_OUTPUT_DIR:-outputs/ablations}"
@@ -119,8 +121,7 @@ Options:
   --generation-models CSV       Metadecode synthesis generation model profiles
   --eval-backend NAME           huggingface|vllm (default: vllm)
   --device NAME                 auto|cuda|cpu|mps (default: auto)
-  --eval-sample-size N          Final evaluation sample size (default: 100)
-  --synth-feedback-sample-size N  Synthesis feedback sample size (default: 20)
+  --eval-sample-size N          Evaluation sample size for baselines and metadecode (default: 100)
   --eval-max-steps N            Eval max steps for main matrix (default: 900)
   --gsm-split-file PATH         Train/eval split manifest for GSM (disjoint splits)
   --spider-split-file PATH      Train/eval split manifest for Spider (disjoint splits)
@@ -153,7 +154,6 @@ while [[ $# -gt 0 ]]; do
     --eval-backend) EVAL_BACKEND="$2"; shift 2 ;;
     --device) DEVICE="$2"; shift 2 ;;
     --eval-sample-size) EVAL_SAMPLE_SIZE="$2"; shift 2 ;;
-    --synth-feedback-sample-size) SYNTH_FEEDBACK_SAMPLE_SIZE="$2"; shift 2 ;;
     --eval-max-steps) EVAL_MAX_STEPS="$2"; shift 2 ;;
     --gsm-split-file) GSM_SPLIT_FILE="$2"; shift 2 ;;
     --spider-split-file) SPIDER_SPLIT_FILE="$2"; shift 2 ;;
@@ -363,7 +363,7 @@ run_metadecode_case() {
     --output-name "$run_name"
     --min-accuracy "0.0"
     --min-syntax-rate "0.0"
-    --eval-sample-size "$SYNTH_FEEDBACK_SAMPLE_SIZE"
+    --eval-sample-size "$EVAL_SAMPLE_SIZE"
     --eval-max-steps "$max_steps"
     --eval-step-token-budget "$token_budget"
     --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
@@ -372,10 +372,13 @@ run_metadecode_case() {
   )
 
   if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
-    synth_cmd+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name train)
+    synth_cmd+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
   fi
   if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
-    synth_cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name train)
+    synth_cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
+  fi
+  if [[ "$benchmark" == "smiles" ]]; then
+    synth_cmd+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
   fi
 
   if [[ -n "$DAFNY_PATH" ]]; then
@@ -545,6 +548,15 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
           --refinement-beam-size "$beam_size"
           --helper-selection-policy "$policy"
         )
+        if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
+          cmd_e+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
+        fi
+        if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
+          cmd_e+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
+        fi
+        if [[ "$benchmark" == "smiles" ]]; then
+          cmd_e+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
+        fi
         if [[ -n "$DAFNY_PATH" ]]; then
           cmd_e+=(--dafny-path "$DAFNY_PATH")
         fi
@@ -587,6 +599,15 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
         --output-dir "$GENERATED_OUTPUT_DIR"
         "$mask_flag"
       )
+      if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
+        cmd_f+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
+      fi
+      if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
+        cmd_f+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
+      fi
+      if [[ "$benchmark" == "smiles" ]]; then
+        cmd_f+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
+      fi
       if [[ -n "$DAFNY_PATH" ]]; then
         cmd_f+=(--dafny-path "$DAFNY_PATH")
       fi

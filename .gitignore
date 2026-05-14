@@ -3,20 +3,34 @@
 cache/
 
 dafny/
+dafny-lang/dafny/
 dafny/variants/
 
 paper/
 legacy/
 
+# Preserved local experiment artifacts.
+outputs/generated-csd/
+outputs/local_root/
+outputs/prompt_logs/
+outputs/smiles-benchmark/
+
+__pycache__/
 **/__pycache__/
 
 *.pyc
 *.bak.*
+*.env
+.env
+.venv/
+**/.env
+**/success_report.json
+**/failure_report.json
+**/latest_run.txt
 
 **/_dafny/
 **/System_/
 
-**/.env
 .codex
 
 environment/vendor/

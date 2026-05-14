@@ -43,7 +43,7 @@ Examples:
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
     )
-    
+
     parser.add_argument(
         "--task", "-t",
         type=str,
@@ -57,7 +57,7 @@ Examples:
         default=5,
         help="Maximum refinement iterations (default: 5)"
     )
-    
+
     parser.add_argument(
         "--generation-model",
         type=str,
@@ -103,14 +103,14 @@ Examples:
         default="vllm",
         help="Backend for evaluation runtime (default: vllm; openai is unsupported for constrained runtime)."
     )
-    
+
     parser.add_argument(
         "--output-name", "-o",
         type=str,
         default="generated_csd",
         help="Name for the output module (default: generated_csd)"
     )
-    
+
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -124,36 +124,50 @@ Examples:
         default=None,
         help="Directory for baseline benchmark summaries (default: outputs/baselines/)"
     )
-    
+
+    parser.add_argument(
+        "--initial-strategy-file",
+        type=Path,
+        default=None,
+        help="Optional strategy body to use as the first attempt instead of asking the generation model for a fresh initial strategy.",
+    )
+
+    parser.add_argument(
+        "--initial-attempt-offset",
+        type=int,
+        default=0,
+        help="Attempt number offset for recovery runs seeded from an earlier synthesis attempt.",
+    )
+
     parser.add_argument(
         "--dafny-path",
         type=str,
         default=default_dafny_path(),
         help="Path to Dafny executable"
     )
-    
+
     parser.add_argument(
         "--temperature",
         type=float,
         default=0.7,
         help="Sampling temperature for Qwen (default: 0.7)"
     )
-    
+
     parser.add_argument(
         "--synthesis-max-tokens",
         "--max-tokens",
         dest="synthesis_max_tokens",
         type=int,
-        default=2048,
-        help="Maximum tokens for CSD synthesis generation per attempt (default: 2048)"
+        default=8192,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 8192)"
     )
-    
+
     parser.add_argument(
         "--no-save-reports",
         action="store_true",
         help="Don't save failure/success reports to disk"
     )
-    
+
     parser.add_argument(
         "--device",
         type=str,
@@ -161,7 +175,7 @@ Examples:
         default="auto",
         help="Device for model inference (default: auto)"
     )
-    
+
     # Evaluation arguments (required - evaluation is part of the synthesis loop)
     parser.add_argument(
         "--dataset", "-d",
@@ -231,7 +245,16 @@ Examples:
         "--gsm-source-dir",
         type=str,
         default=None,
-        help="Load GSM-Symbolic examples from this local folder of JSON files (e.g. CRANE's gsm_symbolic/) instead of HuggingFace"
+        help="Load GSM-Symbolic examples from this folder of CRANE-style JSON files ({placeholder} questions). "
+        "When omitted for --dataset gsm_symbolic, defaults to vendored legacy/CRANE/src/gsm_symbolic if present "
+        "(not HuggingFace: HF rows only have numeric prose in question fields)."
+    )
+
+    parser.add_argument(
+        "--gsm-instantiated-hf",
+        action="store_true",
+        help="For gsm_symbolic only: load apple/GSM-Symbolic from HuggingFace (numeric stories) and skip the "
+        "default local CRANE JSON folder.",
     )
 
     parser.add_argument(
@@ -328,8 +351,8 @@ Examples:
     parser.add_argument(
         "--vllm-max-model-len",
         type=int,
-        default=4096,
-        help="Maximum model context length passed to vLLM (default: 4096)"
+        default=16384,
+        help="Maximum model context length passed to vLLM (default: 16384; must fit prompts plus synthesis output)"
     )
 
     parser.add_argument(
@@ -439,6 +462,33 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    # GSM-Symbolic: HF ``question`` / ``original_question`` are numeric prose only. Use CRANE JSONs (question_parsed)
+    # for {placeholder} prompts unless the user opts into HF via --gsm-instantiated-hf.
+    if args.dataset == "gsm_symbolic" and not args.gsm_instantiated_hf and args.gsm_source_dir is None:
+        repo_root = Path(__file__).resolve().parent.parent
+        vendored = repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
+        if vendored.is_dir():
+            args.gsm_source_dir = str(vendored)
+        else:
+            try:
+                from synthesis.project_defaults import default_gsm_source_dir
+            except ImportError:
+                from project_defaults import default_gsm_source_dir
+            fb = default_gsm_source_dir()
+            if fb.is_dir():
+                args.gsm_source_dir = str(fb)
+        if args.gsm_source_dir:
+            print(
+                f"[gsm_symbolic] Using local JSON folder for symbolic {{var}} prompts: {args.gsm_source_dir}"
+            )
+        else:
+            print(
+                "[gsm_symbolic] Warning: no local CRANE-style GSM folder found; "
+                "using HuggingFace apple/GSM-Symbolic (numeric prose in question fields only). "
+                "Set --gsm-source-dir or CRANE_GSM_SYMBOLIC_DIR, or pass --gsm-instantiated-hf to silence.",
+                file=sys.stderr,
+            )
 
     if args.generation_model is None:
         if args.generation_backend == "bedrock":
@@ -589,14 +639,21 @@ Examples:
         max_local_edit_ratio=args.max_local_edit_ratio,
         beam_verify_candidates=args.beam_verify_candidates,
     )
-    
+
+    initial_strategy_code = None
+    if args.initial_strategy_file:
+        initial_strategy_code = args.initial_strategy_file.read_text()
+        print(f"Loaded initial strategy seed from: {args.initial_strategy_file}")
+
     # Run synthesis
     try:
         result = pipeline.synthesize(
             task_description=args.task,
             output_name=args.output_name,
+            initial_strategy_code=initial_strategy_code,
+            initial_attempt_offset=args.initial_attempt_offset,
         )
-        
+
         print("\n" + "=" * 60)
         print("SYNTHESIS COMPLETE")
         print("=" * 60)
@@ -609,19 +666,19 @@ Examples:
         print(f"Total time: {result.total_time_ms:.1f}ms")
 
         sys.exit(0)
-        
+
     except SynthesisExhaustionError as e:
         print("\n" + "=" * 60)
         print("SYNTHESIS FAILED")
         print("=" * 60)
         print(e.get_failure_summary())
-        
+
         sys.exit(1)
-        
+
     except KeyboardInterrupt:
         print("\n\nSynthesis interrupted by user")
         sys.exit(130)
-        
+
     except Exception as e:
         print(f"\nUnexpected error: {e}")
         import traceback

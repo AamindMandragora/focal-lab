@@ -655,21 +655,14 @@ def eval_exec_match(db, p_str, g_str, pred, gold):
     except:
         return False
 
-    try:
-        cursor.execute(g_str)
-        q_res = cursor.fetchall()
-    except:
-        return False
+    cursor.execute(g_str)
+    q_res = cursor.fetchall()
 
     def res_map(res, val_units):
         rmap = {}
         for idx, val_unit in enumerate(val_units):
             key = tuple(val_unit[1]) if not val_unit[2] else (val_unit[0], tuple(val_unit[1]), tuple(val_unit[2]))
-            try:
-                rmap[key] = [r[idx] for r in res]
-            except (IndexError, TypeError):
-                # Predicted query returned a different shape than expected; treat as no-match.
-                rmap[key] = None
+            rmap[key] = [r[idx] for r in res]
         return rmap
 
     p_val_units = [unit[1] for unit in pred['select'][1]]

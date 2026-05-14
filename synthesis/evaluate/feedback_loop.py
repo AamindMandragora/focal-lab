@@ -2633,6 +2633,8 @@ class SynthesisPipeline:
         self,
         task_description: str,
         output_name: str = "generated_csd",
+        initial_strategy_code: str | None = None,
+        initial_attempt_offset: int = 0,
     ) -> SynthesisResult:
         """
         Synthesize a CSD strategy for the given task.
@@ -2714,14 +2716,20 @@ class SynthesisPipeline:
             step_token_budget=self.evaluator.step_token_budget,
         )
 
-        print(f"Generating initial strategy for: {task_description}")
         allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
         if helper_status:
             print(f"Helper policy: {helper_status}")
-        strategy_code = self.generator.generate_initial(
-            task_description,
-            allowed_helpers=allowed_helpers,
-        )
+
+        # Initial generation, or a caller-provided recovery seed.
+        if initial_strategy_code is not None:
+            print("Using caller-provided initial strategy seed")
+            strategy_code = initial_strategy_code
+        else:
+            print(f"Generating initial strategy for: {task_description}")
+            strategy_code = self.generator.generate_initial(
+                task_description,
+                allowed_helpers=allowed_helpers,
+            )
 
         # Index in `attempts` after which we last performed a fresh restart.
         # Used to bound the "consecutive verification failures since last restart"
@@ -2729,10 +2737,11 @@ class SynthesisPipeline:
         last_restart_index = 0
 
         for iteration in range(self.max_iterations):
-            attempt_num = iteration + 1
+            attempt_num = initial_attempt_offset + iteration + 1
+            attempt_total = initial_attempt_offset + self.max_iterations
             allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
             print(f"\n{'='*60}")
-            print(f"Attempt {attempt_num}/{self.max_iterations}")
+            print(f"Attempt {attempt_num}/{attempt_total}")
             print(f"{'='*60}")
             if helper_status:
                 print(f"Helper policy: {helper_status}")
@@ -2992,19 +3001,21 @@ class SynthesisPipeline:
                 )
             self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
-            try:
-                eval_result = self.evaluator.evaluate_sample(
-                    compiled_module_path=compilation_result.main_module_path,
-                    sample_size=self.eval_sample_size,
-                    min_accuracy=self.min_accuracy,
-                )
-            except TypeError as exc:
-                if "min_accuracy" not in str(exc):
-                    raise
-                eval_result = self.evaluator.evaluate_sample(
-                    compiled_module_path=compilation_result.main_module_path,
-                    sample_size=self.eval_sample_size,
-                )
+            eval_result = self.evaluator.evaluate_sample(
+                compiled_module_path=compilation_result.main_module_path,
+                sample_size=self.eval_sample_size,
+                early_stop_min_accuracy=self.min_accuracy
+                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                else None,
+                early_stop_min_syntax_rate=self.min_syntax_rate
+                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                else None,
+                early_stop_runtime_failures=(
+                    int(os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP_RUNTIME_FAILURES", "1"))
+                    if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                    else None
+                ),
+            )
             attempt.eval_result = eval_result
 
             smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
