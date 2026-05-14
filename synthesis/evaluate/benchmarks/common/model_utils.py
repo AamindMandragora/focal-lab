@@ -302,6 +302,35 @@ def _get_vllm_quantization_kwargs(
     }
 
 
+class _TaskGuidanceState:
+    """First-call-wins prompt guidance appended by generated CSDs."""
+
+    MAX_GUIDANCE_CHARS = 1200
+    HEADER = "Additional task guidance from CSD:"
+
+    def __init__(self) -> None:
+        self.accepted_guidance: str | None = None
+
+    def reset(self) -> None:
+        self.accepted_guidance = None
+
+    def append(self, instruction_text: str, guidance: object) -> str:
+        if self.accepted_guidance is not None:
+            return instruction_text
+        text = self._coerce_guidance(guidance)
+        if not text:
+            return instruction_text
+        self.accepted_guidance = text
+        separator = "\n" if instruction_text.endswith("\n") else "\n\n"
+        return f"{instruction_text}{separator}{self.HEADER}\n{text}\n"
+
+    def _coerce_guidance(self, guidance: object) -> str:
+        text = str(guidance).strip()
+        if not text:
+            return ""
+        return text[: self.MAX_GUIDANCE_CHARS]
+
+
 class _TensorizedLMBase:
     """Shared tensorized behavior for Dafny LM wrappers."""
 
@@ -311,6 +340,7 @@ class _TensorizedLMBase:
         self._Tokens = tokens
         self._token_ids = tids
         self.instruction_text = ""
+        self._task_guidance = _TaskGuidanceState()
         self._logits_device = torch.device(logits_device)
 
         n = len(tids)
@@ -341,6 +371,19 @@ class _TensorizedLMBase:
 
     def _prefix_text(self, prefix) -> str:
         return "".join(self._to_str(prefix[i]) for i in range(len(prefix)))
+
+    def ResetTaskGuidance(self):
+        self._task_guidance.reset()
+
+    def AppendTaskGuidance(self, guidance):
+        self.instruction_text = self._task_guidance.append(
+            self.instruction_text,
+            self._to_str(guidance),
+        )
+
+    @property
+    def task_guidance(self) -> str | None:
+        return self._task_guidance.accepted_guidance
 
     def _token_str_from_id(self, token_id: int) -> str:
         token_id = int(token_id)

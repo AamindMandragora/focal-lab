@@ -32,6 +32,8 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - `verify/reference/` holds verified example strategies (CRANE / IterGen / CARS-style); see `verify/reference/README.md`.
 - `evaluate/`
   - Runtime environment setup, benchmark evaluation, parser integration, and feedback-loop orchestration.
+  - Captures CSD-authored `AppendTaskGuidance` prompt guidance in evaluation
+    feedback so refinement can compare guidance choices against metrics.
 
 ## Canonical Stage Flow
 
