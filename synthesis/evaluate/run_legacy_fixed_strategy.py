@@ -952,7 +952,18 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
 
     run_started = time.perf_counter()
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
-    n_per_class = max(1, args.eval_sample_size)
+    selected_classes = [
+        part.strip()
+        for part in (args.smiles_classes or ",".join(SMILES_CLASSES)).split(",")
+        if part.strip()
+    ]
+    unknown = sorted(set(selected_classes) - set(SMILES_CLASSES))
+    if unknown:
+        raise ValueError(
+            f"Unknown SMILES class(es): {unknown}. Expected one of {SMILES_CLASSES}."
+        )
+
+    n_per_class = max(1, args.smiles_samples_per_class or args.eval_sample_size)
     uc_smiles_cot_prefix = (
         "For each molecule requested below, give brief step-by-step reasoning about the "
         "constraints, then write the SMILES string.\n\n"
@@ -979,7 +990,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     seen_per_class: dict[str, set[str]] = {}
 
-    for class_name in SMILES_CLASSES:
+    for class_name in selected_classes:
         task = get_smiles_task(class_name)
         base_prompt = task["prompt"]
         grammar_text = str(task["grammar_text"])
