@@ -59,6 +59,7 @@ DEFAULT_TOKEN_BUDGETS="1,2,4"
 DEFAULT_SYNTH_ITERS="3,5,10"
 DEFAULT_GEN_MODELS="gpt5.4,opus4.7"
 DEFAULT_STEP_BUDGETS="256,512,1024"
+DEFAULT_SMILES_CLASSES="acrylates,chain_extenders,isocyanates"
 
 MODELS="$DEFAULT_MODELS"
 BENCHMARKS="$DEFAULT_BENCHMARKS"
@@ -67,6 +68,7 @@ TOKEN_BUDGETS="$DEFAULT_TOKEN_BUDGETS"
 SYNTH_ITERS="$DEFAULT_SYNTH_ITERS"
 GEN_MODELS="$DEFAULT_GEN_MODELS"
 STEP_BUDGETS="$DEFAULT_STEP_BUDGETS"
+SMILES_CLASSES="$DEFAULT_SMILES_CLASSES"
 
 EVAL_BACKEND="vllm"
 DEVICE="auto"
@@ -119,6 +121,8 @@ Options:
   --step-budgets CSV            Max-steps budget ablation values (total generation budget)
   --synthesis-iterations CSV    Metadecode synthesis-iteration ablation values
   --generation-models CSV       Metadecode synthesis generation model profiles
+  --smiles-classes CSV          SMILES classes to evaluate; each run gets one class-specific grammar
+                                (default: acrylates,chain_extenders,isocyanates)
   --eval-backend NAME           huggingface|vllm (default: vllm)
   --device NAME                 auto|cuda|cpu|mps (default: auto)
   --eval-sample-size N          Evaluation sample size for baselines and metadecode (default: 100)
@@ -151,6 +155,7 @@ while [[ $# -gt 0 ]]; do
     --step-budgets) STEP_BUDGETS="$2"; shift 2 ;;
     --synthesis-iterations) SYNTH_ITERS="$2"; shift 2 ;;
     --generation-models) GEN_MODELS="$2"; shift 2 ;;
+    --smiles-classes|--smiles-class) SMILES_CLASSES="$2"; shift 2 ;;
     --eval-backend) EVAL_BACKEND="$2"; shift 2 ;;
     --device) DEVICE="$2"; shift 2 ;;
     --eval-sample-size) EVAL_SAMPLE_SIZE="$2"; shift 2 ;;
@@ -183,6 +188,44 @@ IFS=',' read -r -a TOKEN_BUDGETS_ARR <<< "$TOKEN_BUDGETS"
 IFS=',' read -r -a SYNTH_ITERS_ARR <<< "$SYNTH_ITERS"
 IFS=',' read -r -a GEN_MODELS_ARR <<< "$GEN_MODELS"
 IFS=',' read -r -a STEP_BUDGETS_ARR <<< "$STEP_BUDGETS"
+IFS=',' read -r -a SMILES_CLASSES_ARR <<< "$SMILES_CLASSES"
+
+trim() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+NORMALIZED_SMILES_CLASSES=()
+seen_smiles_classes=""
+for raw_smiles_class in "${SMILES_CLASSES_ARR[@]}"; do
+  smiles_class="$(trim "$raw_smiles_class")"
+  if [[ -z "$smiles_class" ]]; then
+    continue
+  fi
+  case "$smiles_class" in
+    acrylates|chain_extenders|isocyanates) ;;
+    *)
+      echo "Unknown SMILES class: $smiles_class" >&2
+      echo "Expected one of: acrylates, chain_extenders, isocyanates" >&2
+      exit 2
+      ;;
+  esac
+  case ",$seen_smiles_classes," in
+    *,"$smiles_class",*) continue ;;
+  esac
+  NORMALIZED_SMILES_CLASSES+=("$smiles_class")
+  seen_smiles_classes="${seen_smiles_classes:+$seen_smiles_classes,}$smiles_class"
+done
+
+if [[ "${#NORMALIZED_SMILES_CLASSES[@]}" -eq 0 ]]; then
+  echo "At least one SMILES class is required." >&2
+  exit 2
+fi
+
+SMILES_CLASSES_ARR=("${NORMALIZED_SMILES_CLASSES[@]}")
+SMILES_CLASSES="${SMILES_CLASSES_ARR[*]}"
 
 normalize_benchmark() {
   local b="$1"
@@ -289,11 +332,20 @@ run_fixed_strategy_case() {
   local eval_model="$3"
   local token_budget="$4"
   local max_steps="$5"
+  local smiles_class="${6:-}"
 
-  local model_slug
+  local model_slug benchmark_key
   model_slug="$(slugify "$eval_model")"
+  benchmark_key="$benchmark"
+  if [[ "$benchmark" == "smiles" ]]; then
+    if [[ -z "$smiles_class" ]]; then
+      echo "Internal error: SMILES fixed-strategy run requires a class." >&2
+      return 2
+    fi
+    benchmark_key="${benchmark}__class_$(slugify "$smiles_class")"
+  fi
 
-  local out_json="${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark}__tb${token_budget}__ms${max_steps}.json"
+  local out_json="${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark_key}__tb${token_budget}__ms${max_steps}.json"
   mkdir -p "$(dirname "$out_json")"
 
   if [[ -f "$out_json" ]] && [[ "$(wc -c < "$out_json")" -gt 20 ]] && baseline_json_complete "$out_json"; then
@@ -328,8 +380,29 @@ run_fixed_strategy_case() {
   if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
     cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
   fi
+  if [[ "$benchmark" == "smiles" ]]; then
+    cmd+=(--smiles-classes "$smiles_class" --smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
+  fi
 
   run_cmd "${cmd[@]}"
+}
+
+run_fixed_strategy_cases() {
+  local strategy="$1"
+  local benchmark="$2"
+  local eval_model="$3"
+  local token_budget="$4"
+  local max_steps="$5"
+
+  if [[ "$benchmark" == "smiles" ]]; then
+    local smiles_class
+    for smiles_class in "${SMILES_CLASSES_ARR[@]}"; do
+      run_fixed_strategy_case "$strategy" "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
+    done
+    return 0
+  fi
+
+  run_fixed_strategy_case "$strategy" "$benchmark" "$eval_model" "$token_budget" "$max_steps"
 }
 
 run_metadecode_case() {
@@ -339,16 +412,27 @@ run_metadecode_case() {
   local synth_iter="$4"
   local gen_profile="$5"
   local max_steps="$6"
+  local smiles_class="${7:-}"
 
   local resolved backend generation_model
   resolved="$(resolve_gen_profile "$gen_profile")"
   backend="${resolved%%|*}"
   generation_model="${resolved##*|}"
 
-  local model_slug gen_slug run_name task
+  local model_slug gen_slug run_name task class_suffix benchmark_key
   model_slug="$(slugify "$eval_model")"
   gen_slug="$(slugify "$gen_profile")"
-  run_name="metadecode_${benchmark}_${model_slug}_${gen_slug}_iter${synth_iter}_tb${token_budget}_ms${max_steps}"
+  class_suffix=""
+  benchmark_key="$benchmark"
+  if [[ "$benchmark" == "smiles" ]]; then
+    if [[ -z "$smiles_class" ]]; then
+      echo "Internal error: SMILES metadecode run requires a class." >&2
+      return 2
+    fi
+    class_suffix="_class_$(slugify "$smiles_class")"
+    benchmark_key="${benchmark}__class_$(slugify "$smiles_class")"
+  fi
+  run_name="metadecode_${benchmark}_${model_slug}_${gen_slug}_iter${synth_iter}_tb${token_budget}_ms${max_steps}${class_suffix}"
   task="$(metadecode_task "$benchmark")"
 
   local synth_cmd=(
@@ -378,7 +462,7 @@ run_metadecode_case() {
     synth_cmd+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
   fi
   if [[ "$benchmark" == "smiles" ]]; then
-    synth_cmd+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
+    synth_cmd+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE" --smiles-classes "$smiles_class")
   fi
 
   if [[ -n "$DAFNY_PATH" ]]; then
@@ -391,7 +475,7 @@ run_metadecode_case() {
   fi
 
   local out_json
-  out_json="${BASELINE_OUTPUT_DIR}/metadecode/${model_slug}/${benchmark}__tb${token_budget}__ms${max_steps}__gen${gen_slug}__iter${synth_iter}.json"
+  out_json="${BASELINE_OUTPUT_DIR}/metadecode/${model_slug}/${benchmark_key}__tb${token_budget}__ms${max_steps}__gen${gen_slug}__iter${synth_iter}.json"
   mkdir -p "$(dirname "$out_json")"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
@@ -418,6 +502,25 @@ run_metadecode_case() {
     --output "$out_json"
 }
 
+run_metadecode_cases() {
+  local benchmark="$1"
+  local eval_model="$2"
+  local token_budget="$3"
+  local synth_iter="$4"
+  local gen_profile="$5"
+  local max_steps="$6"
+
+  if [[ "$benchmark" == "smiles" ]]; then
+    local smiles_class
+    for smiles_class in "${SMILES_CLASSES_ARR[@]}"; do
+      run_metadecode_case "$benchmark" "$eval_model" "$token_budget" "$synth_iter" "$gen_profile" "$max_steps" "$smiles_class"
+    done
+    return 0
+  fi
+
+  run_metadecode_case "$benchmark" "$eval_model" "$token_budget" "$synth_iter" "$gen_profile" "$max_steps"
+}
+
 echo "=== run_all_tests matrix ==="
 echo "models: ${MODELS_ARR[*]}"
 echo "benchmarks: ${BENCHMARKS_ARR[*]}"
@@ -426,6 +529,7 @@ echo "token budgets: ${TOKEN_BUDGETS_ARR[*]}"
 echo "step budgets (ablation): ${STEP_BUDGETS_ARR[*]}"
 echo "synthesis iters (metadecode): ${SYNTH_ITERS_ARR[*]}"
 echo "generation models (metadecode): ${GEN_MODELS_ARR[*]}"
+echo "SMILES classes: ${SMILES_CLASSES_ARR[*]}"
 echo "eval max steps (main): ${EVAL_MAX_STEPS}"
 echo ""
 
@@ -440,10 +544,10 @@ if [[ "$SKIP_MAIN" -eq 0 ]]; then
       benchmark="$(normalize_benchmark "$raw_benchmark")"
       for strategy in "${STRATEGIES_ARR[@]}"; do
         if [[ "$strategy" == "metadecode" ]]; then
-          run_metadecode_case "$benchmark" "$eval_model" "${TOKEN_BUDGETS_ARR[0]}" \
+          run_metadecode_cases "$benchmark" "$eval_model" "${TOKEN_BUDGETS_ARR[0]}" \
             "${SYNTH_ITERS_ARR[-1]}" "${GEN_MODELS_ARR[0]}" "$EVAL_MAX_STEPS"
         else
-          run_fixed_strategy_case "$strategy" "$benchmark" "$eval_model" \
+          run_fixed_strategy_cases "$strategy" "$benchmark" "$eval_model" \
             "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS"
         fi
       done
@@ -469,10 +573,10 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
     for step_budget in "${STEP_BUDGETS_ARR[@]}"; do
       for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
         if [[ "$strategy" == "metadecode" ]]; then
-          run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
+          run_metadecode_cases "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
             "${SYNTH_ITERS_ARR[-1]}" "${GEN_MODELS_ARR[0]}" "$step_budget"
         else
-          run_fixed_strategy_case "$strategy" "$benchmark" "$ABLATION_MODEL" \
+          run_fixed_strategy_cases "$strategy" "$benchmark" "$ABLATION_MODEL" \
             "${TOKEN_BUDGETS_ARR[0]}" "$step_budget"
         fi
       done
@@ -484,7 +588,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
   for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for synth_iter in "${SYNTH_ITERS_ARR[@]}"; do
-      run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
+      run_metadecode_cases "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
         "$synth_iter" "${GEN_MODELS_ARR[0]}" "$EVAL_MAX_STEPS"
     done
   done
@@ -494,7 +598,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
   for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for gen_profile in "${GEN_MODELS_ARR[@]}"; do
-      run_metadecode_case "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
+      run_metadecode_cases "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" \
         "${SYNTH_ITERS_ARR[-1]}" "$gen_profile" "$EVAL_MAX_STEPS"
     done
   done
@@ -506,112 +610,79 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
     for token_budget in "${TOKEN_BUDGETS_ARR[@]}"; do
       for strategy in "gcd" "crane" "itergen" "cars" "metadecode"; do
         if [[ "$strategy" == "metadecode" ]]; then
-          run_metadecode_case "$benchmark" "$ABLATION_MODEL" "$token_budget" \
+          run_metadecode_cases "$benchmark" "$ABLATION_MODEL" "$token_budget" \
             "${SYNTH_ITERS_ARR[-1]}" "${GEN_MODELS_ARR[0]}" "$EVAL_MAX_STEPS"
         else
-          run_fixed_strategy_case "$strategy" "$benchmark" "$ABLATION_MODEL" \
+          run_fixed_strategy_cases "$strategy" "$benchmark" "$ABLATION_MODEL" \
             "$token_budget" "$EVAL_MAX_STEPS"
         fi
       done
     done
   done
 
-  # --- Ablation E: Beam refinement x helper selection policy ---
-  echo "--- Ablation E: Beam refinement x helper selection policy ---"
+  # --- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---
+  echo "--- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---"
   for raw_benchmark in "gsm" "spider" "smiles"; do
     benchmark="$(normalize_benchmark "$raw_benchmark")"
     for beam_size in 1 2 4; do
-      for policy in "utility" "bandit"; do
-        task_e="$(metadecode_task "$benchmark")"
-        run_name_e="ablat_beam${beam_size}_${policy}_${benchmark}"
-        resolved_gen_e="$(resolve_gen_profile "gpt5.4")"
-        backend_e="${resolved_gen_e%%|*}"
-        generation_model_e="${resolved_gen_e##*|}"
-        cmd_e=(
-          python -m synthesis.run_synthesis
-          --task "$task_e"
-          --dataset "$benchmark"
-          --generation-backend "$backend_e"
-          --generation-model "$generation_model_e"
-          --eval-model "$ABLATION_MODEL"
-          --eval-backend "$EVAL_BACKEND"
-          --max-iterations "${SYNTH_ITERS_ARR[-1]}"
-          --output-name "$run_name_e"
-          --min-accuracy "0.0"
-          --min-syntax-rate "0.0"
-          --eval-sample-size "$EVAL_SAMPLE_SIZE"
-          --eval-max-steps "$EVAL_MAX_STEPS"
-          --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
-          --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
-          --device "$DEVICE"
-          --output-dir "$GENERATED_OUTPUT_DIR"
-          --refinement-beam-size "$beam_size"
-          --helper-selection-policy "$policy"
-        )
-        if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
-          cmd_e+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
+      for mask_flag in "--adaptive-helper-mask" "--no-adaptive-helper-mask"; do
+        mask_label="mask_on"
+        if [[ "$mask_flag" == "--no-adaptive-helper-mask" ]]; then
+          mask_label="mask_off"
         fi
-        if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
-          cmd_e+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
-        fi
-        if [[ "$benchmark" == "smiles" ]]; then
-          cmd_e+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
-        fi
-        if [[ -n "$DAFNY_PATH" ]]; then
-          cmd_e+=(--dafny-path "$DAFNY_PATH")
-        fi
-        run_cmd "${cmd_e[@]}"
+        for policy in "utility" "bandit"; do
+          ablation_smiles_classes=("")
+          if [[ "$benchmark" == "smiles" ]]; then
+            ablation_smiles_classes=("${SMILES_CLASSES_ARR[@]}")
+          fi
+          for smiles_class in "${ablation_smiles_classes[@]}"; do
+            task_e="$(metadecode_task "$benchmark")"
+            class_suffix=""
+            if [[ "$benchmark" == "smiles" ]]; then
+              class_suffix="_class_$(slugify "$smiles_class")"
+            fi
+            run_name_e="ablat_beam${beam_size}_${mask_label}_${policy}_${benchmark}${class_suffix}"
+            resolved_gen_e="$(resolve_gen_profile "gpt5.4")"
+            backend_e="${resolved_gen_e%%|*}"
+            generation_model_e="${resolved_gen_e##*|}"
+            cmd_e=(
+              python -m synthesis.run_synthesis
+              --task "$task_e"
+              --dataset "$benchmark"
+              --generation-backend "$backend_e"
+              --generation-model "$generation_model_e"
+              --eval-model "$ABLATION_MODEL"
+              --eval-backend "$EVAL_BACKEND"
+              --max-iterations "${SYNTH_ITERS_ARR[-1]}"
+              --output-name "$run_name_e"
+              --min-accuracy "0.0"
+              --min-syntax-rate "0.0"
+              --eval-sample-size "$EVAL_SAMPLE_SIZE"
+              --eval-max-steps "$EVAL_MAX_STEPS"
+              --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
+              --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
+              --device "$DEVICE"
+              --output-dir "$GENERATED_OUTPUT_DIR"
+              --refinement-beam-size "$beam_size"
+              "$mask_flag"
+              --helper-selection-policy "$policy"
+            )
+            if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
+              cmd_e+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
+            fi
+            if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
+              cmd_e+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
+            fi
+            if [[ "$benchmark" == "smiles" ]]; then
+              cmd_e+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE" --smiles-classes "$smiles_class")
+            fi
+            if [[ -n "$DAFNY_PATH" ]]; then
+              cmd_e+=(--dafny-path "$DAFNY_PATH")
+            fi
+            run_cmd "${cmd_e[@]}"
+          done
+        done
       done
-    done
-  done
-
-  # --- Ablation F: Adaptive helper masking on/off ---
-  echo "--- Ablation F: Adaptive helper masking ---"
-  for mask_flag in "--adaptive-helper-mask" "--no-adaptive-helper-mask"; do
-    for raw_benchmark in "gsm" "spider" "smiles"; do
-      benchmark="$(normalize_benchmark "$raw_benchmark")"
-      task_f="$(metadecode_task "$benchmark")"
-      mask_label="mask_on"
-      if [[ "$mask_flag" == "--no-adaptive-helper-mask" ]]; then
-        mask_label="mask_off"
-      fi
-      run_name_f="ablat_${mask_label}_${benchmark}"
-      resolved_gen_f="$(resolve_gen_profile "gpt5.4")"
-      backend_f="${resolved_gen_f%%|*}"
-      generation_model_f="${resolved_gen_f##*|}"
-      cmd_f=(
-        python -m synthesis.run_synthesis
-        --task "$task_f"
-        --dataset "$benchmark"
-        --generation-backend "$backend_f"
-        --generation-model "$generation_model_f"
-        --eval-model "$ABLATION_MODEL"
-        --eval-backend "$EVAL_BACKEND"
-        --max-iterations "${SYNTH_ITERS_ARR[-1]}"
-        --output-name "$run_name_f"
-        --min-accuracy "0.0"
-        --min-syntax-rate "0.0"
-        --eval-sample-size "$EVAL_SAMPLE_SIZE"
-        --eval-max-steps "$EVAL_MAX_STEPS"
-        --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
-        --vllm-gpu-memory-utilization "$VLLM_GPU_MEM_UTIL"
-        --device "$DEVICE"
-        --output-dir "$GENERATED_OUTPUT_DIR"
-        "$mask_flag"
-      )
-      if [[ -n "$GSM_SPLIT_FILE" ]] && [[ "$benchmark" == "gsm_symbolic" ]]; then
-        cmd_f+=(--gsm-split-file "$GSM_SPLIT_FILE" --gsm-split-name eval)
-      fi
-      if [[ -n "$SPIDER_SPLIT_FILE" ]] && [[ "$benchmark" == "spider" ]]; then
-        cmd_f+=(--spider-split-file "$SPIDER_SPLIT_FILE" --spider-split-name eval)
-      fi
-      if [[ "$benchmark" == "smiles" ]]; then
-        cmd_f+=(--smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
-      fi
-      if [[ -n "$DAFNY_PATH" ]]; then
-        cmd_f+=(--dafny-path "$DAFNY_PATH")
-      fi
-      run_cmd "${cmd_f[@]}"
     done
   done
 
