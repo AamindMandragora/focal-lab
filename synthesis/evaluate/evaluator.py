@@ -1236,7 +1236,9 @@ class Evaluator:
         self.max_steps = max_steps
         self.load_in_4bit = load_in_4bit
         self.load_in_8bit = load_in_8bit
-        self.vllm_tensor_parallel_size = vllm_tensor_parallel_size
+        from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+
+        self.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(vllm_tensor_parallel_size)
         self.vllm_pipeline_parallel_size = vllm_pipeline_parallel_size
         self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
         self.vllm_max_model_len = vllm_max_model_len
@@ -1284,12 +1286,16 @@ class Evaluator:
             except Exception:
                 pass
 
+    def _read_split_manifest(self, split_file: str | Path) -> dict:
+        """Load a benchmark split manifest from a filesystem path."""
+        return json.loads(Path(split_file).read_text())
+
     def _load_gsm_split_indices(self) -> Optional[List[int]]:
         """Load explicit GSM example indices from a train/eval split manifest."""
         if self.gsm_split_file is None:
             return None
 
-        manifest = json.loads(self.gsm_split_file.read_text())
+        manifest = self._read_split_manifest(self.gsm_split_file)
         key = f"{self.gsm_split_name}_indices"
         if key not in manifest:
             available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
@@ -1314,7 +1320,7 @@ class Evaluator:
         if self.spider_split_file is None:
             return None
 
-        manifest = json.loads(self.spider_split_file.read_text())
+        manifest = self._read_split_manifest(self.spider_split_file)
         split_name = self._normalize_spider_split_name()
         key = f"{split_name}_indices"
         if key not in manifest and split_name == "test":
@@ -1414,7 +1420,10 @@ class Evaluator:
         else:
             raise ValueError(f"Unknown dataset: {self.dataset_name}")
 
-        def _make_env(gpu_memory_utilization: float) -> Dict[str, Any]:
+        def _make_env(
+            gpu_memory_utilization: float,
+            tensor_parallel_size: int | None,
+        ) -> Dict[str, Any]:
             return setup_dafny_environment(
                 run_dir=run_dir,
                 model_name=self.model_name,
@@ -1423,7 +1432,7 @@ class Evaluator:
                 grammar_file=self._get_grammar_file(),
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
-                vllm_tensor_parallel_size=self.vllm_tensor_parallel_size,
+                vllm_tensor_parallel_size=tensor_parallel_size,
                 vllm_pipeline_parallel_size=self.vllm_pipeline_parallel_size,
                 vllm_gpu_memory_utilization=gpu_memory_utilization,
                 vllm_max_model_len=self.vllm_max_model_len,
@@ -1431,7 +1440,36 @@ class Evaluator:
             )
 
         if self.backend != "vllm":
-            return _make_env(self.vllm_gpu_memory_utilization)
+            env = _make_env(self.vllm_gpu_memory_utilization, self.vllm_tensor_parallel_size)
+            self._env = env
+            self._env_cache_key = env_cache_key
+            return env
+
+        from synthesis.evaluate.benchmarks.common.model_utils import (
+            clear_vllm_engine_cache,
+            narrow_cuda_visible_devices_to_index,
+            pick_cuda_device_index_with_most_free_memory,
+        )
+
+        def _is_vllm_startup_memory_error(exc: Exception) -> bool:
+            message = str(exc)
+            return (
+                "desired GPU memory utilization" in message
+                or "Free memory on device" in message
+                or "Engine core initialization failed" in message
+            )
+
+        try:
+            import torch
+        except Exception:
+            torch = None  # type: ignore[assignment]
+
+        requested_tp = self.vllm_tensor_parallel_size or 1
+
+        tp_candidates: List[int] = []
+        for candidate in (requested_tp, 1):
+            if candidate >= 1 and candidate not in tp_candidates:
+                tp_candidates.append(candidate)
 
         util_candidates: List[float] = []
         for candidate in [
@@ -1445,27 +1483,45 @@ class Evaluator:
                 util_candidates.append(candidate)
 
         last_error: Exception | None = None
-        for util in util_candidates:
-            try:
-                if util != self.vllm_gpu_memory_utilization:
-                    print(
-                        f"Retrying vLLM evaluator startup with lower "
-                        f"gpu_memory_utilization={util:.2f}"
-                    )
-                env = _make_env(util)
-                self._env = env
-                self._env_cache_key = env_cache_key
-                return env
-            except Exception as exc:
-                last_error = exc
-                message = str(exc)
-                startup_memory_error = (
-                    "desired GPU memory utilization" in message
-                    or "Free memory on device" in message
-                    or "Engine core initialization failed" in message
+        narrowed_visible_devices = False
+        for tp in tp_candidates:
+            if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
+                best_idx = pick_cuda_device_index_with_most_free_memory()
+                chosen = narrow_cuda_visible_devices_to_index(best_idx)
+                narrowed_visible_devices = True
+                print(
+                    "Retrying vLLM evaluator startup on a single GPU "
+                    f"(CUDA_VISIBLE_DEVICES={chosen})"
                 )
-                if not startup_memory_error or util == util_candidates[-1]:
-                    raise
+                clear_vllm_engine_cache()
+                if torch is not None and torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            for util in util_candidates:
+                try:
+                    if tp != requested_tp and util == util_candidates[0]:
+                        print(
+                            f"Retrying vLLM evaluator startup with "
+                            f"tensor_parallel_size={tp}"
+                        )
+                    elif util != self.vllm_gpu_memory_utilization:
+                        print(
+                            f"Retrying vLLM evaluator startup with lower "
+                            f"gpu_memory_utilization={util:.2f}"
+                        )
+                    env = _make_env(util, tp)
+                    self._env = env
+                    self._env_cache_key = env_cache_key
+                    return env
+                except Exception as exc:
+                    last_error = exc
+                    if not _is_vllm_startup_memory_error(exc):
+                        raise
+                    clear_vllm_engine_cache()
+                    if torch is not None and torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
+                    if is_last_attempt:
+                        raise
 
         if last_error is not None:
             raise last_error

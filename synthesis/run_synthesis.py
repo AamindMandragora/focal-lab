@@ -331,7 +331,7 @@ Examples:
         "--vllm-tensor-parallel-size",
         type=int,
         default=None,
-        help="Explicit tensor parallel size for vLLM. Defaults to visible GPU count."
+        help="Explicit tensor parallel size for vLLM (default: 1; capped by VAS_MAX_CUDA_DEVICES)"
     )
 
     parser.add_argument(

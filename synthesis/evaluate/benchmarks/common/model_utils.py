@@ -225,6 +225,81 @@ def _get_cached_vllm_engine(
     return llm, tokenizer
 
 
+def max_cuda_devices_from_env(default: int = 1) -> int:
+    """Max CUDA devices for local runs (override with VAS_MAX_CUDA_DEVICES or CSD_MAX_CUDA_DEVICES)."""
+    raw = os.environ.get(
+        "VAS_MAX_CUDA_DEVICES",
+        os.environ.get("CSD_MAX_CUDA_DEVICES", str(default)),
+    )
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
+
+
+def resolve_vllm_tensor_parallel_size(requested: int | None = None) -> int:
+    """Resolve vLLM tensor parallel size, capped by max_cuda_devices_from_env()."""
+    cap = max_cuda_devices_from_env()
+    tensor_parallel_size = requested or 1
+    return max(1, min(tensor_parallel_size, cap))
+
+
+def limit_cuda_visible_devices(value: str | None, max_devices: int | None = None) -> str | None:
+    """Keep at most ``max_devices`` entries from a comma-separated CUDA_VISIBLE_DEVICES value."""
+    if not value:
+        return value
+    cap = max_devices if max_devices is not None else max_cuda_devices_from_env()
+    parts = [part.strip() for part in value.split(",") if part.strip()]
+    if len(parts) <= cap:
+        return value
+    return ",".join(parts[:cap])
+
+
+def visible_cuda_device_ids() -> list[str]:
+    """Return CUDA device ids from CUDA_VISIBLE_DEVICES, or 0..N-1 when unset."""
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
+    if not visible:
+        try:
+            import torch
+
+            return [str(i) for i in range(torch.cuda.device_count())]
+        except Exception:
+            return ["0"]
+    return [part.strip() for part in visible.split(",") if part.strip()]
+
+
+def pick_cuda_device_index_with_most_free_memory() -> int:
+    """Pick the visible CUDA index with the largest free memory pool."""
+    try:
+        import torch
+
+        if not torch.cuda.is_available() or torch.cuda.device_count() == 0:
+            return 0
+        best_idx = 0
+        best_free = -1
+        for idx in range(torch.cuda.device_count()):
+            free_bytes, _total_bytes = torch.cuda.mem_get_info(idx)
+            if free_bytes > best_free:
+                best_free = free_bytes
+                best_idx = idx
+        return best_idx
+    except Exception:
+        return 0
+
+
+def narrow_cuda_visible_devices_to_index(device_index: int) -> str:
+    """Restrict CUDA_VISIBLE_DEVICES to one physical id from the current visible set."""
+    visible_ids = visible_cuda_device_ids()
+    if not visible_ids:
+        chosen = str(device_index)
+    elif 0 <= device_index < len(visible_ids):
+        chosen = visible_ids[device_index]
+    else:
+        chosen = visible_ids[0]
+    os.environ["CUDA_VISIBLE_DEVICES"] = chosen
+    return chosen
+
+
 def clear_vllm_engine_cache() -> None:
     """Release cached vLLM engines before switching back to a generator model."""
     cached_engines = list(_VLLM_ENGINE_CACHE.values())
@@ -801,7 +876,7 @@ def create_vllm_lm(
     _configure_vllm_multiprocessing()
     from vllm import SamplingParams
 
-    tensor_parallel_size = tensor_parallel_size or max(1, torch.cuda.device_count())
+    tensor_parallel_size = resolve_vllm_tensor_parallel_size(tensor_parallel_size)
     vllm_kwargs = _get_vllm_quantization_kwargs(
         load_in_4bit=load_in_4bit,
         load_in_8bit=load_in_8bit,

@@ -253,7 +253,11 @@ class StrategyGenerator:
                 from vllm import LLM
                 from vllm.transformers_utils.tokenizer import get_tokenizer
 
-                tensor_parallel_size = self.vllm_tensor_parallel_size or max(1, torch.cuda.device_count())
+                from synthesis.evaluate.benchmarks.common.model_utils import (
+                    resolve_vllm_tensor_parallel_size,
+                )
+
+                tensor_parallel_size = resolve_vllm_tensor_parallel_size(self.vllm_tensor_parallel_size)
                 self._tokenizer = get_tokenizer(self.model_name, trust_remote_code=True)
                 vllm_kwargs = self._get_vllm_quantization_kwargs()
                 self._vllm = LLM(

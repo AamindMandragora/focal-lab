@@ -166,6 +166,22 @@ def _gsm_symbolic_completion_to_delimited(
     return f"<<{expr}>>"
 
 
+def _legacy_local_cuda_device(device_arg: str) -> str:
+    """CUDA device string valid for the GPUs visible in this process."""
+    if device_arg and device_arg not in {"auto", "cuda"}:
+        if device_arg.startswith("cuda"):
+            return device_arg
+        return f"cuda:{device_arg}"
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            return "cuda:0"
+    except Exception:
+        pass
+    return "cuda"
+
+
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
     if dataset == "gsm_symbolic":
         repo_root = Path(__file__).resolve().parents[2]
@@ -175,10 +191,12 @@ def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, d
             if env_gsm
             else repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
         )
-        eval_runtime.gsm_split_file = args.gsm_split_file
+        if args.gsm_split_file:
+            eval_runtime.gsm_split_file = Path(args.gsm_split_file)
         eval_runtime.gsm_split_name = args.gsm_split_name
     if dataset == "spider":
-        eval_runtime.spider_split_file = args.spider_split_file
+        if args.spider_split_file:
+            eval_runtime.spider_split_file = Path(args.spider_split_file)
         eval_runtime.spider_split_name = args.spider_split_name
 
 
@@ -350,6 +368,11 @@ def _annotate_legacy_rows_with_syntax(
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
@@ -564,6 +587,11 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
 
@@ -681,11 +709,16 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    device = _legacy_local_cuda_device(args.device)
     base_gsm_grammar = ""
     if dataset == "gsm_symbolic":
         base_gsm_grammar = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
@@ -849,11 +882,16 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    device = _legacy_local_cuda_device(args.device)
 
     base_gsm_grammar_text = ""
     if dataset == "gsm_symbolic":
@@ -983,7 +1021,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     )
 
     run_started = time.perf_counter()
-    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    device = _legacy_local_cuda_device(args.device)
     selected_classes = [
         part.strip()
         for part in (args.smiles_classes or ",".join(SMILES_CLASSES)).split(",")
@@ -1115,11 +1153,14 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        spider_split_file=args.spider_split_file,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, "spider")
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    device = _legacy_local_cuda_device(args.device)
 
     if args.eval_backend == "vllm":
         from vllm import LLM
@@ -1255,11 +1296,16 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    device = _legacy_local_cuda_device(args.device)
     base_gsm_grammar_text = ""
     if dataset == "gsm_symbolic":
         base_gsm_grammar_text = _crane_delimited_start_grammar(
@@ -1415,6 +1461,9 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     if do_cot:
         cmd.extend(["--do_cot", "True"])
 
+    legacy_device = _legacy_local_cuda_device(args.device)
+    cmd.extend(["--cot_device", legacy_device, "--llm_parser_device", legacy_device])
+
     if dataset == "gsm_symbolic":
         cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
     elif dataset in ("spider", "smiles"):
@@ -1469,6 +1518,12 @@ def main() -> None:
     parser.add_argument("--eval-step-token-budget", type=int, default=1)
     parser.add_argument("--dafny-path", default="")
     parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
+    parser.add_argument(
+        "--vllm-tensor-parallel-size",
+        type=int,
+        default=None,
+        help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
+    )
     parser.add_argument("--gsm-split-file", type=str, default=None,
                         help="Optional GSM train/eval split manifest JSON")
     parser.add_argument("--gsm-split-name", type=str, choices=["train", "eval"], default="eval",
@@ -1490,6 +1545,9 @@ def main() -> None:
         help="Samples per class for legacy CRANE main.py (default: eval-sample-size)",
     )
     args = parser.parse_args()
+    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+
+    args.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size)
 
     _ensure_repo_cache_env()
 
