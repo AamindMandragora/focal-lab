@@ -6,9 +6,10 @@ import argparse
 import json
 import os
 import re
-import time
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -166,12 +167,18 @@ def _gsm_symbolic_completion_to_delimited(
     return f"<<{expr}>>"
 
 
-def _legacy_local_cuda_device(device_arg: str) -> str:
-    """CUDA device string valid for the GPUs visible in this process."""
+def _legacy_local_cuda_device(device_arg: str, *, touch_cuda: bool = True) -> str:
+    """CUDA device string valid for the GPUs visible in this process.
+
+    When ``touch_cuda`` is false, do not call ``torch.cuda`` (required before vLLM
+  spawns workers so the parent has not initialized CUDA yet).
+    """
     if device_arg and device_arg not in {"auto", "cuda"}:
         if device_arg.startswith("cuda"):
             return device_arg
         return f"cuda:{device_arg}"
+    if not touch_cuda:
+        return "cuda:0"
     try:
         import torch
 
@@ -180,6 +187,10 @@ def _legacy_local_cuda_device(device_arg: str) -> str:
     except Exception:
         pass
     return "cuda"
+
+
+def _legacy_cuda_device_for_backend(device_arg: str, backend: str) -> str:
+    return _legacy_local_cuda_device(device_arg, touch_cuda=backend != "vllm")
 
 
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
@@ -403,9 +414,13 @@ def _annotate_legacy_rows_with_syntax(
             example = dict(example)
             if not isinstance(example.get("variable_types"), dict):
                 gold_answer = str(row.get("gold_answer") or "")
+                from synthesis.evaluate.benchmarks.gsm_symbolic.expression_normalize import (
+                    reserved_equivalence_names,
+                )
+
                 numeric_vars = sorted(
                     set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", gold_answer))
-                    - {"int", "ToInt", "z3_floor_div"}
+                    - reserved_equivalence_names()
                 )
                 if numeric_vars:
                     example["variable_types"] = {name: "int" for name in numeric_vars}
@@ -443,29 +458,8 @@ def _annotate_legacy_rows_with_syntax(
 
 
 def _cars_model_id(eval_model: str) -> str:
-    """Return the HuggingFace model ID to pass to CARS's run_task.py."""
+    """Return the HuggingFace model ID for legacy ``cars.lib.ConstrainedModel``."""
     return eval_model
-
-
-def _load_latest_cars_results(cars_root_dir: Path, class_name: str) -> list[dict[str, Any]]:
-    runs_root = cars_root_dir / "runs_log"
-    prefix = f"smiles_{class_name}"
-    candidates = sorted(
-        runs_root.rglob("*.json"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    for candidate in candidates:
-        if prefix not in candidate.as_posix():
-            continue
-        try:
-            payload = json.loads(candidate.read_text())
-        except json.JSONDecodeError:
-            continue
-        steps = payload.get("steps")
-        if isinstance(steps, list):
-            return steps
-    return []
 
 
 def _load_cars_results_from_log_dir(log_dir: Path) -> list[dict[str, Any]]:
@@ -479,14 +473,6 @@ def _load_cars_results_from_log_dir(log_dir: Path) -> list[dict[str, Any]]:
         if isinstance(steps, list):
             return steps
     return []
-
-
-def _extract_cars_log_dir(stdout: str, cars_root_dir: Path) -> Path | None:
-    for line in stdout.splitlines():
-        match = re.search(r"Saving results in folder\s+(.+)$", line.strip())
-        if match:
-            return cars_root_dir / match.group(1)
-    return None
 
 
 def _cars_add_import_paths(cars_root_dir: Path) -> None:
@@ -506,28 +492,34 @@ def _cars_tokens_to_text(tokens: list[Any]) -> str:
     return "".join(text_tokens).strip()
 
 
-def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_attempts: int) -> str:
-    formatted_prompt = cars_model._format_prompt(prompt)
-    prompt_ids = cars_model.tokenizer.encode(
-        formatted_prompt,
-        return_tensors="pt",
-        add_special_tokens=False,
-    ).to(cars_model.model.device)
-    prompt_len = int(prompt_ids.shape[1])
-    cars_model.reset_sampling(learn_level=3, constrain_first=True)
+def _cars_sampler_steps(
+    cars_model: Any,
+    prompt: str,
+    *,
+    n_steps: int,
+    max_new_tokens: int,
+) -> list[dict[str, Any]]:
+    """Run upstream ``cars.CARS`` multi-step sampling; return logged step dicts."""
+    from cars.cars import CARS
 
-    for _attempt in range(max(1, max_attempts)):
-        try:
-            current_ids, _current_scores, _current_raw_logprob = cars_model._generate(
-                prompt_ids,
-                max_new_tokens=max_new_tokens,
-            )
-        except ValueError:
-            continue
-        new_ids = current_ids[0][prompt_len:]
-        tokens = [cars_model.tokenizer.decode(token_id) for token_id in new_ids]
-        return _cars_tokens_to_text(tokens)
-    return ""
+    with tempfile.TemporaryDirectory(prefix="vas_cars_") as log_dir:
+        runner = CARS(cars_model, prompt, "cars", log_dir)
+        runner.get_samples(
+            n_samples=1,
+            n_steps=max(1, n_steps),
+            stop_after=1,
+            max_new_tokens=max(1, max_new_tokens),
+        )
+        return _load_cars_results_from_log_dir(Path(log_dir))
+
+
+def _cars_completion_from_steps(steps: list[dict[str, Any]]) -> str:
+    if not steps:
+        return ""
+    tokens = steps[-1].get("tokens")
+    if not isinstance(tokens, list):
+        return ""
+    return _cars_tokens_to_text(tokens)
 
 
 def _cars_normalize_gsm_symbolic_output(raw: str) -> str:
@@ -601,8 +593,9 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_suffix: dict[str, str] = {}
     grammar_cache: dict[str, Any] = {}
-    max_attempts = max(20, min(2000, int(args.eval_max_steps) * 2))
-    max_new_tokens = max(32, int(args.eval_max_steps))
+    # Match upstream run_task.py caps (default max_new_tokens=512; n_steps scales with sample count).
+    n_steps = max(20, min(2000, int(args.eval_max_steps) * 2))
+    max_new_tokens = min(512, max(32, int(args.eval_max_steps)))
 
     gsm_cars_grammar = ""
     if dataset == "gsm_symbolic":
@@ -628,12 +621,13 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
-        output_text = _cars_generate_text(
+        steps = _cars_sampler_steps(
             cars_model,
             prompt,
+            n_steps=n_steps,
             max_new_tokens=max_new_tokens,
-            max_attempts=max_attempts,
         )
+        output_text = _cars_completion_from_steps(steps)
         gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
@@ -675,6 +669,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         rows,
         args.output_json,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        extra_metrics={"adapter": "cars_legacy_cars"},
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -718,15 +713,13 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = _legacy_local_cuda_device(args.device)
+    device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
     base_gsm_grammar = ""
     if dataset == "gsm_symbolic":
-        base_gsm_grammar = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        # The prompt already ends with "<<"; constrain the expression body plus closing marker.
-        base_gsm_grammar = base_gsm_grammar.replace(
-            'syncode: "<<" start ">>"',
-            'syncode: start ">>"',
-            1,
+        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_gcd_span_grammar
+
+        base_gsm_grammar = build_gcd_span_grammar(
+            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         )
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
@@ -740,7 +733,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
     def _gcd_max_new_tokens() -> int:
         if dataset == "gsm_symbolic":
-            return min(96, max(32, int(args.eval_max_steps)))
+            # GSM answers are usually short; cap runaway constrained spans.
+            return 28
         if dataset == "smiles":
             return min(256, max(64, int(args.eval_max_steps)))
         return max(32, int(args.eval_max_steps))
@@ -891,23 +885,21 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = _legacy_local_cuda_device(args.device)
+    device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
 
     base_gsm_grammar_text = ""
     if dataset == "gsm_symbolic":
-        base_gsm_grammar_text = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        # GCD alignment: constrain body after the prompt's ``<<`` through closing ``>>``.
-        base_gsm_grammar_text = base_gsm_grammar_text.replace(
-            'syncode: "<<" start ">>"',
-            'syncode: start ">>"',
-            1,
+        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_gcd_span_grammar
+
+        base_gsm_grammar_text = build_gcd_span_grammar(
+            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         )
 
     def _itergen_max_new_tokens() -> int:
         """Match GCD caps so the incremental parser stack cannot grow with eval_max_steps."""
         ms = int(args.eval_max_steps)
         if dataset == "gsm_symbolic":
-            return min(96, max(32, ms))
+            return 28
         if dataset == "smiles":
             return min(256, max(64, ms))
         if dataset == "spider":
@@ -1021,7 +1013,6 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     )
 
     run_started = time.perf_counter()
-    device = _legacy_local_cuda_device(args.device)
     selected_classes = [
         part.strip()
         for part in (args.smiles_classes or ",".join(SMILES_CLASSES)).split(",")
@@ -1052,6 +1043,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
 
+        device = _legacy_local_cuda_device(args.device)
         tokenizer = AutoTokenizer.from_pretrained(args.eval_model, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             args.eval_model, device_map=device, torch_dtype=torch.float16, trust_remote_code=True
@@ -1160,8 +1152,6 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     _configure_fixed_eval_runtime(eval_runtime, args, "spider")
     examples = logic.load_dataset_sample(eval_runtime)
 
-    device = _legacy_local_cuda_device(args.device)
-
     if args.eval_backend == "vllm":
         from vllm import LLM
 
@@ -1175,6 +1165,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
         from transformers import AutoModelForCausalLM, AutoTokenizer
         import torch
 
+        device = _legacy_local_cuda_device(args.device)
         tokenizer = AutoTokenizer.from_pretrained(args.eval_model, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             args.eval_model,
@@ -1243,175 +1234,6 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
-def _crane_delimited_start_grammar(grammar_text: str) -> str:
-    """Make a grammar's default ``start`` rule include CRANE's delimiters.
-
-    CRANE switches into constrained mode only after the model emits ``<<``.
-    Once that happens its parser sees partial text prefixed with ``<<``, so
-    grammars whose default start rule is just the payload body must be wrapped
-    as ``start: "<<" body ">>"``.  The evaluator grammars keep delimiter
-    handling in ``syncode``/``csd_start`` helpers, which are not the default
-    Lark start rule used by the CRANE-style decoder.
-    """
-    if re.search(r'(?m)^\??start\s*:\s*"<<".*">>"', grammar_text):
-        return grammar_text
-
-    start_rule = re.compile(r"(?m)^(\??)start(\s*:)")
-    if not start_rule.search(grammar_text):
-        raise ValueError("Cannot wrap CRANE grammar: no default start rule found")
-
-    wrapped_body = start_rule.sub(r"\1crane_body\2", grammar_text, count=1)
-    return 'start: "<<" crane_body ">>"\n' + wrapped_body
-
-
-def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
-    """Run CRANE-style adaptive constrained decoding via vendored AdaptiveSynCode.
-
-    This path uses the shared synthesis evaluator to choose examples and score
-    answers, so CRANE is compared on the same split as MetaDecode, GCD, IterGen,
-    and CARS. AdaptiveSynCode implements CRANE's << >> switching logic.
-    """
-    run_started = time.perf_counter()
-    import sys as _sys
-
-    repo_root = Path(__file__).resolve().parents[2]
-    syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
-    syncode_pkg = syncode_root / "syncode"
-    for p in [str(syncode_root), str(syncode_pkg)]:
-        if p not in _sys.path:
-            _sys.path.insert(0, p)
-
-    from syncode.infer import AdaptiveSynCode
-    from synthesis.evaluate.benchmarks.registry import get_logic
-
-    logic = get_logic(dataset)
-
-    from synthesis.evaluate.evaluator import Evaluator
-    eval_runtime = Evaluator(
-        dataset_name=dataset,
-        model_name=args.eval_model,
-        backend=args.eval_backend,
-        device=args.device,
-        sample_size=args.eval_sample_size,
-        max_steps=args.eval_max_steps,
-        step_token_budget=args.eval_step_token_budget,
-        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
-        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
-        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
-        gsm_split_name=args.gsm_split_name,
-        spider_split_file=args.spider_split_file if dataset == "spider" else None,
-        spider_split_name=args.spider_split_name,
-    )
-    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
-    examples = logic.load_dataset_sample(eval_runtime)
-
-    device = _legacy_local_cuda_device(args.device)
-    base_gsm_grammar_text = ""
-    if dataset == "gsm_symbolic":
-        base_gsm_grammar_text = _crane_delimited_start_grammar(
-            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        )
-    spider_grammar_text = ""
-    if dataset == "spider":
-        spider_grammar_text = _crane_delimited_start_grammar(
-            (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
-        )
-
-    def _grammar_for_example(example: dict[str, Any]) -> str:
-        if dataset == "gsm_symbolic":
-            return base_gsm_grammar_text
-        if dataset == "spider":
-            return spider_grammar_text
-        if dataset == "smiles":
-            return _crane_delimited_start_grammar(str(example.get("grammar_text", "")))
-        raise ValueError(f"Unsupported dataset for AdaptiveSynCode adapter: {dataset}")
-
-    syncode_cache: dict[str, Any] = {}
-    rows: list[dict[str, Any]] = []
-    smiles_prompt_suffix: dict[str, str] = {}
-
-    for example in examples:
-        grammar_text = _grammar_for_example(example)
-        cache_key = f"{dataset}:{hash(grammar_text)}"
-        if cache_key not in syncode_cache:
-            syncode_cache[cache_key] = AdaptiveSynCode(
-                model=args.eval_model,
-                mode="grammar_strict",
-                quantize=False,
-                device=device,
-                grammar=grammar_text,
-                parse_output_only=True,
-                log_level=0,
-                start_symbol="<<",
-                end_symbol=">>",
-                max_new_tokens=max(32, int(args.eval_max_steps)),
-                do_sample=False,
-                num_return_sequences=1,
-            )
-        sc = syncode_cache[cache_key]
-
-        if dataset == "smiles":
-            cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
-
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
-        gen_started = time.perf_counter()
-        completions = sc.infer(prompt)
-        gen_seconds = time.perf_counter() - gen_started
-        raw_output = completions[0] if completions else ""
-        completion = completion_for_scoring(prompt, raw_output)
-        scored_output = (
-            eval_runtime._truncate_gsm_output(completion)
-            if dataset == "gsm_symbolic"
-            else completion
-        )
-        expected = logic.expected_answer(eval_runtime, example)
-        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
-        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
-
-        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
-        if dataset == "spider":
-            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
-        if dataset == "smiles":
-            syntax_valid = bool(aux and aux.get("syntax_valid"))
-            if syntax_valid and actual:
-                cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
-
-        question = _baseline_row_question(dataset, example, expected)
-        rows.append(
-            {
-                "question": question,
-                "llm_response": completion,
-                "prompt_used": prompt,
-                "correct": bool(is_correct),
-                "syntax_valid": bool(syntax_valid),
-                "generation_seconds": gen_seconds,
-            }
-        )
-
-    _build_minimal_json(
-        rows,
-        args.output_json,
-        run_wall_time_seconds=time.perf_counter() - run_started,
-        extra_metrics={
-            "adapter": "crane_shared_evaluator",
-            "dataset_source": "synthesis.evaluate",
-            "split_file": str(
-                args.gsm_split_file if dataset == "gsm_symbolic" else args.spider_split_file
-            )
-            if dataset in {"gsm_symbolic", "spider"}
-            and (args.gsm_split_file if dataset == "gsm_symbolic" else args.spider_split_file)
-            else None,
-            "split_name": args.gsm_split_name if dataset == "gsm_symbolic" else (
-                args.spider_split_name if dataset == "spider" else None
-            ),
-        },
-    )
-    print(f"Saved baseline JSON: {args.output_json}")
-    return 0
-
-
 def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     dataset = _normalize_dataset(args.dataset)
 
@@ -1420,9 +1242,6 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     if dataset == "spider" and args.strategy == "unconstrained":
         return run_unconstrained_spider_adapter(args)
-
-    if args.strategy == "crane":
-        return _crane_via_adaptive_syncode(args, dataset)
 
     mode, do_cot = _mode_for_strategy(args.strategy)
     grammar = _crane_grammar_name(dataset)
@@ -1494,10 +1313,14 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         args,
         dataset,
     )
+    extra_metrics: dict[str, Any] | None = None
+    if args.strategy == "crane":
+        extra_metrics = {"adapter": "crane_legacy_main"}
     _build_minimal_json(
         rows,
         args.output_json,
         run_wall_time_seconds=time.perf_counter() - crane_run_started,
+        extra_metrics=extra_metrics,
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -1545,11 +1368,16 @@ def main() -> None:
         help="Samples per class for legacy CRANE main.py (default: eval-sample-size)",
     )
     args = parser.parse_args()
-    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+    from synthesis.evaluate.benchmarks.common.model_utils import (
+        configure_vllm_multiprocessing,
+        resolve_vllm_tensor_parallel_size,
+    )
 
     args.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size)
 
     _ensure_repo_cache_env()
+    if args.eval_backend == "vllm":
+        configure_vllm_multiprocessing()
 
     if args.strategy == "gcd":
         raise SystemExit(run_gcd_legacy_adapter(args))

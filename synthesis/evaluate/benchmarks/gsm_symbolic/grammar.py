@@ -67,6 +67,26 @@ def build_numeric_only_grammar(base_grammar: str) -> str:
     )
 
 
+def build_gcd_span_grammar(base_grammar: str) -> str:
+    """Grammar for legacy GCD/IterGen when the prompt already ends with ``<<``.
+
+    The opening ``<<`` is in the prompt; the start rule must parse ``any_expr ">>"``
+    so constrained decoding can close the span instead of padding with operators.
+    """
+    text = base_grammar.replace(
+        'syncode: "<<" start ">>"',
+        'syncode: start ">>"',
+        1,
+    )
+    return re.sub(
+        r'^start:\s*any_expr\s*$',
+        'start: any_expr ">>"',
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+
+
 def extract_variables_from_mapping(
     variable_mapping: dict,
     include_string_variables: bool = False,

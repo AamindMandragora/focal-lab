@@ -21,9 +21,12 @@ def symbolic_expression_only_prompt(question: str) -> str:
     """Prompt for constrained decoders: single final expression, no chain-of-thought."""
     return (
         "You solve grade-school math word problems that use symbolic variables.\n\n"
-        "Respond with only the final symbolic expression, wrapped once in << >>. "
+        "Write only the final symbolic expression inside one << >> span. "
         "Use numbers and the variables from the problem. "
         "Allowed operations: +, -, /, //, %, (), and int().\n"
+        "Typical answers are short (often under 20 tokens inside the delimiters). "
+        "Finish as soon as the expression is complete; emit the closing >> immediately "
+        "after the expression rather than adding extra terms.\n"
         "Do not include reasoning, labels, or text outside the << >> span.\n\n"
         f"Problem: {question}\n"
         "Answer:\n"

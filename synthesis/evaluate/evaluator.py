@@ -1599,9 +1599,15 @@ class Evaluator:
                 return ops[type(node.op)](_eval(node.left), _eval(node.right))
             elif isinstance(node, ast.UnaryOp) and type(node.op) in ops:
                 return ops[type(node.op)](_eval(node.operand))
-            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                  and node.func.id == 'int' and len(node.args) == 1):
-                return float(int(_eval(node.args[0])))
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in {"int", "ToInt"} and len(node.args) == 1:
+                    value = _eval(node.args[0])
+                    return float(int(value))
+                if node.func.id == "z3_floor_div" and len(node.args) == 2:
+                    divisor = _eval(node.args[1])
+                    if divisor == 0:
+                        return 0.0
+                    return float(int(_eval(node.args[0]) / divisor))
             else:
                 raise ValueError(f"Unsupported node: {type(node)}")
 
@@ -1613,13 +1619,18 @@ class Evaluator:
 
     def _evaluate_symbolic_expression(self, expr: str, var_values: dict) -> Optional[float]:
         """Substitute variable values into a symbolic expression and evaluate."""
+        from synthesis.evaluate.benchmarks.gsm_symbolic.expression_normalize import (
+            has_unbound_problem_variables,
+            normalize_gsm_symbolic_for_equivalence,
+        )
+
+        expr = normalize_gsm_symbolic_for_equivalence(expr)
         substituted = expr
         # Substitute longest names first to avoid partial replacement (n10 before n1)
         for var in sorted(var_values.keys(), key=len, reverse=True):
             substituted = re.sub(r'\b' + re.escape(var) + r'\b',
                                  str(var_values[var]), substituted)
-        # If alphabetic chars remain, some variables were unresolved
-        if re.search(r'[a-zA-Z_]', substituted):
+        if has_unbound_problem_variables(substituted):
             return None
         return self._safe_eval_arithmetic(substituted)
 
@@ -1767,8 +1778,16 @@ class Evaluator:
             return False
         import random as _rng
 
+        from synthesis.evaluate.benchmarks.gsm_symbolic.expression_normalize import (
+            normalize_gsm_symbolic_for_equivalence,
+            reserved_equivalence_names,
+        )
+
+        model_expr = normalize_gsm_symbolic_for_equivalence(model_expr)
+        expected_expr = normalize_gsm_symbolic_for_equivalence(expected_expr)
+
         var_names = set(re.findall(r'\b[a-zA-Z_]\w*\b', model_expr + ' ' + expected_expr))
-        var_names -= {'int'}
+        var_names -= reserved_equivalence_names()
 
         for name in var_names:
             if name not in variable_types:
