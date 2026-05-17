@@ -90,6 +90,7 @@ fi
 GENERATED_OUTPUT_DIR="${CSD_OUTPUT_DIR:-outputs/generated}"
 BASELINE_OUTPUT_DIR="${CSD_BASELINE_OUTPUT_DIR:-outputs/baselines}"
 ABLATION_OUTPUT_DIR="${CSD_ABLATION_OUTPUT_DIR:-outputs/ablations}"
+BASELINE_CACHE_MODE="${CSD_BASELINE_CACHE_MODE:-reuse}"
 GSM_SPLIT_FILE=""
 SPIDER_SPLIT_FILE=""
 DRY_RUN=0
@@ -143,6 +144,8 @@ Options:
   --generated-output-dir PATH    Synthesis output directory (default: outputs/generated/ or CSD_OUTPUT_DIR)
   --baseline-output-dir PATH     Baseline JSON directory (default: outputs/baselines/ or CSD_BASELINE_OUTPUT_DIR)
   --ablation-output-dir PATH     Ablation JSON directory (default: outputs/ablations/)
+  --recompute-baselines          Re-run fixed-strategy baselines instead of reusing cached JSONs
+  --reuse-baselines              Reuse complete cached baseline JSONs (default)
   --skip-main                   Skip main matrix, run ablations only
   --skip-ablations              Skip ablations, run main matrix only
   --dry-run                     Print commands only
@@ -176,6 +179,8 @@ while [[ $# -gt 0 ]]; do
     --generated-output-dir) GENERATED_OUTPUT_DIR="$2"; shift 2 ;;
     --baseline-output-dir) BASELINE_OUTPUT_DIR="$2"; shift 2 ;;
     --ablation-output-dir) ABLATION_OUTPUT_DIR="$2"; shift 2 ;;
+    --recompute-baselines) BASELINE_CACHE_MODE="refresh"; shift ;;
+    --reuse-baselines) BASELINE_CACHE_MODE="reuse"; shift ;;
     --skip-main) SKIP_MAIN=1; shift ;;
     --skip-ablations) SKIP_ABLATIONS=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -187,6 +192,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+case "$BASELINE_CACHE_MODE" in
+  reuse|refresh) ;;
+  *)
+    echo "Invalid baseline cache mode: $BASELINE_CACHE_MODE (expected reuse or refresh)" >&2
+    exit 2
+    ;;
+esac
 
 mkdir -p "$GENERATED_OUTPUT_DIR" "$BASELINE_OUTPUT_DIR" "$ABLATION_OUTPUT_DIR"
 
@@ -376,6 +389,124 @@ raise SystemExit(0)
 PY
 }
 
+baseline_json_matches_strategy() {
+  local path="$1"
+  local strategy="$2"
+  if [[ "$strategy" != "crane" ]]; then
+    return 0
+  fi
+  python - "$path" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    payload = json.loads(path.read_text())
+except Exception:
+    raise SystemExit(1)
+if payload.get("metrics", {}).get("adapter") != "crane_shared_evaluator":
+    raise SystemExit(1)
+raise SystemExit(0)
+PY
+}
+
+CSD_TARGET_STRATEGIES=(crane itergen cars)
+declare -A PREPARED_BASELINES=()
+
+baseline_case_key() {
+  local strategy="$1"
+  local model_slug="$2"
+  local benchmark_key="$3"
+  local token_budget="$4"
+  local max_steps="$5"
+  printf "%s|%s|%s|%s|%s" "$strategy" "$model_slug" "$benchmark_key" "$token_budget" "$max_steps"
+}
+
+baseline_json_usable() {
+  local path="$1"
+  local strategy="$2"
+  [[ -f "$path" ]] \
+    && [[ "$(wc -c < "$path")" -gt 20 ]] \
+    && baseline_json_complete "$path" \
+    && baseline_json_matches_strategy "$path" "$strategy"
+}
+
+best_csd_baseline_target() {
+  local benchmark="$1"
+  local eval_model="$2"
+  local token_budget="$3"
+  local max_steps="$4"
+  local smiles_class="${5:-}"
+
+  local model_slug benchmark_key
+  model_slug="$(slugify "$eval_model")"
+  benchmark_key="$benchmark"
+  if [[ "$benchmark" == "smiles" ]]; then
+    benchmark_key="${benchmark}__class_$(slugify "$smiles_class")"
+  fi
+
+  python - "$BASELINE_OUTPUT_DIR" "$model_slug" "$benchmark_key" "$token_budget" "$max_steps" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+baseline_dir = Path(sys.argv[1])
+model_slug = sys.argv[2]
+benchmark_key = sys.argv[3]
+token_budget = sys.argv[4]
+max_steps = sys.argv[5]
+
+best = None
+for strategy in ("crane", "itergen", "cars"):
+    path = (
+        baseline_dir
+        / strategy
+        / model_slug
+        / f"{benchmark_key}__tb{token_budget}__ms{max_steps}.json"
+    )
+    try:
+        payload = json.loads(path.read_text())
+    except Exception:
+        continue
+
+    answers = payload.get("answers")
+    if not isinstance(answers, list) or not answers:
+        continue
+    if not all(isinstance(row, dict) and "generated_answer" in row for row in answers):
+        continue
+    if strategy == "crane" and payload.get("metrics", {}).get("adapter") != "crane_shared_evaluator":
+        continue
+
+    accuracy = payload.get("accuracy")
+    if not isinstance(accuracy, (int, float)):
+        continue
+    candidate = (float(accuracy), strategy, str(path), f"{float(accuracy):.1%}")
+    if best is None or candidate[0] > best[0]:
+        best = candidate
+
+if best is None:
+    print("0.0|none||0.0%")
+else:
+    print(f"{best[0]:.12g}|{best[1]}|{best[2]}|{best[3]}")
+PY
+}
+
+ensure_csd_target_baselines() {
+  local benchmark="$1"
+  local eval_model="$2"
+  local token_budget="$3"
+  local max_steps="$4"
+  local smiles_class="${5:-}"
+  local strategy
+
+  for strategy in "${CSD_TARGET_STRATEGIES[@]}"; do
+    if ! run_fixed_strategy_case "$strategy" "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"; then
+      echo "[warn] Could not prepare $strategy baseline for benchmark=$benchmark eval_model=$eval_model token_budget=$token_budget max_steps=$max_steps smiles_class=${smiles_class:-<none>}" >&2
+    fi
+  done
+}
+
 run_fixed_strategy_case() {
   local strategy="$1"
   local benchmark="$2"
@@ -397,12 +528,23 @@ run_fixed_strategy_case() {
 
   local out_json="${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark_key}__tb${token_budget}__ms${max_steps}.json"
   mkdir -p "$(dirname "$out_json")"
+  local case_key
+  case_key="$(baseline_case_key "$strategy" "$model_slug" "$benchmark_key" "$token_budget" "$max_steps")"
+  local allow_cache_reuse=0
+  if [[ "$BASELINE_CACHE_MODE" == "reuse" || -n "${PREPARED_BASELINES[$case_key]+set}" ]]; then
+    allow_cache_reuse=1
+  fi
 
-  if [[ -f "$out_json" ]] && [[ "$(wc -c < "$out_json")" -gt 20 ]] && baseline_json_complete "$out_json"; then
+  if [[ "$allow_cache_reuse" -eq 1 ]] && baseline_json_usable "$out_json" "$strategy"; then
+    PREPARED_BASELINES["$case_key"]=1
     echo "[skip] $out_json already exists ($(wc -l < "$out_json") lines). Delete it to re-run."
     return 0
   elif [[ -f "$out_json" ]]; then
-    echo "[rerun] $out_json exists but is incomplete or corrupt."
+    if [[ "$BASELINE_CACHE_MODE" == "refresh" && -z "${PREPARED_BASELINES[$case_key]+set}" ]]; then
+      echo "[rerun] $out_json exists but --recompute-baselines was requested."
+    else
+      echo "[rerun] $out_json exists but is incomplete, corrupt, or from an obsolete adapter."
+    fi
   fi
 
   # All fixed strategies (unconstrained, gcd, crane, itergen, cars) use legacy adapters.
@@ -434,7 +576,11 @@ run_fixed_strategy_case() {
     cmd+=(--smiles-classes "$smiles_class" --smiles-samples-per-class "$EVAL_SAMPLE_SIZE")
   fi
 
-  run_cmd "${cmd[@]}"
+  if run_cmd "${cmd[@]}"; then
+    PREPARED_BASELINES["$case_key"]=1
+    return 0
+  fi
+  return 1
 }
 
 run_fixed_strategy_cases() {
@@ -484,6 +630,16 @@ run_metadecode_case() {
   fi
   run_name="metadecode_${benchmark}_${model_slug}_${gen_slug}_iter${synth_iter}_tb${token_budget}_ms${max_steps}${class_suffix}"
   task="$(metadecode_task "$benchmark")"
+  ensure_csd_target_baselines "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
+  local target_accuracy target_strategy target_path target_percent
+  IFS='|' read -r target_accuracy target_strategy target_path target_percent < <(
+    best_csd_baseline_target "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
+  )
+  if [[ "$target_strategy" == "none" ]]; then
+    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0"
+  else
+    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: best CSD baseline ${target_strategy}=${target_percent}; passing --min-accuracy ${target_accuracy}"
+  fi
 
   local synth_cmd=(
     python -m synthesis.run_synthesis
@@ -495,7 +651,7 @@ run_metadecode_case() {
     --eval-backend "$EVAL_BACKEND"
     --max-iterations "$synth_iter"
     --output-name "$run_name"
-    --min-accuracy "0.0"
+    --min-accuracy "$target_accuracy"
     --min-syntax-rate "0.0"
     --eval-sample-size "$EVAL_SAMPLE_SIZE"
     --eval-max-steps "$max_steps"
@@ -581,6 +737,7 @@ echo "synthesis iters (metadecode): ${SYNTH_ITERS_ARR[*]}"
 echo "generation models (metadecode): ${GEN_MODELS_ARR[*]}"
 echo "SMILES classes: ${SMILES_CLASSES_ARR[*]}"
 echo "eval max steps (main): ${EVAL_MAX_STEPS}"
+echo "baseline cache mode: ${BASELINE_CACHE_MODE} (reuse=skip complete JSONs, refresh=recompute fixed baselines)"
 echo ""
 
 # ========================================================
@@ -695,6 +852,18 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
             resolved_gen_e="$(resolve_gen_profile "gpt5.4")"
             backend_e="${resolved_gen_e%%|*}"
             generation_model_e="${resolved_gen_e##*|}"
+            ensure_csd_target_baselines "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS" "$smiles_class"
+            target_accuracy_e="0.0"
+            target_strategy_e="none"
+            target_percent_e="0.0%"
+            IFS='|' read -r target_accuracy_e target_strategy_e target_path_e target_percent_e < <(
+              best_csd_baseline_target "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS" "$smiles_class"
+            )
+            if [[ "$target_strategy_e" == "none" ]]; then
+              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0"
+            else
+              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: best CSD baseline ${target_strategy_e}=${target_percent_e}; passing --min-accuracy ${target_accuracy_e}"
+            fi
             cmd_e=(
               python -m synthesis.run_synthesis
               --task "$task_e"
@@ -705,7 +874,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
               --eval-backend "$EVAL_BACKEND"
               --max-iterations "${SYNTH_ITERS_ARR[-1]}"
               --output-name "$run_name_e"
-              --min-accuracy "0.0"
+              --min-accuracy "$target_accuracy_e"
               --min-syntax-rate "0.0"
               --eval-sample-size "$EVAL_SAMPLE_SIZE"
               --eval-max-steps "$EVAL_MAX_STEPS"
