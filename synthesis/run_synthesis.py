@@ -242,6 +242,17 @@ Examples:
     )
 
     parser.add_argument(
+        "--eval-min-examples-before-threshold-stop",
+        type=int,
+        default=None,
+        help="Minimum number of evaluated examples before threshold-impossible "
+        "early stops (target accuracy / target syntax) can fire. Suppresses the "
+        "early stop until the synthesis feedback loop has at least this much "
+        "evaluation signal. The runtime-budget early stop is unaffected. "
+        "Default: None (no minimum)."
+    )
+
+    parser.add_argument(
         "--gsm-source-dir",
         type=str,
         default=None,
@@ -623,6 +634,7 @@ Examples:
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
+        min_examples_before_threshold_stop=args.eval_min_examples_before_threshold_stop,
         adaptive_helper_mask=args.adaptive_helper_mask,
         helper_selection_policy=args.helper_selection_policy,
         helper_mask_min_evals=args.helper_mask_min_evals,
