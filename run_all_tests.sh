@@ -121,6 +121,7 @@ Environment:
   Sets CUDA_VISIBLE_DEVICES (default 3) after loading synthesis/.env; override with RUN_ALL_TESTS_CUDA_DEVICES (e.g. 2,3).
   Optional RUN_ALL_TESTS_CUDA_OOM_FALLBACK (default 2): each GPU job tries the primary visibility first; if logs indicate CUDA OOM, retries once with the fallback visibility. Set RUN_ALL_TESTS_CUDA_OOM_FALLBACK= to disable.
   Metadecode: profile gpt5.4 uses OpenAI (--generation-backend openai, OPENAI_API_KEY); opus4.7 uses Bedrock (AWS_BEARER_TOKEN_BEDROCK, BEDROCK_OPUS_MODEL). Profile gemini-pro is disabled in the default GEN_MODELS list; set GEMINI_BEDROCK_MODEL if you pass gemini-pro explicitly.
+  Metadecode synthesis gates (--min-accuracy, --min-syntax-rate) are set from the best complete legacy baseline JSON among unconstrained, gcd, crane, itergen, and cars for the same eval model, benchmark, token budget, and max steps (SMILES: per-class files). Run those strategies before metadecode in --strategies order, or re-use existing baseline JSONs.
 
 Options:
   --models CSV                  Eval models list
@@ -252,6 +253,102 @@ slugify() {
   s="${s// /_}"
   s="${s//-/_}"
   echo "$s"
+}
+
+LEGACY_CSD_STRATEGIES=(unconstrained gcd crane itergen cars)
+
+benchmark_key_for() {
+  local benchmark="$1"
+  local smiles_class="${2:-}"
+  if [[ "$benchmark" == "smiles" ]]; then
+    if [[ -z "$smiles_class" ]]; then
+      echo "Internal error: SMILES benchmark requires a class for benchmark_key_for." >&2
+      return 2
+    fi
+    echo "${benchmark}__class_$(slugify "$smiles_class")"
+    return 0
+  fi
+  echo "$benchmark"
+}
+
+legacy_baseline_json_path() {
+  local strategy="$1"
+  local eval_model="$2"
+  local benchmark_key="$3"
+  local token_budget="$4"
+  local max_steps="$5"
+  local model_slug
+  model_slug="$(slugify "$eval_model")"
+  echo "${BASELINE_OUTPUT_DIR}/${strategy}/${model_slug}/${benchmark_key}__tb${token_budget}__ms${max_steps}.json"
+}
+
+# Print: MIN_ACCURACY MIN_SYNTAX_RATE BEST_STRATEGY (or "0.0 0.0 none" when no legacy JSONs).
+best_legacy_csd_thresholds() {
+  local eval_model="$1"
+  local benchmark="$2"
+  local token_budget="$3"
+  local max_steps="$4"
+  local smiles_class="${5:-}"
+  local benchmark_key
+  benchmark_key="$(benchmark_key_for "$benchmark" "$smiles_class")" || return $?
+
+  local model_slug
+  model_slug="$(slugify "$eval_model")"
+  python - "$BASELINE_OUTPUT_DIR" "$model_slug" "$benchmark_key" "$token_budget" "$max_steps" \
+    "${LEGACY_CSD_STRATEGIES[@]}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+baselines_dir = Path(sys.argv[1])
+model_slug = sys.argv[2]
+benchmark_key = sys.argv[3]
+token_budget = sys.argv[4]
+max_steps = sys.argv[5]
+strategies = sys.argv[6:]
+
+def load_metrics(path: Path) -> tuple[float, float] | None:
+    try:
+        payload = json.loads(path.read_text())
+    except Exception:
+        return None
+    answers = payload.get("answers")
+    if not isinstance(answers, list) or not answers:
+        return None
+    for row in answers:
+        if not isinstance(row, dict) or "generated_answer" not in row:
+            return None
+    try:
+        accuracy = float(payload["accuracy"])
+        syntax_rate = float(payload["syntax_rate"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return accuracy, syntax_rate
+
+best: tuple[float, float, str] | None = None
+for strategy in strategies:
+    path = (
+        baselines_dir
+        / strategy
+        / model_slug
+        / f"{benchmark_key}__tb{token_budget}__ms{max_steps}.json"
+    )
+    metrics = load_metrics(path)
+    if metrics is None:
+        continue
+    accuracy, syntax_rate = metrics
+    candidate = (accuracy, syntax_rate, strategy)
+    if best is None:
+        best = candidate
+        continue
+    if candidate[0] > best[0] or (candidate[0] == best[0] and candidate[1] > best[1]):
+        best = candidate
+
+if best is None:
+    print("0.0 0.0 none")
+else:
+    print(f"{best[0]} {best[1]} {best[2]}")
+PY
 }
 
 metadecode_task() {
@@ -473,17 +570,22 @@ run_metadecode_case() {
   model_slug="$(slugify "$eval_model")"
   gen_slug="$(slugify "$gen_profile")"
   class_suffix=""
-  benchmark_key="$benchmark"
+  benchmark_key="$(benchmark_key_for "$benchmark" "$smiles_class")" || return $?
   if [[ "$benchmark" == "smiles" ]]; then
-    if [[ -z "$smiles_class" ]]; then
-      echo "Internal error: SMILES metadecode run requires a class." >&2
-      return 2
-    fi
     class_suffix="_class_$(slugify "$smiles_class")"
-    benchmark_key="${benchmark}__class_$(slugify "$smiles_class")"
   fi
   run_name="metadecode_${benchmark}_${model_slug}_${gen_slug}_iter${synth_iter}_tb${token_budget}_ms${max_steps}${class_suffix}"
   task="$(metadecode_task "$benchmark")"
+
+  local min_accuracy min_syntax_rate best_legacy
+  read -r min_accuracy min_syntax_rate best_legacy < <(
+    best_legacy_csd_thresholds "$eval_model" "$benchmark" "$token_budget" "$max_steps" "$smiles_class"
+  )
+  if [[ "$best_legacy" == "none" ]]; then
+    echo "[warn] No complete legacy baseline JSONs for metadecode gate: benchmark=$benchmark_key eval_model=$eval_model tb=$token_budget ms=$max_steps; using min-accuracy/min-syntax-rate 0.0 (run unconstrained,gcd,crane,itergen,cars first)" >&2
+  else
+    echo "[metadecode] legacy gate from best=$best_legacy: min-accuracy=$min_accuracy min-syntax-rate=$min_syntax_rate ($benchmark_key eval_model=$eval_model tb=$token_budget ms=$max_steps)"
+  fi
 
   local synth_cmd=(
     python -m synthesis.run_synthesis
@@ -495,8 +597,8 @@ run_metadecode_case() {
     --eval-backend "$EVAL_BACKEND"
     --max-iterations "$synth_iter"
     --output-name "$run_name"
-    --min-accuracy "0.0"
-    --min-syntax-rate "0.0"
+    --min-accuracy "$min_accuracy"
+    --min-syntax-rate "$min_syntax_rate"
     --eval-sample-size "$EVAL_SAMPLE_SIZE"
     --eval-max-steps "$max_steps"
     --eval-step-token-budget "$token_budget"
@@ -695,6 +797,18 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
             resolved_gen_e="$(resolve_gen_profile "gpt5.4")"
             backend_e="${resolved_gen_e%%|*}"
             generation_model_e="${resolved_gen_e##*|}"
+            min_accuracy_e=""
+            min_syntax_rate_e=""
+            best_legacy_e=""
+            read -r min_accuracy_e min_syntax_rate_e best_legacy_e < <(
+              best_legacy_csd_thresholds "$ABLATION_MODEL" "$benchmark" \
+                "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS" "$smiles_class"
+            )
+            if [[ "$best_legacy_e" == "none" ]]; then
+              echo "[warn] No legacy baselines for ablation metadecode gate: benchmark=${benchmark}${class_suffix}; using 0.0" >&2
+            else
+              echo "[metadecode] ablation legacy gate from best=$best_legacy_e: min-accuracy=$min_accuracy_e min-syntax-rate=$min_syntax_rate_e"
+            fi
             cmd_e=(
               python -m synthesis.run_synthesis
               --task "$task_e"
@@ -705,8 +819,8 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
               --eval-backend "$EVAL_BACKEND"
               --max-iterations "${SYNTH_ITERS_ARR[-1]}"
               --output-name "$run_name_e"
-              --min-accuracy "0.0"
-              --min-syntax-rate "0.0"
+              --min-accuracy "$min_accuracy_e"
+              --min-syntax-rate "$min_syntax_rate_e"
               --eval-sample-size "$EVAL_SAMPLE_SIZE"
               --eval-max-steps "$EVAL_MAX_STEPS"
               --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
