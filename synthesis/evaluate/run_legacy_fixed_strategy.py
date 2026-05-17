@@ -238,12 +238,16 @@ def _build_minimal_json(
     output_json: Path,
     *,
     run_wall_time_seconds: float | None = None,
+    extra_metrics: dict[str, Any] | None = None,
 ) -> None:
+    metrics = _aggregate_run_metrics(rows, run_wall_time_seconds=run_wall_time_seconds)
+    if extra_metrics:
+        metrics.update(extra_metrics)
     if not rows:
         payload = {
             "accuracy": 0.0,
             "syntax_rate": 0.0,
-            "metrics": _aggregate_run_metrics([], run_wall_time_seconds=run_wall_time_seconds),
+            "metrics": metrics,
             "answers": [],
         }
         output_json.parent.mkdir(parents=True, exist_ok=True)
@@ -287,7 +291,7 @@ def _build_minimal_json(
     payload = {
         "accuracy": sum(correct_vals) / max(1, len(correct_vals)),
         "syntax_rate": sum(syntax_vals) / max(1, len(syntax_vals)),
-        "metrics": _aggregate_run_metrics(rows, run_wall_time_seconds=run_wall_time_seconds),
+        "metrics": metrics,
         "answers": answers,
     }
 
@@ -1170,11 +1174,33 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def _crane_delimited_start_grammar(grammar_text: str) -> str:
+    """Make a grammar's default ``start`` rule include CRANE's delimiters.
+
+    CRANE switches into constrained mode only after the model emits ``<<``.
+    Once that happens its parser sees partial text prefixed with ``<<``, so
+    grammars whose default start rule is just the payload body must be wrapped
+    as ``start: "<<" body ">>"``.  The evaluator grammars keep delimiter
+    handling in ``syncode``/``csd_start`` helpers, which are not the default
+    Lark start rule used by the CRANE-style decoder.
+    """
+    if re.search(r'(?m)^\??start\s*:\s*"<<".*">>"', grammar_text):
+        return grammar_text
+
+    start_rule = re.compile(r"(?m)^(\??)start(\s*:)")
+    if not start_rule.search(grammar_text):
+        raise ValueError("Cannot wrap CRANE grammar: no default start rule found")
+
+    wrapped_body = start_rule.sub(r"\1crane_body\2", grammar_text, count=1)
+    return 'start: "<<" crane_body ">>"\n' + wrapped_body
+
+
 def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     """Run CRANE-style adaptive constrained decoding via vendored AdaptiveSynCode.
 
-    Used for benchmarks where the legacy CRANE codebase lacks grammar support
-    (e.g. SMILES). AdaptiveSynCode implements the same << >> switching logic.
+    This path uses the shared synthesis evaluator to choose examples and score
+    answers, so CRANE is compared on the same split as MetaDecode, GCD, IterGen,
+    and CARS. AdaptiveSynCode implements CRANE's << >> switching logic.
     """
     run_started = time.perf_counter()
     import sys as _sys
@@ -1206,12 +1232,24 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     examples = logic.load_dataset_sample(eval_runtime)
 
     device = "cuda" if args.device in {"auto", "cuda"} else args.device
+    base_gsm_grammar_text = ""
+    if dataset == "gsm_symbolic":
+        base_gsm_grammar_text = _crane_delimited_start_grammar(
+            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
+        )
+    spider_grammar_text = ""
+    if dataset == "spider":
+        spider_grammar_text = _crane_delimited_start_grammar(
+            (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+        )
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
-        if dataset == "smiles":
-            return str(example.get("grammar_text", ""))
+        if dataset == "gsm_symbolic":
+            return base_gsm_grammar_text
         if dataset == "spider":
-            return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+            return spider_grammar_text
+        if dataset == "smiles":
+            return _crane_delimited_start_grammar(str(example.get("grammar_text", "")))
         raise ValueError(f"Unsupported dataset for AdaptiveSynCode adapter: {dataset}")
 
     syncode_cache: dict[str, Any] = {}
@@ -1253,6 +1291,8 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
         syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+        if dataset == "spider":
+            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
             if syntax_valid and actual:
@@ -1274,6 +1314,19 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         rows,
         args.output_json,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        extra_metrics={
+            "adapter": "crane_shared_evaluator",
+            "dataset_source": "synthesis.evaluate",
+            "split_file": str(
+                args.gsm_split_file if dataset == "gsm_symbolic" else args.spider_split_file
+            )
+            if dataset in {"gsm_symbolic", "spider"}
+            and (args.gsm_split_file if dataset == "gsm_symbolic" else args.spider_split_file)
+            else None,
+            "split_name": args.gsm_split_name if dataset == "gsm_symbolic" else (
+                args.spider_split_name if dataset == "spider" else None
+            ),
+        },
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -1287,6 +1340,9 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     if dataset == "spider" and args.strategy == "unconstrained":
         return run_unconstrained_spider_adapter(args)
+
+    if args.strategy == "crane":
+        return _crane_via_adaptive_syncode(args, dataset)
 
     mode, do_cot = _mode_for_strategy(args.strategy)
     grammar = _crane_grammar_name(dataset)
