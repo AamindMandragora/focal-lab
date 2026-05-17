@@ -23,7 +23,8 @@ The project is organized so the core workflow is explicit:
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
 - `environment/`: environment setup and dependency installation notes/scripts.
 - `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
-- `outputs/`: generated runs, baselines, prompt logs, and preserved local experiment artifacts.
+- `outputs/`: generated runs, baselines, and preserved local experiment artifacts.
+- `logs/`: per-run LLM prompt/response records (`prompt_io.jsonl`; override root via `CSD_LOGS_DIR`).
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
 
@@ -63,6 +64,20 @@ Fixed-strategy baselines use legacy codepaths:
 - `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
 Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
+
+## Long runs (tmux)
+
+Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CUDA_VISIBLE_DEVICES=2,3` already set:
+
+```bash
+./run_tmux.sh shell                              # interactive shell
+./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session
+./run_tmux.sh attach                           # attach to session
+./run_tmux.sh synthesis -- --dataset gsm_symbolic --output-name smoke_gsm ...
+./run_tmux.sh run -- python -m synthesis.run_synthesis --help
+```
+
+Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
 
 ## Quick Start
 
