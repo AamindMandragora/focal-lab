@@ -432,7 +432,7 @@ baseline_json_usable() {
     && baseline_json_matches_strategy "$path" "$strategy"
 }
 
-best_csd_baseline_target() {
+best_csd_baseline_targets() {
   local benchmark="$1"
   local eval_model="$2"
   local token_budget="$3"
@@ -457,7 +457,8 @@ benchmark_key = sys.argv[3]
 token_budget = sys.argv[4]
 max_steps = sys.argv[5]
 
-best = None
+best_accuracy = None
+best_syntax = None
 for strategy in ("crane", "itergen", "cars"):
     path = (
         baseline_dir
@@ -479,16 +480,26 @@ for strategy in ("crane", "itergen", "cars"):
         continue
 
     accuracy = payload.get("accuracy")
-    if not isinstance(accuracy, (int, float)):
-        continue
-    candidate = (float(accuracy), strategy, str(path), f"{float(accuracy):.1%}")
-    if best is None or candidate[0] > best[0]:
-        best = candidate
+    if isinstance(accuracy, (int, float)):
+        candidate = (float(accuracy), strategy, str(path), f"{float(accuracy):.1%}")
+        if best_accuracy is None or candidate[0] > best_accuracy[0]:
+            best_accuracy = candidate
 
-if best is None:
-    print("0.0|none||0.0%")
-else:
-    print(f"{best[0]:.12g}|{best[1]}|{best[2]}|{best[3]}")
+    syntax_rate = payload.get("syntax_rate")
+    if isinstance(syntax_rate, (int, float)):
+        candidate = (float(syntax_rate), strategy, str(path), f"{float(syntax_rate):.1%}")
+        if best_syntax is None or candidate[0] > best_syntax[0]:
+            best_syntax = candidate
+
+if best_accuracy is None:
+    best_accuracy = (0.0, "none", "", "0.0%")
+if best_syntax is None:
+    best_syntax = (0.0, "none", "", "0.0%")
+
+print(
+    f"{best_accuracy[0]:.12g}|{best_accuracy[1]}|{best_accuracy[2]}|{best_accuracy[3]}|"
+    f"{best_syntax[0]:.12g}|{best_syntax[1]}|{best_syntax[2]}|{best_syntax[3]}"
+)
 PY
 }
 
@@ -632,13 +643,14 @@ run_metadecode_case() {
   task="$(metadecode_task "$benchmark")"
   ensure_csd_target_baselines "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
   local target_accuracy target_strategy target_path target_percent
-  IFS='|' read -r target_accuracy target_strategy target_path target_percent < <(
-    best_csd_baseline_target "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
+  local target_syntax target_syntax_strategy target_syntax_path target_syntax_percent
+  IFS='|' read -r target_accuracy target_strategy target_path target_percent target_syntax target_syntax_strategy target_syntax_path target_syntax_percent < <(
+    best_csd_baseline_targets "$benchmark" "$eval_model" "$token_budget" "$max_steps" "$smiles_class"
   )
-  if [[ "$target_strategy" == "none" ]]; then
-    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0"
+  if [[ "$target_strategy" == "none" && "$target_syntax_strategy" == "none" ]]; then
+    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
   else
-    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: best CSD baseline ${target_strategy}=${target_percent}; passing --min-accuracy ${target_accuracy}"
+    echo "[target] metadecode ${benchmark_key}/${model_slug} tb${token_budget} ms${max_steps}: best CSD baseline accuracy ${target_strategy}=${target_percent}, syntax ${target_syntax_strategy}=${target_syntax_percent}; passing --min-accuracy ${target_accuracy} --min-syntax-rate ${target_syntax}"
   fi
 
   local synth_cmd=(
@@ -652,7 +664,7 @@ run_metadecode_case() {
     --max-iterations "$synth_iter"
     --output-name "$run_name"
     --min-accuracy "$target_accuracy"
-    --min-syntax-rate "0.0"
+    --min-syntax-rate "$target_syntax"
     --eval-sample-size "$EVAL_SAMPLE_SIZE"
     --eval-max-steps "$max_steps"
     --eval-step-token-budget "$token_budget"
@@ -856,13 +868,16 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
             target_accuracy_e="0.0"
             target_strategy_e="none"
             target_percent_e="0.0%"
-            IFS='|' read -r target_accuracy_e target_strategy_e target_path_e target_percent_e < <(
-              best_csd_baseline_target "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS" "$smiles_class"
+            target_syntax_e="0.0"
+            target_syntax_strategy_e="none"
+            target_syntax_percent_e="0.0%"
+            IFS='|' read -r target_accuracy_e target_strategy_e target_path_e target_percent_e target_syntax_e target_syntax_strategy_e target_syntax_path_e target_syntax_percent_e < <(
+              best_csd_baseline_targets "$benchmark" "$ABLATION_MODEL" "${TOKEN_BUDGETS_ARR[0]}" "$EVAL_MAX_STEPS" "$smiles_class"
             )
-            if [[ "$target_strategy_e" == "none" ]]; then
-              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0"
+            if [[ "$target_strategy_e" == "none" && "$target_syntax_strategy_e" == "none" ]]; then
+              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             else
-              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: best CSD baseline ${target_strategy_e}=${target_percent_e}; passing --min-accuracy ${target_accuracy_e}"
+              echo "[target] metadecode ${benchmark}${class_suffix}/$(slugify "$ABLATION_MODEL") tb${TOKEN_BUDGETS_ARR[0]} ms${EVAL_MAX_STEPS}: best CSD baseline accuracy ${target_strategy_e}=${target_percent_e}, syntax ${target_syntax_strategy_e}=${target_syntax_percent_e}; passing --min-accuracy ${target_accuracy_e} --min-syntax-rate ${target_syntax_e}"
             fi
             cmd_e=(
               python -m synthesis.run_synthesis
@@ -875,7 +890,7 @@ if [[ "$SKIP_ABLATIONS" -eq 0 ]]; then
               --max-iterations "${SYNTH_ITERS_ARR[-1]}"
               --output-name "$run_name_e"
               --min-accuracy "$target_accuracy_e"
-              --min-syntax-rate "0.0"
+              --min-syntax-rate "$target_syntax_e"
               --eval-sample-size "$EVAL_SAMPLE_SIZE"
               --eval-max-steps "$EVAL_MAX_STEPS"
               --eval-step-token-budget "${TOKEN_BUDGETS_ARR[0]}"
