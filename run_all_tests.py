@@ -47,8 +47,7 @@ OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
     r"cumemAllocator|RESOURCE_EXHAUSTED|"
-    r"Free memory on device|desired GPU memory utilization|"
-    r"Engine core initialization failed",
+    r"Free memory on device|desired GPU memory utilization",
     re.IGNORECASE,
 )
 
@@ -451,7 +450,8 @@ class Runner:
             payload = json.loads(path.read_text())
         except Exception:
             return False
-        return payload.get("metrics", {}).get("adapter") == "crane_shared_evaluator"
+        adapter = payload.get("metrics", {}).get("adapter")
+        return adapter != "crane_shared_evaluator"
 
     def baseline_json_usable(self, path: Path, strategy: str) -> bool:
         return (
@@ -507,7 +507,7 @@ class Runner:
                 continue
             if not all(isinstance(row, dict) and "generated_answer" in row for row in answers):
                 continue
-            if strategy == "crane" and payload.get("metrics", {}).get("adapter") != "crane_shared_evaluator":
+            if strategy == "crane" and payload.get("metrics", {}).get("adapter") == "crane_shared_evaluator":
                 continue
             accuracy = payload.get("accuracy")
             if isinstance(accuracy, (int, float)):
@@ -1168,7 +1168,7 @@ def make_parser() -> argparse.ArgumentParser:
         action="store_const",
         const="reuse",
     )
-    parser.set_defaults(baseline_cache_mode="refresh")
+    parser.set_defaults(baseline_cache_mode="reuse")
     parser.add_argument("--skip-main", action="store_true")
     parser.add_argument("--skip-ablations", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -1275,6 +1275,10 @@ def main(argv: list[str] | None = None) -> int:
     load_env_file(ROOT_DIR / "synthesis" / ".env")
     parser = make_parser()
     args = parser.parse_args(argv)
+    if args.eval_backend == "vllm":
+        from synthesis.evaluate.benchmarks.common.model_utils import configure_vllm_multiprocessing
+
+        configure_vllm_multiprocessing()
     conda_env_path, env = configure_conda_environment(ROOT_DIR)
     config = build_config(args, conda_env_path)
     return Runner(config=config, env=env).run()

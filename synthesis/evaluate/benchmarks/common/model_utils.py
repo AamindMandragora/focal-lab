@@ -146,7 +146,7 @@ def get_max_input_length(model, tokenizer) -> int:
 
 
 
-def _configure_vllm_multiprocessing() -> None:
+def configure_vllm_multiprocessing() -> None:
     """Prefer spawn workers for vLLM to avoid CUDA re-init failures under fork."""
     os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
     try:
@@ -156,6 +156,10 @@ def _configure_vllm_multiprocessing() -> None:
         # Another library may have already locked the start method.
         pass
 
+
+_configure_vllm_multiprocessing = configure_vllm_multiprocessing
+
+
 def load_runtime_tokenizer(model_name: str, backend: str = "huggingface"):
     """Load the tokenizer matching the requested runtime backend."""
     cache_key = (backend, model_name)
@@ -164,7 +168,7 @@ def load_runtime_tokenizer(model_name: str, backend: str = "huggingface"):
         return cached
 
     if backend == "vllm":
-        _configure_vllm_multiprocessing()
+        configure_vllm_multiprocessing()
         from vllm.transformers_utils.tokenizer import get_tokenizer
 
         tokenizer = get_tokenizer(model_name, trust_remote_code=True)

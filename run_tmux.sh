@@ -6,6 +6,7 @@
 #   ./run_tmux.sh -d matrix -- [args]   # start detached (no attach)
 #   ./run_tmux.sh run -- <command...>   # run command in tmux (logs to logs/tmux/)
 #   ./run_tmux.sh matrix [-- args]      # python run_all_tests.py ...
+#   ./run_tmux.sh baselines [-- args]   # legacy fixed strategies only (no metadecode)
 #   ./run_tmux.sh synthesis [-- args]   # python -m synthesis.run_synthesis ...
 #   ./run_tmux.sh attach [session]      # attach to existing session
 #   ./run_tmux.sh kill [session]        # kill session
@@ -27,6 +28,8 @@ DETACHED=0
 FRESH=0
 CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
 PYTHON="${CONDA_ENV}/bin/python"
+# Matches run_all_tests.py fixed-strategy names (everything except metadecode).
+LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars}"
 
 usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -68,6 +71,7 @@ export PYTHONUNBUFFERED=1
 export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2}"
 export VAS_MAX_CUDA_DEVICES="\${VAS_MAX_CUDA_DEVICES:-1}"
 export VAS_VLLM_GPU_MEMORY_UTILIZATION="\${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
+export VLLM_WORKER_MULTIPROC_METHOD="\${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
 EOF
 }
 
@@ -159,6 +163,14 @@ run_matrix() {
   run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" "$@"
 }
 
+run_baselines() {
+  require_python_env
+  run_matrix \
+    --strategies "$LEGACY_BASELINE_STRATEGIES" \
+    --skip-ablations \
+    "$@"
+}
+
 run_synthesis() {
   require_python_env
   run_command "$PYTHON" -m synthesis.run_synthesis "$@"
@@ -219,6 +231,14 @@ main() {
         run_matrix "${args[@]:1}"
       else
         run_matrix "${args[@]}"
+      fi
+      ;;
+    baselines|legacy-baselines)
+      require_tmux
+      if [[ "${args[0]:-}" == "--" ]]; then
+        run_baselines "${args[@]:1}"
+      else
+        run_baselines "${args[@]}"
       fi
       ;;
     synthesis)
