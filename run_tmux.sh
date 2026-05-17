@@ -88,7 +88,7 @@ kill_session() {
 start_session() {
   local window_cmd="$1"
   local log_hint="${2:-}"
-  mkdir -p "$ROOT_DIR/logs/tmux"
+  ensure_tmux_log_dir
   if [[ "$FRESH" -eq 1 ]] && tmux has-session -t "$SESSION" 2>/dev/null; then
     tmux kill-session -t "$SESSION"
   fi
@@ -115,12 +115,17 @@ run_shell() {
   start_session "$inner" ""
 }
 
+ensure_tmux_log_dir() {
+  mkdir -p "$ROOT_DIR/logs/tmux"
+}
+
 run_command() {
   if [[ $# -eq 0 ]]; then
     echo "run_tmux.sh run: missing command (use: ./run_tmux.sh run -- <cmd> ...)" >&2
     exit 1
   fi
   require_python_env
+  ensure_tmux_log_dir
   local stamp
   stamp="$(date +%Y%m%d_%H%M%S)"
   local log_file="$ROOT_DIR/logs/tmux/${SESSION}_${stamp}.log"
