@@ -26,6 +26,12 @@ def main() -> None:
     p.add_argument("--max-steps", type=int, default=900)
     p.add_argument("--step-token-budget", type=int, default=1)
     p.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
+    p.add_argument(
+        "--vllm-tensor-parallel-size",
+        type=int,
+        default=None,
+        help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
+    )
     p.add_argument("--vllm-max-model-len", type=int, default=16384)
     p.add_argument("--gsm-split-file", type=str, default=None)
     p.add_argument("--gsm-split-name", choices=["train", "eval"], default="eval")
@@ -42,6 +48,8 @@ def main() -> None:
     if not compiled.is_file():
         raise SystemExit(f"Not a file: {compiled}")
 
+    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+
     evaluator_kwargs: dict[str, Any] = dict(
         dataset_name=args.dataset,
         model_name=args.eval_model,
@@ -51,6 +59,7 @@ def main() -> None:
         max_steps=args.max_steps,
         step_token_budget=args.step_token_budget,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         vllm_max_model_len=args.vllm_max_model_len,
         vllm_enforce_eager=True,
     )

@@ -17,7 +17,7 @@
 # Environment:
 #   METADECODE_TMUX_SESSION     session name (default: metadecode)
 #   METADECODE_CONDA_ENV        conda prefix (default: /apps/conda/advayth2/envs/advayth2)
-#   CUDA_VISIBLE_DEVICES GPUs for local runs (default: 2,3)
+#   CUDA_VISIBLE_DEVICES GPU for local runs (default: 2; set VAS_MAX_CUDA_DEVICES>1 to allow more)
 
 set -euo pipefail
 
@@ -65,7 +65,9 @@ if [[ -d "$CONDA_ENV/lib" ]]; then
   export LD_LIBRARY_PATH="$CONDA_ENV/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 fi
 export PYTHONUNBUFFERED=1
-export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2,3}"
+export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2}"
+export VAS_MAX_CUDA_DEVICES="\${VAS_MAX_CUDA_DEVICES:-1}"
+export VAS_VLLM_GPU_MEMORY_UTILIZATION="\${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
 EOF
 }
 

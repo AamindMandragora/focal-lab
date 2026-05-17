@@ -46,7 +46,9 @@ CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
-    r"cumemAllocator|RESOURCE_EXHAUSTED",
+    r"cumemAllocator|RESOURCE_EXHAUSTED|"
+    r"Free memory on device|desired GPU memory utilization|"
+    r"Engine core initialization failed",
     re.IGNORECASE,
 )
 
@@ -100,6 +102,7 @@ class Config:
     gsm_eval_sample_size: str
     eval_max_steps: str
     vllm_gpu_memory_utilization: str
+    vllm_tensor_parallel_size: int
     dafny_path: str
     generated_output_dir: Path
     baseline_output_dir: Path
@@ -124,8 +127,11 @@ class Runner:
     prepared_baselines: set[tuple[str, str, str, str, str]] = field(default_factory=set)
 
     def configure_cuda_devices(self) -> bool:
+        from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
+
         selected = self.resolve_cuda_visible_devices("primary", ())
         if selected:
+            selected = limit_cuda_visible_devices(selected) or selected
             self.env["CUDA_VISIBLE_DEVICES"] = selected
             os.environ["CUDA_VISIBLE_DEVICES"] = selected
             if self.config.cuda_devices == "auto" and not CALLER_CUDA_VISIBLE_DEVICES:
@@ -235,8 +241,15 @@ class Runner:
         if requested != "auto":
             return requested
         if role != "fallback" and CALLER_CUDA_VISIBLE_DEVICES:
-            return CALLER_CUDA_VISIBLE_DEVICES
-        return self.wait_for_free_cuda_device(skip)
+            from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
+
+            return limit_cuda_visible_devices(CALLER_CUDA_VISIBLE_DEVICES)
+        selected = self.wait_for_free_cuda_device(skip)
+        if selected:
+            from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
+
+            return limit_cuda_visible_devices(selected)
+        return None
 
     def generation_sample_size(self, benchmark: str) -> str:
         if benchmark == "gsm_symbolic":
@@ -308,6 +321,14 @@ class Runner:
             ]
         if self.config.spider_split_file and benchmark == "spider":
             cmd += ["--spider-split-file", self.config.spider_split_file, "--spider-split-name", "eval"]
+
+    def add_vllm_parallel_flags(self, cmd: list[str]) -> None:
+        if self.config.eval_backend != "vllm":
+            return
+        cmd += [
+            "--vllm-tensor-parallel-size",
+            str(self.config.vllm_tensor_parallel_size),
+        ]
 
     def run_cmd(self, cmd: list[str]) -> bool:
         if self.config.dry_run:
@@ -585,6 +606,7 @@ class Runner:
             "--output-json",
             str(out_json),
         ]
+        self.add_vllm_parallel_flags(cmd)
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.add_evaluation_split_flags(cmd, benchmark)
@@ -649,6 +671,7 @@ class Runner:
             "--output-json",
             str(out_json),
         ]
+        self.add_vllm_parallel_flags(cmd)
         self.add_evaluation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += ["--smiles-classes", smiles_class]
@@ -741,6 +764,7 @@ class Runner:
             "--output-dir",
             str(self.config.generated_output_dir),
         ]
+        self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
@@ -969,6 +993,7 @@ class Runner:
             "--helper-selection-policy",
             policy,
         ]
+        self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
             cmd += [
@@ -1116,7 +1141,17 @@ def make_parser() -> argparse.ArgumentParser:
         default=os.environ.get("CSD_SPIDER_SPLIT_FILE", str(DEFAULT_SPIDER_SPLIT_FILE)),
         help="Stratified Spider manifest (default: environment/benchmark_splits/spider_dev_proportional.json)",
     )
-    parser.add_argument("--vllm-gpu-memory-utilization", default="0.95")
+    parser.add_argument(
+        "--vllm-gpu-memory-utilization",
+        default=os.environ.get("VAS_VLLM_GPU_MEMORY_UTILIZATION", "0.80"),
+        help="vLLM GPU memory fraction (default: 0.80; override via VAS_VLLM_GPU_MEMORY_UTILIZATION)",
+    )
+    parser.add_argument(
+        "--vllm-tensor-parallel-size",
+        type=int,
+        default=int(os.environ.get("VAS_VLLM_TENSOR_PARALLEL_SIZE", "1")),
+        help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
+    )
     parser.add_argument("--dafny-path", default=os.environ.get("DAFNY_PATH", ""))
     parser.add_argument("--generated-output-dir", default=os.environ.get("CSD_OUTPUT_DIR", "outputs/generated"))
     parser.add_argument("--baseline-output-dir", default=os.environ.get("CSD_BASELINE_OUTPUT_DIR", "outputs/baselines"))
@@ -1188,6 +1223,8 @@ def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
 
 
 def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
+    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
+
     dafny_path = args.dafny_path
     if not dafny_path and (ROOT_DIR / "dafny" / "dafny").is_file():
         dafny_path = str(ROOT_DIR / "dafny" / "dafny")
@@ -1213,6 +1250,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
+        vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,
         generated_output_dir=Path(args.generated_output_dir),
         baseline_output_dir=Path(args.baseline_output_dir),
