@@ -20,7 +20,7 @@ so baseline numbers remain interpretable.
 
 | Aspect | Raw CRANE | Our adapter |
 |--------|-----------|-------------|
-| Entrypoint | `python main.py` from `src/` with many CLI flags | **`run_crane_legacy_adapter`** invokes **`main.py`** with flags aligned to this repo’s benchmarks: `--dataset gsm_symbolic|spider|smiles`, delimiter symbols `<<` / `>>`, grammar modes `original` vs `adaptive`, optional SMILES class/sample overrides, model id from **`--eval-model`**. |
+| Entrypoint | `python main.py` from `src/` with many CLI flags | **`run_crane_legacy_adapter`** invokes **`main.py`** with flags aligned to this repo’s benchmarks: `--dataset gsm_symbolic|spider|smiles`, delimiter symbols `<<` / `>>`, grammar modes `original` vs `adaptive`, optional SMILES class/sample overrides, model id from **`--eval-model`**. When **`--gsm-split-file`** / **`--spider-split-file`** are set (from **`run_all_tests`** manifests), **`main.py`** selects **`train_indices`** / **`test_indices`** before **`--num_examples`**, matching harness GCD/IterGen/CARS baselines. |
 | Results consumption | Writes rich local artifacts | Loader **`_load_latest_crane_results`** + **`_annotate_legacy_rows_with_syntax`** augments rows with benchmark syntax validity and emits **minimal baseline JSON** (`accuracy`, `syntax_rate`, per-row answers). |
 
 ## IterGen (`legacy/itergen`)
