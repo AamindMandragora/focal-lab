@@ -46,11 +46,18 @@ fi
 export PYTHONUNBUFFERED=1
 
 # Pin visible GPUs after sourcing synthesis/.env (it may set busy cards 0/1).
-# Default 2,3 matches typical shared nodes where 0/1 host other vLLM jobs.
-# Override: RUN_ALL_TESTS_CUDA_DEVICES=0,1 ./run_all_tests.sh
-RUN_ALL_TESTS_CUDA_DEVICES="${RUN_ALL_TESTS_CUDA_DEVICES:-2,3}"
+# Default 3 dedicates physical GPU 3 to this matrix (process sees it as cuda:0).
+# Shared-node preset: RUN_ALL_TESTS_CUDA_DEVICES=2,3 ./run_all_tests.sh
+RUN_ALL_TESTS_CUDA_DEVICES="${RUN_ALL_TESTS_CUDA_DEVICES:-3}"
 export CUDA_VISIBLE_DEVICES="$RUN_ALL_TESTS_CUDA_DEVICES"
-echo "[env] CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES (set RUN_ALL_TESTS_CUDA_DEVICES to override)"
+# On CUDA OOM, matrix subprocesses retry once with this visibility (unset defaults to 2; empty string disables).
+RUN_ALL_TESTS_CUDA_OOM_FALLBACK="${RUN_ALL_TESTS_CUDA_OOM_FALLBACK-2}"
+echo "[env] CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+if [[ -n "${RUN_ALL_TESTS_CUDA_OOM_FALLBACK:-}" ]]; then
+  echo "[env] RUN_ALL_TESTS_CUDA_OOM_FALLBACK=$RUN_ALL_TESTS_CUDA_OOM_FALLBACK (OOM retry; set empty to disable)"
+else
+  echo "[env] RUN_ALL_TESTS_CUDA_OOM_FALLBACK unset/disabled"
+fi
 
 DEFAULT_MODELS="Qwen/Qwen2.5-Coder-1.5B-Instruct,Qwen/Qwen2.5-Coder-7B-Instruct,Qwen/Qwen2.5-Coder-14B-Instruct,meta-llama/Llama-3.1-8B-Instruct"
 DEFAULT_BENCHMARKS="gsm,spider,smiles"
@@ -74,7 +81,8 @@ EVAL_BACKEND="vllm"
 DEVICE="auto"
 EVAL_SAMPLE_SIZE="100"
 EVAL_MAX_STEPS="900"
-VLLM_GPU_MEM_UTIL="0.8"
+# Higher default when pinning a single card so vLLM reserves most VRAM on that GPU.
+VLLM_GPU_MEM_UTIL="0.95"
 DAFNY_PATH="${DAFNY_PATH:-}"
 if [[ -z "$DAFNY_PATH" && -x "$ROOT_DIR/dafny/dafny" ]]; then
   DAFNY_PATH="$ROOT_DIR/dafny/dafny"
@@ -110,7 +118,8 @@ Environment:
   Default conda prefix /apps/conda/advayth2/envs/advayth2 (must include RDKit).
   Override with VAS_CONDA_ENV or legacy VAS_RDKIT_CONDA_ENV (see environment/README.md).
   Prepends CONDA_PREFIX/lib to LD_LIBRARY_PATH for SciPy/transformers wheels vs system libstdc++.
-  Forces CUDA_VISIBLE_DEVICES=2,3 after loading synthesis/.env unless you set RUN_ALL_TESTS_CUDA_DEVICES.
+  Sets CUDA_VISIBLE_DEVICES (default 3) after loading synthesis/.env; override with RUN_ALL_TESTS_CUDA_DEVICES (e.g. 2,3).
+  Optional RUN_ALL_TESTS_CUDA_OOM_FALLBACK (default 2): each GPU job tries the primary visibility first; if logs indicate CUDA OOM, retries once with the fallback visibility. Set RUN_ALL_TESTS_CUDA_OOM_FALLBACK= to disable.
   Metadecode: profile gpt5.4 uses OpenAI (--generation-backend openai, OPENAI_API_KEY); opus4.7 uses Bedrock (AWS_BEARER_TOKEN_BEDROCK, BEDROCK_OPUS_MODEL). Profile gemini-pro is disabled in the default GEN_MODELS list; set GEMINI_BEDROCK_MODEL if you pass gemini-pro explicitly.
 
 Options:
@@ -293,13 +302,54 @@ resolve_gen_profile() {
   esac
 }
 
+_cuda_oom_detected_in_file() {
+  local f="$1"
+  [[ -f "$f" ]] || return 1
+  # PyTorch / vLLM / CUDA runtime wording varies by version.
+  grep -Eiq \
+    'out of memory|OutOfMemoryError|CUDA out of memory|CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|cumemAllocator|RESOURCE_EXHAUSTED' \
+    "$f"
+}
+
 run_cmd() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "[dry-run] $*"
     return 0
   fi
-  echo "[run] $*"
-  "$@"
+
+  local fallback="${RUN_ALL_TESTS_CUDA_OOM_FALLBACK:-}"
+  if [[ -z "$fallback" ]]; then
+    echo "[run] $*"
+    "$@"
+    return $?
+  fi
+
+  local primary="${RUN_ALL_TESTS_CUDA_DEVICES:-3}"
+  local log ec
+  log="$(mktemp "${TMPDIR:-/tmp}/run_all_tests_cuda_try.XXXXXX")"
+
+  echo "[run] CUDA_VISIBLE_DEVICES=$primary $*"
+  (
+    set -o pipefail
+    CUDA_VISIBLE_DEVICES="$primary" "$@" 2>&1 | tee "$log"
+  )
+  ec=$?
+
+  if [[ "$ec" -eq 0 ]]; then
+    rm -f "$log"
+    return 0
+  fi
+
+  if ! _cuda_oom_detected_in_file "$log"; then
+    rm -f "$log"
+    return "$ec"
+  fi
+
+  rm -f "$log"
+
+  echo "[warn] CUDA OOM on CUDA_VISIBLE_DEVICES=$primary; retrying with CUDA_VISIBLE_DEVICES=$fallback" >&2
+  echo "[run] CUDA_VISIBLE_DEVICES=$fallback $*"
+  CUDA_VISIBLE_DEVICES="$fallback" "$@"
 }
 
 baseline_json_complete() {
