@@ -57,8 +57,8 @@ def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
     answers: list[dict[str, Any]] = []
     for sample in samples:
         question = str(sample.get("question", ""))
-        generated_answer = sample.get("actual")
-        if generated_answer is None:
+        generated_answer = sample.get("scored_output")
+        if not generated_answer:
             generated_answer = sample.get("full_output", "")
         row: dict[str, Any] = {
             "question": question,
@@ -92,8 +92,8 @@ def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, An
     answers: list[dict[str, Any]] = []
     for sample in samples:
         question = str(sample.get("question", ""))
-        generated_answer = sample.get("actual")
-        if generated_answer is None:
+        generated_answer = sample.get("scored_output")
+        if not generated_answer:
             generated_answer = sample.get("full_output", "")
         row: dict[str, Any] = {
             "question": question,

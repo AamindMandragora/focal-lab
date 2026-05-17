@@ -36,6 +36,7 @@ Disallowed prompt content:
 ## Key Paths
 
 - Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
+- Fixed GSM-Symbolic / Spider eval subsets: `environment/benchmark_splits/` (proportional easy/medium/hard[/extra]; regenerate via `python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits`).
 - Legacy baseline codebases (CRANE / IterGen / CARS): clone with `bash environment/clone_legacy_csds.sh` into gitignored `legacy/*`; tracked pointer `legacy/README.md`; harness-vs-upstream notes `environment/legacy/DIFFERENCES.md`; **any edit under `legacy/{CRANE,itergen,cars}` must be captured as patches under `environment/legacy_patches/`** (see `environment/legacy/AGENTS.md`).
 - Dafny binary: set `DAFNY_PATH` when needed; otherwise the runner uses repo-local `dafny/dafny` only if present, then falls back to `dafny` on `PATH` or `~/.dotnet/tools/dafny`.
 - OpenAI API key: `synthesis/.env`

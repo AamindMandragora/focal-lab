@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
+
 
 _MAX_PROMPT_CHARS = 50000  # ~12.5K tokens; leaves room for generation within 16384-token context
 _MAX_SUFFIX_CHARS = 45000
@@ -200,6 +202,9 @@ def _mode_for_strategy(strategy: str) -> tuple[str, bool]:
 
 
 def _compose_baseline_answer_row(question: str, generated: str, row: dict[str, Any]) -> dict[str, Any]:
+    prompt_used = row.get("prompt_used")
+    if isinstance(prompt_used, str) and prompt_used:
+        generated = strip_prompt_prefix(prompt_used, generated)
     entry: dict[str, Any] = {"question": question, "generated_answer": generated}
     if row.get("num_tokens") is not None:
         entry["num_tokens"] = int(row["num_tokens"])
@@ -388,10 +393,12 @@ def _annotate_legacy_rows_with_syntax(
             or row.get("pred")
             or ""
         )
+        prompt_used = str(row.get("prompt_used") or "")
+        completion = completion_for_scoring(prompt_used or None, output_text)
         scored_output = (
-            eval_runtime._truncate_gsm_output(output_text)
+            eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"
-            else output_text
+            else completion
         )
         all_valid, segments = eval_runtime._check_syntax_validity(
             scored_output,
@@ -483,6 +490,7 @@ def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_a
         return_tensors="pt",
         add_special_tokens=False,
     ).to(cars_model.model.device)
+    prompt_len = int(prompt_ids.shape[1])
     cars_model.reset_sampling(learn_level=3, constrain_first=True)
 
     for _attempt in range(max(1, max_attempts)):
@@ -493,7 +501,8 @@ def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_a
             )
         except ValueError:
             continue
-        tokens = [cars_model.tokenizer.decode(token_id) for token_id in current_ids[0]]
+        new_ids = current_ids[0][prompt_len:]
+        tokens = [cars_model.tokenizer.decode(token_id) for token_id in new_ids]
         return _cars_tokens_to_text(tokens)
     return ""
 
@@ -600,7 +609,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
-        scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
+        completion = completion_for_scoring(prompt, output_text)
+        scored_output = (
+            eval_runtime._truncate_gsm_output(completion)
+            if dataset == "gsm_symbolic"
+            else completion
+        )
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
@@ -618,7 +632,8 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         rows.append(
             {
                 "question": question,
-                "llm_response": output_text,
+                "llm_response": completion,
+                "prompt_used": prompt,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
                 "generation_seconds": gen_seconds,
@@ -736,10 +751,16 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
-        completions = sc.infer(_gcd_prompt(prompt), stop_words=[">>"] if dataset == "gsm_symbolic" else None)
+        gcd_prompt = _gcd_prompt(prompt)
+        completions = sc.infer(gcd_prompt, stop_words=[">>"] if dataset == "gsm_symbolic" else None)
         gen_seconds = time.perf_counter() - gen_started
-        output_text = _gcd_output(completions[0] if completions else "", example)
-        scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
+        raw_output = _gcd_output(completions[0] if completions else "", example)
+        completion = completion_for_scoring(gcd_prompt, raw_output)
+        scored_output = (
+            eval_runtime._truncate_gsm_output(completion)
+            if dataset == "gsm_symbolic"
+            else completion
+        )
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
@@ -757,7 +778,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         rows.append(
             {
                 "question": question,
-                "llm_response": output_text,
+                "llm_response": completion,
+                "prompt_used": gcd_prompt,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
                 "generation_seconds": gen_seconds,
@@ -902,11 +924,16 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         gen_started = time.perf_counter()
         raw_completion = _itergen_generate(iter_gen, prompt)
         if dataset == "gsm_symbolic":
-            output_text = _gsm_symbolic_completion_to_delimited(raw_completion, example, eval_runtime, logic)
-        else:
-            output_text = raw_completion
+            raw_completion = _gsm_symbolic_completion_to_delimited(
+                raw_completion, example, eval_runtime, logic
+            )
         gen_seconds = time.perf_counter() - gen_started
-        scored_output = eval_runtime._truncate_gsm_output(output_text) if dataset == "gsm_symbolic" else output_text
+        completion = completion_for_scoring(prompt, raw_completion)
+        scored_output = (
+            eval_runtime._truncate_gsm_output(completion)
+            if dataset == "gsm_symbolic"
+            else completion
+        )
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
@@ -924,7 +951,8 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         rows.append(
             {
                 "question": question,
-                "llm_response": output_text,
+                "llm_response": completion,
+                "prompt_used": prompt,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
                 "generation_seconds": gen_seconds,
@@ -1146,8 +1174,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
             num_toks = int(new_ids.numel())
             suffix = tokenizer.decode(new_ids, skip_special_tokens=True)
 
-        output_text = prompt + suffix
-        scored_output = output_text
+        scored_output = suffix
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
@@ -1156,7 +1183,8 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
         question = _baseline_row_question("spider", example, expected)
         row_out: dict[str, Any] = {
             "question": question,
-            "llm_response": output_text,
+            "llm_response": suffix,
+            "prompt_used": prompt,
             "correct": bool(is_correct),
             "syntax_valid": bool(syntax_valid),
             "generation_seconds": gen_seconds,
@@ -1284,8 +1312,13 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         gen_started = time.perf_counter()
         completions = sc.infer(prompt)
         gen_seconds = time.perf_counter() - gen_started
-        output_text = completions[0] if completions else ""
-        scored_output = output_text
+        raw_output = completions[0] if completions else ""
+        completion = completion_for_scoring(prompt, raw_output)
+        scored_output = (
+            eval_runtime._truncate_gsm_output(completion)
+            if dataset == "gsm_symbolic"
+            else completion
+        )
         expected = logic.expected_answer(eval_runtime, example)
         actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
@@ -1303,7 +1336,8 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         rows.append(
             {
                 "question": question,
-                "llm_response": output_text,
+                "llm_response": completion,
+                "prompt_used": prompt,
                 "correct": bool(is_correct),
                 "syntax_valid": bool(syntax_valid),
                 "generation_seconds": gen_seconds,
