@@ -36,6 +36,7 @@ Disallowed prompt content:
 ## Key Paths
 
 - Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
+- Legacy baseline codebases (CRANE / IterGen / CARS): clone with `bash environment/clone_legacy_csds.sh` into gitignored `legacy/*`; tracked pointer `legacy/README.md`; harness-vs-upstream notes `environment/legacy/DIFFERENCES.md`; **any edit under `legacy/{CRANE,itergen,cars}` must be captured as patches under `environment/legacy_patches/`** (see `environment/legacy/AGENTS.md`).
 - Dafny binary: set `DAFNY_PATH` when needed; otherwise the runner uses repo-local `dafny/dafny` only if present, then falls back to `dafny` on `PATH` or `~/.dotnet/tools/dafny`.
 - OpenAI API key: `synthesis/.env`
 - Hugging Face checkpoints and SynCode mask/parser pickles: repository `cache/` (set `CSD_CACHE_ROOT` to relocate; legacy CRANE/IterGen/GCD paths resolve here when unset).
@@ -98,3 +99,4 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 - For bandit-style helper selection, keep exploration/exploitation policy in pipeline code/CLI knobs (e.g., UCB parameters), not in synthesis prompt prose.
 - Always update the `README.md` and `AGENTS.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes. Occasionally scan the repo at the end of a request to ensure they are up-to-date.
 - Under `synthesis/`, update the nearest subdirectory **`README.md`** / **`AGENTS.md`** when behavior or conventions change (see `synthesis/README.md` for the layout); do not add documentation inside vendored `synthesis/evaluate/syncode/syncode/` except via the root `evaluate/syncode/AGENTS.md` policy unless upgrading the vendor drop.
+- **Legacy upstream trees:** never leave manual edits only under gitignored **`legacy/CRANE`**, **`legacy/itergen`**, or **`legacy/cars`**. Add matching unified patches under **`environment/legacy_patches/<name>/`**, refresh **`environment/legacy/DIFFERENCES.md`** when behavior changes, and verify with **`bash environment/clone_legacy_csds.sh`** (see **`environment/legacy/AGENTS.md`**).
