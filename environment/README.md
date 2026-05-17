@@ -18,6 +18,16 @@ If you keep a **`vas-eval-environment.yml`** (or similar) for **`conda env updat
 
 If **SciPy** / **transformers** fail with **`CXXABI_1.3.15`** on **`libstdc++`**, **`run_all_tests.sh`** already prepends **`$CONDA_PREFIX/lib`** to **`LD_LIBRARY_PATH`**; reuse that pattern for other bash drivers.
 
+## Fixed benchmark splits
+
+Proportional GSM-Symbolic and Spider train/eval manifests live under **`environment/benchmark_splits/`**. Regenerate with:
+
+```bash
+python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits
+```
+
+See **`environment/benchmark_splits/README.md`**. **`run_all_tests.sh`** uses these paths by default.
+
 ## Legacy baseline repositories (`legacy/`)
 
 Fixed-strategy runners expect optional upstream clones under **`legacy/CRANE`**, **`legacy/itergen`**, and **`legacy/cars`** (see root **`README.md`**).

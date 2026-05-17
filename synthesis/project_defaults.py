@@ -30,11 +30,15 @@ def default_gsm_source_dir() -> Path:
         p = Path(env_gsm).expanduser()
         if p.exists():
             return p
-    crane_root = default_crane_repo()
-    for candidate in (crane_root / "src" / "gsm_symbolic", crane_root / "gsm_symbolic"):
+    repo_root = Path(__file__).resolve().parent.parent
+    for candidate in (
+        repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic",
+        default_crane_repo() / "src" / "gsm_symbolic",
+        default_crane_repo() / "gsm_symbolic",
+    ):
         if candidate.exists():
             return candidate
-    return crane_root / "src" / "gsm_symbolic"
+    return default_crane_repo() / "src" / "gsm_symbolic"
 
 
 def default_dafny_path() -> str:

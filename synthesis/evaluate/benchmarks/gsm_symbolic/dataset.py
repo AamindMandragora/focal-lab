@@ -18,6 +18,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
+from synthesis.evaluate.benchmarks.split_utils import (
+    proportional_allocations,
+    split_manifest_metadata,
+    stratified_sample_indices,
+)
 from synthesis.project_defaults import default_gsm_source_dir
 
 DEFAULT_CRANE_GSM_DIR = Path(
@@ -795,13 +800,78 @@ def _validate_difficulty_counts(counts: dict[str, int], field_name: str) -> dict
     return normalized
 
 
+def make_gsm_proportional_train_eval_split(
+    crane_dir: Path | str | None = None,
+    train_size: int = 0,
+    eval_size: int = 100,
+    seed: int = 123,
+) -> dict[str, Any]:
+    """Create a disjoint train/eval split with benchmark-proportional difficulty mix."""
+    if train_size < 0 or eval_size < 0:
+        raise ValueError("train_size and eval_size must be non-negative")
+    if train_size + eval_size <= 0:
+        raise ValueError("train_size + eval_size must be positive")
+
+    crane_dir = Path(crane_dir) if crane_dir is not None else DEFAULT_CRANE_GSM_DIR
+    rows = _load_crane_payloads(crane_dir)
+    if not rows:
+        raise FileNotFoundError(f"No GSM JSON files found under {crane_dir}")
+
+    difficulty_info = infer_gsm_crane_difficulty_labels(crane_dir)
+    labels = {int(idx): label for idx, label in difficulty_info["difficulty_by_index"].items()}
+    selected = stratified_sample_indices(
+        labels,
+        split_sizes={"train": train_size, "eval": eval_size},
+        difficulties=GSM_DIFFICULTIES,
+        seed=seed,
+    )
+    population = {
+        difficulty: len([idx for idx, label in labels.items() if label == difficulty])
+        for difficulty in GSM_DIFFICULTIES
+    }
+    return split_manifest_metadata(
+        seed=seed,
+        split_strategy="stratified_proportional",
+        labels_by_index=labels,
+        split_sizes={"train": train_size, "eval": eval_size},
+        selected=selected,
+        extra={
+            "crane_dir": str(crane_dir),
+            "train_size_requested": train_size,
+            "eval_size_requested": eval_size,
+            "train_allocations_requested": proportional_allocations(
+                train_size, population, order=GSM_DIFFICULTIES
+            ),
+            "eval_allocations_requested": proportional_allocations(
+                eval_size, population, order=GSM_DIFFICULTIES
+            ),
+            **difficulty_info,
+        },
+    )
+
+
 def make_gsm_stratified_train_eval_split(
     crane_dir: Path | str | None = None,
     train_counts: Optional[dict[str, int]] = None,
     eval_counts: Optional[dict[str, int]] = None,
     seed: int = 123,
+    *,
+    train_size: Optional[int] = None,
+    eval_size: Optional[int] = None,
 ) -> dict[str, Any]:
-    """Create a deterministic train/eval split with requested difficulty counts."""
+    """Create a deterministic train/eval split with requested difficulty counts.
+
+    When ``train_size`` / ``eval_size`` are provided, difficulty counts are derived
+    proportionally from the local CRANE GSM pool instead of the legacy 16/16/16 default.
+    """
+    if train_size is not None or eval_size is not None:
+        return make_gsm_proportional_train_eval_split(
+            crane_dir=crane_dir,
+            train_size=0 if train_size is None else train_size,
+            eval_size=100 if eval_size is None else eval_size,
+            seed=seed,
+        )
+
     crane_dir = Path(crane_dir) if crane_dir is not None else DEFAULT_CRANE_GSM_DIR
     rows = _load_crane_payloads(crane_dir)
     if not rows:
@@ -889,18 +959,46 @@ def write_gsm_stratified_train_eval_split(
     train_counts: Optional[dict[str, int]] = None,
     eval_counts: Optional[dict[str, int]] = None,
     seed: int = 123,
+    *,
+    train_size: Optional[int] = None,
+    eval_size: Optional[int] = None,
 ) -> dict[str, Any]:
     """Write a stratified train/eval manifest for the local CRANE GSM folder."""
-    split = make_gsm_stratified_train_eval_split(
-        crane_dir=crane_dir,
-        train_counts=train_counts,
-        eval_counts=eval_counts,
-        seed=seed,
-    )
+    if train_size is not None or eval_size is not None:
+        split = make_gsm_proportional_train_eval_split(
+            crane_dir=crane_dir,
+            train_size=0 if train_size is None else train_size,
+            eval_size=100 if eval_size is None else eval_size,
+            seed=seed,
+        )
+    else:
+        split = make_gsm_stratified_train_eval_split(
+            crane_dir=crane_dir,
+            train_counts=train_counts,
+            eval_counts=eval_counts,
+            seed=seed,
+        )
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(split, indent=2))
+    output_path.write_text(json.dumps(split, indent=2) + "\n")
     return split
+
+
+def write_gsm_proportional_train_eval_split(
+    output_path: Path | str,
+    crane_dir: Path | str | None = None,
+    train_size: int = 0,
+    eval_size: int = 100,
+    seed: int = 123,
+) -> dict[str, Any]:
+    """Write a proportional stratified GSM manifest for the local CRANE GSM folder."""
+    return write_gsm_stratified_train_eval_split(
+        output_path,
+        crane_dir=crane_dir,
+        seed=seed,
+        train_size=train_size,
+        eval_size=eval_size,
+    )
 
 
 

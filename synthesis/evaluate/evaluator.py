@@ -1301,13 +1301,22 @@ class Evaluator:
             raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
         return indices
 
+    def _normalize_spider_split_name(self) -> str:
+        """Map legacy ``eval`` alias to Spider's ``test`` split field."""
+        if self.spider_split_name == "eval":
+            return "test"
+        return self.spider_split_name
+
     def _load_spider_split_indices(self) -> Optional[List[int]]:
         """Load explicit Spider example indices from a train/test split manifest."""
         if self.spider_split_file is None:
             return None
 
         manifest = json.loads(self.spider_split_file.read_text())
-        key = f"{self.spider_split_name}_indices"
+        split_name = self._normalize_spider_split_name()
+        key = f"{split_name}_indices"
+        if key not in manifest and split_name == "test":
+            key = "eval_indices"
         if key not in manifest:
             available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
             raise ValueError(
@@ -2041,10 +2050,13 @@ class Evaluator:
                     example_time = time.time() - example_start
                     print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
 
+                    from synthesis.evaluate.completion_text import completion_for_scoring
+
+                    completion = completion_for_scoring(prompt, output_text)
                     scored_output = (
-                        self._truncate_gsm_output(output_text)
+                        self._truncate_gsm_output(completion)
                         if self.dataset_name == "gsm_symbolic"
-                        else output_text
+                        else completion
                     )
 
                     actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
@@ -2108,8 +2120,8 @@ class Evaluator:
                     sample = {
                         "question": q_str,
                         "expected": expected,
-                        "actual": actual or output_text[:100],
-                        "full_output": output_text,
+                        "actual": actual or completion[:100],
+                        "full_output": completion,
                         "scored_output": scored_output,
                         "answer_source": answer_source,
                         "has_extracted_answer": actual is not None or answer_source == "text_fallback",

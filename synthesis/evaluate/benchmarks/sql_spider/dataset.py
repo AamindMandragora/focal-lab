@@ -20,16 +20,24 @@ from __future__ import annotations
 import json
 import os
 import random
+from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from synthesis.evaluate.benchmarks.split_utils import (
+    proportional_allocations,
+    split_manifest_metadata,
+    stratified_sample_indices,
+)
 from synthesis.project_defaults import default_spider_data_dir
 
 DEFAULT_SPIDER_DIR = Path(
     default_spider_data_dir()
 )
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+SPIDER_DIFFICULTIES: tuple[str, ...] = ("easy", "medium", "hard", "extra")
 
 
 def _vendored_spider_eval_dir() -> Path:
@@ -256,6 +264,108 @@ def load_spider(
     return rows
 
 
+def _load_spider_evaluator():
+    import sys
+
+    eval_dir = str(_vendored_spider_eval_dir())
+    if eval_dir not in sys.path:
+        sys.path.insert(0, eval_dir)
+    from evaluation import Evaluator, get_sql
+    from process_sql import Schema, get_schema
+
+    return Evaluator(), get_sql, Schema, get_schema
+
+
+def infer_spider_difficulty_labels(
+    *,
+    source: str = "auto",
+    spider_dir: Optional[Path | str] = None,
+) -> Dict[str, Any]:
+    """Infer official Spider easy/medium/hard/extra labels for loaded dev rows."""
+    rows = load_spider(source=source, spider_dir=spider_dir)
+    evaluator, get_sql, Schema, get_schema = _load_spider_evaluator()
+    labels: Dict[int, str] = {}
+    for idx, row in enumerate(rows):
+        db_id = row.get("db_id", "")
+        db_path = default_db_dir() / db_id / f"{db_id}.sqlite"
+        try:
+            schema = Schema(get_schema(str(db_path)))
+            parsed = get_sql(schema, row.get("query") or "")
+            labels[idx] = evaluator.eval_hardness(parsed)
+        except Exception:
+            labels[idx] = "unknown"
+
+    composition = dict(sorted(Counter(labels.values()).items()))
+    return {
+        "difficulty_source": "spider_official_eval_hardness",
+        "difficulty_order": list(SPIDER_DIFFICULTIES),
+        "difficulty_by_index": {str(idx): label for idx, label in sorted(labels.items())},
+        "difficulty_composition": composition,
+        "total_examples": len(rows),
+    }
+
+
+def make_spider_proportional_train_test_split(
+    *,
+    source: str = "auto",
+    spider_dir: Optional[Path | str] = None,
+    train_size: int = 50,
+    test_size: int = 100,
+    seed: int = 123,
+) -> Dict[str, Any]:
+    """Create a disjoint train/test split with benchmark-proportional hardness mix."""
+    if train_size < 0 or test_size < 0:
+        raise ValueError("train_size and test_size must be non-negative")
+    if train_size + test_size <= 0:
+        raise ValueError("train_size + test_size must be positive")
+
+    rows = load_spider(source=source, spider_dir=spider_dir)
+    difficulty_info = infer_spider_difficulty_labels(source=source, spider_dir=spider_dir)
+    labels = {
+        int(idx): label
+        for idx, label in difficulty_info["difficulty_by_index"].items()
+        if label in SPIDER_DIFFICULTIES
+    }
+    unknown = len(rows) - len(labels)
+    if unknown:
+        raise ValueError(
+            f"Could not assign Spider hardness to {unknown} of {len(rows)} examples"
+        )
+
+    selected = stratified_sample_indices(
+        labels,
+        split_sizes={"train": train_size, "test": test_size},
+        difficulties=SPIDER_DIFFICULTIES,
+        seed=seed,
+    )
+    population = {
+        difficulty: len([idx for idx, label in labels.items() if label == difficulty])
+        for difficulty in SPIDER_DIFFICULTIES
+    }
+    manifest = split_manifest_metadata(
+        seed=seed,
+        split_strategy="stratified_proportional",
+        labels_by_index=labels,
+        split_sizes={"train": train_size, "test": test_size},
+        selected=selected,
+        extra={
+            "source": source,
+            "spider_dir": str(spider_dir or DEFAULT_SPIDER_DIR),
+            "train_size_requested": train_size,
+            "test_size_requested": test_size,
+            "train_allocations_requested": proportional_allocations(
+                train_size, population, order=SPIDER_DIFFICULTIES
+            ),
+            "test_allocations_requested": proportional_allocations(
+                test_size, population, order=SPIDER_DIFFICULTIES
+            ),
+            **difficulty_info,
+        },
+    )
+    manifest["eval_indices"] = list(manifest["test_indices"])
+    return manifest
+
+
 def make_spider_train_test_split(
     total_examples: int,
     train_size: int = 50,
@@ -289,7 +399,7 @@ def make_spider_train_test_split(
     }
 
 
-def write_spider_train_test_split(
+def write_spider_proportional_train_test_split(
     output_path: Path | str,
     *,
     source: str = "auto",
@@ -299,7 +409,57 @@ def write_spider_train_test_split(
     seed: int = 123,
     include_preview: bool = True,
 ) -> Dict[str, Any]:
+    """Write a proportional stratified Spider train/test manifest."""
+    rows = load_spider(source=source, spider_dir=spider_dir)
+    split = make_spider_proportional_train_test_split(
+        source=source,
+        spider_dir=spider_dir,
+        train_size=train_size,
+        test_size=test_size,
+        seed=seed,
+    )
+    if include_preview:
+        for split_name in ("train", "test"):
+            previews = []
+            for idx in split[f"{split_name}_indices"][:10]:
+                row = rows[idx]
+                previews.append({
+                    "index": idx,
+                    "db_id": row.get("db_id", ""),
+                    "question": row.get("question", ""),
+                    "difficulty": split["difficulty_by_index"].get(str(idx)),
+                })
+            split[f"{split_name}_preview"] = previews
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(split, indent=2) + "\n")
+    return split
+
+
+def write_spider_train_test_split(
+    output_path: Path | str,
+    *,
+    source: str = "auto",
+    spider_dir: Optional[Path | str] = None,
+    train_size: int = 50,
+    test_size: int = 100,
+    seed: int = 123,
+    include_preview: bool = True,
+    proportional: bool = True,
+) -> Dict[str, Any]:
     """Write a deterministic Spider split manifest for synthesis/test workflows."""
+    if proportional:
+        return write_spider_proportional_train_test_split(
+            output_path,
+            source=source,
+            spider_dir=spider_dir,
+            train_size=train_size,
+            test_size=test_size,
+            seed=seed,
+            include_preview=include_preview,
+        )
+
     rows = load_spider(source=source, spider_dir=spider_dir)
     split = make_spider_train_test_split(
         total_examples=len(rows),
@@ -319,9 +479,10 @@ def write_spider_train_test_split(
                 })
             split[f"{split_name}_preview"] = previews
 
+    split["eval_indices"] = list(split["test_indices"])
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(split, indent=2))
+    output_path.write_text(json.dumps(split, indent=2) + "\n")
     return split
 
 
