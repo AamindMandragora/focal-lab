@@ -8,7 +8,7 @@ They are not imported by the core package at runtime; run them explicitly with `
 
 - **`ablation_beam_bandit.py`** — Grid search over refinement beam size and helper-selection policy.
 - **`reevaluate_compiled_csd.py`** — Re-run evaluation on an already-compiled GeneratedCSD.py.
-- **`collect_paper_results.py`** — Collect baseline and synthesis results into paper-ready LaTeX table fragments. Reads `outputs/baselines/` and `outputs/generated/`, emits main results + ablation tables.
+- **`collect_paper_results.py`** — Collect baseline and synthesis results into paper-ready LaTeX table fragments. Reads `outputs/baselines/` and `outputs/generated/`, emits main results + ablation tables. Use **`--paper-main-table`** / **`--paper-bold-best`** to print Table~1 rows for `paper/experiments.tex`. Pass **`--git-tracked-only`** to include only metrics whose source `outputs/**/*.json` paths are tracked by git (cells without such JSON emit `\todo{--}`).
 
 Scripts are self-contained CLIs. See each file's module docstring for arguments and examples.
 
