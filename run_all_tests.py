@@ -1138,8 +1138,8 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--generation-sample-size", default="50")
     parser.add_argument("--eval-sample-size", default="100")
-    parser.add_argument("--gsm-generation-sample-size", default="50")
-    parser.add_argument("--gsm-eval-sample-size", default="50")
+    parser.add_argument("--gsm-generation-sample-size", default="100")
+    parser.add_argument("--gsm-eval-sample-size", default="100")
     parser.add_argument("--eval-max-steps", default="900")
     parser.add_argument(
         "--eval-max-seconds-per-example",

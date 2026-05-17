@@ -1285,8 +1285,26 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     if dataset == "gsm_symbolic":
         cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
+        if args.gsm_split_file:
+            cmd.extend(
+                [
+                    "--gsm-split-file",
+                    str(args.gsm_split_file),
+                    "--gsm-split-name",
+                    args.gsm_split_name,
+                ]
+            )
     elif dataset in ("spider", "smiles"):
         cmd.extend(["--start_symbol", "<<", "--end_symbol", ">>"])
+    if dataset == "spider" and args.spider_split_file:
+        cmd.extend(
+            [
+                "--spider-split-file",
+                str(args.spider_split_file),
+                "--spider-split-name",
+                args.spider_split_name,
+            ]
+        )
 
     if dataset == "smiles":
         smiles_classes = getattr(args, "smiles_classes", None) or "acrylates,chain_extenders,isocyanates"
