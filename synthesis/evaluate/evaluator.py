@@ -1923,6 +1923,7 @@ class Evaluator:
         early_stop_min_accuracy: Optional[float] = None,
         early_stop_min_syntax_rate: Optional[float] = None,
         early_stop_runtime_failures: Optional[int] = None,
+        min_examples_before_threshold_stop: Optional[int] = None,
     ) -> EvaluationResult:
         """
         Evaluate the compiled CSD on a sample of the dataset.
@@ -1934,6 +1935,12 @@ class Evaluator:
             early_stop_min_accuracy: Optional target accuracy for early stop.
             early_stop_min_syntax_rate: Optional target syntax rate for early stop.
             early_stop_runtime_failures: Optional runtime-failure count for early stop.
+            min_examples_before_threshold_stop: If set, the threshold-impossible
+                accuracy and syntax-rate early stops are suppressed until at
+                least this many examples have been evaluated. The runtime-budget
+                early stop is unaffected (it is a different signal). Lets the
+                synthesis feedback loop see usable data even when the strategy
+                cannot possibly clear the acceptance threshold.
 
         Returns:
             EvaluationResult with metrics and sample outputs
@@ -2060,6 +2067,16 @@ class Evaluator:
                 # an accuracy upper bound is not comparable until all syntax outcomes
                 # are known. Keep this synthesis gate to fixed-denominator tasks.
                 if self.dataset_name == "smiles":
+                    return None
+
+                # Guard threshold-impossible early stops so the synthesis feedback
+                # loop always sees a usable amount of evaluation data. The
+                # runtime-failures gate above is intentionally not affected: it
+                # signals actual budget exhaustion, not an unreachable target.
+                if (
+                    min_examples_before_threshold_stop is not None
+                    and evaluated_count < min_examples_before_threshold_stop
+                ):
                     return None
 
                 if target_min_accuracy is not None:
