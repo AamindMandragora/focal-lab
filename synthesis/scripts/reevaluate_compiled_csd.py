@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Re-run GSM (or other) evaluation on an already compiled GeneratedCSD.py path."""
+"""Evaluate an already compiled GeneratedCSD.py path and optionally export JSON."""
 from __future__ import annotations
 
 import argparse
 import os
 from pathlib import Path
+from typing import Any
 
+from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
 
 
@@ -18,10 +20,19 @@ def main() -> None:
     )
     p.add_argument("--dataset", default="gsm_symbolic")
     p.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
+    p.add_argument("--eval-backend", default="vllm")
+    p.add_argument("--device", default="cuda")
     p.add_argument("--sample-size", type=int, default=15)
     p.add_argument("--max-steps", type=int, default=900)
     p.add_argument("--step-token-budget", type=int, default=1)
-    p.add_argument("--vllm-max-model-len", type=int, default=4096)
+    p.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.8)
+    p.add_argument("--vllm-max-model-len", type=int, default=16384)
+    p.add_argument("--gsm-split-file", type=str, default=None)
+    p.add_argument("--gsm-split-name", choices=["train", "eval"], default="eval")
+    p.add_argument("--spider-split-file", type=str, default=None)
+    p.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="eval")
+    p.add_argument("--smiles-classes", type=str, default=None)
+    p.add_argument("--output-json", type=Path, default=None)
     args = p.parse_args()
 
     if os.environ.get("VLLM_WORKER_MULTIPROC_METHOD") is None:
@@ -31,17 +42,28 @@ def main() -> None:
     if not compiled.is_file():
         raise SystemExit(f"Not a file: {compiled}")
 
-    ev = Evaluator(
+    evaluator_kwargs: dict[str, Any] = dict(
         dataset_name=args.dataset,
         model_name=args.eval_model,
-        backend="vllm",
-        device="cuda",
+        backend=args.eval_backend,
+        device=args.device,
         sample_size=args.sample_size,
         max_steps=args.max_steps,
         step_token_budget=args.step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=args.vllm_max_model_len,
         vllm_enforce_eager=True,
     )
+    if args.gsm_split_file:
+        evaluator_kwargs["gsm_split_file"] = args.gsm_split_file
+        evaluator_kwargs["gsm_split_name"] = args.gsm_split_name
+    if args.spider_split_file:
+        evaluator_kwargs["spider_split_file"] = args.spider_split_file
+        evaluator_kwargs["spider_split_name"] = args.spider_split_name
+    if args.smiles_classes:
+        evaluator_kwargs["smiles_classes"] = args.smiles_classes
+
+    ev = Evaluator(**evaluator_kwargs)
     try:
         res = ev.evaluate_sample(compiled, sample_size=args.sample_size)
     finally:
@@ -53,6 +75,9 @@ def main() -> None:
     print(f"contains_delimiters: {res.contains_delimiters}")
     syn = sum(1 for s in res.sample_outputs if s.get("is_syntax_valid"))
     print(f"per_example_syntax_pass: {syn} / {len(res.sample_outputs)}")
+    if args.output_json is not None:
+        save_minimal_baseline_json(res, args.output_json)
+        print(f"wrote_json: {args.output_json}")
 
 
 if __name__ == "__main__":
