@@ -129,25 +129,27 @@ run_command() {
   local stamp
   stamp="$(date +%Y%m%d_%H%M%S)"
   local log_file="$ROOT_DIR/logs/tmux/${SESSION}_${stamp}.log"
-  local launcher="$ROOT_DIR/logs/tmux/${SESSION}_${stamp}_run.sh"
   local quoted_cmd=""
+  local quoted_log=""
   printf -v quoted_cmd '%q ' "$@"
+  printf -v quoted_log '%q' "$log_file"
 
-  {
-    project_env_script
-    cat <<EOF
-echo "Logging to: $log_file"
-echo "Command: $quoted_cmd"
-set +e
-$quoted_cmd 2>&1 | tee -a "$log_file"
-echo "Exit code: \${PIPESTATUS[0]}" | tee -a "$log_file"
-touch "$log_file"
-exec bash -l
-EOF
-  } >"$launcher"
-  chmod +x "$launcher"
+  local inner
+  inner="$(project_env_script)"
+  inner+=$'\n'
+  inner+="echo \"Logging to: $log_file\""
+  inner+=$'\n'
+  inner+="echo \"Command: $quoted_cmd\""
+  inner+=$'\n'
+  inner+='set +e'
+  inner+=$'\n'
+  inner+="$quoted_cmd 2>&1 | tee -a $quoted_log"
+  inner+=$'\n'
+  inner+='echo "Exit code: ${PIPESTATUS[0]}" | tee -a '"$quoted_log"
+  inner+=$'\n'
+  inner+='exec bash -l'
 
-  start_session "bash \"$launcher\"" "$log_file"
+  start_session "$inner" "$log_file"
 }
 
 run_matrix() {
