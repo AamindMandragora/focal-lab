@@ -350,11 +350,13 @@ class EvaluationResult:
 
     @staticmethod
     def _format_counter(counter: Counter[str], denominator: int, max_items: int = 5) -> str:
-        if not counter:
-            return "none"
-        return ", ".join(
-            f"{key} {count}/{denominator}"
-            for key, count in counter.most_common(max_items)
+        from synthesis.evaluate.benchmarks.common.formatting import format_named_counter
+
+        return format_named_counter(
+            counter,
+            denominator,
+            max_items=max_items,
+            min_denominator=1,
         )
 
     @classmethod
@@ -1726,10 +1728,9 @@ class Evaluator:
                     env[var] = _rng.uniform(0.001, 100)
                 else:
                     env[var] = _rng.randint(1, 100)
-            try:
-                val_model = eval(model_expr, {"__builtins__": {}}, {**env, 'int': int})
-                val_expected = eval(expected_expr, {"__builtins__": {}}, {**env, 'int': int})
-            except Exception:
+            val_model = self._evaluate_symbolic_expression(model_expr, env)
+            val_expected = self._evaluate_symbolic_expression(expected_expr, env)
+            if val_model is None or val_expected is None:
                 return False
             if abs(val_model - val_expected) > 1e-6 * max(1, abs(val_expected)):
                 return False

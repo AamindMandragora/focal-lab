@@ -22,7 +22,6 @@ from .evaluator import Evaluator, EvaluationResult
 from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
-from .runner import RuntimeResult, StrategyRunner
 from ..verify.verifier import DafnyVerifier, VerificationResult
 
 
@@ -122,7 +121,6 @@ class SynthesisAttempt:
     # Results from each stage (None if stage not reached)
     verification_result: Optional[VerificationResult] = None
     compilation_result: Optional[CompilationResult] = None
-    runtime_result: Optional[RuntimeResult] = None
     eval_result: Optional[EvaluationResult] = None
 
     # Failure information
@@ -130,14 +128,16 @@ class SynthesisAttempt:
     error_summary: str = ""
 
     def succeeded(self) -> bool:
-        """Check if this attempt succeeded completely."""
+        """Check if this attempt passed verify, compile, and evaluation."""
+        if self.failed_at is not None:
+            return False
         return (
             self.verification_result is not None
             and self.verification_result.success
             and self.compilation_result is not None
             and self.compilation_result.success
-            and self.runtime_result is not None
-            and self.runtime_result.success
+            and self.eval_result is not None
+            and self.eval_result.success
         )
 
     def get_strategy_analysis(self) -> dict:
@@ -168,16 +168,6 @@ class SynthesisAttempt:
                 else None,
             }
             if self.compilation_result
-            else None,
-            "runtime": {
-                "success": self.runtime_result.success if self.runtime_result else None,
-                "output_length": len(self.runtime_result.output)
-                if self.runtime_result and self.runtime_result.output
-                else 0,
-                "cost": self.runtime_result.cost if self.runtime_result else 0,
-                "execution_time_ms": self.runtime_result.execution_time_ms if self.runtime_result else 0,
-            }
-            if self.runtime_result
             else None,
             "evaluation": self.eval_result.to_dict() if self.eval_result else None,
         }
@@ -356,7 +346,6 @@ class SynthesisPipeline:
         generator: Optional[StrategyGenerator] = None,
         verifier: Optional[DafnyVerifier] = None,
         compiler: Optional[DafnyCompiler] = None,
-        runner: Optional[StrategyRunner] = None,
         max_iterations: int = 5,
         output_dir: Optional[Path] = None,
         save_reports: bool = True,
@@ -389,7 +378,6 @@ class SynthesisPipeline:
             generator: Strategy generator (creates default if None)
             verifier: Dafny verifier (creates default if None)
             compiler: Dafny compiler (creates default if None)
-            runner: Strategy runner (creates default if None)
             max_iterations: Maximum refinement iterations
             output_dir: Directory for outputs and reports
             save_reports: Whether to save failure reports to disk
@@ -417,7 +405,6 @@ class SynthesisPipeline:
         self.generator = generator or StrategyGenerator()
         self.verifier = verifier or DafnyVerifier()
         self.compiler = compiler or DafnyCompiler()
-        self.runner = runner  # Will be created per-task in synthesize()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
         self.save_reports = save_reports
@@ -2148,26 +2135,23 @@ class SynthesisPipeline:
 
     @staticmethod
     def _format_named_counter(counter, denominator: int, max_items: int = 5) -> str:
-        if not counter:
-            return "none"
-        denom = max(1, denominator)
-        return ", ".join(
-            f"{key} {count}/{denom}"
-            for key, count in counter.most_common(max_items)
+        from synthesis.evaluate.benchmarks.common.formatting import format_named_counter
+
+        return format_named_counter(
+            counter,
+            denominator,
+            max_items=max_items,
+            min_denominator=1,
         )
 
     @staticmethod
     def _format_counter_delta(current_counter, baseline_counter, max_items: int = 6) -> str:
-        keys = set(current_counter) | set(baseline_counter)
-        if not keys:
-            return "none"
-        ranked = sorted(
-            keys,
-            key=lambda key: (-abs(current_counter.get(key, 0) - baseline_counter.get(key, 0)), key),
-        )
-        return ", ".join(
-            f"{key} {current_counter.get(key, 0) - baseline_counter.get(key, 0):+d}"
-            for key in ranked[:max_items]
+        from synthesis.evaluate.benchmarks.common.formatting import format_counter_delta
+
+        return format_counter_delta(
+            current_counter,
+            baseline_counter,
+            max_items=max_items,
         )
 
     @staticmethod
@@ -2672,25 +2656,6 @@ class SynthesisPipeline:
         start_time = time.time()
         attempts: list[SynthesisAttempt] = []
 
-        # Create runner if not already provided
-        if self.runner is None:
-            # Pull grammar from the evaluator so the smoke test exercises
-            # the SAME grammar the real evaluation will use. This removes
-            # the whole class of "TestParser missing method X" false negatives.
-            grammar_source = None
-            grammar_start = "start"
-            try:
-                grammar_source = str(self.evaluator._get_grammar_file())
-            except Exception:
-                grammar_source = None
-            runner = StrategyRunner(
-                parser_mode="permissive",
-                grammar_source=grammar_source,
-                grammar_start=grammar_start,
-            )
-        else:
-            runner = self.runner
-
         # Create an isolated output directory for this run. The directory layout is:
         #   outputs/generated/<output_name>_<run_id>/
         #     - dafny/
@@ -2967,15 +2932,7 @@ class SynthesisPipeline:
                 )
                 continue
 
-            # Smoke-test stage removed (April 25). The TestLM stub in runner.py
-            # diverged from the real _TensorizedLMBase API (e.g. _logits_tensor,
-            # _token_indices_for_token), causing valid strategies to be marked
-            # runtime-failed when they used helpers that the fastpath shims
-            # vectorize. Real evaluation catches the same crash modes the smoke
-            # test was meant to catch (the eval has its own per-example step
-            # budget and any interface error surfaces there too). Skipping
-            # straight from compile to eval.
-            print("\n[3/4] Skipping runtime smoke test (removed; eval catches the same failures).")
+            print("\n[3/4] Evaluating compiled strategy (runtime smoke test removed).")
 
             # Stage 4: Evaluation
             print("\n[4/4] Evaluating on dataset sample...")

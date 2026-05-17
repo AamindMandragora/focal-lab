@@ -7,15 +7,9 @@ from typing import Any
 
 
 def normalize_classes(evaluator: Any) -> list[str]:
-    if evaluator.smiles_classes is None:
-        from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES
+    from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
 
-        return list(SMILES_CLASSES)
-    if isinstance(evaluator.smiles_classes, str):
-        raw = [part.strip() for part in evaluator.smiles_classes.split(",")]
-    else:
-        raw = [str(part).strip() for part in evaluator.smiles_classes]
-    return [part for part in raw if part]
+    return normalize_smiles_classes(evaluator.smiles_classes)
 
 
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
@@ -102,9 +96,10 @@ def extract_actual(
     grammar_text = example.get("grammar_text", "")
     prompt_exemplars = example.get("prompt_exemplars", [])
 
-    # Prefer extracting from << >> delimiters when present.
-    expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
-    candidate = expr_matches[-1].strip() if expr_matches else scored_output
+    from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
+
+    span, found = extract_last_delimited_span(scored_output)
+    candidate = span if found else scored_output
 
     smiles_eval = evaluate_smiles_output(
         class_name,

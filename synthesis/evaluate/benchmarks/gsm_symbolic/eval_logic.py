@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 from typing import Any
+
+from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
+from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
+
+uses_hidden_chunks = defaults.uses_hidden_chunks
+example_syntax_pass = defaults.example_syntax_pass_from_segments
+accuracy_applicable = defaults.accuracy_applicable_always
+accuracy_upper_bound = defaults.accuracy_upper_bound_with_remaining
+final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
+invalid_outputs_excluded = defaults.invalid_outputs_excluded_none
+accuracy_definition = defaults.accuracy_definition_standard
 
 
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
@@ -139,9 +151,8 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
 
 
 def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) -> tuple[str | None, str, dict[str, Any] | None]:
-    expr_matches = re.findall(r"<<\s*([^<>]+?)\s*>>", scored_output)
-    actual = expr_matches[-1].strip() if expr_matches else None
-    source = "last_visible_span" if expr_matches else "none"
+    actual, found = extract_last_delimited_span(scored_output)
+    source = "last_visible_span" if found else "none"
     return actual, source, None
 
 
@@ -156,9 +167,11 @@ def is_correct(
     vt = example.get("variable_types", {})
     if isinstance(vt, str):
         try:
-            vt = eval(vt)
-        except Exception:
+            vt = ast.literal_eval(vt)
+        except (ValueError, SyntaxError):
             vt = {}
+    if not isinstance(vt, dict):
+        vt = {}
     if vt and example.get("answer_parsed"):
         return evaluator._gsm_symbolic_equivalence(actual, expected, vt)
     numeric_actual = evaluator._extract_answer_gsm(scored_output)
@@ -166,23 +179,6 @@ def is_correct(
     if numeric_expected:
         return evaluator._answers_match(numeric_actual, numeric_expected.group(1))
     return evaluator._answers_match(numeric_actual, expected)
-
-
-def uses_hidden_chunks() -> bool:
-    return False
-
-
-def example_syntax_pass(
-    all_valid_syntax: bool,
-    segments: list[tuple[str, bool]],
-    used_hidden_chunk: bool,
-    aux: dict[str, Any] | None,
-) -> bool:
-    return bool(segments) and all_valid_syntax
-
-
-def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
-    return True
 
 
 def get_generation_runner():
@@ -228,22 +224,3 @@ def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) ->
     return {}
 
 
-def accuracy_upper_bound(
-    num_correct: int,
-    remaining: int,
-    num_accuracy_examples: int,
-    total_planned_examples: int,
-) -> float:
-    return (num_correct + remaining) / max(1, total_planned_examples)
-
-
-def final_accuracy_denominator(num_examples: int, num_accuracy_examples: int) -> int:
-    return num_examples
-
-
-def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> int:
-    return 0
-
-
-def accuracy_definition() -> str:
-    return "correct_examples_over_all_examples"

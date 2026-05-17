@@ -14,7 +14,7 @@ Target venue: ACL (paper uses `acl.sty`, review mode).
 2. **Verified reference strategies** — GCD, CRANE, IterGen, CARS formalized in Dafny against a shared primitive library (`VerifiedAgentSynthesis.dfy`). All verify cleanly.
 3. **Three benchmark integrations** — GSM-Symbolic, Spider, SMILES with dataset loaders, grammars, and scoring logic.
 4. **Legacy baseline runners** — external codebases for CRANE, IterGen, CARS wired into the evaluation harness for apples-to-apples comparison.
-5. **Experiment orchestration** — `run_all_tests.sh` covers the full strategy × model × benchmark matrix (4 models × 6 strategies × 3 benchmarks) plus ablations on step budget, synthesis iterations, synthesizer model, per-step token budget, beam refinement × helper selection policy, and adaptive helper masking.
+5. **Experiment orchestration** — `run_all_tests.py` covers the full strategy × model × benchmark matrix (4 models × 6 strategies × 3 benchmarks) plus ablations on step budget, synthesis iterations, synthesizer model, per-step token budget, beam refinement × helper selection policy, and adaptive helper masking.
 6. **Ablation infrastructure** — beam/bandit sweep (`outputs/ablations/beam_bandit_20260509_034827.json`) shows the helper-selection-policy and beam-size ablation grid ran successfully on GSM-Symbolic with Qwen-7B. Results: beam=2 + utility policy achieved 80% accuracy (4/5), the best configuration in that sweep.
 7. **Paper skeleton** — full LaTeX structure: abstract, intro, related work, problem formulation, approach, experiments, conclusion, appendix (Dafny spec, prompts, strategies). The experiments section has table shells for all planned results.
 8. **DFA-mask constrained decoding** — Syncode vendor drop with DFAMaskStore for efficient per-step validity.
@@ -27,13 +27,13 @@ The experiment tables in `paper/experiments.tex` are entirely `\todo{--}`. No fi
 
 | Experiment | Status | What to Run |
 |---|---|---|
-| Main matrix (4 models × 6 strategies × 3 benchmarks) | **NOT DONE** | `run_all_tests.sh --skip-ablations --eval-sample-size <N>` with publication sample size |
-| Step-budget ablation (n=256,512,1024) | **NOT DONE** | Ablation A in `run_all_tests.sh` |
-| Synthesis-iterations ablation (K=3,5,10) | **NOT DONE** | Ablation B in `run_all_tests.sh` |
+| Main matrix (4 models × 6 strategies × 3 benchmarks) | **NOT DONE** | `run_all_tests.py --skip-ablations --eval-sample-size <N>` with publication sample size |
+| Step-budget ablation (n=256,512,1024) | **NOT DONE** | Ablation A in `run_all_tests.py` |
+| Synthesis-iterations ablation (K=3,5,10) | **NOT DONE** | Ablation B in `run_all_tests.py` |
 | Synthesizer-model ablation (GPT-5.4, Opus 4.7, Gemini 3.1 Pro) | **NOT DONE** | Ablation C; requires API keys for all three |
-| Per-step token budget (b=1,2,4) | **NOT DONE** | Ablation D in `run_all_tests.sh` |
-| Beam refinement × helper selection (B=1,2,4 × utility,bandit) | **NOT DONE** | Ablation E in `run_all_tests.sh` |
-| Adaptive helper masking (on/off) | **NOT DONE** | Ablation F in `run_all_tests.sh` |
+| Per-step token budget (b=1,2,4) | **NOT DONE** | Ablation D in `run_all_tests.py` |
+| Beam refinement × helper selection (B=1,2,4 × utility,bandit) | **NOT DONE** | Ablation E in `run_all_tests.py` |
+| Adaptive helper masking (on/off) | **NOT DONE** | Ablation F in `run_all_tests.py` |
 | Qualitative strategy examples | **NOT DONE** | Manual curation from successful synthesis runs |
 
 **Models:** Qwen2.5-Coder-1.5B-Instruct, Qwen2.5-Coder-7B-Instruct, Qwen2.5-Coder-14B-Instruct, Llama-3.1-8B-Instruct (cross-family generalization).
@@ -81,7 +81,7 @@ From the dev ablation (beam/bandit sweep, n=5, GSM-Symbolic, Qwen-7B, 2 synthesi
 - [ ] Decide final evaluation sample size per benchmark (recommend: GSM=100, Spider=50, SMILES=30 per class × 3 classes = 90).
 - [ ] Decide on synthesis iteration count for final metaDecode strategies (K=10 per paper draft).
 - [ ] Confirm all API keys available (OpenAI, Anthropic, Google) for synthesizer ablation.
-- [ ] Verify that `run_all_tests.sh --dry-run` produces the correct command matrix.
+- [ ] Verify that `run_all_tests.py --dry-run` produces the correct command matrix.
 
 ### Phase 2: Run Full Experiments (3–5 days compute)
 
@@ -151,7 +151,7 @@ From the dev ablation (beam/bandit sweep, n=5, GSM-Symbolic, Qwen-7B, 2 synthesi
 
 ## Notes on the Codebase
 
-- The synthesis pipeline is single-threaded per run but `run_all_tests.sh` can launch parallel jobs.
+- The synthesis pipeline is single-threaded per run but `run_all_tests.py` can launch parallel jobs.
 - Generated strategies from dev runs are in `outputs/generated/` — 44 run directories as of today, all from 2026-05-08/09 debugging.
 - No paper/ TeX files reference any figure files yet — may need result plots (accuracy vs. budget curves, convergence plots).
 - The `legacy/` directory contains full external codebases (CRANE, IterGen, CARS) which are used for baseline evaluation but not for verification.

@@ -1,6 +1,6 @@
 # Evaluation conda environment
 
-Default conda prefix for **`run_all_tests.sh`**: **`/apps/conda/advayth2/envs/advayth2`**. Override with **`VAS_CONDA_ENV`** (legacy **`VAS_RDKIT_CONDA_ENV`**).
+Default conda prefix for **`run_all_tests.py`**: **`/apps/conda/advayth2/envs/advayth2`**. Override with **`VAS_CONDA_ENV`** (legacy **`VAS_RDKIT_CONDA_ENV`**).
 
 ## `mxeval` (Syncode / legacy adapters)
 
@@ -16,7 +16,7 @@ This clones into **`environment/vendor/mxeval`** (gitignored), patches **`setup.
 
 If you keep a **`vas-eval-environment.yml`** (or similar) for **`conda env update`**, prefer **`pip==24.0`** first in the pip section when pulling **`mxeval`** from Git, or omit **`mxeval`** there and use **`install_mxeval_into_env.sh`** afterward.
 
-If **SciPy** / **transformers** fail with **`CXXABI_1.3.15`** on **`libstdc++`**, **`run_all_tests.sh`** already prepends **`$CONDA_PREFIX/lib`** to **`LD_LIBRARY_PATH`**; reuse that pattern for other bash drivers.
+If **SciPy** / **transformers** fail with **`CXXABI_1.3.15`** on **`libstdc++`**, **`run_all_tests.py`** already prepends **`$CONDA_PREFIX/lib`** to **`LD_LIBRARY_PATH`**; reuse that pattern for other bash drivers.
 
 ## Fixed benchmark splits
 
@@ -26,7 +26,7 @@ Proportional GSM-Symbolic and Spider train/eval manifests live under **`environm
 python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits
 ```
 
-See **`environment/benchmark_splits/README.md`**. **`run_all_tests.sh`** uses these paths by default.
+See **`environment/benchmark_splits/README.md`**. **`run_all_tests.py`** uses these paths by default.
 
 ## Legacy baseline repositories (`legacy/`)
 

@@ -15,6 +15,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.benchmarks.common.dafny_tokens import dafny_seq_to_str
+
 
 # Per-component timing, shared conceptually with model_utils but kept separate
 # so parser_utils doesn't depend on model_utils.
@@ -129,19 +131,6 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
     return dfa_mask_store
 
 
-def prewarm_dfa_mask_store(grammar_source: str, start: str = "start", tokenizer=None) -> dict[str, Any]:
-    """Materialize and cache the DFA mask store for one grammar/tokenizer pair."""
-    grammar_text = _load_grammar_text(grammar_source)
-    grammar, _, _ = _get_parser_components(grammar_text, start)
-    dfa_mask_store = _get_cached_dfa_mask_store(grammar_text, grammar, tokenizer)
-    return {
-        "grammar_text": grammar_text,
-        "start": start,
-        "tokenizer_fingerprint": _tokenizer_cache_fingerprint(tokenizer) if tokenizer is not None else None,
-        "dfa_mask_store": dfa_mask_store,
-    }
-
-
 def create_lark_dafny_parser(
     grammar_source: str,
     VerifiedDecoderAgent,
@@ -192,7 +181,7 @@ def create_lark_dafny_parser(
             # Precompute token string -> index mapping
             self._token_str_to_idx = {}
             for idx, token in enumerate(self._token_list):
-                token_str = self._dafny_seq_to_str(token)
+                token_str = dafny_seq_to_str(token)
                 if token_str:
                     self._token_str_to_idx.setdefault(token_str, []).append(idx)
 
@@ -203,20 +192,10 @@ def create_lark_dafny_parser(
             self._valid_next_mask_cache = {}
             self._valid_next_indices_cache = {}
 
-        def _dafny_seq_to_str(self, seq) -> str:
-            """Convert a Dafny Seq to a Python string."""
-            try:
-                return ''.join(seq)
-            except TypeError:
-                try:
-                    return ''.join(seq[i] for i in range(len(seq)))
-                except (TypeError, AttributeError, IndexError):
-                    return str(seq)
-
         def _tokens_to_text(self, tokens) -> str:
             """Convert Dafny token sequence to text."""
             try:
-                return ''.join(self._dafny_seq_to_str(tokens[i]) for i in range(len(tokens)))
+                return ''.join(dafny_seq_to_str(tokens[i]) for i in range(len(tokens)))
             except (TypeError, AttributeError, IndexError):
                 return str(tokens)
 
@@ -293,7 +272,7 @@ def create_lark_dafny_parser(
                         import torch
                         accept_mask = torch.zeros(len(self._token_list), dtype=torch.bool)
                         for idx, token in enumerate(self._token_list):
-                            token_str = self._dafny_seq_to_str(token)
+                            token_str = dafny_seq_to_str(token)
                             if token_str and self._is_valid_prefix(current_text + token_str):
                                 accept_mask[idx] = True
                     self._valid_next_mask_cache[current_text] = accept_mask
@@ -402,7 +381,7 @@ def create_lark_dafny_parser(
                 if current_text and not self._is_valid_prefix(current_text):
                     return False
 
-                token_str = self._dafny_seq_to_str(token)
+                token_str = dafny_seq_to_str(token)
                 if not token_str:
                     return False
 
@@ -428,7 +407,7 @@ def create_lark_dafny_parser(
                 accept_len = len(accept_mask)
                 str_to_idx = self._token_str_to_idx
                 for tok_dafny in group:
-                    token_str = self._dafny_seq_to_str(tok_dafny)
+                    token_str = dafny_seq_to_str(tok_dafny)
                     if not token_str:
                         continue
                     indices = str_to_idx.get(token_str)

@@ -399,6 +399,29 @@ def make_spider_train_test_split(
     }
 
 
+def _attach_split_previews(
+    split: Dict[str, Any],
+    rows: List[Dict[str, Any]],
+    *,
+    include_difficulty: bool = False,
+    preview_limit: int = 10,
+) -> None:
+    """Attach train/test preview rows to a split manifest in place."""
+    for split_name in ("train", "test"):
+        previews = []
+        for idx in split[f"{split_name}_indices"][:preview_limit]:
+            row = rows[idx]
+            preview = {
+                "index": idx,
+                "db_id": row.get("db_id", ""),
+                "question": row.get("question", ""),
+            }
+            if include_difficulty:
+                preview["difficulty"] = split["difficulty_by_index"].get(str(idx))
+            previews.append(preview)
+        split[f"{split_name}_preview"] = previews
+
+
 def write_spider_proportional_train_test_split(
     output_path: Path | str,
     *,
@@ -419,17 +442,7 @@ def write_spider_proportional_train_test_split(
         seed=seed,
     )
     if include_preview:
-        for split_name in ("train", "test"):
-            previews = []
-            for idx in split[f"{split_name}_indices"][:10]:
-                row = rows[idx]
-                previews.append({
-                    "index": idx,
-                    "db_id": row.get("db_id", ""),
-                    "question": row.get("question", ""),
-                    "difficulty": split["difficulty_by_index"].get(str(idx)),
-                })
-            split[f"{split_name}_preview"] = previews
+        _attach_split_previews(split, rows, include_difficulty=True)
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -468,16 +481,7 @@ def write_spider_train_test_split(
         seed=seed,
     )
     if include_preview:
-        for split_name in ("train", "test"):
-            previews = []
-            for idx in split[f"{split_name}_indices"][:10]:
-                row = rows[idx]
-                previews.append({
-                    "index": idx,
-                    "db_id": row.get("db_id", ""),
-                    "question": row.get("question", ""),
-                })
-            split[f"{split_name}_preview"] = previews
+        _attach_split_previews(split, rows)
 
     split["eval_indices"] = list(split["test_indices"])
     output_path = Path(output_path)

@@ -36,13 +36,13 @@ Output:
 
 ## API Backends
 
-- **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Default model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Used by the **`gpt5.4`** profile in `run_all_tests.sh`.
+- **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Default model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Used by the **`gpt5.4`** profile in `run_all_tests.py`.
 
-- **Amazon Bedrock** (`--generation-backend bedrock`): **`AWS_BEARER_TOKEN_BEDROCK`** and a Bedrock model id via **`--generation-model`** or **`BEDROCK_GENERATION_MODEL`**. Used by the **`opus4.7`** profile (see **`BEDROCK_OPUS_MODEL`** in `run_all_tests.sh`).
+- **Amazon Bedrock** (`--generation-backend bedrock`): **`AWS_BEARER_TOKEN_BEDROCK`** and a Bedrock model id via **`--generation-model`** or **`BEDROCK_GENERATION_MODEL`**. Used by the **`opus4.7`** profile (see **`BEDROCK_OPUS_MODEL`** in `run_all_tests.py`).
 
 For local runs use **`--generation-backend huggingface`** or **`vllm`**.
 
-Direct Gemini / Vertex APIs are not wired in the generator; Gemini matrix profiling is partner-owned (`GEMINI_BEDROCK_MODEL` placeholder in `run_all_tests.sh` when `gemini-pro` is enabled).
+Direct Gemini / Vertex APIs are not wired in the generator; Gemini matrix profiling is partner-owned (`GEMINI_BEDROCK_MODEL` placeholder in `run_all_tests.py` when `gemini-pro` is enabled).
 
 ## Important Constraint
 

@@ -80,7 +80,7 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Use **`--generation-backend bedrock`** with `AWS_BEARER_TOKEN_BEDROCK` for Claude-on-Bedrock (e.g. metadecode `opus4.7` in `run_all_tests.sh`). Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Use **`--generation-backend bedrock`** with `AWS_BEARER_TOKEN_BEDROCK` for Claude-on-Bedrock (e.g. metadecode `opus4.7` in `run_all_tests.py`). Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -127,15 +127,15 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.sh` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. Metadecode runs use `--min-accuracy` / `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps).
-- `run_all_tests.sh` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. Metadecode runs use `--min-accuracy` / `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps).
+- `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.sh` sources `synthesis/.env` before resolving generation profiles. **`gpt5.4`** uses **OpenAI**; **`opus4.7`** uses **Bedrock** (`BEDROCK_OPUS_MODEL` / `AWS_BEARER_TOKEN_BEDROCK`). **`gemini-pro`** is not in the default generation-model list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
+- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. **`gpt5.4`** uses **OpenAI**; **`opus4.7`** uses **Bedrock** (`BEDROCK_OPUS_MODEL` / `AWS_BEARER_TOKEN_BEDROCK`). **`gemini-pro`** is not in the default generation-model list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
 
 ## Path Configuration
 
@@ -145,7 +145,7 @@ Path defaults are intentionally overrideable. Use CLI flags where available and 
 - `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` / `CSD_GRAMMARS_DIR`
 - `--dafny-path` / `DAFNY_PATH`
-- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.sh`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
+- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.py`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
 - `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)
 - `VERIFIED_AGENT_SYNTHESIS_DFY` / `DAFNY_PROOFS_DIR`
 - `CSD_SYNCODE_DIR`
