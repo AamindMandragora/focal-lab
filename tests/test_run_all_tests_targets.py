@@ -12,6 +12,7 @@ def _write_baseline_json(
     model_slug: str,
     benchmark_key: str,
     accuracy: float,
+    syntax_rate: float,
 ) -> None:
     metrics = {}
     if strategy == "crane":
@@ -27,7 +28,7 @@ def _write_baseline_json(
         json.dumps(
             {
                 "accuracy": accuracy,
-                "syntax_rate": 1.0,
+                "syntax_rate": syntax_rate,
                 "metrics": metrics,
                 "answers": [{"generated_answer": "SELECT 1"}],
             },
@@ -111,6 +112,7 @@ def test_metadecode_dry_run_uses_strongest_cached_csd_baseline(tmp_path):
         model_slug=model_slug,
         benchmark_key="spider",
         accuracy=0.33,
+        syntax_rate=0.92,
     )
     _write_baseline_json(
         baseline_dir,
@@ -118,6 +120,7 @@ def test_metadecode_dry_run_uses_strongest_cached_csd_baseline(tmp_path):
         model_slug=model_slug,
         benchmark_key="spider",
         accuracy=0.16,
+        syntax_rate=0.88,
     )
     _write_baseline_json(
         baseline_dir,
@@ -125,6 +128,7 @@ def test_metadecode_dry_run_uses_strongest_cached_csd_baseline(tmp_path):
         model_slug=model_slug,
         benchmark_key="spider",
         accuracy=0.66,
+        syntax_rate=0.75,
     )
 
     env = _fake_conda_env(tmp_path)
@@ -155,5 +159,6 @@ def test_metadecode_dry_run_uses_strongest_cached_csd_baseline(tmp_path):
     output = result.stdout + result.stderr
     assert result.returncode == 0, output
     assert "[target] metadecode spider" in output
-    assert "best CSD baseline cars=66.0%" in output
+    assert "best CSD baseline accuracy cars=66.0%, syntax crane=92.0%" in output
     assert "--min-accuracy 0.66" in output
+    assert "--min-syntax-rate 0.92" in output
