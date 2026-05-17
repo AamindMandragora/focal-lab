@@ -5,6 +5,24 @@ from pathlib import Path
 from shutil import which
 
 
+def repo_root() -> Path:
+    """Repository root (parent of the ``synthesis/`` package)."""
+    return Path(__file__).resolve().parent.parent
+
+
+def default_logs_dir() -> Path:
+    """Canonical directory for synthesis prompt/response logs."""
+    raw = os.environ.get("CSD_LOGS_DIR")
+    if raw:
+        return Path(raw).expanduser()
+    return repo_root() / "logs"
+
+
+def synthesis_prompt_log_dir(output_name: str, run_id: str) -> Path:
+    """Per-run prompt log directory under :func:`default_logs_dir`."""
+    return default_logs_dir() / f"{output_name}_{run_id}"
+
+
 def default_repo_path(env_var: str, fallback_name: str) -> Path:
     raw = os.environ.get(env_var)
     if raw:

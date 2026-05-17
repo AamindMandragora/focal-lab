@@ -2670,13 +2670,12 @@ class SynthesisPipeline:
         run_python_dir.mkdir(parents=True, exist_ok=True)
         run_results_dir.mkdir(parents=True, exist_ok=True)
 
-        # Persist exact prompt/response records by default for this run. The
-        # generator also honors a caller-provided CSD_PROMPT_LOG_DIR, so external
-        # tooling can still override this path when needed.
-        os.environ.setdefault(
-            "CSD_PROMPT_LOG_DIR",
-            str(Path.cwd() / "logs" / output_name),
-        )
+        # Persist exact prompt/response records under the repo's single logs tree.
+        from synthesis.project_defaults import synthesis_prompt_log_dir
+
+        prompt_log_dir = synthesis_prompt_log_dir(output_name, run_id)
+        prompt_log_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["CSD_PROMPT_LOG_DIR"] = str(prompt_log_dir)
 
         # Update a convenience pointer to the most recent run
         try:

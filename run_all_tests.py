@@ -24,6 +24,10 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent
 CALLER_CUDA_VISIBLE_DEVICES = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+DEFAULT_GSM_SPLIT_FILE = (
+    ROOT_DIR / "environment" / "benchmark_splits" / "gsm_symbolic_crane_proportional.json"
+)
+DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
 DEFAULT_MODELS = (
     "Qwen/Qwen2.5-Coder-1.5B-Instruct,"
@@ -100,7 +104,6 @@ class Config:
     generated_output_dir: Path
     baseline_output_dir: Path
     ablation_output_dir: Path
-    split_output_dir: Path
     baseline_cache_mode: str
     gsm_split_file: str = ""
     spider_split_file: str = ""
@@ -113,8 +116,6 @@ class Config:
     free_gpu_max_used_mb: int = 1024
     gpu_wait_seconds: int = 60
     gpu_wait_timeout_seconds: int = 0
-    split_seed: int = 123
-
 
 @dataclass
 class Runner:
@@ -247,66 +248,64 @@ class Runner:
             return self.config.gsm_eval_sample_size
         return self.config.eval_sample_size
 
-    def prepare_split_manifests(self) -> None:
-        self.config.split_output_dir.mkdir(parents=True, exist_ok=True)
+    def ensure_split_manifests(self) -> None:
+        """Require tracked stratified manifests under environment/benchmark_splits/."""
         normalized = {normalize_benchmark(benchmark) for benchmark in self.config.benchmarks}
         if not self.config.skip_ablations:
             normalized.update({"gsm_symbolic", "spider", "smiles"})
 
-        if "gsm_symbolic" in normalized and not self.config.gsm_split_file:
-            path = (
-                self.config.split_output_dir
-                / f"gsm_train{self.config.gsm_generation_sample_size}_eval{self.config.gsm_eval_sample_size}_seed{self.config.split_seed}.json"
-            )
-            train_size = int(self.config.gsm_generation_sample_size)
-            eval_size = int(self.config.gsm_eval_sample_size)
-            payload = {
-                "seed": self.config.split_seed,
-                "split_strategy": "hf_train_test_prefix",
-                "dataset": "gsm_symbolic",
-                "source": "apple/GSM-Symbolic main",
-                "train_source_split": "train",
-                "eval_source_split": "test",
-                "train_indices": list(range(train_size)),
-                "eval_indices": list(range(eval_size)),
-                "train_size": train_size,
-                "eval_size": eval_size,
-            }
-            path.write_text(json.dumps(payload, indent=2) + "\n")
-            self.config.gsm_split_file = str(path)
+        if "gsm_symbolic" in normalized:
+            gsm_path = Path(self.config.gsm_split_file)
+            if not gsm_path.is_file():
+                raise SystemExit(
+                    f"GSM split manifest not found: {gsm_path}\n"
+                    "Regenerate tracked splits with:\n"
+                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
+                )
 
-        if "spider" in normalized and not self.config.spider_split_file:
-            path = (
-                self.config.split_output_dir
-                / f"spider_train{self.config.generation_sample_size}_eval{self.config.eval_sample_size}_seed{self.config.split_seed}.json"
-            )
-            train_size = int(self.config.generation_sample_size)
-            eval_size = int(self.config.eval_sample_size)
-            train_indices = list(range(train_size))
-            eval_indices = list(range(train_size, train_size + eval_size))
-            payload = {
-                "seed": self.config.split_seed,
-                "split_strategy": "deterministic_non_overlapping_prefix",
-                "dataset": "spider",
-                "train_indices": train_indices,
-                "eval_indices": eval_indices,
-                "test_indices": eval_indices,
-                "train_size": train_size,
-                "eval_size": eval_size,
-                "test_size": eval_size,
-            }
-            path.write_text(json.dumps(payload, indent=2) + "\n")
-            self.config.spider_split_file = str(path)
+        if "spider" in normalized:
+            spider_path = Path(self.config.spider_split_file)
+            if not spider_path.is_file():
+                raise SystemExit(
+                    f"Spider split manifest not found: {spider_path}\n"
+                    "Regenerate tracked splits with:\n"
+                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
+                )
+
+    def gsm_split_name_for_role(self, role: str) -> str:
+        """
+        Map generation/evaluation roles to manifest keys.
+
+        The default CRANE proportional manifest has train_size=0; use the eval
+        pool for synthesis as well so metadecode tunes on the same fixed subset.
+        """
+        path = Path(self.config.gsm_split_file)
+        if not path.is_file():
+            return "eval" if role != "train" else "train"
+        manifest = json.loads(path.read_text())
+        if role == "train" and not manifest.get("train_indices"):
+            return "eval"
+        return "train" if role == "train" else "eval"
 
     def add_generation_split_flags(self, cmd: list[str], benchmark: str) -> None:
         if self.config.gsm_split_file and benchmark == "gsm_symbolic":
-            cmd += ["--gsm-split-file", self.config.gsm_split_file, "--gsm-split-name", "train"]
+            cmd += [
+                "--gsm-split-file",
+                self.config.gsm_split_file,
+                "--gsm-split-name",
+                self.gsm_split_name_for_role("train"),
+            ]
         if self.config.spider_split_file and benchmark == "spider":
             cmd += ["--spider-split-file", self.config.spider_split_file, "--spider-split-name", "train"]
 
     def add_evaluation_split_flags(self, cmd: list[str], benchmark: str) -> None:
         if self.config.gsm_split_file and benchmark == "gsm_symbolic":
-            cmd += ["--gsm-split-file", self.config.gsm_split_file, "--gsm-split-name", "eval"]
+            cmd += [
+                "--gsm-split-file",
+                self.config.gsm_split_file,
+                "--gsm-split-name",
+                self.gsm_split_name_for_role("eval"),
+            ]
         if self.config.spider_split_file and benchmark == "spider":
             cmd += ["--spider-split-file", self.config.spider_split_file, "--spider-split-name", "eval"]
 
@@ -1070,7 +1069,7 @@ class Runner:
         self.config.generated_output_dir.mkdir(parents=True, exist_ok=True)
         self.config.baseline_output_dir.mkdir(parents=True, exist_ok=True)
         self.config.ablation_output_dir.mkdir(parents=True, exist_ok=True)
-        self.prepare_split_manifests()
+        self.ensure_split_manifests()
         if not self.configure_cuda_devices():
             return 1
         self.print_matrix_header()
@@ -1107,15 +1106,21 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gsm-generation-sample-size", default="50")
     parser.add_argument("--gsm-eval-sample-size", default="50")
     parser.add_argument("--eval-max-steps", default="900")
-    parser.add_argument("--gsm-split-file", default="")
-    parser.add_argument("--spider-split-file", default="")
+    parser.add_argument(
+        "--gsm-split-file",
+        default=os.environ.get("CSD_GSM_SPLIT_FILE", str(DEFAULT_GSM_SPLIT_FILE)),
+        help="Stratified GSM-Symbolic manifest (default: environment/benchmark_splits/gsm_symbolic_crane_proportional.json)",
+    )
+    parser.add_argument(
+        "--spider-split-file",
+        default=os.environ.get("CSD_SPIDER_SPLIT_FILE", str(DEFAULT_SPIDER_SPLIT_FILE)),
+        help="Stratified Spider manifest (default: environment/benchmark_splits/spider_dev_proportional.json)",
+    )
     parser.add_argument("--vllm-gpu-memory-utilization", default="0.95")
     parser.add_argument("--dafny-path", default=os.environ.get("DAFNY_PATH", ""))
     parser.add_argument("--generated-output-dir", default=os.environ.get("CSD_OUTPUT_DIR", "outputs/generated"))
     parser.add_argument("--baseline-output-dir", default=os.environ.get("CSD_BASELINE_OUTPUT_DIR", "outputs/baselines"))
     parser.add_argument("--ablation-output-dir", default=os.environ.get("CSD_ABLATION_OUTPUT_DIR", "outputs/ablations"))
-    parser.add_argument("--split-output-dir", default=os.environ.get("CSD_SPLIT_OUTPUT_DIR", "outputs/splits"))
-    parser.add_argument("--split-seed", type=int, default=int(os.environ.get("CSD_SPLIT_SEED", "123")))
     parser.add_argument(
         "--recompute-baselines",
         dest="baseline_cache_mode",
@@ -1212,7 +1217,6 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         generated_output_dir=Path(args.generated_output_dir),
         baseline_output_dir=Path(args.baseline_output_dir),
         ablation_output_dir=Path(args.ablation_output_dir),
-        split_output_dir=Path(args.split_output_dir),
         baseline_cache_mode=baseline_cache_mode,
         gsm_split_file=args.gsm_split_file,
         spider_split_file=args.spider_split_file,
@@ -1225,7 +1229,6 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         free_gpu_max_used_mb=int(os.environ.get("RUN_ALL_TESTS_FREE_GPU_MAX_USED_MB", "1024")),
         gpu_wait_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_SECONDS", "60")),
         gpu_wait_timeout_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_TIMEOUT_SECONDS", "0")),
-        split_seed=int(args.split_seed),
     )
 
 
