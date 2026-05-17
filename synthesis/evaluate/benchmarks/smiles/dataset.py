@@ -16,17 +16,38 @@ GRAMMAR_DIR = Path(
 ).expanduser()
 
 
-def _normalize_classes(classes: Sequence[str] | str | None) -> list[str]:
+def normalize_smiles_classes(
+    classes: Sequence[str] | str | None,
+    *,
+    dedupe: bool = False,
+    require_non_empty: bool = False,
+) -> list[str]:
+    """Normalize SMILES class names with validation against known classes."""
     if classes is None:
-        return list(SMILES_CLASSES)
-    if isinstance(classes, str):
+        selected = list(SMILES_CLASSES)
+    elif isinstance(classes, str):
         raw = [part.strip() for part in classes.split(",")]
+        selected = [part for part in raw if part]
     else:
-        raw = [str(part).strip() for part in classes]
-    selected = [part for part in raw if part]
+        selected = [str(part).strip() for part in classes if str(part).strip()]
+
     unknown = sorted(set(selected) - set(SMILES_CLASSES))
     if unknown:
         raise ValueError(f"Unknown SMILES class(es): {unknown}. Expected one of {SMILES_CLASSES}.")
+
+    if dedupe:
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for class_name in selected:
+            if class_name in seen:
+                continue
+            deduped.append(class_name)
+            seen.add(class_name)
+        selected = deduped
+
+    if require_non_empty and not selected:
+        raise ValueError("At least one SMILES class is required.")
+
     return selected
 
 
@@ -69,7 +90,7 @@ def load_smiles(
     if samples_per_class < 1:
         raise ValueError("samples_per_class must be >= 1")
     rows: list[dict[str, Any]] = []
-    for class_name in _normalize_classes(classes):
+    for class_name in normalize_smiles_classes(classes):
         task = get_smiles_task(class_name)
         for attempt_index in range(samples_per_class):
             row = dict(task)

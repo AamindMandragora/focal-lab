@@ -377,7 +377,7 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
         lm._logits_dirty = True
 
     # Preserve the originals so the fastpath can fall back when the LM
-    # isn't a _TensorizedLMBase subclass (e.g. runner.py's TestLM smoke-test).
+    # isn't a _TensorizedLMBase subclass (legacy smoke-test LM stubs).
     _orig_get_highest = helpers_cls.GetHighestLogitToken
     _orig_top_valid = helpers_cls.TopValidCandidates
     _orig_boost = helpers_cls.BoostTokenLogits

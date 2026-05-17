@@ -12,20 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 
-def dafny_seq_to_str(seq) -> str:
-    """
-    Convert a Dafny Seq to a Python string.
-
-    Dafny.Seq objects have __len__ and __getitem__ but NOT __iter__,
-    so ''.join(seq) fails. We must use index-based iteration.
-    """
-    try:
-        return ''.join(seq)
-    except TypeError:
-        try:
-            return ''.join(seq[i] for i in range(len(seq)))
-        except (TypeError, AttributeError, IndexError):
-            return str(seq)
+from synthesis.evaluate.benchmarks.common.dafny_tokens import dafny_seq_to_str
 
 
 def _enforce_max_steps(result_tokens: List[str], max_steps: int) -> None:
@@ -204,55 +191,3 @@ def run_crane_csd(
         print(f"[STEP_BREAKDOWN] error printing timings: {_dbg_err}", flush=True)
 
     return output_text, len(result_tokens), execution_time, constrained_segments, helper_trace
-
-
-def run_unconstrained(
-    env: dict,
-    prompt_text: Union[str, List[dict]],
-    max_steps: int,
-    debug: bool = False,
-) -> Tuple[str, int, float]:
-    """
-    Run unconstrained generation without CSD (baseline).
-
-    Generates tokens freely until EOS or max_steps.
-
-    Args:
-        env: Environment dict with Dafny modules and model
-        prompt_text: The prompt text (set as lm.instruction_text)
-        max_steps: Maximum generation steps
-        debug: Whether to print debug output
-
-    Returns:
-        Tuple of (output_text, token_count, time_seconds)
-    """
-    _dafny = env["_dafny"]
-    lm = env["lm"]
-
-    result_tokens: List[str] = []
-
-    if isinstance(prompt_text, list):
-        chat_messages = prompt_text
-    else:
-        chat_messages = [{"role": "user", "content": prompt_text}]
-    lm.instruction_text = lm.tokenizer.apply_chat_template(
-        chat_messages, tokenize=False, add_generation_prompt=True
-    )
-    start_time = time.time()
-
-    eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
-
-    for step in range(max_steps):
-        dafny_prefix = _dafny.SeqWithoutIsStrInference(result_tokens)
-        lm.GenerateLogits(dafny_prefix)
-        token = lm.ChooseNextTokenUnconstrained()
-        token_str = dafny_seq_to_str(token)
-        result_tokens.append(token_str)
-
-        if token_str == eos_token_str:
-            break
-
-    end_time = time.time()
-    output_text = "".join(result_tokens)
-
-    return output_text, len(result_tokens), end_time - start_time

@@ -2,11 +2,11 @@
 """
 CLI entry point for CSD synthesis pipeline with evaluation feedback loop.
 
-The pipeline runs: generate → verify → compile → runtime → evaluate → refine
+The pipeline runs: generate → verify → compile → evaluate → refine
 until evaluation thresholds are met or max iterations exhausted.
 
 Usage:
-    python run_synthesis.py --task "..." --dataset gsm_symbolic \\
+    python -m synthesis.run_synthesis --task "..." --dataset gsm_symbolic \\
         --min-accuracy 0.3 --min-syntax-rate 0.5
 """
 
@@ -33,12 +33,12 @@ def main():
         epilog="""
 Examples:
   # GSM-Symbolic
-  python run_synthesis.py --task "Generate math reasoning strategy" \\
+  python -m synthesis.run_synthesis --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic \\
       --min-accuracy 0.3 --min-syntax-rate 0.5
 
   # With more iterations and custom eval sample size
-  python run_synthesis.py --task "..." --dataset gsm_symbolic \\
+  python -m synthesis.run_synthesis --task "..." --dataset gsm_symbolic \\
       --min-accuracy 0.3 --min-syntax-rate 0.5 \\
       --output-name my_strategy --max-iterations 10 --eval-sample-size 20
 """
@@ -614,7 +614,6 @@ Examples:
         generator=generator,
         verifier=verifier,
         compiler=compiler,
-        runner=None,  # Let pipeline create task-appropriate runner
         max_iterations=args.max_iterations,
         output_dir=args.output_dir,
         save_reports=not args.no_save_reports,

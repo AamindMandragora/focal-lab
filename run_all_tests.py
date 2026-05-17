@@ -38,7 +38,6 @@ DEFAULT_SYNTH_ITERS = "3,5,10"
 DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
 DEFAULT_STEP_BUDGETS = "256,512,1024"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
-VALID_SMILES_CLASSES = {"acrylates", "chain_extenders", "isocyanates"}
 CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
@@ -48,34 +47,8 @@ OOM_RE = re.compile(
 )
 
 
-def parse_env_value(raw: str) -> str:
-    raw = raw.strip()
-    if not raw:
-        return ""
-    try:
-        parsed = shlex.split(raw, posix=True)
-    except ValueError:
-        return raw.strip("\"'")
-    if not parsed:
-        return ""
-    return parsed[0]
-
-
-def load_env_file(path: Path) -> None:
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if stripped.startswith("export "):
-            stripped = stripped[len("export ") :].strip()
-        if "=" not in stripped:
-            continue
-        key, raw_value = stripped.split("=", 1)
-        key = key.strip()
-        if key:
-            os.environ[key] = parse_env_value(raw_value)
+from synthesis.env_utils import load_env_file
+from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
 
 
 def csv_list(value: str) -> list[str]:
@@ -1162,22 +1135,15 @@ def make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def normalize_smiles_classes(raw: str) -> list[str]:
-    classes: list[str] = []
-    seen: set[str] = set()
-    for smiles_class in csv_list(raw):
-        if smiles_class not in VALID_SMILES_CLASSES:
-            raise SystemExit(
-                f"Unknown SMILES class: {smiles_class}\n"
-                "Expected one of: acrylates, chain_extenders, isocyanates"
-            )
-        if smiles_class in seen:
-            continue
-        classes.append(smiles_class)
-        seen.add(smiles_class)
-    if not classes:
-        raise SystemExit("At least one SMILES class is required.")
-    return classes
+def normalize_smiles_classes_for_cli(raw: str) -> list[str]:
+    try:
+        return normalize_smiles_classes(
+            ",".join(csv_list(raw)),
+            dedupe=True,
+            require_non_empty=True,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
@@ -1233,7 +1199,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         synth_iters=csv_list(args.synthesis_iterations),
         gen_models=csv_list(args.generation_models),
         step_budgets=csv_list(args.step_budgets),
-        smiles_classes=normalize_smiles_classes(args.smiles_classes),
+        smiles_classes=normalize_smiles_classes_for_cli(args.smiles_classes),
         eval_backend=args.eval_backend,
         device=args.device,
         generation_sample_size=str(args.generation_sample_size),

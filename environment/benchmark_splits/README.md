@@ -20,4 +20,4 @@ Default manifests:
 | `gsm_symbolic_crane_proportional.json` | `eval_indices` | 100 | Full local CRANE GSM pool |
 | `spider_dev_proportional.json` | `test_indices` / `eval_indices` | 100 test, 50 train | Disjoint subsets of Spider dev |
 
-`run_all_tests.sh` passes these paths with `--gsm-split-name eval` and `--spider-split-name eval` (Spider `eval` maps to `test_indices`).
+`run_all_tests.py` passes these paths with `--gsm-split-name eval` and `--spider-split-name eval` (Spider `eval` maps to `test_indices`).

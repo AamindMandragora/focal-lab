@@ -111,30 +111,6 @@ def enrich_gsm_symbolic_example(
     return enriched
 
 
-def load_gsm_symbolic_mixed(
-    per_config: int = 10,
-    split: str = 'test',
-    seed: Optional[int] = 42,
-) -> list[dict[str, Any]]:
-    """
-    Load a mixed sample from all three GSM-Symbolic configs (main, p1, p2).
-
-    Each example is tagged with a 'config' field so per-difficulty metrics
-    can be computed downstream.
-    """
-    rows: list[dict[str, Any]] = []
-    for config in ('main', 'p1', 'p2'):
-        chunk = load_gsm_symbolic(
-            config=config, split=split, limit=per_config,
-            random_sample=True, seed=seed,
-        )
-        for ex in chunk:
-            ex['config'] = config
-        rows.extend(chunk)
-    print(f'Mixed dataset: {len(rows)} examples ({per_config} per config)')
-    return rows
-
-
 def load_gsm_from_crane_folder(
     crane_dir: Path | str | None = None,
     limit: Optional[int] = None,
@@ -199,35 +175,6 @@ def load_gsm_from_crane_folder(
 
     print(f'Loaded {len(rows)} examples from CRANE folder {crane_dir}')
     return rows
-
-
-def make_gsm_train_eval_split(
-    total_examples: int,
-    train_fraction: float = 0.5,
-    seed: int = 123,
-) -> dict[str, Any]:
-    """Create a deterministic complementary train/eval split over sorted examples."""
-    if total_examples <= 0:
-        raise ValueError("total_examples must be positive")
-    if not 0.0 < train_fraction < 1.0:
-        raise ValueError("train_fraction must be between 0 and 1")
-
-    train_size = int(round(total_examples * train_fraction))
-    train_size = max(1, min(total_examples - 1, train_size))
-    rng = random.Random(seed)
-    train_indices = sorted(rng.sample(range(total_examples), train_size))
-    train_set = set(train_indices)
-    eval_indices = [idx for idx in range(total_examples) if idx not in train_set]
-
-    return {
-        "seed": seed,
-        "train_fraction": train_fraction,
-        "total_examples": total_examples,
-        "train_indices": train_indices,
-        "eval_indices": eval_indices,
-        "train_size": len(train_indices),
-        "eval_size": len(eval_indices),
-    }
 
 
 def _count_arithmetic_ops(text: str) -> int:
@@ -929,28 +876,6 @@ def make_gsm_stratified_train_eval_split(
         "eval_composition": composition(eval_indices),
         **difficulty_info,
     }
-
-
-def write_gsm_train_eval_split(
-    output_path: Path | str,
-    crane_dir: Path | str | None = None,
-    train_fraction: float = 0.5,
-    seed: int = 123,
-) -> dict[str, Any]:
-    """Write a deterministic train/eval split manifest for the local CRANE GSM folder."""
-    crane_dir = Path(crane_dir) if crane_dir is not None else DEFAULT_CRANE_GSM_DIR
-    total_examples = len(sorted(crane_dir.glob('*.json')))
-    split = make_gsm_train_eval_split(
-        total_examples=total_examples,
-        train_fraction=train_fraction,
-        seed=seed,
-    )
-    split["crane_dir"] = str(crane_dir)
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(split, indent=2))
-    return split
 
 
 def write_gsm_stratified_train_eval_split(

@@ -1,16 +1,8 @@
-"""Generation wrapper for SMILES tasks.
-
-Strategies decide their own constraint mode: CRANE uses << >> delimiters
-naturally, GCD forces constrained from the first token via its Dafny code.
-"""
+"""Generation wrapper for SMILES tasks."""
 
 from __future__ import annotations
 
-from synthesis.evaluate.benchmarks.gsm_symbolic.generation import (
-    dafny_seq_to_str,
-    run_crane_csd,
-    run_unconstrained,
-)
+from synthesis.evaluate.benchmarks.common.dafny_tokens import dafny_seq_to_str
+from synthesis.evaluate.benchmarks.gsm_symbolic.generation import run_crane_csd
 
-
-__all__ = ["dafny_seq_to_str", "run_crane_csd", "run_unconstrained"]
+__all__ = ["dafny_seq_to_str", "run_crane_csd"]

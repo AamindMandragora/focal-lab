@@ -266,11 +266,21 @@ def _evaluate_rows_resilient(
     return merged_scores, dict(merged_errors)
 
 
-def score_predictions(
-    predictions: List[str],
-    examples: List[Dict[str, Any]],
-    **kwargs: Any,
-) -> float:
-    """Return the overall execution accuracy (level='all') as a float in [0, 1]."""
-    scores, _, _ = execute_accuracy(predictions, examples, **kwargs)
-    return float(scores.get("all", {}).get("exec", 0.0))
+def prediction_matches_gold(
+    prediction: str,
+    example: Dict[str, Any],
+    *,
+    db_dir: Optional[Path] = None,
+    tables_json: Optional[Path] = None,
+) -> bool:
+    """Score one prediction with the vendored Spider execution-accuracy evaluator."""
+    _, _, per_row = execute_accuracy(
+        [prediction],
+        [example],
+        db_dir=db_dir,
+        tables_json=tables_json,
+        etype="exec",
+    )
+    if not per_row:
+        return False
+    return bool(per_row[0].get("exec"))
