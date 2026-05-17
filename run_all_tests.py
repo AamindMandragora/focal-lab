@@ -100,6 +100,8 @@ class Config:
     gsm_generation_sample_size: str
     gsm_eval_sample_size: str
     eval_max_steps: str
+    eval_max_seconds_per_example: str
+    eval_min_examples_before_threshold_stop: str
     vllm_gpu_memory_utilization: str
     vllm_tensor_parallel_size: int
     dafny_path: str
@@ -757,6 +759,10 @@ class Runner:
             max_steps,
             "--eval-step-token-budget",
             token_budget,
+            "--eval-max-seconds-per-example",
+            self.config.eval_max_seconds_per_example,
+            "--eval-min-examples-before-threshold-stop",
+            self.config.eval_min_examples_before_threshold_stop,
             "--vllm-gpu-memory-utilization",
             self.config.vllm_gpu_memory_utilization,
             "--device",
@@ -981,6 +987,10 @@ class Runner:
             self.config.eval_max_steps,
             "--eval-step-token-budget",
             token_budget,
+            "--eval-max-seconds-per-example",
+            self.config.eval_max_seconds_per_example,
+            "--eval-min-examples-before-threshold-stop",
+            self.config.eval_min_examples_before_threshold_stop,
             "--vllm-gpu-memory-utilization",
             self.config.vllm_gpu_memory_utilization,
             "--device",
@@ -1132,6 +1142,18 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gsm-eval-sample-size", default="50")
     parser.add_argument("--eval-max-steps", default="900")
     parser.add_argument(
+        "--eval-max-seconds-per-example",
+        default="90",
+        help="Per-example wall-clock timeout for synthesis evaluation (seconds). "
+        "Wired through to synthesis.run_synthesis. Default: 90.",
+    )
+    parser.add_argument(
+        "--eval-min-examples-before-threshold-stop",
+        default="25",
+        help="Minimum number of evaluated examples before threshold-impossible "
+        "early stops can fire during synthesis. Default: 25.",
+    )
+    parser.add_argument(
         "--gsm-split-file",
         default=os.environ.get("CSD_GSM_SPLIT_FILE", str(DEFAULT_GSM_SPLIT_FILE)),
         help="Stratified GSM-Symbolic manifest (default: environment/benchmark_splits/gsm_symbolic_crane_proportional.json)",
@@ -1249,6 +1271,8 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_generation_sample_size=str(args.gsm_generation_sample_size),
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
+        eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
+        eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
         vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,

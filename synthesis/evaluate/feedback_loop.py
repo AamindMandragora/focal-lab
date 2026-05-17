@@ -355,6 +355,7 @@ class SynthesisPipeline:
         require_delimiters: bool = True,
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = None,
+        min_examples_before_threshold_stop: Optional[int] = None,
         adaptive_helper_mask: bool = True,
         helper_selection_policy: str = "utility",
         helper_mask_min_evals: int = 4,
@@ -386,6 +387,11 @@ class SynthesisPipeline:
             require_delimiters: Whether evaluated outputs must contain << >> spans
             eval_sample_size: Number of examples to evaluate on
             eval_max_seconds_per_example: Optional runtime budget per example in seconds
+            min_examples_before_threshold_stop: Minimum number of examples that
+                must be evaluated before threshold-impossible early stops can
+                fire. Decouples the synthesis feedback budget from the
+                acceptance threshold so the synthesizer always sees a usable
+                amount of evaluation data. None means no minimum (legacy).
             adaptive_helper_mask: Enable empirical helper pruning contract
             helper_selection_policy: Helper selection policy (`utility` or `bandit`)
             helper_mask_min_evals: Evaluated attempts before pruning can start
@@ -415,6 +421,7 @@ class SynthesisPipeline:
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
+        self.min_examples_before_threshold_stop = min_examples_before_threshold_stop
         self.adaptive_helper_mask = adaptive_helper_mask
         normalized_policy = helper_selection_policy.strip().lower()
         if normalized_policy not in {"utility", "bandit"}:
@@ -680,10 +687,27 @@ class SynthesisPipeline:
         if not self.adaptive_helper_mask or not self._helper_universe:
             return None, ""
 
-        evaluated = [attempt for attempt in attempts if attempt.eval_result is not None]
+        # Attempts whose evaluation completed zero examples carry no real signal
+        # for the helper mask: their scalar score reflects defaults (0 accuracy,
+        # 0 syntax_rate) rather than actual helper behavior. Excluding them keeps
+        # the utility/bandit policies from training on phantom rewards.
+        with_eval = [attempt for attempt in attempts if attempt.eval_result is not None]
+        evaluated = [
+            attempt for attempt in with_eval
+            if (attempt.eval_result.num_examples or 0) > 0
+        ]
+        skipped_zero_n = len(with_eval) - len(evaluated)
         if self.helper_selection_policy == "bandit":
-            return self._compute_allowed_helpers_bandit(evaluated)
-        return self._compute_allowed_helpers_utility(evaluated)
+            allowed, status = self._compute_allowed_helpers_bandit(evaluated)
+        else:
+            allowed, status = self._compute_allowed_helpers_utility(evaluated)
+        if skipped_zero_n:
+            suffix = (
+                f"; excluded {skipped_zero_n} attempt(s) with zero evaluated "
+                "examples from helper-mask scoring"
+            )
+            status = (status + suffix) if status else suffix.lstrip("; ")
+        return allowed, status
 
     def _get_disallowed_helper_calls(
         self,
@@ -2989,6 +3013,7 @@ class SynthesisPipeline:
                     if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
                     else None
                 ),
+                min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
             )
             attempt.eval_result = eval_result
 
