@@ -436,6 +436,8 @@ class Runner:
         return strategy, model_slug, benchmark_key, token_budget, max_steps
 
     def baseline_json_complete(self, path: Path) -> bool:
+        from synthesis.evaluate.baseline_store import baseline_answer_row_complete
+
         try:
             payload = json.loads(path.read_text())
         except Exception:
@@ -443,7 +445,9 @@ class Runner:
         answers = payload.get("answers")
         if not isinstance(answers, list) or not answers:
             return False
-        return all(isinstance(row, dict) and "generated_answer" in row for row in answers)
+        return all(
+            isinstance(row, dict) and baseline_answer_row_complete(row) for row in answers
+        )
 
     def baseline_json_matches_strategy(self, path: Path, strategy: str) -> bool:
         if strategy != "crane":

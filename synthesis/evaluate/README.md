@@ -41,7 +41,15 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - Baseline snapshots are JSON files in `outputs/baselines/` with:
   - `accuracy`, `syntax_rate`
   - `metrics` (counts, optional sums/means for `generation_seconds` / `num_tokens`, optional `run_wall_time_seconds` or evaluator totals)
-  - `answers[]` with `question`, `generated_answer`, and optional `generation_seconds` / `num_tokens` per row
+  - optional top-level `metadata` for legacy runs (prompt tier, adapter id, decode caps)
+  - `answers[]` per row:
+    - `question` — normalized benchmark question (plain text, aligned across strategies)
+    - `prompt` — full prompt sent to the model
+    - `generated` — raw model completion suffix used for scoring
+    - `extracted` — parsed answer used for accuracy/syntax checks
+    - `correct`, `syntax_valid` — per-example booleans
+    - `generated_answer` — legacy alias of `extracted` for older readers
+    - optional `generation_seconds`, `num_tokens`
 - Fixed-strategy GSM baselines use the local CRANE GSM source rows so
   `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` are compared on the
   same questions.

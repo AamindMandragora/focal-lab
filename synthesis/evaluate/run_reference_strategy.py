@@ -28,7 +28,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from synthesis.evaluate.baseline_store import build_metrics_from_eval_samples
+from synthesis.evaluate.baseline_store import build_minimal_baseline_record
 from synthesis.evaluate.evaluator import Evaluator
 
 
@@ -99,6 +99,7 @@ def _evaluate(
         max_steps=max_steps,
         step_token_budget=step_token_budget,
         vllm_gpu_memory_utilization=vllm_gpu_memory_utilization,
+        prompt_tier=1,
     )
     if vllm_max_model_len is not None:
         kwargs["vllm_max_model_len"] = vllm_max_model_len
@@ -111,34 +112,15 @@ def _evaluate(
     finally:
         evaluator.unload_runtime()
 
-    answers: list[dict[str, Any]] = []
-    for sample in result.sample_outputs or []:
-        question = str(sample.get("question", ""))
-        generated = sample.get("actual")
-        if generated is None:
-            generated = sample.get("full_output", "")
-        row: dict[str, Any] = {"question": question, "generated_answer": str(generated)}
-        if sample.get("token_count") is not None:
-            row["num_tokens"] = int(sample["token_count"])
-        if sample.get("time_seconds") is not None:
-            row["generation_seconds"] = round(float(sample["time_seconds"]), 6)
-        answers.append(row)
-
-    metrics = build_metrics_from_eval_samples(
-        result.sample_outputs or [],
-        evaluator_total_time_seconds=result.total_time_seconds,
-        evaluator_max_sample_time_seconds=result.max_sample_time_seconds,
+    payload = build_minimal_baseline_record(result, dataset=dataset)
+    payload.update(
+        {
+            "num_correct": result.num_correct,
+            "num_examples": result.num_examples,
+            "contains_delimiters": result.contains_delimiters,
+        }
     )
-
-    return {
-        "accuracy": float(result.accuracy),
-        "syntax_rate": float(result.syntax_rate),
-        "metrics": metrics,
-        "num_correct": result.num_correct,
-        "num_examples": result.num_examples,
-        "contains_delimiters": result.contains_delimiters,
-        "answers": answers,
-    }
+    return payload
 
 
 def main() -> None:

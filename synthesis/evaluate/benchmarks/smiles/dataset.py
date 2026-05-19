@@ -55,7 +55,7 @@ def extract_prompt_exemplars(prompt: str) -> list[str]:
     exemplars: list[str] = []
     for line in prompt.splitlines():
         line = line.strip()
-        if line.startswith("Molecule:"):
+        if line.startswith("Molecule:") or line.startswith("SMILES:"):
             value = line.split(":", 1)[1].strip()
             if value:
                 exemplars.append(value)
@@ -71,10 +71,14 @@ def get_smiles_task(class_name: str) -> Dict[str, Any]:
     prompt_path = DATA_DIR / f"{class_name}.txt"
     grammar_text = grammar_path.read_text()
     prompt = prompt_path.read_text()
+    properties = prompt.split("Molecule:")[0].split("SMILES:")[0].strip()
+    if properties.startswith("Properties:"):
+        properties = properties.split(":", 1)[1].strip()
     return {
         "class_name": class_name,
         "question": class_name,
         "prompt": prompt,
+        "smiles_properties": properties,
         "grammar_path": grammar_path,
         "grammar_text": grammar_text,
         "prompt_path": prompt_path,

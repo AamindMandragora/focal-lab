@@ -9,8 +9,8 @@ from pathlib import Path
 from synthesis.evaluate.baseline_store import baseline_payload_from_success_report
 
 
-def _build_minimal_payload(report: dict) -> dict:
-    return baseline_payload_from_success_report(report)
+def _build_minimal_payload(report: dict, *, dataset: str) -> dict:
+    return baseline_payload_from_success_report(report, dataset=dataset)
 
 
 def main() -> None:
@@ -29,10 +29,16 @@ def main() -> None:
         required=True,
         help="Output baseline JSON path (for example outputs/baselines/<strategy>/<model>/<benchmark>.json)",
     )
+    parser.add_argument(
+        "--dataset",
+        default="gsm_symbolic",
+        choices=["gsm_symbolic", "spider", "smiles"],
+        help="Benchmark dataset for question normalization (default: gsm_symbolic)",
+    )
     args = parser.parse_args()
 
     report = json.loads(args.success_report.read_text())
-    payload = _build_minimal_payload(report)
+    payload = _build_minimal_payload(report, dataset=args.dataset)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2) + "\n")

@@ -17,7 +17,6 @@ from synthesis.evaluate.completion_text import completion_for_scoring, strip_pro
 
 
 _MAX_PROMPT_CHARS = 50000  # ~12.5K tokens; leaves room for generation within 16384-token context
-_MAX_SUFFIX_CHARS = 45000
 
 
 def _truncate_prompt(prompt: str, base_prompt: str) -> str:
@@ -29,16 +28,6 @@ def _truncate_prompt(prompt: str, base_prompt: str) -> str:
     while len(base_prompt) + len("\n".join(lines)) > _MAX_PROMPT_CHARS and len(lines) > 1:
         lines.pop(0)
     return base_prompt + "\n".join(lines)
-
-
-def _cap_suffix(suffix: str) -> str:
-    """Drop the oldest appended molecules if suffix exceeds ``_MAX_SUFFIX_CHARS``."""
-    if len(suffix) <= _MAX_SUFFIX_CHARS:
-        return suffix
-    lines = suffix.split("\n")
-    while len("\n".join(lines)) > _MAX_SUFFIX_CHARS and len(lines) > 1:
-        lines.pop(0)
-    return "\n".join(lines)
 
 
 def _ensure_repo_cache_env() -> Path:
@@ -78,35 +67,105 @@ def _normalize_dataset(dataset: str) -> str:
 
 def _baseline_row_question(dataset: str, example: dict[str, Any], fallback: str) -> str:
     """Question string stored in baseline JSON and used for GSM example lookup."""
-    if dataset == "gsm_symbolic":
-        text = (
-            example.get("question_parsed")
-            or example.get("original_question")
-            or example.get("question")
-            or example.get("prompt")
-        )
-        return str(text or fallback)
-    return str(example.get("question") or example.get("prompt") or fallback)
+    from synthesis.evaluate.baseline_store import normalize_baseline_question
+
+    return normalize_baseline_question(dataset, example=example, fallback=fallback)
 
 
-def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any], profile: str) -> str:
-    """User-message text for legacy fixed strategies (not used by metadecode).
+def _legacy_adapter_baseline_row(
+    *,
+    dataset: str,
+    example: dict[str, Any],
+    prompt: str,
+    raw_generated: str,
+    extracted: str | None,
+    correct: bool,
+    syntax_valid: bool,
+    generation_seconds: float | None = None,
+    num_tokens: int | None = None,
+) -> dict[str, Any]:
+    """Build a unified baseline row for ``baseline_store`` export."""
+    from synthesis.evaluate.baseline_store import compose_baseline_answer
+    from synthesis.evaluate.completion_text import completion_for_scoring
+
+    generated_suffix = completion_for_scoring(prompt, raw_generated)
+    return compose_baseline_answer(
+        dataset=dataset,
+        example=example,
+        prompt=prompt,
+        generated=generated_suffix,
+        extracted=extracted or "",
+        correct=correct,
+        syntax_valid=syntax_valid,
+        generation_seconds=generation_seconds,
+        num_tokens=num_tokens,
+    )
+
+
+def _legacy_benchmark_prompt(
+    logic: Any,
+    evaluator: Any,
+    example: dict[str, Any],
+    profile: str,
+    *,
+    dataset: str,
+    strategy: str,
+) -> str:
+    """Render the standardized tier prompt for a legacy fixed strategy row.
 
     profile:
-      - ``expression_only``: one delimited answer; used by IterGen and GCD.
-      - ``chain_of_thought``: explicit reasoning then answer; used by CRANE adaptive SMILES.
-      - ``evaluator_default``: ``logic.format_prompt`` (optional Spider reasoning for unconstrained paths).
+      - ``expression_only`` → tier 1 (GCD, IterGen, CARS).
+      - ``chain_of_thought`` / ``evaluator_default`` → tier 2 (Unconstrained, CRANE paths in-repo).
     """
-    if profile == "evaluator_default":
-        return logic.format_prompt(evaluator, example)
-    if profile == "expression_only":
-        return logic.format_prompt_expression_only(evaluator, example)
-    if profile == "chain_of_thought":
-        cot = getattr(logic, "format_prompt_chain_of_thought", None)
-        if callable(cot):
-            return cot(evaluator, example)
-        return logic.format_prompt(evaluator, example)
-    raise ValueError(f"Unknown legacy prompt profile: {profile}")
+    from synthesis.evaluate.prompt_tiers import (
+        format_prompt_for_tier,
+        prompt_tier_for_strategy,
+    )
+
+    tier = 1 if profile == "expression_only" else 2
+    if profile in ("evaluator_default", "chain_of_thought"):
+        tier = 2
+    elif profile == "expression_only":
+        tier = 1
+    else:
+        tier = prompt_tier_for_strategy(strategy)
+
+    constrained = profile == "expression_only" and strategy in ("gcd", "itergen")
+    if profile == "expression_only" and strategy == "cars":
+        constrained = True
+    return format_prompt_for_tier(
+        evaluator,
+        example,
+        benchmark=dataset,
+        tier=tier,
+        constrained_suffix=constrained,
+    )
+
+
+def _baseline_run_metadata(
+    args: argparse.Namespace,
+    dataset: str,
+    *,
+    adapter: str | None = None,
+) -> dict[str, Any]:
+    from synthesis.evaluate.prompt_tiers import (
+        benchmark_max_new_tokens,
+        effective_max_new_tokens,
+        prompt_tier_for_strategy,
+    )
+
+    tier = prompt_tier_for_strategy(args.strategy)
+    meta: dict[str, Any] = {
+        "benchmark": dataset,
+        "strategy": args.strategy,
+        "prompt_tier": tier,
+        "eval_model": args.eval_model,
+        "benchmark_max_new_tokens": benchmark_max_new_tokens(dataset),
+        "effective_max_new_tokens": effective_max_new_tokens(dataset, args.eval_max_steps),
+    }
+    if adapter:
+        meta["adapter"] = adapter
+    return meta
 
 
 def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, Any]]) -> str:
@@ -130,6 +189,22 @@ def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, 
     if gsm_allowed_variables:
         return build_dynamic_grammar(base_gsm_grammar, gsm_allowed_variables)
     return build_numeric_only_grammar(base_gsm_grammar)
+
+
+def _legacy_sql_grammar_base(repo_root: Path) -> str:
+    return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+
+
+def _legacy_delimited_span_grammar(base_grammar: str) -> str:
+    from synthesis.evaluate.benchmarks.common.delimiter_grammar import (
+        build_delimited_span_grammar,
+    )
+
+    return build_delimited_span_grammar(base_grammar)
+
+
+_LEGACY_DELIMITED_DATASETS = frozenset({"gsm_symbolic", "spider", "smiles"})
+_LEGACY_DELIMITED_STOP_WORDS = [">>"]
 
 
 def _gsm_symbolic_completion_to_delimited(
@@ -230,18 +305,6 @@ def _mode_for_strategy(strategy: str) -> tuple[str, bool]:
     raise ValueError(f"Unsupported CRANE-backed strategy: {strategy}")
 
 
-def _compose_baseline_answer_row(question: str, generated: str, row: dict[str, Any]) -> dict[str, Any]:
-    prompt_used = row.get("prompt_used")
-    if isinstance(prompt_used, str) and prompt_used:
-        generated = strip_prompt_prefix(prompt_used, generated)
-    entry: dict[str, Any] = {"question": question, "generated_answer": generated}
-    if row.get("num_tokens") is not None:
-        entry["num_tokens"] = int(row["num_tokens"])
-    if row.get("generation_seconds") is not None:
-        entry["generation_seconds"] = round(float(row["generation_seconds"]), 6)
-    return entry
-
-
 def _aggregate_run_metrics(
     rows: list[dict[str, Any]],
     *,
@@ -271,66 +334,114 @@ def _build_minimal_json(
     rows: list[dict[str, Any]],
     output_json: Path,
     *,
+    dataset: str,
     run_wall_time_seconds: float | None = None,
     extra_metrics: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> None:
-    metrics = _aggregate_run_metrics(rows, run_wall_time_seconds=run_wall_time_seconds)
-    if extra_metrics:
-        metrics.update(extra_metrics)
-    if not rows:
-        payload = {
-            "accuracy": 0.0,
-            "syntax_rate": 0.0,
-            "metrics": metrics,
-            "answers": [],
-        }
-        output_json.parent.mkdir(parents=True, exist_ok=True)
-        output_json.write_text(json.dumps(payload, indent=2) + "\n")
-        return
+    from synthesis.evaluate.baseline_store import save_minimal_baseline_from_rows
 
-    correct_vals: list[float] = []
-    syntax_vals: list[float] = []
-    answers: list[dict[str, Any]] = []
+    save_minimal_baseline_from_rows(
+        rows,
+        output_json,
+        dataset=_normalize_dataset(dataset),
+        run_wall_time_seconds=run_wall_time_seconds,
+        extra_metrics=extra_metrics,
+        metadata=metadata,
+    )
 
-    syntax_keys = [
-        "is_syntax_valid",
-        "syntax_valid",
-        "grammar_valid",
-        "out_parse_success",
-    ]
 
-    for row in rows:
-        if isinstance(row.get("correct"), bool):
-            correct_vals.append(1.0 if row["correct"] else 0.0)
+def _enrich_crane_baseline_rows(
+    rows: list[dict[str, Any]],
+    *,
+    args: argparse.Namespace,
+    dataset: str,
+    logic: Any,
+    eval_runtime: Any,
+    examples: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Attach prompts, normalized questions, and extracted answers to CRANE jsonl rows."""
+    from synthesis.evaluate.baseline_store import normalize_baseline_question
+    from synthesis.evaluate.completion_text import completion_for_scoring
 
-        syntax_value = None
-        for key in syntax_keys:
-            if key in row and isinstance(row[key], bool):
-                syntax_value = 1.0 if row[key] else 0.0
-                break
-        if syntax_value is None:
-            syntax_value = 0.0
-        syntax_vals.append(syntax_value)
+    profile = "chain_of_thought"
+    examples_by_question: dict[str, dict[str, Any]] = {}
+    for example in examples:
+        if dataset == "gsm_symbolic":
+            for key in (
+                example.get("question_parsed"),
+                example.get("original_question"),
+                example.get("question"),
+                example.get("prompt"),
+            ):
+                if key:
+                    examples_by_question[str(key)] = example
+        else:
+            q = normalize_baseline_question(dataset, example=example)
+            if q:
+                examples_by_question[q] = example
+            embedded = str(example.get("question") or "")
+            if embedded:
+                examples_by_question[embedded] = example
 
-        question = str(row.get("question") or row.get("prompt") or "")
-        generated = row.get("llm_response")
-        if generated is None:
-            generated = row.get("response")
-        if generated is None:
-            generated = row.get("pred")
-        if generated is None:
-            generated = ""
-        answers.append(_compose_baseline_answer_row(question, str(generated), row))
+    enriched: list[dict[str, Any]] = []
+    for idx, row in enumerate(rows):
+        question_raw = str(row.get("question") or "")
+        example = examples_by_question.get(question_raw)
+        if example is None:
+            norm_q = normalize_baseline_question(dataset, row=row)
+            example = examples_by_question.get(norm_q)
+        if example is None and idx < len(examples):
+            example = examples[idx]
 
-    payload = {
-        "accuracy": sum(correct_vals) / max(1, len(correct_vals)),
-        "syntax_rate": sum(syntax_vals) / max(1, len(syntax_vals)),
-        "metrics": metrics,
-        "answers": answers,
-    }
+        prompt = row.get("prompt_used") or row.get("prompt")
+        if not prompt and example is not None:
+            prompt = _legacy_benchmark_prompt(
+                logic,
+                eval_runtime,
+                example,
+                profile,
+                dataset=dataset,
+                strategy=args.strategy,
+            )
+        prompt_s = str(prompt or "")
 
-    output_json.parent.mkdir(parents=True, exist_ok=True)
-    output_json.write_text(json.dumps(payload, indent=2) + "\n")
+        raw_generated = str(
+            row.get("llm_response") or row.get("response") or row.get("pred") or ""
+        )
+        extracted = row.get("parsed_completion")
+        if extracted is None and example is not None:
+            completion = completion_for_scoring(prompt_s or None, raw_generated)
+            scored = (
+                eval_runtime._truncate_gsm_output(completion)
+                if dataset == "gsm_symbolic"
+                else completion
+            )
+            extracted, _src, _aux = logic.extract_actual(
+                eval_runtime, scored, example
+            )
+
+        correct = bool(row.get("correct")) if isinstance(row.get("correct"), bool) else False
+        syntax_valid = (
+            bool(row.get("syntax_valid"))
+            if isinstance(row.get("syntax_valid"), bool)
+            else False
+        )
+
+        enriched.append(
+            _legacy_adapter_baseline_row(
+                dataset=dataset,
+                example=example or {"question": question_raw},
+                prompt=prompt_s,
+                raw_generated=raw_generated,
+                extracted=str(extracted) if extracted is not None else None,
+                correct=correct,
+                syntax_valid=syntax_valid,
+                generation_seconds=row.get("generation_seconds"),
+                num_tokens=row.get("num_tokens"),
+            )
+        )
+    return enriched
 
 
 def _load_latest_crane_results(crane_src_dir: Path, dataset: str) -> list[dict[str, Any]]:
@@ -590,19 +701,29 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     examples = logic.load_dataset_sample(eval_runtime)
     cars_model = ConstrainedModel(model_id, None, torch_dtype=torch.bfloat16)
 
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        SmilesPromptState,
+        record_prompt_result,
+    )
+
     rows: list[dict[str, Any]] = []
-    smiles_prompt_suffix: dict[str, str] = {}
+    smiles_prompt_states: dict[str, SmilesPromptState] = {}
     grammar_cache: dict[str, Any] = {}
     # Match upstream run_task.py caps (default max_new_tokens=512; n_steps scales with sample count).
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
+
+    decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
     n_steps = max(20, min(2000, int(args.eval_max_steps) * 2))
-    max_new_tokens = min(512, max(32, int(args.eval_max_steps)))
+    max_new_tokens = decode_cap
 
     gsm_cars_grammar = ""
     if dataset == "gsm_symbolic":
-        gsm_cars_grammar = _legacy_gsm_symbolic_grammar_base(repo_root, examples)
+        gsm_cars_grammar = _legacy_delimited_span_grammar(
+            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
+        )
     spider_cars_grammar = ""
     if dataset == "spider":
-        spider_cars_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+        spider_cars_grammar = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
 
     for example in examples:
         if dataset == "gsm_symbolic":
@@ -610,16 +731,20 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         elif dataset == "spider":
             grammar_text = spider_cars_grammar
         elif dataset == "smiles":
-            grammar_text = str(example.get("grammar_text", ""))
+            grammar_text = _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
         else:
             raise ValueError(f"Unsupported dataset for CARS adapter: {dataset}")
         _cars_set_cached_grammar(cars_model, grammar_text, grammar_cache)
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if cls not in smiles_prompt_states:
+                smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
+            smiles_prompt_states[cls].apply_to_example(example)
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _legacy_benchmark_prompt(
+            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="cars"
+        )
         gen_started = time.perf_counter()
         steps = _cars_sampler_steps(
             cars_model,
@@ -631,6 +756,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
+        elif dataset in ("spider", "smiles"):
+            from synthesis.evaluate.benchmarks.common.delimited_completion import (
+                wrap_constrained_completion,
+            )
+
+            output_text = wrap_constrained_completion(output_text)
         completion = completion_for_scoring(prompt, output_text)
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
@@ -646,20 +777,20 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
-            if syntax_valid and actual:
-                cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+            is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
-        question = _baseline_row_question(dataset, example, expected)
         rows.append(
-            {
-                "question": question,
-                "llm_response": completion,
-                "prompt_used": prompt,
-                "correct": bool(is_correct),
-                "syntax_valid": bool(syntax_valid),
-                "generation_seconds": gen_seconds,
-            }
+            _legacy_adapter_baseline_row(
+                dataset=dataset,
+                example=example,
+                prompt=prompt,
+                raw_generated=output_text,
+                extracted=actual,
+                correct=bool(is_correct),
+                syntax_valid=bool(syntax_valid),
+                generation_seconds=gen_seconds,
+            )
         )
 
     if not rows:
@@ -668,8 +799,10 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
         extra_metrics={"adapter": "cars_legacy_cars"},
+        metadata=_baseline_run_metadata(args, dataset, adapter="cars_legacy_cars"),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -715,43 +848,56 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
     device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
     base_gsm_grammar = ""
+    base_spider_grammar = ""
     if dataset == "gsm_symbolic":
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_gcd_span_grammar
-
-        base_gsm_grammar = build_gcd_span_grammar(
+        base_gsm_grammar = _legacy_delimited_span_grammar(
             _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         )
+    elif dataset == "spider":
+        base_spider_grammar = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
             return base_gsm_grammar
         if dataset == "spider":
-            return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+            return base_spider_grammar
         if dataset == "smiles":
-            return str(example.get("grammar_text", ""))
+            return _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
         raise ValueError(f"Unsupported dataset for GCD adapter: {dataset}")
+
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
+
+    decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
 
     def _gcd_max_new_tokens() -> int:
         if dataset == "gsm_symbolic":
-            # GSM answers are usually short; cap runaway constrained spans.
-            return 28
-        if dataset == "smiles":
-            return min(256, max(64, int(args.eval_max_steps)))
-        return max(32, int(args.eval_max_steps))
+            return min(28, decode_cap)
+        return decode_cap
 
     def _gcd_prompt(prompt: str) -> str:
-        if dataset == "gsm_symbolic":
-            return prompt.rstrip() + "<<"
         return prompt
 
     def _gcd_output(completion: str, example: dict[str, Any]) -> str:
-        if dataset != "gsm_symbolic":
-            return completion
-        return _gsm_symbolic_completion_to_delimited(completion, example, eval_runtime, logic)
+        if dataset == "gsm_symbolic":
+            return _gsm_symbolic_completion_to_delimited(
+                completion, example, eval_runtime, logic
+            )
+        if dataset in ("spider", "smiles"):
+            from synthesis.evaluate.benchmarks.common.delimited_completion import (
+                wrap_constrained_completion,
+            )
+
+            return wrap_constrained_completion(completion)
+        return completion
+
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        SmilesPromptState,
+        record_prompt_result,
+    )
 
     syncode_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
-    smiles_prompt_suffix: dict[str, str] = {}
+    smiles_prompt_states: dict[str, SmilesPromptState] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
@@ -774,12 +920,21 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if cls not in smiles_prompt_states:
+                smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
+            smiles_prompt_states[cls].apply_to_example(example)
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _legacy_benchmark_prompt(
+            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="gcd"
+        )
         gen_started = time.perf_counter()
         gcd_prompt = _gcd_prompt(prompt)
-        completions = sc.infer(gcd_prompt, stop_words=[">>"] if dataset == "gsm_symbolic" else None)
+        completions = sc.infer(
+            gcd_prompt,
+            stop_words=_LEGACY_DELIMITED_STOP_WORDS
+            if dataset in _LEGACY_DELIMITED_DATASETS
+            else None,
+        )
         gen_seconds = time.perf_counter() - gen_started
         raw_output = _gcd_output(completions[0] if completions else "", example)
         completion = completion_for_scoring(gcd_prompt, raw_output)
@@ -797,29 +952,32 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
-            if syntax_valid and actual:
-                cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+            is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
-        question = _baseline_row_question(dataset, example, expected)
         rows.append(
-            {
-                "question": question,
-                "llm_response": completion,
-                "prompt_used": gcd_prompt,
-                "correct": bool(is_correct),
-                "syntax_valid": bool(syntax_valid),
-                "generation_seconds": gen_seconds,
-            }
+            _legacy_adapter_baseline_row(
+                dataset=dataset,
+                example=example,
+                prompt=gcd_prompt,
+                raw_generated=raw_output,
+                extracted=actual,
+                correct=bool(is_correct),
+                syntax_valid=bool(syntax_valid),
+                generation_seconds=gen_seconds,
+            )
         )
 
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        metadata=_baseline_run_metadata(args, dataset, adapter="gcd_syncode"),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
+
 
 def _itergen_add_import_paths(itergen_root: Path) -> None:
     candidates = [
@@ -888,23 +1046,24 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
 
     base_gsm_grammar_text = ""
+    base_spider_grammar_text = ""
     if dataset == "gsm_symbolic":
-        from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import build_gcd_span_grammar
-
-        base_gsm_grammar_text = build_gcd_span_grammar(
+        base_gsm_grammar_text = _legacy_delimited_span_grammar(
             _legacy_gsm_symbolic_grammar_base(repo_root, examples)
         )
+    elif dataset == "spider":
+        base_spider_grammar_text = _legacy_delimited_span_grammar(
+            _legacy_sql_grammar_base(repo_root)
+        )
+
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
+
+    decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
 
     def _itergen_max_new_tokens() -> int:
-        """Match GCD caps so the incremental parser stack cannot grow with eval_max_steps."""
-        ms = int(args.eval_max_steps)
         if dataset == "gsm_symbolic":
-            return 28
-        if dataset == "smiles":
-            return min(256, max(64, ms))
-        if dataset == "spider":
-            return min(512, max(64, ms))
-        return max(32, ms)
+            return min(28, decode_cap)
+        return decode_cap
 
     _new_tok = _itergen_max_new_tokens()
 
@@ -912,14 +1071,19 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         if dataset == "gsm_symbolic":
             return base_gsm_grammar_text
         if dataset == "spider":
-            return (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
+            return base_spider_grammar_text
         if dataset == "smiles":
-            return str(example.get("grammar_text", ""))
+            return _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
         raise ValueError(f"Unsupported dataset for itergen adapter: {dataset}")
+
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        SmilesPromptState,
+        record_prompt_result,
+    )
 
     itergen_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
-    smiles_prompt_suffix: dict[str, str] = {}
+    smiles_prompt_states: dict[str, SmilesPromptState] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
@@ -945,11 +1109,13 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
         if dataset == "smiles":
             cls = str(example.get("class_name", ""))
-            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+            if cls not in smiles_prompt_states:
+                smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
+            smiles_prompt_states[cls].apply_to_example(example)
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
-        if dataset == "gsm_symbolic":
-            prompt = prompt.rstrip() + "<<"
+        prompt = _legacy_benchmark_prompt(
+            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="itergen"
+        )
 
         gen_started = time.perf_counter()
         raw_completion = _itergen_generate(iter_gen, prompt)
@@ -957,6 +1123,12 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             raw_completion = _gsm_symbolic_completion_to_delimited(
                 raw_completion, example, eval_runtime, logic
             )
+        elif dataset in ("spider", "smiles"):
+            from synthesis.evaluate.benchmarks.common.delimited_completion import (
+                wrap_constrained_completion,
+            )
+
+            raw_completion = wrap_constrained_completion(raw_completion)
         gen_seconds = time.perf_counter() - gen_started
         completion = completion_for_scoring(prompt, raw_completion)
         scored_output = (
@@ -973,26 +1145,28 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
         if dataset == "smiles":
             syntax_valid = bool(aux and aux.get("syntax_valid"))
-            if syntax_valid and actual:
-                cls = str(example.get("class_name", ""))
-                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+            is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
-        question = _baseline_row_question(dataset, example, expected)
         rows.append(
-            {
-                "question": question,
-                "llm_response": completion,
-                "prompt_used": prompt,
-                "correct": bool(is_correct),
-                "syntax_valid": bool(syntax_valid),
-                "generation_seconds": gen_seconds,
-            }
+            _legacy_adapter_baseline_row(
+                dataset=dataset,
+                example=example,
+                prompt=prompt,
+                raw_generated=raw_completion,
+                extracted=actual,
+                correct=bool(is_correct),
+                syntax_valid=bool(syntax_valid),
+                generation_seconds=gen_seconds,
+            )
         )
 
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        metadata=_baseline_run_metadata(args, dataset, adapter="itergen_legacy"),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -1001,18 +1175,25 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     """Unconstrained SMILES generation: generate without grammar masking, then score.
 
-    Each sample appends all previously generated valid molecules to the prompt
-    so the model is nudged to produce novel strings (matching the CARS paper
-    protocol).  Temperature 0.8 gives diversity; greedy would repeat the same
-    molecule every time.
+    Each sample appends prior good and bad molecules to the prompt so the model
+    is nudged toward novel valid strings and away from repeated failures.
+    Temperature 0.8 gives diversity; deterministic decoders rely on the suffix.
     """
     from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, get_smiles_task
     from synthesis.evaluate.benchmarks.smiles.metrics import (
         clean_smiles_output,
         evaluate_smiles_output,
     )
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        SmilesPromptState,
+        record_prompt_result,
+    )
+    from synthesis.evaluate.evaluator import Evaluator
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
     run_started = time.perf_counter()
+    decode_cap = effective_max_new_tokens("smiles", args.eval_max_steps)
     selected_classes = [
         part.strip()
         for part in (args.smiles_classes or ",".join(SMILES_CLASSES)).split(",")
@@ -1025,9 +1206,14 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         )
 
     n_per_class = max(1, args.smiles_samples_per_class or args.eval_sample_size)
-    uc_smiles_cot_prefix = (
-        "For each molecule requested below, give brief step-by-step reasoning about the "
-        "constraints, then write the SMILES string.\n\n"
+    logic = get_logic("smiles")
+    eval_runtime = Evaluator(
+        dataset_name="smiles",
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=n_per_class,
+        max_steps=decode_cap,
     )
 
     if args.eval_backend == "vllm":
@@ -1050,24 +1236,33 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
         )
 
     rows: list[dict[str, Any]] = []
-    seen_per_class: dict[str, set[str]] = {}
 
     for class_name in selected_classes:
         task = get_smiles_task(class_name)
-        base_prompt = task["prompt"]
         grammar_text = str(task["grammar_text"])
         prompt_exemplars = list(task.get("prompt_exemplars", []))
-        seen_per_class[class_name] = set(prompt_exemplars)
-        seed_prompt = uc_smiles_cot_prefix + base_prompt
-        running_prompt = seed_prompt
+        state = SmilesPromptState(prompt_exemplars)
+        example_seed = dict(task)
+        tier_base = _legacy_benchmark_prompt(
+            logic,
+            eval_runtime,
+            example_seed,
+            "chain_of_thought",
+            dataset="smiles",
+            strategy="unconstrained",
+        )
+        seed_prompt = tier_base
 
         for _i in range(n_per_class):
-            running_prompt = _truncate_prompt(running_prompt, seed_prompt)
+            prompt_row = dict(task)
+            prompt_row["prompt"] = tier_base
+            state.apply_to_example(prompt_row)
+            running_prompt = _truncate_prompt(str(prompt_row["prompt"]), seed_prompt)
             if args.eval_backend == "vllm":
                 from vllm import SamplingParams as _SP
 
                 gen_started = time.perf_counter()
-                sp = _SP(max_tokens=args.eval_max_steps, temperature=0.8, stop=["\n\n"])
+                sp = _SP(max_tokens=decode_cap, temperature=0.8, stop=["\n\n"])
                 outputs = llm.generate([running_prompt], sp)
                 gen_seconds = time.perf_counter() - gen_started
                 completion = outputs[0].outputs[0]
@@ -1078,8 +1273,10 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 gen_started = time.perf_counter()
                 with torch.no_grad():
                     out_ids = model.generate(
-                        **inputs, max_new_tokens=args.eval_max_steps,
-                        do_sample=True, temperature=0.8,
+                        **inputs,
+                        max_new_tokens=decode_cap,
+                        do_sample=True,
+                        temperature=0.8,
                     )
                 gen_seconds = time.perf_counter() - gen_started
                 new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
@@ -1094,32 +1291,33 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 require_rdkit=True,
             )
             cleaned = clean_smiles_output(gen_text)
-            is_novel = bool(
-                smiles_eval.get("syntax_valid")
-                and cleaned
-                and cleaned not in seen_per_class[class_name]
+            scored = record_prompt_result(
+                {"class_name": class_name},
+                {class_name: state},
+                cleaned,
+                smiles_eval,
             )
-            if cleaned and smiles_eval.get("syntax_valid"):
-                seen_per_class[class_name].add(cleaned)
-                running_prompt = running_prompt.rstrip() + f" {cleaned}\nMolecule: "
 
-            row_out: dict[str, Any] = {
-                "question": class_name,
-                "llm_response": gen_text,
-                "correct": bool(
-                    is_novel and smiles_eval.get("class_membership")
-                ),
-                "syntax_valid": bool(smiles_eval.get("syntax_valid", False)),
-                "generation_seconds": gen_seconds,
-            }
-            if num_toks is not None:
-                row_out["num_tokens"] = num_toks
-            rows.append(row_out)
+            rows.append(
+                _legacy_adapter_baseline_row(
+                    dataset="smiles",
+                    example={"class_name": class_name, "prompt": prompt_row.get("prompt", "")},
+                    prompt=running_prompt,
+                    raw_generated=gen_text,
+                    extracted=cleaned,
+                    correct=bool(scored and scored.get("novel_valid")),
+                    syntax_valid=bool(smiles_eval.get("syntax_valid", False)),
+                    generation_seconds=gen_seconds,
+                    num_tokens=num_toks,
+                )
+            )
 
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset="smiles",
         run_wall_time_seconds=time.perf_counter() - run_started,
+        metadata=_baseline_run_metadata(args, "smiles", adapter="unconstrained_smiles"),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
@@ -1174,11 +1372,20 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
             trust_remote_code=True,
         )
 
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
+
     rows: list[dict[str, Any]] = []
-    max_new = max(32, int(args.eval_max_steps))
+    max_new = effective_max_new_tokens("spider", args.eval_max_steps)
 
     for example in examples:
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
+        prompt = _legacy_benchmark_prompt(
+            logic,
+            eval_runtime,
+            example,
+            "chain_of_thought",
+            dataset="spider",
+            strategy="unconstrained",
+        )
         num_toks: int | None = None
         if args.eval_backend == "vllm":
             from vllm import SamplingParams as _SP
@@ -1212,29 +1419,34 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
         is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
         syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
 
-        question = _baseline_row_question("spider", example, expected)
-        row_out: dict[str, Any] = {
-            "question": question,
-            "llm_response": suffix,
-            "prompt_used": prompt,
-            "correct": bool(is_correct),
-            "syntax_valid": bool(syntax_valid),
-            "generation_seconds": gen_seconds,
-        }
-        if num_toks is not None:
-            row_out["num_tokens"] = num_toks
-        rows.append(row_out)
+        rows.append(
+            _legacy_adapter_baseline_row(
+                dataset="spider",
+                example=example,
+                prompt=prompt,
+                raw_generated=suffix,
+                extracted=actual,
+                correct=bool(is_correct),
+                syntax_valid=bool(syntax_valid),
+                generation_seconds=gen_seconds,
+                num_tokens=num_toks,
+            )
+        )
 
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset="spider",
         run_wall_time_seconds=time.perf_counter() - run_started,
+        metadata=_baseline_run_metadata(args, "spider", adapter="unconstrained_spider"),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
 
 def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
+    from synthesis.evaluate.prompt_tiers import TIER2_FEWSHOT_CAP
+
     dataset = _normalize_dataset(args.dataset)
 
     if dataset == "smiles" and args.strategy == "unconstrained":
@@ -1259,7 +1471,7 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         "--num_examples",
         str(args.eval_sample_size),
         "--num_shots",
-        "1",
+        str(TIER2_FEWSHOT_CAP),
         "--overwrite_results",
         "True",
         "--write_file",
@@ -1326,19 +1538,49 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     crane_run_started = time.perf_counter()
     subprocess.run(cmd, cwd=crane_src_dir, check=True, env=env)
 
-    rows = _annotate_legacy_rows_with_syntax(
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.evaluator import Evaluator
+
+    logic = get_logic(dataset)
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
+    )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
+    examples = logic.load_dataset_sample(eval_runtime)
+
+    raw_rows = _annotate_legacy_rows_with_syntax(
         _load_latest_crane_results(crane_src_dir, dataset),
         args,
         dataset,
     )
-    extra_metrics: dict[str, Any] | None = None
-    if args.strategy == "crane":
-        extra_metrics = {"adapter": "crane_legacy_main"}
+    rows = _enrich_crane_baseline_rows(
+        raw_rows,
+        args=args,
+        dataset=dataset,
+        logic=logic,
+        eval_runtime=eval_runtime,
+        examples=examples,
+    )
+    adapter = "crane_legacy_main" if args.strategy == "crane" else "unconstrained_crane_main"
     _build_minimal_json(
         rows,
         args.output_json,
+        dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - crane_run_started,
-        extra_metrics=extra_metrics,
+        extra_metrics={"adapter": adapter},
+        metadata=_baseline_run_metadata(args, dataset, adapter=adapter),
     )
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
