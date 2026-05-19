@@ -1,17 +1,17 @@
 // SQL grammar for CSD evaluation on Spider.
 //
-// Mirrors gsm.lark: outer delimiter is "<<" ... ">>" and csd_start consumes
-// the closing delimiter. The constrained window contains one SQL statement.
+// Full-span mode: prompt prefix ``<<``, grammar closes with ``>>``.
+// GCD / IterGen / CARS after ``<<`` use build_delimited_span_grammar → start ">>".
+// csd_start closes with ``>>`` for evaluator dynamic parsers.
 //
 // NAME is a single permissive identifier terminal used for tables, columns,
 // and aliases — mirroring itergen's grammar shape. This avoids the LALR
 // lexer ambiguity that comes with multiple same-regex terminals.
 
-syncode: start
+syncode: "<<" start ">>"
 
 start: sql_stmt
-csd_start: sql_stmt EOQ
-EOQ: /[;\n]+/
+csd_start: sql_stmt ">>"
 
 sql_stmt: select_core (compound_op select_core)*
 

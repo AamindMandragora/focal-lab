@@ -25,3 +25,10 @@ Strategies decide their own constraint behaviour. The prompt appends `<< >>` del
 
 SMILES scoring treats syntax validity and class-membership quality as separate signals.
 The synthesis loop can use these diagnostics to discourage degenerate strategies that exploit formatting without producing meaningful molecules.
+
+Multi-sample evaluation (synthesis eval and legacy baselines) updates each class prompt with empirical context from the current run:
+
+- **Good results:** novel, syntax-valid, in-class molecules (unique scoring numerator).
+- **Bad results:** prior failed or duplicate attempts listed so deterministic decoders do not repeat the same output.
+
+State is managed in `prompt_state.py` and applied through `eval_logic.py` hooks used by `evaluator.py` and `run_legacy_fixed_strategy.py`.

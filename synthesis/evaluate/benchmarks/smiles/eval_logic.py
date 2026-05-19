@@ -31,34 +31,22 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    base_prompt = example.get("prompt", "")
-    return (
-        base_prompt.rstrip()
-        + "\n\nWrap your answer molecule in << >> delimiters, e.g. <<CC(=O)OC=C>>.\n"
-        "Molecule: "
-    )
+    """Tier-2 SMILES prompt; ``prompt_state`` may append good/bad molecules afterward."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+
+    return render_benchmark_prompt("smiles", tier=2, example=example)
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Grammar-masked legacy adapters: single SMILES span, no reasoning."""
-    base_prompt = example.get("prompt", "")
-    return (
-        base_prompt.rstrip()
-        + "\n\nOutput only one SMILES string inside << >> (example: <<CC(=O)OC=C>>). "
-        "Do not write explanations.\n"
-        "Molecule: "
-    )
+    """Tier-1 SMILES prompt (grammar-masked legacy adapters)."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+
+    return render_benchmark_prompt("smiles", tier=1, example=example)
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """CRANE-style adaptive SMILES: reasoning allowed before the delimited molecule."""
-    base_prompt = example.get("prompt", "")
-    return (
-        base_prompt.rstrip()
-        + "\n\nThink step by step about how to satisfy the structural constraints, "
-        "then wrap your final SMILES in << >> delimiters.\n"
-        "Molecule: "
-    )
+    """Tier-2 SMILES prompt."""
+    return format_prompt(evaluator, example)
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
@@ -119,7 +107,32 @@ def is_correct(
     aux: dict[str, Any] | None,
     scored_output: str,
 ) -> bool:
+    if aux and "novel_valid" in aux:
+        return bool(aux.get("novel_valid"))
     return bool(aux and aux.get("unique_valid_candidate"))
+
+
+def init_prompt_states(dataset: list[dict[str, Any]]) -> dict[str, Any]:
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import init_prompt_states as _init
+
+    return _init(dataset)
+
+
+def apply_prompt_state(example: dict[str, Any], states: dict[str, Any]) -> None:
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import apply_prompt_state as _apply
+
+    _apply(example, states)
+
+
+def record_prompt_result(
+    example: dict[str, Any],
+    states: dict[str, Any],
+    smiles: str,
+    eval_row: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result as _record
+
+    return _record(example, states, smiles, eval_row)
 
 
 def uses_hidden_chunks() -> bool:

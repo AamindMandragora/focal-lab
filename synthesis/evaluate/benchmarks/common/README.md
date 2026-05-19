@@ -10,6 +10,10 @@
 
 ## Key Modules
 
+- `delimiter_grammar.py` / `delimited_completion.py`
+  - Adapt Lark grammars and raw decoder output for tier-1 `<<` … `>>` spans (GCD / IterGen / CARS).
+- `delimited_output.py`
+  - Shared `<< >>` extraction for GSM, Spider, and SMILES scoring.
 - `model_utils.py`
   - Backend-aware model/tokenizer setup and runtime object creation.
   - Owns first-call-wins task guidance state for CSD-authored prompt guidance.

@@ -1,0 +1,133 @@
+--- a/src/prompting/base.py	2026-05-18 22:24:47.976962204 +0000
++++ b/src/prompting/base.py
+@@ -4,15 +4,74 @@
+ from abc import ABC, abstractmethod
+ from textwrap import dedent
+ import os
++import sys
+ from copy import deepcopy
+ 
++VAS_TIER_DATASETS = frozenset({"gsm_symbolic", "spider", "smiles"})
++
++
++def _vas_repo_root():
++    """Walk up to verified-agent-synthesis root (contains synthesis/run_synthesis.py)."""
++    here = os.path.dirname(os.path.abspath(__file__))
++    cur = here
++    for _ in range(28):
++        marker = os.path.join(cur, "synthesis", "run_synthesis.py")
++        if os.path.isfile(marker):
++            return cur
++        parent = os.path.dirname(cur)
++        if parent == cur:
++            return None
++        cur = parent
++    return None
++
++
++def _parse_spider_row(row):
++    """Normalize CRANE Spider rows to db_info + plain question for tier templates."""
++    db_info = str(row.get("db_info") or "").strip()
++    qtext = str(row.get("question") or "")
++    if "### Question:" in qtext:
++        if not db_info and "SQL tables information:" in qtext:
++            mid = qtext.split("SQL tables information:", 1)[1]
++            db_info = mid.split("### Question:", 1)[0].strip()
++        question = qtext.split("### Question:", 1)[-1].strip()
++        if question.endswith("SQL:"):
++            question = question[:-4].strip()
++        return {"db_info": db_info, "question": question, "db_id": row.get("db_id", "")}
++    return {"db_info": db_info, "question": qtext.strip(), "db_id": row.get("db_id", "")}
++
++
++def _row_for_vas_prompt(dataset, row):
++    if dataset == "gsm_symbolic":
++        question = str(row.get("question") or "").strip()
++        return {"question_parsed": question, "question": question}
++    if dataset == "spider":
++        return _parse_spider_row(row)
++    if dataset == "smiles":
++        prompt_body = str(row.get("prompt") or "")
++        props = prompt_body.split("Molecule:")[0].split("SMILES:")[0].strip()
++        if props.startswith("Properties:"):
++            props = props.split(":", 1)[1].strip()
++        return {
++            "class_name": row.get("class_name", "smiles"),
++            "smiles_properties": props,
++            "prompt": prompt_body,
++            "prompt_exemplars": row.get("prompt_exemplars", []),
++        }
++    return None
++
++
+ class BasePrompter(ABC):
+     def __init__(self, dataset, do_cot = True, instruct_type = 'text', num_shots=8) -> None:
++        self.dataset = dataset
++        self.do_cot = do_cot
++        self.instruct_type = instruct_type
+         self.num_shots = num_shots
++        self.use_vas_prompts = dataset in VAS_TIER_DATASETS and _vas_repo_root() is not None
++
+         with open(f'prompt_templates/{dataset}.yaml', 'r') as file:
+             self.config = yaml.safe_load(file)
+         self.fewshots = []
+-        if 'fewshots' in self.config:
++        if not self.use_vas_prompts and 'fewshots' in self.config:
+             if do_cot:
+                 if 'cot' in self.config['fewshots'] and instruct_type in self.config['fewshots']['cot']:
+                     self.fewshots = self.config['fewshots']['cot'][instruct_type]
+@@ -21,7 +80,6 @@
+                     self.fewshots = self.config['fewshots']['std'][instruct_type]
+ 
+         self.task_specification = self.config.get('task_specification', None)
+-        self.task_specification = self.config.get('task_specification', None)
+         self.format_instruct = None
+         self.prompt_str = "[[QUESTION]]"
+         if do_cot:
+@@ -37,8 +95,30 @@
+             
+             if 'std_prompt' in self.config and  instruct_type in self.config['std_prompt']:
+                 self.prompt_str = self.config['std_prompt'][instruct_type]
++
++    def _render_vas_prompt_text(self, row):
++        root = _vas_repo_root()
++        if root is None:
++            return None
++        root_s = str(root)
++        if root_s not in sys.path:
++            sys.path.insert(0, root_s)
++        from synthesis.evaluate.prompt_tiers import (
++            fewshot_count_for_tier,
++            render_benchmark_prompt,
++        )
++
++        example = _row_for_vas_prompt(self.dataset, row)
++        if example is None:
++            return None
++        tier = 2 if self.do_cot else 1
++        max_fewshots = fewshot_count_for_tier(tier, requested=self.num_shots)
++        return render_benchmark_prompt(
++            self.dataset,
++            tier=tier,
++            example=example,
++            max_fewshots=max_fewshots,
++        )
+                 
+     def prompt(self, row, modify_system_prompt = True, chat_mode = True):
++        if self.use_vas_prompts:
++            vas_text = self._render_vas_prompt_text(row)
++            if vas_text is not None:
++                if chat_mode:
++                    return [{"role": "user", "content": vas_text}]
++                return vas_text
++
+         task_spec = "" 
+         if self.task_specification is not None:
+             task_spec += self.task_specification 
+@@ -168,4 +248,4 @@
+             completions = [self.parse_completion_regex(ex['llm_response']) for ex in batch]
+         else:
+             completions = [ex['llm_response'] for ex in batch]
+-        return completions, parse_infos
+\ No newline at end of file
++        return completions, parse_infos

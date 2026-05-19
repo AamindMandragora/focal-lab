@@ -1196,6 +1196,7 @@ class Evaluator:
         spider_split_name: str = "train",
         smiles_classes: Optional[List[str]] = None,
         grammars_dir: str | Path | None = None,
+        prompt_tier: int = 2,
     ):
         """
         Initialize the evaluator.
@@ -1220,6 +1221,7 @@ class Evaluator:
             gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
             spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
             spider_split_name: Which split from spider_split_file to use ("train" or "test").
+            prompt_tier: 1 for answer-only (GCD / IterGen / CARS-style) or 2 for chain-of-thought.
         """
         if backend not in {"huggingface", "vllm"}:
             raise NotImplementedError(
@@ -1253,6 +1255,9 @@ class Evaluator:
         self.spider_split_name = spider_split_name
         self.smiles_classes = smiles_classes
         self.grammars_dir = Path(grammars_dir).expanduser() if grammars_dir is not None else None
+        if prompt_tier not in (1, 2):
+            raise ValueError(f"prompt_tier must be 1 or 2, got {prompt_tier!r}")
+        self.prompt_tier = int(prompt_tier)
 
         # Lazy-loaded components
         self._dataset = None
@@ -1823,6 +1828,8 @@ class Evaluator:
         from synthesis.evaluate.benchmarks.registry import get_logic
 
         logic = get_logic(self.dataset_name)
+        if self.prompt_tier == 1:
+            return logic.format_prompt_expression_only(self, example)
         return logic.format_prompt(self, example)
 
     def _contains_delimiters(self, output: str) -> bool:
@@ -2122,9 +2129,15 @@ class Evaluator:
 
                 return None
 
+            smiles_prompt_states: dict[str, Any] | None = None
+            if self.dataset_name == "smiles":
+                smiles_prompt_states = logic.init_prompt_states(dataset)
+
             for i, example in enumerate(dataset):
                 print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
                 example_start = time.time()
+                if smiles_prompt_states is not None:
+                    logic.apply_prompt_state(example, smiles_prompt_states)
                 prompt = self._format_prompt(example)
                 expected = self._get_expected_answer(example)
                 benchmark_aux: Optional[dict[str, Any]] = None
@@ -2153,6 +2166,13 @@ class Evaluator:
                     )
 
                     actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
+                    if smiles_prompt_states is not None:
+                        benchmark_aux = logic.record_prompt_result(
+                            example,
+                            smiles_prompt_states,
+                            actual or "",
+                            benchmark_aux,
+                        )
                     is_correct = self._is_correct_for_example(
                         actual,
                         expected,
@@ -2206,12 +2226,18 @@ class Evaluator:
                         ]
                         num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
 
-                    if hasattr(example, "conclusion"):
-                        q_str = (example.premises + " | " + example.conclusion)[:200]
-                    else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                    from synthesis.evaluate.baseline_store import normalize_baseline_question
+
+                    full_question = normalize_baseline_question(
+                        self.dataset_name, example=example
+                    )
+                    prompt_text = (
+                        prompt if isinstance(prompt, str) else str(prompt)
+                    )
                     sample = {
-                        "question": q_str,
+                        "question": full_question,
+                        "prompt": prompt_text,
+                        "generated": completion,
                         "expected": expected,
                         "actual": actual or completion[:100],
                         "full_output": completion,
@@ -2250,16 +2276,22 @@ class Evaluator:
                         return build_result(early_reason)
 
                 except Exception as e:
-                    if hasattr(example, "conclusion"):
-                        q_str = (example.premises + " | " + example.conclusion)[:200]
-                    else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                    from synthesis.evaluate.baseline_store import normalize_baseline_question
+
+                    full_question = normalize_baseline_question(
+                        self.dataset_name, example=example
+                    )
+                    prompt_text = (
+                        prompt if isinstance(prompt, str) else str(prompt)
+                    )
                     elapsed = time.time() - example_start
                     timed_out = isinstance(e, PerExampleTimeout)
                     if timed_out:
                         print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
                     sample = {
-                        "question": q_str,
+                        "question": full_question,
+                        "prompt": prompt_text,
+                        "generated": "",
                         "expected": expected,
                         "actual": None,
                         "full_output": "",

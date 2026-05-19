@@ -92,20 +92,21 @@ def _gsm_question_text(example: dict[str, Any]) -> str:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_prompt
+    """Tier-2 chain-of-thought prompt (Unconstrained, CRANE, MetaDecode)."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
 
-    return reasoning_with_symbolic_expr_prompt(_gsm_question_text(example))
+    return render_benchmark_prompt("gsm_symbolic", tier=2, example=example)
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """GSM prompt without CoT instructions (e.g. legacy IterGen grammar-masked generation)."""
-    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import symbolic_expression_only_prompt
+    """Tier-1 answer-only prompt (GCD, IterGen, CARS)."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
 
-    return symbolic_expression_only_prompt(_gsm_question_text(example))
+    return render_benchmark_prompt("gsm_symbolic", tier=1, example=example)
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """Same instructions as ``format_prompt``: reasoning then ``<<expression>>``."""
+    """Tier-2 chain-of-thought prompt."""
     return format_prompt(evaluator, example)
 
 

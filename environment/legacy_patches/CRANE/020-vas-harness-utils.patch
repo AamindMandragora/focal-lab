@@ -1,0 +1,182 @@
+--- a/src/utils.py	2026-05-18 22:25:29.628832721 +0000
++++ b/src/utils.py
+@@ -1,8 +1,42 @@
+ import json
+ import os
+ import re
++from typing import List, Optional
+ 
+-def load_data_by_name(task, do_cot = True):
++SMILES_CLASSES = ("acrylates", "chain_extenders", "isocyanates")
++
++
++def _vas_repo_root():
++    """Walk up to verified-agent-synthesis root (contains synthesis/run_synthesis.py)."""
++    here = os.path.dirname(os.path.abspath(__file__))
++    cur = here
++    for _ in range(28):
++        if os.path.isfile(os.path.join(cur, "synthesis", "run_synthesis.py")):
++            return cur
++        parent = os.path.dirname(cur)
++        if parent == cur:
++            return None
++        cur = parent
++    return None
++
++
++def _smiles_prompt_exemplars(prompt: str):
++    exemplars = []
++    for line in prompt.splitlines():
++        line = line.strip()
++        if line.startswith("Molecule:"):
++            value = line.split(":", 1)[1].strip()
++            if value:
++                exemplars.append(value)
++    return exemplars
++
++
++def load_data_by_name(
++    task,
++    do_cot=True,
++    smiles_classes="acrylates,chain_extenders,isocyanates",
++    smiles_samples_per_class=1,
++):
+     from datasets import load_dataset, Dataset
+ 
+     if task == 'gsm8k':
+@@ -24,19 +58,22 @@
+         data = []
+         i = 0
+         for row in load_dataset("richardr1126/spider-context-validation", split="validation"):
+-            if not do_cot:
+-                prompt = f"### Database ID: {row['db_id']}\nSQL tables information: \n{row['db_info']}\n### Question: {row['question']}\nSQL:"
+-            else:
+-                prompt = f"### Database ID: {row['db_id']}\nSQL tables information: \n{row['db_info']}\n### Question: {row['question']}"
+-
+-            data.append(dict(question = prompt, answer = row['ground_truth'], idx = i, db_info = row['db_info']))
++            data.append(
++                dict(
++                    question=row["question"],
++                    answer=row["ground_truth"],
++                    idx=i,
++                    db_info=row["db_info"],
++                    db_id=row.get("db_id", "") or "",
++                )
++            )
+             i += 1
+         return Dataset.from_list(data)
+     elif task == 'gsm_symbolic':
+         data = []
+         i = 0
+         folder_path = 'gsm_symbolic/'  
+-        for filename in os.listdir(folder_path):
++        for filename in sorted(os.listdir(folder_path)):
+             if filename.endswith('.json'):
+                 with open(os.path.join(folder_path, filename), 'r') as f:
+                     json_data = json.load(f)
+@@ -45,6 +82,53 @@
+                     i += 1
+         ds = Dataset.from_list(data)
+         return ds
++    elif task == "smiles":
++        repo = _vas_repo_root()
++        if not repo:
++            raise RuntimeError(
++                "smiles task requires this checkout's repository root "
++                "(synthesis/run_synthesis.py not found when walking up from CRANE src)."
++            )
++        data_dir = os.path.join(repo, "synthesis", "evaluate", "benchmarks", "smiles", "data")
++        gram_dir = os.path.join(repo, "synthesis", "evaluate", "grammars")
++        raw_classes = [c.strip() for c in smiles_classes.split(",") if c.strip()]
++        if not raw_classes:
++            raw_classes = list(SMILES_CLASSES)
++        unknown = sorted(set(raw_classes) - set(SMILES_CLASSES))
++        if unknown:
++            raise ValueError(f"Unknown SMILES class(es): {unknown}. Expected subset of {SMILES_CLASSES}.")
++        if smiles_samples_per_class < 1:
++            raise ValueError("smiles_samples_per_class must be >= 1")
++        data = []
++        i = 0
++        for class_name in raw_classes:
++            grammar_path = os.path.join(gram_dir, f"smiles_{class_name}.lark")
++            prompt_path = os.path.join(data_dir, f"{class_name}.txt")
++            if not os.path.isfile(grammar_path) or not os.path.isfile(prompt_path):
++                raise FileNotFoundError(
++                    f"Missing SMILES assets for class {class_name!r}: "
++                    f"{grammar_path} / {prompt_path}"
++                )
++            with open(grammar_path, "r", encoding="utf-8") as gf:
++                grammar_text = gf.read()
++            with open(prompt_path, "r", encoding="utf-8") as pf:
++                prompt_body = pf.read()
++            exemplars = _smiles_prompt_exemplars(prompt_body)
++            for attempt_index in range(smiles_samples_per_class):
++                data.append(
++                    dict(
++                        question=class_name,
++                        answer=class_name,
++                        prompt=prompt_body,
++                        grammar_text=grammar_text,
++                        class_name=class_name,
++                        prompt_exemplars=exemplars,
++                        idx=i,
++                        attempt_index=attempt_index,
++                    )
++                )
++                i += 1
++        return Dataset.from_list(data)
+     elif task == 'fol':
+         data = []
+         i = 0 
+@@ -167,3 +251,51 @@
+     raise ValueError("%s is not in supported list" % task)
+ 
+ 
++def load_manifest_indices(manifest_path: str, split_name: str = "eval") -> List[int]:
++    """Load integer row indices from a tracked train/eval split manifest JSON."""
++    with open(manifest_path, "r", encoding="utf-8") as f:
++        manifest = json.load(f)
++    keys_to_try = []
++    if split_name in ("eval", "test"):
++        keys_to_try.extend(["test_indices", "eval_indices"])
++    keys_to_try.append(f"{split_name}_indices")
++    seen = set()
++    for key in keys_to_try:
++        if key in seen:
++            continue
++        seen.add(key)
++        if key not in manifest:
++            continue
++        indices = manifest[key]
++        if not isinstance(indices, list) or not all(isinstance(i, int) for i in indices):
++            raise ValueError(f"{key} in {manifest_path} must be a list of integers")
++        return list(indices)
++    available = sorted(k for k in manifest if k.endswith("_indices"))
++    raise ValueError(
++        f"Split manifest {manifest_path} has no indices for split {split_name!r}; "
++        f"available: {available}"
++    )
++
++
++def limit_dataset_examples(
++    dataset,
++    *,
++    num_examples: int = -1,
++    manifest_path: Optional[str] = None,
++    split_name: str = "eval",
++):
++    """Select manifest indices first, then optionally cap with ``num_examples``."""
++    if manifest_path:
++        indices = load_manifest_indices(manifest_path, split_name)
++        size = len(dataset)
++        bad = [i for i in indices if i < 0 or i >= size]
++        if bad:
++            raise IndexError(
++                f"Manifest index out of range for dataset size {size}: {bad[:5]}"
++            )
++        dataset = dataset.select(indices)
++    if num_examples > 0:
++        dataset = dataset.take(num_examples)
++    return dataset
++
++

@@ -85,7 +85,7 @@ def main() -> None:
     syn = sum(1 for s in res.sample_outputs if s.get("is_syntax_valid"))
     print(f"per_example_syntax_pass: {syn} / {len(res.sample_outputs)}")
     if args.output_json is not None:
-        save_minimal_baseline_json(res, args.output_json)
+        save_minimal_baseline_json(res, args.output_json, dataset=args.dataset)
         print(f"wrote_json: {args.output_json}")
 
 
