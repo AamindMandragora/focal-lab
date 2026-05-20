@@ -83,6 +83,12 @@ def _load_template(benchmark: str, tier: PromptTier) -> str:
     return path.read_text()
 
 
+_GSM_TIER1_CARS_INFO = (
+    "The expression must be symbolic: include at least one variable name from the question "
+    "(not a plain numeric literal alone).\n\n"
+)
+
+
 @lru_cache(maxsize=None)
 def _load_shots(benchmark: str) -> Any:
     path = PROMPTS_ROOT / benchmark / "shots.json"
@@ -91,12 +97,20 @@ def _load_shots(benchmark: str) -> Any:
     return json.loads(path.read_text())
 
 
+def _tier1_undelimited_answer(response_std: str) -> str:
+    """Strip legacy ``<<`` / ``>>`` wrappers from tier-1 few-shot answers."""
+    text = str(response_std or "").strip()
+    if text.startswith("<<") and text.endswith(">>"):
+        return text[2:-2].strip()
+    return text
+
+
 def _gsm_fewshot_block(shots: list[dict[str, Any]], *, tier: PromptTier) -> str:
     lines: list[str] = []
     for shot in shots:
         q = str(shot.get("question", "")).strip()
         if tier == 1:
-            response = str(shot.get("response_std", "")).strip()
+            response = _tier1_undelimited_answer(str(shot.get("response_std", "")))
         else:
             response = str(shot.get("response_cot", "")).strip()
         lines.append(f"Q: {q}")
@@ -127,9 +141,8 @@ def _spider_fewshot_block(shots: list[dict[str, Any]], *, tier: PromptTier) -> s
 _LEGACY_CARS_RESPONSE_LINE = (
     "Your response must be a single SMILES molecule and nothing else."
 )
-_CARS_DELIMITER_RESPONSE_LINE = (
-    "Your response must be a single SMILES molecule wrapped in << and >> "
-    "and nothing else."
+_CARS_CONSTRAINED_RESPONSE_LINE = (
+    "Your response must be a single SMILES molecule and nothing else."
 )
 
 
@@ -146,15 +159,15 @@ def _smiles_instruction_from_example(example: dict[str, Any]) -> str:
 
 
 def _smiles_cars_instruction(example: dict[str, Any]) -> str:
-    """Legacy CARS prose with a single harness-compatible delimiter requirement."""
+    """Legacy CARS prose for fully constrained SMILES generation."""
     text = _smiles_instruction_from_example(example)
     if _LEGACY_CARS_RESPONSE_LINE in text:
-        return text.replace(_LEGACY_CARS_RESPONSE_LINE, _CARS_DELIMITER_RESPONSE_LINE)
-    if _CARS_DELIMITER_RESPONSE_LINE in text:
+        return text.replace(_LEGACY_CARS_RESPONSE_LINE, _CARS_CONSTRAINED_RESPONSE_LINE)
+    if _CARS_CONSTRAINED_RESPONSE_LINE in text:
         return text
     if text:
-        return text + "\n\n" + _CARS_DELIMITER_RESPONSE_LINE
-    return _CARS_DELIMITER_RESPONSE_LINE
+        return text + "\n\n" + _CARS_CONSTRAINED_RESPONSE_LINE
+    return _CARS_CONSTRAINED_RESPONSE_LINE
 
 
 def render_smiles_cars_prompt(
@@ -162,7 +175,7 @@ def render_smiles_cars_prompt(
     *,
     tier: PromptTier,
 ) -> str:
-    """Render a CARS-style class prompt (``data/*.txt``) with shared ``<<`` / ``>>`` scoring."""
+    """Render a CARS-style class prompt (``data/*.txt``); tier 1 is grammar-only (no delimiters)."""
     lines = [_smiles_cars_instruction(example), ""]
     for smiles in example.get("prompt_exemplars") or []:
         value = str(smiles).strip()
@@ -170,7 +183,7 @@ def render_smiles_cars_prompt(
             lines.append(f"Molecule: {value}")
     if tier == 2:
         lines.extend(["", "Reasoning:"])
-    lines.append("Molecule: <<")
+    lines.append("Molecule:")
     return "\n".join(lines)
 
 
@@ -180,6 +193,7 @@ def render_benchmark_prompt(
     tier: PromptTier,
     example: dict[str, Any],
     max_fewshots: int | None = None,
+    strategy: str | None = None,
 ) -> str:
     """Render a full in-context prompt for one evaluation example."""
     bench = "gsm_symbolic" if benchmark == "gsm" else benchmark
@@ -198,7 +212,11 @@ def render_benchmark_prompt(
         )
         target_question = str(target_question or "").strip()
         fewshot = _gsm_fewshot_block(list(shots_raw)[:shot_limit], tier=tier)
+        cars_info = ""
+        if tier == 1 and (strategy or "").strip().lower() == "cars":
+            cars_info = _GSM_TIER1_CARS_INFO
         return template.format(
+            CARS_INFO=cars_info,
             FEWSHOT_BLOCK=fewshot,
             TARGET_QUESTION=target_question,
         )
@@ -225,28 +243,13 @@ def format_prompt_for_tier(
     tier: PromptTier,
     constrained_suffix: bool = False,
     max_fewshots: int | None = None,
+    strategy: str | None = None,
 ) -> str:
-    """Render tier prompt; tier-1 templates end with the grammar start token (``<<``)."""
-    prompt = render_benchmark_prompt(
-        benchmark, tier=tier, example=example, max_fewshots=max_fewshots
+    """Render tier prompt. Tier-1 constrained strategies use undelimited templates."""
+    return render_benchmark_prompt(
+        benchmark,
+        tier=tier,
+        example=example,
+        max_fewshots=max_fewshots,
+        strategy=strategy,
     )
-    if not constrained_suffix:
-        return prompt
-    # Legacy callers may still request a suffix; templates already include ``<<``.
-    stripped = prompt.rstrip()
-    if stripped.endswith("<<"):
-        return prompt
-    bench = "gsm_symbolic" if benchmark == "gsm" else benchmark
-    if bench in ("gsm_symbolic", "gsm"):
-        if stripped.endswith("A:"):
-            return stripped + " <<"
-        return stripped + "<<"
-    if bench == "spider":
-        if stripped.endswith("SQL:"):
-            return stripped + " <<"
-        return stripped + "\nSQL: <<"
-    if bench == "smiles":
-        if stripped.endswith("Molecule:"):
-            return stripped + " <<"
-        return stripped + "\nMolecule: <<"
-    return prompt

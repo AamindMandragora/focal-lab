@@ -6,7 +6,7 @@ Frozen few-shot demonstrations and tier templates for baseline / MetaDecode eval
 
 | Path | Purpose |
 |------|---------|
-| `{benchmark}/tier1.txt` | Answer-only template; target line ends with `<<` (grammar start). Default **0** few-shot rows. |
+| `{benchmark}/tier1.txt` | Answer-only template; no delimiters (grammar constrains the expression). GSM includes `{CARS_INFO}` when strategy is `cars`. Default **0** few-shot rows. |
 | `{benchmark}/tier2.txt` | Chain-of-thought template; instructs models to put formatted answers (math / SQL / SMILES) inside `<<` `>>` |
 | `{benchmark}/shots.json` | Frozen few-shot pool (up to 8 GSM rows); adapters cap usage via `prompt_tiers.fewshot_count_for_tier` |
 

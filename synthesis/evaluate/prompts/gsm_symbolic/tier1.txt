@@ -1,10 +1,8 @@
 You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.
 
-Output only the symbolic expression wrapped in << and >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().
+{CARS_INFO}Output only the symbolic expression that answers the question. The expression must use numbers and the variables defined in the question. Allowed operations: +, -, /, //, %, (), and int().
 
-You will always respond in the format described below:
-<<symbolic expression>>
+Do not include reasoning, labels, or other text—only the expression.
 
-{FEWSHOT_BLOCK}
-Q: {TARGET_QUESTION}
-A: <<
+{FEWSHOT_BLOCK}Q: {TARGET_QUESTION}
+A:
