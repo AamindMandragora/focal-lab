@@ -76,6 +76,18 @@ Examples:
     )
 
     parser.add_argument(
+        "--allow-small-author-model",
+        action="store_true",
+        default=False,
+        help=(
+            "Override the safety check that blocks small open models "
+            "(name contains e.g. '1.5B'/'7B'/'14B') from being used as the "
+            "--generation-model on a local backend. Rarely correct; see "
+            "CLAUDE.md 'Model Configuration Verification'."
+        ),
+    )
+
+    parser.add_argument(
         "--generation-api-base-url",
         type=str,
         default=None,
@@ -473,6 +485,45 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    # Defense against the "small author model" foot-gun.
+    # The author model (--generation-model) writes the Dafny strategy code and
+    # must be a large reasoning model (gpt-5.4 via --generation-backend openai).
+    # A small open model (1.5B/7B/14B Qwen) cannot hold enough context to author
+    # workable strategies, and synthesis silently produces 0% accuracy runs.
+    # Raise here so the misconfiguration is caught BEFORE any GPU work.
+    import re as _re_guard
+    _SMALL_AUTHOR_RE = _re_guard.compile(r"\b\d+(?:\.\d+)?\s*[Bb]\b")
+    _LOCAL_BACKENDS = {"vllm", "huggingface"}
+    if (
+        args.generation_backend in _LOCAL_BACKENDS
+        and args.generation_model
+        and _SMALL_AUTHOR_RE.search(args.generation_model)
+        and not args.allow_small_author_model
+    ):
+        raise SystemExit(
+            "\n[FATAL] Refusing to run: --generation-model="
+            f"{args.generation_model!r} looks like a small open model and "
+            f"--generation-backend={args.generation_backend!r} is local. The "
+            "author model must be a large reasoning model (e.g. gpt-5.4 via "
+            "--generation-backend openai). Pass --allow-small-author-model to "
+            "override (rarely correct). See CLAUDE.md "
+            "'Model Configuration Verification'.\n"
+        )
+
+    # Prominent startup banner: identify author + eval models so any future
+    # "wrong author model" misconfig is obvious in stdout/logs.
+    _banner_width = 72
+    print("=" * _banner_width)
+    print(
+        f"  AUTHOR MODEL : {args.generation_model!r} "
+        f"via backend={args.generation_backend!r}"
+    )
+    print(
+        f"  EVAL   MODEL : {args.eval_model!r} "
+        f"via backend={args.eval_backend!r}"
+    )
+    print("=" * _banner_width)
 
     # GSM-Symbolic: HF ``question`` / ``original_question`` are numeric prose only. Use CRANE JSONs (question_parsed)
     # for {placeholder} prompts unless the user opts into HF via --gsm-instantiated-hf.

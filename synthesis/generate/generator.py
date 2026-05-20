@@ -719,6 +719,7 @@ class StrategyGenerator:
         working_hypothesis: str = "",
         search_memory: str = "",
         allowed_helpers: list[str] | None = None,
+        primary_failure: str = "",
     ) -> str:
         """
         Generate a refined strategy after evaluation failure.
@@ -732,6 +733,8 @@ class StrategyGenerator:
             evaluation_feedback: Feedback summary from the evaluator
             evaluation_history: Recent evaluated attempts and outcomes
             working_hypothesis: Compact strategy lineage and balanced-best state
+            primary_failure: Top-of-prompt ranked summary of the dominant
+                failure mode/location (Change 2). Empty disables it.
 
         Returns:
             New strategy expression
@@ -745,6 +748,7 @@ class StrategyGenerator:
             working_hypothesis,
             search_memory,
             allowed_helpers=allowed_helpers,
+            primary_failure=primary_failure,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
