@@ -153,8 +153,12 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
 
 def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) -> tuple[str | None, str, dict[str, Any] | None]:
     actual, found = extract_last_delimited_span(scored_output)
-    source = "last_visible_span" if found else "none"
-    return actual, source, None
+    if found:
+        return actual, "last_visible_span", None
+    body = (scored_output or "").strip().splitlines()[0].strip()
+    if body:
+        return body, "constrained_body", None
+    return None, "none", None
 
 
 def is_correct(

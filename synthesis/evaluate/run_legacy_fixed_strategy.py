@@ -139,6 +139,7 @@ def _legacy_benchmark_prompt(
         benchmark=dataset,
         tier=tier,
         constrained_suffix=constrained,
+        strategy=strategy,
     )
 
 
@@ -165,6 +166,11 @@ def _baseline_run_metadata(
     }
     if adapter:
         meta["adapter"] = adapter
+    if args.strategy == "cars":
+        meta["cars_search_steps"] = int(
+            getattr(args, "cars_search_steps", DEFAULT_CARS_SEARCH_STEPS)
+        )
+        meta["cars_grammar"] = "constrained_body"
     return meta
 
 
@@ -203,43 +209,71 @@ def _legacy_delimited_span_grammar(base_grammar: str) -> str:
     return build_delimited_span_grammar(base_grammar)
 
 
-_LEGACY_DELIMITED_DATASETS = frozenset({"gsm_symbolic", "spider", "smiles"})
-_LEGACY_DELIMITED_STOP_WORDS = [">>"]
+def _legacy_constrained_body_grammar(base_grammar: str, *, require_symbolic: bool) -> str:
+    from synthesis.evaluate.benchmarks.common.delimiter_grammar import (
+        build_constrained_body_grammar,
+    )
+
+    return build_constrained_body_grammar(base_grammar, require_symbolic=require_symbolic)
 
 
-def _gsm_symbolic_completion_to_delimited(
-    completion: str,
+def _gsm_example_requires_symbolic_grammar(example: dict[str, Any]) -> bool:
+    from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
+        extract_variables_from_mapping,
+    )
+
+    vt = example.get("variable_types") or {}
+    if isinstance(vt, dict) and extract_variables_from_mapping(vt):
+        return True
+    return False
+
+
+def _tier1_grammar_for_example(
+    repo_root: Path,
+    dataset: str,
     example: dict[str, Any],
-    eval_runtime: Any,
-    logic: Any,
 ) -> str:
-    """Normalize raw GSM completion (prompt already ends with ``<<``) to ``<<expr>>`` for scoring.
-
-    Matches GCD's ``_gcd_output`` so IterGen and Syncode GSM baselines use the same delimited form
-    and syntax checks as ``benchmarks/gsm_symbolic/eval_logic.py`` extraction.
-    """
-    expr = completion.strip().splitlines()[0].strip()
-    if expr.startswith("<<"):
-        wrapped = expr if ">>" in expr else f"{expr}>>"
-        expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
-        expr = expr[-1] if expr else ""
-    if expr.endswith(">>"):
-        expr = expr[:-2].strip()
-    if not expr:
-        return ""
-
-    for end in range(len(expr), 0, -1):
-        candidate = expr[:end].strip()
-        if not candidate:
-            continue
-        wrapped = f"<<{candidate}>>"
-        all_valid, segments = eval_runtime._check_syntax_validity(
-            wrapped,
-            example=example,
+    if dataset == "gsm_symbolic":
+        base = _legacy_gsm_symbolic_grammar_base(repo_root, [example])
+        return _legacy_constrained_body_grammar(
+            base,
+            require_symbolic=_gsm_example_requires_symbolic_grammar(example),
         )
-        if logic.example_syntax_pass(all_valid, segments, False, None):
-            return wrapped
-    return f"<<{expr}>>"
+    if dataset == "spider":
+        return _legacy_constrained_body_grammar(
+            _legacy_sql_grammar_base(repo_root),
+            require_symbolic=False,
+        )
+    if dataset == "smiles":
+        return _legacy_constrained_body_grammar(
+            str(example.get("grammar_text", "")),
+            require_symbolic=False,
+        )
+    raise ValueError(f"Unsupported dataset for tier-1 constrained grammar: {dataset}")
+
+
+def _cars_grammar_for_example(
+    repo_root: Path,
+    dataset: str,
+    example: dict[str, Any],
+) -> str:
+    return _tier1_grammar_for_example(repo_root, dataset, example)
+
+# CARS runs up to this many stochastic grammar-guided decode attempts per example
+# (separate from synthesis ``--eval-max-steps``, which only caps ``max_new_tokens``).
+DEFAULT_CARS_SEARCH_STEPS = 200
+
+
+def _gsm_symbolic_scored_body(completion: str) -> str:
+    """First-line GSM expression body for tier-1 constrained decoders (no delimiters)."""
+    text = (completion or "").strip().splitlines()[0].strip()
+    if text.startswith("<<") and text.endswith(">>"):
+        text = text[2:-2].strip()
+    elif text.startswith("<<"):
+        text = text[2:].strip()
+        if text.endswith(">>"):
+            text = text[:-2].strip()
+    return text
 
 
 def _legacy_local_cuda_device(device_arg: str, *, touch_cuda: bool = True) -> str:
@@ -348,6 +382,31 @@ def _build_minimal_json(
         run_wall_time_seconds=run_wall_time_seconds,
         extra_metrics=extra_metrics,
         metadata=metadata,
+    )
+
+
+def _checkpoint_baseline_json(
+    rows: list[dict[str, Any]],
+    output_json: Path,
+    *,
+    dataset: str,
+    run_started: float,
+    extra_metrics: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Write partial baseline JSON so a long CARS run survives interruption."""
+    meta = dict(metadata or {})
+    meta["checkpoint"] = True
+    meta["checkpoint_examples"] = len(rows)
+    metrics = dict(extra_metrics or {})
+    metrics["checkpoint_examples"] = len(rows)
+    _build_minimal_json(
+        rows,
+        output_json,
+        dataset=dataset,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+        extra_metrics=metrics,
+        metadata=meta,
     )
 
 
@@ -634,19 +693,7 @@ def _cars_completion_from_steps(steps: list[dict[str, Any]]) -> str:
 
 
 def _cars_normalize_gsm_symbolic_output(raw: str) -> str:
-    """Wrap bare GSM expressions so benchmark scoring can see them.
-
-    GSM-Symbolic ``extract_actual`` only reads ``<< ... >>`` spans. Legacy CARS often
-    emits a grammar-valid expression body with no delimiters, which yields
-    ``actual is None`` and zero accuracy despite plausible-looking output.
-    """
-    text = (raw or "").strip()
-    if not text:
-        return raw
-    if re.findall(r"<<\s*([^<>]+?)\s*>>", text):
-        return raw
-    expr = text.splitlines()[0].strip()
-    return f"<<{expr}>>" if expr else raw
+    return _gsm_symbolic_scored_body(raw)
 
 
 def _cars_set_cached_grammar(
@@ -713,27 +760,18 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
     decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
-    n_steps = max(20, min(2000, int(args.eval_max_steps) * 2))
+    n_steps = max(1, int(getattr(args, "cars_search_steps", DEFAULT_CARS_SEARCH_STEPS)))
     max_new_tokens = decode_cap
+    print(
+        f"CARS: {n_steps} search attempts/example, "
+        f"max_new_tokens={max_new_tokens} (eval-max-steps cap only)"
+    )
 
-    gsm_cars_grammar = ""
-    if dataset == "gsm_symbolic":
-        gsm_cars_grammar = _legacy_delimited_span_grammar(
-            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        )
-    spider_cars_grammar = ""
-    if dataset == "spider":
-        spider_cars_grammar = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
+    run_metadata = _baseline_run_metadata(args, dataset, adapter="cars_legacy_cars")
+    output_json = Path(args.output_json)
 
     for example in examples:
-        if dataset == "gsm_symbolic":
-            grammar_text = gsm_cars_grammar
-        elif dataset == "spider":
-            grammar_text = spider_cars_grammar
-        elif dataset == "smiles":
-            grammar_text = _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
-        else:
-            raise ValueError(f"Unsupported dataset for CARS adapter: {dataset}")
+        grammar_text = _cars_grammar_for_example(repo_root, dataset, example)
         _cars_set_cached_grammar(cars_model, grammar_text, grammar_cache)
 
         if dataset == "smiles":
@@ -757,11 +795,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
         elif dataset in ("spider", "smiles"):
-            from synthesis.evaluate.benchmarks.common.delimited_completion import (
-                wrap_constrained_completion,
-            )
-
-            output_text = wrap_constrained_completion(output_text)
+            output_text = (output_text or "").strip()
         completion = completion_for_scoring(prompt, output_text)
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
@@ -792,19 +826,31 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
                 generation_seconds=gen_seconds,
             )
         )
+        _checkpoint_baseline_json(
+            rows,
+            output_json,
+            dataset=dataset,
+            run_started=run_started,
+            extra_metrics={"adapter": "cars_legacy_cars"},
+            metadata=run_metadata,
+        )
+        print(f"Checkpoint ({len(rows)}/{len(examples)}): {output_json}", flush=True)
 
     if not rows:
         raise RuntimeError("CARS produced no rows; refusing to write an empty baseline JSON")
 
+    final_metadata = dict(run_metadata)
+    final_metadata.pop("checkpoint", None)
+    final_metadata["complete"] = True
     _build_minimal_json(
         rows,
-        args.output_json,
+        output_json,
         dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
         extra_metrics={"adapter": "cars_legacy_cars"},
-        metadata=_baseline_run_metadata(args, dataset, adapter="cars_legacy_cars"),
+        metadata=final_metadata,
     )
-    print(f"Saved baseline JSON: {args.output_json}")
+    print(f"Saved baseline JSON: {output_json}")
     return 0
 
 
@@ -849,21 +895,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
     base_gsm_grammar = ""
     base_spider_grammar = ""
-    if dataset == "gsm_symbolic":
-        base_gsm_grammar = _legacy_delimited_span_grammar(
-            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        )
-    elif dataset == "spider":
-        base_spider_grammar = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
-
     def _grammar_for_example(example: dict[str, Any]) -> str:
-        if dataset == "gsm_symbolic":
-            return base_gsm_grammar
-        if dataset == "spider":
-            return base_spider_grammar
-        if dataset == "smiles":
-            return _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
-        raise ValueError(f"Unsupported dataset for GCD adapter: {dataset}")
+        return _tier1_grammar_for_example(repo_root, dataset, example)
 
     from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
@@ -879,16 +912,8 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
 
     def _gcd_output(completion: str, example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
-            return _gsm_symbolic_completion_to_delimited(
-                completion, example, eval_runtime, logic
-            )
-        if dataset in ("spider", "smiles"):
-            from synthesis.evaluate.benchmarks.common.delimited_completion import (
-                wrap_constrained_completion,
-            )
-
-            return wrap_constrained_completion(completion)
-        return completion
+            return _gsm_symbolic_scored_body(completion)
+        return (completion or "").strip()
 
     from synthesis.evaluate.benchmarks.smiles.prompt_state import (
         SmilesPromptState,
@@ -929,12 +954,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         )
         gen_started = time.perf_counter()
         gcd_prompt = _gcd_prompt(prompt)
-        completions = sc.infer(
-            gcd_prompt,
-            stop_words=_LEGACY_DELIMITED_STOP_WORDS
-            if dataset in _LEGACY_DELIMITED_DATASETS
-            else None,
-        )
+        completions = sc.infer(gcd_prompt, stop_words=None)
         gen_seconds = time.perf_counter() - gen_started
         raw_output = _gcd_output(completions[0] if completions else "", example)
         completion = completion_for_scoring(gcd_prompt, raw_output)
@@ -1045,17 +1065,6 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
     device = _legacy_cuda_device_for_backend(args.device, args.eval_backend)
 
-    base_gsm_grammar_text = ""
-    base_spider_grammar_text = ""
-    if dataset == "gsm_symbolic":
-        base_gsm_grammar_text = _legacy_delimited_span_grammar(
-            _legacy_gsm_symbolic_grammar_base(repo_root, examples)
-        )
-    elif dataset == "spider":
-        base_spider_grammar_text = _legacy_delimited_span_grammar(
-            _legacy_sql_grammar_base(repo_root)
-        )
-
     from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
     decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
@@ -1068,13 +1077,7 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     _new_tok = _itergen_max_new_tokens()
 
     def _grammar_for_example(example: dict[str, Any]) -> str:
-        if dataset == "gsm_symbolic":
-            return base_gsm_grammar_text
-        if dataset == "spider":
-            return base_spider_grammar_text
-        if dataset == "smiles":
-            return _legacy_delimited_span_grammar(str(example.get("grammar_text", "")))
-        raise ValueError(f"Unsupported dataset for itergen adapter: {dataset}")
+        return _tier1_grammar_for_example(repo_root, dataset, example)
 
     from synthesis.evaluate.benchmarks.smiles.prompt_state import (
         SmilesPromptState,
@@ -1120,15 +1123,9 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         gen_started = time.perf_counter()
         raw_completion = _itergen_generate(iter_gen, prompt)
         if dataset == "gsm_symbolic":
-            raw_completion = _gsm_symbolic_completion_to_delimited(
-                raw_completion, example, eval_runtime, logic
-            )
-        elif dataset in ("spider", "smiles"):
-            from synthesis.evaluate.benchmarks.common.delimited_completion import (
-                wrap_constrained_completion,
-            )
-
-            raw_completion = wrap_constrained_completion(raw_completion)
+            raw_completion = _gsm_symbolic_scored_body(raw_completion)
+        else:
+            raw_completion = (raw_completion or "").strip()
         gen_seconds = time.perf_counter() - gen_started
         completion = completion_for_scoring(prompt, raw_completion)
         scored_output = (
@@ -1626,6 +1623,16 @@ def main() -> None:
         type=int,
         default=None,
         help="Samples per class for legacy CRANE main.py (default: eval-sample-size)",
+    )
+    parser.add_argument(
+        "--cars-search-steps",
+        type=int,
+        default=DEFAULT_CARS_SEARCH_STEPS,
+        help=(
+            "Max stochastic CARS decode attempts per example (grammar must accept, "
+            f"including closing >>). Default: {DEFAULT_CARS_SEARCH_STEPS}. "
+            "Not tied to --eval-max-steps."
+        ),
     )
     args = parser.parse_args()
     from synthesis.evaluate.benchmarks.common.model_utils import (

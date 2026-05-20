@@ -100,6 +100,7 @@ class Config:
     gsm_generation_sample_size: str
     gsm_eval_sample_size: str
     eval_max_steps: str
+    cars_search_steps: str
     eval_max_seconds_per_example: str
     eval_min_examples_before_threshold_stop: str
     vllm_gpu_memory_utilization: str
@@ -432,8 +433,11 @@ class Runner:
         benchmark_key: str,
         token_budget: str,
         max_steps: str,
-    ) -> tuple[str, str, str, str, str]:
-        return strategy, model_slug, benchmark_key, token_budget, max_steps
+    ) -> tuple[str, ...]:
+        key: tuple[str, ...] = (strategy, model_slug, benchmark_key, token_budget, max_steps)
+        if strategy == "cars":
+            return key + (self.config.cars_search_steps,)
+        return key
 
     def baseline_json_complete(self, path: Path) -> bool:
         from synthesis.evaluate.baseline_store import baseline_answer_row_complete
@@ -460,12 +464,21 @@ class Runner:
         return adapter != "crane_shared_evaluator"
 
     def baseline_json_usable(self, path: Path, strategy: str) -> bool:
-        return (
+        if not (
             path.is_file()
             and path.stat().st_size > 20
             and self.baseline_json_complete(path)
             and self.baseline_json_matches_strategy(path, strategy)
-        )
+        ):
+            return False
+        try:
+            payload = json.loads(path.read_text())
+        except Exception:
+            return False
+        metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+        if metadata.get("checkpoint"):
+            return False
+        return True
 
     def benchmark_key(self, benchmark: str, smiles_class: str = "") -> str:
         if benchmark == "smiles":
@@ -483,11 +496,14 @@ class Runner:
     ) -> Path:
         model_slug = slugify(eval_model)
         key = self.benchmark_key(benchmark, smiles_class)
+        stem = f"{key}__tb{token_budget}__ms{max_steps}"
+        if strategy == "cars":
+            stem += f"__cs{self.config.cars_search_steps}"
         return (
             self.config.baseline_output_dir
             / strategy
             / model_slug
-            / f"{key}__tb{token_budget}__ms{max_steps}.json"
+            / f"{stem}.json"
         )
 
     def best_csd_baseline_targets(
@@ -616,6 +632,8 @@ class Runner:
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.add_evaluation_split_flags(cmd, benchmark)
+        if strategy == "cars":
+            cmd += ["--cars-search-steps", self.config.cars_search_steps]
         if benchmark == "smiles":
             cmd += [
                 "--smiles-classes",
@@ -1146,6 +1164,12 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gsm-eval-sample-size", default="100")
     parser.add_argument("--eval-max-steps", default="900")
     parser.add_argument(
+        "--cars-search-steps",
+        default="200",
+        help="Max CARS stochastic decode attempts per baseline example (default: 200). "
+        "Wired only for --strategy cars; does not affect other strategies.",
+    )
+    parser.add_argument(
         "--eval-max-seconds-per-example",
         default="90",
         help="Per-example wall-clock timeout for synthesis evaluation (seconds). "
@@ -1275,6 +1299,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_generation_sample_size=str(args.gsm_generation_sample_size),
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
+        cars_search_steps=str(args.cars_search_steps),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
         eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
