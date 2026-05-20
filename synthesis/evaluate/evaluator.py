@@ -682,6 +682,54 @@ class EvaluationResult:
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
         return [(mode, count, details.get(mode, "")) for mode, count in ranked[:4]]
 
+    def get_primary_failure_summary(self) -> Optional[str]:
+        """Return a compact 'where to focus next' block for the top of refinement
+        prompts. Surfaces the single dominant failure mode + dominant failure
+        location + most-used control tags so the model has one ranked target
+        instead of having to integrate 7 diagnostic sub-sections itself.
+
+        Returns None when there is no usable signal (no samples, fully succeeded).
+        Change 2 of the feedback-shape interventions.
+        """
+        if not self.sample_outputs:
+            return None
+        n = self.num_examples or len(self.sample_outputs)
+        if n == 0:
+            return None
+        failure_modes = self._summarize_failure_modes()
+        if not failure_modes:
+            return None
+        prov = self.get_provenance_counts()
+        loc_counter = prov.get("failure_location")
+        tag_counter = prov.get("control_tags")
+        top_loc = loc_counter.most_common(1)[0] if loc_counter else None
+        top_tags = tag_counter.most_common(3) if tag_counter else []
+
+        lines = ["## Primary failure to fix"]
+        mode_name, mode_count, mode_detail = failure_modes[0]
+        lines.append(
+            f"- Dominant failure mode: {mode_name} "
+            f"({mode_count}/{n} examples) {mode_detail}".rstrip()
+        )
+        if len(failure_modes) > 1:
+            m2_name, m2_count, m2_detail = failure_modes[1]
+            if m2_count >= max(2, n // 5):
+                lines.append(
+                    f"- Secondary failure mode: {m2_name} "
+                    f"({m2_count}/{n} examples) {m2_detail}".rstrip()
+                )
+        if top_loc:
+            loc_name, loc_count = top_loc
+            if loc_name and loc_name != "correct":
+                lines.append(
+                    f"- Dominant failure location: {loc_name} "
+                    f"({loc_count}/{n} examples)"
+                )
+        if top_tags:
+            tag_str = ", ".join(f"{name} ({c}/{n})" for name, c in top_tags)
+            lines.append(f"- Most-used control path tags in previous attempt: {tag_str}")
+        return "\n".join(lines)
+
     @staticmethod
     def _mean(values: List[float]) -> Optional[float]:
         if not values:
@@ -2046,6 +2094,15 @@ class Evaluator:
                 )
 
             def early_stop_reason_if_any() -> Optional[str]:
+                # Benchmark-specific "we have what we need" stop. Fires even when
+                # no threshold-based gates are configured — e.g. SMILES stops the
+                # moment 100 unique-valid molecules are collected (paper protocol).
+                collected_stop = getattr(logic, "should_stop_collected", None)
+                if callable(collected_stop) and sample_outputs:
+                    reason = collected_stop(sample_outputs)
+                    if reason:
+                        return reason
+
                 if not early_stop_enabled or not sample_outputs:
                     return None
 
@@ -2062,12 +2119,6 @@ class Evaluator:
                         "threshold-impossible early stop: "
                         f"{runtime_failures} example(s) exceeded the per-example runtime budget."
                     )
-
-                # SMILES excludes invalid molecules from the accuracy denominator, so
-                # an accuracy upper bound is not comparable until all syntax outcomes
-                # are known. Keep this synthesis gate to fixed-denominator tasks.
-                if self.dataset_name == "smiles":
-                    return None
 
                 # Guard threshold-impossible early stops so the synthesis feedback
                 # loop always sees a usable amount of evaluation data. The

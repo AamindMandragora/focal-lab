@@ -2406,6 +2406,12 @@ class SynthesisPipeline:
                 f"slowest {result.max_sample_time_seconds:.2f}s"
             )
 
+        # Change 1: when current attempt IS the balanced-best, the "Current
+        # balanced-best ..." mirror blocks and "Relation current minus
+        # balanced-best" zero-deltas are exact duplicates / no-op information.
+        # Suppress them to keep the prompt focused on real signal.
+        same_as_best = balanced_best is current_attempt
+
         lines = [
             "Working hypothesis state:",
             (
@@ -2413,35 +2419,45 @@ class SynthesisPipeline:
                 "a lopsided result is not best merely because one metric is high."
             ),
             attempt_line("Current evaluated attempt", current_attempt, current_result),
-            attempt_line("Current balanced-best attempt", balanced_best, best_result),
-            (
-                "Relation current minus balanced-best: "
-                f"accuracy {current_result.accuracy - best_result.accuracy:+.1%}, "
-                f"syntax {current_result.syntax_rate - best_result.syntax_rate:+.1%}, "
-                f"slowest {current_result.max_sample_time_seconds - best_result.max_sample_time_seconds:+.2f}s"
-            ),
-            *self._format_execution_counts("Current evaluated attempt", current_result),
-            *self._format_execution_counts("Current balanced-best attempt", best_result),
-            *self._format_execution_delta(
-                "Relation to balanced-best",
-                current_result,
-                best_result,
-            ),
-            *self._format_diagnostic_counts("Current evaluated attempt", current_result),
-            *self._format_diagnostic_counts("Current balanced-best attempt", best_result),
-            *self._format_diagnostic_delta(
-                "Relation to balanced-best",
-                current_result,
-                best_result,
-            ),
-            *self._format_provenance_counts("Current evaluated attempt", current_result),
-            *self._format_provenance_counts("Current balanced-best attempt", best_result),
-            *self._format_provenance_delta(
-                "Relation to balanced-best",
-                current_result,
-                best_result,
-            ),
         ]
+        if same_as_best:
+            lines.append(
+                "(Current attempt is the balanced-best; mirror metrics and zero-deltas omitted.)"
+            )
+        else:
+            lines.extend([
+                attempt_line("Current balanced-best attempt", balanced_best, best_result),
+                (
+                    "Relation current minus balanced-best: "
+                    f"accuracy {current_result.accuracy - best_result.accuracy:+.1%}, "
+                    f"syntax {current_result.syntax_rate - best_result.syntax_rate:+.1%}, "
+                    f"slowest {current_result.max_sample_time_seconds - best_result.max_sample_time_seconds:+.2f}s"
+                ),
+            ])
+        lines.extend(self._format_execution_counts("Current evaluated attempt", current_result))
+        if not same_as_best:
+            lines.extend(self._format_execution_counts("Current balanced-best attempt", best_result))
+            lines.extend(self._format_execution_delta(
+                "Relation to balanced-best",
+                current_result,
+                best_result,
+            ))
+        lines.extend(self._format_diagnostic_counts("Current evaluated attempt", current_result))
+        if not same_as_best:
+            lines.extend(self._format_diagnostic_counts("Current balanced-best attempt", best_result))
+            lines.extend(self._format_diagnostic_delta(
+                "Relation to balanced-best",
+                current_result,
+                best_result,
+            ))
+        lines.extend(self._format_provenance_counts("Current evaluated attempt", current_result))
+        if not same_as_best:
+            lines.extend(self._format_provenance_counts("Current balanced-best attempt", best_result))
+            lines.extend(self._format_provenance_delta(
+                "Relation to balanced-best",
+                current_result,
+                best_result,
+            ))
 
         if previous_eval is not None and previous_result is not None:
             lines.extend(
@@ -3050,6 +3066,7 @@ class SynthesisPipeline:
                 eval_history = self._get_evaluation_history_summary(attempts)
                 working_hypothesis = self._get_working_hypothesis_state(attempts, attempt)
                 evaluation_feedback = eval_result.get_feedback_summary()
+                primary_failure = eval_result.get_primary_failure_summary() or ""
                 search_memory = self._get_compact_search_memory(attempts, current_attempt=attempt)
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
@@ -3065,6 +3082,7 @@ class SynthesisPipeline:
                         working_hypothesis=working_hypothesis,
                         search_memory=search_memory,
                         allowed_helpers=next_allowed_helpers,
+                        primary_failure=primary_failure,
                     ),
                 )
                 continue
@@ -3111,6 +3129,7 @@ class SynthesisPipeline:
                 )
                 eval_history = self._get_evaluation_history_summary(attempts)
                 working_hypothesis = self._get_working_hypothesis_state(attempts, attempt)
+                primary_failure = eval_result.get_primary_failure_summary() or ""
                 search_memory = self._get_compact_search_memory(attempts, current_attempt=attempt)
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
@@ -3126,6 +3145,7 @@ class SynthesisPipeline:
                         working_hypothesis=working_hypothesis,
                         search_memory=search_memory,
                         allowed_helpers=next_allowed_helpers,
+                        primary_failure=primary_failure,
                     ),
                 )
                 continue

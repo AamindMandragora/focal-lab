@@ -1122,101 +1122,6 @@ cost := attempts;
 
 ```dafny
 // CSD_RATIONALE_BEGIN
-// Recursive CSD. One step of work per invocation, then tail-recurse with a
-// smaller maxSteps. Inside a span we use TopValidCandidates to pick a
-// constrained token directly (no sampling noise).
-// CSD_RATIONALE_END
-// CSD_PROOF_SKETCH_BEGIN
-// This strategy is recursive rather than loop-based, so the sketch covers the
-// four non-trivial postconditions at each return path.
-// parser_validity (ensures insideConstrainedOut ==> IsValidPrefix(currentConstrainedOut)):
-//   maxSteps==0 base case returns the inputs unchanged, and the precondition
-//   already guarantees the invariant. In the non-constrained recursive branch
-//   we call the recursion with currentConstrained = [] (valid) when entering a
-//   span, or with the existing valid prefix otherwise. In the complete-prefix
-//   branch, CloseConstrainedSpan returns closedInside = false (implication
-//   vacuous) before we recurse. In the TopValidCandidates branch, chosen is
-//   valid-next by construction of TopValidCandidates, so AppendConstrainedToken
-//   yields a valid prefix; recursion preserves it.
-// cost (ensures cost <= maxSteps): each non-base path consumes one local step
-//   before recursing with maxSteps - 1. The returned cost is 1 plus the
-//   recursive sub-cost, so induction on maxSteps gives cost <= maxSteps.
-// progress (ensures |generated| <= |generatedPrefix| + maxSteps): each call
-//   appends at most one token before recursing with maxSteps - 1.
-// CSD_PROOF_SKETCH_END
-generated := generatedPrefix;
-insideConstrainedOut := insideConstrained;
-currentConstrainedOut := currentConstrained;
-cost := 0;
-
-if maxSteps == 0 {{
-}} else if !insideConstrained {{
-  var next := helpers.UnconstrainedStep(lm, prompt, generatedPrefix);
-  if next == eosToken {{
-    cost := 1;
-  }} else {{
-    var nextGenerated := generatedPrefix + [next];
-    if next == "<<" {{
-      var subGenerated, subInside, subCurrent, subCost := MyCSDStrategy(
-        lm, parser, prompt, nextGenerated, true, [], maxSteps - 1, stepTokenBudget, validTokenGroups, eosToken
-      );
-      generated := subGenerated;
-      insideConstrainedOut := subInside;
-      currentConstrainedOut := subCurrent;
-      cost := 1 + subCost;
-    }} else {{
-      var subGenerated, subInside, subCurrent, subCost := MyCSDStrategy(
-        lm, parser, prompt, nextGenerated, false, [], maxSteps - 1, stepTokenBudget, validTokenGroups, eosToken
-      );
-      generated := subGenerated;
-      insideConstrainedOut := subInside;
-      currentConstrainedOut := subCurrent;
-      cost := 1 + subCost;
-    }}
-  }}
-}} else if parser.IsCompletePrefix(currentConstrained) {{
-  var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
-    lm, parser, generatedPrefix, currentConstrained
-  );
-  var subGenerated, subInside, subCurrent, subCost := MyCSDStrategy(
-    lm, parser, prompt, closedGenerated, closedInside, closedCurrent, maxSteps - 1, stepTokenBudget, validTokenGroups, eosToken
-  );
-  generated := subGenerated;
-  insideConstrainedOut := subInside;
-  currentConstrainedOut := subCurrent;
-  cost := 1 + subCost;
-}} else {{
-  var constrainedPrompt := prompt + generatedPrefix[..|generatedPrefix| - |currentConstrained|];
-  var candidates := helpers.TopValidCandidates(
-    lm, parser, constrainedPrompt, currentConstrained, 2, eosToken
-  );
-  var chosen := candidates[0];
-  if chosen == eosToken && |candidates| > 1 {{
-    chosen := candidates[1];
-  }}
-
-  if chosen == eosToken {{
-    cost := 1;
-  }} else {{
-    assert chosen in candidates;
-    assert chosen in parser.ValidNextTokens(currentConstrained);
-    assert parser.IsValidPrefix(currentConstrained + [chosen]);
-    var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
-      lm, parser, generatedPrefix, currentConstrained, chosen
-    );
-    var subGenerated, subInside, subCurrent, subCost := MyCSDStrategy(
-      lm, parser, prompt, appendedGenerated, appendedInside, appendedCurrent, maxSteps - 1, stepTokenBudget, validTokenGroups, eosToken
-    );
-    generated := subGenerated;
-    insideConstrainedOut := subInside;
-    currentConstrainedOut := subCurrent;
-    cost := 1 + subCost;
-  }}
-}}
-```
-
-```dafny
-// CSD_RATIONALE_BEGIN
 // Chunked-outside CSD. Outside a constrained span we generate unconstrained
 // tokens in a single multi-token call (`UnconstrainedChunk`) that breaks early
 // on EOS or on the open-span delimiter `"<<"`. Inside a span we decode token
@@ -1748,6 +1653,13 @@ Task:
 {task_description}
 {allowed_helpers_block}{tool_reference_block}
 
+## Verified Examples
+
+These are verified reference CSD patterns available for reuse during verification repair.
+Use them as examples of valid helper usage, state tracking, loop structure, and proof style.
+
+{verified_examples}
+
 {search_memory_block}
 Previous attempt:
 ```dafny
@@ -1766,32 +1678,6 @@ Dafny constraint reminder:
 - Methods cannot be called directly inside expression contexts.
 - Call the method first, bind its result to a local variable, then use that variable in the condition.
 
-## Verified Examples
-
-These are verified reference CSD patterns available for reuse during verification repair.
-Use them as examples of valid helper usage, state tracking, loop structure, and proof style.
-
-{verified_examples}
-
-Adaptive revision policy:
-Treat balanced-best and previous evaluated attempts as evidence, not templates.
-When preserving a mechanism, preserve it because measured behavior says it
-protected a useful subsystem. A useful ingredient is a mechanism with evidence
-of contributing to a positive metric shift, not a whole strategy template. First
-choose the refinement mode. If balanced-best is near target, make a surgical
-repair that preserves its broad structure and answer-production path, changing
-only the measured weak point. If balanced-best is delimiter-valid with decent
-syntax but not near target, preserve useful ingredients, compare the
-contract/syntax anchor with the accuracy anchor if both are present, and change
-one causal axis. When anchors differ, prefer merge/repair: preserve the
-contract anchor's delimiter contract while importing only one accuracy-improving
-ingredient from the accuracy anchor; alternatively repair the accuracy anchor's
-contract if that is the smaller change. If there is no valid basin, repeated
-single-axis repairs have failed, or metrics show a specific useful ingredient
-stopped helping, make a causal structural change while carrying forward the
-useful ingredients that still have positive metric evidence. In any mode, name
-the measured failure source and avoid repeating a broad behavior profile unless
-the next change alters the causal axis that failed.
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
 Use only the contracts and tools provided above.
@@ -1865,10 +1751,20 @@ Your method body passed verification and compilation, then was evaluated on the 
 but did not meet evaluation thresholds.
 All method parameters in the Dafny signature are available to the strategy.
 Treat the evaluation results below as factual observations of generated outputs.
+{primary_failure_block}
 
 Task:
 {task_description}
 {allowed_helpers_block}{tool_reference_block}
+
+## Verified Examples
+
+These are verified reference CSD patterns available for reuse during refinement.
+Use them as examples of valid helper usage, state tracking, loop structure, and
+proof style. The evaluation results and recent history below determine which
+parts, if any, are relevant to the next strategy revision.
+
+{verified_examples}
 
 {search_memory_block}
 ## Strategy Context
@@ -1885,15 +1781,6 @@ Evaluation results:
 ```
 {evaluation_history_block}
 
-## Verified Examples
-
-These are verified reference CSD patterns available for reuse during refinement.
-Use them as examples of valid helper usage, state tracking, loop structure, and
-proof style. The evaluation results and recent history above determine which
-parts, if any, are relevant to the next strategy revision.
-
-{verified_examples}
-
 Recent evaluation history is provided for context.
 Use the evaluation history to recognize which prior approach families already
 failed, matched, or improved. When balanced-best is far from target or a family
@@ -1907,26 +1794,6 @@ is not best-so-far merely because one score is high.
 Avoid small parameter tweaks to a strategy shape that repeatedly underperformed.
 If a shape regressed multiple times and is not the near-win balanced-best family,
 make a structurally different change.
-Adaptive revision policy:
-Treat balanced-best and previous evaluated attempts as evidence, not templates.
-When preserving a mechanism, preserve it because measured behavior says it
-protected a useful subsystem. A useful ingredient is a mechanism with evidence
-of contributing to a positive metric shift, not a whole strategy template. First
-choose the refinement mode. If balanced-best is near target, use it as an anchor
-for a surgical repair: preserve its broad structure and answer-production path,
-and change only the measured weak point. If balanced-best is delimiter-valid
-with decent syntax but not near target, preserve useful ingredients, compare the
-contract/syntax anchor with the accuracy anchor if both are present, and change
-one causal axis. When anchors differ, prefer merge/repair: preserve the
-contract anchor's delimiter contract while importing only one accuracy-improving
-ingredient from the accuracy anchor; alternatively repair the accuracy anchor's
-contract if that is the smaller change. If there is no valid basin, repeated
-single-axis repairs have failed, or metrics show a specific useful ingredient
-stopped helping, then make a causal structural change while carrying forward the
-useful ingredients that still have positive metric evidence. Do not re-submit
-balanced-best or a balanced-best-like near-copy whose expected metric movement
-is unclear. Name the measured failure source and avoid repeating a broad
-behavior profile unless the next change alters the causal axis that failed.
 Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
 The revised rationale should explain what changed in response to the evaluation results.
@@ -2107,10 +1974,16 @@ def build_evaluation_failure_prompt(
     working_hypothesis: str = "",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    primary_failure: str = "",
 ) -> tuple[str, str]:
     evaluation_history_block = ""
     working_hypothesis_block = ""
     search_memory_block = ""
+    primary_failure_block = ""
+    if primary_failure:
+        # Place the primary-failure summary just under the prompt preamble so it
+        # is the first concrete thing the model reads. Change 2.
+        primary_failure_block = f"\n\n{primary_failure}\n"
     if search_memory:
         search_memory_block = f"{search_memory}\n"
     if evaluation_history:
@@ -2134,5 +2007,6 @@ def build_evaluation_failure_prompt(
         evaluation_history_block=evaluation_history_block,
         verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
+        primary_failure_block=primary_failure_block,
     )
     return SYSTEM_PROMPT, user_prompt

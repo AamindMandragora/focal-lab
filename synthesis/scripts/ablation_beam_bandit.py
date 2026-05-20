@@ -97,8 +97,11 @@ def main() -> None:
         default="Solve math word problems with constrained symbolic expressions.",
     )
     p.add_argument("--dataset", default="gsm_symbolic")
-    p.add_argument("--generation-backend", default="vllm")
-    p.add_argument("--generation-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
+    # IMPORTANT: --generation-* is the AUTHOR model that writes the Dafny
+    # strategy code; it must be a large reasoning model (gpt-5.4 via openai),
+    # not a local small model. See CLAUDE.md "Model Configuration Verification".
+    p.add_argument("--generation-backend", default="openai")
+    p.add_argument("--generation-model", default="gpt-5.4")
     p.add_argument("--eval-backend", default="vllm")
     p.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     p.add_argument("--eval-sample-size", type=int, default=8)

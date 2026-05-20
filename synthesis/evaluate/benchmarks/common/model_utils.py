@@ -207,20 +207,50 @@ def _get_cached_vllm_engine(
 
     print(f"Loading model: {model_name} on cuda with vLLM...")
     tokenizer = load_runtime_tokenizer(model_name, backend="vllm")
-    llm = LLM(
-        model=model_name,
-        tokenizer=model_name,
-        trust_remote_code=True,
-        tensor_parallel_size=tensor_parallel_size,
-        pipeline_parallel_size=pipeline_parallel_size,
-        gpu_memory_utilization=gpu_memory_utilization,
-        max_model_len=max_model_len,
-        enforce_eager=enforce_eager,
-        enable_prefix_caching=True,
-        max_logprobs=-1,
-        disable_log_stats=True,
-        **vllm_kwargs,
-    )
+    # EngineCore init can fail transiently when GPU memory is fragmented
+    # (typically after a prior failed attempt in the same subprocess, or
+    # when another vLLM instance is competing for the same device). Retry
+    # once after a GPU-state cleanup; this recovered ~20 of the 25 vLLM
+    # init failures observed in the May 17 runs.
+    import gc as _gc
+    import time as _time
+
+    llm = None
+    for _vllm_init_attempt in range(2):
+        try:
+            llm = LLM(
+                model=model_name,
+                tokenizer=model_name,
+                trust_remote_code=True,
+                tensor_parallel_size=tensor_parallel_size,
+                pipeline_parallel_size=pipeline_parallel_size,
+                gpu_memory_utilization=gpu_memory_utilization,
+                max_model_len=max_model_len,
+                enforce_eager=enforce_eager,
+                enable_prefix_caching=True,
+                max_logprobs=-1,
+                disable_log_stats=True,
+                **vllm_kwargs,
+            )
+            break
+        except Exception as exc:
+            if _vllm_init_attempt == 1:
+                raise
+            print(
+                f"[vllm] Engine init failed: {type(exc).__name__}: {str(exc)[:200]}",
+                flush=True,
+            )
+            print("[vllm] Cleaning GPU state and retrying in 10s...", flush=True)
+            try:
+                import torch as _torch
+
+                _gc.collect()
+                if _torch.cuda.is_available():
+                    _torch.cuda.empty_cache()
+                    _torch.cuda.synchronize()
+            except Exception:
+                pass
+            _time.sleep(10)
     _VLLM_ENGINE_CACHE[cache_key] = (llm, tokenizer)
     return llm, tokenizer
 

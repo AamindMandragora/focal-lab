@@ -171,6 +171,35 @@ def ensure_runtime_prereqs(evaluator: Any) -> None:
         )
 
 
+def should_stop_collected(
+    sample_outputs: list[dict[str, Any]],
+    target_unique_valid: int = 100,
+) -> str | None:
+    """Paper-aligned stop: CARS generates until 100 unique-valid molecules are
+    collected (subject to a 1000-sample cap). Once we cross the target the
+    headline `samples_to_target_unique_valid` metric is already determined, so
+    further generation is wasted work. Returns a reason string when the target
+    is reached, else None.
+    """
+    if not sample_outputs:
+        return None
+    seen: set[str] = set()
+    for sample in sample_outputs:
+        smiles_eval = sample.get("smiles_eval") or {}
+        if not smiles_eval.get("unique_valid_candidate"):
+            continue
+        smiles = str(smiles_eval.get("smiles") or "").strip()
+        if smiles and smiles not in seen:
+            seen.add(smiles)
+            if len(seen) >= target_unique_valid:
+                return (
+                    "paper-aligned early stop: collected "
+                    f"{len(seen)} unique-valid molecules (target {target_unique_valid}) "
+                    f"after {len(sample_outputs)} samples."
+                )
+    return None
+
+
 def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) -> dict[str, Any]:
     from synthesis.evaluate.benchmarks.smiles.metrics import smiles_trial_metrics
 
