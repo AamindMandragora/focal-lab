@@ -1566,9 +1566,14 @@ def main() -> None:
     _ensure_repo_cache_env()
 
     dataset_normalized = _normalize_dataset(args.dataset)
+    # CRANE main.py only supports gsm_symbolic and FOL — no Spider support
+    # (no prompt_templates/spider.yaml, no generate_spider_with_itergen function).
+    # For Spider, fall through to the legacy shared-evaluator adapters which DO
+    # support Spider and were the source of the 05-18 baselines.
+    crane_repo_datasets = {"gsm_symbolic"}
     crane_repo_strategies = {"unconstrained", "gcd", "crane", "itergen"}
     if (
-        dataset_normalized in {"gsm_symbolic", "spider"}
+        dataset_normalized in crane_repo_datasets
         and args.strategy in crane_repo_strategies
     ):
         from synthesis.evaluate.baselines.crane_repo_runner import (

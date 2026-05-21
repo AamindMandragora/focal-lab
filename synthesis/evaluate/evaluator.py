@@ -66,6 +66,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+try:
+    from synthesis.failure_taxonomy import render_cluster_block
+except ImportError:
+    from failure_taxonomy import render_cluster_block
+
 
 class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
@@ -289,30 +294,26 @@ class EvaluationResult:
                 lines.append("\nAggregate Failure Stats:")
                 lines.extend(extras)
 
-        diagnostic_metrics = self._summarize_diagnostic_metrics()
-        if diagnostic_metrics:
-            lines.append("\nDiagnostic Error Decomposition:")
-            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
-
-        provenance_metrics = self._summarize_provenance_metrics()
-        if provenance_metrics:
-            lines.append("\nOutput Provenance and Failure Localization:")
-            lines.extend(f"  {metric}" for metric in provenance_metrics)
-
-        contrast_metrics = self._summarize_correct_wrong_contrast()
-        if contrast_metrics:
-            lines.append("\nCorrect-vs-Wrong Behavioral Contrast:")
-            lines.extend(f"  {metric}" for metric in contrast_metrics)
-
-        structural_metrics = self._summarize_structural_metrics()
-        if structural_metrics:
-            lines.append("\nStructural Generation Metrics:")
-            lines.extend(f"  {metric}" for metric in structural_metrics)
-
-        snapshots = self._summarize_representative_snapshots()
-        if snapshots:
-            lines.append("\nRepresentative Factual Snapshots:")
-            lines.extend(snapshots)
+        # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
+        # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
+        # Structural Generation Metrics, Representative Factual Snapshots)
+        # with a single cluster-organized failure block. Each wrong sample
+        # is reduced to a 17-axis fingerprint; failures are grouped by
+        # Hamming distance ≤ 1 into discovered modes. The cluster view shows
+        # which axes are constant across all clusters (true of every failure)
+        # versus which vary (where the real distinct failure modes diverge).
+        #
+        # Persistent cluster IDs across attempts (Change 2) are wired in by
+        # feedback_loop.py via attach_cluster_ledger().
+        cluster_block = render_cluster_block(
+            self.sample_outputs,
+            max_steps=512,
+            slow_threshold_seconds=30.0,
+            persistent_ledger=getattr(self, "_failure_ledger", None),
+            attempt_index=getattr(self, "_attempt_index", None),
+        )
+        if cluster_block:
+            lines.append(cluster_block)
 
         return "\n".join(lines)
 
