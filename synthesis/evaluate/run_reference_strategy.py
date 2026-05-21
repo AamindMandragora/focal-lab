@@ -1,19 +1,13 @@
 """
-Compile a verified reference Dafny strategy and evaluate it on any benchmark.
+Evaluate an already-compiled GeneratedCSD module on any benchmark.
 
-This replaces legacy external codebases with our own verified Dafny
-reference implementations, ensuring consistent evaluation infrastructure
-across all strategy-benchmark combinations.
-
-Available strategies:
-  unconstrained  Pure unconstrained decoding (no grammar enforcement)
-  gcd            Pure hard-mask constrained decoding (SynCode-style)
-  crane          Adaptive constrained-unconstrained switching (CRANE-style)
-  itergen        Chunked constrained symbol generation (IterGen-style)
-  cars           Adaptive group-boosted constrained steps (CARS-style)
+Reference ``.dfy`` files under ``synthesis/verify/reference/`` are documentation
+only — this entrypoint never compiles them. Pass a ``GeneratedCSD.py`` from a
+synthesis run (or another verified build) via ``--compiled-module``.
 
 Usage:
   python -m synthesis.evaluate.run_reference_strategy \\
+    --compiled-module outputs/synthesis_runs/<run>/generated_csd/GeneratedCSD.py \\
     --strategy crane --dataset smiles \\
     --eval-model Qwen/Qwen2.5-Coder-7B-Instruct \\
     --eval-sample-size 50 --eval-max-steps 900 \\
@@ -23,8 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -32,49 +24,7 @@ from synthesis.evaluate.baseline_store import build_minimal_baseline_record
 from synthesis.evaluate.evaluator import Evaluator
 
 
-STRATEGY_DFY: dict[str, str] = {
-    "unconstrained": "unconstrained.dfy",
-    "gcd": "gcd.dfy",
-    "crane": "crane.dfy",
-    "itergen": "itergen.dfy",
-    "cars": "cars.dfy",
-}
-
-REFERENCE_DIR = Path(__file__).resolve().parents[1] / "verify" / "reference"
-
-
-def _rewrite_to_generated_csd(source_text: str) -> str:
-    """Rewrite the module name so the evaluator can import it as GeneratedCSD."""
-    return re.sub(
-        r"module\s+Reference\w+CSD\s*\{",
-        "module GeneratedCSD {",
-        source_text,
-        count=1,
-    )
-
-
-def _compile_reference(strategy: str, output_dir: Path) -> Path:
-    """Compile a reference .dfy to Python under output_dir, return GeneratedCSD.py path."""
-    from synthesis.verify.compiler import DafnyCompiler
-
-    dfy_name = STRATEGY_DFY[strategy]
-    source_path = REFERENCE_DIR / dfy_name
-    if not source_path.is_file():
-        raise FileNotFoundError(f"Reference strategy not found: {source_path}")
-
-    source_text = source_path.read_text()
-    source_text = _rewrite_to_generated_csd(source_text)
-
-    compiler = DafnyCompiler(output_dir=output_dir)
-    result = compiler.compile(source_text, output_name=f"ref_{strategy}")
-    if not result.success:
-        errors = "; ".join(e.message for e in result.errors[:5])
-        raise RuntimeError(f"Failed to compile {dfy_name}: {errors}")
-
-    if result.main_module_path is None:
-        raise RuntimeError(f"Compilation produced no main module for {dfy_name}")
-
-    return result.main_module_path
+STRATEGY_NAMES = frozenset({"unconstrained", "gcd", "crane", "itergen", "cars"})
 
 
 def _evaluate(
@@ -126,10 +76,16 @@ def _evaluate(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--compiled-module",
+        type=Path,
+        required=True,
+        help="Path to an existing GeneratedCSD.py (synthesis output; references are not compiled here)",
+    )
+    parser.add_argument(
         "--strategy",
         required=True,
-        choices=sorted(STRATEGY_DFY),
-        help="Reference strategy to evaluate",
+        choices=sorted(STRATEGY_NAMES),
+        help="Label for the run (metadata only; module must already match)",
     )
     parser.add_argument(
         "--dataset",
@@ -146,33 +102,19 @@ def main() -> None:
     parser.add_argument("--vllm-max-model-len", type=int, default=None)
     parser.add_argument("--smiles-classes", default=None)
     parser.add_argument("--output-json", type=Path, required=True)
-    parser.add_argument(
-        "--compiled-cache-dir",
-        type=Path,
-        default=None,
-        help="Directory to cache compiled reference modules (avoids recompilation)",
-    )
     args = parser.parse_args()
 
-    cache_dir = args.compiled_cache_dir
-    if cache_dir is None:
-        repo_root = Path(__file__).resolve().parents[2]
-        cache_dir = repo_root / "outputs" / "compiled_references"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-
-    strategy_cache = cache_dir / args.strategy
-    generated_csd = strategy_cache / f"ref_{args.strategy}" / "GeneratedCSD.py"
-    if not generated_csd.is_file():
-        print(f"Compiling reference strategy: {args.strategy}", flush=True)
-        compiled_path = _compile_reference(args.strategy, strategy_cache)
-        print(f"  Compiled to: {compiled_path}", flush=True)
-    else:
-        compiled_path = generated_csd
-        print(f"Using cached compilation: {compiled_path}", flush=True)
+    compiled_path = args.compiled_module.resolve()
+    if not compiled_path.is_file():
+        raise SystemExit(
+            f"Compiled module not found: {compiled_path}\n"
+            "Reference .dfy strategies are never compiled by this tool; "
+            "use a GeneratedCSD.py from synthesis or another existing build."
+        )
 
     print(
         f"Evaluating {args.strategy} on {args.dataset} with {args.eval_model} "
-        f"(n={args.eval_sample_size}, steps={args.eval_max_steps})",
+        f"(module={compiled_path}, n={args.eval_sample_size}, steps={args.eval_max_steps})",
         flush=True,
     )
     payload = _evaluate(

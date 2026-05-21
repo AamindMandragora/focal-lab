@@ -93,18 +93,18 @@ def write_spider_shots() -> None:
 
 def write_smiles_shots() -> None:
     """CARS-style class prompts and exemplar molecules from ``benchmarks/smiles/data``."""
-    from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, get_smiles_task
+    from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, prompt_exemplars_for_class
+    from synthesis.evaluate.prompt_tiers import smiles_class_properties
 
     payload: dict[str, list[dict[str, str]]] = {}
     for cls in SMILES_CLASSES:
-        task = get_smiles_task(cls)
-        props = str(task.get("smiles_properties") or "").strip()
+        props = smiles_class_properties(cls)
         payload[cls] = [
             {
                 "properties": props,
                 "smiles": mol,
             }
-            for mol in task.get("prompt_exemplars", [])[:8]
+            for mol in prompt_exemplars_for_class(cls)
         ]
     out = PROMPTS_ROOT / "smiles" / "shots.json"
     out.parent.mkdir(parents=True, exist_ok=True)

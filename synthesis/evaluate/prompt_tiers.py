@@ -24,8 +24,14 @@ BENCHMARK_MAX_NEW_TOKENS: dict[str, int] = {
     "gsm_symbolic": 600,
     "gsm": 600,
     "spider": 512,
+    # Tier-2 ceiling (CRANE / unconstrained CoT + <<SMILES>>). Tier-1 uses ``smiles_tier1_max_new_tokens``.
     "smiles": 256,
 }
+
+# Longest frozen exemplar SMILES is ~96 characters. Tier-1 grammars are unbounded (``rest*``) and
+# SynCode rarely accepts EOS early, so a tight cap prevents repetitive padding to the old 256 limit.
+SMILES_TIER1_MAX_NEW_TOKENS = 96
+SMILES_TIER2_MAX_NEW_TOKENS = 256
 
 TIER1_STRATEGIES = frozenset({"gcd", "itergen", "cars"})
 TIER2_STRATEGIES = frozenset({"unconstrained", "crane", "metadecode"})
@@ -33,6 +39,9 @@ TIER2_STRATEGIES = frozenset({"unconstrained", "crane", "metadecode"})
 # Few-shot caps (full frozen shot lists live in shots.json; CRANE yaml used 8).
 TIER1_FEWSHOT_CAP = 0
 TIER2_FEWSHOT_CAP = 4
+
+# SMILES CARS prompts always use exactly eight in-context exemplar molecules.
+SMILES_FEWSHOT_COUNT = 8
 
 
 def prompt_tier_for_strategy(strategy: str) -> PromptTier:
@@ -61,6 +70,16 @@ def effective_max_new_tokens(dataset: str, cli_max_steps: int) -> int:
     """Use the benchmark cap unless the CLI requests a smaller budget."""
     cap = benchmark_max_new_tokens(dataset)
     return min(max(1, int(cli_max_steps)), cap)
+
+
+def smiles_tier1_max_new_tokens(decode_cap: int) -> int:
+    """Decode budget for GCD / IterGen / CARS (body-only SMILES, no CoT)."""
+    return min(SMILES_TIER1_MAX_NEW_TOKENS, max(1, int(decode_cap)))
+
+
+def smiles_tier2_max_new_tokens(decode_cap: int) -> int:
+    """Decode budget for CRANE / unconstrained (brief reasoning + delimited answer)."""
+    return min(SMILES_TIER2_MAX_NEW_TOKENS, max(1, int(decode_cap)))
 
 
 def fewshot_count_for_tier(
@@ -133,24 +152,35 @@ def _spider_fewshot_block(shots: list[dict[str, Any]], *, tier: PromptTier) -> s
         else:
             if reasoning:
                 lines.append(reasoning)
-            lines.append(sql)
+            lines.append(f"<<{sql}>>")
         lines.append("")
     return "\n".join(lines).rstrip() + ("\n\n" if lines else "")
 
 
-_LEGACY_CARS_RESPONSE_LINE = (
-    "Your response must be a single SMILES molecule and nothing else."
-)
-_CARS_CONSTRAINED_RESPONSE_LINE = (
-    "Your response must be a single SMILES molecule and nothing else."
-)
+def _smiles_class_label(class_name: str) -> str:
+    return str(class_name).replace("_", " ")
+
+
+def smiles_class_properties(class_name: str) -> str:
+    """Tier-neutral class instruction (eight in-context examples are appended separately)."""
+    label = _smiles_class_label(class_name)
+    return (
+        f"You are an expert in chemistry. Below are exactly {SMILES_FEWSHOT_COUNT} example "
+        f"{label} molecules, each shown as `Molecule: <SMILES>`. "
+        "These lines are in-context demonstrations only — not your answer.\n\n"
+        f"Your task: generate exactly one new, valid {label} molecule that is different "
+        f"from all {SMILES_FEWSHOT_COUNT} examples."
+    )
 
 
 def _smiles_instruction_from_example(example: dict[str, Any]) -> str:
-    """Class-level CARS instruction (text before the first exemplar ``Molecule:`` line)."""
+    """Class-level instruction; prefer stored properties, else rebuild from class name."""
     props = str(example.get("smiles_properties") or example.get("properties") or "").strip()
-    if props:
+    if props and "exactly" in props.lower() and str(SMILES_FEWSHOT_COUNT) in props:
         return props
+    class_name = str(example.get("class_name") or "").strip()
+    if class_name:
+        return smiles_class_properties(class_name)
     raw = str(example.get("_smiles_base_prompt") or example.get("prompt") or "")
     head = raw.split("Molecule:")[0].split("SMILES:")[0].strip()
     if head.startswith("Properties:"):
@@ -158,16 +188,19 @@ def _smiles_instruction_from_example(example: dict[str, Any]) -> str:
     return head
 
 
-def _smiles_cars_instruction(example: dict[str, Any]) -> str:
-    """Legacy CARS prose for fully constrained SMILES generation."""
-    text = _smiles_instruction_from_example(example)
-    if _LEGACY_CARS_RESPONSE_LINE in text:
-        return text.replace(_LEGACY_CARS_RESPONSE_LINE, _CARS_CONSTRAINED_RESPONSE_LINE)
-    if _CARS_CONSTRAINED_RESPONSE_LINE in text:
-        return text
-    if text:
-        return text + "\n\n" + _CARS_CONSTRAINED_RESPONSE_LINE
-    return _CARS_CONSTRAINED_RESPONSE_LINE
+def _smiles_tier1_suffix() -> str:
+    return (
+        "\n\nOutput exactly one SMILES string with no other text "
+        "(no labels, no reasoning, no multiple molecules)."
+    )
+
+
+def _smiles_tier2_suffix() -> str:
+    return (
+        "\n\nYou may use at most two short sentences of reasoning, then output your final "
+        "answer immediately as a single SMILES string inside double angle brackets, "
+        "for example: <<CCO>>. Do not enumerate or repeat the example molecules."
+    )
 
 
 def render_smiles_cars_prompt(
@@ -175,15 +208,21 @@ def render_smiles_cars_prompt(
     *,
     tier: PromptTier,
 ) -> str:
-    """Render a CARS-style class prompt (``data/*.txt``); tier 1 is grammar-only (no delimiters)."""
-    lines = [_smiles_cars_instruction(example), ""]
-    for smiles in example.get("prompt_exemplars") or []:
+    """Render a CARS-style class prompt; tier 1 is body-only, tier 2 ends before CoT."""
+    instruction = _smiles_instruction_from_example(example)
+    if tier == 1:
+        instruction += _smiles_tier1_suffix()
+    else:
+        instruction += _smiles_tier2_suffix()
+
+    lines = [instruction, ""]
+    exemplars = list(example.get("prompt_exemplars") or [])[:SMILES_FEWSHOT_COUNT]
+    for smiles in exemplars:
         value = str(smiles).strip()
         if value:
             lines.append(f"Molecule: {value}")
     if tier == 2:
         lines.extend(["", "Reasoning:"])
-    lines.append("Molecule:")
     return "\n".join(lines)
 
 

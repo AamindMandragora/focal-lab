@@ -107,6 +107,16 @@
 +                )
 +            with open(grammar_path, "r", encoding="utf-8") as gf:
 +                grammar_text = gf.read()
++            if do_cot:
++                import sys
++
++                if repo not in sys.path:
++                    sys.path.insert(0, repo)
++                from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
++                    build_smiles_tier2_delimited_grammar,
++                )
++
++                grammar_text = build_smiles_tier2_delimited_grammar(grammar_text)
 +            with open(prompt_path, "r", encoding="utf-8") as pf:
 +                prompt_body = pf.read()
 +            exemplars = _smiles_prompt_exemplars(prompt_body)

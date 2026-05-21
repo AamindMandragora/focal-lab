@@ -38,7 +38,7 @@ instruction and all `Molecule:` exemplars from the class `.txt` file, with the r
 updated to require `<<` / `>>` for harness scoring. Tier 2 adds a `Reasoning:` line before
 `Molecule: <<`. `shots.json` remains for regeneration checks only.
 
-Tier templates mirror the same legacy `task_specification` / `std_instruct` / `cot_instruct` prose (with `<<` `>>` instead of `[[START]]` `[[END]]`).
+Tier templates mirror the same legacy `task_specification` / `std_instruct` / `cot_instruct` prose (with `<<` `>>` instead of `[[START]]` `[[END]]`). Spider tier-2 few-shots and the target block end with `Reasoning:` so models emit brief CoT then `<<SELECT ...>>`.
 
 ## Few-shot caps
 
@@ -57,7 +57,7 @@ Override GSM/Spider per call with `render_benchmark_prompt(..., max_fewshots=N)`
 |-----------|----------------------------|
 | `gsm_symbolic` | 600 |
 | `spider` | 512 |
-| `smiles` | 256 |
+| `smiles` | 256 (tier-2 CRANE / unconstrained; tier-1 body cap 96) |
 
 Legacy adapters use `effective_max_new_tokens(dataset, --eval-max-steps)` so CLI budgets cannot exceed these caps.
 

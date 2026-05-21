@@ -41,14 +41,23 @@ def clean_smiles_output(output: str | None) -> str:
     text = str(output).strip()
     for marker in EOS_MARKERS:
         text = text.replace(marker, "")
-    text = text.replace("<<", "").replace(">>", "")
-    # Safety net: remove orphan angle-bracket control tokens that can leak from
-    # delimiter generation into the extracted molecule string.
-    text = text.replace("<", "").replace(">", "")
+
+    from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
+
+    span, found = extract_last_delimited_span(text)
+    if found and span:
+        return span.strip()
+
     text = text.split("\n\n", 1)[0].strip()
     if "Molecule:" in text:
         text = text.rsplit("Molecule:", 1)[-1].strip()
-    return text.splitlines()[0].strip() if text else ""
+    text = text.splitlines()[0].strip() if text else ""
+    # Tier-1 body-only outputs may still contain stray angle brackets; strip wrappers.
+    if text.startswith("<<") and text.endswith(">>"):
+        text = text[2:-2].strip()
+    text = text.replace("<<", "").replace(">>", "")
+    text = text.replace("<", "").replace(">", "")
+    return text.strip()
 
 
 @lru_cache(maxsize=None)
