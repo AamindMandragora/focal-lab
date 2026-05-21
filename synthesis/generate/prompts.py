@@ -75,6 +75,15 @@ You must output ONLY the Dafny method body for:
 - Call static entries listed as `CSDHelpers.<Method>` with that qualifier.
 - Do NOT use `CSDHelpers.<Method>` for instance methods.
 
+## Refinement discipline
+When refining a failed attempt, the user prompt names the Pareto-best prior
+attempt (the "Anchor for this refinement"). Your next strategy must be a
+*single-axis delta* on top of that anchor attempt's strategy: change one
+mechanism (one helper swap, one parameter, one ordering tweak). Do not
+introduce a new strategy family or rewrite from scratch. State at the top of
+your rationale which anchor attempt you are building on and what single axis
+you are changing.
+
 ## API Guidance
 
 - `Token` is type `string`.
@@ -1751,7 +1760,7 @@ Your method body passed verification and compilation, then was evaluated on the 
 but did not meet evaluation thresholds.
 All method parameters in the Dafny signature are available to the strategy.
 Treat the evaluation results below as factual observations of generated outputs.
-{primary_failure_block}
+{anchor_block_top}{primary_failure_block}{phase_directive_block}
 
 Task:
 {task_description}
@@ -1794,7 +1803,7 @@ is not best-so-far merely because one score is high.
 Avoid small parameter tweaks to a strategy shape that repeatedly underperformed.
 If a shape regressed multiple times and is not the near-win balanced-best family,
 make a structurally different change.
-Output ONLY a corrected full Dafny method body.
+{anchor_block_bottom}Output ONLY a corrected full Dafny method body.
 Do NOT output a method signature, outer wrapper text, or markdown fences.
 The revised rationale should explain what changed in response to the evaluation results.
 """
@@ -1966,6 +1975,67 @@ def build_format_repair_prompt(
     return SYSTEM_PROMPT, user_prompt
 
 
+def _build_anchor_block(
+    attempt_number: int | None,
+    accuracy: float | None,
+    syntax_rate: float | None,
+    position: str = "top",
+) -> str:
+    """Render the Pareto-best anchor block.
+
+    `position="top"` is shown right after the preamble so opus reads it first.
+    `position="bottom"` restates the anchor right before the final output
+    instruction so it survives long-context attention drop-off in the middle.
+    """
+    if attempt_number is None or accuracy is None or syntax_rate is None:
+        return ""
+    if position == "top":
+        return (
+            "\n\n## Anchor for this refinement\n"
+            f"Pareto-best so far: attempt {attempt_number} "
+            f"(acc={accuracy:.1%}, syn={syntax_rate:.1%}).\n"
+            f"Build a single-axis delta on top of attempt {attempt_number}'s strategy. "
+            "Do not introduce a new family. State the anchor and the delta axis "
+            "at the top of your rationale.\n"
+        )
+    return (
+        f"\nReminder: anchor on attempt {attempt_number} "
+        f"(acc={accuracy:.1%}, syn={syntax_rate:.1%}); single-axis delta only.\n"
+    )
+
+
+def _build_phase_directive_block(
+    phase: int | None,
+    phase1_acc_target: float,
+    phase2_acc_floor: float,
+    phase2_syn_target: float,
+) -> str:
+    """Render the staged-optimization directive (Change 4).
+
+    Phase 1 tells the author to drive accuracy above the Phase 1 target,
+    treating syntax as secondary. Phase 2 tells the author to drive syntax
+    above the Phase 2 target while keeping accuracy above the floor.
+    """
+    if phase is None:
+        return ""
+    if phase == 1:
+        return (
+            "\nStaged optimization — Phase 1 (accuracy first):\n"
+            f"  • Drive accuracy above {phase1_acc_target:.1%}. This is the gate to Phase 2.\n"
+            "  • Syntax-rate is secondary in this phase: do not sacrifice accuracy to chase it.\n"
+            "  • Prefer strategy changes that fix WRONG answers; ignore minor syntax tweaks for now.\n"
+        )
+    if phase == 2:
+        return (
+            "\nStaged optimization — Phase 2 (syntax with accuracy floor):\n"
+            f"  • Drive syntax-rate above {phase2_syn_target:.1%}.\n"
+            f"  • Maintain accuracy at or above {phase2_acc_floor:.1%}; any change that drops below the floor is a regression.\n"
+            "  • Prefer minimal localized edits that tighten generation (better delimiters, "
+            "fewer free-form digressions) without altering the high-accuracy strategy shape.\n"
+        )
+    return ""
+
+
 def build_evaluation_failure_prompt(
     task_description: str,
     previous_strategy: str,
@@ -1975,6 +2045,13 @@ def build_evaluation_failure_prompt(
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
     primary_failure: str = "",
+    phase: int | None = None,
+    phase1_acc_target: float = 0.0,
+    phase2_acc_floor: float = 0.0,
+    phase2_syn_target: float = 0.0,
+    anchor_attempt_number: int | None = None,
+    anchor_accuracy: float | None = None,
+    anchor_syntax_rate: float | None = None,
 ) -> tuple[str, str]:
     evaluation_history_block = ""
     working_hypothesis_block = ""
@@ -1997,6 +2074,15 @@ def build_evaluation_failure_prompt(
             "\n\n"
             f"{working_hypothesis}\n"
         )
+    phase_directive_block = _build_phase_directive_block(
+        phase, phase1_acc_target, phase2_acc_floor, phase2_syn_target
+    )
+    anchor_block_top = _build_anchor_block(
+        anchor_attempt_number, anchor_accuracy, anchor_syntax_rate, position="top"
+    )
+    anchor_block_bottom = _build_anchor_block(
+        anchor_attempt_number, anchor_accuracy, anchor_syntax_rate, position="bottom"
+    )
     user_prompt = EVALUATION_FAILURE_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
@@ -2008,5 +2094,8 @@ def build_evaluation_failure_prompt(
         verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
         primary_failure_block=primary_failure_block,
+        phase_directive_block=phase_directive_block,
+        anchor_block_top=anchor_block_top,
+        anchor_block_bottom=anchor_block_bottom,
     )
     return SYSTEM_PROMPT, user_prompt

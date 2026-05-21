@@ -39,7 +39,7 @@ DEFAULT_BENCHMARKS = "gsm,spider,smiles"
 DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10"
-DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
+DEFAULT_GEN_MODELS = "opus4.7,gpt5.5"
 DEFAULT_STEP_BUDGETS = "256,512,1024"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
 CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
@@ -49,6 +49,23 @@ OOM_RE = re.compile(
     r"cumemAllocator|RESOURCE_EXHAUSTED|"
     r"Free memory on device|desired GPU memory utilization|"
     r"Engine core initialization failed",
+    re.IGNORECASE,
+)
+# Quota / credit exhaustion on the AUTHOR-model API (OpenAI / Anthropic / Bedrock).
+# These errors are NOT transient — retrying or moving GPUs won't help. We abort
+# the whole matrix run so the user is forced to notice and fix the credit issue
+# instead of letting every metadecode cell silently fail with empty output.
+QUOTA_RE = re.compile(
+    r"insufficient_quota|"
+    r"RateLimitError|rate_limit_error|"
+    r"credit balance is too low|"
+    r"You exceeded your current quota|"
+    r"quota.{0,30}exceeded|"
+    r"BillingHardLimitReached|"
+    r"You have exceeded your.{0,40}quota|"
+    r"403 Forbidden.{0,100}billing|"
+    r"401 Unauthorized.{0,100}(invalid_api_key|authentication)|"
+    r"AccessDeniedException.{0,40}Bedrock",
     re.IGNORECASE,
 )
 
@@ -368,6 +385,20 @@ class Runner:
             if return_code == 0:
                 return True
             log_text = log_path.read_text(errors="ignore")
+            # Hard-stop the whole matrix on author-model quota / credit exhaustion.
+            # These are NOT transient — retrying or switching GPUs won't recover.
+            if QUOTA_RE.search(log_text):
+                quota_excerpt = "\n".join(
+                    ln for ln in log_text.splitlines()
+                    if QUOTA_RE.search(ln)
+                )[:1500]
+                print(
+                    "\n[FATAL] Author-model quota / credit / auth error detected in subprocess output. "
+                    "Aborting the matrix run so the user sees this immediately.\n"
+                    f"Matched lines (truncated):\n{quota_excerpt}\n",
+                    file=sys.stderr,
+                )
+                raise SystemExit(2)
             if not OOM_RE.search(log_text):
                 return False
         finally:
@@ -407,15 +438,15 @@ class Runner:
             "BEDROCK_GENERATION_MODEL",
             self.env.get("AWS_BEDROCK_GENERATION_MODEL", "anthropic.claude-3-5-sonnet-20241022-v2:0"),
         )
-        opus_model = self.env.get(
-            "BEDROCK_OPUS_MODEL",
-            self.env.get("BEDROCK_PROFILE_OPUS", "us.anthropic.claude-opus-4-1-20250514-v1:0"),
-        )
-        openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.4")
-        if profile == "gpt5.4":
+        # opus4.7 now uses the Anthropic API directly (ANTHROPIC_API_KEY in synthesis/.env),
+        # not Bedrock. The prior Bedrock default was mis-labeled — it pointed at Opus 4.1,
+        # not 4.7. Anthropic backend lets us use the real 4.7 model.
+        anthropic_opus47 = self.env.get("ANTHROPIC_OPUS_MODEL", "claude-opus-4-7")
+        openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.5")
+        if profile == "gpt5.5":
             return "openai", openai_gpt
         if profile == "opus4.7":
-            return "bedrock", opus_model
+            return "anthropic", anthropic_opus47
         if profile == "gemini-pro":
             model = self.env.get("GEMINI_BEDROCK_MODEL")
             if not model:
@@ -962,7 +993,7 @@ class Runner:
         task = self.metadecode_task(benchmark)
         class_suffix = f"_class_{slugify(smiles_class)}" if benchmark == "smiles" else ""
         run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
-        backend, generation_model = self.resolve_gen_profile("gpt5.4")
+        backend, generation_model = self.resolve_gen_profile("gpt5.5")
         token_budget = self.config.token_budgets[0]
         max_steps = self.eval_max_steps_for(benchmark)
         self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, max_steps, smiles_class)
@@ -1121,17 +1152,18 @@ class Runner:
                             strategy, benchmark, ablation_model, token_budget, self.eval_max_steps_for(benchmark)
                         )
 
-        print("--- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---")
+        print("--- Ablation E: Adaptive helper masking (tool filtering on/off) ---")
+        # Trimmed for deadline: only vary the mask_flag (tool filtering on/off),
+        # holding beam_size=1 and policy=utility fixed. Original cross-product
+        # (beam x mask x policy) was 60 cells; this is 10.
         for raw_benchmark in ("gsm", "spider", "smiles"):
             benchmark = normalize_benchmark(raw_benchmark)
-            for beam_size in ("1", "2", "4"):
-                for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
-                    for policy in ("utility", "bandit"):
-                        smiles_classes = self.config.smiles_classes if benchmark == "smiles" else [""]
-                        for smiles_class in smiles_classes:
-                            self.run_ablation_e_case(
-                                benchmark, ablation_model, beam_size, mask_flag, policy, smiles_class
-                            )
+            for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
+                smiles_classes = self.config.smiles_classes if benchmark == "smiles" else [""]
+                for smiles_class in smiles_classes:
+                    self.run_ablation_e_case(
+                        benchmark, ablation_model, "1", mask_flag, "utility", smiles_class
+                    )
         print("=== Phase 2 complete ===")
 
     def run(self) -> int:

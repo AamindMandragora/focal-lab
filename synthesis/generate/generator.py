@@ -149,6 +149,8 @@ class StrategyGenerator:
             return os.environ.get("OPENAI_API_KEY")
         if backend == "bedrock":
             return os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
+        if backend == "anthropic":
+            return os.environ.get("ANTHROPIC_API_KEY")
         return None
 
     def _get_vllm_quantization_kwargs(self) -> dict:
@@ -242,6 +244,19 @@ class StrategyGenerator:
                 raise ValueError(
                     "AWS_BEARER_TOKEN_BEDROCK is required when --generation-backend=bedrock"
                 )
+            return
+
+        if self.backend == "anthropic":
+            if self._client is None:
+                if not self.api_key:
+                    raise ValueError(
+                        "ANTHROPIC_API_KEY is required when --generation-backend=anthropic"
+                    )
+                from anthropic import Anthropic
+                client_kwargs = {"api_key": self.api_key}
+                if self.api_base_url:
+                    client_kwargs["base_url"] = self.api_base_url
+                self._client = Anthropic(**client_kwargs)
             return
 
         if self.backend == "vllm":
@@ -366,6 +381,27 @@ class StrategyGenerator:
 
         if self.backend == "bedrock":
             output = self._generate_bedrock(system_prompt, user_prompt)
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
+        if self.backend == "anthropic":
+            # Anthropic API takes `system` as a top-level arg, not a message.
+            # Newer reasoning models (claude-opus-4-7 et al.) reject `temperature`
+            # and `top_p` as deprecated, so we omit them — the model uses its
+            # own default sampling, which is what we want for a reasoning author.
+            response = self._client.messages.create(
+                model=self.model_name,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+                max_tokens=self.max_new_tokens,
+            )
+            # response.content is a list of content blocks; join text blocks.
+            parts = []
+            for block in response.content:
+                text = getattr(block, "text", None)
+                if text:
+                    parts.append(text)
+            output = "".join(parts).strip()
             self._log_prompt_io(system_prompt, user_prompt, output)
             return output
 
@@ -720,6 +756,13 @@ class StrategyGenerator:
         search_memory: str = "",
         allowed_helpers: list[str] | None = None,
         primary_failure: str = "",
+        phase: int | None = None,
+        phase1_acc_target: float = 0.0,
+        phase2_acc_floor: float = 0.0,
+        phase2_syn_target: float = 0.0,
+        anchor_attempt_number: int | None = None,
+        anchor_accuracy: float | None = None,
+        anchor_syntax_rate: float | None = None,
     ) -> str:
         """
         Generate a refined strategy after evaluation failure.
@@ -749,6 +792,13 @@ class StrategyGenerator:
             search_memory,
             allowed_helpers=allowed_helpers,
             primary_failure=primary_failure,
+            phase=phase,
+            phase1_acc_target=phase1_acc_target,
+            phase2_acc_floor=phase2_acc_floor,
+            phase2_syn_target=phase2_syn_target,
+            anchor_attempt_number=anchor_attempt_number,
+            anchor_accuracy=anchor_accuracy,
+            anchor_syntax_rate=anchor_syntax_rate,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)

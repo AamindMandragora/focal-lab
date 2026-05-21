@@ -370,6 +370,11 @@ class SynthesisPipeline:
         local_neighborhood_refinement: bool = True,
         max_local_edit_ratio: float = 0.65,
         beam_verify_candidates: bool = True,
+        # Two-phase staged optimization (accuracy first, then syntax)
+        two_phase: bool = False,
+        phase1_acc_target: float = 0.0,
+        phase2_acc_floor: float = 0.0,
+        phase2_syn_target: float = 0.0,
     ):
         """
         Initialize the synthesis pipeline.
@@ -415,9 +420,24 @@ class SynthesisPipeline:
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
         self.save_reports = save_reports
 
+        # Two-phase staged optimization: accuracy first, then syntax.
+        # In Phase 1, min_syntax_rate is held at 0 (don't care). When eval
+        # accuracy meets phase1_acc_target, we transition to Phase 2 and
+        # swap thresholds to (phase2_acc_floor, phase2_syn_target).
+        self.two_phase = two_phase
+        self.phase1_acc_target = phase1_acc_target
+        self.phase2_acc_floor = phase2_acc_floor
+        self.phase2_syn_target = phase2_syn_target
+        self.phase = 1 if two_phase else None
+
         # Evaluation thresholds
-        self.min_accuracy = min_accuracy
-        self.min_syntax_rate = min_syntax_rate
+        if two_phase:
+            # Phase 1 active thresholds: hit accuracy target, ignore syntax
+            self.min_accuracy = phase1_acc_target
+            self.min_syntax_rate = 0.0
+        else:
+            self.min_accuracy = min_accuracy
+            self.min_syntax_rate = min_syntax_rate
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
@@ -675,6 +695,34 @@ class SynthesisPipeline:
             f"(top_k={self.helper_bandit_top_k}, explore_untried={self.helper_bandit_explore_untried})"
         )
         return sorted(allowed_helpers), status
+
+    def _compute_pareto_best(
+        self, attempts: list[SynthesisAttempt]
+    ) -> tuple[int | None, float | None, float | None]:
+        """
+        Identify the Pareto-best prior attempt (lex by accuracy, then syntax).
+
+        Used to inject a concrete anchor into the refinement prompt so opus
+        builds a single-axis delta on top of a specific prior attempt rather
+        than re-deriving "what was best" each iteration from the full history.
+        Only attempts with a completed evaluation on >=1 example are eligible.
+        """
+        candidates = [
+            a for a in attempts
+            if a.eval_result is not None
+            and (a.eval_result.num_examples or 0) > 0
+        ]
+        if not candidates:
+            return None, None, None
+        best = max(
+            candidates,
+            key=lambda a: (a.eval_result.accuracy, a.eval_result.syntax_rate),
+        )
+        return (
+            best.attempt_number,
+            best.eval_result.accuracy,
+            best.eval_result.syntax_rate,
+        )
 
     def _compute_allowed_helpers(self, attempts: list[SynthesisAttempt]) -> tuple[list[str] | None, str]:
         """
@@ -3005,15 +3053,9 @@ class SynthesisPipeline:
                 torch.cuda.empty_cache()
                 print("  Generator vllm engine unloaded to free GPU memory")
 
-            # Rotate eval seed each iteration so the gate moves and the
-            # synthesis loop can't local-search a single sample's quirks.
-            if not hasattr(self, "_eval_base_seed"):
-                self._eval_base_seed = (
-                    int(self.evaluator.sample_seed)
-                    if self.evaluator.sample_seed is not None
-                    else 0
-                )
-            self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
+            # Eval seed is fixed across iterations so per-iter deltas are
+            # statistically trustworthy and opus can anchor on best-so-far.
+            # Overfitting concern is handled by the final held-out eval.
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
             eval_result = self.evaluator.evaluate_sample(
                 compiled_module_path=compilation_result.main_module_path,
@@ -3031,6 +3073,17 @@ class SynthesisPipeline:
                 ),
                 min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
             )
+            # Change 2: stamp the cross-attempt cluster ledger on the result
+            # so EvaluationResult.get_feedback_summary can emit persistent
+            # mode IDs (mode_A appeared in attempts 1,3,5…).
+            if not hasattr(self, "_failure_ledger"):
+                try:
+                    from synthesis.failure_taxonomy import make_persistent_ledger
+                except ImportError:
+                    from failure_taxonomy import make_persistent_ledger
+                self._failure_ledger = make_persistent_ledger()
+            eval_result._failure_ledger = self._failure_ledger
+            eval_result._attempt_index = attempt.attempt_number
             attempt.eval_result = eval_result
 
             smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
@@ -3071,6 +3124,12 @@ class SynthesisPipeline:
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
                     print(f"  Helper policy: {next_helper_status}")
+                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
+                if anchor_n is not None:
+                    print(
+                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
+                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
+                    )
                 strategy_code = self._refine_with_beam(
                     stage_label="evaluation_error",
                     previous_strategy=strategy_code,
@@ -3083,9 +3142,35 @@ class SynthesisPipeline:
                         search_memory=search_memory,
                         allowed_helpers=next_allowed_helpers,
                         primary_failure=primary_failure,
+                        phase=self.phase,
+                        phase1_acc_target=self.phase1_acc_target,
+                        phase2_acc_floor=self.phase2_acc_floor,
+                        phase2_syn_target=self.phase2_syn_target,
+                        anchor_attempt_number=anchor_n,
+                        anchor_accuracy=anchor_acc,
+                        anchor_syntax_rate=anchor_syn,
                     ),
                 )
                 continue
+
+            # Two-phase staged optimization: transition Phase 1 → Phase 2
+            # when accuracy first meets the Phase 1 target. Phase 2 swaps in
+            # the accuracy floor and syntax target as the new live thresholds,
+            # so the subsequent meets_threshold check + every later iteration
+            # uses Phase 2 values.
+            if self.two_phase and self.phase == 1:
+                if eval_result.accuracy >= self.phase1_acc_target:
+                    print(
+                        f"  ✓ Phase 1 → Phase 2 transition: "
+                        f"acc {eval_result.accuracy:.1%} >= phase1 target "
+                        f"{self.phase1_acc_target:.1%}. "
+                        f"Swapping thresholds to acc floor "
+                        f"{self.phase2_acc_floor:.1%} and syn target "
+                        f"{self.phase2_syn_target:.1%}."
+                    )
+                    self.phase = 2
+                    self.min_accuracy = self.phase2_acc_floor
+                    self.min_syntax_rate = self.phase2_syn_target
 
             # Check if evaluation meets thresholds
             if not eval_result.meets_threshold(
@@ -3134,6 +3219,12 @@ class SynthesisPipeline:
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
                     print(f"  Helper policy: {next_helper_status}")
+                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
+                if anchor_n is not None:
+                    print(
+                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
+                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
+                    )
                 strategy_code = self._refine_with_beam(
                     stage_label="evaluation_threshold",
                     previous_strategy=strategy_code,
@@ -3146,6 +3237,13 @@ class SynthesisPipeline:
                         search_memory=search_memory,
                         allowed_helpers=next_allowed_helpers,
                         primary_failure=primary_failure,
+                        phase=self.phase,
+                        phase1_acc_target=self.phase1_acc_target,
+                        phase2_acc_floor=self.phase2_acc_floor,
+                        phase2_syn_target=self.phase2_syn_target,
+                        anchor_attempt_number=anchor_n,
+                        anchor_accuracy=anchor_acc,
+                        anchor_syntax_rate=anchor_syn,
                     ),
                 )
                 continue
@@ -3204,6 +3302,57 @@ class SynthesisPipeline:
                 task_description,
                 run_dir,
                 run_results_dir,
+            )
+
+        # Best-accuracy fallback: if any attempt's accuracy beat min_accuracy
+        # (even if syntax fell short of min_syntax_rate), save a side-channel
+        # `fallback_winner.json` so this cell can be harvested as an accuracy-only
+        # win in post-hoc analysis. Does NOT change exception semantics — the
+        # subprocess still exits non-zero so existing flows aren't affected.
+        fallback_winner = None
+        for att in attempts:
+            if (
+                att.eval_result is not None
+                and att.eval_result.accuracy >= self.min_accuracy
+                and (
+                    fallback_winner is None
+                    or att.eval_result.accuracy > fallback_winner.eval_result.accuracy
+                )
+            ):
+                fallback_winner = att
+
+        if fallback_winner is not None:
+            fb_path = run_results_dir / "fallback_winner.json"
+            try:
+                with open(fb_path, "w") as f:
+                    json.dump(
+                        {
+                            "fallback_reason": "accuracy_met_but_syntax_below_threshold",
+                            "min_accuracy": self.min_accuracy,
+                            "min_syntax_rate": self.min_syntax_rate,
+                            "winner_attempt_number": fallback_winner.attempt_number,
+                            "winner_accuracy": fallback_winner.eval_result.accuracy,
+                            "winner_syntax_rate": fallback_winner.eval_result.syntax_rate,
+                            "winner_strategy_code": fallback_winner.strategy_code,
+                            "winner_full_dafny_code": fallback_winner.full_dafny_code,
+                            "evaluation": fallback_winner.eval_result.to_dict(),
+                        },
+                        f,
+                        indent=2,
+                    )
+                print(
+                    f"[FALLBACK] accuracy-only winner: attempt "
+                    f"{fallback_winner.attempt_number}, "
+                    f"acc={fallback_winner.eval_result.accuracy:.1%} "
+                    f"(syntax {fallback_winner.eval_result.syntax_rate:.1%} below "
+                    f"required {self.min_syntax_rate:.1%}). Saved to {fb_path}."
+                )
+            except Exception as fb_err:
+                print(f"[FALLBACK] Failed to write fallback_winner.json: {fb_err}")
+        else:
+            print(
+                "[FALLBACK] No accuracy-only candidate found either "
+                "(no attempt met the min_accuracy threshold); no fallback saved."
             )
 
         error = SynthesisExhaustionError(

@@ -70,9 +70,9 @@ Examples:
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "bedrock"],
+        choices=["huggingface", "vllm", "openai", "bedrock", "anthropic"],
         default="openai",
-        help="Backend for strategy generation (default: openai)",
+        help="Backend for strategy generation (default: openai). 'anthropic' uses ANTHROPIC_API_KEY for Claude models like claude-opus-4-7.",
     )
 
     parser.add_argument(
@@ -209,6 +209,33 @@ Examples:
         type=float,
         required=True,
         help="Minimum syntax validity rate threshold (e.g. 0.5)"
+    )
+
+    parser.add_argument(
+        "--two-phase",
+        action="store_true",
+        help="Enable two-phase staged optimization: drive accuracy first, then syntax"
+    )
+
+    parser.add_argument(
+        "--phase1-acc-target",
+        type=float,
+        default=0.0,
+        help="Phase 1 accuracy target; reaching this triggers transition to Phase 2"
+    )
+
+    parser.add_argument(
+        "--phase2-acc-floor",
+        type=float,
+        default=0.0,
+        help="Phase 2 accuracy floor; must be maintained while optimizing syntax"
+    )
+
+    parser.add_argument(
+        "--phase2-syn-target",
+        type=float,
+        default=0.0,
+        help="Phase 2 syntax-rate target; final exit condition together with the acc floor"
     )
 
     parser.add_argument(
@@ -682,6 +709,11 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
+        # Two-phase staged optimization (accuracy first, then syntax)
+        two_phase=args.two_phase,
+        phase1_acc_target=args.phase1_acc_target,
+        phase2_acc_floor=args.phase2_acc_floor,
+        phase2_syn_target=args.phase2_syn_target,
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
