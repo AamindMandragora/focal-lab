@@ -12,7 +12,7 @@ RecordOutcome = Literal["empty", "exemplar", "good", "bad", "duplicate"]
 
 def strip_trailing_molecule_slot(prompt: str) -> str:
     text = prompt.rstrip()
-    for suffix in ("Molecule: <<", "Molecule:", "SMILES:", "Reasoning:"):
+    for suffix in ("Molecule: <<", "Molecule:", "SMILES:", "Reasoning:", "<<"):
         while text.endswith(suffix):
             text = text[: -len(suffix)].rstrip()
     return text
@@ -78,7 +78,7 @@ class SmilesPromptState:
         if self.bad_results:
             lines.append("Bad results:")
             lines.extend(f"SMILES: {smiles}" for smiles in self.bad_results)
-        lines.append("SMILES:")
+        lines.append("Reasoning:")
         return "\n" + "\n".join(lines) + "\n"
 
     def apply_to_example(self, example: dict[str, Any]) -> None:

@@ -53,10 +53,23 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
     return str(example.get("class_name", ""))
 
 
+def grammar_text_for_prompt_tier(example: dict[str, Any], prompt_tier: int) -> str:
+    """Return decoder grammar: tier 1 body-only; tier 2 reasoning + ``<<`` SMILES ``>>``."""
+    from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
+        build_smiles_tier1_body_grammar,
+        build_smiles_tier2_delimited_grammar,
+    )
+
+    base = str(example.get("grammar_text", ""))
+    if int(prompt_tier) == 1:
+        return build_smiles_tier1_body_grammar(base)
+    return build_smiles_tier2_delimited_grammar(base)
+
+
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
 
-    grammar_text = example.get("grammar_text", "")
+    grammar_text = grammar_text_for_prompt_tier(example, getattr(evaluator, "prompt_tier", 2))
     class_name = str(example.get("class_name", "smiles"))
     cache_key = ("smiles", class_name, grammar_text)
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)

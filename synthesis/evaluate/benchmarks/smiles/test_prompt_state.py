@@ -10,7 +10,7 @@ from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState,
 class SmilesPromptStateTests(unittest.TestCase):
     def test_records_good_and_bad_sections(self) -> None:
         state = SmilesPromptState(["CCO"])
-        example = {"class_name": "chain_extenders", "prompt": "Task text\nMolecule:\n"}
+        example = {"class_name": "chain_extenders", "prompt": "Task text\nReasoning:\n"}
 
         good_row = {
             "unique_valid_candidate": True,

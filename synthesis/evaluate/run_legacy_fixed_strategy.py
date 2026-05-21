@@ -245,10 +245,11 @@ def _tier1_grammar_for_example(
             require_symbolic=False,
         )
     if dataset == "smiles":
-        return _legacy_constrained_body_grammar(
-            str(example.get("grammar_text", "")),
-            require_symbolic=False,
+        from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
+            build_smiles_tier1_body_grammar,
         )
+
+        return build_smiles_tier1_body_grammar(str(example.get("grammar_text", "")))
     raise ValueError(f"Unsupported dataset for tier-1 constrained grammar: {dataset}")
 
 
@@ -469,7 +470,9 @@ def _enrich_crane_baseline_rows(
             row.get("llm_response") or row.get("response") or row.get("pred") or ""
         )
         extracted = row.get("parsed_completion")
-        if extracted is None and example is not None:
+        if example is not None and (
+            extracted is None or dataset in ("spider", "smiles")
+        ):
             completion = completion_for_scoring(prompt_s or None, raw_generated)
             scored = (
                 eval_runtime._truncate_gsm_output(completion)
@@ -761,7 +764,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
 
     decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
     n_steps = max(1, int(getattr(args, "cars_search_steps", DEFAULT_CARS_SEARCH_STEPS)))
-    max_new_tokens = decode_cap
+    if dataset == "smiles":
+        from synthesis.evaluate.prompt_tiers import smiles_tier1_max_new_tokens
+
+        max_new_tokens = smiles_tier1_max_new_tokens(decode_cap)
+    else:
+        max_new_tokens = decode_cap
     print(
         f"CARS: {n_steps} search attempts/example, "
         f"max_new_tokens={max_new_tokens} (eval-max-steps cap only)"
@@ -905,6 +913,10 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     def _gcd_max_new_tokens() -> int:
         if dataset == "gsm_symbolic":
             return min(28, decode_cap)
+        if dataset == "smiles":
+            from synthesis.evaluate.prompt_tiers import smiles_tier1_max_new_tokens
+
+            return smiles_tier1_max_new_tokens(decode_cap)
         return decode_cap
 
     def _gcd_prompt(prompt: str) -> str:
@@ -924,8 +936,19 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_states: dict[str, SmilesPromptState] = {}
 
+    from syncode import common as syncode_common
+
     for example in examples:
         grammar_text = _grammar_for_example(example)
+        if dataset == "smiles":
+            from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
+                prepare_smiles_mask_store,
+            )
+
+            tokenizer = syncode_common.load_tokenizer(args.eval_model)
+            grammar_text = prepare_smiles_mask_store(
+                example, tokenizer, mode="grammar_strict"
+            )
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in syncode_cache:
             syncode_cache[cache_key] = Syncode(
@@ -1072,6 +1095,10 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     def _itergen_max_new_tokens() -> int:
         if dataset == "gsm_symbolic":
             return min(28, decode_cap)
+        if dataset == "smiles":
+            from synthesis.evaluate.prompt_tiers import smiles_tier1_max_new_tokens
+
+            return smiles_tier1_max_new_tokens(decode_cap)
         return decode_cap
 
     _new_tok = _itergen_max_new_tokens()
@@ -1084,12 +1111,23 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         record_prompt_result,
     )
 
+    from syncode import common as syncode_common
+
     itergen_cache: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
     smiles_prompt_states: dict[str, SmilesPromptState] = {}
 
     for example in examples:
         grammar_text = _grammar_for_example(example)
+        if dataset == "smiles":
+            from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
+                prepare_smiles_mask_store,
+            )
+
+            tokenizer = syncode_common.load_tokenizer(args.eval_model)
+            grammar_text = prepare_smiles_mask_store(
+                example, tokenizer, mode="grammar_mask"
+            )
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in itergen_cache:
             # Session ceiling must cover prompt + capped decode (``_new_tok``), not ``eval_max_steps`` alone.
@@ -1169,6 +1207,130 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_crane_smiles_legacy_adapter(args: argparse.Namespace) -> int:
+    """
+    Optional in-repo CRANE CSD for SMILES (tier-2 ``<<`` SMILES ``>>``).
+
+    Not used by baseline ``main()`` (SMILES CRANE uses legacy CRANE ``main.py``).
+    Requires ``--dafny-path`` = synthesis run dir with existing ``GeneratedCSD.py``;
+    reference ``.dfy`` files are never compiled.
+    """
+    from synthesis.evaluate.benchmarks.smiles.environment import resolve_run_dir, setup_dafny_environment
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        SmilesPromptState,
+        record_prompt_result,
+    )
+    from synthesis.evaluate.benchmarks.gsm_symbolic.generation import run_crane_csd
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.completion_text import completion_for_scoring
+    from synthesis.evaluate.evaluator import Evaluator
+    from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
+
+    run_started = time.perf_counter()
+    dataset = "smiles"
+    decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
+    logic = get_logic(dataset)
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=decode_cap,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        smiles_classes=getattr(args, "smiles_classes", None),
+        prompt_tier=2,
+    )
+    if not args.dafny_path:
+        raise RuntimeError(
+            "SMILES in-repo CRANE requires --dafny-path pointing at a synthesis run directory "
+            "that already contains GeneratedCSD.py (reference .dfy files are never compiled here)."
+        )
+    examples = logic.load_dataset_sample(eval_runtime)
+    run_dir = resolve_run_dir(Path(args.dafny_path))
+
+    env_by_class: dict[str, dict[str, Any]] = {}
+    grammar_path_by_class: dict[str, Path] = {}
+    smiles_prompt_states: dict[str, SmilesPromptState] = {}
+    rows: list[dict[str, Any]] = []
+
+    for example in examples:
+        class_name = str(example.get("class_name", ""))
+        row = dict(example)
+        grammar_path = Path(row["grammar_path"])
+        grammar_path_by_class[class_name] = grammar_path
+        if class_name not in env_by_class:
+            env_by_class[class_name] = setup_dafny_environment(
+                run_dir,
+                args.eval_model,
+                backend=args.eval_backend,
+                device=_legacy_cuda_device_for_backend(args.device, args.eval_backend),
+                grammar_file=grammar_path,
+                vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+                vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+            )
+
+        env = env_by_class[class_name]
+
+        if class_name not in smiles_prompt_states:
+            smiles_prompt_states[class_name] = SmilesPromptState(row.get("prompt_exemplars", []))
+        smiles_prompt_states[class_name].apply_to_example(row)
+
+        prompt = _legacy_benchmark_prompt(
+            logic,
+            eval_runtime,
+            row,
+            "chain_of_thought",
+            dataset=dataset,
+            strategy="crane",
+        )
+        gen_started = time.perf_counter()
+        output_text, token_count, gen_time, constrained_segments, _trace = run_crane_csd(
+            env=env,
+            prompt_text=prompt,
+            max_steps=decode_cap,
+            step_token_budget=args.eval_step_token_budget,
+            grammar_file=grammar_path_by_class[class_name],
+            dynamic_parser=logic.build_dynamic_parser(eval_runtime, env, row),
+            start_inside_constrained=False,
+        )
+        gen_seconds = time.perf_counter() - gen_started
+        completion = completion_for_scoring(prompt, output_text)
+        scored_output = completion.strip()
+        expected = logic.expected_answer(eval_runtime, row)
+        actual, _src, aux = logic.extract_actual(eval_runtime, scored_output, row)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, row, aux, scored_output))
+        syntax_valid = bool(aux and aux.get("syntax_valid"))
+        aux = record_prompt_result(row, smiles_prompt_states, actual or "", aux)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, row, aux, scored_output))
+
+        rows.append(
+            _legacy_adapter_baseline_row(
+                dataset=dataset,
+                example=row,
+                prompt=prompt,
+                raw_generated=output_text,
+                extracted=actual,
+                correct=is_correct,
+                syntax_valid=syntax_valid,
+                generation_seconds=gen_seconds,
+                num_tokens=token_count,
+            )
+        )
+
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        dataset=dataset,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+        metadata=_baseline_run_metadata(args, dataset, adapter="crane_smiles_inrepo"),
+    )
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
 def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     """Unconstrained SMILES generation: generate without grammar masking, then score.
 
@@ -1190,7 +1352,11 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
     from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
     run_started = time.perf_counter()
-    decode_cap = effective_max_new_tokens("smiles", args.eval_max_steps)
+    from synthesis.evaluate.prompt_tiers import smiles_tier2_max_new_tokens
+
+    decode_cap = smiles_tier2_max_new_tokens(
+        effective_max_new_tokens("smiles", args.eval_max_steps)
+    )
     selected_classes = [
         part.strip()
         for part in (args.smiles_classes or ",".join(SMILES_CLASSES)).split(",")
@@ -1259,7 +1425,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 from vllm import SamplingParams as _SP
 
                 gen_started = time.perf_counter()
-                sp = _SP(max_tokens=decode_cap, temperature=0.8, stop=["\n\n"])
+                sp = _SP(max_tokens=decode_cap, temperature=0.2)
                 outputs = llm.generate([running_prompt], sp)
                 gen_seconds = time.perf_counter() - gen_started
                 completion = outputs[0].outputs[0]
@@ -1273,7 +1439,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                         **inputs,
                         max_new_tokens=decode_cap,
                         do_sample=True,
-                        temperature=0.8,
+                        temperature=0.2,
                     )
                 gen_seconds = time.perf_counter() - gen_started
                 new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
@@ -1457,6 +1623,12 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
     repo_root = Path(__file__).resolve().parents[2]
     crane_src_dir = repo_root / "legacy" / "CRANE" / "src"
+    tier2_grammar_path: Path | None = None
+    if dataset == "spider" and mode != "original":
+        tier2_sql = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
+        tier2_grammar_path = crane_src_dir / ".vas_spider_tier2.lark"
+        tier2_grammar_path.write_text(tier2_sql, encoding="utf-8")
+        grammar = str(tier2_grammar_path)
     if not crane_src_dir.exists():
         raise RuntimeError(f"Legacy CRANE src directory not found: {crane_src_dir}")
 
@@ -1516,12 +1688,21 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         )
 
     if dataset == "smiles":
+        from synthesis.evaluate.prompt_tiers import (
+            effective_max_new_tokens,
+            smiles_tier2_max_new_tokens,
+        )
+
         smiles_classes = getattr(args, "smiles_classes", None) or "acrylates,chain_extenders,isocyanates"
         spc = getattr(args, "smiles_samples_per_class", None)
         if spc is None:
             spc = args.eval_sample_size
         cmd.extend(["--smiles_classes", smiles_classes])
         cmd.extend(["--smiles_samples_per_class", str(spc)])
+        crane_decode = smiles_tier2_max_new_tokens(
+            effective_max_new_tokens("smiles", args.eval_max_steps)
+        )
+        cmd.extend(["--max_tokens", str(crane_decode)])
 
     repo_syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
     repo_syncode_pkg = repo_syncode_root / "syncode"
@@ -1533,7 +1714,11 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     )
 
     crane_run_started = time.perf_counter()
-    subprocess.run(cmd, cwd=crane_src_dir, check=True, env=env)
+    try:
+        subprocess.run(cmd, cwd=crane_src_dir, check=True, env=env)
+    finally:
+        if tier2_grammar_path is not None and tier2_grammar_path.is_file():
+            tier2_grammar_path.unlink(missing_ok=True)
 
     from synthesis.evaluate.benchmarks.registry import get_logic
     from synthesis.evaluate.evaluator import Evaluator

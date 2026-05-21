@@ -14,6 +14,8 @@ _START_RULE_CLOSERS: tuple[tuple[str, str], ...] = (
 _CSD_START_CLOSERS: tuple[tuple[str, str], ...] = (
     (r"^csd_start:\s*sql_stmt\s+EOQ\s*$", 'csd_start: sql_stmt ">>"'),
     (r"^csd_start:\s*sql_stmt\s*$", 'csd_start: sql_stmt ">>"'),
+    (r"^csd_start:\s*smiles\s+\">>\"\s*$", 'csd_start: smiles ">>"'),
+    (r"^csd_start:\s*smiles\s*$", 'csd_start: smiles ">>"'),
 )
 
 _CONSTRAINED_START_RULES: tuple[tuple[str, str, str], ...] = (

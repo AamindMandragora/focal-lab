@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence
+
+from synthesis.evaluate.prompt_tiers import PROMPTS_ROOT, SMILES_FEWSHOT_COUNT, smiles_class_properties
 
 SMILES_CLASSES: tuple[str, ...] = ("acrylates", "chain_extenders", "isocyanates")
 DATA_DIR = Path(
@@ -14,6 +17,7 @@ DATA_DIR = Path(
 GRAMMAR_DIR = Path(
     os.environ.get("SMILES_GRAMMAR_DIR", str(Path(__file__).resolve().parents[2] / "grammars"))
 ).expanduser()
+SHOTS_PATH = PROMPTS_ROOT / "smiles" / "shots.json"
 
 
 def normalize_smiles_classes(
@@ -51,7 +55,7 @@ def normalize_smiles_classes(
     return selected
 
 
-def extract_prompt_exemplars(prompt: str) -> list[str]:
+def extract_prompt_exemplars(prompt: str, *, limit: int | None = SMILES_FEWSHOT_COUNT) -> list[str]:
     exemplars: list[str] = []
     for line in prompt.splitlines():
         line = line.strip()
@@ -59,7 +63,29 @@ def extract_prompt_exemplars(prompt: str) -> list[str]:
             value = line.split(":", 1)[1].strip()
             if value:
                 exemplars.append(value)
+        if limit is not None and len(exemplars) >= limit:
+            break
     return exemplars
+
+
+@lru_cache(maxsize=None)
+def _load_frozen_smiles_shots() -> dict[str, list[dict[str, str]]]:
+    if not SHOTS_PATH.is_file():
+        return {}
+    return json.loads(SHOTS_PATH.read_text())
+
+
+def prompt_exemplars_for_class(class_name: str) -> list[str]:
+    """Return up to eight frozen in-context exemplar SMILES for a class."""
+    frozen = _load_frozen_smiles_shots().get(class_name, [])
+    if frozen:
+        return [
+            str(row.get("smiles", "")).strip()
+            for row in frozen[:SMILES_FEWSHOT_COUNT]
+            if str(row.get("smiles", "")).strip()
+        ]
+    prompt_path = DATA_DIR / f"{class_name}.txt"
+    return extract_prompt_exemplars(prompt_path.read_text(), limit=SMILES_FEWSHOT_COUNT)
 
 
 @lru_cache(maxsize=None)
@@ -71,18 +97,15 @@ def get_smiles_task(class_name: str) -> Dict[str, Any]:
     prompt_path = DATA_DIR / f"{class_name}.txt"
     grammar_text = grammar_path.read_text()
     prompt = prompt_path.read_text()
-    properties = prompt.split("Molecule:")[0].split("SMILES:")[0].strip()
-    if properties.startswith("Properties:"):
-        properties = properties.split(":", 1)[1].strip()
     return {
         "class_name": class_name,
         "question": class_name,
         "prompt": prompt,
-        "smiles_properties": properties,
+        "smiles_properties": smiles_class_properties(class_name),
         "grammar_path": grammar_path,
         "grammar_text": grammar_text,
         "prompt_path": prompt_path,
-        "prompt_exemplars": extract_prompt_exemplars(prompt),
+        "prompt_exemplars": prompt_exemplars_for_class(class_name),
     }
 
 
