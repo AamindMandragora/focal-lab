@@ -69,6 +69,8 @@ MODEL_TABULAR_MACROS = [
 BENCHMARKS = ["gsm_symbolic", "spider", "smiles"]
 STRATEGIES = ["unconstrained", "gcd", "crane", "itergen", "cars", "metadecode"]
 SMILES_CLASSES = ("acrylates", "chain_extenders", "isocyanates")
+# Main matrix / non-Ablation-C metadecode runs (first profile in run_all_tests.py --generation-models).
+DEFAULT_MAIN_GEN_PROFILE = "opus4.7"
 MASK_LABELS = ("mask_on", "mask_off")
 
 
@@ -436,6 +438,7 @@ def _main_table_rows_raw(
                         generated_dir,
                         benchmark,
                         model_full,
+                        gen_profile=DEFAULT_MAIN_GEN_PROFILE,
                         smiles_classes=smiles_classes,
                         baselines_dir=baselines_dir,
                         repo_root=repo_root,
@@ -575,6 +578,7 @@ def emit_step_budget_table(
                         generated_dir,
                         benchmark,
                         ablation_model,
+                        gen_profile=DEFAULT_MAIN_GEN_PROFILE,
                         max_steps=ms,
                         smiles_classes=smiles_classes,
                         baselines_dir=baselines_dir,
@@ -621,6 +625,7 @@ def emit_synth_iter_table(
                 generated_dir,
                 benchmark,
                 ablation_model,
+                gen_profile=DEFAULT_MAIN_GEN_PROFILE,
                 synth_iter=k,
                 smiles_classes=smiles_classes,
                 baselines_dir=baselines_dir,
@@ -711,6 +716,39 @@ def emit_factorial_table(
     return "\n".join(lines)
 
 
+MAIN_RESULTS_BEGIN = "% BEGIN:main_results_table_body"
+MAIN_RESULTS_END = "% END:main_results_table_body"
+
+
+def write_main_results_to_paper(
+    body: str,
+    *,
+    paper_experiments: Path | None = None,
+) -> Path:
+    """Replace the auto-generated Table~1 body in paper/experiments.tex."""
+    repo = _repo_root()
+    tex_path = paper_experiments or (repo / "paper" / "experiments.tex")
+    text = tex_path.read_text(encoding="utf-8")
+    if MAIN_RESULTS_BEGIN not in text or MAIN_RESULTS_END not in text:
+        raise SystemExit(
+            f"Missing {MAIN_RESULTS_BEGIN!r} / {MAIN_RESULTS_END!r} markers in {tex_path}"
+        )
+    indented = "\n".join(body.splitlines())
+    replacement = (
+        f"{MAIN_RESULTS_BEGIN}\n"
+        f"{indented}\n"
+        f"{MAIN_RESULTS_END}"
+    )
+    start = text.find(MAIN_RESULTS_BEGIN)
+    end = text.find(MAIN_RESULTS_END, start)
+    if start < 0 or end < 0:
+        raise SystemExit(f"Could not locate main results block in {tex_path}")
+    end += len(MAIN_RESULTS_END)
+    new_text = text[:start] + replacement + text[end:]
+    tex_path.write_text(new_text, encoding="utf-8")
+    return tex_path
+
+
 def main() -> None:
     repo = _repo_root()
     p = argparse.ArgumentParser(description=__doc__)
@@ -718,7 +756,7 @@ def main() -> None:
     p.add_argument("--generated-dir", type=Path, default=repo / "outputs" / "generated")
     p.add_argument("--step-budgets", default="256,512,1024")
     p.add_argument("--synth-iters", default="3,5,10")
-    p.add_argument("--gen-profiles", default="gpt5.4,opus4.7,gemini-pro")
+    p.add_argument("--gen-profiles", default="opus4.7,gpt5.4,gemini-pro")
     p.add_argument("--smiles-classes", default=",".join(SMILES_CLASSES))
     p.add_argument(
         "--paper-main-table",
@@ -737,7 +775,21 @@ def main() -> None:
         action="store_true",
         help="Only read JSON files tracked by git under outputs/ (via git ls-files)",
     )
+    p.add_argument(
+        "--write-paper",
+        action="store_true",
+        help="Write Table 1 body into paper/experiments.tex (implies --paper-main-table --paper-bold-best)",
+    )
+    p.add_argument(
+        "--paper-experiments",
+        type=Path,
+        default=repo / "paper" / "experiments.tex",
+        help="Target experiments.tex for --write-paper",
+    )
     args = p.parse_args()
+    if args.write_paper:
+        args.paper_main_table = True
+        args.paper_bold_best = True
 
     step_budgets = [int(x) for x in args.step_budgets.split(",")]
     synth_iters = [int(x) for x in args.synth_iters.split(",")]
@@ -757,17 +809,24 @@ def main() -> None:
     print("=" * 60)
     print("Table 1: Main Results")
     print("=" * 60)
-    print(
-        emit_main_table(
-            args.baselines_dir,
-            args.generated_dir,
-            smiles_classes=smiles_classes,
-            paper_multirow=args.paper_main_table,
-            bold_best=args.paper_bold_best,
-            repo_root=repo_for_track,
-            tracked_relpaths=tracked,
-        )
+    main_table_body = emit_main_table(
+        args.baselines_dir,
+        args.generated_dir,
+        smiles_classes=smiles_classes,
+        paper_multirow=args.paper_main_table,
+        bold_best=args.paper_bold_best,
+        repo_root=repo_for_track,
+        tracked_relpaths=tracked,
     )
+    print(main_table_body)
+    if args.write_paper:
+        if not args.paper_main_table:
+            raise SystemExit("--write-paper requires --paper-main-table")
+        out_path = write_main_results_to_paper(
+            main_table_body,
+            paper_experiments=args.paper_experiments,
+        )
+        print(f"\nWrote Table 1 body to {out_path}")
     print()
 
     print("=" * 60)

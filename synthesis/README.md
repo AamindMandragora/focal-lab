@@ -11,7 +11,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
   - **GSM-Symbolic:** unless `--gsm-instantiated-hf` is set, an unset `--gsm-source-dir` defaults to vendored `legacy/CRANE/src/gsm_symbolic` JSONs so feedback uses `{placeholder}` questions (HF `apple/GSM-Symbolic` `question` / `original_question` fields are numeric prose only).
-  - Generation backends: local HuggingFace/vLLM, **OpenAI** (default for CLI), or **Amazon Bedrock** (e.g. metadecode `opus4.7` profile).
+  - Generation backends: local HuggingFace/vLLM, **Amazon Bedrock / Claude Opus** (default for CLI), or **OpenAI** (e.g. `gpt5.4` ablation profile).
   - Includes empirical helper-mask controls to constrain helper-call search space:
     `--adaptive-helper-mask`, `--helper-selection-policy`,
     `--helper-mask-min-evals`, `--helper-mask-min-uses`,
@@ -67,8 +67,8 @@ Common filesystem/tool paths can be overridden via CLI flags or environment vari
 - `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY` (Spider evaluator location)
 - `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
 - `CSD_JSON_GRAMMAR_PATH` (JSON grammar for smoke-test runner)
-- `OPENAI_API_KEY` / `OPENAI_GENERATION_MODEL` for OpenAI (default `--generation-backend openai` in `run_synthesis`, model `gpt-5.4` unless overridden).
-- `AWS_BEARER_TOKEN_BEDROCK` and Bedrock model ids when using `--generation-backend bedrock`.
+- `AWS_BEARER_TOKEN_BEDROCK`, `BEDROCK_OPUS_MODEL`, and related Bedrock ids (default `--generation-backend bedrock` in `run_synthesis`).
+- `OPENAI_API_KEY` / `OPENAI_GENERATION_MODEL` for OpenAI (`--generation-backend openai`, model `gpt-5.4` unless overridden).
 
 ## Design Philosophy
 

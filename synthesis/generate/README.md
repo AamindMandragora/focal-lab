@@ -36,9 +36,9 @@ Output:
 
 ## API Backends
 
-- **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Default model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Used by the **`gpt5.4`** profile in `run_all_tests.py`.
+- **Amazon Bedrock** (`--generation-backend bedrock`, default in `run_synthesis`): **`AWS_BEARER_TOKEN_BEDROCK`** and Claude Opus via **`BEDROCK_OPUS_MODEL`** (or **`--generation-model`** / **`BEDROCK_GENERATION_MODEL`**). Used by the main **`opus4.7`** profile in `run_all_tests.py` (first in default **`--generation-models`**).
 
-- **Amazon Bedrock** (`--generation-backend bedrock`): **`AWS_BEARER_TOKEN_BEDROCK`** and a Bedrock model id via **`--generation-model`** or **`BEDROCK_GENERATION_MODEL`**. Used by the **`opus4.7`** profile (see **`BEDROCK_OPUS_MODEL`** in `run_all_tests.py`).
+- **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Used by the **`gpt5.4`** synthesizer ablation profile in `run_all_tests.py`.
 
 For local runs use **`--generation-backend huggingface`** or **`vllm`**.
 

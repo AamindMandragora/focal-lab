@@ -10,7 +10,7 @@ Target venue: ACL (paper uses `acl.sty`, review mode).
 
 ### What Exists and Works
 
-1. **Full synthesis pipeline** — generate (GPT-5.4 default) → verify (Dafny) → compile (Dafny→Python) → evaluate (vLLM/Qwen) → refine. End-to-end functional.
+1. **Full synthesis pipeline** — generate (Claude Opus default) → verify (Dafny) → compile (Dafny→Python) → evaluate (vLLM/Qwen) → refine. End-to-end functional.
 2. **Verified reference strategies** — GCD, CRANE, IterGen, CARS formalized in Dafny against a shared primitive library (`VerifiedAgentSynthesis.dfy`). All verify cleanly.
 3. **Three benchmark integrations** — GSM-Symbolic, Spider, SMILES with dataset loaders, grammars, and scoring logic.
 4. **Legacy baseline runners** — external codebases for CRANE, IterGen, CARS wired into the evaluation harness for apples-to-apples comparison.
@@ -30,7 +30,7 @@ The experiment tables in `paper/experiments.tex` are entirely `\todo{--}`. No fi
 | Main matrix (4 models × 6 strategies × 3 benchmarks) | **NOT DONE** | `run_all_tests.py --skip-ablations --eval-sample-size <N>` with publication sample size |
 | Step-budget ablation (n=256,512,1024) | **NOT DONE** | Ablation A in `run_all_tests.py` |
 | Synthesis-iterations ablation (K=3,5,10) | **NOT DONE** | Ablation B in `run_all_tests.py` |
-| Synthesizer-model ablation (GPT-5.4, Opus 4.7, Gemini 3.1 Pro) | **NOT DONE** | Ablation C; requires API keys for all three |
+| Synthesizer-model ablation (Opus 4.7 main, GPT-5.4, Gemini 3.1 Pro) | **NOT DONE** | Ablation C; requires API keys for all three |
 | Per-step token budget (b=1,2,4) | **NOT DONE** | Ablation D in `run_all_tests.py` |
 | Beam refinement × helper selection (B=1,2,4 × utility,bandit) | **NOT DONE** | Ablation E in `run_all_tests.py` |
 | Adaptive helper masking (on/off) | **NOT DONE** | Ablation F in `run_all_tests.py` |
@@ -63,7 +63,7 @@ The experiment tables in `paper/experiments.tex` are entirely `\todo{--}`. No fi
 - The Dafny formalization is complete for all baseline strategies + the generated template.
 - The experiment runner can produce all needed data without code changes.
 - Paper framing/narrative (abstract, intro, approach) appears solid.
-- Three synthesizer backends (GPT-5.4, Opus 4.7, Gemini 3.1 Pro) are already wired in.
+- Three synthesizer backends (Opus 4.7 main, GPT-5.4 ablation, Gemini 3.1 Pro) are already wired in.
 
 ### Preliminary Signal
 

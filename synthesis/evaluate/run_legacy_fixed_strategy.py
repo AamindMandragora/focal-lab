@@ -876,7 +876,6 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         if p not in sys.path:
             sys.path.insert(0, p)
 
-    from syncode.infer import Syncode
     from synthesis.evaluate.benchmarks.registry import get_logic
 
     logic = get_logic(dataset)
@@ -932,84 +931,86 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         record_prompt_result,
     )
 
-    syncode_cache: dict[str, Any] = {}
+    from synthesis.evaluate.syncode_run_session import SyncodeRunSession, release_cuda_cache
+
+    gcd_session = SyncodeRunSession(
+        args.eval_model,
+        device=device,
+        mode="grammar_strict",
+        quantize=False,
+        parse_output_only=True,
+        log_level=0,
+        max_new_tokens=_gcd_max_new_tokens(),
+        do_sample=False,
+        num_return_sequences=1,
+        opp=False,
+    )
     rows: list[dict[str, Any]] = []
     smiles_prompt_states: dict[str, SmilesPromptState] = {}
 
     from syncode import common as syncode_common
 
-    for example in examples:
-        grammar_text = _grammar_for_example(example)
-        if dataset == "smiles":
-            from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
-                prepare_smiles_mask_store,
+    try:
+        for example in examples:
+            grammar_text = _grammar_for_example(example)
+            if dataset == "smiles":
+                from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
+                    prepare_smiles_mask_store,
+                )
+
+                tokenizer = syncode_common.load_tokenizer(args.eval_model)
+                grammar_text = prepare_smiles_mask_store(
+                    example, tokenizer, mode="grammar_strict"
+                )
+            gcd_session.apply_grammar(grammar_text)
+
+            if dataset == "smiles":
+                cls = str(example.get("class_name", ""))
+                if cls not in smiles_prompt_states:
+                    smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
+                smiles_prompt_states[cls].apply_to_example(example)
+
+            prompt = _legacy_benchmark_prompt(
+                logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="gcd"
             )
-
-            tokenizer = syncode_common.load_tokenizer(args.eval_model)
-            grammar_text = prepare_smiles_mask_store(
-                example, tokenizer, mode="grammar_strict"
+            gen_started = time.perf_counter()
+            gcd_prompt = _gcd_prompt(prompt)
+            completions = gcd_session.infer(gcd_prompt, stop_words=None)
+            gen_seconds = time.perf_counter() - gen_started
+            raw_output = _gcd_output(completions[0] if completions else "", example)
+            completion = completion_for_scoring(gcd_prompt, raw_output)
+            scored_output = (
+                eval_runtime._truncate_gsm_output(completion)
+                if dataset == "gsm_symbolic"
+                else completion
             )
-        cache_key = f"{dataset}:{hash(grammar_text)}"
-        if cache_key not in syncode_cache:
-            syncode_cache[cache_key] = Syncode(
-                model=args.eval_model,
-                mode="grammar_strict",
-                quantize=False,
-                device=device,
-                grammar=grammar_text,
-                parse_output_only=True,
-                log_level=0,
-                max_new_tokens=_gcd_max_new_tokens(),
-                do_sample=False,
-                num_return_sequences=1,
-                opp=False,
-            )
-        sc = syncode_cache[cache_key]
-
-        if dataset == "smiles":
-            cls = str(example.get("class_name", ""))
-            if cls not in smiles_prompt_states:
-                smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
-            smiles_prompt_states[cls].apply_to_example(example)
-
-        prompt = _legacy_benchmark_prompt(
-            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="gcd"
-        )
-        gen_started = time.perf_counter()
-        gcd_prompt = _gcd_prompt(prompt)
-        completions = sc.infer(gcd_prompt, stop_words=None)
-        gen_seconds = time.perf_counter() - gen_started
-        raw_output = _gcd_output(completions[0] if completions else "", example)
-        completion = completion_for_scoring(gcd_prompt, raw_output)
-        scored_output = (
-            eval_runtime._truncate_gsm_output(completion)
-            if dataset == "gsm_symbolic"
-            else completion
-        )
-        expected = logic.expected_answer(eval_runtime, example)
-        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
-        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
-
-        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
-        if dataset == "spider":
-            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
-        if dataset == "smiles":
-            syntax_valid = bool(aux and aux.get("syntax_valid"))
-            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+            expected = logic.expected_answer(eval_runtime, example)
+            actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
             is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
-        rows.append(
-            _legacy_adapter_baseline_row(
-                dataset=dataset,
-                example=example,
-                prompt=gcd_prompt,
-                raw_generated=raw_output,
-                extracted=actual,
-                correct=bool(is_correct),
-                syntax_valid=bool(syntax_valid),
-                generation_seconds=gen_seconds,
+            syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+            if dataset == "spider":
+                syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+            if dataset == "smiles":
+                syntax_valid = bool(aux and aux.get("syntax_valid"))
+                aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+                is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+            rows.append(
+                _legacy_adapter_baseline_row(
+                    dataset=dataset,
+                    example=example,
+                    prompt=gcd_prompt,
+                    raw_generated=raw_output,
+                    extracted=actual,
+                    correct=bool(is_correct),
+                    syntax_valid=bool(syntax_valid),
+                    generation_seconds=gen_seconds,
+                )
             )
-        )
+    finally:
+        gcd_session.close()
+        release_cuda_cache()
 
     _build_minimal_json(
         rows,
@@ -1042,6 +1043,72 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
             return ""
         return str(generated[0])
     return str(generated)
+
+
+def _itergen_ignore_whitespace(grammar: Any) -> bool:
+    from parsers import create_base_parser
+
+    base_parser = create_base_parser(grammar)
+    import regex
+
+    ignore_whitespace = False
+    for ig_name in ("WS", "WS_INLINE"):
+        for terminal in base_parser.terminals:
+            if terminal.name == ig_name:
+                if regex.match(terminal.pattern.to_regexp(), " ") is not None:
+                    ignore_whitespace = True
+    return ignore_whitespace
+
+
+def _itergen_grammar_bundle(
+    grammar_text: str,
+    *,
+    tokenizer: Any,
+    grammar_cache: dict[str, tuple[Any, Any, list[Any], bool]],
+    dfa_mode: str,
+) -> tuple[Any, Any, list[Any], bool]:
+    cached = grammar_cache.get(grammar_text)
+    if cached is not None:
+        return cached
+    from itergen import Grammar
+    from itergen.syncode.syncode.dfa_mask_store import DFAMaskStore
+    from parsers import create_parser
+
+    grammar = Grammar(grammar_text)
+    ignore_whitespace = _itergen_ignore_whitespace(grammar)
+    dfa_mask_store = DFAMaskStore.load_dfa_mask_store(
+        grammar=grammar,
+        tokenizer=tokenizer,
+        use_cache=True,
+        mode=dfa_mode,
+    )
+    inc_parsers = [create_parser(grammar, ignore_whitespace=ignore_whitespace)]
+    bundle = (grammar, dfa_mask_store, inc_parsers, ignore_whitespace)
+    grammar_cache[grammar_text] = bundle
+    return bundle
+
+
+def _itergen_rebind_grammar(
+    iter_gen: Any,
+    grammar_text: str,
+    *,
+    grammar_cache: dict[str, tuple[Any, Any, list[Any], bool]],
+    dfa_mode: str,
+) -> None:
+    """Swap tier-1 grammar/mask state without reloading the shared HF model."""
+    if getattr(iter_gen, "_vas_bound_grammar_text", None) == grammar_text:
+        return
+    grammar, dfa_mask_store, inc_parsers, ignore_whitespace = _itergen_grammar_bundle(
+        grammar_text,
+        tokenizer=iter_gen.tokenizer,
+        grammar_cache=grammar_cache,
+        dfa_mode=dfa_mode,
+    )
+    iter_gen.grammar = grammar
+    iter_gen.dfa_mask_store = dfa_mask_store
+    iter_gen.inc_parsers = inc_parsers
+    iter_gen._ignore_whitespace = ignore_whitespace
+    iter_gen._vas_bound_grammar_text = grammar_text
 
 
 def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
@@ -1113,88 +1180,106 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
 
     from syncode import common as syncode_common
 
-    itergen_cache: dict[str, Any] = {}
+    from synthesis.evaluate.syncode_run_session import release_cuda_cache
+
+    itergen_grammar_cache: dict[str, tuple[Any, Any, list[Any], bool]] = {}
+    iter_gen_session: Any = None
     rows: list[dict[str, Any]] = []
     smiles_prompt_states: dict[str, SmilesPromptState] = {}
+    _session_ceiling = min(16384, max(2048, _new_tok + 4096))
+    _itergen_dfa_mode = "grammar_mask" if dataset == "smiles" else "grammar_strict"
 
-    for example in examples:
-        grammar_text = _grammar_for_example(example)
-        if dataset == "smiles":
-            from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
-                prepare_smiles_mask_store,
+    try:
+        for example in examples:
+            grammar_text = _grammar_for_example(example)
+            if dataset == "smiles":
+                from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
+                    prepare_smiles_mask_store,
+                )
+
+                tokenizer = syncode_common.load_tokenizer(args.eval_model)
+                grammar_text = prepare_smiles_mask_store(
+                    example, tokenizer, mode="grammar_mask"
+                )
+            if iter_gen_session is None:
+                iter_gen_session = IterGen(
+                    grammar=grammar_text,
+                    model_id=args.eval_model,
+                    device=device,
+                    parse_output_only=True,
+                    quantize=False,
+                    max_tokens=_session_ceiling,
+                    do_sample=False,
+                    max_new_tokens=_new_tok,
+                    num_return_sequences=1,
+                )
+                iter_gen_session._vas_bound_grammar_text = grammar_text
+                itergen_grammar_cache[grammar_text] = (
+                    iter_gen_session.grammar,
+                    iter_gen_session.dfa_mask_store,
+                    iter_gen_session.inc_parsers,
+                    iter_gen_session._ignore_whitespace,
+                )
+            else:
+                _itergen_rebind_grammar(
+                    iter_gen_session,
+                    grammar_text,
+                    grammar_cache=itergen_grammar_cache,
+                    dfa_mode=_itergen_dfa_mode,
+                )
+            iter_gen = iter_gen_session
+
+            if dataset == "smiles":
+                cls = str(example.get("class_name", ""))
+                if cls not in smiles_prompt_states:
+                    smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
+                smiles_prompt_states[cls].apply_to_example(example)
+
+            prompt = _legacy_benchmark_prompt(
+                logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="itergen"
             )
 
-            tokenizer = syncode_common.load_tokenizer(args.eval_model)
-            grammar_text = prepare_smiles_mask_store(
-                example, tokenizer, mode="grammar_mask"
+            gen_started = time.perf_counter()
+            raw_completion = _itergen_generate(iter_gen, prompt)
+            if dataset == "gsm_symbolic":
+                raw_completion = _gsm_symbolic_scored_body(raw_completion)
+            else:
+                raw_completion = (raw_completion or "").strip()
+            gen_seconds = time.perf_counter() - gen_started
+            completion = completion_for_scoring(prompt, raw_completion)
+            scored_output = (
+                eval_runtime._truncate_gsm_output(completion)
+                if dataset == "gsm_symbolic"
+                else completion
             )
-        cache_key = f"{dataset}:{hash(grammar_text)}"
-        if cache_key not in itergen_cache:
-            # Session ceiling must cover prompt + capped decode (``_new_tok``), not ``eval_max_steps`` alone.
-            _session_ceiling = min(16384, max(2048, _new_tok + 4096))
-            # Do not use ``stop_strings`` here: ``["\\n\\n"]`` fires HuggingFace stopping criteria and ends
-            # generation before the LALR parser can reach a complete / EOF-ready state (e.g. GSM expr cut
-            # mid-expression). Rely on grammar ``start`` completion + ``max_new_tokens`` instead.
-            itergen_cache[cache_key] = IterGen(
-                grammar=grammar_text,
-                model_id=args.eval_model,
-                device=device,
-                parse_output_only=True,
-                quantize=False,
-                max_tokens=_session_ceiling,
-                do_sample=False,
-                max_new_tokens=_new_tok,
-                num_return_sequences=1,
-            )
-        iter_gen = itergen_cache[cache_key]
-
-        if dataset == "smiles":
-            cls = str(example.get("class_name", ""))
-            if cls not in smiles_prompt_states:
-                smiles_prompt_states[cls] = SmilesPromptState(example.get("prompt_exemplars", []))
-            smiles_prompt_states[cls].apply_to_example(example)
-
-        prompt = _legacy_benchmark_prompt(
-            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="itergen"
-        )
-
-        gen_started = time.perf_counter()
-        raw_completion = _itergen_generate(iter_gen, prompt)
-        if dataset == "gsm_symbolic":
-            raw_completion = _gsm_symbolic_scored_body(raw_completion)
-        else:
-            raw_completion = (raw_completion or "").strip()
-        gen_seconds = time.perf_counter() - gen_started
-        completion = completion_for_scoring(prompt, raw_completion)
-        scored_output = (
-            eval_runtime._truncate_gsm_output(completion)
-            if dataset == "gsm_symbolic"
-            else completion
-        )
-        expected = logic.expected_answer(eval_runtime, example)
-        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
-        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
-
-        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
-        if dataset == "spider":
-            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
-        if dataset == "smiles":
-            syntax_valid = bool(aux and aux.get("syntax_valid"))
-            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+            expected = logic.expected_answer(eval_runtime, example)
+            actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
             is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
-        rows.append(
-            _legacy_adapter_baseline_row(
-                dataset=dataset,
-                example=example,
-                prompt=prompt,
-                raw_generated=raw_completion,
-                extracted=actual,
-                correct=bool(is_correct),
-                syntax_valid=bool(syntax_valid),
-                generation_seconds=gen_seconds,
+            syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+            if dataset == "spider":
+                syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+            if dataset == "smiles":
+                syntax_valid = bool(aux and aux.get("syntax_valid"))
+                aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+                is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+            rows.append(
+                _legacy_adapter_baseline_row(
+                    dataset=dataset,
+                    example=example,
+                    prompt=prompt,
+                    raw_generated=raw_completion,
+                    extracted=actual,
+                    correct=bool(is_correct),
+                    syntax_valid=bool(syntax_valid),
+                    generation_seconds=gen_seconds,
+                )
             )
-        )
+    finally:
+        iter_gen_session = None
+        itergen_grammar_cache.clear()
+        release_cuda_cache()
 
     _build_minimal_json(
         rows,
@@ -1624,11 +1709,15 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
     repo_root = Path(__file__).resolve().parents[2]
     crane_src_dir = repo_root / "legacy" / "CRANE" / "src"
     tier2_grammar_path: Path | None = None
+    cot_grammar_arg = grammar if mode != "original" else "text"
+    out_grammar_arg = grammar if mode != "original" else "text"
     if dataset == "spider" and mode != "original":
         tier2_sql = _legacy_delimited_span_grammar(_legacy_sql_grammar_base(repo_root))
         tier2_grammar_path = crane_src_dir / ".vas_spider_tier2.lark"
         tier2_grammar_path.write_text(tier2_sql, encoding="utf-8")
-        grammar = str(tier2_grammar_path)
+        # Syncode loads the tier-2 Lark file; CRANE PARSE_MAP keys stay "sql".
+        cot_grammar_arg = str(tier2_grammar_path)
+        out_grammar_arg = "sql"
     if not crane_src_dir.exists():
         raise RuntimeError(f"Legacy CRANE src directory not found: {crane_src_dir}")
 
@@ -1654,9 +1743,9 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         "--cot_grammar_mode",
         mode,
         "--cot_grammar",
-        grammar if mode != "original" else "text",
+        cot_grammar_arg,
         "--out_grammar",
-        grammar if mode != "original" else "text",
+        out_grammar_arg,
     ]
     if do_cot:
         cmd.extend(["--do_cot", "True"])
