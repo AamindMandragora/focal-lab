@@ -28,7 +28,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies (default generation: OpenAI; Bedrock optional for Claude; eval often vLLM)",
+        description="Synthesize constrained decoding strategies (default generation: Bedrock Claude Opus; OpenAI optional; eval often vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -64,15 +64,16 @@ Examples:
         default=None,
         help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
         "Bedrock model id when using bedrock; HF id for huggingface/vllm). "
-        "OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4; Bedrock from BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL.",
+        "Bedrock defaults from BEDROCK_OPUS_MODEL / BEDROCK_GENERATION_MODEL; "
+        "OpenAI from OPENAI_GENERATION_MODEL or gpt-5.4.",
     )
 
     parser.add_argument(
         "--generation-backend",
         type=str,
         choices=["huggingface", "vllm", "openai", "bedrock"],
-        default="openai",
-        help="Backend for strategy generation (default: openai)",
+        default="bedrock",
+        help="Backend for strategy generation (default: bedrock / Claude Opus)",
     )
 
     parser.add_argument(
@@ -503,13 +504,17 @@ Examples:
 
     if args.generation_model is None:
         if args.generation_backend == "bedrock":
-            resolved = os.environ.get("BEDROCK_GENERATION_MODEL") or os.environ.get(
-                "AWS_BEDROCK_GENERATION_MODEL"
+            resolved = (
+                os.environ.get("BEDROCK_OPUS_MODEL")
+                or os.environ.get("BEDROCK_PROFILE_OPUS")
+                or os.environ.get("BEDROCK_GENERATION_MODEL")
+                or os.environ.get("AWS_BEDROCK_GENERATION_MODEL")
             )
             if not resolved:
                 parser.error(
                     "Bedrock synthesis requires --generation-model or "
-                    "BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL in the environment."
+                    "BEDROCK_OPUS_MODEL / BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL "
+                    "in the environment."
                 )
             args.generation_model = resolved
         elif args.generation_backend == "openai":

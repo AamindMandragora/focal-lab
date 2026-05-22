@@ -39,7 +39,8 @@ DEFAULT_BENCHMARKS = "gsm,spider,smiles"
 DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10"
-DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
+# First profile: main matrix + ablations A/B/D/E/F; remainder: Ablation C (synthesizer model).
+DEFAULT_GEN_MODELS = "opus4.7,gpt5.4"
 DEFAULT_STEP_BUDGETS = "256,512,1024"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
 CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
@@ -951,7 +952,7 @@ class Runner:
         task = self.metadecode_task(benchmark)
         class_suffix = f"_class_{slugify(smiles_class)}" if benchmark == "smiles" else ""
         run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
-        backend, generation_model = self.resolve_gen_profile("gpt5.4")
+        backend, generation_model = self.resolve_gen_profile(self.config.gen_models[0])
         token_budget = self.config.token_budgets[0]
         self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class)
         (
@@ -1154,7 +1155,13 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token-budgets", default=DEFAULT_TOKEN_BUDGETS)
     parser.add_argument("--step-budgets", default=DEFAULT_STEP_BUDGETS)
     parser.add_argument("--synthesis-iterations", default=DEFAULT_SYNTH_ITERS)
-    parser.add_argument("--generation-models", default=DEFAULT_GEN_MODELS)
+    parser.add_argument(
+        "--generation-models",
+        default=DEFAULT_GEN_MODELS,
+        help="Metadecode synthesizer profiles (comma-separated). "
+        "First entry drives the main matrix and ablations A/B/D/E/F; "
+        "remaining entries are Ablation C only (default: opus4.7,gpt5.4).",
+    )
     parser.add_argument("--smiles-classes", "--smiles-class", default=DEFAULT_SMILES_CLASSES)
     parser.add_argument("--eval-backend", default="vllm")
     parser.add_argument("--device", default="auto")
