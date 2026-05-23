@@ -14,7 +14,7 @@ This module evaluates synthesized CSD strategies on constrained molecular-string
 - `dataset.py`: class/task loading and prompt assembly.
 - `generation.py`: generation wrappers for evaluator integration.
 - `environment.py`: runtime setup for compiled strategy execution.
-- `metrics.py`: RDKit-based validity and membership metrics.
+- `metrics.py`: RDKit-based validity and membership metrics; **`grammar_valid_with_fallback`** for tier-then-base grammar checks.
 - `data/`: per-class assets (grammars, exemplars, reference sets).
 
 ## Constraint mode
@@ -25,6 +25,8 @@ Strategies decide their own constraint behaviour. The prompt appends `<< >>` del
 
 SMILES scoring treats syntax validity and class-membership quality as separate signals.
 The synthesis loop can use these diagnostics to discourage degenerate strategies that exploit formatting without producing meaningful molecules.
+
+**Grammar validity:** extracted SMILES bodies are checked against the active prompt tier's grammar first. When that fails (common for tier-2 delimited grammars that expect a trailing `>>`), scoring retries with a closed tier variant and then with the class **base** body grammar (`base_grammar_text` from `dataset.py`). **`syntax_valid`** is true when grammar and RDKit (if installed) both pass.
 
 Multi-sample evaluation (synthesis eval and legacy baselines) updates each class prompt with empirical context from the current run:
 

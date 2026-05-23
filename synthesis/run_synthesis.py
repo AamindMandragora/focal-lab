@@ -247,9 +247,9 @@ Examples:
         type=int,
         default=None,
         help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops (target accuracy / target syntax) can fire. Suppresses the "
-        "early stop until the synthesis feedback loop has at least this much "
-        "evaluation signal. The runtime-budget early stop is unaffected. "
+        "early stops (target syntax rate; target accuracy for non-SMILES) can "
+        "fire. Suppresses early stop until the synthesis loop has at least this "
+        "much evaluation signal (including when early examples time out). "
         "Default: None (no minimum)."
     )
 
@@ -599,6 +599,12 @@ Examples:
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
     print(f"  Evaluation model: {args.eval_model}")
+    smiles_grammar_tier = None
+    if args.dataset == "smiles":
+        from synthesis.evaluate.prompt_tiers import smiles_grammar_tier_for_csd
+
+        smiles_grammar_tier = smiles_grammar_tier_for_csd()
+
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
@@ -607,6 +613,7 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
+        grammar_prompt_tier=smiles_grammar_tier,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,

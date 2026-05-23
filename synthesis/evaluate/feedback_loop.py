@@ -2999,6 +2999,16 @@ class SynthesisPipeline:
                 )
             self.evaluator.sample_seed = self._eval_base_seed + (attempt.attempt_number - 1)
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
+            if self.evaluator.dataset_name == "smiles":
+                from synthesis.evaluate.prompt_tiers import configure_smiles_eval_prompts
+
+                configure_smiles_eval_prompts(self.evaluator, strategy_code)
+                print(
+                    "  [synthesis] SMILES eval prompt: "
+                    f"tier={self.evaluator.prompt_tier} "
+                    f"(reasoning={'yes' if self.evaluator.use_reasoning_prompt else 'no'}), "
+                    f"grammar_tier={self.evaluator.grammar_prompt_tier}"
+                )
             eval_result = self.evaluator.evaluate_sample(
                 compiled_module_path=compilation_result.main_module_path,
                 sample_size=self.eval_sample_size,

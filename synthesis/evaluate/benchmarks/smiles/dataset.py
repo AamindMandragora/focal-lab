@@ -104,6 +104,7 @@ def get_smiles_task(class_name: str) -> Dict[str, Any]:
         "smiles_properties": smiles_class_properties(class_name),
         "grammar_path": grammar_path,
         "grammar_text": grammar_text,
+        "base_grammar_text": grammar_text,
         "prompt_path": prompt_path,
         "prompt_exemplars": prompt_exemplars_for_class(class_name),
     }
