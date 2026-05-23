@@ -150,7 +150,7 @@ Optional local-beam refinement controls:
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. Default **`--generation-models`** is **`opus4.7,gpt5.4`**: **`opus4.7`** (Bedrock / `BEDROCK_OPUS_MODEL`) drives the main matrix; **`gpt5.4`** (OpenAI) is the synthesizer-model ablation. **`gemini-pro`** is not in the default list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
+- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. Default **`--generation-models`** is **`gpt5.4,opus4.7`**: **`gpt5.4`** (OpenAI) drives the main matrix; **`opus4.7`** (Bedrock / `BEDROCK_OPUS_MODEL`) is the optional second profile (Ablation C). **`gemini-pro`** is not in the default list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
 
 ## Path Configuration
 
