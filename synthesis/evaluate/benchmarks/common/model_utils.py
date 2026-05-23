@@ -242,9 +242,13 @@ def max_cuda_devices_from_env(default: int = 1) -> int:
 
 
 def resolve_vllm_tensor_parallel_size(requested: int | None = None) -> int:
-    """Resolve vLLM tensor parallel size, capped by max_cuda_devices_from_env()."""
+    """Resolve vLLM tensor parallel size, capped by max_cuda_devices_from_env().
+
+    When ``requested`` is None, use the env cap (``VAS_MAX_CUDA_DEVICES``, default 1) so
+    ``CUDA_VISIBLE_DEVICES=2,3`` with ``VAS_MAX_CUDA_DEVICES=2`` spreads models across both GPUs.
+    """
     cap = max_cuda_devices_from_env()
-    tensor_parallel_size = requested or 1
+    tensor_parallel_size = cap if requested is None else requested
     return max(1, min(tensor_parallel_size, cap))
 
 

@@ -343,7 +343,7 @@ Examples:
         "--vllm-tensor-parallel-size",
         type=int,
         default=None,
-        help="Explicit tensor parallel size for vLLM (default: 1; capped by VAS_MAX_CUDA_DEVICES)"
+        help="Explicit tensor parallel size for vLLM (default: VAS_MAX_CUDA_DEVICES; capped by that env)"
     )
 
     parser.add_argument(

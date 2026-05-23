@@ -40,7 +40,7 @@ DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10"
 # First profile: main matrix + ablations A/B/D/E/F; remainder: Ablation C (synthesizer model).
-DEFAULT_GEN_MODELS = "opus4.7,gpt5.4"
+DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
 DEFAULT_STEP_BUDGETS = "256,512,1024"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
 CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
@@ -962,6 +962,11 @@ class Runner:
             f"baseline cache mode: {self.config.baseline_cache_mode} "
             "(reuse=skip complete JSONs, refresh=recompute fixed baselines)"
         )
+        if self.config.eval_backend == "vllm":
+            print(
+                f"vLLM: tensor_parallel_size={self.config.vllm_tensor_parallel_size}, "
+                f"gpu_memory_utilization={self.config.vllm_gpu_memory_utilization}"
+            )
         print("")
 
     def run_main_matrix(self) -> None:
@@ -1220,7 +1225,7 @@ def make_parser() -> argparse.ArgumentParser:
         default=DEFAULT_GEN_MODELS,
         help="Metadecode synthesizer profiles (comma-separated). "
         "First entry drives the main matrix and ablations A/B/D/E/F; "
-        "remaining entries are Ablation C only (default: opus4.7,gpt5.4).",
+        "remaining entries are Ablation C only (default: gpt5.4,opus4.7).",
     )
     parser.add_argument("--smiles-classes", "--smiles-class", default=DEFAULT_SMILES_CLASSES)
     parser.add_argument("--eval-backend", default="vllm")
@@ -1268,8 +1273,12 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--vllm-tensor-parallel-size",
         type=int,
-        default=int(os.environ.get("VAS_VLLM_TENSOR_PARALLEL_SIZE", "1")),
-        help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
+        default=(
+            int(os.environ["VAS_VLLM_TENSOR_PARALLEL_SIZE"])
+            if os.environ.get("VAS_VLLM_TENSOR_PARALLEL_SIZE")
+            else None
+        ),
+        help="vLLM tensor parallel size (default: VAS_MAX_CUDA_DEVICES; capped by that env)",
     )
     parser.add_argument("--dafny-path", default=os.environ.get("DAFNY_PATH", ""))
     parser.add_argument("--generated-output-dir", default=os.environ.get("CSD_OUTPUT_DIR", "outputs/generated"))

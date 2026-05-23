@@ -1527,6 +1527,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
 
         llm = LLM(
             model=args.eval_model,
+            tensor_parallel_size=args.vllm_tensor_parallel_size,
             gpu_memory_utilization=args.vllm_gpu_memory_utilization,
             max_model_len=16384,
             trust_remote_code=True,
@@ -1664,6 +1665,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
 
         llm = LLM(
             model=args.eval_model,
+            tensor_parallel_size=args.vllm_tensor_parallel_size,
             gpu_memory_utilization=args.vllm_gpu_memory_utilization,
             max_model_len=16384,
             trust_remote_code=True,
@@ -1937,7 +1939,7 @@ def main() -> None:
         "--vllm-tensor-parallel-size",
         type=int,
         default=None,
-        help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
+        help="vLLM tensor parallel size (default: VAS_MAX_CUDA_DEVICES; capped by that env)",
     )
     parser.add_argument("--gsm-split-file", type=str, default=None,
                         help="Optional GSM train/eval split manifest JSON")
