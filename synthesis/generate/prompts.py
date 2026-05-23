@@ -87,6 +87,24 @@ You must output ONLY the Dafny method body for:
   not invent visible delimiters for tasks whose contract is hidden constrained
   chunks, fully constrained objects, or another structured-output surface.
 
+## Within-decode search and retries
+
+The helper library supports multi-attempt decoding inside one `MyCSDStrategy`
+invocation. Neutral composition patterns include:
+
+- `helpers.SoftConstrainedStep` / `helpers.SafeSoftConstrainedStep` to sample,
+  then check `parser.IsValidPrefix` on the extended prefix.
+- `helpers.RollbackConstrainedSuffix` / `helpers.RollbackConstrainedSpan` to
+  rewind an invalid suffix while preserving a stable outer prefix.
+- `helpers.SafePenalizedConstrainedStep` or `helpers.RolloutConstrainedWithPenalties`
+  on later attempts over a growing `penalties` token bag.
+- `helpers.SpeculativeConstrainedRollout` with `SaveLogitsSnapshot` /
+  `RestoreLogitsSnapshot` for bounded lookahead without committing logits.
+
+Verified reference bodies under `synthesis/verify/reference/` (for example
+`cars.dfy`) show one way these contracts compose; your strategy must still prove
+its own obligations.
+
 ## Available Tools
 
 ### Runtime inputs

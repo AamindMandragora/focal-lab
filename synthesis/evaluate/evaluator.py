@@ -1197,6 +1197,7 @@ class Evaluator:
         smiles_classes: Optional[List[str]] = None,
         grammars_dir: str | Path | None = None,
         prompt_tier: int = 2,
+        grammar_prompt_tier: int | None = None,
     ):
         """
         Initialize the evaluator.
@@ -1222,6 +1223,8 @@ class Evaluator:
             spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
             spider_split_name: Which split from spider_split_file to use ("train" or "test").
             prompt_tier: 1 for answer-only (GCD / IterGen / CARS-style) or 2 for chain-of-thought.
+            grammar_prompt_tier: Optional decoder grammar tier when it differs from
+                ``prompt_tier`` (compiled SMILES CSD keeps tier-2 delimited grammars).
         """
         if backend not in {"huggingface", "vllm"}:
             raise NotImplementedError(
@@ -1258,6 +1261,13 @@ class Evaluator:
         if prompt_tier not in (1, 2):
             raise ValueError(f"prompt_tier must be 1 or 2, got {prompt_tier!r}")
         self.prompt_tier = int(prompt_tier)
+        if grammar_prompt_tier is not None and int(grammar_prompt_tier) not in (1, 2):
+            raise ValueError(f"grammar_prompt_tier must be 1 or 2, got {grammar_prompt_tier!r}")
+        self.grammar_prompt_tier = (
+            int(grammar_prompt_tier) if grammar_prompt_tier is not None else None
+        )
+        self.use_reasoning_prompt: bool | None = None
+        self.smiles_delimited_answer_prompt: bool = False
 
         # Lazy-loaded components
         self._dataset = None
@@ -1851,16 +1861,28 @@ class Evaluator:
 
         if self.dataset_name == "smiles":
             from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
+            from synthesis.evaluate.benchmarks.smiles.eval_logic import grammar_text_for_prompt_tier
 
             class_name = (example or {}).get("class_name", "smiles")
             prompt_exemplars = (example or {}).get("prompt_exemplars", [])
-            grammar_text = (example or {}).get("grammar_text", "")
+            base_grammar_text = str(
+                (example or {}).get("base_grammar_text")
+                or (example or {}).get("grammar_text")
+                or ""
+            )
+            from synthesis.evaluate.benchmarks.smiles.eval_logic import grammar_tier_for_evaluator
+
+            tier_grammar_text = grammar_text_for_prompt_tier(
+                example or {},
+                grammar_tier_for_evaluator(self),
+            )
             eval_row = evaluate_smiles_output(
                 class_name,
                 output,
-                grammar_text,
+                tier_grammar_text,
                 prompt_exemplars,
                 require_rdkit=True,
+                base_grammar_text=base_grammar_text,
             )
             smiles = eval_row["smiles"]
             if not smiles:
@@ -1960,13 +1982,15 @@ class Evaluator:
             min_accuracy: Backward-compatible target accuracy for early stop.
             early_stop_min_accuracy: Optional target accuracy for early stop.
             early_stop_min_syntax_rate: Optional target syntax rate for early stop.
-            early_stop_runtime_failures: Optional runtime-failure count for early stop.
-            min_examples_before_threshold_stop: If set, the threshold-impossible
-                accuracy and syntax-rate early stops are suppressed until at
-                least this many examples have been evaluated. The runtime-budget
-                early stop is unaffected (it is a different signal). Lets the
-                synthesis feedback loop see usable data even when the strategy
-                cannot possibly clear the acceptance threshold.
+            early_stop_runtime_failures: Deprecated; ignored. Retained for API
+                compatibility. Runtime timeouts are folded into syntax-rate
+                threshold-impossible checks instead of aborting after a fixed
+                failure count.
+            min_examples_before_threshold_stop: If set, threshold-impossible
+                early stops (syntax rate and, for non-SMILES, accuracy) are
+                suppressed until at least this many examples have been evaluated,
+                so the synthesis feedback loop sees enough signal even when the
+                first examples time out or fail.
 
         Returns:
             EvaluationResult with metrics and sample outputs
@@ -2077,32 +2101,40 @@ class Evaluator:
 
                 evaluated_count = len(sample_outputs)
                 remaining = planned_num_examples - evaluated_count
-                runtime_failures = sum(
-                    1 for sample in sample_outputs if sample.get("runtime_budget_exceeded")
-                )
+
                 if (
-                    early_stop_runtime_failures is not None
-                    and runtime_failures >= early_stop_runtime_failures
+                    min_examples_before_threshold_stop is not None
+                    and evaluated_count < min_examples_before_threshold_stop
                 ):
-                    return (
-                        "threshold-impossible early stop: "
-                        f"{runtime_failures} example(s) exceeded the per-example runtime budget."
-                    )
+                    return None
+
+                if early_stop_min_syntax_rate is not None:
+                    best_possible_syntax = (
+                        num_examples_syntax_pass + remaining
+                    ) / max(1, planned_num_examples)
+                    if best_possible_syntax < early_stop_min_syntax_rate:
+                        runtime_failures = sum(
+                            1
+                            for sample in sample_outputs
+                            if sample.get("runtime_budget_exceeded")
+                        )
+                        runtime_note = (
+                            f" ({runtime_failures} example(s) exceeded the per-example runtime budget)"
+                            if runtime_failures
+                            else ""
+                        )
+                        return (
+                            "threshold-impossible early stop: "
+                            f"best possible syntax is {best_possible_syntax:.1%} "
+                            f"after {evaluated_count}/{planned_num_examples} examples, "
+                            f"below required {early_stop_min_syntax_rate:.1%}."
+                            f"{runtime_note}"
+                        )
 
                 # SMILES excludes invalid molecules from the accuracy denominator, so
                 # an accuracy upper bound is not comparable until all syntax outcomes
                 # are known. Keep this synthesis gate to fixed-denominator tasks.
                 if self.dataset_name == "smiles":
-                    return None
-
-                # Guard threshold-impossible early stops so the synthesis feedback
-                # loop always sees a usable amount of evaluation data. The
-                # runtime-failures gate above is intentionally not affected: it
-                # signals actual budget exhaustion, not an unreachable target.
-                if (
-                    min_examples_before_threshold_stop is not None
-                    and evaluated_count < min_examples_before_threshold_stop
-                ):
                     return None
 
                 if target_min_accuracy is not None:
@@ -2113,18 +2145,6 @@ class Evaluator:
                             f"best possible accuracy is {best_possible_accuracy:.1%} "
                             f"after {evaluated_count}/{planned_num_examples} examples, "
                             f"below required {target_min_accuracy:.1%}."
-                        )
-
-                if early_stop_min_syntax_rate is not None:
-                    best_possible_syntax = (
-                        num_examples_syntax_pass + remaining
-                    ) / max(1, planned_num_examples)
-                    if best_possible_syntax < early_stop_min_syntax_rate:
-                        return (
-                            "threshold-impossible early stop: "
-                            f"best possible syntax is {best_possible_syntax:.1%} "
-                            f"after {evaluated_count}/{planned_num_examples} examples, "
-                            f"below required {early_stop_min_syntax_rate:.1%}."
                         )
 
                 return None

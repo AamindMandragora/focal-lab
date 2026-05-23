@@ -264,6 +264,15 @@ class Runner:
             return self.config.gsm_eval_sample_size
         return self.config.eval_sample_size
 
+    def eval_max_seconds_per_example(self, benchmark: str) -> str:
+        """Per-example synthesis-eval wall clock; SMILES needs mask-store warmup."""
+        if benchmark == "smiles":
+            return os.environ.get(
+                "VAS_SMILES_EVAL_MAX_SECONDS_PER_EXAMPLE",
+                os.environ.get("VAS_EVAL_MAX_SECONDS_PER_EXAMPLE_SMILES", "600"),
+            )
+        return self.config.eval_max_seconds_per_example
+
     def ensure_split_manifests(self) -> None:
         """Require tracked stratified manifests under environment/benchmark_splits/."""
         normalized = {normalize_benchmark(benchmark) for benchmark in self.config.benchmarks}
@@ -482,7 +491,7 @@ class Runner:
         return True
 
     def benchmark_key(self, benchmark: str, smiles_class: str = "") -> str:
-        if benchmark == "smiles":
+        if benchmark == "smiles" and smiles_class:
             return f"{benchmark}__class_{slugify(smiles_class)}"
         return benchmark
 
@@ -515,6 +524,47 @@ class Runner:
         max_steps: str,
         smiles_class: str = "",
     ) -> tuple[float, str, str, str, float, str, str, str]:
+        if benchmark == "smiles" and not smiles_class:
+            accuracies: list[float] = []
+            syntax_rates: list[float] = []
+            acc_labels: list[str] = []
+            syn_labels: list[str] = []
+            for class_name in self.config.smiles_classes:
+                (
+                    class_accuracy,
+                    acc_strategy,
+                    _acc_path,
+                    acc_percent,
+                    class_syntax,
+                    syn_strategy,
+                    _syn_path,
+                    syn_percent,
+                ) = self.best_csd_baseline_targets(
+                    benchmark,
+                    eval_model,
+                    token_budget,
+                    max_steps,
+                    class_name,
+                )
+                accuracies.append(class_accuracy)
+                syntax_rates.append(class_syntax)
+                acc_labels.append(f"{class_name}:{acc_strategy}={acc_percent}")
+                syn_labels.append(f"{class_name}:{syn_strategy}={syn_percent}")
+            mean_accuracy = sum(accuracies) / max(1, len(accuracies))
+            mean_syntax = sum(syntax_rates) / max(1, len(syntax_rates))
+            acc_summary = ", ".join(acc_labels) if acc_labels else "none=0.0%"
+            syn_summary = ", ".join(syn_labels) if syn_labels else "none=0.0%"
+            return (
+                mean_accuracy,
+                "mean_per_class",
+                "",
+                f"{mean_accuracy:.1%} ({acc_summary})",
+                mean_syntax,
+                "mean_per_class",
+                "",
+                f"{mean_syntax:.1%} ({syn_summary})",
+            )
+
         best_accuracy: tuple[float, str, str, str] | None = None
         best_syntax: tuple[float, str, str, str] | None = None
         for strategy in CSD_TARGET_STRATEGIES:
@@ -699,8 +749,11 @@ class Runner:
         self.add_vllm_parallel_flags(cmd)
         self.add_evaluation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
-            cmd += ["--smiles-classes", smiles_class]
+            cmd += ["--smiles-classes", self.smiles_classes_cli_value()]
         return cmd
+
+    def smiles_classes_cli_value(self) -> str:
+        return ",".join(self.config.smiles_classes)
 
     def run_metadecode_case(
         self,
@@ -712,22 +765,23 @@ class Runner:
         max_steps: str,
         smiles_class: str = "",
     ) -> bool:
-        if benchmark == "smiles" and not smiles_class:
-            print("Internal error: SMILES metadecode run requires a class.", file=sys.stderr)
-            return False
-
         backend, generation_model = self.resolve_gen_profile(gen_profile)
         model_slug = slugify(eval_model)
         gen_slug = slugify(gen_profile)
-        class_suffix = f"_class_{slugify(smiles_class)}" if benchmark == "smiles" else ""
         key = self.benchmark_key(benchmark, smiles_class)
         run_name = (
             f"metadecode_{benchmark}_{model_slug}_{gen_slug}_"
-            f"iter{synth_iter}_tb{token_budget}_ms{max_steps}{class_suffix}"
+            f"iter{synth_iter}_tb{token_budget}_ms{max_steps}"
         )
         task = self.metadecode_task(benchmark)
 
-        self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, max_steps, smiles_class)
+        if benchmark == "smiles":
+            for class_name in self.config.smiles_classes:
+                self.ensure_csd_target_baselines(
+                    benchmark, eval_model, token_budget, max_steps, class_name
+                )
+        else:
+            self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, max_steps, smiles_class)
         (
             target_accuracy,
             target_strategy,
@@ -783,7 +837,7 @@ class Runner:
             "--eval-step-token-budget",
             token_budget,
             "--eval-max-seconds-per-example",
-            self.config.eval_max_seconds_per_example,
+            self.eval_max_seconds_per_example(benchmark),
             "--eval-min-examples-before-threshold-stop",
             self.config.eval_min_examples_before_threshold_stop,
             "--vllm-gpu-memory-utilization",
@@ -800,7 +854,7 @@ class Runner:
                 "--smiles-samples-per-class",
                 self.generation_sample_size(benchmark),
                 "--smiles-classes",
-                smiles_class,
+                self.smiles_classes_cli_value(),
             ]
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
@@ -879,12 +933,6 @@ class Runner:
         gen_profile: str,
         max_steps: str,
     ) -> None:
-        if benchmark == "smiles":
-            for smiles_class in self.config.smiles_classes:
-                self.run_metadecode_case(
-                    benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps, smiles_class
-                )
-            return
         self.run_metadecode_case(benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps)
 
     def print_matrix_header(self) -> None:
@@ -896,7 +944,10 @@ class Runner:
         print(f"step budgets (ablation): {' '.join(self.config.step_budgets)}")
         print(f"synthesis iters (metadecode): {' '.join(self.config.synth_iters)}")
         print(f"generation models (metadecode): {' '.join(self.config.gen_models)}")
-        print(f"SMILES classes: {' '.join(self.config.smiles_classes)}")
+        print(
+            f"SMILES classes (unified metadecode eval): {' '.join(self.config.smiles_classes)} "
+            f"x {self.generation_sample_size('smiles')} samples/class"
+        )
         print(f"eval max steps (main): {self.config.eval_max_steps}")
         print(
             "split policy: "
@@ -950,11 +1001,21 @@ class Runner:
         smiles_class: str = "",
     ) -> None:
         task = self.metadecode_task(benchmark)
-        class_suffix = f"_class_{slugify(smiles_class)}" if benchmark == "smiles" else ""
-        run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
+        run_name = (
+            f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_"
+            f"{policy}_{benchmark}"
+        )
         backend, generation_model = self.resolve_gen_profile(self.config.gen_models[0])
         token_budget = self.config.token_budgets[0]
-        self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class)
+        if benchmark == "smiles":
+            for class_name in self.config.smiles_classes:
+                self.ensure_csd_target_baselines(
+                    benchmark, eval_model, token_budget, self.config.eval_max_steps, class_name
+                )
+        else:
+            self.ensure_csd_target_baselines(
+                benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class
+            )
         (
             target_accuracy,
             target_strategy,
@@ -966,15 +1027,16 @@ class Runner:
             target_syntax_percent,
         ) = self.best_csd_baseline_targets(benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class)
 
+        key = self.benchmark_key(benchmark, smiles_class)
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
-                f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
+                f"[target] metadecode {key}/{slugify(eval_model)} "
                 f"tb{token_budget} ms{self.config.eval_max_steps}: no valid CRANE/IterGen/CARS baseline found; "
                 "passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
             print(
-                f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
+                f"[target] metadecode {key}/{slugify(eval_model)} "
                 f"tb{token_budget} ms{self.config.eval_max_steps}: best CSD baseline accuracy "
                 f"{target_strategy}={target_percent}, syntax {target_syntax_strategy}={target_syntax_percent}; "
                 f"passing --min-accuracy {target_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
@@ -1011,7 +1073,7 @@ class Runner:
             "--eval-step-token-budget",
             token_budget,
             "--eval-max-seconds-per-example",
-            self.config.eval_max_seconds_per_example,
+            self.eval_max_seconds_per_example(benchmark),
             "--eval-min-examples-before-threshold-stop",
             self.config.eval_min_examples_before_threshold_stop,
             "--vllm-gpu-memory-utilization",
@@ -1033,7 +1095,7 @@ class Runner:
                 "--smiles-samples-per-class",
                 self.generation_sample_size(benchmark),
                 "--smiles-classes",
-                smiles_class,
+                self.smiles_classes_cli_value(),
             ]
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
@@ -1116,11 +1178,9 @@ class Runner:
             for beam_size in ("1", "2", "4"):
                 for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
                     for policy in ("utility", "bandit"):
-                        smiles_classes = self.config.smiles_classes if benchmark == "smiles" else [""]
-                        for smiles_class in smiles_classes:
-                            self.run_ablation_e_case(
-                                benchmark, ablation_model, beam_size, mask_flag, policy, smiles_class
-                            )
+                        self.run_ablation_e_case(
+                            benchmark, ablation_model, beam_size, mask_flag, policy
+                        )
         print("=== Phase 2 complete ===")
 
     def run(self) -> int:
@@ -1179,8 +1239,10 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--eval-max-seconds-per-example",
         default="90",
-        help="Per-example wall-clock timeout for synthesis evaluation (seconds). "
-        "Wired through to synthesis.run_synthesis. Default: 90.",
+        help="Per-example wall-clock timeout for synthesis evaluation on GSM/Spider "
+        "(seconds). SMILES metadecode/ablation runs use 600s unless overridden via "
+        "VAS_SMILES_EVAL_MAX_SECONDS_PER_EXAMPLE or "
+        "VAS_EVAL_MAX_SECONDS_PER_EXAMPLE_SMILES. Default: 90.",
     )
     parser.add_argument(
         "--eval-min-examples-before-threshold-stop",

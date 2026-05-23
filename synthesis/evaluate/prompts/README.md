@@ -17,7 +17,12 @@ Benchmarks: `gsm_symbolic`, `spider`, `smiles`.
 | Tier | Strategies |
 |------|------------|
 | 1 | `gcd`, `itergen`, `cars` |
-| 2 | `unconstrained`, `crane`, `metadecode` |
+| 2 | `unconstrained`, `crane`, `metadecode` (CoT when the compiled CSD uses free LM steps) |
+
+Compiled **metadecode** on SMILES may evaluate with **tier-1 answer-only prompt text**
+(plus `<<`/`>>` in the suffix) when the strategy does not use `UnconstrainedStep` /
+`UnconstrainedChunk`, while **decoder grammar stays tier-2 delimited**. See
+`strategy_uses_reasoning_prompt` and `configure_smiles_eval_prompts` in `prompt_tiers.py`.
 
 Logic lives in `synthesis/evaluate/prompt_tiers.py`. Benchmark `eval_logic.format_prompt*` delegates there.
 

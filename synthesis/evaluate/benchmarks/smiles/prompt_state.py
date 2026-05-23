@@ -10,6 +10,24 @@ _MAX_SUFFIX_CHARS = 45000
 RecordOutcome = Literal["empty", "exemplar", "good", "bad", "duplicate"]
 
 
+def format_attempt_suffix(
+    good_results: Sequence[str],
+    bad_results: Sequence[str],
+) -> str:
+    """Build the good/bad SMILES suffix appended before the next attempt."""
+    if not good_results and not bad_results:
+        return ""
+    lines: list[str] = []
+    if good_results:
+        lines.append("Good results:")
+        lines.extend(f"SMILES: {smiles}" for smiles in good_results)
+    if bad_results:
+        lines.append("Bad results:")
+        lines.extend(f"SMILES: {smiles}" for smiles in bad_results)
+    lines.append("Reasoning:")
+    return "\n" + "\n".join(lines) + "\n"
+
+
 def strip_trailing_molecule_slot(prompt: str) -> str:
     text = prompt.rstrip()
     for suffix in ("Molecule: <<", "Molecule:", "SMILES:", "Reasoning:", "<<"):
@@ -49,9 +67,7 @@ class SmilesPromptState:
             return "empty"
 
         row = eval_row or {}
-        if row.get("is_prompt_exemplar") or cleaned in self.prompt_exemplars:
-            self.seen.add(cleaned)
-            return "exemplar"
+        is_exemplar = bool(row.get("is_prompt_exemplar")) or cleaned in self.prompt_exemplars
 
         if cleaned in self.good_results:
             self.seen.add(cleaned)
@@ -63,23 +79,16 @@ class SmilesPromptState:
             self.seen.add(cleaned)
             return "good"
 
+        # Any non-good attempt (syntax-invalid, wrong class, or exemplar copy) goes in Bad results.
         if cleaned not in self.bad_results:
             self.bad_results.append(cleaned)
         self.seen.add(cleaned)
+        if is_exemplar:
+            return "exemplar"
         return "bad"
 
     def build_suffix(self) -> str:
-        if not self.good_results and not self.bad_results:
-            return ""
-        lines: list[str] = []
-        if self.good_results:
-            lines.append("Good results:")
-            lines.extend(f"SMILES: {smiles}" for smiles in self.good_results)
-        if self.bad_results:
-            lines.append("Bad results:")
-            lines.extend(f"SMILES: {smiles}" for smiles in self.bad_results)
-        lines.append("Reasoning:")
-        return "\n" + "\n".join(lines) + "\n"
+        return format_attempt_suffix(self.good_results, self.bad_results)
 
     def apply_to_example(self, example: dict[str, Any]) -> None:
         base_key = "_smiles_base_prompt"

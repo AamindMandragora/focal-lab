@@ -16,4 +16,6 @@ If `git apply` fails (e.g. non-git snapshot), the clone script falls back to
 Keep patches **minimal** and document motivation in the patch header or in
 **`environment/legacy/DIFFERENCES.md`**.
 
+Current CRANE apply order: **`010-vas-prompt-tiers-base`**, **`020-vas-harness-utils`**, **`030-vas-smiles-prompt-state-grammar`** (SMILES prompt state + grammar fallback scoring).
+
 Agent/human policy for edits in **`legacy/`** trees: **`../legacy/AGENTS.md`**.

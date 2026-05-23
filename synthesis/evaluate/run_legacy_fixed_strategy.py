@@ -444,6 +444,12 @@ def _enrich_crane_baseline_rows(
             if embedded:
                 examples_by_question[embedded] = example
 
+    smiles_states: dict[str, Any] = {}
+    if dataset == "smiles":
+        from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState
+
+        smiles_states = {}
+
     enriched: list[dict[str, Any]] = []
     for idx, row in enumerate(rows):
         question_raw = str(row.get("question") or "")
@@ -455,7 +461,24 @@ def _enrich_crane_baseline_rows(
             example = examples[idx]
 
         prompt = row.get("prompt_used") or row.get("prompt")
-        if not prompt and example is not None:
+        replay_example: dict[str, Any] | None = None
+        if dataset == "smiles" and example is not None:
+            class_name = str(example.get("class_name", "smiles"))
+            if class_name not in smiles_states:
+                smiles_states[class_name] = SmilesPromptState(
+                    example.get("prompt_exemplars", [])
+                )
+            replay_example = dict(example)
+            smiles_states[class_name].apply_to_example(replay_example)
+            prompt = _legacy_benchmark_prompt(
+                logic,
+                eval_runtime,
+                replay_example,
+                profile,
+                dataset=dataset,
+                strategy=args.strategy,
+            )
+        elif not prompt and example is not None:
             prompt = _legacy_benchmark_prompt(
                 logic,
                 eval_runtime,
@@ -470,6 +493,7 @@ def _enrich_crane_baseline_rows(
             row.get("llm_response") or row.get("response") or row.get("pred") or ""
         )
         extracted = row.get("parsed_completion")
+        aux_for_row: dict[str, Any] | None = None
         if example is not None and (
             extracted is None or dataset in ("spider", "smiles")
         ):
@@ -479,7 +503,7 @@ def _enrich_crane_baseline_rows(
                 if dataset == "gsm_symbolic"
                 else completion
             )
-            extracted, _src, _aux = logic.extract_actual(
+            extracted, _src, aux_for_row = logic.extract_actual(
                 eval_runtime, scored, example
             )
 
@@ -489,6 +513,33 @@ def _enrich_crane_baseline_rows(
             if isinstance(row.get("syntax_valid"), bool)
             else False
         )
+        if aux_for_row is not None:
+            syntax_valid = bool(aux_for_row.get("syntax_valid"))
+            if dataset == "smiles" and example is not None:
+                expected = logic.expected_answer(eval_runtime, example)
+                correct = bool(
+                    logic.is_correct(
+                        eval_runtime,
+                        str(extracted) if extracted is not None else None,
+                        expected,
+                        example,
+                        aux_for_row,
+                        str(raw_generated),
+                    )
+                )
+
+        if dataset == "smiles" and example is not None and smiles_states:
+            from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result
+
+            eval_for_state = row.get("smiles_eval")
+            if not isinstance(eval_for_state, dict):
+                eval_for_state = aux_for_row
+            record_prompt_result(
+                example,
+                smiles_states,
+                str(extracted) if extracted is not None else "",
+                eval_for_state if isinstance(eval_for_state, dict) else None,
+            )
 
         enriched.append(
             _legacy_adapter_baseline_row(
@@ -622,6 +673,13 @@ def _annotate_legacy_rows_with_syntax(
                 example or {},
             )
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+        elif dataset == "smiles":
+            _actual, _answer_source, aux = logic.extract_actual(
+                eval_runtime,
+                scored_output,
+                example or {},
+            )
+            syntax_valid = bool(aux and aux.get("syntax_valid"))
         else:
             syntax_valid = bool(
                 logic.example_syntax_pass(all_valid, segments, False, None)
@@ -1421,7 +1479,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
 
     Each sample appends prior good and bad molecules to the prompt so the model
     is nudged toward novel valid strings and away from repeated failures.
-    Temperature 0.8 gives diversity; deterministic decoders rely on the suffix.
+    Decoding is greedy (temperature 0), matching GSM/Spider unconstrained baselines.
     """
     from synthesis.evaluate.benchmarks.smiles.dataset import SMILES_CLASSES, get_smiles_task
     from synthesis.evaluate.benchmarks.smiles.metrics import (
@@ -1483,11 +1541,14 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
             args.eval_model, device_map=device, torch_dtype=torch.float16, trust_remote_code=True
         )
 
+    from synthesis.evaluate.benchmarks.smiles.eval_logic import grammar_text_for_prompt_tier
+
     rows: list[dict[str, Any]] = []
 
     for class_name in selected_classes:
         task = get_smiles_task(class_name)
-        grammar_text = str(task["grammar_text"])
+        base_grammar_text = str(task["grammar_text"])
+        tier_grammar_text = grammar_text_for_prompt_tier(task, 2)
         prompt_exemplars = list(task.get("prompt_exemplars", []))
         state = SmilesPromptState(prompt_exemplars)
         example_seed = dict(task)
@@ -1510,7 +1571,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 from vllm import SamplingParams as _SP
 
                 gen_started = time.perf_counter()
-                sp = _SP(max_tokens=decode_cap, temperature=0.2)
+                sp = _SP(max_tokens=decode_cap, temperature=0.0)
                 outputs = llm.generate([running_prompt], sp)
                 gen_seconds = time.perf_counter() - gen_started
                 completion = outputs[0].outputs[0]
@@ -1523,8 +1584,7 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                     out_ids = model.generate(
                         **inputs,
                         max_new_tokens=decode_cap,
-                        do_sample=True,
-                        temperature=0.2,
+                        do_sample=False,
                     )
                 gen_seconds = time.perf_counter() - gen_started
                 new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
@@ -1534,9 +1594,10 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
             smiles_eval = evaluate_smiles_output(
                 class_name=class_name,
                 output=gen_text,
-                grammar_text=grammar_text,
+                grammar_text=tier_grammar_text,
                 prompt_exemplars=prompt_exemplars,
                 require_rdkit=True,
+                base_grammar_text=base_grammar_text,
             )
             cleaned = clean_smiles_output(gen_text)
             scored = record_prompt_result(

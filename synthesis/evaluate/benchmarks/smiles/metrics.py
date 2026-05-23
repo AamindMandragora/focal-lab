@@ -75,6 +75,53 @@ def grammar_valid(smiles: str, grammar_text: str) -> bool:
         return False
 
 
+def body_grammar_from_base(base_grammar_text: str) -> str:
+    """Tier-1 body grammar used to validate extracted SMILES spans."""
+    from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
+        build_smiles_tier1_body_grammar,
+    )
+
+    return build_smiles_tier1_body_grammar(base_grammar_text.strip())
+
+
+def grammar_valid_with_fallback(
+    smiles: str,
+    grammar_text: str,
+    *,
+    base_grammar_text: str | None = None,
+) -> tuple[bool, str]:
+    """
+    Validate a SMILES body against tier-specific grammar, then base body grammar.
+
+    Tier-2 delimited grammars often require a closing ``>>``; those variants are
+    tried before falling back to the raw class grammar.
+    """
+    if not smiles:
+        return False, "empty"
+
+    primary = grammar_text.strip()
+    base = (base_grammar_text or primary).strip()
+    body_grammar = body_grammar_from_base(base)
+
+    attempts: list[tuple[str, str, str]] = [
+        ("tier", primary, smiles),
+    ]
+    if '">>"' in primary or primary != body_grammar:
+        attempts.append(("tier_closed", primary, f"{smiles}>>"))
+    if body_grammar not in {primary}:
+        attempts.append(("base", body_grammar, smiles))
+
+    seen: set[tuple[str, str]] = set()
+    for source, grammar, candidate in attempts:
+        key = (grammar, candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if grammar_valid(candidate, grammar):
+            return True, source
+    return False, "none"
+
+
 def rdkit_available() -> bool:
     # Core availability for syntax validity checks (MolFromSmiles).
     return Chem is not None
@@ -113,9 +160,14 @@ def evaluate_smiles_output(
     grammar_text: str,
     prompt_exemplars: Sequence[str],
     require_rdkit: bool = True,
+    base_grammar_text: str | None = None,
 ) -> Dict[str, Any]:
     smiles = clean_smiles_output(output)
-    grammar_ok = grammar_valid(smiles, grammar_text)
+    grammar_ok, grammar_source = grammar_valid_with_fallback(
+        smiles,
+        grammar_text,
+        base_grammar_text=base_grammar_text,
+    )
     rdkit_ok = rdkit_valid(smiles)
     # RDKit validates chemistry when installed; when it is unavailable, fall
     # back to the project grammar so syntax rate remains measurable.
@@ -130,6 +182,7 @@ def evaluate_smiles_output(
     return {
         "smiles": smiles,
         "grammar_valid": grammar_ok,
+        "grammar_source": grammar_source,
         "rdkit_available": rdkit_available(),
         "rdkit_valid": rdkit_ok,
         "syntax_valid": syntax_ok,

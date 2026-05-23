@@ -13,14 +13,18 @@ from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
     build_smiles_tier1_body_grammar,
     build_smiles_tier2_delimited_grammar,
 )
+from synthesis.evaluate.benchmarks.smiles.eval_logic import grammar_tier_for_evaluator
 from synthesis.evaluate.prompt_tiers import (
     SMILES_TIER1_MAX_NEW_TOKENS,
     SMILES_TIER2_MAX_NEW_TOKENS,
     benchmark_max_new_tokens,
+    configure_smiles_eval_prompts,
     effective_max_new_tokens,
     render_smiles_cars_prompt,
+    smiles_no_reuse_clause,
     smiles_tier1_max_new_tokens,
     smiles_tier2_max_new_tokens,
+    strategy_uses_reasoning_prompt,
 )
 
 
@@ -37,6 +41,47 @@ class SmilesPromptTests(unittest.TestCase):
         self.assertIn("Molecule: C=CC", prompt)
         self.assertFalse(prompt.rstrip().endswith("Molecule:"))
         self.assertNotIn("Reasoning:", prompt)
+        self.assertIn(smiles_no_reuse_clause(), prompt)
+
+    def test_tier1_delimited_answer_prompt(self) -> None:
+        task = get_smiles_task("acrylates")
+        prompt = render_smiles_cars_prompt(task, tier=1, delimited_answer=True)
+        self.assertIn("<<CCO>>", prompt)
+        self.assertNotIn("Reasoning:", prompt)
+        self.assertIn("Do not include reasoning", prompt)
+
+    def test_strategy_prompt_tier_inference(self) -> None:
+        eager = "OpenConstrainedSpan(lm, generated); var freePrefixLimit := 2;"
+        self.assertFalse(strategy_uses_reasoning_prompt(eager))
+        cot = "UnconstrainedChunk(lm, prompt, generated, 8, \"<<\", eosToken);"
+        self.assertTrue(strategy_uses_reasoning_prompt(cot))
+
+    def test_grammar_tier_for_evaluator_none_grammar_defaults_to_prompt_tier(self) -> None:
+        class _LegacyCraneEv:
+            prompt_tier = 2
+            grammar_prompt_tier = None
+
+        self.assertEqual(grammar_tier_for_evaluator(_LegacyCraneEv()), 2)
+
+    def test_grammar_tier_for_evaluator_prefers_grammar_prompt_tier(self) -> None:
+        class _SynthesisEv:
+            prompt_tier = 1
+            grammar_prompt_tier = 2
+
+        self.assertEqual(grammar_tier_for_evaluator(_SynthesisEv()), 2)
+
+    def test_configure_smiles_eval_prompts(self) -> None:
+        class _Ev:
+            prompt_tier = 2
+            grammar_prompt_tier = None
+            use_reasoning_prompt = None
+            smiles_delimited_answer_prompt = False
+
+        ev = _Ev()
+        configure_smiles_eval_prompts(ev, "OpenConstrainedSpan(lm, g); freePrefixLimit := 1;")
+        self.assertEqual(ev.prompt_tier, 1)
+        self.assertEqual(ev.grammar_prompt_tier, 2)
+        self.assertTrue(ev.smiles_delimited_answer_prompt)
 
     def test_tier2_prompt_ends_with_reasoning_and_delimiter_hint(self) -> None:
         task = get_smiles_task("chain_extenders")

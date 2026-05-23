@@ -16,11 +16,9 @@ def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
     from synthesis.evaluate.benchmarks.smiles.dataset import get_smiles_task
 
     classes = normalize_classes(evaluator)
-    if len(classes) != 1:
-        raise ValueError(
-            "SMILES CSD evaluation uses class-specific grammars; "
-            "pass exactly one class via --smiles-classes."
-        )
+    if not classes:
+        raise ValueError("At least one SMILES class is required via --smiles-classes.")
+    # Bootstrap parser only: per-example decoding uses build_dynamic_parser().
     return Path(get_smiles_task(classes[0])["grammar_path"])
 
 
@@ -31,16 +29,20 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-2 SMILES prompt; ``prompt_state`` may append good/bad molecules afterward."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+    """SMILES prompt for tier 2 or synthesis-selected tier; ``prompt_state`` may append suffix rows."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt, render_smiles_eval_prompt
 
+    if getattr(evaluator, "grammar_prompt_tier", None) is not None:
+        return render_smiles_eval_prompt(evaluator, example)
     return render_benchmark_prompt("smiles", tier=2, example=example)
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-1 SMILES prompt (grammar-masked legacy adapters)."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+    """Tier-1 SMILES prompt (legacy body-only adapters) or synthesis answer-only delimited text."""
+    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt, render_smiles_eval_prompt
 
+    if getattr(evaluator, "grammar_prompt_tier", None) is not None:
+        return render_smiles_eval_prompt(evaluator, example)
     return render_benchmark_prompt("smiles", tier=1, example=example)
 
 
@@ -54,7 +56,7 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
 
 
 def grammar_text_for_prompt_tier(example: dict[str, Any], prompt_tier: int) -> str:
-    """Return decoder grammar: tier 1 body-only; tier 2 reasoning + ``<<`` SMILES ``>>``."""
+    """Return decoder grammar: tier 1 body-only; tier 2 delimited ``<<`` SMILES ``>>`` span."""
     from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
         build_smiles_tier1_body_grammar,
         build_smiles_tier2_delimited_grammar,
@@ -66,10 +68,21 @@ def grammar_text_for_prompt_tier(example: dict[str, Any], prompt_tier: int) -> s
     return build_smiles_tier2_delimited_grammar(base)
 
 
+def grammar_tier_for_evaluator(evaluator: Any) -> int:
+    """Grammar tier may differ from prompt tier during compiled CSD evaluation."""
+    grammar_tier = getattr(evaluator, "grammar_prompt_tier", None)
+    if grammar_tier is not None:
+        return int(grammar_tier)
+    prompt_tier = getattr(evaluator, "prompt_tier", None)
+    if prompt_tier is not None:
+        return int(prompt_tier)
+    return 2
+
+
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
 
-    grammar_text = grammar_text_for_prompt_tier(example, getattr(evaluator, "prompt_tier", 2))
+    grammar_text = grammar_text_for_prompt_tier(example, grammar_tier_for_evaluator(evaluator))
     class_name = str(example.get("class_name", "smiles"))
     cache_key = ("smiles", class_name, grammar_text)
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
@@ -94,7 +107,10 @@ def extract_actual(
     from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
 
     class_name = example.get("class_name", "smiles")
-    grammar_text = example.get("grammar_text", "")
+    base_grammar_text = str(
+        example.get("base_grammar_text") or example.get("grammar_text") or ""
+    )
+    tier_grammar_text = grammar_text_for_prompt_tier(example, grammar_tier_for_evaluator(evaluator))
     prompt_exemplars = example.get("prompt_exemplars", [])
 
     from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
@@ -105,9 +121,10 @@ def extract_actual(
     smiles_eval = evaluate_smiles_output(
         class_name,
         candidate,
-        grammar_text,
+        tier_grammar_text,
         prompt_exemplars,
         require_rdkit=True,
+        base_grammar_text=base_grammar_text,
     )
     return smiles_eval["smiles"] or None, "smiles_eval", smiles_eval
 
@@ -158,7 +175,11 @@ def example_syntax_pass(
     used_hidden_chunk: bool,
     aux: dict[str, Any] | None,
 ) -> bool:
-    return bool(aux and aux.get("syntax_valid"))
+    if aux is not None and "syntax_valid" in aux:
+        return bool(aux.get("syntax_valid"))
+    if segments:
+        return all(is_valid for _, is_valid in segments)
+    return bool(all_valid_syntax)
 
 
 def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
