@@ -1,0 +1,58 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 3,
+    "total_generation_seconds": 1.8662,
+    "mean_generation_seconds_per_example": 0.62208,
+    "examples_with_generation_timing": 3,
+    "run_wall_time_seconds": 10.5335,
+    "adapter": "rejection_sampling_syncode",
+    "checkpoint_examples": 3
+  },
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "prompt": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nOutput only the symbolic expression that answers the question. The expression must use numbers and the variables defined in the question. Allowed operations: +, -, /, //, %, (), and int().\n\nDo not include reasoning, labels, or other text\u2014only the expression.\n\nQ: {n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?\nA:\n",
+      "generated": ":((k*y)/12)*100/n",
+      "extracted": ":((k*y)/12)*100/n",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": ":((k*y)/12)*100/n",
+      "generation_seconds": 1.074934
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many minutes will it take for the fog bank to cover the whole city?",
+      "prompt": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nOutput only the symbolic expression that answers the question. The expression must use numbers and the variables defined in the question. Allowed operations: +, -, /, //, %, (), and int().\n\nDo not include reasoning, labels, or other text\u2014only the expression.\n\nQ: A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many minutes will it take for the fog bank to cover the whole city?\nA:\n",
+      "generated": ":",
+      "extracted": ":",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": ":",
+      "generation_seconds": 0.105379
+    },
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "prompt": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nOutput only the symbolic expression that answers the question. The expression must use numbers and the variables defined in the question. Allowed operations: +, -, /, //, %, (), and int().\n\nDo not include reasoning, labels, or other text\u2014only the expression.\n\nQ: {name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?\nA:\n",
+      "generated": ":100*(({sides}-{target})/{sides}-2*({sides}//2)**2/{sides",
+      "extracted": ":100*(({sides}-{target})/{sides}-2*({sides}//2)**2/{sides",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": ":100*(({sides}-{target})/{sides}-2*({sides}//2)**2/{sides",
+      "generation_seconds": 0.685928
+    }
+  ],
+  "metadata": {
+    "benchmark": "gsm_symbolic",
+    "strategy": "rejection_sampling",
+    "prompt_tier": 1,
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "benchmark_max_new_tokens": 600,
+    "effective_max_new_tokens": 600,
+    "adapter": "rejection_sampling_syncode",
+    "rejection_search_steps": 200,
+    "rejection_temperature": 1.0,
+    "checkpoint": true,
+    "checkpoint_examples": 3
+  }
+}
