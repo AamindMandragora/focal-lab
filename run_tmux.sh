@@ -52,7 +52,14 @@ require_python_env() {
 }
 
 # Shell snippet run inside tmux (bash -lc).
+# Bake GPU env from the invoking shell: tmux often carries a stale
+# CUDA_VISIBLE_DEVICES (e.g. 2,3) that would override launch-time values.
 project_env_script() {
+  local cuda_visible="${CUDA_VISIBLE_DEVICES:-2,3}"
+  local vas_max_cuda="${VAS_MAX_CUDA_DEVICES:-2}"
+  local vas_tp="${VAS_VLLM_TENSOR_PARALLEL_SIZE:-$vas_max_cuda}"
+  local vas_gpu_mem="${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
+  local vas_mp="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
   cat <<EOF
 set -euo pipefail
 cd "$ROOT_DIR"
@@ -68,11 +75,11 @@ if [[ -d "$CONDA_ENV/lib" ]]; then
   export LD_LIBRARY_PATH="$CONDA_ENV/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 fi
 export PYTHONUNBUFFERED=1
-export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2,3}"
-export VAS_MAX_CUDA_DEVICES="\${VAS_MAX_CUDA_DEVICES:-2}"
-export VAS_VLLM_TENSOR_PARALLEL_SIZE="\${VAS_VLLM_TENSOR_PARALLEL_SIZE:-\${VAS_MAX_CUDA_DEVICES}}"
-export VAS_VLLM_GPU_MEMORY_UTILIZATION="\${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
-export VLLM_WORKER_MULTIPROC_METHOD="\${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
+export CUDA_VISIBLE_DEVICES="$cuda_visible"
+export VAS_MAX_CUDA_DEVICES="$vas_max_cuda"
+export VAS_VLLM_TENSOR_PARALLEL_SIZE="$vas_tp"
+export VAS_VLLM_GPU_MEMORY_UTILIZATION="$vas_gpu_mem"
+export VLLM_WORKER_MULTIPROC_METHOD="$vas_mp"
 EOF
 }
 

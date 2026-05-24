@@ -515,18 +515,6 @@ def _enrich_crane_baseline_rows(
         )
         if aux_for_row is not None:
             syntax_valid = bool(aux_for_row.get("syntax_valid"))
-            if dataset == "smiles" and example is not None:
-                expected = logic.expected_answer(eval_runtime, example)
-                correct = bool(
-                    logic.is_correct(
-                        eval_runtime,
-                        str(extracted) if extracted is not None else None,
-                        expected,
-                        example,
-                        aux_for_row,
-                        str(raw_generated),
-                    )
-                )
 
         if dataset == "smiles" and example is not None and smiles_states:
             from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result
@@ -534,11 +522,26 @@ def _enrich_crane_baseline_rows(
             eval_for_state = row.get("smiles_eval")
             if not isinstance(eval_for_state, dict):
                 eval_for_state = aux_for_row
-            record_prompt_result(
+            updated = record_prompt_result(
                 example,
                 smiles_states,
                 str(extracted) if extracted is not None else "",
                 eval_for_state if isinstance(eval_for_state, dict) else None,
+            )
+            if isinstance(updated, dict):
+                aux_for_row = {**(aux_for_row or {}), **updated}
+
+        if aux_for_row is not None and dataset == "smiles" and example is not None:
+            expected = logic.expected_answer(eval_runtime, example)
+            correct = bool(
+                logic.is_correct(
+                    eval_runtime,
+                    str(extracted) if extracted is not None else None,
+                    expected,
+                    example,
+                    aux_for_row,
+                    str(raw_generated),
+                )
             )
 
         enriched.append(

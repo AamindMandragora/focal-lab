@@ -79,6 +79,27 @@ class SmilesPromptStateTests(unittest.TestCase):
         self.assertTrue(first and first["novel_valid"])
         self.assertFalse(second and second["novel_valid"])
         self.assertEqual(state.good_results, ["C=CC(=O)O"])
+        self.assertIn("C=CC(=O)O", state.bad_results)
+
+    def test_replay_acrylates_duplicate_scoring(self) -> None:
+        """Regression: second identical valid SMILES must not count as correct."""
+        from synthesis.evaluate.benchmarks.smiles.eval_logic import is_correct
+
+        state = SmilesPromptState(
+            [
+                "C=CC(=O)OCC1=CC=CC=C1",
+                "C=CC(=O)OC1=CC=CC=C1",
+            ]
+        )
+        states = {"acrylates": state}
+        row = {"unique_valid_candidate": True, "is_prompt_exemplar": False, "syntax_valid": True}
+        mol = "C=CC(=O)OCC1=CC=CC=C1C(=O)OCC2=CC=CC=C2"
+
+        first = record_prompt_result({"class_name": "acrylates"}, states, mol, row)
+        second = record_prompt_result({"class_name": "acrylates"}, states, mol, row)
+
+        self.assertTrue(is_correct(None, mol, "acrylates", {}, first, mol))
+        self.assertFalse(is_correct(None, mol, "acrylates", {}, second, mol))
 
 
 if __name__ == "__main__":

@@ -182,7 +182,8 @@ var generatedOut, currentOut := helpers.RollbackConstrainedSuffix(parser, genera
 var flat := CSDHelpers.FlattenTokenGroups(validTokenGroups);
 var groupIdx := CSDHelpers.GroupContaining(validTokenGroups, token);
 var prevTok, foundPrev := helpers.LastTokenBefore(generated, ">>");
-var occ := CSDHelpers.CountTokenOccurrences(generated, tok);
+var occ: nat;
+occ := CSDHelpers.CountTokenOccurrences(generated, tok);
 var occPrefix := CSDHelpers.OccurrencesInRange(generated, tok, hi);
 var since := CSDHelpers.TokensSinceLastOccurrence(generated, tok);
 var following := CSDHelpers.ExtractAfterKeyword(prefix, keyword);
@@ -476,8 +477,11 @@ consume token budget by themselves.
   Cost: +0.
   Control profile: context information only.
 
-- `CSDHelpers.CountTokenOccurrences(prefix, target)` (static)
+- `CSDHelpers.CountTokenOccurrences(prefix, target)` (static method)
   Role: count how many times `target` appears as a token element of `prefix`.
+  Mechanics: assign via `count := CSDHelpers.CountTokenOccurrences(prefix, target)`
+  (not in expression position). For inline counts use
+  `CSDHelpers.OccurrencesInRange(prefix, target, |prefix|)`.
   Cost: +0.
 
 - `CSDHelpers.OccurrencesInRange(prefix, target, hi)` (static function)

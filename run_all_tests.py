@@ -607,6 +607,27 @@ class Runner:
         max_steps: str,
         smiles_class: str = "",
     ) -> None:
+        (
+            target_accuracy,
+            target_strategy,
+            _target_path,
+            _target_percent,
+            target_syntax,
+            target_syntax_strategy,
+            _target_syntax_path,
+            _target_syntax_percent,
+        ) = self.best_csd_baseline_targets(
+            benchmark, eval_model, token_budget, max_steps, smiles_class
+        )
+        if target_strategy != "none" and target_syntax_strategy != "none":
+            key = self.benchmark_key(benchmark, smiles_class)
+            print(
+                f"[skip] CSD target baselines already available for {key}/"
+                f"{slugify(eval_model)} tb{token_budget} ms{max_steps}: "
+                f"accuracy {target_strategy}={target_accuracy:.1%}, "
+                f"syntax {target_syntax_strategy}={target_syntax:.1%}"
+            )
+            return
         for strategy in CSD_TARGET_STRATEGIES:
             ok = self.run_fixed_strategy_case(
                 strategy, benchmark, eval_model, token_budget, max_steps, smiles_class

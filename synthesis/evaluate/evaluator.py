@@ -2108,7 +2108,12 @@ class Evaluator:
                 ):
                     return None
 
-                if early_stop_min_syntax_rate is not None:
+                # SMILES synthesis feedback needs full multi-class eval runs; syntax
+                # threshold-impossible stops are deferred to the final pass/fail gate.
+                if (
+                    early_stop_min_syntax_rate is not None
+                    and self.dataset_name != "smiles"
+                ):
                     best_possible_syntax = (
                         num_examples_syntax_pass + remaining
                     ) / max(1, planned_num_examples)
