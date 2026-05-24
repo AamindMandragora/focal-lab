@@ -70,7 +70,21 @@ class SmilesPromptState:
         is_exemplar = bool(row.get("is_prompt_exemplar")) or cleaned in self.prompt_exemplars
 
         if cleaned in self.good_results:
+            if cleaned not in self.bad_results:
+                self.bad_results.append(cleaned)
+            return "duplicate"
+
+        if is_exemplar:
+            if cleaned in self.bad_results:
+                return "duplicate"
+            if cleaned not in self.bad_results:
+                self.bad_results.append(cleaned)
             self.seen.add(cleaned)
+            return "exemplar"
+
+        if cleaned in self.seen:
+            if cleaned not in self.bad_results:
+                self.bad_results.append(cleaned)
             return "duplicate"
 
         is_good = bool(row.get("unique_valid_candidate"))
