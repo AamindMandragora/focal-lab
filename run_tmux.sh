@@ -5,8 +5,9 @@
 #   ./run_tmux.sh shell                 # interactive shell (default)
 #   ./run_tmux.sh -d matrix -- [args]   # start detached (no attach)
 #   ./run_tmux.sh run -- <command...>   # run command in tmux (logs to logs/tmux/)
-#   ./run_tmux.sh matrix [-- args]      # python run_all_tests.py ...
-#   ./run_tmux.sh baselines [-- args]   # legacy fixed strategies only (no metadecode)
+#   ./run_tmux.sh matrix [-- args]      # run_all_tests.py (baselines + ablations; no metadecode by default)
+#   ./run_tmux.sh baselines [-- args]   # same default strategies; often used with --skip-ablations
+#   ./run_tmux.sh metadecode [-- args]  # run_all_tests.py with metadecode + synthesis ablations
 #   ./run_tmux.sh synthesis [-- args]   # python -m synthesis.run_synthesis ...
 #   ./run_tmux.sh attach [session]      # attach to existing session
 #   ./run_tmux.sh kill [session]        # kill session
@@ -28,8 +29,21 @@ DETACHED=0
 FRESH=0
 CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
 PYTHON="${CONDA_ENV}/bin/python"
-# Matches run_all_tests.py fixed-strategy names (everything except metadecode).
+# Matches run_all_tests.py DEFAULT_BASELINE_STRATEGIES (no metadecode).
 LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars,rejection_sampling}"
+METADECODE_STRATEGIES="${METADECODE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars,rejection_sampling,metadecode}"
+
+argv_has_flag() {
+  local flag="$1"
+  shift
+  while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "$flag" ]]; then
+      return 0
+    fi
+    shift
+  done
+  return 1
+}
 
 usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -168,14 +182,49 @@ run_command() {
 
 run_matrix() {
   require_python_env
-  run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" "$@"
+  local -a extra=()
+  if [[ "${1:-}" == "--" ]]; then
+    extra=("${@:1}")
+  else
+    extra=("$@")
+  fi
+  if argv_has_flag --strategies "${extra[@]}"; then
+    run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" "${extra[@]}"
+  else
+    run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" \
+      --strategies "$LEGACY_BASELINE_STRATEGIES" \
+      "${extra[@]}"
+  fi
 }
 
 run_baselines() {
   require_python_env
-  run_matrix \
-    --strategies "$LEGACY_BASELINE_STRATEGIES" \
-    "$@"
+  local -a extra=()
+  if [[ "${1:-}" == "--" ]]; then
+    extra=("${@:1}")
+  else
+    extra=("$@")
+  fi
+  if argv_has_flag --strategies "${extra[@]}"; then
+    run_matrix "${extra[@]}"
+  else
+    run_matrix --strategies "$LEGACY_BASELINE_STRATEGIES" "${extra[@]}"
+  fi
+}
+
+run_metadecode_matrix() {
+  require_python_env
+  local -a extra=()
+  if [[ "${1:-}" == "--" ]]; then
+    extra=("${@:1}")
+  else
+    extra=("$@")
+  fi
+  if argv_has_flag --strategies "${extra[@]}"; then
+    run_matrix "${extra[@]}"
+  else
+    run_matrix --strategies "$METADECODE_STRATEGIES" "${extra[@]}"
+  fi
 }
 
 run_synthesis() {
@@ -246,6 +295,14 @@ main() {
         run_baselines "${args[@]:1}"
       else
         run_baselines "${args[@]}"
+      fi
+      ;;
+    metadecode|metadecode-matrix)
+      require_tmux
+      if [[ "${args[0]:-}" == "--" ]]; then
+        run_metadecode_matrix "${args[@]:1}"
+      else
+        run_metadecode_matrix "${args[@]}"
       fi
       ;;
     synthesis)

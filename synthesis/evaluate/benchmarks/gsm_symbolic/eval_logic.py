@@ -155,7 +155,8 @@ def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) 
     actual, found = extract_last_delimited_span(scored_output)
     if found:
         return actual, "last_visible_span", None
-    body = (scored_output or "").strip().splitlines()[0].strip()
+    lines = (scored_output or "").strip().splitlines()
+    body = lines[0].strip() if lines else ""
     if body:
         return body, "constrained_body", None
     return None, "none", None

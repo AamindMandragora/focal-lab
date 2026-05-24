@@ -281,7 +281,10 @@ DEFAULT_CARS_SEARCH_STEPS = 200
 
 def _gsm_symbolic_scored_body(completion: str) -> str:
     """First-line GSM expression body for tier-1 constrained decoders (no delimiters)."""
-    text = (completion or "").strip().splitlines()[0].strip()
+    lines = (completion or "").strip().splitlines()
+    if not lines:
+        return ""
+    text = lines[0].strip()
     if text.startswith("<<") and text.endswith(">>"):
         text = text[2:-2].strip()
     elif text.startswith("<<"):

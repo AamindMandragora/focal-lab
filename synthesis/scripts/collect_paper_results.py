@@ -72,8 +72,8 @@ STRATEGIES = [
     "gcd",
     "crane",
     "itergen",
-    "cars",
     "rejection_sampling",
+    "cars",
     "metadecode",
 ]
 SMILES_CLASSES = ("acrylates", "chain_extenders", "isocyanates")
