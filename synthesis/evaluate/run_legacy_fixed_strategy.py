@@ -317,7 +317,28 @@ def _legacy_cuda_device_for_backend(device_arg: str, backend: str) -> str:
     return _legacy_local_cuda_device(device_arg, touch_cuda=backend != "vllm")
 
 
+def _smiles_samples_per_class(args: argparse.Namespace) -> int:
+    spc = getattr(args, "smiles_samples_per_class", None)
+    if spc is not None and int(spc) > 0:
+        return int(spc)
+    return max(1, int(args.eval_sample_size))
+
+
+def _smiles_classes_from_args(args: argparse.Namespace) -> list[str] | None:
+    raw = getattr(args, "smiles_classes", None)
+    if not raw:
+        return None
+    from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
+
+    return normalize_smiles_classes(raw, require_non_empty=True)
+
+
 def _configure_fixed_eval_runtime(eval_runtime: Any, args: argparse.Namespace, dataset: str) -> None:
+    if dataset == "smiles":
+        classes = _smiles_classes_from_args(args)
+        if classes:
+            eval_runtime.smiles_classes = classes
+        eval_runtime.sample_size = _smiles_samples_per_class(args)
     if dataset == "gsm_symbolic":
         repo_root = Path(__file__).resolve().parents[2]
         env_gsm = os.environ.get("CRANE_GSM_SYMBOLIC_DIR")
@@ -1008,19 +1029,22 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
     output_json = Path(args.output_json)
 
     try:
+        if session.mode == "original":
+            session.ensure_ready()
         for example in examples:
-            grammar_text = _tier1_grammar_for_example(repo_root, dataset, example)
-            if dataset == "smiles":
-                from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
-                    prepare_smiles_mask_store,
-                )
-                import syncode.common as syncode_common
+            if session.mode != "original":
+                grammar_text = _tier1_grammar_for_example(repo_root, dataset, example)
+                if dataset == "smiles":
+                    from synthesis.evaluate.benchmarks.smiles.mask_store_cache import (
+                        prepare_smiles_mask_store,
+                    )
+                    import syncode.common as syncode_common
 
-                tokenizer = syncode_common.load_tokenizer(args.eval_model)
-                grammar_text = prepare_smiles_mask_store(
-                    example, tokenizer, mode="original"
-                )
-            session.apply_grammar(grammar_text)
+                    tokenizer = syncode_common.load_tokenizer(args.eval_model)
+                    grammar_text = prepare_smiles_mask_store(
+                        example, tokenizer, mode=session.mode
+                    )
+                session.apply_grammar(grammar_text)
 
             if dataset == "smiles":
                 cls = str(example.get("class_name", ""))

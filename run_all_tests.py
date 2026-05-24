@@ -358,7 +358,9 @@ class Runner:
             return subprocess.run(cmd, env={**self.env, "CUDA_VISIBLE_DEVICES": primary}).returncode == 0
 
         print(f"[run] CUDA_VISIBLE_DEVICES={primary} {command_text(cmd)}")
-        with tempfile.NamedTemporaryFile("w+", prefix="run_all_tests_cuda_try.", delete=False) as log:
+        with tempfile.NamedTemporaryFile(
+            "wb+", prefix="run_all_tests_cuda_try.", delete=False
+        ) as log:
             log_path = Path(log.name)
         try:
             proc = subprocess.Popen(
@@ -366,14 +368,14 @@ class Runner:
                 env={**self.env, "CUDA_VISIBLE_DEVICES": primary},
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True,
                 bufsize=1,
             )
             assert proc.stdout is not None
-            with log_path.open("w") as log_file:
-                for line in proc.stdout:
+            with log_path.open("wb") as log_file:
+                for raw_line in proc.stdout:
+                    line = raw_line.decode("utf-8", errors="replace")
                     print(line, end="")
-                    log_file.write(line)
+                    log_file.write(raw_line)
             return_code = proc.wait()
             if return_code == 0:
                 return True
@@ -1374,7 +1376,13 @@ def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
         print(f"conda environment python not found: {python_path}", file=sys.stderr)
         raise SystemExit(1)
 
+    from synthesis.evaluate.run_legacy_fixed_strategy import _ensure_repo_cache_env
+
+    _ensure_repo_cache_env()
     env = os.environ.copy()
+    hf_token_file = Path.home() / ".cache" / "huggingface" / "token"
+    if not env.get("HF_TOKEN") and hf_token_file.is_file():
+        env["HF_TOKEN"] = hf_token_file.read_text().strip()
     env["CONDA_PREFIX"] = str(conda_env_path)
     env["PATH"] = f"{conda_env_path / 'bin'}{os.pathsep}{env.get('PATH', '')}"
     lib_dir = conda_env_path / "lib"

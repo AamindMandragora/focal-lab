@@ -66,8 +66,18 @@ class SyncodeRunSession:
     def loaded_model(self) -> Any:
         return self._model
 
+    def ensure_ready(self) -> None:
+        """Initialize the HF runner without grammar masking (``mode=\"original\"`` only)."""
+        if self.mode != "original":
+            raise RuntimeError("ensure_ready() is only valid when mode is 'original'")
+        self._ensure_original_runner()
+
     def apply_grammar(self, grammar_text: str) -> None:
         """Attach *grammar_text* for the next decode; does not retain prior parser state."""
+        if self.mode == "original":
+            self._ensure_original_runner()
+            return
+
         if self._active_grammar_text == grammar_text and self._hf_runner is not None:
             return
 
@@ -105,6 +115,21 @@ class SyncodeRunSession:
             )
 
         self._active_grammar_text = grammar_text
+
+    def _ensure_original_runner(self) -> None:
+        if self._hf_runner is not None:
+            return
+        self._hf_runner = HuggingFaceModel(
+            self._model,
+            grammar=None,
+            tokenizer=self._tokenizer,
+            device=self.device,
+            grammar_decoder=None,
+            mode=self.mode,
+            opp=self.opp,
+            **self.gen_kwargs,
+        )
+        self._active_grammar_text = ""
 
     def infer(
         self,
