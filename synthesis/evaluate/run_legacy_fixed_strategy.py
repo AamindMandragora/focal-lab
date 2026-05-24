@@ -13,6 +13,10 @@ import time
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importable
+
+ensure_vendored_syncode_importable()
+
 from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
 from synthesis.evaluate.rejection_sampling import (
     DEFAULT_REJECTION_SEARCH_STEPS,
