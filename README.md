@@ -71,11 +71,15 @@ Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CU
 
 ```bash
 ./run_tmux.sh shell                              # interactive shell
-./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session
+./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session (no metadecode by default)
+./run_tmux.sh baselines -- --skip-ablations    # legacy fixed strategies only
+./run_tmux.sh metadecode --                    # includes metadecode + synthesis ablations B/C/E
 ./run_tmux.sh attach                           # attach to session
 ./run_tmux.sh synthesis -- --dataset gsm_symbolic --output-name smoke_gsm ...
 ./run_tmux.sh run -- python -m synthesis.run_synthesis --help
 ```
+
+**`matrix`** and **`baselines`** inject **`--strategies`** without **metadecode** unless you pass **`--strategies`** yourself. Phase 2 then runs fixed-strategy arms of ablations A/D only; ablations B/C/E and metadecode arms require **metadecode** in **`--strategies`** (use **`metadecode`** subcommand or **`python run_all_tests.py --strategies ...`**).
 
 Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
 
@@ -142,7 +146,7 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order, then strategies in `unconstrained, gcd, crane, itergen, cars, rejection_sampling, metadecode` order to reduce model reload churn. Metadecode runs use `--min-accuracy` / `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps).
+- `run_all_tests.py` default **`--strategies`** omits **metadecode** (fixed strategies only). With that default, Phase 2 runs ablations A and D for `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` only; ablations B/C/E and metadecode arms of A/D are skipped. Add **metadecode** to **`--strategies`** (or **`./run_tmux.sh metadecode`**) for synthesis runs and full ablations. The scheduler still orders strategies as `unconstrained, gcd, crane, itergen, cars, rejection_sampling, metadecode` when present. Metadecode runs use `--min-accuracy` / `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps).
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` so those strategies compare against the same questions.

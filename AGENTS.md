@@ -71,7 +71,9 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend vllm --generation-model Qwen/Qwen2.5-Coder-7B-Instruct --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name vllm_run`
 - Hosted generation defaults to **Claude Opus on Bedrock** (`AWS_BEARER_TOKEN_BEDROCK`, `BEDROCK_OPUS_MODEL` / `--generation-backend bedrock` in `run_synthesis`). **`gpt5.4`** (OpenAI) is the **main** metadecode profile in `run_all_tests.py` (first in default **`--generation-models`**). **`opus4.7`** remains the optional second profile (Ablation C). The **`gemini-pro`** matrix profile is omitted until a partner wires it; pass `--generation-models gemini-pro` and set **`GEMINI_BEDROCK_MODEL`** when ready.
 - Full repository test sweep:
-  `python run_all_tests.py`
+  `python run_all_tests.py` (default **`--strategies`** omits **metadecode**; Phase 2 runs fixed-strategy ablations A/D only unless **metadecode** is listed)
+- Baselines-only tmux: `./run_tmux.sh baselines -- --skip-ablations` (same default strategies)
+- Full matrix including synthesis: `./run_tmux.sh metadecode` or pass **`--strategies`** with **metadecode**
 - `run_all_tests.py` activates `/apps/conda/advayth2/envs/advayth2` by default and verifies RDKit import before starting the matrix. Partners using a different prefix should `export VAS_CONDA_ENV=/path/to/env`; `VAS_RDKIT_CONDA_ENV` remains as a legacy alias. The launcher prepends `CONDA_PREFIX/lib` to `LD_LIBRARY_PATH` so SciPy/transformers wheels resolve `libstdc++` correctly; Syncode needs **`mxeval`** with bundled **`data/`** — run **`bash environment/install_mxeval_into_env.sh`** once per env (see **`environment/README.md`**).
 
 ## Evaluation Expectations

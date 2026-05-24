@@ -36,7 +36,15 @@ DEFAULT_MODELS = (
     "meta-llama/Llama-3.1-8B-Instruct"
 )
 DEFAULT_BENCHMARKS = "gsm,spider,smiles"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,rejection_sampling,metadecode"
+DEFAULT_BASELINE_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,rejection_sampling"
+DEFAULT_STRATEGIES = DEFAULT_BASELINE_STRATEGIES
+ABLATION_FIXED_STRATEGIES = (
+    "gcd",
+    "crane",
+    "itergen",
+    "cars",
+    "rejection_sampling",
+)
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10"
 # First profile: main matrix + ablations A/B/D/E/F; remainder: Ablation C (synthesizer model).
@@ -965,11 +973,19 @@ class Runner:
     ) -> None:
         self.run_metadecode_case(benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps)
 
+    def includes_metadecode(self) -> bool:
+        return "metadecode" in self.config.strategies
+
     def print_matrix_header(self) -> None:
         print("=== run_all_tests matrix ===")
         print(f"models: {' '.join(self.config.models)}")
         print(f"benchmarks: {' '.join(self.config.benchmarks)}")
         print(f"strategies: {' '.join(self.config.strategies)}")
+        if not self.includes_metadecode():
+            print(
+                "metadecode: omitted (add metadecode to --strategies to run Phase 1 metadecode "
+                "and ablations B/C/E plus metadecode arms of A/D)"
+            )
         print(f"token budgets: {' '.join(self.config.token_budgets)}")
         print(f"step budgets (ablation): {' '.join(self.config.step_budgets)}")
         print(f"synthesis iters (metadecode): {' '.join(self.config.synth_iters)}")
@@ -1142,94 +1158,91 @@ class Runner:
         print("")
         print("=== Phase 2: Ablation studies ===")
         ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
+        include_metadecode = self.includes_metadecode()
 
         print("--- Ablation A: Step budget ---")
         for raw_benchmark in ("gsm", "spider", "smiles"):
             benchmark = normalize_benchmark(raw_benchmark)
             for step_budget in self.config.step_budgets:
-                for strategy in (
-                    "gcd",
-                    "crane",
-                    "itergen",
-                    "cars",
-                    "rejection_sampling",
-                    "metadecode",
-                ):
-                    if strategy == "metadecode":
-                        self.run_metadecode_cases(
-                            benchmark,
-                            ablation_model,
-                            self.config.token_budgets[0],
-                            self.config.synth_iters[-1],
-                            self.config.gen_models[0],
-                            step_budget,
-                        )
-                    else:
-                        self.run_fixed_strategy_cases(
-                            strategy, benchmark, ablation_model, self.config.token_budgets[0], step_budget
-                        )
+                for strategy in ABLATION_FIXED_STRATEGIES:
+                    self.run_fixed_strategy_cases(
+                        strategy, benchmark, ablation_model, self.config.token_budgets[0], step_budget
+                    )
+                if include_metadecode:
+                    self.run_metadecode_cases(
+                        benchmark,
+                        ablation_model,
+                        self.config.token_budgets[0],
+                        self.config.synth_iters[-1],
+                        self.config.gen_models[0],
+                        step_budget,
+                    )
 
-        print("--- Ablation B: Synthesis iterations ---")
-        for raw_benchmark in ("gsm", "spider", "smiles"):
-            benchmark = normalize_benchmark(raw_benchmark)
-            for synth_iter in self.config.synth_iters:
-                self.run_metadecode_cases(
-                    benchmark,
-                    ablation_model,
-                    self.config.token_budgets[0],
-                    synth_iter,
-                    self.config.gen_models[0],
-                    self.config.eval_max_steps,
-                )
+        if include_metadecode:
+            print("--- Ablation B: Synthesis iterations ---")
+            for raw_benchmark in ("gsm", "spider", "smiles"):
+                benchmark = normalize_benchmark(raw_benchmark)
+                for synth_iter in self.config.synth_iters:
+                    self.run_metadecode_cases(
+                        benchmark,
+                        ablation_model,
+                        self.config.token_budgets[0],
+                        synth_iter,
+                        self.config.gen_models[0],
+                        self.config.eval_max_steps,
+                    )
+        else:
+            print("--- Ablation B: Synthesis iterations (skipped; metadecode not in --strategies) ---")
 
-        print("--- Ablation C: Synthesizer model ---")
-        for raw_benchmark in ("gsm", "spider", "smiles"):
-            benchmark = normalize_benchmark(raw_benchmark)
-            for gen_profile in self.config.gen_models:
-                self.run_metadecode_cases(
-                    benchmark,
-                    ablation_model,
-                    self.config.token_budgets[0],
-                    self.config.synth_iters[-1],
-                    gen_profile,
-                    self.config.eval_max_steps,
-                )
+        if include_metadecode:
+            print("--- Ablation C: Synthesizer model ---")
+            for raw_benchmark in ("gsm", "spider", "smiles"):
+                benchmark = normalize_benchmark(raw_benchmark)
+                for gen_profile in self.config.gen_models:
+                    self.run_metadecode_cases(
+                        benchmark,
+                        ablation_model,
+                        self.config.token_budgets[0],
+                        self.config.synth_iters[-1],
+                        gen_profile,
+                        self.config.eval_max_steps,
+                    )
+        else:
+            print("--- Ablation C: Synthesizer model (skipped; metadecode not in --strategies) ---")
 
         print("--- Ablation D: Per-step token budget ---")
         for raw_benchmark in ("gsm", "spider", "smiles"):
             benchmark = normalize_benchmark(raw_benchmark)
             for token_budget in self.config.token_budgets:
-                for strategy in (
-                    "gcd",
-                    "crane",
-                    "itergen",
-                    "cars",
-                    "rejection_sampling",
-                    "metadecode",
-                ):
-                    if strategy == "metadecode":
-                        self.run_metadecode_cases(
-                            benchmark,
-                            ablation_model,
-                            token_budget,
-                            self.config.synth_iters[-1],
-                            self.config.gen_models[0],
-                            self.config.eval_max_steps,
-                        )
-                    else:
-                        self.run_fixed_strategy_cases(
-                            strategy, benchmark, ablation_model, token_budget, self.config.eval_max_steps
-                        )
+                for strategy in ABLATION_FIXED_STRATEGIES:
+                    self.run_fixed_strategy_cases(
+                        strategy, benchmark, ablation_model, token_budget, self.config.eval_max_steps
+                    )
+                if include_metadecode:
+                    self.run_metadecode_cases(
+                        benchmark,
+                        ablation_model,
+                        token_budget,
+                        self.config.synth_iters[-1],
+                        self.config.gen_models[0],
+                        self.config.eval_max_steps,
+                    )
 
-        print("--- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---")
-        for raw_benchmark in ("gsm", "spider", "smiles"):
-            benchmark = normalize_benchmark(raw_benchmark)
-            for beam_size in ("1", "2", "4"):
-                for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
-                    for policy in ("utility", "bandit"):
-                        self.run_ablation_e_case(
-                            benchmark, ablation_model, beam_size, mask_flag, policy
-                        )
+        if include_metadecode:
+            print("--- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---")
+            for raw_benchmark in ("gsm", "spider", "smiles"):
+                benchmark = normalize_benchmark(raw_benchmark)
+                for beam_size in ("1", "2", "4"):
+                    for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
+                        for policy in ("utility", "bandit"):
+                            self.run_ablation_e_case(
+                                benchmark, ablation_model, beam_size, mask_flag, policy
+                            )
+        else:
+            print(
+                "--- Ablation E: Beam refinement x helper masking x policy "
+                "(skipped; metadecode not in --strategies) ---"
+            )
         print("=== Phase 2 complete ===")
 
     def run(self) -> int:
@@ -1260,7 +1273,15 @@ def make_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--models", default=DEFAULT_MODELS)
     parser.add_argument("--benchmarks", default=DEFAULT_BENCHMARKS)
-    parser.add_argument("--strategies", default=DEFAULT_STRATEGIES)
+    parser.add_argument(
+        "--strategies",
+        default=DEFAULT_STRATEGIES,
+        help=(
+            "Comma-separated strategies for Phase 1. Default excludes metadecode (fixed baselines only). "
+            "Include metadecode to run synthesis in Phase 1 and metadecode-only ablations B/C/E "
+            "plus metadecode arms of A/D."
+        ),
+    )
     parser.add_argument("--token-budgets", default=DEFAULT_TOKEN_BUDGETS)
     parser.add_argument("--step-budgets", default=DEFAULT_STEP_BUDGETS)
     parser.add_argument("--synthesis-iterations", default=DEFAULT_SYNTH_ITERS)
@@ -1268,7 +1289,8 @@ def make_parser() -> argparse.ArgumentParser:
         "--generation-models",
         default=DEFAULT_GEN_MODELS,
         help="Metadecode synthesizer profiles (comma-separated). "
-        "First entry drives the main matrix and ablations A/B/D/E/F; "
+        "Used only when metadecode is listed in --strategies. "
+        "First entry drives Phase 1 metadecode and ablations A/D metadecode arms; "
         "remaining entries are Ablation C only (default: gpt5.4,opus4.7).",
     )
     parser.add_argument("--smiles-classes", "--smiles-class", default=DEFAULT_SMILES_CLASSES)
