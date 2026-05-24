@@ -10,6 +10,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Optional, Union
 
+from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importable
+
+ensure_vendored_syncode_importable()
+
 import syncode.common as syncode_common
 from syncode.grammar_decoder import SyncodeLogitsProcessor
 from syncode.language_model import HuggingFaceModel

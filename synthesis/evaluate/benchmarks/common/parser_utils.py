@@ -67,21 +67,9 @@ def _tokenizer_cache_fingerprint(tokenizer) -> tuple[str, int]:
 
 
 def _ensure_syncode_import_path() -> None:
-    syncode_dir = Path(
-        os.environ.get(
-            "CSD_SYNCODE_DIR",
-            str(Path(__file__).parent.parent.parent / "syncode"),
-        )
-    ).expanduser()
-    # Vendored layout is synthesis/evaluate/syncode/syncode. We need
-    # synthesis/evaluate/syncode on sys.path so imports like
-    # `syncode.parsers` resolve correctly.
-    candidates = [str(syncode_dir)]
-    for candidate in reversed(candidates):
-        if candidate in sys.path:
-            sys.path.remove(candidate)
-    for candidate in candidates:
-        sys.path.insert(0, candidate)
+    from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importable
+
+    ensure_vendored_syncode_importable()
 
 
 def _load_grammar_text(grammar_source: str) -> str:
