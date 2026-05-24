@@ -36,7 +36,7 @@ DEFAULT_MODELS = (
     "meta-llama/Llama-3.1-8B-Instruct"
 )
 DEFAULT_BENCHMARKS = "gsm,spider,smiles"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
+DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,rejection_sampling,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10"
 # First profile: main matrix + ablations A/B/D/E/F; remainder: Ablation C (synthesizer model).
@@ -102,6 +102,7 @@ class Config:
     gsm_eval_sample_size: str
     eval_max_steps: str
     cars_search_steps: str
+    rejection_search_steps: str
     eval_max_seconds_per_example: str
     eval_min_examples_before_threshold_stop: str
     vllm_gpu_memory_utilization: str
@@ -447,6 +448,8 @@ class Runner:
         key: tuple[str, ...] = (strategy, model_slug, benchmark_key, token_budget, max_steps)
         if strategy == "cars":
             return key + (self.config.cars_search_steps,)
+        if strategy == "rejection_sampling":
+            return key + (self.config.rejection_search_steps,)
         return key
 
     def baseline_json_complete(self, path: Path) -> bool:
@@ -509,6 +512,8 @@ class Runner:
         stem = f"{key}__tb{token_budget}__ms{max_steps}"
         if strategy == "cars":
             stem += f"__cs{self.config.cars_search_steps}"
+        if strategy == "rejection_sampling":
+            stem += f"__rs{self.config.rejection_search_steps}"
         return (
             self.config.baseline_output_dir
             / strategy
@@ -706,6 +711,8 @@ class Runner:
         self.add_evaluation_split_flags(cmd, benchmark)
         if strategy == "cars":
             cmd += ["--cars-search-steps", self.config.cars_search_steps]
+        if strategy == "rejection_sampling":
+            cmd += ["--rejection-search-steps", self.config.rejection_search_steps]
         if benchmark == "smiles":
             cmd += [
                 "--smiles-classes",
@@ -1138,7 +1145,14 @@ class Runner:
         for raw_benchmark in ("gsm", "spider", "smiles"):
             benchmark = normalize_benchmark(raw_benchmark)
             for step_budget in self.config.step_budgets:
-                for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                for strategy in (
+                    "gcd",
+                    "crane",
+                    "itergen",
+                    "cars",
+                    "rejection_sampling",
+                    "metadecode",
+                ):
                     if strategy == "metadecode":
                         self.run_metadecode_cases(
                             benchmark,
@@ -1183,7 +1197,14 @@ class Runner:
         for raw_benchmark in ("gsm", "spider", "smiles"):
             benchmark = normalize_benchmark(raw_benchmark)
             for token_budget in self.config.token_budgets:
-                for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                for strategy in (
+                    "gcd",
+                    "crane",
+                    "itergen",
+                    "cars",
+                    "rejection_sampling",
+                    "metadecode",
+                ):
                     if strategy == "metadecode":
                         self.run_metadecode_cases(
                             benchmark,
@@ -1261,6 +1282,12 @@ def make_parser() -> argparse.ArgumentParser:
         default="200",
         help="Max CARS stochastic decode attempts per baseline example (default: 200). "
         "Wired only for --strategy cars; does not affect other strategies.",
+    )
+    parser.add_argument(
+        "--rejection-search-steps",
+        default="200",
+        help="Max rejection-sampling decode attempts per baseline example (default: 200). "
+        "Wired only for --strategy rejection_sampling; uses temperature 1.0.",
     )
     parser.add_argument(
         "--eval-max-seconds-per-example",
@@ -1399,6 +1426,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
         cars_search_steps=str(args.cars_search_steps),
+        rejection_search_steps=str(args.rejection_search_steps),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
         eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),

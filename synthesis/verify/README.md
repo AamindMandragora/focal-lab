@@ -19,7 +19,7 @@ It has two tightly coupled jobs: formal verification and compilation.
 - `library/`
   - Dafny source files used as synthesis substrate; see `library/README.md` for a member-by-member index of `VerifiedAgentSynthesis.dfy`.
 - `reference/`
-  - Verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`); see `reference/README.md`.
+  - Verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`, `rejection_sampling.dfy`); see `reference/README.md`.
 
 ## Verification and Compile Relationship
 

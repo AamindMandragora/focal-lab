@@ -8,8 +8,9 @@
 
 - **Contracts are authoritative:** pre/postconditions and lemmas are not optional documentation; changing them requires proof updates and explicit intent.
 - Generated strategy bodies plug into a **fixed template**; keep extension points and `extern` axioms aligned with **`evaluate/`** runtime behavior.
-- `AppendTaskGuidance` is a runtime prompt-policy hook with zero Dafny cost;
-  keep its contract aligned with the shared LM runtime implementation.
+- `AppendTaskGuidance` and `SetNonDeterministic` are runtime policy hooks with
+  zero Dafny cost; keep their contracts aligned with the shared LM runtime
+  implementation (`SetNonDeterministic` resets each evaluation example).
 - Coordinate with **`generate/`** if template placeholders or allowed call patterns change.
 
 ## See also

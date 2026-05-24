@@ -24,7 +24,9 @@ from synthesis.evaluate.baseline_store import build_minimal_baseline_record
 from synthesis.evaluate.evaluator import Evaluator
 
 
-STRATEGY_NAMES = frozenset({"unconstrained", "gcd", "crane", "itergen", "cars"})
+STRATEGY_NAMES = frozenset(
+    {"unconstrained", "gcd", "crane", "itergen", "cars", "rejection_sampling"}
+)
 
 
 def _evaluate(

@@ -1,6 +1,6 @@
 """Prompt tier selection and rendering for MetaDecode / baseline evaluation.
 
-Tier 1 (answer-only): GCD, IterGen, CARS — grammar-masked from the first token.
+Tier 1 (answer-only): GCD, IterGen, CARS, rejection sampling — grammar-masked from the first token.
 Tier 2 (chain-of-thought): Unconstrained, CRANE, MetaDecode — free-form reasoning allowed.
 
 Templates live under ``synthesis/evaluate/prompts/<benchmark>/tier{1,2}.txt`` with frozen
@@ -33,7 +33,7 @@ BENCHMARK_MAX_NEW_TOKENS: dict[str, int] = {
 SMILES_TIER1_MAX_NEW_TOKENS = 96
 SMILES_TIER2_MAX_NEW_TOKENS = 256
 
-TIER1_STRATEGIES = frozenset({"gcd", "itergen", "cars"})
+TIER1_STRATEGIES = frozenset({"gcd", "itergen", "cars", "rejection_sampling"})
 TIER2_STRATEGIES = frozenset({"unconstrained", "crane", "metadecode"})
 
 # Few-shot caps (full frozen shot lists live in shots.json; CRANE yaml used 8).

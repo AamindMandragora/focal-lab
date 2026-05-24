@@ -275,6 +275,7 @@ class SynthesisPipeline:
 
     DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
     NON_PRUNABLE_HELPERS = {
+        "SetNonDeterministic",
         "UnconstrainedStep",
         "ConstrainedStep",
         "AppendConstrainedToken",
