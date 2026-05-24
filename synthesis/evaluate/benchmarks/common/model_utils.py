@@ -2,9 +2,9 @@
 Model loading and management utilities for CSD evaluation.
 
 Supports both HuggingFace and vLLM runtimes. The hot path remains tensorized:
-next-token logits are captured as tensors, masking uses tensor ops, constrained
-token selection is argmax over masked tensors, and unconstrained token selection
-samples from the model distribution.
+next-token logits are captured as tensors, masking uses tensor ops, and token
+selection is greedy by default. CSD strategies may call `SetNonDeterministic(true)`
+to use temperature-1 sampling for masked and unconstrained choices and chunks.
 """
 
 from __future__ import annotations
@@ -438,6 +438,7 @@ class _TensorizedLMBase:
         self._last_full_prompt: str | None = None
         self._logits_dirty: bool = False
         self._cache_hits: int = 0
+        self._non_deterministic: bool = False
 
         self._token_str_to_indices = {}
         for i in range(n):
@@ -456,7 +457,11 @@ class _TensorizedLMBase:
         return "".join(self._to_str(prefix[i]) for i in range(len(prefix)))
 
     def ResetTaskGuidance(self):
+        self._non_deterministic = False
         self._task_guidance.reset()
+
+    def SetNonDeterministic(self, nonDeterministic):
+        self._non_deterministic = bool(nonDeterministic)
 
     def AppendTaskGuidance(self, guidance):
         self.instruction_text = self._task_guidance.append(
@@ -550,6 +555,20 @@ class _TensorizedLMBase:
         sampled_idx = int(torch.multinomial(probs, num_samples=1).item())
         return sampled_idx
 
+    def _argmax_subset_token_index(self) -> int:
+        return int(self._logits_tensor.argmax().item())
+
+    def _sample_subset_token_index(self) -> int:
+        probs = torch.softmax(self._logits_tensor, dim=0)
+        if torch.isnan(probs).any() or torch.sum(probs).item() <= 0.0:
+            return self._argmax_subset_token_index()
+        return int(torch.multinomial(probs, num_samples=1).item())
+
+    def _chunk_sampling_kwargs(self) -> tuple[float, bool]:
+        if self._non_deterministic:
+            return 1.0, True
+        return 0.0, False
+
     def _finalize_from_logprob_dict(self, logprob_dict: dict[int, Any]) -> None:
         # vLLM returns next-token logprobs as a Python dict. We previously fetched
         # the *full* vocab (logprobs=-1) and looped once per vocab entry — 152k
@@ -591,14 +610,20 @@ class _TensorizedLMBase:
 
     def ChooseNextToken(self):
         with _timed("ChooseNextToken"):
-            best_idx = int(self._logits_tensor.argmax().item())
+            if self._non_deterministic:
+                best_idx = self._sample_subset_token_index()
+            else:
+                best_idx = self._argmax_subset_token_index()
             return self._Tokens[best_idx]
 
     def ChooseNextTokenUnconstrained(self):
         with _timed("ChooseNextTokenUnconstrained"):
             if self._full_logits is None:
                 raise RuntimeError("Must call GenerateLogits before ChooseNextTokenUnconstrained")
-            sampled_idx = self._sample_full_token_id()
+            if self._non_deterministic:
+                sampled_idx = self._sample_full_token_id()
+            else:
+                sampled_idx = int(self._full_logits.argmax().item())
             return self._dafny.Seq(self.tokenizer.decode([sampled_idx]))
 
     def _token_indices_for_token(self, token) -> list[int]:
@@ -849,11 +874,13 @@ def create_huggingface_lm(
             inputs = inputs.to(self._input_device)
             prompt_len = inputs["input_ids"].shape[-1]
 
+            chunk_temperature, chunk_do_sample = self._chunk_sampling_kwargs()
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
-                    do_sample=False,
+                    do_sample=chunk_do_sample,
+                    temperature=chunk_temperature,
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -960,9 +987,10 @@ def create_vllm_lm(
 
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
+            chunk_temperature, _ = self._chunk_sampling_kwargs()
             sampling_params = SamplingParams(
                 max_tokens=max_new_tokens,
-                temperature=0.0,
+                temperature=chunk_temperature,
                 detokenize=False,
             )
             outputs = self.engine.generate([full_prompt], sampling_params=sampling_params, use_tqdm=False)

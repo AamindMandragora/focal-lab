@@ -34,7 +34,8 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 
 - The parser path depends on Syncode DFA-mask caching for practical performance.
 - Evaluation backends currently support runtime modes that provide token-level control (`huggingface`, `vllm`).
-- Runtime LM wrappers support `AppendTaskGuidance`: the first non-empty CSD
+- Runtime LM wrappers support `SetNonDeterministic` (greedy vs temperature-1
+  sampling; resets each example) and `AppendTaskGuidance`: the first non-empty CSD
   guidance block is appended to the evaluator prompt for that example, later
   calls are ignored, and accepted guidance is surfaced in evaluation feedback.
 - Output artifacts from this stage are saved under per-run `results/` folders in `outputs/generated/`.
@@ -51,8 +52,8 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
     - `generated_answer` — legacy alias of `extracted` for older readers
     - optional `generation_seconds`, `num_tokens`
 - Fixed-strategy GSM baselines use the local CRANE GSM source rows so
-  `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` are compared on the
-  same questions.
+  `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling`
+  are compared on the same questions.
 - The GCD adapter uses Syncode DFA-mask decoding but keeps GSM-Symbolic generation scoped to expression bodies: it starts after `<<`, wraps the generated body for scoring, caps expression length, finalizes the longest parseable expression prefix, and restricts GSM variables to numeric placeholders observed in the evaluation sample.
 - GCD and IterGen legacy adapters load **one** Hugging Face model per subprocess (`syncode_run_session.SyncodeRunSession` / IterGen grammar rebind). Per-example tier-1 grammars swap cached DFA mask decoders only; each decode resets parser state via SynCode/IterGen `start`/`reset` so prior prompts cannot leak into the next example. Subprocess exit clears GPU state between matrix jobs.
 - GSM syntax checks use a numeric-only grammar when examples do not expose numeric symbolic variables; arbitrary identifiers such as `reasoning` must not pass syntax on instantiated GSM rows.

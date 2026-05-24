@@ -78,7 +78,7 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
 
 - Always compare synthesized strategy performance against a CRANE baseline on the same model/split/sample settings before claiming success.
 - Maintain high syntax/format validity while improving accuracy.
-- Fixed-strategy GSM baselines should use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so comparisons are row-aligned.
+- Fixed-strategy GSM baselines should use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` so comparisons are row-aligned.
 - For fixed-strategy baseline JSONs, do not infer valid syntax from missing legacy metadata. Annotate rows with benchmark parser checks or treat missing syntax booleans as invalid.
 - For CRANE-backed GSM rows that lack `variable_types`, infer numeric symbolic identifiers from `gold_answer` before syntax checking.
 - Keep the GCD GSM-Symbolic adapter scoped to constrained expression bodies after `<<`; wrap those bodies for scoring, finalize the longest parseable expression prefix, and restrict identifiers to numeric placeholders from the evaluation sample.

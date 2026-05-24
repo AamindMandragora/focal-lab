@@ -29,7 +29,7 @@ FRESH=0
 CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
 PYTHON="${CONDA_ENV}/bin/python"
 # Matches run_all_tests.py fixed-strategy names (everything except metadecode).
-LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars}"
+LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars,rejection_sampling}"
 
 usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -55,8 +55,8 @@ require_python_env() {
 # Bake GPU env from the invoking shell: tmux often carries a stale
 # CUDA_VISIBLE_DEVICES (e.g. 2,3) that would override launch-time values.
 project_env_script() {
-  local cuda_visible="${CUDA_VISIBLE_DEVICES:-2,3}"
-  local vas_max_cuda="${VAS_MAX_CUDA_DEVICES:-2}"
+  local cuda_visible="${CUDA_VISIBLE_DEVICES:-0}"
+  local vas_max_cuda="${VAS_MAX_CUDA_DEVICES:-1}"
   local vas_tp="${VAS_VLLM_TENSOR_PARALLEL_SIZE:-$vas_max_cuda}"
   local vas_gpu_mem="${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
   local vas_mp="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"

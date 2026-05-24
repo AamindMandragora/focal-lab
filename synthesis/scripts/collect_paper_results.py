@@ -67,7 +67,15 @@ MODEL_TABULAR_MACROS = [
     r"\LlamaEight",
 ]
 BENCHMARKS = ["gsm_symbolic", "spider", "smiles"]
-STRATEGIES = ["unconstrained", "gcd", "crane", "itergen", "cars", "metadecode"]
+STRATEGIES = [
+    "unconstrained",
+    "gcd",
+    "crane",
+    "itergen",
+    "cars",
+    "rejection_sampling",
+    "metadecode",
+]
 SMILES_CLASSES = ("acrylates", "chain_extenders", "isocyanates")
 # Main matrix / non-Ablation-C metadecode runs (first profile in run_all_tests.py --generation-models).
 DEFAULT_MAIN_GEN_PROFILE = "opus4.7"
@@ -414,6 +422,7 @@ def _strategy_display(strategy: str) -> str:
         "crane": r"\Crane",
         "itergen": r"\IterGen",
         "cars": r"\CARS",
+        "rejection_sampling": "Reject.",
         "metadecode": r"\Tool",
     }.get(strategy, strategy)
 

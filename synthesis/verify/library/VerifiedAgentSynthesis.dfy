@@ -207,6 +207,10 @@ module VerifiedDecoderAgent {
       requires ValidTokensIdsLogits()
       ensures ValidTokensIdsLogits()
 
+    method {:extern} {:axiom} SetNonDeterministic(nonDeterministic: bool)
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+
     method {:extern} {:axiom} ChooseNextToken() returns (token: Token)
       requires ValidTokensIdsLogits()
       ensures token in Tokens
@@ -298,6 +302,14 @@ module VerifiedDecoderAgent {
       ensures cost == old(cost)
     {
       lm.AppendTaskGuidance(guidance);
+    }
+
+    method SetNonDeterministic(lm: LM, nonDeterministic: bool)
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures cost == old(cost)
+    {
+      lm.SetNonDeterministic(nonDeterministic);
     }
 
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)

@@ -193,6 +193,12 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"forward_pass, prefix_len={prefix_len}"
         return event
 
+    if name == "SetNonDeterministic":
+        enabled = bool(args[-1]) if args else False
+        event["non_deterministic"] = enabled
+        event["detail"] = f"non_deterministic={enabled}"
+        return event
+
     if name == "ChooseNextTokenUnconstrained":
         # Keep delimiter tokens verbatim; redact schema/identifier tokens.
         token = _safe_token(result)
@@ -244,12 +250,10 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
         return
 
     def _fast_get_highest_logit_token(self, lm):
-        # Delegate to the tensor-backed argmax. lm.ChooseNextToken does a
-        # single argmax over the constrained logits tensor and returns the
-        # corresponding Dafny token sequence -- exactly what the Dafny spec
-        # for GetHighestLogitToken requires, but O(1) GPU syncs instead of
-        # O(vocab_size).
-        return lm.ChooseNextToken()
+        # Always argmax: GetHighestLogitToken must not sample even when the CSD
+        # enabled non-deterministic decoding for ChooseNextToken.
+        best_idx = lm._argmax_subset_token_index()
+        return lm._Tokens[best_idx]
 
     def _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
         """Vectorized top-K over parser-valid + EOS tokens.
@@ -526,6 +530,7 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         return
 
     helper_names = [
+        "SetNonDeterministic",
         "UnconstrainedStep",
         "UnconstrainedChunk",
         "OpenConstrainedSpan",
@@ -611,6 +616,7 @@ def _attach_lm_trace(lm: Any, trace_state: Dict[str, Any]) -> None:
         return
 
     lm_method_names = [
+        "SetNonDeterministic",
         "GenerateLogits",
         "ChooseNextTokenUnconstrained",
         "MaskValidNextAndEos",

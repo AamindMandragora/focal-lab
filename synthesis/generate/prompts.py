@@ -118,6 +118,7 @@ outside `lm.Tokens`; safe helpers internally ignore non-vocabulary tokens.
 ### Helper methods
 ```
 helpers.AppendTaskGuidance(lm, guidance);
+helpers.SetNonDeterministic(lm, nonDeterministic);
 var next := helpers.UnconstrainedStep(lm, prompt, generated);
 var generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);
 var generated, insideConstrainedOut, currentConstrainedOut := helpers.EnterObservedConstrainedSpan(lm, generated);
@@ -216,6 +217,19 @@ consume token budget by themselves.
   Control profile: prompt policy only; call only at the start of the CSD, after
   output initialization and before the first LM generation helper. Do not use it
   as a mid-generation control action.
+
+- `helpers.SetNonDeterministic(lm, nonDeterministic)`
+  Role: select greedy decoding (`false`) or temperature-1 sampling (`true`) for
+  subsequent LM token choices in the current CSD invocation.
+  Mechanics: forwards `nonDeterministic` to the runtime LM wrapper. When `false`,
+  `ChooseNextToken`, `ChooseNextTokenUnconstrained`, and unconstrained chunk
+  generation use greedy selection. When `true`, those paths sample with
+  temperature 1 over the active logits or chunk decode. `GetHighestLogitToken`
+  always reads the argmax token regardless of this flag. The flag resets to
+  `false` at the start of each evaluation example.
+  Cost: +0.
+  Control profile: decoding policy only; call before LM generation helpers when
+  the task benefits from stochastic decoding.
 
 ### Outside-span generation
 
@@ -597,7 +611,7 @@ consume token budget by themselves.
 Strategy code may also invoke `lm` and `parser` members directly when proofs permit.
 Summaries align with `synthesis/verify/library/README.md`; the `.dfy` file states full contracts.
 
-- **`lm`:** `GenerateLogits`, `ChooseNextToken`, `ChooseNextTokenUnconstrained`, `GenerateUnconstrainedChunk`,
+- **`lm`:** `SetNonDeterministic`, `GenerateLogits`, `ChooseNextToken`, `ChooseNextTokenUnconstrained`, `GenerateUnconstrainedChunk`,
   `MaskValidNextAndEos`, `BoostValidNextAndEos`, `MaskToken` / `MaskTokens` / `MaskTokensExcept`,
   `IdToToken`, `TokenToId`, logit readers, `IsMasked`, `HasUnmaskedToken`.
 - **`parser`:** `IsValidPrefix`, `IsCompletePrefix`, `IsDeadPrefix`, `ValidNextTokenCount`, `ValidNextToken`,

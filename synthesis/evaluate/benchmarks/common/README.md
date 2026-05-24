@@ -16,7 +16,8 @@
   - Shared `<< >>` extraction for GSM, Spider, and SMILES scoring.
 - `model_utils.py`
   - Backend-aware model/tokenizer setup and runtime object creation.
-  - Owns first-call-wins task guidance state for CSD-authored prompt guidance.
+  - Owns first-call-wins task guidance state and per-example `SetNonDeterministic`
+    decoding policy (greedy default; temperature-1 when enabled).
 - `parser_utils.py`
   - Canonical parser factory implementation using Syncode DFA mask stores.
 
