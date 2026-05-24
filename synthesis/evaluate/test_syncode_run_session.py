@@ -23,6 +23,26 @@ class TestSyncodeRunSession(unittest.TestCase):
             raise unittest.SkipTest(str(exc)) from exc
         cls.SyncodeRunSession = SyncodeRunSession
 
+    def test_original_mode_skips_dfa_mask_store(self) -> None:
+        session = self.SyncodeRunSession(
+            "test",
+            device="cpu",
+            mode="original",
+            quantize=False,
+            max_new_tokens=4,
+            do_sample=True,
+            temperature=1.0,
+            opp=False,
+        )
+        try:
+            session.ensure_ready()
+            self.assertEqual(len(session._grammar_decoders), 0)
+            batch = session.infer("1 + 1 = ")
+            self.assertIsInstance(batch, list)
+            self.assertGreaterEqual(len(batch), 1)
+        finally:
+            session.close()
+
     def test_reuses_one_model_across_two_grammars(self) -> None:
         g1 = "start: NUMBER\n%import common.NUMBER\n"
         g2 = 'start: NUMBER "+" NUMBER\n%import common.NUMBER\n'

@@ -175,7 +175,6 @@ run_baselines() {
   require_python_env
   run_matrix \
     --strategies "$LEGACY_BASELINE_STRATEGIES" \
-    --skip-ablations \
     "$@"
 }
 
