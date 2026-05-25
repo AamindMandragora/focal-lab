@@ -9,9 +9,14 @@
 - Follow root **`AGENTS.md`**: benchmark-specific behavior belongs under **`benchmarks/<name>/`** (especially **`eval_logic.py`**).
 - Preserve **DFA-mask / Syncode** integration assumptions documented in **`README.md`**; do not regress per-step validity to full-vocabulary parsing.
 - **`evaluator.py`** should delegate; avoid growing monolithic if/else by benchmark.
-- Keep CSD-authored policy hooks generic: `SetNonDeterministic` and
-  `AppendTaskGuidance` belong in shared runtime/evaluation plumbing, not
-  benchmark-specific scoring.
+- Keep CSD-authored prompt guidance capture generic: `AppendTaskGuidance`
+  belongs in shared runtime/evaluation plumbing, not benchmark-specific scoring.
+- Attempt outcome ledgers must remain empirical: metrics, measured deltas,
+  rationale-claim summaries, and observed failure-location counts. Include all
+  small failure-location buckets rather than top-k truncating them.
+- Aggregate failure-mode summaries in **`evaluator.py`** should list all
+  detected mode buckets. Keep any cap on verbatim rollout examples separate
+  from the aggregate counts.
 - **`run_legacy_fixed_strategy.main`** calls **`_ensure_repo_cache_env`** so subprocess CRANE runs inherit **`HF_HOME`**, **`HF_CACHE`**, **`TRANSFORMERS_CACHE`**, **`SYNCODE_CACHE`**, and **`ITER_SYNCODE_CACHE`** under the repository **`cache/`** unless **`CSD_CACHE_ROOT`** (or those variables) are already set; vendored **`syncode/syncode/common.py`** and legacy forks walk up to the same root when imports happen outside that entrypoint.
 - **`vendored_syncode.ensure_vendored_syncode_importable`** runs before any **`import syncode`** in this tree so broken editable installs (another user's **`CRANE/syncode`** path) do not shadow **`synthesis/evaluate/syncode/syncode`**.
 - **`rejection_sampling`** uses **`SyncodeRunSession(mode="original")`** with **`ensure_ready()`** (no DFA mask store); grammar is applied only for constrained modes.

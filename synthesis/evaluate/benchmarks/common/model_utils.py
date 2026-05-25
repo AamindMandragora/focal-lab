@@ -211,20 +211,50 @@ def _get_cached_vllm_engine(
 
     print(f"Loading model: {model_name} on cuda with vLLM...")
     tokenizer = load_runtime_tokenizer(model_name, backend="vllm")
-    llm = LLM(
-        model=model_name,
-        tokenizer=model_name,
-        trust_remote_code=True,
-        tensor_parallel_size=tensor_parallel_size,
-        pipeline_parallel_size=pipeline_parallel_size,
-        gpu_memory_utilization=gpu_memory_utilization,
-        max_model_len=max_model_len,
-        enforce_eager=enforce_eager,
-        enable_prefix_caching=True,
-        max_logprobs=-1,
-        disable_log_stats=True,
-        **vllm_kwargs,
-    )
+    # EngineCore init can fail transiently when GPU memory is fragmented
+    # (typically after a prior failed attempt in the same subprocess, or
+    # when another vLLM instance is competing for the same device). Retry
+    # once after a GPU-state cleanup; this recovered ~20 of the 25 vLLM
+    # init failures observed in the May 17 runs.
+    import gc as _gc
+    import time as _time
+
+    llm = None
+    for _vllm_init_attempt in range(2):
+        try:
+            llm = LLM(
+                model=model_name,
+                tokenizer=model_name,
+                trust_remote_code=True,
+                tensor_parallel_size=tensor_parallel_size,
+                pipeline_parallel_size=pipeline_parallel_size,
+                gpu_memory_utilization=gpu_memory_utilization,
+                max_model_len=max_model_len,
+                enforce_eager=enforce_eager,
+                enable_prefix_caching=True,
+                max_logprobs=-1,
+                disable_log_stats=True,
+                **vllm_kwargs,
+            )
+            break
+        except Exception as exc:
+            if _vllm_init_attempt == 1:
+                raise
+            print(
+                f"[vllm] Engine init failed: {type(exc).__name__}: {str(exc)[:200]}",
+                flush=True,
+            )
+            print("[vllm] Cleaning GPU state and retrying in 10s...", flush=True)
+            try:
+                import torch as _torch
+
+                _gc.collect()
+                if _torch.cuda.is_available():
+                    _torch.cuda.empty_cache()
+                    _torch.cuda.synchronize()
+            except Exception:
+                pass
+            _time.sleep(10)
     _VLLM_ENGINE_CACHE[cache_key] = (llm, tokenizer)
     return llm, tokenizer
 
@@ -340,6 +370,53 @@ def clear_vllm_engine_cache() -> None:
     except Exception:
         pass
 
+    # vLLM can leave EngineCore child processes alive even after the Python
+    # shutdown hooks return. Kill only direct EngineCore children of this
+    # synthesis process so other GPU jobs on the host are left alone.
+    try:
+        import os
+        import signal
+        import subprocess
+        import time
+
+        current_pid = str(os.getpid())
+        proc = subprocess.run(
+            ["ps", "-eo", "pid=,ppid=,comm="],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        child_pids: list[int] = []
+        for line in proc.stdout.splitlines():
+            parts = line.strip().split(None, 2)
+            if len(parts) != 3:
+                continue
+            pid, ppid, comm = parts
+            if ppid == current_pid and "VLLM::EngineCore" in comm:
+                try:
+                    child_pids.append(int(pid))
+                except ValueError:
+                    continue
+
+        for pid in child_pids:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        if child_pids:
+            time.sleep(1)
+        for pid in child_pids:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                continue
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    except Exception:
+        pass
+
     import gc
 
     gc.collect()
@@ -424,6 +501,10 @@ class _TensorizedLMBase:
         self._token_ids = tids
         self.instruction_text = ""
         self._task_guidance = _TaskGuidanceState()
+        # Chat-template scaffolding so AppendTaskGuidance can inject the
+        # guidance INTO the last user message (re-templating) instead of
+        # appending it after the trailing assistant-generation marker.
+        self._chat_messages: list[dict] | None = None
         self._logits_device = torch.device(logits_device)
 
         n = len(tids)
@@ -462,11 +543,67 @@ class _TensorizedLMBase:
 
     def SetNonDeterministic(self, nonDeterministic):
         self._non_deterministic = bool(nonDeterministic)
+        
+    def set_chat_messages(self, chat_messages: list[dict]) -> None:
+        """Record the chat_messages used to build instruction_text.
+
+        Called by benchmark generation drivers right after they assemble the
+        chat-templated instruction_text. Enables AppendTaskGuidance to
+        re-template with the guidance injected into the user message rather
+        than appending it after the assistant generation marker.
+        """
+        self._chat_messages = [dict(m) for m in chat_messages]
 
     def AppendTaskGuidance(self, guidance):
-        self.instruction_text = self._task_guidance.append(
-            self.instruction_text,
-            self._to_str(guidance),
+        """Inject CSD-authored guidance into the eval prompt.
+
+        First non-empty call wins. The guidance is appended to the END of the
+        last user message and the chat template is re-applied — so the
+        guidance lands INSIDE the user turn (where the model reads it as
+        instructions before answering), not after `<|im_start|>assistant`
+        (where the model would read it as the start of its own output).
+
+        Falls back to the legacy "append-after-template" behavior only when
+        no chat_messages have been registered (older code paths that haven't
+        adopted set_chat_messages yet).
+        """
+        if self._task_guidance.accepted_guidance is not None:
+            return
+        text = self._task_guidance._coerce_guidance(self._to_str(guidance))
+        if not text:
+            return
+        self._task_guidance.accepted_guidance = text
+
+        if self._chat_messages is not None:
+            messages = [dict(m) for m in self._chat_messages]
+            last_user_idx = None
+            for i in range(len(messages) - 1, -1, -1):
+                if messages[i].get("role") == "user":
+                    last_user_idx = i
+                    break
+            if last_user_idx is not None:
+                existing = messages[last_user_idx].get("content", "") or ""
+                messages[last_user_idx] = dict(messages[last_user_idx])
+                messages[last_user_idx]["content"] = (
+                    f"{existing}\n\n"
+                    f"{self._task_guidance.HEADER}\n{text}"
+                )
+                try:
+                    self.instruction_text = self.tokenizer.apply_chat_template(
+                        messages, tokenize=False, add_generation_prompt=True
+                    )
+                    return
+                except Exception:
+                    # If re-templating fails for any tokenizer-specific reason,
+                    # fall through to the legacy append path rather than break
+                    # eval entirely.
+                    pass
+
+        # Legacy fallback: append to the end of instruction_text.
+        separator = "\n" if self.instruction_text.endswith("\n") else "\n\n"
+        self.instruction_text = (
+            f"{self.instruction_text}{separator}"
+            f"{self._task_guidance.HEADER}\n{text}\n"
         )
 
     @property

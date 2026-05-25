@@ -38,6 +38,7 @@ def main() -> None:
     p.add_argument("--spider-split-file", type=str, default=None)
     p.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="eval")
     p.add_argument("--smiles-classes", type=str, default=None)
+    p.add_argument("--max-seconds-per-example", type=float, default=None)
     p.add_argument("--output-json", type=Path, default=None)
     args = p.parse_args()
 
@@ -62,6 +63,7 @@ def main() -> None:
         vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         vllm_max_model_len=args.vllm_max_model_len,
         vllm_enforce_eager=True,
+        max_seconds_per_example=args.max_seconds_per_example,
     )
     if args.gsm_split_file:
         evaluator_kwargs["gsm_split_file"] = args.gsm_split_file

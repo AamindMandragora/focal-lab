@@ -3,8 +3,8 @@ Environment setup for SQL Spider.
 
 Thin re-export of evaluations.gsm_symbolic.environment.setup_dafny_environment —
 the setup is dataset-agnostic, it just reads the grammar file the caller
-passes in. Kept as a module so synthesis/evaluator.py can import it via
-`evaluations.sql_spider.environment`.
+passes in. Kept as a module so synthesis.evaluate.evaluator can import it via
+`synthesis.evaluate.benchmarks.sql_spider.environment`.
 """
 
 from __future__ import annotations
