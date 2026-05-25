@@ -83,6 +83,22 @@ Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CU
 
 Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
 
+## Live Dashboard
+
+Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
+
+```bash
+python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
+```
+
+If the server is remote, open it through an SSH tunnel:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 focal
+```
+
+Then visit `http://127.0.0.1:8765/`.
+
 ## Quick Start
 
 1. Install Python dependencies.
@@ -99,7 +115,7 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **Claude Opus on Amazon Bedrock** (`AWS_BEARER_TOKEN_BEDROCK` and `BEDROCK_OPUS_MODEL` in `.env`; `--generation-backend bedrock` in `run_synthesis`). Use **`--generation-backend openai`** with `OPENAI_API_KEY` for GPT ablations (`gpt5.4` profile in `run_all_tests.py`). Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -112,14 +128,10 @@ CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --eval-sample-size 10
 ```
 
-Optional search-space controls for helper-call pruning:
+Optional search-space controls for UCB/bandit helper-call pruning:
 
 - `--adaptive-helper-mask` / `--no-adaptive-helper-mask`
-- `--helper-selection-policy` (`utility` or `bandit`)
-- `--helper-mask-min-evals`
-- `--helper-mask-min-uses`
-- `--helper-mask-margin`
-- `--helper-mask-max-disabled`
+- `--helper-selection-policy` (`bandit`)
 - `--helper-bandit-min-evals`
 - `--helper-bandit-top-k`
 - `--helper-bandit-ucb-c`
@@ -127,7 +139,7 @@ Optional search-space controls for helper-call pruning:
 
 Optional local-beam refinement controls:
 
-- `--refinement-beam-size`
+- `--refinement-beam-size` (defaults to 2)
 - `--local-neighborhood-refinement` / `--no-local-neighborhood-refinement`
 - `--max-local-edit-ratio`
 - `--beam-verify-candidates` / `--no-beam-verify-candidates`
@@ -146,7 +158,8 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` default **`--strategies`** omits **metadecode** (fixed strategies only). With that default, Phase 2 runs ablations A and D for `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` only; ablations B/C/E and metadecode arms of A/D are skipped. Add **metadecode** to **`--strategies`** (or **`./run_tmux.sh metadecode`**) for synthesis runs and full ablations. The scheduler still orders strategies as `unconstrained, gcd, crane, itergen, cars, rejection_sampling, metadecode` when present. Metadecode runs use `--min-accuracy` / `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps).
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
+- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` so those strategies compare against the same questions.
@@ -154,7 +167,7 @@ Optional local-beam refinement controls:
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. Default **`--generation-models`** is **`gpt5.4,opus4.7`**: **`gpt5.4`** (OpenAI) drives the main matrix; **`opus4.7`** (Bedrock / `BEDROCK_OPUS_MODEL`) is the optional second profile (Ablation C). **`gemini-pro`** is not in the default list until wired (`GEMINI_BEDROCK_MODEL` when enabled).
+- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking; **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
 
 ## Path Configuration
 

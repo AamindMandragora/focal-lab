@@ -8,6 +8,7 @@ from typing import Any
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
 
+
 uses_hidden_chunks = defaults.uses_hidden_chunks
 example_syntax_pass = defaults.example_syntax_pass_from_segments
 accuracy_applicable = defaults.accuracy_applicable_always

@@ -815,12 +815,26 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
 
+    if dataset == "gsm_symbolic":
+        raise SystemExit(
+            "CARS baseline is not evaluated on GSM-Symbolic in the CARS paper; "
+            "no paper-faithful comparison exists for this combination. "
+            "Skipping CARS GSM run."
+        )
+
     model_id = _cars_model_id(args.eval_model)
 
-    repo_root = Path(__file__).resolve().parents[2]
-    cars_root = repo_root / "legacy" / "cars"
+    cars_root_override = os.environ.get("CARS_REPO_DIR")
+    if cars_root_override:
+        cars_root = Path(cars_root_override).expanduser().resolve()
+    else:
+        upstream_cars = Path(os.path.expanduser("~/cars")).resolve()
+        if upstream_cars.exists():
+            cars_root = upstream_cars
+        else:
+            cars_root = Path(__file__).resolve().parents[2] / "legacy" / "cars"
     if not cars_root.exists():
-        raise RuntimeError(f"Legacy cars directory not found: {cars_root}")
+        raise RuntimeError(f"cars directory not found: {cars_root}")
 
     _cars_add_import_paths(cars_root)
 
@@ -2228,6 +2242,22 @@ def main() -> None:
     _ensure_repo_cache_env()
     if args.eval_backend == "vllm":
         configure_vllm_multiprocessing()
+
+    dataset_normalized = _normalize_dataset(args.dataset)
+    # CRANE main.py only supports gsm_symbolic and FOL — no Spider support
+    # (no prompt_templates/spider.yaml, no generate_spider_with_itergen function).
+    # For Spider, fall through to the legacy shared-evaluator adapters which DO
+    # support Spider and were the source of the 05-18 baselines.
+    crane_repo_datasets = {"gsm_symbolic"}
+    crane_repo_strategies = {"unconstrained", "gcd", "crane", "itergen"}
+    if (
+        dataset_normalized in crane_repo_datasets
+        and args.strategy in crane_repo_strategies
+    ):
+        from synthesis.evaluate.baselines.crane_repo_runner import (
+            run_crane_repo_baseline,
+        )
+        raise SystemExit(run_crane_repo_baseline(args, dataset_normalized))
 
     if args.strategy == "gcd":
         raise SystemExit(run_gcd_legacy_adapter(args))

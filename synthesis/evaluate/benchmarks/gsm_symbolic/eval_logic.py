@@ -26,58 +26,25 @@ def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
 def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
     from synthesis.evaluate.benchmarks.gsm_symbolic.dataset import (
         load_gsm_from_crane_folder,
-        load_gsm_symbolic,
     )
     from synthesis.project_defaults import default_gsm_source_dir
 
     indices = evaluator._load_gsm_split_indices()
 
     crane_dir = evaluator.gsm_source_dir
-    if crane_dir is None and indices is not None:
+    if crane_dir is None:
         crane_dir = default_gsm_source_dir()
-
-    # Local CRANE JSONs are required when a fixed split manifest is in use.
-    if crane_dir is not None:
-        ds = load_gsm_from_crane_folder(
-            crane_dir=crane_dir,
-            limit=evaluator.sample_size,
-            indices=indices,
+    if crane_dir is None:
+        raise RuntimeError(
+            "GSM-Symbolic evaluation requires a CRANE JSON folder. "
+            "HuggingFace loading has been removed — set --gsm-source-dir or "
+            "ensure synthesis.project_defaults.default_gsm_source_dir() resolves."
         )
-        return list(ds)
 
-    # Default path: HuggingFace GSM-Symbolic.
-    split = "train" if evaluator.gsm_split_name == "train" else "test"
-
-    if indices is not None:
-        needed = max(indices) + 1 if indices else 0
-        ds = load_gsm_symbolic(
-            config="main",
-            split=split,
-            limit=needed if needed > 0 else None,
-            random_sample=False,
-        )
-        selected: list[dict[str, Any]] = []
-        for idx in indices:
-            if idx < 0 or idx >= len(ds):
-                raise IndexError(
-                    f"GSM split index {idx} is out of range for HF split "
-                    f"{split} (size={len(ds)})."
-                )
-            selected.append(ds[idx])
-        if evaluator.sample_size is not None and evaluator.sample_size > 0:
-            selected = selected[: evaluator.sample_size]
-        print(
-            f"Loaded {len(selected)} examples from HuggingFace GSM-Symbolic "
-            f"(split={split}) using split manifest indices"
-        )
-        return selected
-
-    ds = load_gsm_symbolic(
-        config="main",
-        split=split,
+    ds = load_gsm_from_crane_folder(
+        crane_dir=crane_dir,
         limit=evaluator.sample_size,
-        random_sample=evaluator.sample_seed is not None,
-        seed=evaluator.sample_seed,
+        indices=indices,
     )
     return list(ds)
 

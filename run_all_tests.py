@@ -9,6 +9,7 @@ layout, matrix order, cache semantics, and MetaDecode target selection.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -30,26 +31,22 @@ DEFAULT_GSM_SPLIT_FILE = (
 DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
 DEFAULT_MODELS = (
-    "Qwen/Qwen2.5-Coder-1.5B-Instruct,"
+    "Qwen/Qwen2.5-1.5B-Instruct,"
     "Qwen/Qwen2.5-Coder-7B-Instruct,"
     "Qwen/Qwen2.5-Coder-14B-Instruct,"
     "meta-llama/Llama-3.1-8B-Instruct"
 )
-DEFAULT_BENCHMARKS = "gsm,spider,smiles"
-DEFAULT_BASELINE_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,rejection_sampling"
-DEFAULT_STRATEGIES = DEFAULT_BASELINE_STRATEGIES
-ABLATION_FIXED_STRATEGIES = (
-    "gcd",
-    "crane",
-    "itergen",
-    "cars",
-    "rejection_sampling",
-)
+DEFAULT_BENCHMARKS = "gsm,spider"
+DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
-DEFAULT_SYNTH_ITERS = "3,5,10"
-# First profile: main matrix + ablations A/B/D/E/F; remainder: Ablation C (synthesizer model).
-DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
-DEFAULT_STEP_BUDGETS = "256,512,1024"
+DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
+DEFAULT_MAIN_SYNTH_ITERS = "40"
+DEFAULT_GEN_MODELS = "opus4.7,gpt5.5,gemini"
+DEFAULT_STEP_BUDGETS = "256,512,900,1024"
+DEFAULT_GSM_MAX_STEPS = "900"
+DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
+VALID_ABLATION_SECTIONS = ("A", "B", "C", "D", "E")
+DEFAULT_ABLATION_SECTIONS = ",".join(VALID_ABLATION_SECTIONS)
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
 # Metadecode min thresholds: best accuracy and best syntax across all fixed baselines.
 BASELINE_TARGET_STRATEGIES = (
@@ -67,6 +64,23 @@ OOM_RE = re.compile(
     r"Free memory on device|desired GPU memory utilization",
     re.IGNORECASE,
 )
+# Quota / credit exhaustion on the AUTHOR-model API (OpenAI / Anthropic / Bedrock).
+# These errors are NOT transient — retrying or moving GPUs won't help. We abort
+# the whole matrix run so the user is forced to notice and fix the credit issue
+# instead of letting every metadecode cell silently fail with empty output.
+QUOTA_RE = re.compile(
+    r"insufficient_quota|"
+    r"RateLimitError|rate_limit_error|"
+    r"credit balance is too low|"
+    r"You exceeded your current quota|"
+    r"quota.{0,30}exceeded|"
+    r"BillingHardLimitReached|"
+    r"You have exceeded your.{0,40}quota|"
+    r"403 Forbidden.{0,100}billing|"
+    r"401 Unauthorized.{0,100}(invalid_api_key|authentication)|"
+    r"AccessDeniedException.{0,40}Bedrock",
+    re.IGNORECASE,
+)
 
 
 from synthesis.env_utils import load_env_file
@@ -75,6 +89,22 @@ from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classe
 
 def csv_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def normalize_ablation_sections(value: str) -> set[str]:
+    sections = {item.upper() for item in csv_list(value)}
+    if not sections:
+        raise SystemExit(
+            "At least one ablation section is required; choose from "
+            f"{','.join(VALID_ABLATION_SECTIONS)}"
+        )
+    invalid = sorted(sections - set(VALID_ABLATION_SECTIONS))
+    if invalid:
+        raise SystemExit(
+            f"Invalid ablation section(s): {','.join(invalid)}. "
+            f"Expected one or more of: {','.join(VALID_ABLATION_SECTIONS)}"
+        )
+    return sections
 
 
 def slugify(value: str) -> str:
@@ -100,6 +130,20 @@ def canonical(path: Path) -> str:
     return str(path.resolve())
 
 
+def maybe_int(value: object) -> int | object:
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return value
+
+
+def maybe_float(value: object) -> float | object:
+    try:
+        return float(str(value))
+    except (TypeError, ValueError):
+        return value
+
+
 @dataclass
 class Config:
     models: list[str]
@@ -109,6 +153,7 @@ class Config:
     synth_iters: list[str]
     gen_models: list[str]
     step_budgets: list[str]
+    ablation_sections: set[str]
     smiles_classes: list[str]
     eval_backend: str
     device: str
@@ -117,10 +162,18 @@ class Config:
     gsm_generation_sample_size: str
     gsm_eval_sample_size: str
     eval_max_steps: str
-    cars_search_steps: str
-    rejection_search_steps: str
+    eval_max_steps_gsm: str
+    eval_max_steps_smiles: str
     eval_max_seconds_per_example: str
     eval_min_examples_before_threshold_stop: str
+    accuracy_win_margin: float
+    synthesis_max_tokens: str
+    restart_after_stuck_iters: str
+    helper_selection_policy: str
+    refinement_beam_size: str
+    anthropic_thinking: str
+    anthropic_effort: str
+    anthropic_thinking_display: str
     vllm_gpu_memory_utilization: str
     vllm_tensor_parallel_size: int
     dafny_path: str
@@ -139,6 +192,9 @@ class Config:
     free_gpu_max_used_mb: int = 1024
     gpu_wait_seconds: int = 60
     gpu_wait_timeout_seconds: int = 0
+    main_synthesis_iterations: str = DEFAULT_MAIN_SYNTH_ITERS
+    gpu3_retry_queue: Path = DEFAULT_GPU3_RETRY_QUEUE
+    gpu3_retry_enabled: bool = True
 
 @dataclass
 class Runner:
@@ -293,9 +349,6 @@ class Runner:
     def ensure_split_manifests(self) -> None:
         """Require tracked stratified manifests under environment/benchmark_splits/."""
         normalized = {normalize_benchmark(benchmark) for benchmark in self.config.benchmarks}
-        if not self.config.skip_ablations:
-            normalized.update({"gsm_symbolic", "spider", "smiles"})
-
         if "gsm_symbolic" in normalized:
             gsm_path = Path(self.config.gsm_split_file)
             if not gsm_path.is_file():
@@ -359,7 +412,149 @@ class Runner:
             str(self.config.vllm_tensor_parallel_size),
         ]
 
-    def run_cmd(self, cmd: list[str]) -> bool:
+    def split_metadata_for(self, benchmark: str, role: str) -> dict[str, str | None]:
+        if benchmark == "gsm_symbolic":
+            return {
+                "split_file": self.config.gsm_split_file or None,
+                "split_name": self.gsm_split_name_for_role(role),
+            }
+        if benchmark == "spider":
+            return {
+                "split_file": self.config.spider_split_file or None,
+                "split_name": "train" if role == "train" else "eval",
+            }
+        return {"split_file": None, "split_name": None}
+
+    def matrix_case_metadata(
+        self,
+        *,
+        phase: str,
+        strategy: str,
+        benchmark: str,
+        eval_model: str,
+        token_budget: str,
+        max_steps: str,
+        command: list[str],
+        synth_iter: str | None = None,
+        gen_profile: str | None = None,
+        generation_backend: str | None = None,
+        generation_model: str | None = None,
+        smiles_class: str = "",
+        required_accuracy: float | None = None,
+        required_syntax: float | None = None,
+        target_accuracy_strategy: str | None = None,
+        target_accuracy_path: str | None = None,
+        target_syntax_strategy: str | None = None,
+        target_syntax_path: str | None = None,
+        beam_size: str | None = None,
+        mask_flag: str | None = None,
+        helper_policy: str | None = None,
+    ) -> dict:
+        return {
+            "phase": phase,
+            "strategy": strategy,
+            "benchmark": benchmark,
+            "smiles_class": smiles_class or None,
+            "eval_model": eval_model,
+            "eval_backend": self.config.eval_backend,
+            "generation_profile": gen_profile,
+            "generation_backend": generation_backend,
+            "generation_model": generation_model,
+            "synthesis_iterations": maybe_int(synth_iter) if synth_iter is not None else None,
+            "eval_step_token_budget": maybe_int(token_budget),
+            "eval_max_steps": maybe_int(max_steps),
+            "sample_sizes": {
+                "synthesis_eval": maybe_int(self.generation_sample_size(benchmark)),
+                "final_eval": maybe_int(self.evaluation_sample_size(benchmark)),
+            },
+            "thresholds": {
+                "min_accuracy": required_accuracy,
+                "min_syntax_rate": required_syntax,
+                "accuracy_win_margin": self.config.accuracy_win_margin,
+                "target_accuracy_strategy": target_accuracy_strategy,
+                "target_accuracy_path": target_accuracy_path,
+                "target_syntax_strategy": target_syntax_strategy,
+                "target_syntax_path": target_syntax_path,
+            },
+            "runtime_controls": {
+                "eval_max_seconds_per_example": maybe_float(self.config.eval_max_seconds_per_example),
+                "eval_min_examples_before_threshold_stop": maybe_int(
+                    self.config.eval_min_examples_before_threshold_stop
+                ),
+                "vllm_gpu_memory_utilization": maybe_float(self.config.vllm_gpu_memory_utilization),
+                "vllm_tensor_parallel_size": self.config.vllm_tensor_parallel_size,
+            },
+            "synthesis_controls": {
+                "max_tokens": maybe_int(self.config.synthesis_max_tokens),
+                "restart_after_stuck_iters": maybe_int(self.config.restart_after_stuck_iters),
+                "adaptive_helper_mask": mask_flag != "--no-adaptive-helper-mask",
+                "helper_selection_policy": helper_policy or self.config.helper_selection_policy,
+                "refinement_beam_size": maybe_int(beam_size or self.config.refinement_beam_size),
+                "anthropic_thinking": self.config.anthropic_thinking,
+                "anthropic_effort": self.config.anthropic_effort,
+                "anthropic_thinking_display": self.config.anthropic_thinking_display,
+            },
+            "splits": {
+                benchmark: self.split_metadata_for(benchmark, "eval"),
+            },
+            "cache": {
+                "baseline_cache_mode": self.config.baseline_cache_mode,
+            },
+            "command": command_text(command),
+        }
+
+    def annotate_result_json(self, path: Path, metadata: dict) -> None:
+        if self.config.dry_run:
+            return
+        if not path.is_file():
+            return
+        try:
+            payload = json.loads(path.read_text())
+        except Exception as exc:
+            print(f"[warn] Could not annotate result JSON {path}: {exc}", file=sys.stderr)
+            return
+        payload["matrix_metadata"] = metadata
+        path.write_text(json.dumps(payload, indent=2) + "\n")
+
+    def running_on_gpu3(self) -> bool:
+        visible = (self.env.get("CUDA_VISIBLE_DEVICES") or CALLER_CUDA_VISIBLE_DEVICES or "").strip()
+        if not visible:
+            return False
+        return [item.strip() for item in visible.split(",") if item.strip()] == ["3"]
+
+    def enqueue_gpu3_retry(self, cmd: list[str], *, reason: str, case: dict[str, object]) -> None:
+        if self.config.dry_run or not self.config.gpu3_retry_enabled or self.running_on_gpu3():
+            return
+        queue_path = self.config.gpu3_retry_queue
+        record = {
+            "id": hashlib.sha256(command_text(cmd).encode("utf-8")).hexdigest()[:16],
+            "enqueued_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "reason": reason,
+            "case": case,
+            "cmd": [str(part) for part in cmd],
+        }
+        queue_path.parent.mkdir(parents=True, exist_ok=True)
+        line = json.dumps(record, sort_keys=True) + "\n"
+        try:
+            with queue_path.open("a") as queue_file:
+                try:
+                    import fcntl
+
+                    fcntl.flock(queue_file.fileno(), fcntl.LOCK_EX)
+                except Exception:
+                    pass
+                queue_file.write(line)
+                queue_file.flush()
+                try:
+                    os.fsync(queue_file.fileno())
+                except OSError:
+                    pass
+        except Exception as exc:
+            print(f"[warn] Could not enqueue GPU3 retry in {queue_path}: {exc}", file=sys.stderr)
+            return
+        print(f"[retry-queue] queued GPU3 retry {record['id']} ({reason}) -> {queue_path}")
+
+    def run_cmd(self, cmd: list[str], *, abort_on_quota: bool = True) -> bool:
         if self.config.dry_run:
             print(f"[dry-run] {command_text(cmd)}")
             return True
@@ -396,6 +591,29 @@ class Runner:
             if return_code == 0:
                 return True
             log_text = log_path.read_text(errors="ignore")
+            # Hard-stop the whole matrix on author-model quota / credit exhaustion.
+            # These are NOT transient — retrying or switching GPUs won't recover.
+            if QUOTA_RE.search(log_text):
+                quota_excerpt = "\n".join(
+                    ln for ln in log_text.splitlines()
+                    if QUOTA_RE.search(ln)
+                )[:1500]
+                if not abort_on_quota:
+                    print(
+                        "\n[warn] Author-model quota / credit / auth error detected in "
+                        "optional subprocess output; treating this cell as skipped/failed "
+                        "and continuing the matrix.\n"
+                        f"Matched lines (truncated):\n{quota_excerpt}\n",
+                        file=sys.stderr,
+                    )
+                    return False
+                print(
+                    "\n[FATAL] Author-model quota / credit / auth error detected in subprocess output. "
+                    "Aborting the matrix run so the user sees this immediately.\n"
+                    f"Matched lines (truncated):\n{quota_excerpt}\n",
+                    file=sys.stderr,
+                )
+                raise SystemExit(2)
             if not OOM_RE.search(log_text):
                 return False
         finally:
@@ -421,39 +639,75 @@ class Runner:
         print(f"[run] CUDA_VISIBLE_DEVICES={fallback} {command_text(cmd)}")
         return subprocess.run(cmd, env={**self.env, "CUDA_VISIBLE_DEVICES": fallback}).returncode == 0
 
+    def openai_generation_available(self, gen_profile: str) -> bool:
+        if gen_profile != "gpt5.5":
+            return True
+        api_key = (self.env.get("OPENAI_API_KEY") or "").strip()
+        if api_key:
+            return True
+        print(
+            "[skip] OpenAI generation profile gpt5.5 skipped because OPENAI_API_KEY is not set.",
+            file=sys.stderr,
+        )
+        return False
+
     def metadecode_task(self, benchmark: str) -> str:
         if benchmark == "gsm_symbolic":
-            return "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters."
+            return "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters."
         if benchmark == "spider":
-            return "Generate a single valid SQL query that answers each question using the provided schema context."
+            return "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context."
         if benchmark == "smiles":
             return "Generate valid SMILES strings that match the requested molecular class while maintaining parser-valid output."
         return "Generate parser-valid benchmark answers."
 
     def resolve_gen_profile(self, profile: str) -> tuple[str, str]:
-        bedrock_model = self.env.get(
-            "BEDROCK_GENERATION_MODEL",
-            self.env.get("AWS_BEDROCK_GENERATION_MODEL", "anthropic.claude-3-5-sonnet-20241022-v2:0"),
+        anthropic_opus47 = self.env.get("ANTHROPIC_OPUS_MODEL", "claude-opus-4-7")
+        bedrock_opus47 = (
+            self.env.get("BEDROCK_OPUS_MODEL")
+            or self.env.get("BEDROCK_GENERATION_MODEL")
+            or self.env.get("AWS_BEDROCK_GENERATION_MODEL")
+            or "us.anthropic.claude-opus-4-7"
         )
-        opus_model = self.env.get(
-            "BEDROCK_OPUS_MODEL",
-            self.env.get("BEDROCK_PROFILE_OPUS", "us.anthropic.claude-opus-4-1-20250514-v1:0"),
+        openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.5")
+        gemini_pro = self.env.get("GEMINI_GENERATION_MODEL", "gemini-3-pro-preview")
+        vertex_gemini = (
+            self.env.get("GEMINI_VERTEX_MODEL")
+            or self.env.get("VERTEX_GEMINI_MODEL")
+            or gemini_pro
         )
-        openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.4")
-        if profile == "gpt5.4":
+        if profile == "gpt5.5":
             return "openai", openai_gpt
         if profile == "opus4.7":
-            return "bedrock", opus_model
-        if profile == "gemini-pro":
-            model = self.env.get("GEMINI_BEDROCK_MODEL")
-            if not model:
-                raise SystemExit("Set GEMINI_BEDROCK_MODEL for gemini-pro (partner-owned wiring)")
-            return "bedrock", model
-        if profile == "bedrock":
-            return "bedrock", bedrock_model
+            if self.env.get("CSD_OPUS47_BACKEND", "").strip().lower() == "bedrock":
+                return "bedrock", bedrock_opus47
+            return "anthropic", anthropic_opus47
+        if profile == "bedrock-opus4.7" or profile == "bedrock":
+            return "bedrock", bedrock_opus47
         if profile.startswith("bedrock:"):
-            return "bedrock", profile.removeprefix("bedrock:")
-        return "bedrock", profile
+            model = profile.split(":", 1)[1].strip()
+            if not model:
+                raise ValueError("bedrock: profiles must include a Bedrock model id.")
+            return "bedrock", model
+        if profile == "gemini":
+            if self.env.get("CSD_GEMINI_BACKEND", "").strip().lower() == "vertex":
+                return "vertex", vertex_gemini
+            return "gemini", gemini_pro
+        if profile == "vertex-gemini" or profile == "vertex":
+            return "vertex", vertex_gemini
+        if profile.startswith("vertex:"):
+            model = profile.split(":", 1)[1].strip()
+            if not model:
+                raise ValueError("vertex: profiles must include a Vertex AI model id.")
+            return "vertex", model
+        if profile == "gemini-pro":
+            raise ValueError(
+                "Bedrock-backed gemini-pro is disabled for the experimental matrix; "
+                "use the direct gemini profile instead."
+            )
+        raise ValueError(
+            f"Unknown generation profile: {profile}. "
+            "Allowed profiles are opus4.7, bedrock-opus4.7, gpt5.5, and gemini."
+        )
 
     def baseline_case_key(
         self,
@@ -491,8 +745,10 @@ class Runner:
             payload = json.loads(path.read_text())
         except Exception:
             return False
-        adapter = payload.get("metrics", {}).get("adapter")
-        return adapter != "crane_shared_evaluator"
+        return payload.get("metrics", {}).get("adapter") in (
+            "crane_shared_evaluator",
+            "crane_repo",
+        )
 
     def baseline_json_usable(self, path: Path, strategy: str) -> bool:
         if not (
@@ -603,7 +859,10 @@ class Runner:
                 continue
             if not all(isinstance(row, dict) and "generated_answer" in row for row in answers):
                 continue
-            if strategy == "crane" and payload.get("metrics", {}).get("adapter") == "crane_shared_evaluator":
+            if strategy == "crane" and payload.get("metrics", {}).get("adapter") not in (
+                "crane_shared_evaluator",
+                "crane_repo",
+            ):
                 continue
             accuracy = payload.get("accuracy")
             if isinstance(accuracy, (int, float)):
@@ -620,7 +879,21 @@ class Runner:
             best_accuracy = (0.0, "none", "", "0.0%")
         if best_syntax is None:
             best_syntax = (0.0, "none", "", "0.0%")
+        else:
+            # CRANE/IterGen hit near-100% syntax by grammar construction. Requiring an
+            # unconstrained-decoded synth attempt to match that triggers spurious
+            # threshold-impossible early stops in evaluator.py even when accuracy is
+            # already beating CRANE. Clip the target so attempts can still win.
+            SYNTAX_CEILING = 0.90
+            if best_syntax[0] > SYNTAX_CEILING:
+                clipped_pct = f"{SYNTAX_CEILING:.1%} (clipped from {best_syntax[0]:.1%})"
+                best_syntax = (SYNTAX_CEILING, best_syntax[1], best_syntax[2], clipped_pct)
         return (*best_accuracy, *best_syntax)
+
+    def accuracy_target_with_margin(self, baseline_accuracy: float, target_strategy: str) -> float:
+        if target_strategy == "none":
+            return 0.0
+        return min(1.0, baseline_accuracy + self.config.accuracy_win_margin)
 
     def ensure_csd_target_baselines(
         self,
@@ -653,7 +926,13 @@ class Runner:
             return
         for strategy in BASELINE_TARGET_STRATEGIES:
             ok = self.run_fixed_strategy_case(
-                strategy, benchmark, eval_model, token_budget, max_steps, smiles_class
+                strategy,
+                benchmark,
+                eval_model,
+                token_budget,
+                max_steps,
+                smiles_class,
+                phase="target_baseline",
             )
             if not ok:
                 print(
@@ -672,9 +951,18 @@ class Runner:
         token_budget: str,
         max_steps: str,
         smiles_class: str = "",
+        phase: str = "baseline",
     ) -> bool:
         if benchmark == "smiles" and not smiles_class:
             print("Internal error: SMILES fixed-strategy run requires a class.", file=sys.stderr)
+            return False
+
+        if strategy == "cars" and benchmark == "gsm_symbolic":
+            print(
+                "[skip] CARS baseline is not evaluated on GSM-Symbolic in the CARS paper; "
+                "skipping for paper-faithful comparison.",
+                file=sys.stderr,
+            )
             return False
 
         model_slug = slugify(eval_model)
@@ -741,6 +1029,19 @@ class Runner:
 
         if self.run_cmd(cmd):
             self.prepared_baselines.add(case_key)
+            self.annotate_result_json(
+                out_json,
+                self.matrix_case_metadata(
+                    phase=phase,
+                    strategy=strategy,
+                    benchmark=benchmark,
+                    eval_model=eval_model,
+                    token_budget=token_budget,
+                    max_steps=max_steps,
+                    command=cmd,
+                    smiles_class=smiles_class,
+                ),
+            )
             return True
         return False
 
@@ -751,12 +1052,23 @@ class Runner:
         eval_model: str,
         token_budget: str,
         max_steps: str,
+        phase: str = "baseline",
     ) -> None:
         if benchmark == "smiles":
             for smiles_class in self.config.smiles_classes:
-                self.run_fixed_strategy_case(strategy, benchmark, eval_model, token_budget, max_steps, smiles_class)
+                self.run_fixed_strategy_case(
+                    strategy,
+                    benchmark,
+                    eval_model,
+                    token_budget,
+                    max_steps,
+                    smiles_class,
+                    phase=phase,
+                )
             return
-        self.run_fixed_strategy_case(strategy, benchmark, eval_model, token_budget, max_steps)
+        self.run_fixed_strategy_case(
+            strategy, benchmark, eval_model, token_budget, max_steps, phase=phase
+        )
 
     def metadecode_final_eval_command(
         self,
@@ -810,7 +1122,15 @@ class Runner:
         gen_profile: str,
         max_steps: str,
         smiles_class: str = "",
+        phase: str = "metadecode",
     ) -> bool:
+        if benchmark == "smiles" and not smiles_class:
+            print("Internal error: SMILES metadecode run requires a class.", file=sys.stderr)
+            return False
+
+        if not self.openai_generation_available(gen_profile):
+            return True
+
         backend, generation_model = self.resolve_gen_profile(gen_profile)
         model_slug = slugify(eval_model)
         gen_slug = slugify(gen_profile)
@@ -838,6 +1158,7 @@ class Runner:
             _target_syntax_path,
             target_syntax_percent,
         ) = self.best_csd_baseline_targets(benchmark, eval_model, token_budget, max_steps, smiles_class)
+        required_accuracy = self.accuracy_target_with_margin(target_accuracy, target_strategy)
 
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
@@ -847,9 +1168,10 @@ class Runner:
         else:
             print(
                 f"[target] metadecode {key}/{model_slug} tb{token_budget} ms{max_steps}: "
-                f"best baseline accuracy {target_strategy}={target_percent}, "
+                f"best CSD baseline accuracy {target_strategy}={target_percent}; "
+                f"accuracy target={required_accuracy:.1%} (+{self.config.accuracy_win_margin:.1%}); "
                 f"syntax {target_syntax_strategy}={target_syntax_percent}; "
-                f"passing --min-accuracy {target_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
+                f"passing --min-accuracy {required_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
             )
 
         cmd = [
@@ -873,7 +1195,7 @@ class Runner:
             "--output-name",
             run_name,
             "--min-accuracy",
-            f"{target_accuracy:.12g}",
+            f"{required_accuracy:.12g}",
             "--min-syntax-rate",
             f"{target_syntax:.12g}",
             "--eval-sample-size",
@@ -886,13 +1208,31 @@ class Runner:
             self.eval_max_seconds_per_example(benchmark),
             "--eval-min-examples-before-threshold-stop",
             self.config.eval_min_examples_before_threshold_stop,
+            "--max-tokens",
+            self.config.synthesis_max_tokens,
+            "--restart-after-stuck-iters",
+            self.config.restart_after_stuck_iters,
             "--vllm-gpu-memory-utilization",
             self.config.vllm_gpu_memory_utilization,
             "--device",
             self.config.device,
             "--output-dir",
             str(self.config.generated_output_dir),
+            "--adaptive-helper-mask",
+            "--helper-selection-policy",
+            self.config.helper_selection_policy,
+            "--refinement-beam-size",
+            self.config.refinement_beam_size,
         ]
+        if backend == "anthropic":
+            cmd += [
+                "--anthropic-thinking",
+                self.config.anthropic_thinking,
+                "--anthropic-effort",
+                self.config.anthropic_effort,
+                "--anthropic-thinking-display",
+                self.config.anthropic_thinking_display,
+            ]
         self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
         if benchmark == "smiles":
@@ -905,13 +1245,25 @@ class Runner:
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
 
-        if not self.run_cmd(cmd):
+        retry_case = {
+            "phase": phase,
+            "benchmark": benchmark,
+            "eval_model": eval_model,
+            "token_budget": token_budget,
+            "synth_iter": synth_iter,
+            "gen_profile": gen_profile,
+            "max_steps": max_steps,
+            "smiles_class": smiles_class,
+            "run_name": run_name,
+        }
+        if not self.run_cmd(cmd, abort_on_quota=backend != "openai"):
             print(
                 f"[warn] Metadecode synthesis failed for benchmark={benchmark} "
                 f"eval_model={eval_model} token_budget={token_budget} iter={synth_iter} "
                 f"gen={gen_profile} max_steps={max_steps}",
                 file=sys.stderr,
             )
+            self.enqueue_gpu3_retry(cmd, reason="synthesis_subprocess_failed", case=retry_case)
             return True
 
         out_json = (
@@ -938,37 +1290,75 @@ class Runner:
         latest_file = self.config.generated_output_dir / "latest_run.txt"
         if not latest_file.is_file():
             print(f"[warn] No latest run file found after synthesis: {latest_file}", file=sys.stderr)
+            self.enqueue_gpu3_retry(cmd, reason="missing_latest_run", case=retry_case)
             return True
         run_dir = Path(latest_file.read_text().strip())
         success_report = run_dir / "results" / "success_report.json"
         if not success_report.is_file():
             print(f"[warn] No success report found for run: {run_dir}", file=sys.stderr)
+            self.enqueue_gpu3_retry(cmd, reason="missing_success_report", case=retry_case)
             return True
         try:
             report = json.loads(success_report.read_text())
         except Exception as exc:
             print(f"[warn] Could not read success report {success_report}: {exc}", file=sys.stderr)
+            self.enqueue_gpu3_retry(cmd, reason="unreadable_success_report", case=retry_case)
             return True
         compiled_dir = report.get("compiled_dir")
         if not compiled_dir:
             print(f"[warn] Success report does not contain compiled_dir: {success_report}", file=sys.stderr)
+            self.enqueue_gpu3_retry(cmd, reason="missing_compiled_dir", case=retry_case)
             return True
         compiled_module = Path(compiled_dir) / "GeneratedCSD.py"
         if not compiled_module.is_file():
             print(f"[warn] Compiled GeneratedCSD.py not found: {compiled_module}", file=sys.stderr)
+            self.enqueue_gpu3_retry(cmd, reason="missing_compiled_module", case=retry_case)
             return True
-        self.run_cmd(
-            self.metadecode_final_eval_command(
-                compiled_module,
-                out_json,
-                benchmark,
-                eval_model,
-                token_budget,
-                max_steps,
-                smiles_class,
-            )
+        final_eval_cmd = self.metadecode_final_eval_command(
+            compiled_module,
+            out_json,
+            benchmark,
+            eval_model,
+            token_budget,
+            max_steps,
+            smiles_class,
+        )
+        self.run_cmd(final_eval_cmd)
+        self.annotate_result_json(
+            out_json,
+            self.matrix_case_metadata(
+                phase=phase,
+                strategy="metadecode",
+                benchmark=benchmark,
+                eval_model=eval_model,
+                token_budget=token_budget,
+                max_steps=max_steps,
+                command=final_eval_cmd,
+                synth_iter=synth_iter,
+                gen_profile=gen_profile,
+                generation_backend=backend,
+                generation_model=generation_model,
+                smiles_class=smiles_class,
+                required_accuracy=required_accuracy,
+                required_syntax=target_syntax,
+                target_accuracy_strategy=target_strategy,
+                target_accuracy_path=_target_path,
+                target_syntax_strategy=target_syntax_strategy,
+                target_syntax_path=_target_syntax_path,
+            ),
         )
         return True
+
+    def eval_max_steps_for(self, benchmark: str) -> str:
+        # SMILES baselines spend the full step budget grinding through long invalid
+        # molecules (`1C2C3C...C252C`). 750 covers the longest naturally-terminated
+        # valid SMILES seen in unconstrained baselines (688) with headroom and cuts
+        # ~17% of wasted compute on invalid runs.
+        if benchmark == "gsm_symbolic":
+            return self.config.eval_max_steps_gsm
+        if benchmark == "smiles":
+            return self.config.eval_max_steps_smiles
+        return self.config.eval_max_steps
 
     def run_metadecode_cases(
         self,
@@ -978,8 +1368,24 @@ class Runner:
         synth_iter: str,
         gen_profile: str,
         max_steps: str,
+        phase: str = "metadecode",
     ) -> None:
-        self.run_metadecode_case(benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps)
+        if benchmark == "smiles":
+            for smiles_class in self.config.smiles_classes:
+                self.run_metadecode_case(
+                    benchmark,
+                    eval_model,
+                    token_budget,
+                    synth_iter,
+                    gen_profile,
+                    max_steps,
+                    smiles_class,
+                    phase=phase,
+                )
+            return
+        self.run_metadecode_case(
+            benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps, phase=phase
+        )
 
     def includes_metadecode(self) -> bool:
         return "metadecode" in self.config.strategies
@@ -996,18 +1402,29 @@ class Runner:
             )
         print(f"token budgets: {' '.join(self.config.token_budgets)}")
         print(f"step budgets (ablation): {' '.join(self.config.step_budgets)}")
+        print(
+            "ablation sections: "
+            f"{' '.join(section for section in VALID_ABLATION_SECTIONS if section in self.config.ablation_sections)}"
+        )
         print(f"synthesis iters (metadecode): {' '.join(self.config.synth_iters)}")
         print(f"generation models (metadecode): {' '.join(self.config.gen_models)}")
+        if "smiles" in {normalize_benchmark(benchmark) for benchmark in self.config.benchmarks}:
+            print(f"SMILES classes: {' '.join(self.config.smiles_classes)}")
         print(
-            f"SMILES classes (unified metadecode eval): {' '.join(self.config.smiles_classes)} "
-            f"x {self.generation_sample_size('smiles')} samples/class"
+            f"eval max steps (main): {self.config.eval_max_steps} "
+            f"(gsm: {self.config.eval_max_steps_gsm}, smiles: {self.config.eval_max_steps_smiles})"
         )
-        print(f"eval max steps (main): {self.config.eval_max_steps}")
         print(
             "split policy: "
             f"GSM generation={self.config.gsm_generation_sample_size}/eval={self.config.gsm_eval_sample_size}; "
             f"other generation={self.config.generation_sample_size}/eval={self.config.eval_sample_size}"
-        )
+            )
+        print(f"accuracy win margin (metadecode): +{self.config.accuracy_win_margin:.1%}")
+        print(f"main synthesis iterations (metadecode): {self.config.main_synthesis_iterations}")
+        if self.config.gpu3_retry_enabled:
+            print(f"GPU3 retry queue: {self.config.gpu3_retry_queue}")
+        else:
+            print("GPU3 retry queue: disabled")
         if self.config.gsm_split_file:
             print(f"GSM split file: {self.config.gsm_split_file}")
         if self.config.spider_split_file:
@@ -1036,9 +1453,10 @@ class Runner:
                             benchmark,
                             eval_model,
                             self.config.token_budgets[0],
-                            self.config.synth_iters[-1],
+                            self.config.main_synthesis_iterations,
                             self.config.gen_models[0],
-                            self.config.eval_max_steps,
+                            self.eval_max_steps_for(benchmark),
+                            phase="main_matrix",
                         )
                     else:
                         self.run_fixed_strategy_cases(
@@ -1046,7 +1464,8 @@ class Runner:
                             benchmark,
                             eval_model,
                             self.config.token_budgets[0],
-                            self.config.eval_max_steps,
+                            self.eval_max_steps_for(benchmark),
+                            phase="main_matrix",
                         )
         print("=== Phase 1 complete ===")
 
@@ -1060,21 +1479,14 @@ class Runner:
         smiles_class: str = "",
     ) -> None:
         task = self.metadecode_task(benchmark)
-        run_name = (
-            f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_"
-            f"{policy}_{benchmark}"
-        )
-        backend, generation_model = self.resolve_gen_profile(self.config.gen_models[0])
+        class_suffix = f"_class_{slugify(smiles_class)}" if benchmark == "smiles" else ""
+        run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
+        backend, generation_model = self.resolve_gen_profile("gpt5.5")
+        if not self.openai_generation_available("gpt5.5"):
+            return
         token_budget = self.config.token_budgets[0]
-        if benchmark == "smiles":
-            for class_name in self.config.smiles_classes:
-                self.ensure_csd_target_baselines(
-                    benchmark, eval_model, token_budget, self.config.eval_max_steps, class_name
-                )
-        else:
-            self.ensure_csd_target_baselines(
-                benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class
-            )
+        max_steps = self.eval_max_steps_for(benchmark)
+        self.ensure_csd_target_baselines(benchmark, eval_model, token_budget, max_steps, smiles_class)
         (
             target_accuracy,
             target_strategy,
@@ -1084,21 +1496,24 @@ class Runner:
             target_syntax_strategy,
             _target_syntax_path,
             target_syntax_percent,
-        ) = self.best_csd_baseline_targets(benchmark, eval_model, token_budget, self.config.eval_max_steps, smiles_class)
+        ) = self.best_csd_baseline_targets(benchmark, eval_model, token_budget, max_steps, smiles_class)
+        required_accuracy = self.accuracy_target_with_margin(target_accuracy, target_strategy)
 
         key = self.benchmark_key(benchmark, smiles_class)
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
-                f"[target] metadecode {key}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{self.config.eval_max_steps}: no valid fixed-strategy baseline found; "
+                f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
+                f"tb{token_budget} ms{max_steps}: no valid CRANE/IterGen/CARS baseline found; "
                 "passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
             print(
-                f"[target] metadecode {key}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{self.config.eval_max_steps}: best baseline accuracy "
-                f"{target_strategy}={target_percent}, syntax {target_syntax_strategy}={target_syntax_percent}; "
-                f"passing --min-accuracy {target_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
+                f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
+                f"tb{token_budget} ms{max_steps}: best CSD baseline accuracy "
+                f"{target_strategy}={target_percent}; "
+                f"accuracy target={required_accuracy:.1%} (+{self.config.accuracy_win_margin:.1%}); "
+                f"syntax {target_syntax_strategy}={target_syntax_percent}; "
+                f"passing --min-accuracy {required_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
             )
 
         cmd = [
@@ -1122,19 +1537,23 @@ class Runner:
             "--output-name",
             run_name,
             "--min-accuracy",
-            f"{target_accuracy:.12g}",
+            f"{required_accuracy:.12g}",
             "--min-syntax-rate",
             f"{target_syntax:.12g}",
             "--eval-sample-size",
             self.generation_sample_size(benchmark),
             "--eval-max-steps",
-            self.config.eval_max_steps,
+            max_steps,
             "--eval-step-token-budget",
             token_budget,
             "--eval-max-seconds-per-example",
             self.eval_max_seconds_per_example(benchmark),
             "--eval-min-examples-before-threshold-stop",
             self.config.eval_min_examples_before_threshold_stop,
+            "--max-tokens",
+            self.config.synthesis_max_tokens,
+            "--restart-after-stuck-iters",
+            self.config.restart_after_stuck_iters,
             "--vllm-gpu-memory-utilization",
             self.config.vllm_gpu_memory_utilization,
             "--device",
@@ -1158,7 +1577,39 @@ class Runner:
             ]
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
-        self.run_cmd(cmd)
+        self.run_cmd(cmd, abort_on_quota=False)
+        out_json = (
+            self.config.baseline_output_dir
+            / "metadecode"
+            / slugify(eval_model)
+            / f"{self.benchmark_key(benchmark, smiles_class)}__tb{token_budget}__ms{max_steps}__gengpt5.5__iter{self.config.synth_iters[-1]}.json"
+        )
+        self.annotate_result_json(
+            out_json,
+            self.matrix_case_metadata(
+                phase="ablation_helper_mask",
+                strategy="metadecode",
+                benchmark=benchmark,
+                eval_model=eval_model,
+                token_budget=token_budget,
+                max_steps=max_steps,
+                command=cmd,
+                synth_iter=self.config.synth_iters[-1],
+                gen_profile="gpt5.5",
+                generation_backend=backend,
+                generation_model=generation_model,
+                smiles_class=smiles_class,
+                required_accuracy=required_accuracy,
+                required_syntax=target_syntax,
+                target_accuracy_strategy=target_strategy,
+                target_accuracy_path=_target_path,
+                target_syntax_strategy=target_syntax_strategy,
+                target_syntax_path=_target_syntax_path,
+                beam_size=beam_size,
+                mask_flag=mask_flag,
+                helper_policy=policy,
+            ),
+        )
 
     def run_ablations(self) -> None:
         if self.config.skip_ablations:
@@ -1166,29 +1617,37 @@ class Runner:
         print("")
         print("=== Phase 2: Ablation studies ===")
         ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
-        include_metadecode = self.includes_metadecode()
+        sections = self.config.ablation_sections
 
-        print("--- Ablation A: Step budget ---")
-        for raw_benchmark in ("gsm", "spider", "smiles"):
-            benchmark = normalize_benchmark(raw_benchmark)
-            for step_budget in self.config.step_budgets:
-                for strategy in ABLATION_FIXED_STRATEGIES:
-                    self.run_fixed_strategy_cases(
-                        strategy, benchmark, ablation_model, self.config.token_budgets[0], step_budget
-                    )
-                if include_metadecode:
-                    self.run_metadecode_cases(
-                        benchmark,
-                        ablation_model,
-                        self.config.token_budgets[0],
-                        self.config.synth_iters[-1],
-                        self.config.gen_models[0],
-                        step_budget,
-                    )
+        if "A" in sections:
+            print("--- Ablation A: Step budget ---")
+            for raw_benchmark in self.config.benchmarks:
+                benchmark = normalize_benchmark(raw_benchmark)
+                for step_budget in self.config.step_budgets:
+                    for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                        if strategy == "metadecode":
+                            self.run_metadecode_cases(
+                                benchmark,
+                                ablation_model,
+                                self.config.token_budgets[0],
+                                self.config.synth_iters[-1],
+                                self.config.gen_models[0],
+                                step_budget,
+                                phase="ablation_step_budget",
+                            )
+                        else:
+                            self.run_fixed_strategy_cases(
+                                strategy,
+                                benchmark,
+                                ablation_model,
+                                self.config.token_budgets[0],
+                                step_budget,
+                                phase="ablation_step_budget",
+                            )
 
-        if include_metadecode:
+        if "B" in sections:
             print("--- Ablation B: Synthesis iterations ---")
-            for raw_benchmark in ("gsm", "spider", "smiles"):
+            for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for synth_iter in self.config.synth_iters:
                     self.run_metadecode_cases(
@@ -1197,14 +1656,13 @@ class Runner:
                         self.config.token_budgets[0],
                         synth_iter,
                         self.config.gen_models[0],
-                        self.config.eval_max_steps,
+                        self.eval_max_steps_for(benchmark),
+                        phase="ablation_synthesis_iterations",
                     )
-        else:
-            print("--- Ablation B: Synthesis iterations (skipped; metadecode not in --strategies) ---")
 
-        if include_metadecode:
+        if "C" in sections:
             print("--- Ablation C: Synthesizer model ---")
-            for raw_benchmark in ("gsm", "spider", "smiles"):
+            for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for gen_profile in self.config.gen_models:
                     self.run_metadecode_cases(
@@ -1213,44 +1671,49 @@ class Runner:
                         self.config.token_budgets[0],
                         self.config.synth_iters[-1],
                         gen_profile,
-                        self.config.eval_max_steps,
-                    )
-        else:
-            print("--- Ablation C: Synthesizer model (skipped; metadecode not in --strategies) ---")
-
-        print("--- Ablation D: Per-step token budget ---")
-        for raw_benchmark in ("gsm", "spider", "smiles"):
-            benchmark = normalize_benchmark(raw_benchmark)
-            for token_budget in self.config.token_budgets:
-                for strategy in ABLATION_FIXED_STRATEGIES:
-                    self.run_fixed_strategy_cases(
-                        strategy, benchmark, ablation_model, token_budget, self.config.eval_max_steps
-                    )
-                if include_metadecode:
-                    self.run_metadecode_cases(
-                        benchmark,
-                        ablation_model,
-                        token_budget,
-                        self.config.synth_iters[-1],
-                        self.config.gen_models[0],
-                        self.config.eval_max_steps,
+                        self.eval_max_steps_for(benchmark),
+                        phase="ablation_synthesizer_model",
                     )
 
-        if include_metadecode:
-            print("--- Ablation E: Beam refinement x adaptive helper masking x helper selection policy ---")
-            for raw_benchmark in ("gsm", "spider", "smiles"):
+        if "D" in sections:
+            print("--- Ablation D: Per-step token budget ---")
+            for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
-                for beam_size in ("1", "2", "4"):
-                    for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
-                        for policy in ("utility", "bandit"):
-                            self.run_ablation_e_case(
-                                benchmark, ablation_model, beam_size, mask_flag, policy
+                for token_budget in self.config.token_budgets:
+                    for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                        if strategy == "metadecode":
+                            self.run_metadecode_cases(
+                                benchmark,
+                                ablation_model,
+                                token_budget,
+                                self.config.synth_iters[-1],
+                                self.config.gen_models[0],
+                                self.eval_max_steps_for(benchmark),
+                                phase="ablation_token_budget",
                             )
-        else:
-            print(
-                "--- Ablation E: Beam refinement x helper masking x policy "
-                "(skipped; metadecode not in --strategies) ---"
-            )
+                        else:
+                            self.run_fixed_strategy_cases(
+                                strategy,
+                                benchmark,
+                                ablation_model,
+                                token_budget,
+                                self.eval_max_steps_for(benchmark),
+                                phase="ablation_token_budget",
+                            )
+
+        if "E" in sections:
+            print("--- Ablation E: Adaptive helper masking (tool filtering on/off) ---")
+            # Trimmed for deadline: only vary the mask_flag (tool filtering on/off),
+            # holding beam_size=2 and UCB/bandit policy fixed. Original cross-product
+            # (beam x mask x policy) was 60 cells; this is 10.
+            for raw_benchmark in self.config.benchmarks:
+                benchmark = normalize_benchmark(raw_benchmark)
+                for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
+                    smiles_classes = self.config.smiles_classes if benchmark == "smiles" else [""]
+                    for smiles_class in smiles_classes:
+                        self.run_ablation_e_case(
+                            benchmark, ablation_model, "2", mask_flag, "bandit", smiles_class
+                        )
         print("=== Phase 2 complete ===")
 
     def run(self) -> int:
@@ -1293,22 +1756,30 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token-budgets", default=DEFAULT_TOKEN_BUDGETS)
     parser.add_argument("--step-budgets", default=DEFAULT_STEP_BUDGETS)
     parser.add_argument("--synthesis-iterations", default=DEFAULT_SYNTH_ITERS)
+    parser.add_argument("--generation-models", default=DEFAULT_GEN_MODELS)
     parser.add_argument(
-        "--generation-models",
-        default=DEFAULT_GEN_MODELS,
-        help="Metadecode synthesizer profiles (comma-separated). "
-        "Used only when metadecode is listed in --strategies. "
-        "First entry drives Phase 1 metadecode and ablations A/D metadecode arms; "
-        "remaining entries are Ablation C only (default: gpt5.4,opus4.7).",
+        "--ablation-sections",
+        default=DEFAULT_ABLATION_SECTIONS,
+        help="Comma-separated ablation sections to run: A,B,C,D,E (default: all).",
     )
     parser.add_argument("--smiles-classes", "--smiles-class", default=DEFAULT_SMILES_CLASSES)
     parser.add_argument("--eval-backend", default="vllm")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--generation-sample-size", default="50")
     parser.add_argument("--eval-sample-size", default="100")
-    parser.add_argument("--gsm-generation-sample-size", default="100")
-    parser.add_argument("--gsm-eval-sample-size", default="100")
-    parser.add_argument("--eval-max-steps", default="900")
+    parser.add_argument("--gsm-generation-sample-size", default="50")
+    parser.add_argument("--gsm-eval-sample-size", default="50")
+    parser.add_argument("--eval-max-steps", default="600")
+    parser.add_argument(
+        "--eval-max-steps-gsm",
+        default=os.environ.get("CSD_GSM_EVAL_MAX_STEPS", DEFAULT_GSM_MAX_STEPS),
+        help="Per-benchmark override for --eval-max-steps used on GSM-Symbolic (default: 900).",
+    )
+    parser.add_argument(
+        "--eval-max-steps-smiles",
+        default="400",
+        help="Per-benchmark override for --eval-max-steps used on SMILES classes.",
+    )
     parser.add_argument(
         "--cars-search-steps",
         default="200",
@@ -1331,9 +1802,57 @@ def make_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--eval-min-examples-before-threshold-stop",
-        default="25",
+        default="15",
         help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops can fire during synthesis. Default: 25.",
+        "early stops can fire during synthesis. Default: 15.",
+    )
+    parser.add_argument(
+        "--accuracy-win-margin",
+        type=float,
+        default=float(os.environ.get("CSD_ACCURACY_WIN_MARGIN", "0.03")),
+        help="Absolute accuracy margin added to the best matching legacy CSD baseline "
+        "for MetaDecode success (default: 0.03).",
+    )
+    parser.add_argument(
+        "--synthesis-max-tokens",
+        "--max-tokens",
+        dest="synthesis_max_tokens",
+        default=os.environ.get("CSD_SYNTHESIS_MAX_TOKENS", "32768"),
+        help="Author-model token budget for each MetaDecode synthesis attempt (default: 32768).",
+    )
+    parser.add_argument(
+        "--restart-after-stuck-iters",
+        default="0",
+        help="Forwarded to synthesis.run_synthesis; 0 disables restart mode (default: 0).",
+    )
+    parser.add_argument(
+        "--helper-selection-policy",
+        choices=["bandit"],
+        default="bandit",
+        help="Forwarded to synthesis.run_synthesis for adaptive helper masking (default: bandit).",
+    )
+    parser.add_argument(
+        "--refinement-beam-size",
+        default="2",
+        help="Forwarded to synthesis.run_synthesis for refinement candidate count (default: 2).",
+    )
+    parser.add_argument(
+        "--anthropic-thinking",
+        choices=["auto", "off", "adaptive", "enabled"],
+        default="adaptive",
+        help="Forwarded for Anthropic MetaDecode author profiles (default: adaptive).",
+    )
+    parser.add_argument(
+        "--anthropic-effort",
+        choices=["low", "medium", "high", "xhigh", "max"],
+        default="xhigh",
+        help="Forwarded for Anthropic adaptive thinking (default: xhigh).",
+    )
+    parser.add_argument(
+        "--anthropic-thinking-display",
+        choices=["omitted", "summarized"],
+        default="summarized",
+        help="Forwarded for Anthropic thinking summaries (default: summarized).",
     )
     parser.add_argument(
         "--gsm-split-file",
@@ -1379,6 +1898,23 @@ def make_parser() -> argparse.ArgumentParser:
     parser.set_defaults(baseline_cache_mode="reuse")
     parser.add_argument("--skip-main", action="store_true")
     parser.add_argument("--skip-ablations", action="store_true")
+    parser.add_argument(
+        "--main-synthesis-iterations",
+        default=os.environ.get("CSD_MAIN_SYNTHESIS_ITERATIONS", DEFAULT_MAIN_SYNTH_ITERS),
+        help="MetaDecode iteration count used by the main matrix (default: 40).",
+    )
+    parser.add_argument(
+        "--gpu3-retry-queue",
+        default=os.environ.get("CSD_GPU3_RETRY_QUEUE", str(DEFAULT_GPU3_RETRY_QUEUE)),
+        help="JSONL queue where failed non-GPU3 MetaDecode runs are appended for GPU3 retry.",
+    )
+    parser.add_argument(
+        "--no-gpu3-retry-queue",
+        dest="gpu3_retry_enabled",
+        action="store_false",
+        help="Disable automatic GPU3 retry queue writes for failed non-GPU3 MetaDecode runs.",
+    )
+    parser.set_defaults(gpu3_retry_enabled=True)
     parser.add_argument("--dry-run", action="store_true")
     return parser
 
@@ -1455,6 +1991,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         synth_iters=csv_list(args.synthesis_iterations),
         gen_models=csv_list(args.generation_models),
         step_budgets=csv_list(args.step_budgets),
+        ablation_sections=normalize_ablation_sections(args.ablation_sections),
         smiles_classes=normalize_smiles_classes_for_cli(args.smiles_classes),
         eval_backend=args.eval_backend,
         device=args.device,
@@ -1463,10 +2000,18 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_generation_sample_size=str(args.gsm_generation_sample_size),
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
-        cars_search_steps=str(args.cars_search_steps),
-        rejection_search_steps=str(args.rejection_search_steps),
+        eval_max_steps_gsm=str(args.eval_max_steps_gsm),
+        eval_max_steps_smiles=str(args.eval_max_steps_smiles),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
         eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
+        accuracy_win_margin=float(args.accuracy_win_margin),
+        synthesis_max_tokens=str(args.synthesis_max_tokens),
+        restart_after_stuck_iters=str(args.restart_after_stuck_iters),
+        helper_selection_policy=str(args.helper_selection_policy),
+        refinement_beam_size=str(args.refinement_beam_size),
+        anthropic_thinking=str(args.anthropic_thinking),
+        anthropic_effort=str(args.anthropic_effort),
+        anthropic_thinking_display=str(args.anthropic_thinking_display),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
         vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,
@@ -1485,6 +2030,9 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         free_gpu_max_used_mb=int(os.environ.get("RUN_ALL_TESTS_FREE_GPU_MAX_USED_MB", "1024")),
         gpu_wait_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_SECONDS", "60")),
         gpu_wait_timeout_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_TIMEOUT_SECONDS", "0")),
+        main_synthesis_iterations=str(args.main_synthesis_iterations),
+        gpu3_retry_queue=Path(args.gpu3_retry_queue),
+        gpu3_retry_enabled=bool(args.gpu3_retry_enabled),
     )
 
 

@@ -71,9 +71,26 @@ Examples:
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "bedrock"],
-        default="bedrock",
-        help="Backend for strategy generation (default: bedrock / Claude Opus)",
+        choices=["huggingface", "vllm", "openai", "bedrock", "anthropic", "gemini", "vertex"],
+        default="openai",
+        help=(
+            "Backend for strategy generation (default: openai). 'anthropic' uses "
+            "ANTHROPIC_API_KEY for Claude models like claude-opus-4-7; 'gemini' "
+            "uses GEMINI_API_KEY or GOOGLE_API_KEY for Google AI Studio models; "
+            "'vertex' uses Vertex AI REST with VERTEX_AI_ACCESS_TOKEN or ADC."
+        ),
+    )
+
+    parser.add_argument(
+        "--allow-small-author-model",
+        action="store_true",
+        default=False,
+        help=(
+            "Override the safety check that blocks small open models "
+            "(name contains e.g. '1.5B'/'7B'/'14B') from being used as the "
+            "--generation-model on a local backend. Rarely correct; see "
+            "CLAUDE.md 'Model Configuration Verification'."
+        ),
     )
 
     parser.add_argument(
@@ -88,6 +105,38 @@ Examples:
         type=str,
         default=None,
         help="Optional API key for generation. Defaults to the selected backend's environment variable."
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking",
+        choices=["auto", "off", "adaptive", "enabled"],
+        default="auto",
+        help=(
+            "Anthropic thinking mode for hosted Claude author models. "
+            "auto enables adaptive thinking for claude-opus-4-7; off omits the thinking payload; "
+            "enabled uses manual budget_tokens for older models that still support it."
+        ),
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking-budget-tokens",
+        type=int,
+        default=4096,
+        help="Manual Anthropic thinking budget for --anthropic-thinking enabled (default: 4096).",
+    )
+
+    parser.add_argument(
+        "--anthropic-effort",
+        choices=["low", "medium", "high", "xhigh", "max"],
+        default="xhigh",
+        help="Anthropic adaptive-thinking effort level (default: xhigh; requires claude-opus-4-7).",
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking-display",
+        choices=["omitted", "summarized"],
+        default="summarized",
+        help="Whether Anthropic returns thinking summaries or only signatures (default: summarized).",
     )
 
     parser.add_argument(
@@ -201,6 +250,31 @@ Examples:
     )
 
     parser.add_argument(
+        "--restart-after-stuck-iters",
+        type=int,
+        default=0,
+        help=(
+            "If the Pareto-best anchor has not advanced for this many "
+            "consecutive iterations, the next refinement uses RESTART mode "
+            "(drops anchor, asks for a structurally different family). "
+            "Set to 0 to disable restart entirely. Default: 0."
+        ),
+    )
+
+    parser.add_argument(
+        "--restart-cooldown-iters",
+        type=int,
+        default=0,
+        help=(
+            "After a restart fires, the counter is set to -N so N normal "
+            "refinement iters run before another restart is eligible. "
+            "0 (default) means restart can fire on consecutive iters when "
+            "the anchor stays stuck — aggressive exploration. Set 2 for a "
+            "balanced explore/exploit rhythm."
+        ),
+    )
+
+    parser.add_argument(
         "--require-delimiters",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -260,13 +334,6 @@ Examples:
         help="Load GSM-Symbolic examples from this folder of CRANE-style JSON files ({placeholder} questions). "
         "When omitted for --dataset gsm_symbolic, defaults to vendored legacy/CRANE/src/gsm_symbolic if present "
         "(not HuggingFace: HF rows only have numeric prose in question fields)."
-    )
-
-    parser.add_argument(
-        "--gsm-instantiated-hf",
-        action="store_true",
-        help="For gsm_symbolic only: load apple/GSM-Symbolic from HuggingFace (numeric stories) and skip the "
-        "default local CRANE JSON folder.",
     )
 
     parser.add_argument(
@@ -475,9 +542,49 @@ Examples:
 
     args = parser.parse_args()
 
-    # GSM-Symbolic: HF ``question`` / ``original_question`` are numeric prose only. Use CRANE JSONs (question_parsed)
-    # for {placeholder} prompts unless the user opts into HF via --gsm-instantiated-hf.
-    if args.dataset == "gsm_symbolic" and not args.gsm_instantiated_hf and args.gsm_source_dir is None:
+    # Defense against the "small author model" foot-gun.
+    # The author model (--generation-model) writes the Dafny strategy code and
+    # must be a large reasoning model (gpt-5.4 via --generation-backend openai).
+    # A small open model (1.5B/7B/14B Qwen) cannot hold enough context to author
+    # workable strategies, and synthesis silently produces 0% accuracy runs.
+    # Raise here so the misconfiguration is caught BEFORE any GPU work.
+    import re as _re_guard
+    _SMALL_AUTHOR_RE = _re_guard.compile(r"\b\d+(?:\.\d+)?\s*[Bb]\b")
+    _LOCAL_BACKENDS = {"vllm", "huggingface"}
+    if (
+        args.generation_backend in _LOCAL_BACKENDS
+        and args.generation_model
+        and _SMALL_AUTHOR_RE.search(args.generation_model)
+        and not args.allow_small_author_model
+    ):
+        raise SystemExit(
+            "\n[FATAL] Refusing to run: --generation-model="
+            f"{args.generation_model!r} looks like a small open model and "
+            f"--generation-backend={args.generation_backend!r} is local. The "
+            "author model must be a large reasoning model (e.g. gpt-5.4 via "
+            "--generation-backend openai). Pass --allow-small-author-model to "
+            "override (rarely correct). See CLAUDE.md "
+            "'Model Configuration Verification'.\n"
+        )
+
+    # Prominent startup banner: identify author + eval models so any future
+    # "wrong author model" misconfig is obvious in stdout/logs.
+    _banner_width = 72
+    print("=" * _banner_width)
+    print(
+        f"  AUTHOR MODEL : {args.generation_model!r} "
+        f"via backend={args.generation_backend!r}"
+    )
+    print(
+        f"  EVAL   MODEL : {args.eval_model!r} "
+        f"via backend={args.eval_backend!r}"
+    )
+    print("=" * _banner_width)
+
+    # GSM-Symbolic: HF loading has been removed. The CRANE JSON folder is the
+    # only supported source. Resolve --gsm-source-dir from the vendored copy
+    # or project default, and error out if neither exists.
+    if args.dataset == "gsm_symbolic" and args.gsm_source_dir is None:
         repo_root = Path(__file__).resolve().parent.parent
         vendored = repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
         if vendored.is_dir():
@@ -488,18 +595,18 @@ Examples:
             except ImportError:
                 from project_defaults import default_gsm_source_dir
             fb = default_gsm_source_dir()
-            if fb.is_dir():
+            if fb is not None and fb.is_dir():
                 args.gsm_source_dir = str(fb)
         if args.gsm_source_dir:
             print(
                 f"[gsm_symbolic] Using local JSON folder for symbolic {{var}} prompts: {args.gsm_source_dir}"
             )
         else:
-            print(
-                "[gsm_symbolic] Warning: no local CRANE-style GSM folder found; "
-                "using HuggingFace apple/GSM-Symbolic (numeric prose in question fields only). "
-                "Set --gsm-source-dir or CRANE_GSM_SYMBOLIC_DIR, or pass --gsm-instantiated-hf to silence.",
-                file=sys.stderr,
+            raise RuntimeError(
+                "GSM-Symbolic requires a CRANE JSON folder. HuggingFace loading "
+                "has been removed. Set --gsm-source-dir explicitly, or place "
+                "JSONs at legacy/CRANE/src/gsm_symbolic / "
+                "$CRANE_GSM_SYMBOLIC_DIR."
             )
 
     if args.generation_model is None:
@@ -580,6 +687,10 @@ Examples:
         vllm_enforce_eager=args.vllm_enforce_eager,
         api_base_url=args.generation_api_base_url,
         api_key=args.generation_api_key,
+        anthropic_thinking=args.anthropic_thinking,
+        anthropic_thinking_budget_tokens=args.anthropic_thinking_budget_tokens,
+        anthropic_effort=args.anthropic_effort,
+        anthropic_thinking_display=args.anthropic_thinking_display,
     )
 
     verifier = DafnyVerifier(
@@ -643,6 +754,9 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
+        # Restart-from-scratch mechanism
+        restart_after_stuck_iters=args.restart_after_stuck_iters,
+        restart_cooldown_iters=args.restart_cooldown_iters,
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
