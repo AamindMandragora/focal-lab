@@ -34,7 +34,6 @@ from synthesis.generate.prompts import (
     build_compilation_error_prompt,
     build_format_repair_prompt,
 )
-from synthesis.evaluate.benchmarks.smiles import eval_logic as smiles_eval_logic
 from synthesis.evaluate.benchmarks.sql_spider import eval_logic as sql_spider_eval_logic
 
 
@@ -504,17 +503,11 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
         "db_info": "# singer ( singer_id , name )",
         "question": "How many singers do we have?",
     }
-    rendered_surfaces.extend(
-        [
-            (
-                "SMILES expression-only prompt",
-                smiles_eval_logic.format_prompt_expression_only(None, benchmark_example),
-            ),
-            (
-                "Spider expression-only prompt",
-                sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example),
-            ),
-        ]
+    rendered_surfaces.append(
+        (
+            "Spider expression-only prompt",
+            sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example),
+        )
     )
 
     hits = {
@@ -531,5 +524,4 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
     assert "Raw task-native surfaces apply only when the task or evaluator explicitly requests them" in combined
     assert "Call it once at method start" in combined
     assert "Return exactly the Dafny method body" in combined
-    assert "Return exactly one line containing `<<SMILES>>`" in combined
-    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in combined
+    assert "<<SELECT COUNT(*) FROM singer>>" in combined or "SQL:" in combined

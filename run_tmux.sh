@@ -30,8 +30,8 @@ FRESH=0
 CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
 PYTHON="${CONDA_ENV}/bin/python"
 # Matches run_all_tests.py DEFAULT_BASELINE_STRATEGIES (no metadecode).
-LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars,rejection_sampling}"
-METADECODE_STRATEGIES="${METADECODE_STRATEGIES:-unconstrained,gcd,crane,itergen,cars,rejection_sampling,metadecode}"
+LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,rejection_sampling}"
+METADECODE_STRATEGIES="${METADECODE_STRATEGIES:-unconstrained,gcd,crane,itergen,rejection_sampling,metadecode}"
 
 argv_has_flag() {
   local flag="$1"

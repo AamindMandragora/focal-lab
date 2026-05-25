@@ -11,6 +11,4 @@ def get_logic(dataset_name: str) -> Any:
         return import_module("synthesis.evaluate.benchmarks.gsm_symbolic.eval_logic")
     if dataset_name == "spider":
         return import_module("synthesis.evaluate.benchmarks.sql_spider.eval_logic")
-    if dataset_name == "smiles":
-        return import_module("synthesis.evaluate.benchmarks.smiles.eval_logic")
     raise ValueError(f"Unknown dataset: {dataset_name}")

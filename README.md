@@ -61,9 +61,8 @@ Baseline storage is intentionally minimal:
 Fixed-strategy baselines use legacy codepaths:
 - `unconstrained` / `crane`: `legacy/CRANE`
 - `itergen`: `legacy/itergen`
-- `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
-Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
+Those `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
 
 ## Long runs (tmux)
 
@@ -158,11 +157,11 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order and strategies in `unconstrained, gcd, crane, itergen, rejection_sampling, metadecode` order to reduce model reload churn. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
 - Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
-- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling` so those strategies compare against the same questions.
+- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `rejection_sampling` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
@@ -183,5 +182,4 @@ Path defaults are intentionally overrideable. Use CLI flags where available and 
 - `CSD_SYNCODE_DIR`
 - `SPIDER_DATA_DIR`, `SPIDER_DB_DIR`, `SPIDER_TABLES_JSON`
 - `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY`
-- `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
 - `CSD_JSON_GRAMMAR_PATH`

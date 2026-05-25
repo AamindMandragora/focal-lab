@@ -195,33 +195,6 @@ class EvaluationResult:
             for guidance in self.task_guidance:
                 lines.append(f"  - {guidance}")
 
-        smiles_trial = self.aux_metrics.get("smiles_paper_trial")
-        if isinstance(smiles_trial, dict):
-            lines.extend(
-                [
-                    "",
-                    "SMILES Quality Metrics (paper-aligned, single trial):",
-                    f"  RDKit Validity: {smiles_trial.get('validity_rdkit', 0.0):.1%}",
-                    f"  Membership: {smiles_trial.get('membership', 0.0):.1%}",
-                    (
-                        "  Diversity (avg pairwise Tanimoto distance): "
-                        f"{smiles_trial.get('diversity_tanimoto') if smiles_trial.get('diversity_tanimoto') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  RetroStar score: "
-                        f"{smiles_trial.get('retro_score') if smiles_trial.get('retro_score') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  Samples to 100 unique valid (cap 1000): "
-                        f"{smiles_trial.get('samples_to_target_unique_valid', 'n/a')}"
-                    ),
-                    (
-                        "  Unique valid molecules: "
-                        f"{smiles_trial.get('unique_valid_count', 0)}/{smiles_trial.get('sample_count', 0)}"
-                    ),
-                ]
-            )
-
         anti = self.aux_metrics.get("anti_degeneracy")
         if isinstance(anti, dict):
             lines.extend(
@@ -1344,7 +1317,6 @@ class Evaluator:
         gsm_split_name: str = "train",
         spider_split_file: str | Path | None = None,
         spider_split_name: str = "train",
-        smiles_classes: Optional[List[str]] = None,
         grammars_dir: str | Path | None = None,
         prompt_tier: int = 2,
         grammar_prompt_tier: int | None = None,
@@ -1353,7 +1325,7 @@ class Evaluator:
         Initialize the evaluator.
 
         Args:
-            dataset_name: Dataset to evaluate on ("gsm_symbolic", "spider", or "smiles")
+            dataset_name: Dataset to evaluate on ("gsm_symbolic" or "spider")
             model_name: HuggingFace model for generation
             backend: Runtime LM backend ("huggingface" or "vllm")
             device: Device to run on ("cuda", "mps", "cpu")
@@ -1372,9 +1344,8 @@ class Evaluator:
             gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
             spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
             spider_split_name: Which split from spider_split_file to use ("train" or "test").
-            prompt_tier: 1 for answer-only (GCD / IterGen / CARS-style) or 2 for chain-of-thought.
-            grammar_prompt_tier: Optional decoder grammar tier when it differs from
-                ``prompt_tier`` (compiled SMILES CSD keeps tier-2 delimited grammars).
+            prompt_tier: 1 for answer-only (GCD / IterGen) or 2 for chain-of-thought.
+            grammar_prompt_tier: Optional decoder grammar tier when it differs from ``prompt_tier``.
         """
         if backend not in {"huggingface", "vllm"}:
             raise NotImplementedError(
@@ -1406,7 +1377,6 @@ class Evaluator:
         self.gsm_split_name = gsm_split_name
         self.spider_split_file = Path(spider_split_file) if spider_split_file is not None else None
         self.spider_split_name = spider_split_name
-        self.smiles_classes = smiles_classes
         self.grammars_dir = Path(grammars_dir).expanduser() if grammars_dir is not None else None
         if prompt_tier not in (1, 2):
             raise ValueError(f"prompt_tier must be 1 or 2, got {prompt_tier!r}")
@@ -1417,7 +1387,6 @@ class Evaluator:
             int(grammar_prompt_tier) if grammar_prompt_tier is not None else None
         )
         self.use_reasoning_prompt: bool | None = None
-        self.smiles_delimited_answer_prompt: bool = False
 
         # Lazy-loaded components
         self._dataset = None
@@ -1517,11 +1486,6 @@ class Evaluator:
             self._grammar_file = logic.get_grammar_file(self, grammars_dir)
         return self._grammar_file
 
-    def _normalize_smiles_classes(self) -> List[str]:
-        """Return the selected SMILES classes as a normalized list."""
-        from synthesis.evaluate.benchmarks.smiles.eval_logic import normalize_classes
-
-        return normalize_classes(self)
 
     def _get_grammar_text(self) -> str:
         """Load and cache the active grammar text."""
@@ -1580,8 +1544,6 @@ class Evaluator:
             from synthesis.evaluate.benchmarks.gsm_symbolic.environment import setup_dafny_environment
         elif self.dataset_name == "spider":
             from synthesis.evaluate.benchmarks.sql_spider.environment import setup_dafny_environment
-        elif self.dataset_name == "smiles":
-            from synthesis.evaluate.benchmarks.smiles.environment import setup_dafny_environment
         else:
             raise ValueError(f"Unknown dataset: {self.dataset_name}")
 
@@ -1916,12 +1878,6 @@ class Evaluator:
 
         return None
 
-    def _extract_answer_smiles(self, output: str, example: Optional[dict] = None) -> Optional[str]:
-        """Extract the generated SMILES string from raw output."""
-        from synthesis.evaluate.benchmarks.smiles.metrics import clean_smiles_output
-
-        smiles = clean_smiles_output(output)
-        return smiles or None
 
     def _answers_match(self, actual: Optional[str], expected: str) -> bool:
         """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
@@ -2059,16 +2015,7 @@ class Evaluator:
         all_valid = all(is_valid for _, is_valid in segments) if segments else True
         return all_valid, segments
 
-    def _ensure_smiles_rdkit_available(self) -> None:
-        logic = self._benchmark_logic()
-        logic.ensure_runtime_prereqs(self)
 
-    def _compute_smiles_aux_metrics(
-        self,
-        sample_outputs: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
-        logic = self._benchmark_logic()
-        return logic.compute_aux_metrics(self, sample_outputs)
 
     def _benchmark_logic(self):
         from synthesis.evaluate.benchmarks.registry import get_logic
@@ -2155,7 +2102,6 @@ class Evaluator:
         sample_outputs: List[Dict[str, Any]] = []
 
         try:
-            self._ensure_smiles_rdkit_available()
             dataset = self._load_dataset_sample()
             env = self._setup_environment(compiled_module_path)
 
@@ -2208,7 +2154,7 @@ class Evaluator:
                     evaluated_count,
                     num_accuracy_examples,
                 )
-                aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
+                aux_metrics: Dict[str, Any] = {}
                 if early_stop_reason is not None:
                     aux_metrics["early_stop"] = {
                         "reason": early_stop_reason,

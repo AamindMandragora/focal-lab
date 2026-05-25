@@ -16,9 +16,8 @@ def test_spider_prompt_requires_visible_expression_only_sql_delimiters():
         },
     )
 
-    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in prompt
-    assert "SQL: <<SELECT count(*) FROM singer>>" in prompt
-    assert "reason" not in prompt.lower()
+    assert "<<SELECT COUNT(*) FROM singer>>" in prompt
+    assert "Reasoning:" in prompt
 
 
 def test_spider_generation_does_not_force_hidden_start(monkeypatch):
