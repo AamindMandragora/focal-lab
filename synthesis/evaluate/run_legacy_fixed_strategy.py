@@ -1517,7 +1517,8 @@ def main() -> None:
     if args.strategy == "gcd":
         raise SystemExit(run_gcd_legacy_adapter(args))
     if args.strategy == "itergen":
-        raise SystemExit(run_itergen_legacy_adapter(args))    if args.strategy == "rejection_sampling":
+        raise SystemExit(run_itergen_legacy_adapter(args))
+    if args.strategy == "rejection_sampling":
         raise SystemExit(run_rejection_sampling_legacy_adapter(args))
     raise SystemExit(run_crane_legacy_adapter(args))
 

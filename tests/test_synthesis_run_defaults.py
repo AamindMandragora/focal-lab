@@ -114,6 +114,8 @@ def test_full_test_runner_defaults_main_metadecode_to_40_iterations(tmp_path):
     import run_all_tests as matrix
 
     assert matrix.DEFAULT_MAIN_SYNTH_ITERS == "40"
+    assert matrix.DEFAULT_MAIN_GEN_PROFILE == "gemini"
+    assert matrix.csv_list(matrix.DEFAULT_GEN_MODELS) == ["sonnet4.6", "gpt5.5"]
     assert "900" in matrix.csv_list(matrix.DEFAULT_STEP_BUDGETS)
 
     runner = _matrix_runner(tmp_path)
@@ -122,7 +124,7 @@ def test_full_test_runner_defaults_main_metadecode_to_40_iterations(tmp_path):
     runner.config.benchmarks = ["gsm"]
     runner.config.strategies = ["metadecode"]
     runner.config.token_budgets = ["1"]
-    runner.config.gen_models = ["opus4.7"]
+    runner.config.main_gen_profile = "gemini"
     calls = []
 
     runner.run_metadecode_cases = lambda *args, **kwargs: calls.append((args, kwargs))
@@ -132,6 +134,7 @@ def test_full_test_runner_defaults_main_metadecode_to_40_iterations(tmp_path):
     assert len(calls) == 1
     args, kwargs = calls[0]
     assert args[3] == "40"
+    assert args[4] == "gemini"
     assert args[5] == "900"
     assert kwargs["phase"] == "main_matrix"
 
@@ -157,7 +160,8 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         strategies=["metadecode"],
         token_budgets=["1", "2", "4"],
         synth_iters=["3", "5", "10", "30"],
-        gen_models=["opus4.7", "gpt5.5", "gemini"],
+        gen_models=["sonnet4.6", "gpt5.5"],
+        main_gen_profile="gemini",
         step_budgets=["256", "512", "900", "1024"],
         ablation_sections=set(matrix.VALID_ABLATION_SECTIONS),
         eval_backend="vllm",
@@ -204,7 +208,7 @@ def _matrix_runner(tmp_path, *, dry_run=True):
     return matrix.Runner(
         config=config,
         env={
-            "ANTHROPIC_OPUS_MODEL": "claude-opus-4-7",
+            "ANTHROPIC_SONNET_MODEL": "claude-sonnet-4-6",
             "OPENAI_API_KEY": "test-openai-key",
             "OPENAI_GENERATION_MODEL": "gpt-5.5",
         },
@@ -307,7 +311,7 @@ def test_metadecode_failure_on_non_gpu3_is_queued_for_gpu3_retry(tmp_path):
         "Qwen/Qwen2.5-Coder-7B-Instruct",
         "1",
         "40",
-        "opus4.7",
+        "sonnet4.6",
         "600",
         phase="main_matrix",
     )
@@ -342,7 +346,7 @@ def test_metadecode_failure_on_gpu3_is_not_requeued(tmp_path):
         "Qwen/Qwen2.5-Coder-7B-Instruct",
         "1",
         "40",
-        "opus4.7",
+        "sonnet4.6",
         "600",
         phase="main_matrix",
     )
@@ -350,17 +354,18 @@ def test_metadecode_failure_on_gpu3_is_not_requeued(tmp_path):
     assert not runner.config.gpu3_retry_queue.exists()
 
 
-def test_full_test_runner_ablation_c_includes_gemini_profile(tmp_path):
+def test_full_test_runner_ablation_c_uses_sonnet_and_gpt_profiles(tmp_path):
     import run_all_tests as matrix
 
-    assert "gemini" in matrix.csv_list(matrix.DEFAULT_GEN_MODELS)
+    assert matrix.csv_list(matrix.DEFAULT_GEN_MODELS) == ["sonnet4.6", "gpt5.5"]
 
     runner = _matrix_runner(tmp_path)
     runner.config.benchmarks = ["gsm"]
     runner.config.step_budgets = []
     runner.config.token_budgets = ["1"]
     runner.config.synth_iters = ["10"]
-    runner.config.gen_models = ["opus4.7", "gpt5.5", "gemini"]
+    runner.config.gen_models = ["sonnet4.6", "gpt5.5"]
+    runner.config.ablation_sections = {"C"}
     calls = []
 
     runner.run_fixed_strategy_cases = lambda *args, **kwargs: None
@@ -369,7 +374,7 @@ def test_full_test_runner_ablation_c_includes_gemini_profile(tmp_path):
 
     runner.run_ablations()
 
-    assert any(call[4] == "gemini" for call in calls)
+    assert sorted(call[4] for call in calls) == ["gpt5.5", "sonnet4.6"]
 
 
 def test_ablation_sections_cli_normalizes_and_rejects_unknown():
@@ -391,7 +396,7 @@ def test_full_test_runner_filters_ablation_sections(tmp_path):
     runner.config.step_budgets = ["256"]
     runner.config.token_budgets = ["1", "2"]
     runner.config.synth_iters = ["3", "30"]
-    runner.config.gen_models = ["opus4.7", "gemini"]
+    runner.config.gen_models = ["sonnet4.6", "gpt5.5"]
     runner.config.ablation_sections = {"C"}
     calls = []
 
@@ -405,7 +410,7 @@ def test_full_test_runner_filters_ablation_sections(tmp_path):
         ("metadecode", "ablation_synthesizer_model"),
         ("metadecode", "ablation_synthesizer_model"),
     ]
-    assert [args[4] for _kind, args, _kwargs in calls] == ["opus4.7", "gemini"]
+    assert [args[4] for _kind, args, _kwargs in calls] == ["sonnet4.6", "gpt5.5"]
 
 
 def test_matrix_result_json_annotation_records_ablation_provenance(tmp_path):
@@ -519,7 +524,7 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
         "Qwen/Qwen2.5-Coder-7B-Instruct",
         "1",
         "10",
-        "opus4.7",
+        "sonnet4.6",
         max_steps,
         smiles_class,
     )
@@ -534,7 +539,7 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
         {
             "--task": expected_task,
             "--dataset": benchmark,
-            "--generation-model": "claude-opus-4-7",
+            "--generation-model": "claude-sonnet-4-6",
             "--generation-backend": "anthropic",
             "--anthropic-thinking": "adaptive",
             "--anthropic-effort": "xhigh",
@@ -567,7 +572,7 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
         else:
             assert actual == value
     assert _flag_value(cmd, "--output-name").startswith(
-        f"metadecode_{benchmark}_Qwen_Qwen2.5_Coder_7B_Instruct_opus4.7_iter10_tb1_ms{max_steps}"
+        f"metadecode_{benchmark}_Qwen_Qwen2.5_Coder_7B_Instruct_sonnet4.6_iter10_tb1_ms{max_steps}"
     )
 
 
@@ -608,8 +613,8 @@ def test_full_test_runner_ablation_e_command_forwards_complete_launch_contract(t
         {
             "--task": "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context.",
             "--dataset": "spider",
-            "--generation-backend": "openai",
-            "--generation-model": "gpt-5.5",
+            "--generation-backend": "gemini",
+            "--generation-model": "gemini-3-pro-preview",
             "--eval-model": "Qwen/Qwen2.5-Coder-7B-Instruct",
             "--eval-backend": "vllm",
             "--max-iterations": "30",
@@ -646,7 +651,7 @@ def test_full_test_runner_default_matrix_sections_cover_gsm_and_sql_not_cars_dat
     runner.config.step_budgets = ["256"]
     runner.config.token_budgets = ["1"]
     runner.config.synth_iters = ["3"]
-    runner.config.gen_models = ["opus4.7"]
+    runner.config.gen_models = ["sonnet4.6"]
     runner.run_fixed_strategy_cases = lambda strategy, benchmark, *args, **kwargs: seen.append(
         ("fixed", strategy, benchmark)
     )

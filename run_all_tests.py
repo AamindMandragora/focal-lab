@@ -41,7 +41,8 @@ DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,rejection_sampling,metadec
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
-DEFAULT_GEN_MODELS = "opus4.7,gpt5.5,gemini"
+DEFAULT_MAIN_GEN_PROFILE = "gemini"
+DEFAULT_GEN_MODELS = "sonnet4.6,gpt5.5"
 DEFAULT_STEP_BUDGETS = "256,512,900,1024"
 DEFAULT_GSM_MAX_STEPS = "900"
 DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
@@ -188,6 +189,7 @@ class Config:
     gpu_wait_seconds: int = 60
     gpu_wait_timeout_seconds: int = 0
     main_synthesis_iterations: str = DEFAULT_MAIN_SYNTH_ITERS
+    main_gen_profile: str = DEFAULT_MAIN_GEN_PROFILE
     gpu3_retry_queue: Path = DEFAULT_GPU3_RETRY_QUEUE
     gpu3_retry_enabled: bool = True
 
@@ -629,6 +631,10 @@ class Runner:
         print(f"[run] CUDA_VISIBLE_DEVICES={fallback} {command_text(cmd)}")
         return subprocess.run(cmd, env={**self.env, "CUDA_VISIBLE_DEVICES": fallback}).returncode == 0
 
+    def default_ablation_synth_profile(self) -> str:
+        """Synthesizer for ablations A/B/D/E (not the synthesizer-model study)."""
+        return self.config.main_gen_profile
+
     def openai_generation_available(self, gen_profile: str) -> bool:
         if gen_profile != "gpt5.5":
             return True
@@ -649,11 +655,16 @@ class Runner:
         return "Generate parser-valid benchmark answers."
 
     def resolve_gen_profile(self, profile: str) -> tuple[str, str]:
+        anthropic_sonnet46 = self.env.get("ANTHROPIC_SONNET_MODEL", "claude-sonnet-4-6")
+        bedrock_sonnet46 = (
+            self.env.get("BEDROCK_SONNET_MODEL")
+            or self.env.get("BEDROCK_GENERATION_MODEL")
+            or self.env.get("AWS_BEDROCK_GENERATION_MODEL")
+            or "anthropic.claude-sonnet-4-6"
+        )
         anthropic_opus47 = self.env.get("ANTHROPIC_OPUS_MODEL", "claude-opus-4-7")
         bedrock_opus47 = (
             self.env.get("BEDROCK_OPUS_MODEL")
-            or self.env.get("BEDROCK_GENERATION_MODEL")
-            or self.env.get("AWS_BEDROCK_GENERATION_MODEL")
             or "us.anthropic.claude-opus-4-7"
         )
         openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.5")
@@ -665,6 +676,12 @@ class Runner:
         )
         if profile == "gpt5.5":
             return "openai", openai_gpt
+        if profile == "sonnet4.6":
+            if self.env.get("CSD_SONNET46_BACKEND", "").strip().lower() == "bedrock":
+                return "bedrock", bedrock_sonnet46
+            return "anthropic", anthropic_sonnet46
+        if profile == "bedrock-sonnet4.6":
+            return "bedrock", bedrock_sonnet46
         if profile == "opus4.7":
             if self.env.get("CSD_OPUS47_BACKEND", "").strip().lower() == "bedrock":
                 return "bedrock", bedrock_opus47
@@ -694,7 +711,7 @@ class Runner:
             )
         raise ValueError(
             f"Unknown generation profile: {profile}. "
-            "Allowed profiles are opus4.7, bedrock-opus4.7, gpt5.5, and gemini."
+            "Allowed profiles are sonnet4.6, bedrock-sonnet4.6, opus4.7, bedrock-opus4.7, gpt5.5, and gemini."
         )
 
     def baseline_case_key(
@@ -1274,7 +1291,11 @@ class Runner:
             f"{' '.join(section for section in VALID_ABLATION_SECTIONS if section in self.config.ablation_sections)}"
         )
         print(f"synthesis iters (metadecode): {' '.join(self.config.synth_iters)}")
-        print(f"generation models (metadecode): {' '.join(self.config.gen_models)}")
+        print(f"main synthesis model (metadecode): {self.config.main_gen_profile}")
+        print(
+            f"default ablation synthesizer (A/B/D/E): {self.config.main_gen_profile}; "
+            f"synthesizer-model ablation (C): {' '.join(self.config.gen_models)}"
+        )
         print(
             f"eval max steps (main): {self.config.eval_max_steps} "
 f"(gsm: {self.config.eval_max_steps_gsm})"
@@ -1319,7 +1340,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
                             eval_model,
                             self.config.token_budgets[0],
                             self.config.main_synthesis_iterations,
-                            self.config.gen_models[0],
+                            self.config.main_gen_profile,
                             self.eval_max_steps_for(benchmark),
                             phase="main_matrix",
                         )
@@ -1346,8 +1367,9 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
         task = self.metadecode_task(benchmark)
         class_suffix = ""
         run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
-        backend, generation_model = self.resolve_gen_profile("gpt5.5")
-        if not self.openai_generation_available("gpt5.5"):
+        ablation_gen = self.default_ablation_synth_profile()
+        backend, generation_model = self.resolve_gen_profile(ablation_gen)
+        if ablation_gen == "gpt5.5" and not self.openai_generation_available("gpt5.5"):
             return
         token_budget = self.config.token_budgets[0]
         max_steps = self.eval_max_steps_for(benchmark)
@@ -1440,7 +1462,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             self.config.baseline_output_dir
             / "metadecode"
             / slugify(eval_model)
-            / f"{self.benchmark_key(benchmark, smiles_class)}__tb{token_budget}__ms{max_steps}__gengpt5.5__iter{self.config.synth_iters[-1]}.json"
+            / f"{self.benchmark_key(benchmark, smiles_class)}__tb{token_budget}__ms{max_steps}__gen{slugify(ablation_gen)}__iter{self.config.synth_iters[-1]}.json"
         )
         self.annotate_result_json(
             out_json,
@@ -1453,7 +1475,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
                 max_steps=max_steps,
                 command=cmd,
                 synth_iter=self.config.synth_iters[-1],
-                gen_profile="gpt5.5",
+                gen_profile=ablation_gen,
                 generation_backend=backend,
                 generation_model=generation_model,
                 smiles_class=smiles_class,
@@ -1489,7 +1511,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
                                 ablation_model,
                                 self.config.token_budgets[0],
                                 self.config.synth_iters[-1],
-                                self.config.gen_models[0],
+                                self.default_ablation_synth_profile(),
                                 step_budget,
                                 phase="ablation_step_budget",
                             )
@@ -1513,7 +1535,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
                         ablation_model,
                         self.config.token_budgets[0],
                         synth_iter,
-                        self.config.gen_models[0],
+                        self.default_ablation_synth_profile(),
                         self.eval_max_steps_for(benchmark),
                         phase="ablation_synthesis_iterations",
                     )
@@ -1545,7 +1567,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
                                 ablation_model,
                                 token_budget,
                                 self.config.synth_iters[-1],
-                                self.config.gen_models[0],
+                                self.default_ablation_synth_profile(),
                                 self.eval_max_steps_for(benchmark),
                                 phase="ablation_token_budget",
                             )
@@ -1613,7 +1635,22 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token-budgets", default=DEFAULT_TOKEN_BUDGETS)
     parser.add_argument("--step-budgets", default=DEFAULT_STEP_BUDGETS)
     parser.add_argument("--synthesis-iterations", default=DEFAULT_SYNTH_ITERS)
-    parser.add_argument("--generation-models", default=DEFAULT_GEN_MODELS)
+    parser.add_argument(
+        "--main-generation-model",
+        default=os.environ.get("CSD_MAIN_GENERATION_MODEL", DEFAULT_MAIN_GEN_PROFILE),
+        help=(
+            "Synthesis profile for Phase 1 main-matrix MetaDecode runs "
+            f"(default: {DEFAULT_MAIN_GEN_PROFILE})."
+        ),
+    )
+    parser.add_argument(
+        "--generation-models",
+        default=DEFAULT_GEN_MODELS,
+        help=(
+            "Comma-separated synthesis profiles for Ablation C only (synthesizer-model study; "
+            f"default: {DEFAULT_GEN_MODELS}). Other ablations use --main-generation-model."
+        ),
+    )
     parser.add_argument(
         "--ablation-sections",
         default=DEFAULT_ABLATION_SECTIONS,
@@ -1855,6 +1892,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gpu_wait_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_SECONDS", "60")),
         gpu_wait_timeout_seconds=int(os.environ.get("RUN_ALL_TESTS_GPU_WAIT_TIMEOUT_SECONDS", "0")),
         main_synthesis_iterations=str(args.main_synthesis_iterations),
+        main_gen_profile=str(args.main_generation_model).strip(),
         gpu3_retry_queue=Path(args.gpu3_retry_queue),
         gpu3_retry_enabled=bool(args.gpu3_retry_enabled),
     )
