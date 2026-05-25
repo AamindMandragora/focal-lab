@@ -10,7 +10,7 @@ Applies to the **`synthesis/`** Python package (pipeline implementation). Reposi
 - **Benchmarks:** keep task-specific scoring and prompts in **`evaluate/benchmarks/<name>/`**; keep **`evaluate/evaluator.py`** focused on orchestration.
 - **Parser performance:** preserve DFA-mask (`DFAMaskStore`) validity paths; do not replace per-step validity with O(vocab) brute-force parsing.
 - **Dafny contracts:** do not weaken or remove formal contracts in **`verify/library/`** unless the change is required and reviewed.
-- **`run_synthesis.py` GSM-Symbolic:** default data source is local CRANE-style JSONs (`--gsm-source-dir` auto-filled when unset) so prompts stay symbolic; HF-only numeric rows require `--gsm-instantiated-hf`.
+- **`run_synthesis.py` GSM-Symbolic:** the only supported data source is local CRANE-style JSONs (`--gsm-source-dir` auto-filled from vendored `legacy/CRANE/src/gsm_symbolic` when unset). HuggingFace loading has been removed; runs error out if no CRANE folder is resolvable.
 
 ## Subfolder guides
 

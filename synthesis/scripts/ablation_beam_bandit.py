@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ablation: refinement beam size x helper-selection policy (utility vs bandit).
+Ablation: refinement beam size under UCB/bandit helper selection.
 
 Runs `python -m synthesis.run_synthesis` for each grid cell, then reads
 `outputs/generated/latest/results/{success,failure}_report.json` for metrics.
@@ -89,8 +89,8 @@ def main() -> None:
     p.add_argument("--beams", default="1,2,4", help="Comma-separated refinement beam sizes")
     p.add_argument(
         "--policies",
-        default="utility,bandit",
-        help="Comma-separated helper-selection-policy values (utility|bandit)",
+        default="bandit",
+        help="Comma-separated helper-selection-policy values (bandit only)",
     )
     p.add_argument(
         "--task",
@@ -144,8 +144,8 @@ def main() -> None:
     beams = [int(x.strip()) for x in args.beams.split(",") if x.strip()]
     policies = [x.strip() for x in args.policies.split(",") if x.strip()]
     for pol in policies:
-        if pol not in {"utility", "bandit"}:
-            raise SystemExit(f"Invalid policy {pol!r}; use utility or bandit")
+        if pol != "bandit":
+            raise SystemExit(f"Invalid policy {pol!r}; utility pruning has been removed; use bandit")
 
     if args.output_json is None:
         out_dir = repo / "outputs" / "ablations"

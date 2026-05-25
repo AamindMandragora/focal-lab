@@ -9,6 +9,7 @@ from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
 from synthesis.evaluate.benchmarks.sql_spider.prompts import format_spider_prompt
 
+
 uses_hidden_chunks = defaults.uses_hidden_chunks
 example_syntax_pass = defaults.example_syntax_pass_from_segments
 accuracy_applicable = defaults.accuracy_applicable_always
@@ -40,11 +41,8 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     return format_spider_prompt(
         example,
         instruction=(
-            "Write a SINGLE SQL query answering the question, using ONLY the tables "
-            "and columns in the schema.\n\n"
-            "You may optionally reason about the problem first. "
-            "Then, wrap your final SQL query in << >> delimiters. "
-            "Stop after the closing >>."
+            "Write ONE SQL query using ONLY tables and columns shown in the schema.\n\n"
+            "Return exactly one line: `SQL: <<YOUR QUERY>>`."
         ),
         few_shot_answer_line="SQL: <<SELECT count(*) FROM singer>>",
     )
@@ -56,7 +54,7 @@ def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> st
         example,
         instruction=(
             "Write ONE SQL query using ONLY tables and columns shown in the schema.\n\n"
-            "Output a single line of the form SQL: <<YOUR QUERY>> — no reasoning or other text."
+            "Return exactly one line: `SQL: <<YOUR QUERY>>`."
         ),
         few_shot_answer_line="SQL: <<SELECT count(*) FROM singer>>",
     )

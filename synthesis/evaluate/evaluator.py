@@ -66,6 +66,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+try:
+    from synthesis.failure_taxonomy import render_cluster_block
+except ImportError:
+    from failure_taxonomy import render_cluster_block
+
 
 class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
@@ -289,30 +294,26 @@ class EvaluationResult:
                 lines.append("\nAggregate Failure Stats:")
                 lines.extend(extras)
 
-        diagnostic_metrics = self._summarize_diagnostic_metrics()
-        if diagnostic_metrics:
-            lines.append("\nDiagnostic Error Decomposition:")
-            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
-
-        provenance_metrics = self._summarize_provenance_metrics()
-        if provenance_metrics:
-            lines.append("\nOutput Provenance and Failure Localization:")
-            lines.extend(f"  {metric}" for metric in provenance_metrics)
-
-        contrast_metrics = self._summarize_correct_wrong_contrast()
-        if contrast_metrics:
-            lines.append("\nCorrect-vs-Wrong Behavioral Contrast:")
-            lines.extend(f"  {metric}" for metric in contrast_metrics)
-
-        structural_metrics = self._summarize_structural_metrics()
-        if structural_metrics:
-            lines.append("\nStructural Generation Metrics:")
-            lines.extend(f"  {metric}" for metric in structural_metrics)
-
-        snapshots = self._summarize_representative_snapshots()
-        if snapshots:
-            lines.append("\nRepresentative Factual Snapshots:")
-            lines.extend(snapshots)
+        # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
+        # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
+        # Structural Generation Metrics, Representative Factual Snapshots)
+        # with a single cluster-organized failure block. Each wrong sample
+        # is reduced to a 17-axis fingerprint; failures are grouped by
+        # Hamming distance ≤ 1 into discovered modes. The cluster view shows
+        # which axes are constant across all clusters (true of every failure)
+        # versus which vary (where the real distinct failure modes diverge).
+        #
+        # Persistent cluster IDs across attempts (Change 2) are wired in by
+        # feedback_loop.py via attach_cluster_ledger().
+        cluster_block = render_cluster_block(
+            self.sample_outputs,
+            max_steps=512,
+            slow_threshold_seconds=30.0,
+            persistent_ledger=getattr(self, "_failure_ledger", None),
+            attempt_index=getattr(self, "_attempt_index", None),
+        )
+        if cluster_block:
+            lines.append(cluster_block)
 
         return "\n".join(lines)
 
@@ -675,12 +676,113 @@ class EvaluationResult:
                 key = "other_observed_failure"
                 counters[key] = counters.get(key, 0) + 1
                 if key not in details:
-                    raw_preview = (full_output or "").replace("\n", " ")[:120] or str(actual)[:120]
-                    anon = _anonymize_sql_preview(raw_preview) if raw_preview else "no preview"
-                    details[key] = f"(uncategorized failure preview, anonymized: {anon})"
+                    details[key] = (
+                        "(uncategorized wrong answer; see representative rollout examples "
+                        "for observed output)"
+                    )
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
-        return [(mode, count, details.get(mode, "")) for mode, count in ranked[:4]]
+        return [(mode, count, details.get(mode, "")) for mode, count in ranked]
+
+    def _pick_representative_samples_by_mode(self) -> List[Tuple[str, Dict[str, Any]]]:
+        """For each top-4 failure mode, pick up to 3 samples by `full_output`
+        length: shortest, median, longest (N=2 → shortest+longest; N=1 → only).
+
+        Returns a flat list [(mode_key, sample_dict), ...] ordered by mode
+        frequency (matching _summarize_failure_modes' top-4 cap). Within a
+        mode bucket picks appear in shortest→median→longest order.
+        """
+        mode_to_samples: Dict[str, List[Dict[str, Any]]] = {}
+        counters: Dict[str, int] = {}
+
+        def _add(mode: str, sample: Dict[str, Any]) -> None:
+            mode_to_samples.setdefault(mode, []).append(sample)
+            counters[mode] = counters.get(mode, 0) + 1
+
+        for sample in self.sample_outputs:
+            error = sample.get("error")
+            full_output = sample.get("full_output") or ""
+            actual = sample.get("actual") or ""
+            contains_delimiters = sample.get("contains_delimiters", False)
+            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
+            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
+            syntax_rate = float(sample.get("syntax_rate", 0.0))
+            matched = False
+
+            if sample.get("runtime_budget_exceeded"):
+                _add("too_slow", sample)
+                matched = True
+                if error:
+                    continue
+            if error:
+                _add("runtime_or_generation_error", sample)
+                continue
+            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
+                _add("unterminated_constrained_segment", sample); matched = True
+            if uses_hidden_chunks:
+                if not used_constrained_chunk:
+                    _add("missing_constrained_chunk", sample); matched = True
+            elif not contains_delimiters and "<<" not in full_output:
+                _add("missing_constrained_segment", sample); matched = True
+            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
+                _add("premature_or_unmatched_closure", sample); matched = True
+            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
+                _add("malformed_constrained_content", sample); matched = True
+            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
+                _add("entered_constrained_mode_too_early", sample); matched = True
+            if self._has_repetition_loop(full_output):
+                _add("repetition_loop", sample); matched = True
+            if not actual:
+                _add("answer_extraction_failed", sample); matched = True
+            if not matched and not sample.get("is_correct", False):
+                _add("other_observed_failure", sample)
+
+        ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))[:4]
+        picks: List[Tuple[str, Dict[str, Any]]] = []
+        for mode, _count in ranked:
+            candidates = mode_to_samples.get(mode, [])
+            if not candidates:
+                continue
+            by_len = sorted(candidates, key=lambda s: len(s.get("full_output") or ""))
+            n = len(by_len)
+            if n == 1:
+                chosen_idxs = [0]
+            elif n == 2:
+                chosen_idxs = [0, 1]
+            else:
+                chosen_idxs = [0, n // 2, n - 1]
+            for idx in chosen_idxs:
+                picks.append((mode, by_len[idx]))
+        return picks
+
+    def _render_mode_examples(self) -> str:
+        """Render one verbatim failing-rollout block per top-4 failure mode.
+
+        Each block: GSM prompt, Qwen full output, extracted answer, correct
+        answer — no truncation, no telemetry, no narrative framing. Returns
+        empty string when there are no failed samples.
+        """
+        if not self.sample_outputs:
+            return ""
+        picks = self._pick_representative_samples_by_mode()
+        if not picks:
+            return ""
+        blocks: List[str] = []
+        for mode, sample in picks:
+            prompt = sample.get("question_full") or sample.get("question") or ""
+            qwen_output = sample.get("full_output") or ""
+            actual_val = sample.get("actual")
+            actual_str = "" if actual_val is None else str(actual_val)
+            expected_val = sample.get("expected")
+            expected_str = "" if expected_val is None else str(expected_val)
+            blocks.append(
+                f"--- Example of {mode} ---\n"
+                f"PROMPT:\n{prompt}\n\n"
+                f"QWEN OUTPUT:\n{qwen_output}\n\n"
+                f"STRATEGY EXTRACTED: {actual_str}\n"
+                f"CORRECT ANSWER: {expected_str}"
+            )
+        return "\n\n".join(blocks)
 
     def get_primary_failure_summary(self) -> Optional[str]:
         """Return a compact 'where to focus next' block for the top of refinement
@@ -2205,10 +2307,8 @@ class Evaluator:
 
                     all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
                     # Per-example syntax pass:
-                    # - GSM: visible <<...>> chunks must exist and parse.
+                    # - GSM/Spider: visible <<...>> chunks must exist and parse.
                     # - SMILES: the full output is the generated molecule string.
-                    # - Spider: chunks are internal/hidden; visible delimiter tokens are not
-                    #   part of the answer contract, so count parser-governed chunk usage.
                     example_syntax_pass = self._example_syntax_pass(
                         all_valid_syntax,
                         segments,
@@ -2239,11 +2339,13 @@ class Evaluator:
                         num_valid_visible_spans = sum(1 for _, is_valid in segments if is_valid)
 
                     if hasattr(example, "conclusion"):
-                        q_str = (example.premises + " | " + example.conclusion)[:200]
+                        q_full = example.premises + " | " + example.conclusion
                     else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                        q_full = example.get("question", str(example.get("premises", "")))
+                    q_str = q_full[:200]
                     sample = {
                         "question": q_str,
+                        "question_full": q_full,
                         "expected": expected,
                         "actual": actual or completion[:100],
                         "full_output": completion,
@@ -2283,15 +2385,17 @@ class Evaluator:
 
                 except Exception as e:
                     if hasattr(example, "conclusion"):
-                        q_str = (example.premises + " | " + example.conclusion)[:200]
+                        q_full = example.premises + " | " + example.conclusion
                     else:
-                        q_str = example.get("question", str(example.get("premises", "")))[:200]
+                        q_full = example.get("question", str(example.get("premises", "")))
+                    q_str = q_full[:200]
                     elapsed = time.time() - example_start
                     timed_out = isinstance(e, PerExampleTimeout)
                     if timed_out:
                         print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
                     sample = {
                         "question": q_str,
+                        "question_full": q_full,
                         "expected": expected,
                         "actual": None,
                         "full_output": "",
