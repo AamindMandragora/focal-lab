@@ -1,0 +1,1026 @@
+{
+  "accuracy": 0.45,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 899.7249,
+    "mean_generation_seconds_per_example": 8.997249,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 907.6642,
+    "adapter": "rejection_sampling_syncode"
+  },
+  "answers": [
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O",
+      "generation_seconds": 2.459478
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": \n: \n3: \n4: \n5: \n6: \n7: \n8: \n\nNew Molecule: \n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 21.32282
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)C3=CC=C(C=C3N=C=O)C4=CC=C(C=C4N=C=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 7.329081
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "generation_seconds": 3.833762
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<CC(=O)N(C(C(=O)N)C(=O)N)C>>",
+      "extracted": "CC(=O)N(C(C(=O)N)C(=O)N)C",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CC(=O)N(C(C(=O)N)C(=O)N)C",
+      "generation_seconds": 0.871269
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1",
+      "generation_seconds": 8.854651
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "generation_seconds": 1.474917
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=C1",
+      "generation_seconds": 11.705417
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "generation_seconds": 7.532125
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": Molecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\n\n: Molecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "generation_seconds": 5.658552
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C(C(C(CN=C=O)(C2)C)N=C=O))N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 6.117448
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC(=O)C1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)>>",
+      "extracted": "OC(=O)C1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC(=O)C1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "generation_seconds": 4.094557
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=C=O\n\nAssistant:\n<<OC(=CN=N(CN=C=O))CC1=CC=CC(N=C=O)C(=O)CC1=CC=CC(N=C=O)>>",
+      "extracted": "OC(=CN=N(CN=C=O))CC1=CC=CC(N=C=O)C(=O)CC1=CC=CC(N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC(=CN=N(CN=C=O))CC1=CC=CC(N=C=O)C(=O)CC1=CC=CC(N=C=O)",
+      "generation_seconds": 33.006514
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2)C3=CC=C(C=C3)N=C=O\n\nAssistant: <<O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1",
+      "generation_seconds": 2.194721
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2(C(C2))N=C=O\n\n: <<CCO>>\n: <<CCO>>\n```python\n# Importing necessary libraries\r\nfrom rdkit import Chem\r\n\r\n# Function to generate a unique isocyanate molecule\r\ndef generate_unique_isocyanate(existing_smiles):\r\n    # Create a list of existing molecules\r\n    existing_molecules = [Chem.MolFromSmiles(smile) for smile in existing_smiles]\r\n    \r\n    # Generate",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 17.979645
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2)N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "generation_seconds": 4.900619
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": Molecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "generation_seconds": 4.518728
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O\n\n: O=C=NCCCCCCCCCCCCN=C=O\n\n```\n<response>\n<<CCO>>\n</response>\n```",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 3.929384
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)=C2=NN=NC(=N2)N=C=O\n\n<<O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O)=CC=C1>>",
+      "extracted": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O)=CC=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O)=CC=C1",
+      "generation_seconds": 9.741784
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=C=O\n\nNew Molecule: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 13.940192
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)=NO\n\nAssistant:\n<<O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)CC6=CC=C(C=C6N=C=O)N=C=O)=CC=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)CC6=CC=C(C=C6N=C=O)N=C=O)=CC=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)CC6=CC=C(C=C6N=C=O)N=C=O)=CC=C1",
+      "generation_seconds": 2.602516
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "generation_seconds": 2.126867
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\n: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1>>\n: <<O=C=NC1=CC(CC2=C(C=C",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "generation_seconds": 13.586106
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=CC(C2)N=C=O\n\nAssistant:\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 0.61326
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)C3=CC=C(C=C3N=C=O)N=C=O\n\nNew Molecule: <<C1=CC=C(C=C1)N=C(N=C2)C2=CC=CC(CN=C=O)C3=CC=C(C=C3)N=C=O>>\n\n(Note: The above new molecule was generated by altering the structure of one of the existing examples without copying",
+      "extracted": "C1=CC=C(C=C1)N=C(N=C2)C2=CC=CC(CN=C=O)C3=CC=C(C=C3)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "C1=CC=C(C=C1)N=C(N=C2)C2=CC=CC(CN=C=O)C3=CC=C(C=C3)N=C=O",
+      "generation_seconds": 16.519341
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O",
+      "generation_seconds": 2.287304
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 1.438763
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "generation_seconds": 16.349178
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC(=O)NC(=O)C1=CN=C(NC2=NN=CC=CC=C2N=C=O)C(=O)C1>>",
+      "extracted": "OC(=O)NC(=O)C1=CN=C(NC2=NN=CC=CC=C2N=C=O)C(=O)C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC(=O)NC(=O)C1=CN=C(NC2=NN=CC=CC=C2N=C=O)C(=O)C1",
+      "generation_seconds": 1.283971
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=CC=CC=CC=C2\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=CC=CC=CC=C2N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=CC=CC=CC=C2N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=CC=CC=CC=C2N=C=O",
+      "generation_seconds": 1.355641
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)C3=CC=C(C=C3N=C=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 3.962708
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\nNew Molecule: <<CCO>> (This is not valid because it's not an isocyanate)\n\nNew Molecule: <<OC=O>> (This is not valid because it's not an isocyanate)\n\nNew Molecule: <<CC(=O)N=O>> (This is not valid because it's not an isocyanate)\n\nNew Molecule: <<CCN=C=O>>",
+      "extracted": "CCN=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "CCN=C=O",
+      "generation_seconds": 4.519308
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C(CCN=C=O)N=C=O)C(CN=C=O)N=C=O\n\nAssistant: <<OC=NC1=CC2=CC=CC=C2C(=NNO)N=C1>>",
+      "extracted": "OC=NC1=CC2=CC=CC=C2C(=NNO)N=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "OC=NC1=CC2=CC=CC=C2C(=NNO)N=C1",
+      "generation_seconds": 11.763855
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)CC2=CC=CC=C2N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 13.809238
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)CC5=CC=CC(C=C5N=C=O)CC6=CC=CC(C=C6N=C=O)N=C=O)=CC=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)CC5=CC=CC(C=C5N=C=O)CC6=CC=CC(C=C6N=C=O)N=C=O)=CC=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)CC5=CC=CC(C=C5N=C=O)CC6=CC=CC(C=C6N=C=O)N=C=O)=CC=C1",
+      "generation_seconds": 7.073064
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O\n\nAssistant:\n<<O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O",
+      "generation_seconds": 9.337504
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1>>",
+      "extracted": "O=C=NC1=CC=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1",
+      "generation_seconds": 15.40519
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\nAssistant:\n<<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1N=C=O",
+      "generation_seconds": 2.207328
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 6.235368
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)C(=O)CC1CCC1=NN=C1\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "generation_seconds": 18.126475
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "generation_seconds": 4.296604
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(CN=C=O)N=C=O\n\nTo generate a new, valid isocyanates molecule that is different from all 8 examples, we need to consider the structure of isocyanates and ensure that our new molecule is distinct in terms of its connectivity and functional groups.\n\nHere is a new, valid isocyanates molecule:\n\n<<CCO>>\n\nThis is a simple isocyanate with a single carbon atom bonded to an oxygen atom and another nitrogen",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 11.710443
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "To create a novel isocyanate molecule, we need to ensure it has a distinct structure compared to the given examples. Here's a new molecule:\n\n<<CC1=CC2=NN=C2CCC(=O)N1>>",
+      "extracted": "CC1=CC2=NN=C2CCC(=O)N1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CC1=CC2=NN=C2CCC(=O)N1",
+      "generation_seconds": 2.67674
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=CC(C(C3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C2)N=C=O\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "generation_seconds": 20.420651
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=C(N=C=O)CC(CN=C=O)C2=O\n\nAssistant:\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 5.489754
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N\n\nAssistant: <<O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)=C1",
+      "generation_seconds": 5.500085
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C(N=C=O))N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "generation_seconds": 7.933896
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2)N=C=O\n\nTo ensure uniqueness and creativity, avoid using the same number of atoms or structural motifs found in the examples. Consider exploring different lengths of chains, branching patterns, and functional groups.\n\n```\n```\n\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 1.667943
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)C\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 31.068053
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=NN(C(N)=O)C(N)=O\n\nAssistant:\n<<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)",
+      "generation_seconds": 4.890906
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)CCC(OC(CCO)OC)C\n\nAssistant:\n<<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O",
+      "generation_seconds": 6.197713
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": Molecule: O=C=NC1=CC=CC(C(=O)N(C)C2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\n\n: Molecule: O=C=NC1=CC(C(=O)N(C)CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)",
+      "extracted": "O=C=NC1=CC=CC(C(=O)N(C)C2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(C(=O)N(C)C2=CC=CC(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "generation_seconds": 29.893742
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O\n\n: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 3.834338
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC=NC1=CC2=C(N=C=O)C3=CC(C=O)C(C=O)C(C=O)C3=CC(C=O)C2=CC1=O>>",
+      "extracted": "OC=NC1=CC2=C(N=C=O)C3=CC(C=O)C(C=O)C(C=O)C3=CC(C=O)C2=CC1=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC=NC1=CC2=C(N=C=O)C3=CC(C=O)C(C=O)C(C=O)C3=CC(C=O)C2=CC1=O",
+      "generation_seconds": 11.944417
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=C(C=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 5.098021
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)OC(=O)CC2=CC=CC(=C2)N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O",
+      "generation_seconds": 10.344602
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)OC2=CC=CC(C2)C(N=C=O)C(N=C=O)C(N=C=O)\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 3.872806
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=NNC1=CC=CC=C1N=C=O\n\nAssistant:\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 0.754522
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=CC=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=CC=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=CC=C1",
+      "generation_seconds": 11.694013
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "generation_seconds": 9.125364
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "generation_seconds": 24.891394
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)N=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)>>\n\nThis new molecule maintains the structure of having an isocyanate group attached to a",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O)",
+      "generation_seconds": 2.555178
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "To generate a unique isocyanate molecule, I will follow these steps:\n1. Identify the general structure of an isocyanate, which typically has a nitrogen atom double-bonded to carbon and single-bonded to oxygen.\n2. Modify existing structures by changing substituents or positions to create a novel compound.\n3. Ensure the new molecule does not resemble any of the provided examples.\n\nHere's a novel isocyanate:\n\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 2.546587
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C)N=C=O\n\nTo generate a unique isocyanate, consider changing the number of benzene rings, altering the placement of functional groups, or modifying the length and complexity of carbon chains.\n\nHere's a hint: you might start by looking at how some of the examples vary in their structure to identify patterns or gaps in the existing set.\n\nGood luck! Here's your chance to create something novel! <<CCN(C)C>>",
+      "extracted": "CCN(C)C",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCN(C)C",
+      "generation_seconds": 2.451497
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=CC(=C2)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 15.199602
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=CC(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=CC(C=C4N=C=O)N=C=O)=C1",
+      "generation_seconds": 7.273688
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=C=O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "generation_seconds": 9.122799
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=N(N)N=C=O\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=C(C=C4)N=C=O)=C1N=C=O>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=C(C=C4)N=C=O)=C1N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=C(C=C4)N=C=O)=C1N=C=O",
+      "generation_seconds": 4.590537
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 27.778794
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1>>",
+      "extracted": "OC=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "generation_seconds": 7.981579
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)CN=O\n\nAssistant:\n<<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O",
+      "generation_seconds": 6.936877
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)N=C=O)=C1",
+      "generation_seconds": 6.660281
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)",
+      "generation_seconds": 11.311804
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 1.225842
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "generation_seconds": 2.878863
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC(=O)NC1=CN=CC(=C1)C(N=C=O)C2=CC=CC=C2>>",
+      "extracted": "OC(=O)NC1=CN=CC(=C1)C(N=C=O)C2=CC=CC=C2",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC(=O)NC1=CN=CC(=C1)C(N=C=O)C2=CC=CC=C2",
+      "generation_seconds": 12.211766
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C)N=C=O\n\nAssistant:\n<<O=C=NC1=CC=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(C2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "generation_seconds": 21.70253
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 16.868998
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N(C)C(=O)O\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O",
+      "generation_seconds": 2.934507
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)",
+      "generation_seconds": 9.235894
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)>>",
+      "extracted": "O=C=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "generation_seconds": 8.859386
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 2.073623
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C(N=C=O))=CC=CC=C1\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 4.616978
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(N=C=O)=NCC2=C2\n\nAssistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5N=C=O)N=C=O",
+      "generation_seconds": 2.427371
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<CCN=CCC(=O)N=CC(N=CC(=O)N=CC(=O)N=C=O)N=O>>",
+      "extracted": "CCN=CCC(=O)N=CC(N=CC(=O)N=CC(=O)N=C=O)N=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "CCN=CCC(=O)N=CC(N=CC(=O)N=CC(=O)N=C=O)N=O",
+      "generation_seconds": 21.438684
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O\n\n<<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 12.269056
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<CCN=CO>>",
+      "extracted": "CCN=CO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCN=CO",
+      "generation_seconds": 8.449343
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<OC=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)>>",
+      "extracted": "OC=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "OC=NC1=CC=C(C=C1N=C=O)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)",
+      "generation_seconds": 8.333828
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)N(C(C2=CC=CC(C=C2)C)N=C=O)\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=CC(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)=C1",
+      "generation_seconds": 2.179246
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": ": Molecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\n: Molecule: O=C=NCCCCCCN=C=O\nin: Molecule: O=C=NCCCCCCCC",
+      "extracted": "O=C=NCCCCCCCC",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NCCCCCCCC",
+      "generation_seconds": 4.930194
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O\n\n```\n```\n\n<<CCO>>\n```\n\n\n```\n\n```\n```\n\n<<CCO>>\n```",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 2.767983
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(C(=O)N(C(=O)N(C(=O)N(C(=O)CN=C=O)N=C=O)N=C=O)N=C=O)N=C=O\n\n<<CCN=C=O>>\n<<CNO=C=O>>\n<<COCN=C=O>>\n<<CCCNCN=C=O>>",
+      "extracted": "CCCNCN=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "CCCNCN=C=O",
+      "generation_seconds": 4.690057
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O)=C1",
+      "generation_seconds": 71.824639
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 2.332616
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "Assistant: <<O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O>>",
+      "extracted": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4N=C=O)N=C=O",
+      "generation_seconds": 1.726222
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=CC=CC=CC=CC=CC2\n\nAssistant:\n<<CC1=CC2=C(N=C=O)C3=CC=CC=C3C2=CC=CC1=O>>",
+      "extracted": "CC1=CC2=C(N=C=O)C3=CC=CC=C3C2=CC=CC1=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "CC1=CC2=C(N=C=O)C3=CC=CC=C3C2=CC=CC1=O",
+      "generation_seconds": 11.028286
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "To create a unique and distinct isocyanate molecule, I'll focus on altering the structure of existing examples while ensuring the core isocyanate functionality remains intact. Here's my proposed novel molecule:\n\n<<O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1",
+      "generation_seconds": 3.562842
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O\n\nAssistant: <<O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=CC(C=C4)CC5=CC=CC(C=C5)N=C=O)=C1N=C=O>>",
+      "extracted": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=CC(C=C4)CC5=CC=CC(C=C5)N=C=O)=C1N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC=CC(CC2=CC=C(C=C2)CC3=CC=C(C=C3)CC4=CC=CC(C=C4)CC5=CC=CC(C=C5)N=C=O)=C1N=C=O",
+      "generation_seconds": 9.144299
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "(=O)OC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3N=C=O)N=C=O\n\nAssistant: <<O=C=NC1=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1N=C=O>>",
+      "extracted": "O=C=NC1=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1N=C=O",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "O=C=NC1=CC(C2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1N=C=O",
+      "generation_seconds": 5.893635
+    },
+    {
+      "question": "isocyanates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example isocyanates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid isocyanates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: O=C=NC1=CC=CC(CC2=CC=C(C=C2N=C=O)CC3=CC=C(C=C3)N=C=O)=C1\nMolecule: O=C=NC1=CC(CC2=C(C=C(C=C2)CC3=CC=C(C=C3N=C=O)CC4=CC=C(C=C4)N=C=O)N=C=O)=CC=C1\nMolecule: O=C=NC1=CC=C(C=C1)CC2=CC=C(C=C2N=C=O)CC3=C(C=C(C=C3)CC4=CC=C(C=C4N=C=O)CC5=CC=C(C=C5)N=C=O)N=C=O\nMolecule: O=C=NCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: O=C=NCCCCCCCCCCCCCCCCCCCCCCCCN=C=O\nMolecule: CC1(CC(CC(CN=C=O)(C1)C)N=C=O)C",
+      "generated": "2(C2)C3(C3)C4(C4)C5(C5)C6(C6)C7(C7)C8(C8)N=C=O\n\nAssistant: <<CCO>>",
+      "extracted": "CCO",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "CCO",
+      "generation_seconds": 4.334294
+    }
+  ],
+  "metadata": {
+    "benchmark": "smiles",
+    "strategy": "rejection_sampling",
+    "prompt_tier": 1,
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "benchmark_max_new_tokens": 256,
+    "effective_max_new_tokens": 256,
+    "adapter": "rejection_sampling_syncode",
+    "rejection_search_steps": 200,
+    "rejection_temperature": 1.0,
+    "complete": true
+  }
+}
