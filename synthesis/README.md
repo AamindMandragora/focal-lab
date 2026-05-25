@@ -10,12 +10,10 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
 - `run_synthesis.py`
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
-  - **GSM-Symbolic:** unless `--gsm-instantiated-hf` is set, an unset `--gsm-source-dir` defaults to vendored `legacy/CRANE/src/gsm_symbolic` JSONs so feedback uses `{placeholder}` questions (HF `apple/GSM-Symbolic` `question` / `original_question` fields are numeric prose only).
+  - **GSM-Symbolic:** the only supported data source is local CRANE-style JSONs. `--gsm-source-dir` auto-resolves to vendored `legacy/CRANE/src/gsm_symbolic` (or `$CRANE_GSM_SYMBOLIC_DIR`) when unset. HuggingFace loading has been removed; runs error out if no CRANE folder is resolvable.
   - Generation backends: local HuggingFace/vLLM, **OpenAI** (default for CLI), or **Amazon Bedrock** (e.g. metadecode `opus4.7` profile).
-  - Includes empirical helper-mask controls to constrain helper-call search space:
+  - Includes UCB/bandit helper-mask controls to constrain helper-call search space:
     `--adaptive-helper-mask`, `--helper-selection-policy`,
-    `--helper-mask-min-evals`, `--helper-mask-min-uses`,
-    `--helper-mask-margin`, `--helper-mask-max-disabled`,
     `--helper-bandit-min-evals`, `--helper-bandit-top-k`,
     `--helper-bandit-ucb-c`, `--helper-bandit-explore-untried`.
   - Includes local-beam refinement controls:

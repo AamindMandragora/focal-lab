@@ -40,12 +40,12 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Grammar-masked legacy adapters: single SMILES span, no reasoning."""
+    """Grammar-masked legacy adapters: single delimited SMILES span."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
-        + "\n\nOutput only one SMILES string inside << >> (example: <<CC(=O)OC=C>>). "
-        "Do not write explanations.\n"
+        + "\n\nReturn exactly one line containing `<<SMILES>>` "
+        "(example: <<CC(=O)OC=C>>).\n"
         "Molecule: "
     )
 
