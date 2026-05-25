@@ -23,7 +23,7 @@ Strategy **generation and refinement** prompts and orchestration.
 ## Synthesizer defaults
 
 - **`run_synthesis`**: default **`--generation-backend bedrock`** (Claude Opus via **`BEDROCK_OPUS_MODEL`**).
-- **`run_all_tests.py`**: default **`--generation-models gpt5.4,opus4.7`** — GPT for the main matrix; Opus optional (Ablation C when listed second).
+- **`run_all_tests.py`**: default **`--main-generation-model gemini`** for Phase~1 main-matrix and Ablation~A/B/D/E; default **`--generation-models sonnet4.6,gpt5.5`** for Ablation~C only (synthesizer-model study).
 
 ## See also
 

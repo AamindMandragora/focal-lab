@@ -75,8 +75,9 @@ STRATEGIES = [
     "rejection_sampling",
     "metadecode",
 ]
-# Main matrix / non-Ablation-C metadecode runs (first profile in run_all_tests.py --generation-models).
-DEFAULT_MAIN_GEN_PROFILE = "opus4.7"
+# Main matrix MetaDecode runs (run_all_tests.py --main-generation-model).
+DEFAULT_MAIN_GEN_PROFILE = "gemini"
+DEFAULT_ABLATION_GEN_PROFILES = ("sonnet4.6", "gpt5.5")
 MASK_LABELS = ("mask_on", "mask_off")
 
 
@@ -280,8 +281,6 @@ def _load_metadecode(
     if generated_dir.is_dir():
         for run_dir in generated_dir.iterdir():
             if not run_dir.is_dir() or not run_dir.name.startswith(prefix):
-                continue
-            if class_token is not None and class_token not in run_dir.name:
                 continue
             success = run_dir / "results" / "success_report.json"
             if not success.is_file():
@@ -496,12 +495,12 @@ def emit_step_budget_table(
             "gcd": r"\GCD",
             "crane": r"\Crane",
             "itergen": r"\IterGen",
-                "metadecode": r"\Tool",
+            "rejection_sampling": "Reject.",
+            "metadecode": r"\Tool",
         }.get(strategy, strategy)
 
         gsm_cells: list[str] = []
         spider_cells: list[str] = []
-        smiles_cells: list[str] = []
         for ms in step_budgets:
             for benchmark, cells in [("gsm_symbolic", gsm_cells), ("spider", spider_cells)]:
                 if strategy == "metadecode":
@@ -527,7 +526,7 @@ def emit_step_budget_table(
                     )
                 cells.append(_fmt(data.get("accuracy") if data else None))
 
-        all_cells = " & ".join(gsm_cells + spider_cells + smiles_cells)
+        all_cells = " & ".join(gsm_cells + spider_cells)
         lines.append(f"{strategy_label:<12s} & {all_cells} \\\\")
 
     return "\n".join(lines)
@@ -580,9 +579,9 @@ def emit_synth_model_table(
     lines: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
     labels = {
-        "gpt5.4": r"\SynthGPT",
-        "opus4.7": r"\SynthOpus",
-        "gemini-pro": r"\SynthGemini",
+        "gpt5.5": r"\SynthGPT",
+        "sonnet4.6": r"\SynthSonnet",
+        "gemini": r"\SynthGemini",
     }
 
     for profile in gen_profiles:
@@ -679,7 +678,11 @@ def main() -> None:
     p.add_argument("--generated-dir", type=Path, default=repo / "outputs" / "generated")
     p.add_argument("--step-budgets", default="256,512,1024")
     p.add_argument("--synth-iters", default="3,5,10")
-    p.add_argument("--gen-profiles", default="opus4.7,gpt5.4,gemini-pro")
+    p.add_argument(
+        "--gen-profiles",
+        default=",".join(DEFAULT_ABLATION_GEN_PROFILES),
+        help="Synthesizer profiles for Ablation C table (default: sonnet4.6,gpt5.5).",
+    )
     p.add_argument(
         "--paper-main-table",
         action="store_true",
@@ -718,9 +721,6 @@ def main() -> None:
     gen_profiles = [x.strip() for x in args.gen_profiles.split(",")]
     beam_sizes = [int(x) for x in args.beam_sizes.split(",")]
     helper_policies = [x.strip() for x in args.helper_policies.split(",") if x.strip()]
-    if unknown_smiles:
-        raise SystemExit(
-        )
 
     tracked = _git_tracked_json_relpaths(repo) if args.git_tracked_only else None
     repo_for_track = repo if tracked is not None else None
