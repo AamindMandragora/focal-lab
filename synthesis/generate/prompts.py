@@ -8,9 +8,9 @@ primitive and parameters based on the *use-case* described by the task.
 The generator expects these entrypoints:
 - build_initial_prompt(task_description)
 - build_verification_error_prompt(task_description, previous_strategy, error_message)
-- build_runtime_error_prompt(previous_strategy, error_traceback)
-- build_compilation_error_prompt(previous_strategy, error_message)
-- build_format_repair_prompt(previous_strategy)
+- build_runtime_error_prompt(previous_strategy, error_traceback, task_description)
+- build_compilation_error_prompt(previous_strategy, error_message, task_description)
+- build_format_repair_prompt(previous_strategy, task_description=None)
 """
 
 import re
@@ -70,19 +70,10 @@ You must output ONLY the Dafny method body for:
   `// CSD_PROOF_SKETCH_BEGIN\n// ...\n// CSD_PROOF_SKETCH_END`.
 - Initialize all out-parameters before any loop/recursion.
 - Assign `cost` before returning.
-- Do NOT redeclare out-parameters as locals.
-- Use the provided `helpers` instance (type `CSDHelpers`). Do NOT write `var helpers := new CSDHelpers();`.
+- Assign the existing out-parameters directly; they are already in scope.
+- Use the provided `helpers` instance (type `CSDHelpers`).
 - Call static entries listed as `CSDHelpers.<Method>` with that qualifier.
-- Do NOT use `CSDHelpers.<Method>` for instance methods.
-
-## Refinement discipline
-When refining a failed attempt, the user prompt names the Pareto-best prior
-attempt (the "Anchor for this refinement"). Your next strategy must be a
-*single-axis delta* on top of that anchor attempt's strategy: change one
-mechanism (one helper swap, one parameter, one ordering tweak). Do not
-introduce a new strategy family or rewrite from scratch. State at the top of
-your rationale which anchor attempt you are building on and what single axis
-you are changing.
+- Call instance helper methods as `helpers.<Method>`.
 
 ## API Guidance
 
@@ -92,9 +83,9 @@ you are changing.
 - `currentConstrained` / `currentConstrainedOut` track only the active constrained segment contents between delimiters.
 - EOS is terminal.
 - Visible delimiters such as `"<<"` and `">>"` are task-contract artifacts.
-  Use them when the task or evaluator requires visible constrained spans. Do
-  not invent visible delimiters for tasks whose contract is hidden constrained
-  chunks, fully constrained objects, or another structured-output surface.
+  When the task, evaluator, or failure feedback requires visible constrained spans,
+  treat those delimiters as part of the target output and emit them exactly.
+  Raw task-native surfaces apply only when the task or evaluator explicitly requests them.
 
 ## Available Tools
 
@@ -203,9 +194,8 @@ consume token budget by themselves.
   guidance is appended as an extra block. Runtime semantics are append-only and
   first-call-wins for the current CSD invocation; empty guidance is ignored.
   Cost: +0.
-  Control profile: prompt policy only; call only at the start of the CSD, after
-  output initialization and before the first LM generation helper. Do not use it
-  as a mid-generation control action.
+  Control profile: prompt policy only. Call it once at method start, after
+  output initialization and before the first LM generation helper.
 
 ### Outside-span generation
 
@@ -730,7 +720,8 @@ Task:
 {task_description}
 {allowed_helpers_block}{tool_reference_block}
 
-Output ONLY the Dafny method body. Do NOT output a method signature, outer wrapper text, or markdown code fences.
+Return exactly the Dafny method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 
 ## Verified Examples
 
@@ -738,7 +729,7 @@ The verified examples below are pattern demonstrations, not task-specific recomm
 Use them as a palette of mechanisms: span entry, constrained progression,
 closing/termination, repair, chunking, and preference shaping. Adapt or combine
 only the parts whose control behavior matches the current task contract and
-measured failures; do not copy an example shape just because it verifies.
+measured failures.
 
 ```dafny
 // CSD_RATIONALE_BEGIN
@@ -1629,7 +1620,7 @@ cost := steps;
 ```
 
 ## Requirements
-- Output a COMPLETE method body — no placeholder comments, no `/* YOUR CHOICE */`.
+- Output a COMPLETE method body with concrete Dafny statements in every required branch.
 - The rationale block should briefly explain:
   - what state the strategy tracks
   - what conditions or observations it uses to choose its next action
@@ -1687,8 +1678,8 @@ Dafny constraint reminder:
 - Methods cannot be called directly inside expression contexts.
 - Call the method first, bind its result to a local variable, then use that variable in the condition.
 
-Output ONLY a corrected full Dafny method body.
-Do NOT output a method signature, outer wrapper text, or markdown fences.
+Return exactly the corrected full Dafny method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 Use only the contracts and tools provided above.
 """
 
@@ -1712,14 +1703,16 @@ Runtime error:
 ```
 
 Fix the runtime error. If needed, rewrite the method body instead of making only local edits.
-Output ONLY a corrected method body (no signature, no braces, no markdown fences).
-The corrected body must include the required rationale and proof sketch blocks at the top.
+Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
 
 
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
+Task:
+{task_description}
 {allowed_helpers_block}{tool_reference_block}
 {search_memory_block}
 Previous attempt:
@@ -1733,8 +1726,8 @@ Compilation error:
 ```
 
 Fix the compilation error. If needed, rewrite the method body instead of making only local edits.
-Output ONLY a corrected method body (no signature, no braces, no markdown fences).
-The corrected body must include the required rationale and proof sketch blocks at the top.
+Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
 
 
@@ -1742,6 +1735,7 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
+{task_contract_block}
 {allowed_helpers_block}{tool_reference_block}
 {search_memory_block}
 Content to rewrite:
@@ -1758,54 +1752,38 @@ The corrected body must include the required rationale and proof sketch blocks.
 EVALUATION_FAILURE_REFINEMENT_PROMPT = """\
 Your method body passed verification and compilation, then was evaluated on the task,
 but did not meet evaluation thresholds.
-All method parameters in the Dafny signature are available to the strategy.
-Treat the evaluation results below as factual observations of generated outputs.
-{anchor_block_top}{primary_failure_block}{phase_directive_block}
 
 Task:
 {task_description}
 {allowed_helpers_block}{tool_reference_block}
 
-## Verified Examples
-
-These are verified reference CSD patterns available for reuse during refinement.
-Use them as examples of valid helper usage, state tracking, loop structure, and
-proof style. The evaluation results and recent history below determine which
-parts, if any, are relevant to the next strategy revision.
+## Verified Dafny patterns (proof-style reference only)
 
 {verified_examples}
 
-{search_memory_block}
-## Strategy Context
+{search_memory_block}## Previous attempt
 
-Previous/current evaluated attempt:
 ```dafny
 {previous_strategy}
 ```
-{working_hypothesis_block}
 
-Evaluation results:
+Result: accuracy {previous_accuracy:.1%}, syntax {previous_syntax_rate:.1%} on {num_examples} examples.
+Goal:   accuracy ≥ {goal_accuracy:.1%}, syntax ≥ {goal_syntax_rate:.1%}.
+{eval_budget_block}Gap to goal accuracy: {accuracy_gap_pp:.1f}pp.
+Gap to goal syntax:   {syntax_gap_pp:.1f}pp.
+{syntax_strategy_block}
+
+Evaluation feedback:
 ```
 {evaluation_feedback}
 ```
-{evaluation_history_block}
+{attempt_outcome_ledger_block}{mode_examples_block}{best_so_far_block}
+## How to revise
 
-Recent evaluation history is provided for context.
-Use the evaluation history to recognize which prior approach families already
-failed, matched, or improved. When balanced-best is far from target or a family
-repeatedly underperforms, prefer substantive causal changes over small
-parameter-only tweaks. When balanced-best is near target, prefer a minimal
-localized repair that preserves the successful family unless that exact family
-has already failed multiple surgical repairs.
-Best-so-far means the strategy with the best balanced progress on both accuracy
-and syntax. A strategy that is strong on only one metric but weak on the other
-is not best-so-far merely because one score is high.
-Avoid small parameter tweaks to a strategy shape that repeatedly underperformed.
-If a shape regressed multiple times and is not the near-win balanced-best family,
-make a structurally different change.
-{anchor_block_bottom}Output ONLY a corrected full Dafny method body.
-Do NOT output a method signature, outer wrapper text, or markdown fences.
-The revised rationale should explain what changed in response to the evaluation results.
+Choose the change size that matches your diagnosis. Numeric tweaks, helper swaps, and structural rewrites are all on the table — pick whatever the failure pattern most directly calls for.
+
+Return exactly the corrected Dafny method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
 
 
@@ -1946,11 +1924,13 @@ def build_runtime_error_prompt(
 def build_compilation_error_prompt(
     previous_strategy: str,
     error_message: str,
+    task_description: str = "Unknown task",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
+        task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
@@ -1964,9 +1944,22 @@ def build_format_repair_prompt(
     previous_strategy: str,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    task_description: str | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
+    task_contract_block = ""
+    if task_description:
+        task_contract_block = (
+            "Task:\n"
+            f"{task_description}\n\n"
+            "Task contract for repair:\n"
+            "Concrete output-format text in the task is authoritative. "
+            "If the task or evaluator requires visible delimiters such as `<<` / `>>`, "
+            "the repaired strategy must still emit those visible delimiter tokens rather "
+            "than converting the answer to hidden or raw output.\n\n"
+        )
     user_prompt = FORMAT_REPAIR_PROMPT.format(
+        task_contract_block=task_contract_block,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
@@ -1975,127 +1968,135 @@ def build_format_repair_prompt(
     return SYSTEM_PROMPT, user_prompt
 
 
-def _build_anchor_block(
-    attempt_number: int | None,
-    accuracy: float | None,
-    syntax_rate: float | None,
-    position: str = "top",
+def _build_best_so_far_block(
+    best_strategy: str | None,
+    best_accuracy: float | None,
+    best_syntax_rate: float | None,
 ) -> str:
-    """Render the Pareto-best anchor block.
+    """Render the best-so-far strategy as a positive anchor.
 
-    `position="top"` is shown right after the preamble so opus reads it first.
-    `position="bottom"` restates the anchor right before the final output
-    instruction so it survives long-context attention drop-off in the middle.
+    Shown in refinement mode only when the previous attempt is NOT the
+    best-so-far — i.e. the previous attempt was a regression and the model
+    should build from the better-scoring lineage instead. Empty otherwise,
+    so the prompt stays minimal when there is only one strategy to discuss.
     """
-    if attempt_number is None or accuracy is None or syntax_rate is None:
+    if (
+        not best_strategy
+        or best_accuracy is None
+        or best_syntax_rate is None
+    ):
         return ""
-    if position == "top":
-        return (
-            "\n\n## Anchor for this refinement\n"
-            f"Pareto-best so far: attempt {attempt_number} "
-            f"(acc={accuracy:.1%}, syn={syntax_rate:.1%}).\n"
-            f"Build a single-axis delta on top of attempt {attempt_number}'s strategy. "
-            "Do not introduce a new family. State the anchor and the delta axis "
-            "at the top of your rationale.\n"
-        )
     return (
-        f"\nReminder: anchor on attempt {attempt_number} "
-        f"(acc={accuracy:.1%}, syn={syntax_rate:.1%}); single-axis delta only.\n"
+        "\n## Best result so far\n\n"
+        f"```dafny\n{best_strategy}\n```\n\n"
+        f"Result: accuracy {best_accuracy:.1%}, "
+        f"syntax {best_syntax_rate:.1%}.\n"
+        "The previous attempt regressed from this; consider building from "
+        "this strategy instead.\n"
     )
 
 
-def _build_phase_directive_block(
-    phase: int | None,
-    phase1_acc_target: float,
-    phase2_acc_floor: float,
-    phase2_syn_target: float,
-) -> str:
-    """Render the staged-optimization directive (Change 4).
-
-    Phase 1 tells the author to drive accuracy above the Phase 1 target,
-    treating syntax as secondary. Phase 2 tells the author to drive syntax
-    above the Phase 2 target while keeping accuracy above the floor.
-    """
-    if phase is None:
+def _build_eval_budget_block(eval_max_seconds_per_example: float | None) -> str:
+    if eval_max_seconds_per_example is None:
         return ""
-    if phase == 1:
+    return (
+        f"Each example: {eval_max_seconds_per_example:.0f}s wall-clock budget; "
+        "over-budget examples score 0.\n"
+    )
+
+
+def _build_syntax_strategy_block(
+    task_description: str,
+    previous_syntax_rate: float,
+    goal_syntax_rate: float,
+) -> str:
+    """Give tactical syntax guidance only when the configured floor is missed."""
+    syntax_gap = goal_syntax_rate - previous_syntax_rate
+    if goal_syntax_rate <= 0.0 or syntax_gap <= 0.0:
+        return ""
+
+    task_lower = task_description.lower()
+    delimiter_task = "<<" in task_description or ">>" in task_description or "delimiter" in task_lower
+    if not delimiter_task:
         return (
-            "\nStaged optimization — Phase 1 (accuracy first):\n"
-            f"  • Drive accuracy above {phase1_acc_target:.1%}. This is the gate to Phase 2.\n"
-            "  • Syntax-rate is secondary in this phase: do not sacrifice accuracy to chase it.\n"
-            "  • Prefer strategy changes that fix WRONG answers; ignore minor syntax tweaks for now.\n"
+            "Syntax-pressure note:\n"
+            f"- Syntax is {syntax_gap * 100.0:.1f}pp below the configured floor. "
+            "Prefer simpler, easier-to-validate constrained surfaces over extra formatting complexity.\n"
         )
-    if phase == 2:
-        return (
-            "\nStaged optimization — Phase 2 (syntax with accuracy floor):\n"
-            f"  • Drive syntax-rate above {phase2_syn_target:.1%}.\n"
-            f"  • Maintain accuracy at or above {phase2_acc_floor:.1%}; any change that drops below the floor is a regression.\n"
-            "  • Prefer minimal localized edits that tighten generation (better delimiters, "
-            "fewer free-form digressions) without altering the high-accuracy strategy shape.\n"
-        )
-    return ""
+
+    return (
+        "Syntax-pressure note:\n"
+        f"- Syntax is {syntax_gap * 100.0:.1f}pp below the configured floor. "
+        "For visible-delimiter tasks, syntax is judged per example: one malformed or unclosed "
+        "`<< >>` span can make the whole example fail.\n"
+        "- If accuracy can be preserved, reduce the number of visible constrained spans and make "
+        "each span high confidence. A single final constrained span containing the complete "
+        "expression/answer is often safer than wrapping every intermediate calculation.\n"
+        "- Keep required visible delimiters; do not switch to raw output or hidden-only output when "
+        "the task contract asks for `<< >>`.\n"
+    )
 
 
 def build_evaluation_failure_prompt(
     task_description: str,
     previous_strategy: str,
+    previous_accuracy: float,
+    previous_syntax_rate: float,
+    num_examples: int,
+    goal_accuracy: float,
+    goal_syntax_rate: float,
     evaluation_feedback: str,
-    evaluation_history: str = "",
-    working_hypothesis: str = "",
+    best_strategy: str | None = None,
+    best_accuracy: float | None = None,
+    best_syntax_rate: float | None = None,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
-    primary_failure: str = "",
-    phase: int | None = None,
-    phase1_acc_target: float = 0.0,
-    phase2_acc_floor: float = 0.0,
-    phase2_syn_target: float = 0.0,
-    anchor_attempt_number: int | None = None,
-    anchor_accuracy: float | None = None,
-    anchor_syntax_rate: float | None = None,
+    eval_max_seconds_per_example: float | None = None,
+    mode_examples: str = "",
+    attempt_outcome_ledger: str = "",
 ) -> tuple[str, str]:
-    evaluation_history_block = ""
-    working_hypothesis_block = ""
-    search_memory_block = ""
-    primary_failure_block = ""
-    if primary_failure:
-        # Place the primary-failure summary just under the prompt preamble so it
-        # is the first concrete thing the model reads. Change 2.
-        primary_failure_block = f"\n\n{primary_failure}\n"
-    if search_memory:
-        search_memory_block = f"{search_memory}\n"
-    if evaluation_history:
-        evaluation_history_block = (
-            "\nRecent evaluation history:\n```\n"
-            f"{evaluation_history}\n"
-            "```\n"
-        )
-    if working_hypothesis:
-        working_hypothesis_block = (
-            "\n\n"
-            f"{working_hypothesis}\n"
-        )
-    phase_directive_block = _build_phase_directive_block(
-        phase, phase1_acc_target, phase2_acc_floor, phase2_syn_target
+    search_memory_block = f"{search_memory}\n" if search_memory else ""
+    best_so_far_block = _build_best_so_far_block(
+        best_strategy=best_strategy,
+        best_accuracy=best_accuracy,
+        best_syntax_rate=best_syntax_rate,
     )
-    anchor_block_top = _build_anchor_block(
-        anchor_attempt_number, anchor_accuracy, anchor_syntax_rate, position="top"
+    mode_examples_block = (
+        f"\n## Concrete failing rollouts from prior attempt\n\n{mode_examples}\n"
+        if mode_examples
+        else ""
     )
-    anchor_block_bottom = _build_anchor_block(
-        anchor_attempt_number, anchor_accuracy, anchor_syntax_rate, position="bottom"
+    attempt_outcome_ledger_block = (
+        f"\n## Attempt outcome ledger\n\n{attempt_outcome_ledger}\n"
+        if attempt_outcome_ledger
+        else ""
+    )
+    accuracy_gap_pp = max(0.0, (goal_accuracy - previous_accuracy) * 100.0)
+    syntax_gap_pp = max(0.0, (goal_syntax_rate - previous_syntax_rate) * 100.0)
+    syntax_strategy_block = _build_syntax_strategy_block(
+        task_description=task_description,
+        previous_syntax_rate=previous_syntax_rate,
+        goal_syntax_rate=goal_syntax_rate,
     )
     user_prompt = EVALUATION_FAILURE_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
-        working_hypothesis_block=working_hypothesis_block,
+        previous_accuracy=previous_accuracy,
+        previous_syntax_rate=previous_syntax_rate,
+        num_examples=num_examples,
+        goal_accuracy=goal_accuracy,
+        goal_syntax_rate=goal_syntax_rate,
+        accuracy_gap_pp=accuracy_gap_pp,
+        syntax_gap_pp=syntax_gap_pp,
+        syntax_strategy_block=syntax_strategy_block,
         evaluation_feedback=evaluation_feedback,
-        evaluation_history_block=evaluation_history_block,
+        attempt_outcome_ledger_block=attempt_outcome_ledger_block,
+        mode_examples_block=mode_examples_block,
         verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
-        primary_failure_block=primary_failure_block,
-        phase_directive_block=phase_directive_block,
-        anchor_block_top=anchor_block_top,
-        anchor_block_bottom=anchor_block_bottom,
+        best_so_far_block=best_so_far_block,
+        eval_budget_block=_build_eval_budget_block(eval_max_seconds_per_example),
     )
     return SYSTEM_PROMPT, user_prompt

@@ -64,6 +64,10 @@ class StrategyGenerator:
         vllm_enforce_eager: bool = True,
         api_base_url: Optional[str] = None,
         api_key: Optional[str] = None,
+        anthropic_thinking: str = "auto",
+        anthropic_thinking_budget_tokens: int = 4096,
+        anthropic_effort: str = "xhigh",
+        anthropic_thinking_display: str = "summarized",
     ):
         """
         Initialize the strategy generator.
@@ -85,6 +89,10 @@ class StrategyGenerator:
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
             api_base_url: Optional base URL override (OpenAI: OPENAI_BASE_URL; Bedrock: BEDROCK_BASE_URL)
             api_key: Optional API key (OpenAI: OPENAI_API_KEY; Bedrock: AWS_BEARER_TOKEN_BEDROCK)
+            anthropic_thinking: Anthropic thinking mode: auto, off, adaptive, or enabled.
+            anthropic_thinking_budget_tokens: Manual thinking budget for models that still accept it.
+            anthropic_effort: Anthropic adaptive-thinking effort level.
+            anthropic_thinking_display: Whether Anthropic should return summarized or omitted thinking.
         """
         self.model_name = model_name or self.DEFAULT_MODEL
         self.backend = backend
@@ -100,6 +108,10 @@ class StrategyGenerator:
         self.vllm_enforce_eager = vllm_enforce_eager
         self.api_base_url = api_base_url or self._default_api_base_url(backend)
         self.api_key = api_key or self._default_api_key(backend)
+        self.anthropic_thinking = anthropic_thinking
+        self.anthropic_thinking_budget_tokens = anthropic_thinking_budget_tokens
+        self.anthropic_effort = anthropic_effort
+        self.anthropic_thinking_display = anthropic_thinking_display
 
         # Auto-detect device
         if device is None:
@@ -127,6 +139,8 @@ class StrategyGenerator:
         self._current_task_description: Optional[str] = None
         self._prompt_log_counter = 0
         self._synthesis_context: Optional[dict[str, str]] = None
+        self._summary_client = None
+        self._summary_anthropic_client = None
 
         # Load template
         self._template = self._load_template()
@@ -136,10 +150,24 @@ class StrategyGenerator:
         if backend == "openai":
             return os.environ.get("OPENAI_BASE_URL")
         if backend == "bedrock":
-            region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+            return os.environ.get("BEDROCK_BASE_URL")
+        if backend == "gemini":
             return os.environ.get(
-                "BEDROCK_BASE_URL",
-                f"https://bedrock-runtime.{region}.amazonaws.com",
+                "GEMINI_BASE_URL",
+                "https://generativelanguage.googleapis.com/v1beta",
+            )
+        if backend == "vertex":
+            location = (
+                os.environ.get("VERTEX_AI_LOCATION")
+                or os.environ.get("GOOGLE_CLOUD_LOCATION")
+                or os.environ.get("GOOGLE_VERTEX_LOCATION")
+                or "global"
+            )
+            if location == "global":
+                return os.environ.get("VERTEX_AI_BASE_URL", "https://aiplatform.googleapis.com/v1")
+            return os.environ.get(
+                "VERTEX_AI_BASE_URL",
+                f"https://{location}-aiplatform.googleapis.com/v1",
             )
         return None
 
@@ -151,6 +179,10 @@ class StrategyGenerator:
             return os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
         if backend == "anthropic":
             return os.environ.get("ANTHROPIC_API_KEY")
+        if backend == "gemini":
+            return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if backend == "vertex":
+            return os.environ.get("VERTEX_AI_ACCESS_TOKEN")
         return None
 
     def _get_vllm_quantization_kwargs(self) -> dict:
@@ -240,10 +272,30 @@ class StrategyGenerator:
             return
 
         if self.backend == "bedrock":
-            if not self.api_key:
-                raise ValueError(
-                    "AWS_BEARER_TOKEN_BEDROCK is required when --generation-backend=bedrock"
-                )
+            if self._client is None:
+                from anthropic import AnthropicBedrockMantle
+
+                client_kwargs = {
+                    "aws_region": os.environ.get("AWS_REGION")
+                    or os.environ.get("AWS_DEFAULT_REGION")
+                    or "us-east-1",
+                }
+                if self.api_key:
+                    client_kwargs["api_key"] = self.api_key
+                access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+                secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+                if access_key and secret_key:
+                    client_kwargs["aws_access_key"] = access_key
+                    client_kwargs["aws_secret_key"] = secret_key
+                session_token = os.environ.get("AWS_SESSION_TOKEN")
+                if session_token:
+                    client_kwargs["aws_session_token"] = session_token
+                profile = os.environ.get("AWS_PROFILE")
+                if profile:
+                    client_kwargs["aws_profile"] = profile
+                if self.api_base_url:
+                    client_kwargs["base_url"] = self.api_base_url
+                self._client = AnthropicBedrockMantle(**client_kwargs)
             return
 
         if self.backend == "anthropic":
@@ -257,6 +309,16 @@ class StrategyGenerator:
                 if self.api_base_url:
                     client_kwargs["base_url"] = self.api_base_url
                 self._client = Anthropic(**client_kwargs)
+            return
+
+        if self.backend == "gemini":
+            if not self.api_key:
+                raise ValueError(
+                    "GEMINI_API_KEY or GOOGLE_API_KEY is required when --generation-backend=gemini"
+                )
+            return
+
+        if self.backend == "vertex":
             return
 
         if self.backend == "vllm":
@@ -346,6 +408,57 @@ class StrategyGenerator:
                 else:
                     raise
 
+    def _is_opus47(self) -> bool:
+        return "claude-opus-4-7" in self.model_name
+
+    def _anthropic_thinking_kwargs(self) -> dict[str, object]:
+        mode = self.anthropic_thinking
+        if mode == "auto":
+            mode = "adaptive" if self._is_opus47() else "off"
+        if mode == "off":
+            return {}
+        if mode not in {"adaptive", "enabled"}:
+            raise ValueError(
+                "anthropic_thinking must be one of: auto, off, adaptive, enabled"
+            )
+        if self.anthropic_thinking_display not in {"omitted", "summarized"}:
+            raise ValueError(
+                "anthropic_thinking_display must be 'omitted' or 'summarized'"
+            )
+
+        if mode == "adaptive":
+            allowed_efforts = {"low", "medium", "high", "xhigh", "max"}
+            if self.anthropic_effort not in allowed_efforts:
+                raise ValueError(
+                    "anthropic_effort must be one of: low, medium, high, xhigh, max"
+                )
+            return {
+                "thinking": {
+                    "type": "adaptive",
+                    "display": self.anthropic_thinking_display,
+                },
+                "output_config": {"effort": self.anthropic_effort},
+            }
+
+        if self._is_opus47():
+            raise ValueError(
+                "claude-opus-4-7 does not support manual Anthropic thinking "
+                "with budget_tokens; use anthropic_thinking='adaptive'."
+            )
+        if self.anthropic_thinking_budget_tokens < 1024:
+            raise ValueError("anthropic_thinking_budget_tokens must be at least 1024")
+        if self.anthropic_thinking_budget_tokens >= self.max_new_tokens:
+            raise ValueError(
+                "anthropic_thinking_budget_tokens must be less than max_new_tokens"
+            )
+        return {
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": self.anthropic_thinking_budget_tokens,
+                "display": self.anthropic_thinking_display,
+            }
+        }
+
     def _generate_text(self, system_prompt: str, user_prompt: str) -> str:
         """
         Generate text using Qwen.
@@ -386,15 +499,21 @@ class StrategyGenerator:
 
         if self.backend == "anthropic":
             # Anthropic API takes `system` as a top-level arg, not a message.
-            # Newer reasoning models (claude-opus-4-7 et al.) reject `temperature`
-            # and `top_p` as deprecated, so we omit them — the model uses its
-            # own default sampling, which is what we want for a reasoning author.
-            response = self._client.messages.create(
-                model=self.model_name,
-                system=system_prompt,
-                messages=[{"role": "user", "content": user_prompt}],
-                max_tokens=self.max_new_tokens,
-            )
+            # Claude Opus 4.7 rejects custom sampling params and manual thinking
+            # budgets, so extended thinking is enabled through adaptive thinking.
+            request_kwargs = {
+                "model": self.model_name,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": user_prompt}],
+                "max_tokens": self.max_new_tokens,
+            }
+            request_kwargs.update(self._anthropic_thinking_kwargs())
+            # Streaming required by the SDK for requests whose estimated
+            # runtime exceeds 10 minutes (true with high max_tokens + adaptive
+            # thinking). get_final_message() returns the same Message object
+            # that non-streaming create() would have returned.
+            with self._client.messages.stream(**request_kwargs) as stream:
+                response = stream.get_final_message()
             # response.content is a list of content blocks; join text blocks.
             parts = []
             for block in response.content:
@@ -402,6 +521,16 @@ class StrategyGenerator:
                 if text:
                     parts.append(text)
             output = "".join(parts).strip()
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
+        if self.backend == "gemini":
+            output = self._generate_gemini(system_prompt, user_prompt)
+            self._log_prompt_io(system_prompt, user_prompt, output)
+            return output
+
+        if self.backend == "vertex":
+            output = self._generate_vertex(system_prompt, user_prompt)
             self._log_prompt_io(system_prompt, user_prompt, output)
             return output
 
@@ -485,33 +614,136 @@ class StrategyGenerator:
         return json.loads(body)
 
     def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
-        base_url = (self.api_base_url or self._default_api_base_url("bedrock") or "").rstrip("/")
+        request_kwargs = {
+            "model": self.model_name,
+            "system": system_prompt,
+            "messages": [{"role": "user", "content": user_prompt}],
+            "max_tokens": self.max_new_tokens,
+        }
+        request_kwargs.update(self._anthropic_thinking_kwargs())
+        with self._client.messages.stream(**request_kwargs) as stream:
+            response = stream.get_final_message()
+        parts = []
+        for block in response.content:
+            text = getattr(block, "text", None)
+            if text:
+                parts.append(text)
+        return "".join(parts).strip()
+
+    def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
+        base_url = (self.api_base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
         model = urllib.parse.quote(self.model_name, safe="")
-        url = f"{base_url}/model/{model}/converse"
+        key = urllib.parse.quote(self.api_key or "", safe="")
+        url = f"{base_url}/models/{model}:generateContent?key={key}"
         payload = {
-            "system": [{"text": system_prompt}],
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [{"text": user_prompt}],
-                }
-            ],
-            "inferenceConfig": {
-                "maxTokens": self.max_new_tokens,
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": self.max_new_tokens,
+                "temperature": self.temperature,
+                "topP": self.top_p,
+            },
+        }
+        data = self._post_json(url, {}, payload)
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return ""
+        parts = candidates[0].get("content", {}).get("parts") or []
+        return "".join(part.get("text", "") for part in parts).strip()
+
+    def _vertex_project(self) -> str:
+        project = (
+            os.environ.get("VERTEX_AI_PROJECT")
+            or os.environ.get("GOOGLE_CLOUD_PROJECT")
+            or os.environ.get("GCP_PROJECT")
+        )
+        if not project:
+            raise RuntimeError(
+                "VERTEX_AI_PROJECT or GOOGLE_CLOUD_PROJECT is required for Vertex AI generation"
+            )
+        return project
+
+    def _vertex_location(self) -> str:
+        return (
+            os.environ.get("VERTEX_AI_LOCATION")
+            or os.environ.get("GOOGLE_CLOUD_LOCATION")
+            or os.environ.get("GOOGLE_VERTEX_LOCATION")
+            or "global"
+        )
+
+    def _vertex_access_token(self) -> str:
+        token = self.api_key or os.environ.get("VERTEX_AI_ACCESS_TOKEN")
+        if token:
+            return token
+        try:
+            import google.auth
+            from google.auth.transport.requests import Request
+        except ImportError as exc:
+            raise RuntimeError(
+                "Vertex AI generation requires VERTEX_AI_ACCESS_TOKEN or google-auth "
+                "with Application Default Credentials."
+            ) from exc
+        credentials, _project = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        credentials.refresh(Request())
+        token = getattr(credentials, "token", None)
+        if not token:
+            raise RuntimeError("Application Default Credentials did not provide an access token")
+        return token
+
+    def _vertex_auth_headers(self) -> dict[str, str]:
+        api_key = (
+            os.environ.get("VERTEX_AI_API_KEY")
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+        )
+        if api_key:
+            return {"x-goog-api-key": api_key}
+        return {"Authorization": f"Bearer {self._vertex_access_token()}"}
+
+    def _vertex_generate_content(
+        self,
+        model_name: str,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int,
+    ) -> str:
+        base_url = (self.api_base_url or self._default_api_base_url("vertex") or "").rstrip("/")
+        project = urllib.parse.quote(self._vertex_project(), safe="")
+        location = urllib.parse.quote(self._vertex_location(), safe="")
+        model = urllib.parse.quote(model_name, safe="")
+        url = (
+            f"{base_url}/projects/{project}/locations/{location}/"
+            f"publishers/google/models/{model}:generateContent"
+        )
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
                 "temperature": self.temperature,
                 "topP": self.top_p,
             },
         }
         data = self._post_json(
             url,
-            {
-                "Authorization": f"Bearer {self.api_key or ''}",
-                "Accept": "application/json",
-            },
+            self._vertex_auth_headers(),
             payload,
         )
-        parts = data.get("output", {}).get("message", {}).get("content") or []
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return ""
+        parts = candidates[0].get("content", {}).get("parts") or []
         return "".join(part.get("text", "") for part in parts).strip()
+
+    def _generate_vertex(self, system_prompt: str, user_prompt: str) -> str:
+        return self._vertex_generate_content(
+            self.model_name,
+            system_prompt,
+            user_prompt,
+            self.max_new_tokens,
+        )
 
     def _log_prompt_io(self, system_prompt: str, user_prompt: str, output: str) -> None:
         """Optionally persist exact prompt/response records for debugging."""
@@ -533,6 +765,206 @@ class StrategyGenerator:
         }
         with (path / "prompt_io.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
+
+    def summarize_rationale_claim(self, rationale: str) -> str:
+        """Summarize an attempt rationale into one empirical branch claim.
+
+        This uses a separate small hosted model so synthesis prompts get the
+        rationale's causal claim without blunt text truncation. If the summary
+        backend is unavailable, return the full rationale rather than silently
+        losing context.
+        """
+        rationale = rationale.strip()
+        if not rationale:
+            return ""
+        backend = os.environ.get("CSD_RATIONALE_SUMMARY_BACKEND", "anthropic").strip().lower()
+        if backend in {"", "off", "none", "disabled"}:
+            return rationale
+        try:
+            return self._summarize_rationale_claim_with_backend(rationale, backend, fallback=False)
+        except Exception as exc:
+            fallback_backend = os.environ.get(
+                "CSD_RATIONALE_SUMMARY_FALLBACK_BACKEND",
+                "anthropic",
+            ).strip().lower()
+            if fallback_backend in {"", "off", "none", "disabled"}:
+                print(f"[rationale-summary] using full rationale; summary failed: {exc}", flush=True)
+                return rationale
+            try:
+                print(
+                    f"[rationale-summary] primary {backend} summary failed; "
+                    f"trying {fallback_backend}: {exc}",
+                    flush=True,
+                )
+                return self._summarize_rationale_claim_with_backend(
+                    rationale,
+                    fallback_backend,
+                    fallback=True,
+                )
+            except Exception as fallback_exc:
+                print(
+                    "[rationale-summary] using full rationale; "
+                    f"primary failed: {exc}; fallback failed: {fallback_exc}",
+                    flush=True,
+                )
+            return rationale
+
+    def _rationale_summary_messages(self, rationale: str) -> tuple[str, str]:
+        system_prompt = (
+            "Summarize a CSD attempt rationale as a factual empirical branch claim. "
+            "Preserve the causal hypothesis and concrete changed knobs. "
+            "Do not add advice, evaluation, or facts not present in the rationale. "
+            "Return one sentence, at most 35 words."
+        )
+        return system_prompt, f"Rationale:\n{rationale}"
+
+    def _summarize_rationale_claim_with_backend(
+        self,
+        rationale: str,
+        backend: str,
+        *,
+        fallback: bool,
+    ) -> str:
+        if backend == "openai":
+            return self._summarize_rationale_claim_openai(rationale, fallback=fallback)
+        if backend == "anthropic":
+            return self._summarize_rationale_claim_anthropic(rationale, fallback=fallback)
+        if backend == "gemini":
+            return self._summarize_rationale_claim_gemini(rationale, fallback=fallback)
+        if backend == "vertex":
+            return self._summarize_rationale_claim_vertex(rationale, fallback=fallback)
+        raise ValueError(f"unsupported rationale summary backend: {backend}")
+
+    def _summarize_rationale_claim_openai(self, rationale: str, *, fallback: bool = False) -> str:
+        if fallback:
+            raise ValueError("openai fallback is not configured by default")
+        api_key = os.environ.get("CSD_RATIONALE_SUMMARY_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not set")
+        if self._summary_client is None:
+            from openai import OpenAI
+
+            self._summary_client = OpenAI(
+                api_key=api_key,
+                base_url=os.environ.get("CSD_RATIONALE_SUMMARY_BASE_URL")
+                or os.environ.get("OPENAI_BASE_URL"),
+            )
+        model = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_MODEL")
+            or os.environ.get("OPENAI_RATIONALE_SUMMARY_MODEL")
+            or "chat-latest"
+        )
+        system_prompt, user_prompt = self._rationale_summary_messages(rationale)
+        response = self._summary_client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_completion_tokens=int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
+        )
+        return self._clean_rationale_summary(response.choices[0].message.content or "")
+
+    def _summarize_rationale_claim_anthropic(self, rationale: str, *, fallback: bool = False) -> str:
+        api_key = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_API_KEY")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_API_KEY")
+        ) or os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY is not set")
+        if self._summary_anthropic_client is None:
+            from anthropic import Anthropic
+
+            client_kwargs = {"api_key": api_key}
+            base_url = (
+                os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_BASE_URL")
+                if fallback
+                else os.environ.get("CSD_RATIONALE_SUMMARY_BASE_URL")
+            ) or os.environ.get("ANTHROPIC_BASE_URL")
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            self._summary_anthropic_client = Anthropic(**client_kwargs)
+        model = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_MODEL")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_MODEL")
+        ) or "claude-haiku-4-5"
+        system_prompt, user_prompt = self._rationale_summary_messages(rationale)
+        response = self._summary_anthropic_client.messages.create(
+            model=model,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+            max_tokens=int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
+        )
+        content = "".join(
+            getattr(block, "text", "") or ""
+            for block in response.content
+            if getattr(block, "type", None) == "text"
+        )
+        return self._clean_rationale_summary(content)
+
+    def _summarize_rationale_claim_gemini(self, rationale: str, *, fallback: bool = False) -> str:
+        api_key = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_API_KEY")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_API_KEY")
+        ) or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY is not set")
+        model = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_MODEL")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_MODEL")
+        ) or "gemini-2.5-flash-lite"
+        base_url = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_BASE_URL")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_BASE_URL")
+        ) or os.environ.get("GEMINI_BASE_URL") or "https://generativelanguage.googleapis.com/v1beta"
+        system_prompt, user_prompt = self._rationale_summary_messages(rationale)
+        model_path = urllib.parse.quote(model, safe="")
+        key = urllib.parse.quote(api_key, safe="")
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "generationConfig": {
+                "maxOutputTokens": int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
+            },
+        }
+        data = self._post_json(
+            f"{base_url.rstrip('/')}/models/{model_path}:generateContent?key={key}",
+            {},
+            payload,
+        )
+        candidates = data.get("candidates") or []
+        if not candidates:
+            raise RuntimeError("empty Gemini rationale summary")
+        parts = candidates[0].get("content", {}).get("parts") or []
+        content = "".join(part.get("text", "") for part in parts)
+        return self._clean_rationale_summary(content)
+
+    def _summarize_rationale_claim_vertex(self, rationale: str, *, fallback: bool = False) -> str:
+        model = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_MODEL")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_MODEL")
+        ) or "gemini-2.5-flash-lite"
+        system_prompt, user_prompt = self._rationale_summary_messages(rationale)
+        output = self._vertex_generate_content(
+            model,
+            system_prompt,
+            user_prompt,
+            int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
+        )
+        return self._clean_rationale_summary(output)
+
+    @staticmethod
+    def _clean_rationale_summary(content: str) -> str:
+        summary = " ".join(content.strip().split())
+        if not summary:
+            raise RuntimeError("empty rationale summary")
+        return summary
 
     def _extract_strategy(self, raw_output: str) -> str:
         """
@@ -561,6 +993,11 @@ class StrategyGenerator:
 
         # Remove leading/trailing whitespace
         strategy = raw_output.strip()
+
+        # Drop any prose preamble above the rationale block markers.
+        marker_idx = strategy.find("// CSD_RATIONALE_BEGIN")
+        if marker_idx > 0:
+            strategy = strategy[marker_idx:]
 
         # Heuristic repair: Dafny uses `+` for sequence concatenation; `++` is invalid.
         # Replace `++` when it is used like an operator (surrounded by optional whitespace).
@@ -750,55 +1187,48 @@ class StrategyGenerator:
     def refine_after_evaluation_failure(
         self,
         previous_strategy: str,
+        previous_accuracy: float,
+        previous_syntax_rate: float,
+        num_examples: int,
+        goal_accuracy: float,
+        goal_syntax_rate: float,
         evaluation_feedback: str,
-        evaluation_history: str = "",
-        working_hypothesis: str = "",
+        best_strategy: str | None = None,
+        best_accuracy: float | None = None,
+        best_syntax_rate: float | None = None,
         search_memory: str = "",
         allowed_helpers: list[str] | None = None,
-        primary_failure: str = "",
-        phase: int | None = None,
-        phase1_acc_target: float = 0.0,
-        phase2_acc_floor: float = 0.0,
-        phase2_syn_target: float = 0.0,
-        anchor_attempt_number: int | None = None,
-        anchor_accuracy: float | None = None,
-        anchor_syntax_rate: float | None = None,
+        eval_max_seconds_per_example: float | None = None,
+        mode_examples: str = "",
+        attempt_outcome_ledger: str = "",
     ) -> str:
-        """
-        Generate a refined strategy after evaluation failure.
+        """Generate a refined strategy after evaluation failure.
 
-        The strategy passed verification, compilation, and runtime testing,
-        but performed poorly on actual dataset evaluation (low accuracy,
-        format rate, syntax rate, or semantic rate).
-
-        Args:
-            previous_strategy: The strategy that failed evaluation
-            evaluation_feedback: Feedback summary from the evaluator
-            evaluation_history: Recent evaluated attempts and outcomes
-            working_hypothesis: Compact strategy lineage and balanced-best state
-            primary_failure: Top-of-prompt ranked summary of the dominant
-                failure mode/location (Change 2). Empty disables it.
-
-        Returns:
-            New strategy expression
+        The model sees the previous attempt's code and scores, the goal,
+        the evaluation feedback, and — only when the previous attempt
+        regressed from a better-scoring earlier attempt — the best-so-far
+        strategy as a positive anchor. It may also see a compact empirical
+        outcome ledger so it has global search context without replaying full
+        prior strategy bodies.
         """
         task_description = self._current_task_description or "Unknown task"
         system_prompt, user_prompt = build_evaluation_failure_prompt(
-            task_description,
-            previous_strategy,
-            evaluation_feedback,
-            evaluation_history,
-            working_hypothesis,
-            search_memory,
+            task_description=task_description,
+            previous_strategy=previous_strategy,
+            previous_accuracy=previous_accuracy,
+            previous_syntax_rate=previous_syntax_rate,
+            num_examples=num_examples,
+            goal_accuracy=goal_accuracy,
+            goal_syntax_rate=goal_syntax_rate,
+            evaluation_feedback=evaluation_feedback,
+            best_strategy=best_strategy,
+            best_accuracy=best_accuracy,
+            best_syntax_rate=best_syntax_rate,
+            search_memory=search_memory,
             allowed_helpers=allowed_helpers,
-            primary_failure=primary_failure,
-            phase=phase,
-            phase1_acc_target=phase1_acc_target,
-            phase2_acc_floor=phase2_acc_floor,
-            phase2_syn_target=phase2_syn_target,
-            anchor_attempt_number=anchor_attempt_number,
-            anchor_accuracy=anchor_accuracy,
-            anchor_syntax_rate=anchor_syntax_rate,
+            eval_max_seconds_per_example=eval_max_seconds_per_example,
+            mode_examples=mode_examples,
+            attempt_outcome_ledger=attempt_outcome_ledger,
         )
         raw_output = self._generate_text(system_prompt, user_prompt)
         strategy = self._extract_strategy(raw_output)
@@ -807,7 +1237,6 @@ class StrategyGenerator:
             search_memory=search_memory,
             allowed_helpers=allowed_helpers,
         )
-
 
     def inject_strategy(self, strategy: str) -> str:
         """

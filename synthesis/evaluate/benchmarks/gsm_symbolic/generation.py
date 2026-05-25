@@ -67,6 +67,13 @@ def run_crane_csd(
     lm.instruction_text = lm.tokenizer.apply_chat_template(
         chat_messages, tokenize=False, add_generation_prompt=True
     )
+    # Register chat_messages on the LM so AppendTaskGuidance (if the CSD
+    # calls it) can re-template with guidance injected INSIDE the last user
+    # message — instead of appending it after the assistant generation
+    # marker (which previously landed guidance in the model's output space
+    # and crashed accuracy by 18-22pp on this cell).
+    if hasattr(lm, "set_chat_messages"):
+        lm.set_chat_messages(chat_messages)
     if hasattr(lm, "ResetTaskGuidance"):
         lm.ResetTaskGuidance()
     start_time = time.time()

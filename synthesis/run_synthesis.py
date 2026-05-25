@@ -70,9 +70,14 @@ Examples:
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "bedrock", "anthropic"],
+        choices=["huggingface", "vllm", "openai", "bedrock", "anthropic", "gemini", "vertex"],
         default="openai",
-        help="Backend for strategy generation (default: openai). 'anthropic' uses ANTHROPIC_API_KEY for Claude models like claude-opus-4-7.",
+        help=(
+            "Backend for strategy generation (default: openai). 'anthropic' uses "
+            "ANTHROPIC_API_KEY for Claude models like claude-opus-4-7; 'gemini' "
+            "uses GEMINI_API_KEY or GOOGLE_API_KEY for Google AI Studio models; "
+            "'vertex' uses Vertex AI REST with VERTEX_AI_ACCESS_TOKEN or ADC."
+        ),
     )
 
     parser.add_argument(
@@ -99,6 +104,38 @@ Examples:
         type=str,
         default=None,
         help="Optional API key for generation. Defaults to the selected backend's environment variable."
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking",
+        choices=["auto", "off", "adaptive", "enabled"],
+        default="auto",
+        help=(
+            "Anthropic thinking mode for hosted Claude author models. "
+            "auto enables adaptive thinking for claude-opus-4-7; off omits the thinking payload; "
+            "enabled uses manual budget_tokens for older models that still support it."
+        ),
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking-budget-tokens",
+        type=int,
+        default=4096,
+        help="Manual Anthropic thinking budget for --anthropic-thinking enabled (default: 4096).",
+    )
+
+    parser.add_argument(
+        "--anthropic-effort",
+        choices=["low", "medium", "high", "xhigh", "max"],
+        default="xhigh",
+        help="Anthropic adaptive-thinking effort level (default: xhigh; requires claude-opus-4-7).",
+    )
+
+    parser.add_argument(
+        "--anthropic-thinking-display",
+        choices=["omitted", "summarized"],
+        default="summarized",
+        help="Whether Anthropic returns thinking summaries or only signatures (default: summarized).",
     )
 
     parser.add_argument(
@@ -212,30 +249,28 @@ Examples:
     )
 
     parser.add_argument(
-        "--two-phase",
-        action="store_true",
-        help="Enable two-phase staged optimization: drive accuracy first, then syntax"
+        "--restart-after-stuck-iters",
+        type=int,
+        default=0,
+        help=(
+            "If the Pareto-best anchor has not advanced for this many "
+            "consecutive iterations, the next refinement uses RESTART mode "
+            "(drops anchor, asks for a structurally different family). "
+            "Set to 0 to disable restart entirely. Default: 0."
+        ),
     )
 
     parser.add_argument(
-        "--phase1-acc-target",
-        type=float,
-        default=0.0,
-        help="Phase 1 accuracy target; reaching this triggers transition to Phase 2"
-    )
-
-    parser.add_argument(
-        "--phase2-acc-floor",
-        type=float,
-        default=0.0,
-        help="Phase 2 accuracy floor; must be maintained while optimizing syntax"
-    )
-
-    parser.add_argument(
-        "--phase2-syn-target",
-        type=float,
-        default=0.0,
-        help="Phase 2 syntax-rate target; final exit condition together with the acc floor"
+        "--restart-cooldown-iters",
+        type=int,
+        default=0,
+        help=(
+            "After a restart fires, the counter is set to -N so N normal "
+            "refinement iters run before another restart is eligible. "
+            "0 (default) means restart can fire on consecutive iters when "
+            "the anchor stays stuck — aggressive exploration. Set 2 for a "
+            "balanced explore/exploit rhythm."
+        ),
     )
 
     parser.add_argument(
@@ -298,13 +333,6 @@ Examples:
         help="Load GSM-Symbolic examples from this folder of CRANE-style JSON files ({placeholder} questions). "
         "When omitted for --dataset gsm_symbolic, defaults to vendored legacy/CRANE/src/gsm_symbolic if present "
         "(not HuggingFace: HF rows only have numeric prose in question fields)."
-    )
-
-    parser.add_argument(
-        "--gsm-instantiated-hf",
-        action="store_true",
-        help="For gsm_symbolic only: load apple/GSM-Symbolic from HuggingFace (numeric stories) and skip the "
-        "default local CRANE JSON folder.",
     )
 
     parser.add_argument(
@@ -552,9 +580,10 @@ Examples:
     )
     print("=" * _banner_width)
 
-    # GSM-Symbolic: HF ``question`` / ``original_question`` are numeric prose only. Use CRANE JSONs (question_parsed)
-    # for {placeholder} prompts unless the user opts into HF via --gsm-instantiated-hf.
-    if args.dataset == "gsm_symbolic" and not args.gsm_instantiated_hf and args.gsm_source_dir is None:
+    # GSM-Symbolic: HF loading has been removed. The CRANE JSON folder is the
+    # only supported source. Resolve --gsm-source-dir from the vendored copy
+    # or project default, and error out if neither exists.
+    if args.dataset == "gsm_symbolic" and args.gsm_source_dir is None:
         repo_root = Path(__file__).resolve().parent.parent
         vendored = repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
         if vendored.is_dir():
@@ -565,18 +594,18 @@ Examples:
             except ImportError:
                 from project_defaults import default_gsm_source_dir
             fb = default_gsm_source_dir()
-            if fb.is_dir():
+            if fb is not None and fb.is_dir():
                 args.gsm_source_dir = str(fb)
         if args.gsm_source_dir:
             print(
                 f"[gsm_symbolic] Using local JSON folder for symbolic {{var}} prompts: {args.gsm_source_dir}"
             )
         else:
-            print(
-                "[gsm_symbolic] Warning: no local CRANE-style GSM folder found; "
-                "using HuggingFace apple/GSM-Symbolic (numeric prose in question fields only). "
-                "Set --gsm-source-dir or CRANE_GSM_SYMBOLIC_DIR, or pass --gsm-instantiated-hf to silence.",
-                file=sys.stderr,
+            raise RuntimeError(
+                "GSM-Symbolic requires a CRANE JSON folder. HuggingFace loading "
+                "has been removed. Set --gsm-source-dir explicitly, or place "
+                "JSONs at legacy/CRANE/src/gsm_symbolic / "
+                "$CRANE_GSM_SYMBOLIC_DIR."
             )
 
     if args.generation_model is None:
@@ -653,6 +682,10 @@ Examples:
         vllm_enforce_eager=args.vllm_enforce_eager,
         api_base_url=args.generation_api_base_url,
         api_key=args.generation_api_key,
+        anthropic_thinking=args.anthropic_thinking,
+        anthropic_thinking_budget_tokens=args.anthropic_thinking_budget_tokens,
+        anthropic_effort=args.anthropic_effort,
+        anthropic_thinking_display=args.anthropic_thinking_display,
     )
 
     verifier = DafnyVerifier(
@@ -709,11 +742,9 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
-        # Two-phase staged optimization (accuracy first, then syntax)
-        two_phase=args.two_phase,
-        phase1_acc_target=args.phase1_acc_target,
-        phase2_acc_floor=args.phase2_acc_floor,
-        phase2_syn_target=args.phase2_syn_target,
+        # Restart-from-scratch mechanism
+        restart_after_stuck_iters=args.restart_after_stuck_iters,
+        restart_cooldown_iters=args.restart_cooldown_iters,
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
