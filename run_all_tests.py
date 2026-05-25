@@ -51,7 +51,15 @@ DEFAULT_SYNTH_ITERS = "3,5,10"
 DEFAULT_GEN_MODELS = "gpt5.4,opus4.7"
 DEFAULT_STEP_BUDGETS = "256,512,1024"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
-CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
+# Metadecode min thresholds: best accuracy and best syntax across all fixed baselines.
+BASELINE_TARGET_STRATEGIES = (
+    "unconstrained",
+    "gcd",
+    "crane",
+    "itergen",
+    "cars",
+    "rejection_sampling",
+)
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
@@ -582,7 +590,7 @@ class Runner:
 
         best_accuracy: tuple[float, str, str, str] | None = None
         best_syntax: tuple[float, str, str, str] | None = None
-        for strategy in CSD_TARGET_STRATEGIES:
+        for strategy in BASELINE_TARGET_STRATEGIES:
             path = self.fixed_baseline_path(
                 strategy, eval_model, benchmark, token_budget, max_steps, smiles_class
             )
@@ -643,7 +651,7 @@ class Runner:
                 f"syntax {target_syntax_strategy}={target_syntax:.1%}"
             )
             return
-        for strategy in CSD_TARGET_STRATEGIES:
+        for strategy in BASELINE_TARGET_STRATEGIES:
             ok = self.run_fixed_strategy_case(
                 strategy, benchmark, eval_model, token_budget, max_steps, smiles_class
             )
@@ -834,12 +842,12 @@ class Runner:
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
                 f"[target] metadecode {key}/{model_slug} tb{token_budget} ms{max_steps}: "
-                "no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
+                "no valid fixed-strategy baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
             print(
                 f"[target] metadecode {key}/{model_slug} tb{token_budget} ms{max_steps}: "
-                f"best CSD baseline accuracy {target_strategy}={target_percent}, "
+                f"best baseline accuracy {target_strategy}={target_percent}, "
                 f"syntax {target_syntax_strategy}={target_syntax_percent}; "
                 f"passing --min-accuracy {target_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
             )
@@ -1082,13 +1090,13 @@ class Runner:
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
                 f"[target] metadecode {key}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{self.config.eval_max_steps}: no valid CRANE/IterGen/CARS baseline found; "
+                f"tb{token_budget} ms{self.config.eval_max_steps}: no valid fixed-strategy baseline found; "
                 "passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
             print(
                 f"[target] metadecode {key}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{self.config.eval_max_steps}: best CSD baseline accuracy "
+                f"tb{token_budget} ms{self.config.eval_max_steps}: best baseline accuracy "
                 f"{target_strategy}={target_percent}, syntax {target_syntax_strategy}={target_syntax_percent}; "
                 f"passing --min-accuracy {target_accuracy:.12g} --min-syntax-rate {target_syntax:.12g}"
             )
