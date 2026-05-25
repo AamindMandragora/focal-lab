@@ -38,6 +38,13 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
   guidance block is appended to the evaluator prompt for that example, later
   calls are ignored, and accepted guidance is surfaced in evaluation feedback.
 - Output artifacts from this stage are saved under per-run `results/` folders in `outputs/generated/`.
+- Evaluation refinement prompts include a compact attempt outcome ledger once
+  multiple evaluated attempts exist. The ledger lists the best result, recent
+  evaluated branches, rationale-claim summaries, measured deltas, and all
+  observed failure-location counts for each listed attempt.
+- Evaluation feedback lists every detected failure-mode bucket. Verbatim
+  rollout examples remain capped separately because they carry full prompts and
+  full model outputs; the aggregate mode summary should not top-k truncate.
 - Baseline snapshots are JSON files in `outputs/baselines/` with:
   - `accuracy`, `syntax_rate`
   - `metrics` (counts, optional sums/means for `generation_seconds` / `num_tokens`, optional `run_wall_time_seconds` or evaluator totals)
