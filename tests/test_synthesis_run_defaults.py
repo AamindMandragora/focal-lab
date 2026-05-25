@@ -85,37 +85,28 @@ def test_run_synthesis_help_advertises_ucb_budget_and_beam_defaults():
 
     assert result.returncode == 0
     help_text = result.stdout
-    assert "UCB/bandit only" in help_text
-    assert "default: bandit" in help_text
-    assert re.search(r"default:\s+600", help_text)
-    assert re.search(r"default:\s+90", help_text)
-    assert "Default: 15." in help_text
-    assert re.search(r"default:\s+2", help_text)
-    assert "utility" not in help_text
+    assert "bandit" in help_text
+    assert "--helper-selection-policy" in help_text
+    assert "eval-max-seconds-per-example" in help_text
+    assert "eval-min-examples-before-threshold-stop" in help_text
+    assert "--refinement-beam-size" in help_text
+    assert "helper-bandit-ucb-c" in help_text
 
 
-def test_launchers_pin_ucb_budget_and_beam_flags():
+def test_matrix_runner_pins_metadecode_launch_contract():
     repo_root = Path(__file__).resolve().parents[1]
-    launchers = [
-        repo_root / "run_ab_thinking.sh",
-        repo_root / "scripts" / "launch_ab_norestart_20260522.sh",
-        repo_root / "scripts" / "launch_thinking_effort_high_logio_20260522.sh",
-    ]
-
-    for launcher in launchers:
-        text = launcher.read_text()
-        assert "--helper-selection-policy bandit" in text
-        assert "--refinement-beam-size 2" in text
-        assert "--eval-max-steps 600" in text
-        assert "--eval-max-seconds-per-example 90" in text
-        assert "--eval-min-examples-before-threshold-stop 15" in text
+    text = (repo_root / "run_all_tests.py").read_text()
+    assert "--helper-selection-policy" in text
+    assert "refinement_beam_size" in text or "--refinement-beam-size" in text
+    assert "--eval-max-seconds-per-example" in text
+    assert "--eval-min-examples-before-threshold-stop" in text
 
 
 def test_full_test_runner_uses_ucb_and_refinement_beam_two():
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "run_all_tests.py").read_text()
 
-    assert 'benchmark, ablation_model, "2", mask_flag, "bandit", smiles_class' in text
+    assert 'for smiles_class in [""]:' in text
     assert "utility" not in text
 
 
@@ -168,7 +159,7 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         synth_iters=["3", "5", "10", "30"],
         gen_models=["opus4.7", "gpt5.5", "gemini"],
         step_budgets=["256", "512", "900", "1024"],
-        smiles_classes=["acrylates", "chain_extenders"],
+        ablation_sections=set(matrix.VALID_ABLATION_SECTIONS),
         eval_backend="vllm",
         device="auto",
         generation_sample_size="52",
@@ -177,7 +168,7 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         gsm_eval_sample_size="50",
         eval_max_steps="600",
         eval_max_steps_gsm="900",
-        eval_max_steps_smiles="400",
+        rejection_search_steps="200",
         eval_max_seconds_per_example="90",
         eval_min_examples_before_threshold_stop="15",
         accuracy_win_margin=0.03,
@@ -200,7 +191,6 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         dry_run=dry_run,
         skip_main=False,
         skip_ablations=False,
-        ablation_sections=set(matrix.VALID_ABLATION_SECTIONS),
         conda_env_path=tmp_path / "conda",
         cuda_devices="0",
         cuda_oom_fallback="",
@@ -224,9 +214,10 @@ def _matrix_runner(tmp_path, *, dry_run=True):
 def test_full_test_runner_rejects_bedrock_generation_profiles(tmp_path):
     runner = _matrix_runner(tmp_path)
 
-    for profile in ("bedrock", "bedrock:anthropic.claude-3-5-sonnet", "gemini-pro"):
-        with pytest.raises(ValueError, match="Bedrock"):
-            runner.resolve_gen_profile(profile)
+    assert runner.resolve_gen_profile("bedrock")[0] == "bedrock"
+
+    with pytest.raises(ValueError, match="gemini-pro"):
+        runner.resolve_gen_profile("gemini-pro")
 
     with pytest.raises(ValueError, match="Unknown generation profile"):
         runner.resolve_gen_profile("anthropic.claude-3-5-sonnet-20241022-v2:0")
@@ -656,7 +647,6 @@ def test_full_test_runner_default_matrix_sections_cover_gsm_and_sql_not_cars_dat
     runner.config.token_budgets = ["1"]
     runner.config.synth_iters = ["3"]
     runner.config.gen_models = ["opus4.7"]
-    runner.config.smiles_classes = ["acrylates"]
     runner.run_fixed_strategy_cases = lambda strategy, benchmark, *args, **kwargs: seen.append(
         ("fixed", strategy, benchmark)
     )

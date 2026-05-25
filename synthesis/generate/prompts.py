@@ -102,7 +102,7 @@ invocation. Neutral composition patterns include:
   `RestoreLogitsSnapshot` for bounded lookahead without committing logits.
 
 Verified reference bodies under `synthesis/verify/reference/` (for example
-`cars.dfy`) show one way these contracts compose; your strategy must still prove
+`rejection_sampling.dfy`) show one way these contracts compose; your strategy must still prove
 its own obligations.
 
 ## Available Tools

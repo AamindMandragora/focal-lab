@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from synthesis.project_defaults import default_dafny_path
+
 
 def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
     """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
@@ -154,7 +156,7 @@ class DafnyVerifier:
     
     def __init__(
         self,
-        dafny_path: str = "dafny",
+        dafny_path: str | None = None,
         timeout: int = 60,
         extra_args: Optional[list[str]] = None
     ):
@@ -166,7 +168,7 @@ class DafnyVerifier:
             timeout: Verification timeout in seconds
             extra_args: Additional arguments to pass to dafny
         """
-        self.dafny_path = dafny_path
+        self.dafny_path = dafny_path or default_dafny_path()
         self.timeout = timeout
         self.extra_args = extra_args or []
         

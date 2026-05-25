@@ -38,9 +38,6 @@ def default_itergen_repo() -> Path:
     return default_repo_path("ITERGEN_REPO", "itergen")
 
 
-def default_cars_repo() -> Path:
-    return default_repo_path("CARS_REPO", "cars")
-
 
 def default_gsm_source_dir() -> Path:
     env_gsm = os.environ.get("CRANE_GSM_SYMBOLIC_DIR")
@@ -60,11 +57,16 @@ def default_gsm_source_dir() -> Path:
 
 
 def default_dafny_path() -> str:
+    """Resolve the Dafny executable for verify/compile subprocesses.
+
+    Precedence: ``DAFNY_PATH`` env, then repo ``dafny/dafny``, then ``dafny`` on
+    ``PATH``, then ``~/.dotnet/tools/dafny``.
+    """
     env_dafny = os.environ.get("DAFNY_PATH")
     if env_dafny:
         return env_dafny
-    repo_dafny = Path(__file__).resolve().parent.parent / "dafny" / "dafny"
-    if repo_dafny.exists():
+    repo_dafny = repo_root() / "dafny" / "dafny"
+    if repo_dafny.is_file():
         return str(repo_dafny)
     path_dafny = which("dafny")
     if path_dafny:
