@@ -1,0 +1,1025 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 0.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 345.6543,
+    "mean_generation_seconds_per_example": 3.456543,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 595.6295
+  },
+  "answers": [
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 4.095983
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.647279
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.204983
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.073286
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.588041
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.03513
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.358356
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.9849
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.116009
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.998865
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.041136
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.983739
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.665222
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.18916
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.019821
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.973778
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.116336
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.67169
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.163607
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.010729
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.275293
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.156116
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.763769
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.651203
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.599552
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.792081
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.888121
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.889056
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.970624
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.242267
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.654623
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.660547
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.571088
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.685951
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.948658
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.690317
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.964831
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.640974
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.698253
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.745293
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.719028
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.99063
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.702318
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.904723
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.667848
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.661617
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.697249
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.661511
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.857888
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.672506
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.898514
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.726984
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.654782
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.65799
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.705488
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 4.119996
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.714902
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.673299
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.661706
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.734652
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.729492
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.73161
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.283098
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.027439
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.195244
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.984881
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.984976
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.966842
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.776418
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.46609
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.96008
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.67916
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.016127
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.992531
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.98957
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.948418
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.258203
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.090564
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.266439
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.042542
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.018483
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.0391
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 2.997278
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 4.116704
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.781571
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.959393
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.691476
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.7535
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.54602
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.04168
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.277449
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.038702
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.280366
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.756163
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.052748
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.043823
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.021554
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.360268
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.021663
+    },
+    {
+      "question": "acrylates",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example acrylates molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid acrylates molecule that is different from all 8 examples. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nOutput exactly one new SMILES string inside double angle brackets, for example: <<CCO>>. Do not include reasoning, labels, or multiple molecules. Do not copy, quote, or repeat any example SMILES verbatim. Your answer must be a novel molecule for the requested class.\n\nMolecule: C=CC(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=CC=CC=C1\nMolecule: CC(=C)C(=O)OC1=CC=CC=C1\nMolecule: C=CC(=O)OCCC1=CC=CC=C1\nMolecule: CCCCCCCCOC(=O)C(=C)C\nMolecule: CCC(C)OC(=O)C=C\nMolecule: CC(=C)C(=O)OCC1=CC=CC=C1\nMolecule: C=CC(=O)OC1=C(C(=C(C(=C1F)F)F)F)F",
+      "generated": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "extracted": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "correct": false,
+      "syntax_valid": false,
+      "generated_answer": "ClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClClCl",
+      "generation_seconds": 3.956376
+    }
+  ],
+  "metadata": {
+    "benchmark": "smiles",
+    "strategy": "gcd",
+    "prompt_tier": 1,
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "benchmark_max_new_tokens": 256,
+    "effective_max_new_tokens": 256,
+    "adapter": "gcd_syncode",
+    "complete": true,
+    "smiles_class_split_from_combined": true,
+    "smiles_class": "acrylates"
+  }
+}

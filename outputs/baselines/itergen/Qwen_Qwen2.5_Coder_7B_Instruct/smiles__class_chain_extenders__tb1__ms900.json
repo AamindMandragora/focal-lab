@@ -1,0 +1,1025 @@
+{
+  "accuracy": 0.01,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 431.3043,
+    "mean_generation_seconds_per_example": 4.313043,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 738.6991
+  },
+  "answers": [
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": true,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.33973
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.240477
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.223523
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.248758
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.243806
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.25044
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.290747
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.296902
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.27357
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.40888
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.363969
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.41686
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.420325
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.503744
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.378286
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.313171
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.345784
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.344498
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.376772
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.358534
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.370455
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.331639
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.28267
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.547703
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.341331
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.300876
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.373881
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.294507
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.211931
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.231622
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.346672
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.274181
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.246814
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.432186
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.223025
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.279541
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.247929
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.20392
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.247501
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.288837
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.292847
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.293011
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.239477
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.448931
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.24271
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.313215
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.211021
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.247662
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.293138
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.278702
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.266924
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.273433
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.25249
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.813544
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.316966
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.351956
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.38847
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.265279
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.296829
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.262724
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.317996
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.330366
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.323934
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.522246
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.313123
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.268284
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.257225
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.295967
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.258494
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.316045
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.396454
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.259157
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.300883
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.50129
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.318066
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.26775
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.311171
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.299404
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.293617
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.298327
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.28967
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.297226
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.229238
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.515884
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.310641
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.266564
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.243843
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.267154
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.299588
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.231194
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.264684
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.279559
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.263736
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.458219
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.280112
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.258862
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.269536
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.253007
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.253507
+    },
+    {
+      "question": "chain_extenders",
+      "prompt": "You are an expert in chemistry. Below are exactly 8 example chain extenders molecules, each shown as `Molecule: <SMILES>`. These lines are in-context demonstrations only \u2014 not your answer.\n\nYour task: generate exactly one new, valid chain extenders molecule that is different from all 8 examples.\n\nOutput exactly one SMILES string with no other text (no labels, no reasoning, no multiple molecules).\n\nMolecule: OCCO\nMolecule: OC(C)CCO\nMolecule: OCCCCO\nMolecule: OCCNC(=O)NCCCCCCNC(=O)NCCO\nMolecule: OCCN1C(=O)NC(C1(=O))CCCCNC(=O)NCCO\nMolecule: Oc1ccc(cc1)CCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: OC(=O)C(N)CCCCN\nMolecule: OC(=O)C(N)CCCN",
+      "generated": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "extracted": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "COCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCNCOCCN",
+      "generation_seconds": 4.256916
+    }
+  ],
+  "metadata": {
+    "benchmark": "smiles",
+    "strategy": "itergen",
+    "prompt_tier": 1,
+    "eval_model": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "benchmark_max_new_tokens": 256,
+    "effective_max_new_tokens": 256,
+    "adapter": "itergen_legacy",
+    "complete": true,
+    "smiles_class_split_from_combined": true,
+    "smiles_class": "chain_extenders"
+  }
+}

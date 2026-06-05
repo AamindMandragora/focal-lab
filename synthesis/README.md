@@ -19,6 +19,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Includes local-beam refinement controls:
     `--refinement-beam-size`, `--local-neighborhood-refinement`,
     `--max-local-edit-ratio`, `--beam-verify-candidates`.
+  - **SMILES:** synthesis feedback evaluates `--smiles-samples-per-class` attempts per CARS class (default **100**, 300 total across the three default classes).
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
 

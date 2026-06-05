@@ -230,7 +230,7 @@ Examples:
     parser.add_argument(
         "--dataset", "-d",
         type=str,
-        choices=["gsm_symbolic", "spider"],
+        choices=["gsm_symbolic", "spider", "smiles"],
         required=True,
         help="Dataset to use for evaluation feedback (required)"
     )
@@ -321,7 +321,7 @@ Examples:
         type=int,
         default=None,
         help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops (target syntax rate; target accuracy) can "
+        "early stops (target syntax rate; target accuracy for non-SMILES) can "
         "fire. Suppresses early stop until the synthesis loop has at least this "
         "much evaluation signal (including when early examples time out). "
         "Default: None (no minimum)."
@@ -373,8 +373,29 @@ Examples:
         help="Optional override for built-in grammar directory (default: synthesis/evaluate/grammars or CSD_GRAMMARS_DIR)"
     )
 
+    parser.add_argument(
+        "--smiles-samples-per-class",
+        type=int,
+        default=100,
+        help=(
+            "Number of SMILES attempts per molecular class during synthesis feedback "
+            "(default: 100, paper-aligned with the CARS unique-valid target per class)"
+        ),
+    )
 
+    parser.add_argument(
+        "--smiles-final-samples-per-class",
+        type=int,
+        default=100,
+        help="Target valid unique SMILES samples per class for final benchmark scripts (default: 100)"
+    )
 
+    parser.add_argument(
+        "--smiles-classes",
+        type=str,
+        default="acrylates,chain_extenders,isocyanates",
+        help="Comma-separated SMILES classes to evaluate (default: all three CARS molecule classes)"
+    )
 
     parser.add_argument(
         "--load-in-4bit",
@@ -685,13 +706,19 @@ Examples:
     # Runner is created by the pipeline with task-appropriate parser mode
 
     feedback_sample_size = (
-        args.eval_sample_size
+        args.smiles_samples_per_class if args.dataset == "smiles" else args.eval_sample_size
     )
 
     # Create evaluator for the feedback loop
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
     print(f"  Evaluation model: {args.eval_model}")
+    smiles_grammar_tier = None
+    if args.dataset == "smiles":
+        from synthesis.evaluate.prompt_tiers import smiles_grammar_tier_for_csd
+
+        smiles_grammar_tier = smiles_grammar_tier_for_csd()
+
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
@@ -700,7 +727,7 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        grammar_prompt_tier=None,
+        grammar_prompt_tier=smiles_grammar_tier,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
@@ -715,6 +742,7 @@ Examples:
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file,
         spider_split_name=args.spider_split_name,
+        smiles_classes=args.smiles_classes,
         grammars_dir=args.grammars_dir,
     )
 
@@ -732,7 +760,7 @@ Examples:
         # Restart-from-scratch mechanism
         restart_after_stuck_iters=args.restart_after_stuck_iters,
         restart_cooldown_iters=args.restart_cooldown_iters,
-        require_delimiters=args.require_delimiters,
+        require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
         min_examples_before_threshold_stop=args.eval_min_examples_before_threshold_stop,
