@@ -183,7 +183,7 @@ def example_syntax_pass(
 
 
 def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
-    return bool(aux and aux.get("accuracy_applicable"))
+    return True
 
 
 def get_generation_runner():
@@ -222,28 +222,16 @@ def should_stop_collected(
     sample_outputs: list[dict[str, Any]],
     target_unique_valid: int = 100,
 ) -> str | None:
-    """Paper-aligned stop: CARS generates until 100 unique-valid molecules are
-    collected (subject to a 1000-sample cap). Once we cross the target the
-    headline `samples_to_target_unique_valid` metric is already determined, so
-    further generation is wasted work. Returns a reason string when the target
-    is reached, else None.
-    """
+    """Stop once ``target_unique_valid`` novel-valid molecules have been scored."""
     if not sample_outputs:
         return None
-    seen: set[str] = set()
-    for sample in sample_outputs:
-        smiles_eval = sample.get("smiles_eval") or {}
-        if not smiles_eval.get("unique_valid_candidate"):
-            continue
-        smiles = str(smiles_eval.get("smiles") or "").strip()
-        if smiles and smiles not in seen:
-            seen.add(smiles)
-            if len(seen) >= target_unique_valid:
-                return (
-                    "paper-aligned early stop: collected "
-                    f"{len(seen)} unique-valid molecules (target {target_unique_valid}) "
-                    f"after {len(sample_outputs)} samples."
-                )
+    novel_valid = sum(1 for sample in sample_outputs if sample.get("is_correct"))
+    if novel_valid >= target_unique_valid:
+        return (
+            "pooled SMILES early stop: collected "
+            f"{novel_valid} novel-valid molecules (target {target_unique_valid}) "
+            f"after {len(sample_outputs)} attempts."
+        )
     return None
 
 
@@ -316,12 +304,12 @@ def accuracy_upper_bound(
 
 
 def final_accuracy_denominator(num_examples: int, num_accuracy_examples: int) -> int:
-    return num_accuracy_examples
+    return num_examples
 
 
 def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> int:
-    return num_examples - num_accuracy_examples
+    return 0
 
 
 def accuracy_definition() -> str:
-    return "class_membership_among_syntax_valid_molecules"
+    return "novel_valid_per_total_attempts"

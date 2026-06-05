@@ -76,16 +76,10 @@ def _load_frozen_smiles_shots() -> dict[str, list[dict[str, str]]]:
 
 
 def prompt_exemplars_for_class(class_name: str) -> list[str]:
-    """Return up to eight frozen in-context exemplar SMILES for a class."""
-    frozen = _load_frozen_smiles_shots().get(class_name, [])
-    if frozen:
-        return [
-            str(row.get("smiles", "")).strip()
-            for row in frozen[:SMILES_FEWSHOT_COUNT]
-            if str(row.get("smiles", "")).strip()
-        ]
-    prompt_path = DATA_DIR / f"{class_name}.txt"
-    return extract_prompt_exemplars(prompt_path.read_text(), limit=SMILES_FEWSHOT_COUNT)
+    """Return all static in-context exemplar SMILES from the native class prompt file."""
+    from synthesis.evaluate.benchmarks.smiles.native_prompt import full_prompt_exemplars
+
+    return list(full_prompt_exemplars(class_name))
 
 
 @lru_cache(maxsize=None)
@@ -107,6 +101,7 @@ def get_smiles_task(class_name: str) -> Dict[str, Any]:
         "base_grammar_text": grammar_text,
         "prompt_path": prompt_path,
         "prompt_exemplars": prompt_exemplars_for_class(class_name),
+        "all_prompt_exemplars": prompt_exemplars_for_class(class_name),
     }
 
 

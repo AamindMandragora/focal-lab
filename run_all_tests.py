@@ -36,8 +36,11 @@ DEFAULT_MODELS = (
     "Qwen/Qwen2.5-Coder-14B-Instruct,"
     "meta-llama/Llama-3.1-8B-Instruct"
 )
-DEFAULT_BENCHMARKS = "gsm,spider"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,rejection_sampling,metadecode"
+DEFAULT_BENCHMARKS = "gsm,spider,smiles"
+DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
+DEFAULT_CARS_SEARCH_STEPS = "200"
+DEFAULT_SMILES_SAMPLES_PER_CLASS = "100"
+DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,rs,metadecode"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
@@ -54,7 +57,7 @@ BASELINE_TARGET_STRATEGIES = (
     "gcd",
     "crane",
     "itergen",
-    "rejection_sampling",
+    "rs",
 )
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
@@ -104,12 +107,13 @@ def normalize_ablation_sections(value: str) -> set[str]:
     return sections
 
 
-def slugify(value: str) -> str:
-    return value.replace("/", "_").replace(":", "_").replace(" ", "_").replace("-", "_")
-
-
-def normalize_benchmark(value: str) -> str:
-    return "gsm_symbolic" if value == "gsm" else value
+from synthesis.project_paths import (
+    benchmark_key as path_benchmark_key,
+    baseline_json_path,
+    normalize_benchmark,
+    resolve_baseline_json_path,
+    slugify,
+)
 
 
 def command_text(cmd: list[str]) -> str:
@@ -159,7 +163,10 @@ class Config:
     gsm_eval_sample_size: str
     eval_max_steps: str
     eval_max_steps_gsm: str
-    rejection_search_steps: str
+    rs_search_steps: str
+    cars_search_steps: str
+    smiles_classes: list[str]
+    smiles_samples_per_class: str
     eval_max_seconds_per_example: str
     eval_min_examples_before_threshold_stop: str
     accuracy_win_margin: float
@@ -332,7 +339,14 @@ class Runner:
     def evaluation_sample_size(self, benchmark: str) -> str:
         if benchmark == "gsm_symbolic":
             return self.config.gsm_eval_sample_size
+        if benchmark == "smiles":
+            return self.config.smiles_samples_per_class
         return self.config.eval_sample_size
+
+    def smiles_class_variants(self, benchmark: str) -> list[str]:
+        if normalize_benchmark(benchmark) == "smiles":
+            return list(self.config.smiles_classes)
+        return [""]
 
     def eval_max_seconds_per_example(self, benchmark: str) -> str:
         del benchmark
@@ -652,6 +666,8 @@ class Runner:
             return "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters."
         if benchmark == "spider":
             return "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context."
+        if benchmark == "smiles":
+            return "Generate valid molecules in the requested class."
         return "Generate parser-valid benchmark answers."
 
     def resolve_gen_profile(self, profile: str) -> tuple[str, str]:
@@ -723,8 +739,10 @@ class Runner:
         max_steps: str,
     ) -> tuple[str, ...]:
         key: tuple[str, ...] = (strategy, model_slug, benchmark_key, token_budget, max_steps)
-        if strategy == "rejection_sampling":
-            return key + (self.config.rejection_search_steps,)
+        if strategy == "rs":
+            return key + (self.config.rs_search_steps,)
+        if strategy == "cars" and benchmark_key.startswith("smiles__class_"):
+            return key + (self.config.cars_search_steps,)
         return key
 
     def baseline_json_complete(self, path: Path) -> bool:
@@ -748,10 +766,9 @@ class Runner:
             payload = json.loads(path.read_text())
         except Exception:
             return False
-        return payload.get("metrics", {}).get("adapter") in (
-            "crane_shared_evaluator",
-            "crane_repo",
-        )
+        from synthesis.evaluate.baselines.registry import CRANE_ADAPTER_IDS
+
+        return payload.get("metrics", {}).get("adapter") in CRANE_ADAPTER_IDS
 
     def baseline_json_usable(self, path: Path, strategy: str) -> bool:
         if not (
@@ -771,8 +788,7 @@ class Runner:
         return True
 
     def benchmark_key(self, benchmark: str, smiles_class: str = "") -> str:
-        del smiles_class
-        return benchmark
+        return path_benchmark_key(benchmark, smiles_class)
 
     def fixed_baseline_path(
         self,
@@ -782,17 +798,48 @@ class Runner:
         token_budget: str,
         max_steps: str,
         smiles_class: str = "",
+        *,
+        gen_profile: str = "",
+        synth_iter: str = "",
     ) -> Path:
-        model_slug = slugify(eval_model)
-        key = self.benchmark_key(benchmark, smiles_class)
-        stem = f"{key}__tb{token_budget}__ms{max_steps}"
-        if strategy == "rejection_sampling":
-            stem += f"__rs{self.config.rejection_search_steps}"
-        return (
-            self.config.baseline_output_dir
-            / strategy
-            / model_slug
-            / f"{stem}.json"
+        return baseline_json_path(
+            self.config.baseline_output_dir,
+            eval_model=eval_model,
+            benchmark=benchmark,
+            strategy=strategy,
+            token_budget=token_budget,
+            max_steps=max_steps,
+            smiles_class=smiles_class,
+            rs_search_steps=self.config.rs_search_steps,
+            cars_search_steps=self.config.cars_search_steps,
+            gen_profile=gen_profile,
+            synth_iter=synth_iter,
+        )
+
+    def readable_baseline_path(
+        self,
+        strategy: str,
+        eval_model: str,
+        benchmark: str,
+        token_budget: str,
+        max_steps: str,
+        smiles_class: str = "",
+        *,
+        gen_profile: str = "",
+        synth_iter: str = "",
+    ) -> Path:
+        return resolve_baseline_json_path(
+            self.config.baseline_output_dir,
+            eval_model=eval_model,
+            benchmark=benchmark,
+            strategy=strategy,
+            token_budget=token_budget,
+            max_steps=max_steps,
+            smiles_class=smiles_class,
+            rs_search_steps=self.config.rs_search_steps,
+            cars_search_steps=self.config.cars_search_steps,
+            gen_profile=gen_profile,
+            synth_iter=synth_iter,
         )
 
     def best_csd_baseline_targets(
@@ -806,7 +853,7 @@ class Runner:
         best_accuracy: tuple[float, str, str, str] | None = None
         best_syntax: tuple[float, str, str, str] | None = None
         for strategy in BASELINE_TARGET_STRATEGIES:
-            path = self.fixed_baseline_path(
+            path = self.readable_baseline_path(
                 strategy, eval_model, benchmark, token_budget, max_steps, smiles_class
             )
             try:
@@ -818,11 +865,11 @@ class Runner:
                 continue
             if not all(isinstance(row, dict) and "generated_answer" in row for row in answers):
                 continue
-            if strategy == "crane" and payload.get("metrics", {}).get("adapter") not in (
-                "crane_shared_evaluator",
-                "crane_repo",
-            ):
-                continue
+            if strategy == "crane":
+                from synthesis.evaluate.baselines.registry import CRANE_ADAPTER_IDS
+
+                if payload.get("metrics", {}).get("adapter") not in CRANE_ADAPTER_IDS:
+                    continue
             accuracy = payload.get("accuracy")
             if isinstance(accuracy, (int, float)):
                 candidate = (float(accuracy), strategy, str(path), f"{float(accuracy):.1%}")
@@ -922,16 +969,20 @@ class Runner:
         allow_cache_reuse = (
             self.config.baseline_cache_mode == "reuse" or case_key in self.prepared_baselines
         )
+        readable_path = self.readable_baseline_path(
+            strategy, eval_model, benchmark, token_budget, max_steps, smiles_class
+        )
 
-        if allow_cache_reuse and self.baseline_json_usable(out_json, strategy):
+        if allow_cache_reuse and readable_path.is_file() and self.baseline_json_usable(readable_path, strategy):
             self.prepared_baselines.add(case_key)
-            print(f"[skip] {out_json} already exists ({line_count(out_json)} lines). Delete it to re-run.")
+            print(f"[skip] {readable_path} already exists ({line_count(readable_path)} lines). Delete it to re-run.")
             return True
-        if out_json.exists():
+        if out_json.exists() or readable_path.exists():
+            existing = readable_path if readable_path.is_file() else out_json
             if self.config.baseline_cache_mode == "refresh" and case_key not in self.prepared_baselines:
-                print(f"[rerun] {out_json} exists but --recompute-baselines was requested.")
+                print(f"[rerun] {existing} exists but --recompute-baselines was requested.")
             else:
-                print(f"[rerun] {out_json} exists but is incomplete, corrupt, or from an obsolete adapter.")
+                print(f"[rerun] {existing} exists but is incomplete, corrupt, or from an obsolete adapter.")
 
         cmd = [
             "python",
@@ -962,8 +1013,17 @@ class Runner:
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.add_evaluation_split_flags(cmd, benchmark)
-        if strategy == "rejection_sampling":
-            cmd += ["--rejection-search-steps", self.config.rejection_search_steps]
+        if benchmark == "smiles" and smiles_class:
+            cmd += [
+                "--smiles-classes",
+                smiles_class,
+                "--smiles-samples-per-class",
+                self.config.smiles_samples_per_class,
+            ]
+        if strategy == "rs":
+            cmd += ["--rs-search-steps", self.config.rs_search_steps]
+        if strategy == "cars":
+            cmd += ["--cars-search-steps", self.config.cars_search_steps]
         if self.run_cmd(cmd):
             self.prepared_baselines.add(case_key)
             self.annotate_result_json(
@@ -991,9 +1051,16 @@ class Runner:
         max_steps: str,
         phase: str = "baseline",
     ) -> None:
-        self.run_fixed_strategy_case(
-            strategy, benchmark, eval_model, token_budget, max_steps, phase=phase
-        )
+        for smiles_class in self.smiles_class_variants(benchmark):
+            self.run_fixed_strategy_case(
+                strategy,
+                benchmark,
+                eval_model,
+                token_budget,
+                max_steps,
+                smiles_class=smiles_class,
+                phase=phase,
+            )
 
     def metadecode_final_eval_command(
         self,
@@ -1031,6 +1098,8 @@ class Runner:
         ]
         self.add_vllm_parallel_flags(cmd)
         self.add_evaluation_split_flags(cmd, benchmark)
+        if benchmark == "smiles" and smiles_class:
+            cmd += ["--smiles-classes", smiles_class]
         return cmd
 
     def run_metadecode_case(
@@ -1051,8 +1120,9 @@ class Runner:
         model_slug = slugify(eval_model)
         gen_slug = slugify(gen_profile)
         key = self.benchmark_key(benchmark, smiles_class)
+        class_suffix = f"_class_{smiles_class}" if smiles_class else ""
         run_name = (
-            f"metadecode_{benchmark}_{model_slug}_{gen_slug}_"
+            f"metadecode_{benchmark}{class_suffix}_{model_slug}_{gen_slug}_"
             f"iter{synth_iter}_tb{token_budget}_ms{max_steps}"
         )
         task = self.metadecode_task(benchmark)
@@ -1145,6 +1215,8 @@ class Runner:
             ]
         self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
+        if benchmark == "smiles" and smiles_class:
+            cmd += ["--smiles-classes", smiles_class]
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
 
@@ -1169,11 +1241,15 @@ class Runner:
             self.enqueue_gpu3_retry(cmd, reason="synthesis_subprocess_failed", case=retry_case)
             return True
 
-        out_json = (
-            self.config.baseline_output_dir
-            / "metadecode"
-            / model_slug
-            / f"{key}__tb{token_budget}__ms{max_steps}__gen{gen_slug}__iter{synth_iter}.json"
+        out_json = self.fixed_baseline_path(
+            "metadecode",
+            eval_model,
+            benchmark,
+            token_budget,
+            max_steps,
+            smiles_class,
+            gen_profile=gen_profile,
+            synth_iter=synth_iter,
         )
         out_json.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1267,9 +1343,17 @@ class Runner:
         max_steps: str,
         phase: str = "metadecode",
     ) -> None:
-        self.run_metadecode_case(
-            benchmark, eval_model, token_budget, synth_iter, gen_profile, max_steps, phase=phase
-        )
+        for smiles_class in self.smiles_class_variants(benchmark):
+            self.run_metadecode_case(
+                benchmark,
+                eval_model,
+                token_budget,
+                synth_iter,
+                gen_profile,
+                max_steps,
+                smiles_class=smiles_class,
+                phase=phase,
+            )
 
     def includes_metadecode(self) -> bool:
         return "metadecode" in self.config.strategies
@@ -1303,8 +1387,15 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
         print(
             "split policy: "
             f"GSM generation={self.config.gsm_generation_sample_size}/eval={self.config.gsm_eval_sample_size}; "
+            f"SMILES per-class={self.config.smiles_samples_per_class}; "
             f"other generation={self.config.generation_sample_size}/eval={self.config.eval_sample_size}"
             )
+        if self.config.smiles_classes:
+            print(f"SMILES classes: {' '.join(self.config.smiles_classes)}")
+        print(
+            f"CARS search steps: {self.config.cars_search_steps}; "
+            f"RS search steps: {self.config.rs_search_steps}"
+        )
         print(f"accuracy win margin (metadecode): +{self.config.accuracy_win_margin:.1%}")
         print(f"main synthesis iterations (metadecode): {self.config.main_synthesis_iterations}")
         if self.config.gpu3_retry_enabled:
@@ -1365,8 +1456,8 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
         smiles_class: str = "",
     ) -> None:
         task = self.metadecode_task(benchmark)
-        class_suffix = ""
-        run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix}"
+        class_suffix = f" class={smiles_class}" if smiles_class else ""
+        run_name = f"ablat_beam{beam_size}_{'mask_off' if mask_flag == '--no-adaptive-helper-mask' else 'mask_on'}_{policy}_{benchmark}{class_suffix.replace(' ', '_')}"
         ablation_gen = self.default_ablation_synth_profile()
         backend, generation_model = self.resolve_gen_profile(ablation_gen)
         if ablation_gen == "gpt5.5" and not self.openai_generation_available("gpt5.5"):
@@ -1390,7 +1481,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
                 f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{max_steps}: no valid CRANE/IterGen/rejection_sampling baseline found; "
+                f"tb{token_budget} ms{max_steps}: no valid CRANE/IterGen/rs baseline found; "
                 "passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
@@ -1455,14 +1546,20 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
         ]
         self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
+        if benchmark == "smiles" and smiles_class:
+            cmd += ["--smiles-classes", smiles_class]
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.run_cmd(cmd, abort_on_quota=False)
-        out_json = (
-            self.config.baseline_output_dir
-            / "metadecode"
-            / slugify(eval_model)
-            / f"{self.benchmark_key(benchmark, smiles_class)}__tb{token_budget}__ms{max_steps}__gen{slugify(ablation_gen)}__iter{self.config.synth_iters[-1]}.json"
+        out_json = self.fixed_baseline_path(
+            "metadecode",
+            eval_model,
+            benchmark,
+            token_budget,
+            max_steps,
+            smiles_class,
+            gen_profile=ablation_gen,
+            synth_iter=self.config.synth_iters[-1],
         )
         self.annotate_result_json(
             out_json,
@@ -1504,7 +1601,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for step_budget in self.config.step_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "rejection_sampling", "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "rs", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1560,7 +1657,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for token_budget in self.config.token_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "rejection_sampling", "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "rs", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1589,7 +1686,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for mask_flag in ("--adaptive-helper-mask", "--no-adaptive-helper-mask"):
-                    for smiles_class in [""]:
+                    for smiles_class in self.smiles_class_variants(benchmark):
                         self.run_ablation_e_case(
                             benchmark, ablation_model, "2", mask_flag, "bandit", smiles_class
                         )
@@ -1669,10 +1766,27 @@ def make_parser() -> argparse.ArgumentParser:
         help="Per-benchmark override for --eval-max-steps used on GSM-Symbolic (default: 900).",
     )
     parser.add_argument(
-        "--rejection-search-steps",
+        "--rs-search-steps",
         default="200",
-        help="Max rejection-sampling decode attempts per baseline example (default: 200). "
-        "Wired only for --strategy rejection_sampling; uses temperature 1.0.",
+        help="Max RS decode attempts per baseline example (default: 200). "
+        "Wired only for --strategy rs; uses temperature 1.0.",
+    )
+    parser.add_argument(
+        "--cars-search-steps",
+        default=DEFAULT_CARS_SEARCH_STEPS,
+        help="Max CARS oracle-rejection attempts per SMILES class session (default: 200). "
+        "Also used for GSM/Spider per-example CARS baselines.",
+    )
+    parser.add_argument(
+        "--smiles-classes",
+        default=DEFAULT_SMILES_CLASSES,
+        help="Comma-separated SMILES classes for smiles benchmark matrix cells "
+        f"(default: {DEFAULT_SMILES_CLASSES}).",
+    )
+    parser.add_argument(
+        "--smiles-samples-per-class",
+        default=DEFAULT_SMILES_SAMPLES_PER_CLASS,
+        help="Attempt budget per SMILES class for fixed-strategy baselines (default: 100).",
     )
     parser.add_argument(
         "--eval-max-seconds-per-example",
@@ -1862,7 +1976,10 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         gsm_eval_sample_size=str(args.gsm_eval_sample_size),
         eval_max_steps=str(args.eval_max_steps),
         eval_max_steps_gsm=str(args.eval_max_steps_gsm),
-        rejection_search_steps=str(args.rejection_search_steps),
+        rs_search_steps=str(args.rs_search_steps),
+        cars_search_steps=str(args.cars_search_steps),
+        smiles_classes=csv_list(args.smiles_classes),
+        smiles_samples_per_class=str(args.smiles_samples_per_class),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
         eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         accuracy_win_margin=float(args.accuracy_win_margin),

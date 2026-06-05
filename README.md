@@ -45,17 +45,17 @@ Runtime artifacts now live under `outputs/`:
 - `outputs/generated/`
 - `outputs/baselines/`
 
-Each synthesis run creates a dedicated folder inside `outputs/generated/`:
+Each synthesis run creates a dedicated folder inside `outputs/generated/<model>/<benchmark>/<strategy>/`:
 
-- `outputs/generated/<output_name>_<timestamp>_<token>/dafny/`
-- `outputs/generated/<output_name>_<timestamp>_<token>/python/`
-- `outputs/generated/<output_name>_<timestamp>_<token>/results/`
+- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/dafny/`
+- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/python/`
+- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/results/`
 
 This makes it easy to inspect strategy source, compiled runtime code, and reports without mixing files across runs.
 
 Baseline storage is intentionally minimal:
 
-- One JSON file per `(baseline_strategy, model, benchmark)` pair under `outputs/baselines/`.
+- One JSON file per `(eval_model, benchmark, strategy)` cell under `outputs/baselines/<model>/<benchmark>/<strategy>/`.
 - Only `accuracy`, `syntax_rate`, and per-question generated answers are stored.
 
 Fixed-strategy baselines use legacy codepaths:
@@ -81,22 +81,6 @@ Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CU
 **`matrix`** and **`baselines`** inject **`--strategies`** without **metadecode** unless you pass **`--strategies`** yourself. Phase 2 then runs fixed-strategy arms of ablations A/D only; ablations B/C/E and metadecode arms require **metadecode** in **`--strategies`** (use **`metadecode`** subcommand or **`python run_all_tests.py --strategies ...`**).
 
 Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
-
-## Live Dashboard
-
-Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
-
-```bash
-python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
-```
-
-If the server is remote, open it through an SSH tunnel:
-
-```bash
-ssh -L 8765:127.0.0.1:8765 focal
-```
-
-Then visit `http://127.0.0.1:8765/`.
 
 ## Quick Start
 
@@ -157,11 +141,11 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order and strategies in `unconstrained, gcd, crane, itergen, rejection_sampling, metadecode` order to reduce model reload churn. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order and strategies in `unconstrained, gcd, crane, itergen, rs, metadecode` order to reduce model reload churn. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
 - Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `sonnet4.6` profile uses the Anthropic API (`claude-sonnet-4-6` by default); the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
-- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `rejection_sampling` so those strategies compare against the same questions.
+- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `rs` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.

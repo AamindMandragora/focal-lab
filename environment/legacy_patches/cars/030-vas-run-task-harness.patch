@@ -1,0 +1,66 @@
+From: VAS baseline harness <vas@local>
+Subject: [PATCH] 030 vas run task harness
+
+--- a/run_task.py
++++ b/run_task.py
+@@ -26,7 +26,7 @@
+     return hashlib.md5(s.encode('utf-8')).hexdigest()[:8]
+ 
+ 
+-def run_task(grammar_file, prompt_file, sample_style, model_num):
++def run_task(grammar_file, prompt_file, sample_style, model_num, n_samples=100, max_new_tokens=512):
+     print(f"Loading grammar from file {grammar_file}")
+     with open(grammar_file, "r") as f:
+         grammar = f.read()
+@@ -35,28 +35,21 @@
+     with open(prompt_file, "r") as f:
+         prompt = f.read()
+ 
+-    if model_num=='1':
+-        model_id = "meta-llama/Llama-3.1-8B-Instruct"
+-    elif model_num=='2':
+-        model_id = "Qwen/Qwen2.5-7B-Instruct"
+-    elif model_num=='3':
+-        model_id = "Qwen/Qwen2.5-14B-Instruct"
+-    elif model_num=='0':
+-        model_id = "hsultanbey/codegen350multi_finetuned" # small model for local tests
+-    else:
+-        print("ERROR: 4-th argument (model) should be in 1,2,3,0")
+-        sys.exit(1)
++    preset_models = {
++        '0': "hsultanbey/codegen350multi_finetuned",
++        '1': "meta-llama/Llama-3.1-8B-Instruct",
++        '2': "Qwen/Qwen2.5-7B-Instruct",
++        '3': "Qwen/Qwen2.5-14B-Instruct",
++    }
++    model_id = preset_models.get(model_num, model_num)
+     
+     root_log_dir = "runs_log"
+     log_dir = f"{root_log_dir}/{determine_out_name(grammar_file, prompt_file)}-{pair_hash(grammar, prompt)}-{model_num}/{sample_style}-{utils.timestamp()}"
+     os.makedirs(log_dir, exist_ok=True)
+     print(f"Saving results in folder {log_dir}")
+ 
+-    max_new_tokens = 512
+-    n_samples = 100
+-    
+     if sample_style in cars.all_sample_styles():
+-        n_steps = 2000
++        n_steps = max(2000, n_samples * 20)
+         model = cars.lib.ConstrainedModel(model_id, grammar, torch_dtype=torch.bfloat16)
+         runner = cars.CARS(model = model, prompt = prompt, sample_style = sample_style, log_dir = log_dir)
+         runner.get_samples(n_samples = 1, n_steps = n_steps, stop_after = n_samples, max_new_tokens = max_new_tokens)
+@@ -74,8 +67,10 @@
+ 
+ 
+ if __name__ == "__main__":
+-    if len(sys.argv) != 5:
+-        print("Arguments: grammar_file prompt_file sample_style model")
++    if len(sys.argv) not in (5, 6, 7):
++        print("Arguments: grammar_file prompt_file sample_style model [n_samples] [max_new_tokens]")
+         sys.exit(1)
+-    
+-    run_task(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
++
++    n_samples = int(sys.argv[5]) if len(sys.argv) >= 6 else 100
++    max_new_tokens = int(sys.argv[6]) if len(sys.argv) >= 7 else 512
++    run_task(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], n_samples, max_new_tokens)

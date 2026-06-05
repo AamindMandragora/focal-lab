@@ -18,8 +18,27 @@ def default_logs_dir() -> Path:
     return repo_root() / "logs"
 
 
-def synthesis_prompt_log_dir(output_name: str, run_id: str) -> Path:
+def synthesis_prompt_log_dir(
+    output_name: str,
+    run_id: str,
+    *,
+    eval_model: str | None = None,
+    benchmark: str | None = None,
+    strategy: str | None = None,
+) -> Path:
     """Per-run prompt log directory under :func:`default_logs_dir`."""
+    from synthesis.project_paths import prompt_log_dir, synthesis_strategy_from_output_name
+
+    if eval_model and benchmark:
+        resolved_strategy = strategy or synthesis_strategy_from_output_name(output_name)
+        return prompt_log_dir(
+            default_logs_dir(),
+            eval_model=eval_model,
+            benchmark=benchmark,
+            strategy=resolved_strategy,
+            output_name=output_name,
+            run_id=run_id,
+        )
     return default_logs_dir() / f"{output_name}_{run_id}"
 
 

@@ -17,7 +17,7 @@ For a concise index of every `LM`, `Parser`, and `CSDHelpers` member, see [`../l
 | `crane.dfy` | **CRANE-style.** Unconstrained prefix; inside `<<`…`>>`, `GroupBoostedConstrainedStep` with empty groups (hard mask only). |
 | `itergen.dfy` | **IterGen-style.** Same outer loop; inside span, per-token `SafeSoftConstrainedStep` with zero boost (sample unconstrained, check grammar, fall back to hard mask if invalid — matching `_get_next_token_grammar`). |
 | `cars.dfy` | **CARS-style (full adaptive rejection sampling).** `ConstrainedStep` for the first constrained token (`constrain_first`); `SoftConstrainedStep` with zero boost for exploration (unconstrained, like new trie nodes); on grammar violation the attempt is rejected, the failing token is penalised, and the span is rolled back; retries use `SafePenalizedConstrainedStep` (hard mask + accumulated penalties, like revisited trie nodes with `log_theta`). |
-| `rejection_sampling.dfy` | **Standard rejection sampling.** Opens a constrained span immediately; each token is sampled without a grammar mask (`SoftConstrainedStep` with zero boost). Invalid draws roll back to the span entry and resample with no accumulated penalty state (unlike CARS exploitation). |
+| `rs.dfy` | **RS (standard rejection sampling).** Opens a constrained span immediately; each token is sampled without a grammar mask (`SoftConstrainedStep` with zero boost). Invalid draws roll back to the span entry and resample with no accumulated penalty state (unlike CARS exploitation). |
 
 ## Design distinction: GCD vs CRANE
 
@@ -33,5 +33,5 @@ From the repository root:
                synthesis/verify/reference/crane.dfy \
                synthesis/verify/reference/itergen.dfy \
                synthesis/verify/reference/cars.dfy \
-               synthesis/verify/reference/rejection_sampling.dfy
+               synthesis/verify/reference/rs.dfy
 ```

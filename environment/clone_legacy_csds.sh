@@ -11,6 +11,7 @@
 #   LEGACY_ITERGEN_URL    IterGen git URL
 #   LEGACY_CRANE_REF      branch/tag/commit for CRANE (passed to clone -b when shallow ok)
 #   LEGACY_ITERGEN_REF    same for IterGen
+#   LEGACY_CARS_REF       same for CARS (pparys/cars)
 #
 set -euo pipefail
 
@@ -23,6 +24,7 @@ mkdir -p "${LEGACY_ROOT}"
 
 CRANE_URL="${LEGACY_CRANE_URL:-https://github.com/uiuc-focal-lab/CRANE.git}"
 ITERGEN_URL="${LEGACY_ITERGEN_URL:-https://github.com/structuredllm/itergen.git}"
+CARS_URL="${LEGACY_CARS_URL:-https://github.com/pparys/cars.git}"
 SHALLOW_ARGS=()
 if [[ "${LEGACY_SHALLOW:-1}" != "0" ]]; then
   SHALLOW_ARGS+=(--depth 1)
@@ -89,6 +91,7 @@ apply_patches() {
 
 clone_repo "CRANE" "${CRANE_URL}" LEGACY_CRANE_REF
 clone_repo "itergen" "${ITERGEN_URL}" LEGACY_ITERGEN_REF
+clone_repo "cars" "${CARS_URL}" LEGACY_CARS_REF
 
 echo "[legacy] done. Trees:"
 ls -la "${LEGACY_ROOT}"

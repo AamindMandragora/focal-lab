@@ -2,7 +2,7 @@
 
 ## Scope
 
-Standalone **CLI utilities** under **`synthesis/scripts/`** (ablations, batch runners, report helpers).
+Standalone **CLI utilities** under **`synthesis/scripts/`** (results aggregation, compiled CSD re-eval, legacy diff reports).
 
 ## Rules
 

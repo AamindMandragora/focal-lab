@@ -21,7 +21,7 @@ Override upstream URLs or refs with environment variables (see
 |------|-----------|
 | `legacy/CRANE/` | `unconstrained`, `crane` strategies (`legacy/CRANE/src/main.py`) |
 | `legacy/itergen/` | `itergen` strategy (`from itergen.main import IterGen`) |
-| `legacy/cars/` | `cars` strategy (`from cars.lib import ConstrainedModel`) |
+| `legacy/cars/` | `cars` strategy (`from cars.lib import ConstrainedModel`; upstream [pparys/cars](https://github.com/pparys/cars)) |
 
 ## How this repo differs from upstream
 

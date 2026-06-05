@@ -2113,6 +2113,202 @@ class Evaluator:
         logic = self._benchmark_logic()
         return bool(logic.accuracy_applicable(aux))
 
+    def _evaluate_smiles_pooled(
+        self,
+        compiled_module_path: Path,
+        *,
+        min_accuracy: Optional[float] = None,
+        early_stop_min_accuracy: Optional[float] = None,
+        early_stop_min_syntax_rate: Optional[float] = None,
+        min_examples_before_threshold_stop: Optional[int] = None,
+    ) -> EvaluationResult:
+        from synthesis.evaluate.benchmarks.smiles.dataset import (
+            get_smiles_task,
+            normalize_smiles_classes,
+        )
+        from synthesis.evaluate.benchmarks.smiles.native_prompt import (
+            full_prompt_exemplars,
+            render_native_smiles_prompt_with_feedback,
+        )
+        from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState
+        from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+            SMILES_POOLED_MAX_NEW_TOKENS,
+            SmilesPooledConfig,
+            score_smiles_attempt,
+            should_stop_pooled_session,
+            smiles_rdkit_syntax_valid,
+        )
+        from synthesis.evaluate.completion_text import completion_for_scoring
+
+        start_time = time.time()
+        sample_outputs: List[Dict[str, Any]] = []
+        logic = self._benchmark_logic()
+        config = SmilesPooledConfig(
+            max_new_tokens=min(self.max_steps, SMILES_POOLED_MAX_NEW_TOKENS),
+            prompt_tier=getattr(self, "prompt_tier", 2),
+        )
+        classes = normalize_smiles_classes(self.smiles_classes)
+        env = self._setup_environment(compiled_module_path)
+        run_crane_csd = logic.get_generation_runner()
+        max_gen_steps = min(int(self.max_steps), config.max_new_tokens)
+
+        for class_name in classes:
+            task = get_smiles_task(class_name)
+            example = dict(task)
+            exemplars = list(full_prompt_exemplars(class_name))
+            prompt_state = SmilesPromptState(exemplars)
+            dynamic_parser = logic.build_dynamic_parser(self, env, example)
+            tier_grammar = str(example.get("grammar_text") or "")
+            base_grammar = str(example.get("base_grammar_text") or tier_grammar)
+            prompt_exemplars = list(exemplars)
+            novel_valid_class = 0
+
+            for attempt_idx in range(config.max_attempts):
+                prompt = render_native_smiles_prompt_with_feedback(
+                    class_name,
+                    good_results=prompt_state.good_results,
+                    bad_results=prompt_state.bad_results,
+                    tier=config.prompt_tier,
+                )
+                example_start = time.time()
+                try:
+                    with _PerExampleTimer(self.max_seconds_per_example):
+                        output_text, token_count, gen_time, constrained_segments, helper_trace = (
+                            run_crane_csd(
+                                env=env,
+                                prompt_text=prompt,
+                                max_steps=max_gen_steps,
+                                step_token_budget=self.step_token_budget,
+                                grammar_file=self._get_grammar_file(),
+                                dynamic_parser=dynamic_parser,
+                            )
+                        )
+                    completion = completion_for_scoring(prompt, output_text)
+                    scored_output = completion
+                    eval_row = score_smiles_attempt(
+                        class_name,
+                        scored_output,
+                        prompt_exemplars=prompt_exemplars,
+                        tier_grammar=tier_grammar,
+                        base_grammar=base_grammar,
+                    )
+                    syntax_pass = smiles_rdkit_syntax_valid(eval_row)
+                    is_correct = bool(eval_row.get("unique_valid_candidate"))
+                    if is_correct:
+                        novel_valid_class += 1
+                    prompt_state.record_attempt(
+                        str(eval_row.get("smiles") or scored_output or "").strip(),
+                        eval_row,
+                    )
+
+                    from synthesis.evaluate.baseline_store import normalize_baseline_question
+
+                    sample_outputs.append(
+                        EvaluationResult._annotate_sample_observability(
+                            {
+                                "question": normalize_baseline_question("smiles", example=example),
+                                "prompt": prompt,
+                                "generated": completion,
+                                "expected": class_name,
+                                "actual": eval_row.get("smiles") or "",
+                                "full_output": completion,
+                                "scored_output": scored_output,
+                                "answer_source": "smiles_eval",
+                                "has_extracted_answer": bool(eval_row.get("smiles")),
+                                "is_correct": is_correct,
+                                "accuracy_applicable": True,
+                                "contains_delimiters": False,
+                                "visible_delimiters": False,
+                                "used_constrained_chunk": bool(constrained_segments),
+                                "uses_hidden_chunks": logic.uses_hidden_chunks(),
+                                "is_syntax_valid": syntax_pass,
+                                "syntax_rate": 1.0 if syntax_pass else 0.0,
+                                "token_count": token_count,
+                                "hit_max_steps": token_count >= max_gen_steps,
+                                "time_seconds": gen_time,
+                                "runtime_budget_exceeded": (
+                                    self.max_seconds_per_example is not None
+                                    and gen_time > self.max_seconds_per_example
+                                ),
+                                "helper_trace": helper_trace,
+                                "smiles_eval": eval_row,
+                                "class_name": class_name,
+                                "attempt_index": attempt_idx,
+                            }
+                        )
+                    )
+                except Exception as exc:
+                    elapsed = time.time() - example_start
+                    from synthesis.evaluate.baseline_store import normalize_baseline_question
+
+                    sample_outputs.append(
+                        EvaluationResult._annotate_sample_observability(
+                            {
+                                "question": normalize_baseline_question("smiles", example=example),
+                                "prompt": prompt,
+                                "generated": "",
+                                "expected": class_name,
+                                "actual": None,
+                                "full_output": "",
+                                "scored_output": "",
+                                "answer_source": "none",
+                                "has_extracted_answer": False,
+                                "is_correct": False,
+                                "accuracy_applicable": True,
+                                "contains_delimiters": False,
+                                "visible_delimiters": False,
+                                "used_constrained_chunk": False,
+                                "uses_hidden_chunks": logic.uses_hidden_chunks(),
+                                "is_syntax_valid": False,
+                                "syntax_rate": 0.0,
+                                "token_count": 0,
+                                "hit_max_steps": False,
+                                "time_seconds": elapsed,
+                                "runtime_budget_exceeded": isinstance(exc, PerExampleTimeout),
+                                "error": str(exc),
+                                "helper_trace": [],
+                                "class_name": class_name,
+                                "attempt_index": attempt_idx,
+                            }
+                        )
+                    )
+
+                collected_reason = logic.should_stop_collected(sample_outputs)
+                if collected_reason:
+                    break
+                if should_stop_pooled_session(
+                    attempt_index=attempt_idx,
+                    config=config,
+                    grammar_successes=0,
+                    novel_valid_count=novel_valid_class,
+                ):
+                    break
+
+        evaluated = len(sample_outputs)
+        num_correct = sum(1 for sample in sample_outputs if sample.get("is_correct"))
+        num_syntax = sum(1 for sample in sample_outputs if sample.get("is_syntax_valid"))
+        total_time = time.time() - start_time
+        aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
+        return EvaluationResult(
+            success=True,
+            accuracy=num_correct / max(1, evaluated),
+            contains_delimiters=False,
+            syntax_rate=num_syntax / max(1, evaluated),
+            num_examples=evaluated,
+            num_correct=num_correct,
+            accuracy_denominator=evaluated,
+            accuracy_definition=logic.accuracy_definition(),
+            invalid_outputs_excluded_from_accuracy=0,
+            total_time_seconds=total_time,
+            max_sample_time_seconds=max(
+                (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
+                default=0.0,
+            ),
+            planned_num_examples=evaluated,
+            sample_outputs=sample_outputs,
+            aux_metrics=aux_metrics,
+        )
+
     def evaluate_sample(
         self,
         compiled_module_path: Path,
@@ -2156,6 +2352,14 @@ class Evaluator:
 
         try:
             self._ensure_smiles_rdkit_available()
+            if self.dataset_name == "smiles":
+                return self._evaluate_smiles_pooled(
+                    compiled_module_path,
+                    min_accuracy=min_accuracy,
+                    early_stop_min_accuracy=early_stop_min_accuracy,
+                    early_stop_min_syntax_rate=early_stop_min_syntax_rate,
+                    min_examples_before_threshold_stop=min_examples_before_threshold_stop,
+                )
             dataset = self._load_dataset_sample()
             env = self._setup_environment(compiled_module_path)
 

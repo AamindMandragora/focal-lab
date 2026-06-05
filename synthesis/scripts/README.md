@@ -1,18 +1,18 @@
 # `synthesis/scripts/`
 
-Optional **maintenance and ablation** scripts that drive `python -m synthesis.run_synthesis` (or inspect `outputs/generated/`) from the repository root.
+Optional **maintenance** scripts run from the repository root with `python -m synthesis.scripts.<name>`.
 
-They are not imported by the core package at runtime; run them explicitly with `PYTHONPATH` set to the repo root when documented in each script's docstring.
+They are not imported by the core package at runtime.
 
 ## Contents
 
-- **`ablation_beam_bandit.py`** — Grid search over refinement beam size and helper-selection policy.
-- **`reevaluate_compiled_csd.py`** — Re-run evaluation on an already-compiled GeneratedCSD.py.
-- **`collect_paper_results.py`** — Collect baseline and synthesis results into paper-ready LaTeX table fragments. Reads `outputs/baselines/` and `outputs/generated/`, emits main results + ablation tables. Main/metaDecode rows use the **`gemini`** profile by default; **`--gen-profiles`** defaults to **`sonnet4.6,gpt5.5`** for the synthesizer-model ablation table. Use **`--paper-main-table`** / **`--paper-bold-best`** to print Table~1 rows for `paper/experiments.tex`, or **`--write-paper`** to patch the marked block in that file automatically. Pass **`--git-tracked-only`** to include only metrics whose source `outputs/**/*.json` paths are tracked by git (cells without such JSON emit `\todo{--}`).
-- **`split_smiles_class_baselines.py`** — One-time repair: split combined SMILES baseline JSONs (all classes in one file) into per-class files with recomputed accuracy/syntax metrics. Use **`--dry-run`** then **`--apply --backup`**.
+- **`reevaluate_compiled_csd.py`** — Re-run evaluation on an already-compiled `GeneratedCSD.py` (used by the matrix after metadecode synthesis).
+- **`collect_paper_results.py`** — Aggregate baseline and synthesis JSONs into LaTeX table fragments from `outputs/`.
+- **`report_legacy_upstream_diff.py`** — Compare patched `legacy/*` trees against upstream for patch maintenance.
 
-Scripts are self-contained CLIs. See each file's module docstring for arguments and examples.
+See each module docstring for CLI flags.
 
 ## See also
 
-- **`AGENTS.md`** in this folder for agent constraints when adding or editing scripts.
+- **`AGENTS.md`** in this folder.
+- **`outputs/README.md`** — artifact layout (`model/benchmark/strategy`).
