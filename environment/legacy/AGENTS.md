@@ -2,7 +2,7 @@
 
 ## Scope
 
-Policies for **local upstream clones** under **`legacy/CRANE`** and **`legacy/itergen`** (gitignored trees used by **`run_legacy_fixed_strategy`**).
+Policies for **local upstream clones** under **`legacy/CRANE`**, **`legacy/itergen`**, and **`legacy/cars`** (gitignored trees used by **`run_legacy_fixed_strategy`**).
 
 ## Rule: edits must become tracked patches
 

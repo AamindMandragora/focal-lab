@@ -23,6 +23,7 @@ def format_attempt_suffix(
         lines.extend(f"SMILES: {smiles}" for smiles in good_results)
     if bad_results:
         lines.append("Bad results:")
+        lines.append("These are past mistakes — do not repeat them.")
         lines.extend(f"SMILES: {smiles}" for smiles in bad_results)
     lines.append("Reasoning:")
     return "\n" + "\n".join(lines) + "\n"
@@ -64,6 +65,10 @@ class SmilesPromptState:
     def record_attempt(self, smiles: str, eval_row: dict[str, Any] | None) -> RecordOutcome:
         cleaned = str(smiles or "").strip()
         if not cleaned:
+            invalid_marker = "(invalid)"
+            if invalid_marker not in self.bad_results:
+                self.bad_results.append(invalid_marker)
+            self.seen.add(invalid_marker)
             return "empty"
 
         row = eval_row or {}
@@ -105,11 +110,18 @@ class SmilesPromptState:
         return format_attempt_suffix(self.good_results, self.bad_results)
 
     def apply_to_example(self, example: dict[str, Any]) -> None:
-        base_key = "_smiles_base_prompt"
-        if base_key not in example:
-            example[base_key] = strip_trailing_molecule_slot(str(example.get("prompt", "")))
-        suffix = _cap_suffix(self.build_suffix())
-        example["prompt"] = example[base_key] + suffix
+        from synthesis.evaluate.benchmarks.smiles.native_prompt import (
+            render_native_smiles_prompt_with_feedback,
+        )
+
+        class_name = str(example.get("class_name", "smiles"))
+        tier = example.get("prompt_tier", 1)
+        example["prompt"] = render_native_smiles_prompt_with_feedback(
+            class_name,
+            good_results=self.good_results,
+            bad_results=self.bad_results,
+            tier=tier,
+        )
         example["smiles_good_results"] = list(self.good_results)
         example["smiles_bad_results"] = list(self.bad_results)
 

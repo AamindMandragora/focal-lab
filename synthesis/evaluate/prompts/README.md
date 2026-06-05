@@ -16,7 +16,7 @@ Benchmarks: `gsm_symbolic`, `spider`, `smiles`.
 
 | Tier | Strategies |
 |------|------------|
-| 1 | `gcd`, `itergen`, `cars`, `rejection_sampling` |
+| 1 | `gcd`, `itergen`, `cars`, `rs` |
 | 2 | `unconstrained`, `crane`, `metadecode` (CoT when the compiled CSD uses free LM steps) |
 
 Compiled **metadecode** picks tier from the CSD body on every synthesis eval iteration:
@@ -52,7 +52,7 @@ Tier templates mirror the same legacy `task_specification` / `std_instruct` / `c
 
 | Tier | Default rows used | Rationale |
 |------|-------------------|-----------|
-| 1 (`gcd`, `itergen`, `cars`, `rejection_sampling`) | 0 frozen GSM/Spider rows | Constrained decoders: minimal prompt, no 8-shot CoT block |
+| 1 (`gcd`, `itergen`, `cars`, `rs`) | 0 frozen GSM/Spider rows | Constrained decoders: minimal prompt, no 8-shot CoT block |
 | 2 (`unconstrained`, `crane`, `metadecode`) | 4 frozen GSM/Spider rows | CoT baselines; CRANE `main.py` passes `--num_shots 4` |
 
 SMILES always includes the full exemplar list from each class `data/*.txt` file (legacy CARS).

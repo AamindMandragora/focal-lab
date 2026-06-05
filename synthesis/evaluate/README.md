@@ -15,12 +15,12 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - `evaluator.py`
   - Core sample evaluation loop and orchestration.
   - Delegates benchmark-specific prompt/answer/parser/scoring logic to `benchmarks/*/eval_logic.py`.
+- `run_legacy_fixed_strategy.py`
+  - Fixed-strategy baseline CLI used by the matrix (`python -m synthesis.evaluate.run_legacy_fixed_strategy`).
 - `feedback_loop.py`
   - Generate/verify/compile/evaluate orchestration with iterative refinement.
-- `runner.py`
-  - Runtime helper paths used by local smoke/runtime routines.
-- `parser_utils.py`
-  - Compatibility wrapper re-exporting canonical parser utilities.
+- `benchmarks/common/parser_utils.py`
+  - Shared parser utilities for benchmark logic modules.
 - `benchmarks/`
   - Dataset-specific modules (GSM-Symbolic, SQL Spider, SMILES).
   - `benchmarks/registry.py` selects the benchmark logic module.
@@ -46,7 +46,7 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - Evaluation feedback lists every detected failure-mode bucket. Verbatim
   rollout examples remain capped separately because they carry full prompts and
   full model outputs; the aggregate mode summary should not top-k truncate.
-- Baseline snapshots are JSON files in `outputs/baselines/` with:
+- Baseline snapshots are JSON files grouped as `outputs/baselines/<model>/<benchmark>/<strategy>/…` with:
   - `accuracy`, `syntax_rate`
   - `metrics` (counts, optional sums/means for `generation_seconds` / `num_tokens`, optional `run_wall_time_seconds` or evaluator totals)
   - optional top-level `metadata` for legacy runs (prompt tier, adapter id, decode caps)
@@ -58,8 +58,9 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
     - `correct`, `syntax_valid` — per-example booleans
     - `generated_answer` — legacy alias of `extracted` for older readers
     - optional `generation_seconds`, `num_tokens`
+- Fixed-strategy baselines dispatch through **`synthesis/evaluate/baselines/registry.py`** (one adapter module per strategy; SMILES uses the pooled native protocol). Legacy trees are cloned with **`bash environment/clone_legacy_csds.sh`** and patched from **`environment/legacy_patches/{CRANE,itergen,cars}/`**.
 - Fixed-strategy GSM baselines use the local CRANE GSM source rows so
-  `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rejection_sampling`
+  `unconstrained`, `gcd`, `crane`, `itergen`, `cars`, and `rs`
   are compared on the same questions.
 - The GCD adapter uses Syncode DFA-mask decoding but keeps GSM-Symbolic generation scoped to expression bodies: it starts after `<<`, wraps the generated body for scoring, caps expression length, finalizes the longest parseable expression prefix, and restricts GSM variables to numeric placeholders observed in the evaluation sample.
 - GCD and IterGen legacy adapters load **one** Hugging Face model per subprocess (`syncode_run_session.SyncodeRunSession` / IterGen grammar rebind). Per-example tier-1 grammars swap cached DFA mask decoders only; each decode resets parser state via SynCode/IterGen `start`/`reset` so prior prompts cannot leak into the next example. Subprocess exit clears GPU state between matrix jobs.

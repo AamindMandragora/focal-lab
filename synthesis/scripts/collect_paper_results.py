@@ -25,6 +25,12 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from synthesis.project_paths import (
+    iter_generated_run_dirs,
+    resolve_baseline_json_path,
+    slugify as path_slugify,
+)
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
@@ -72,7 +78,7 @@ STRATEGIES = [
     "gcd",
     "crane",
     "itergen",
-    "rejection_sampling",
+    "rs",
     "metadecode",
 ]
 # Main matrix MetaDecode runs (run_all_tests.py --main-generation-model).
@@ -82,7 +88,7 @@ MASK_LABELS = ("mask_on", "mask_off")
 
 
 def _slugify(s: str) -> str:
-    return s.replace("/", "_").replace(":", "_").replace(" ", "_").replace("-", "_")
+    return path_slugify(s)
 
 
 def _record_num_examples(record: dict[str, Any]) -> int:
@@ -155,19 +161,46 @@ def _load_baseline_single(
     tracked_relpaths: frozenset[str] | None = None,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
-    model_slug = _slugify(model)
-    model_dir = baselines_dir / strategy / model_slug
-    candidates = []
-    if model_dir.is_dir():
-        candidates = sorted(
-            (
-                path
-                for path in model_dir.glob(f"{benchmark_key}__*.json")
-                if _matches_name_filters(path, **kwargs)
-            ),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
+    benchmark = benchmark_key
+    smiles_class = ""
+    if benchmark_key.startswith("smiles__class_"):
+        benchmark = "smiles"
+        smiles_class = benchmark_key.split("smiles__class_", 1)[1]
+
+    token_budget = str(kwargs.get("token_budget") or "1")
+    max_steps = str(kwargs.get("max_steps") or "900")
+    gen_profile = str(kwargs.get("gen_profile") or "")
+    synth_iter = str(kwargs.get("synth_iter") or "")
+    rs_search_steps = str(kwargs.get("rs_search_steps") or "200")
+    cars_search_steps = str(kwargs.get("cars_search_steps") or "200")
+
+    candidates: list[Path] = []
+    resolved = resolve_baseline_json_path(
+        baselines_dir,
+        eval_model=model,
+        benchmark=benchmark,
+        strategy=strategy,
+        token_budget=token_budget,
+        max_steps=max_steps,
+        smiles_class=smiles_class,
+        rs_search_steps=rs_search_steps,
+        cars_search_steps=cars_search_steps,
+        gen_profile=gen_profile,
+        synth_iter=synth_iter,
+    )
+    if resolved.is_file() and _matches_name_filters(resolved, **kwargs):
+        candidates.append(resolved)
+
+    # Legacy glob fallback for partially migrated trees.
+    legacy_dir = baselines_dir / strategy / _slugify(model)
+    if legacy_dir.is_dir():
+        candidates.extend(
+            path
+            for path in legacy_dir.glob(f"{benchmark_key}__*.json")
+            if _matches_name_filters(path, **kwargs)
         )
+
+    candidates = sorted(set(candidates), key=lambda p: p.stat().st_mtime, reverse=True)
     if tracked_relpaths is not None and repo_root is not None:
         candidates = [
             p
@@ -220,12 +253,7 @@ def _load_generated_prefix(
     best: Path | None = None
     best_mtime = -1.0
 
-    if not generated_dir.is_dir():
-        return None
-
-    for run_dir in generated_dir.iterdir():
-        if not run_dir.is_dir() or not run_dir.name.startswith(prefix):
-            continue
+    for run_dir in iter_generated_run_dirs(generated_dir, name_prefix=prefix):
         success = run_dir / "results" / "success_report.json"
         if not success.is_file():
             continue
@@ -278,21 +306,24 @@ def _load_metadecode(
     best: Path | None = None
     best_mtime = -1.0
 
-    if generated_dir.is_dir():
-        for run_dir in generated_dir.iterdir():
-            if not run_dir.is_dir() or not run_dir.name.startswith(prefix):
+    for run_dir in iter_generated_run_dirs(
+        generated_dir,
+        eval_model=model,
+        benchmark=benchmark,
+        strategy="metadecode",
+        name_prefix=prefix,
+    ):
+        success = run_dir / "results" / "success_report.json"
+        if not success.is_file():
+            continue
+        if not _generated_run_matches(run_dir.name, **kwargs):
+            continue
+        if tracked_relpaths is not None and repo_root is not None:
+            rel = _json_relpath_under_repo(success, repo_root)
+            if rel not in tracked_relpaths:
                 continue
-            success = run_dir / "results" / "success_report.json"
-            if not success.is_file():
-                continue
-            if not _generated_run_matches(run_dir.name, **kwargs):
-                continue
-            if tracked_relpaths is not None and repo_root is not None:
-                rel = _json_relpath_under_repo(success, repo_root)
-                if rel not in tracked_relpaths:
-                    continue
 
-            mtime = success.stat().st_mtime
+        mtime = success.stat().st_mtime
             if mtime > best_mtime:
                 best = success
                 best_mtime = mtime
@@ -350,7 +381,7 @@ def _strategy_display(strategy: str) -> str:
         "gcd": r"\GCD",
         "crane": r"\Crane",
         "itergen": r"\IterGen",
-        "rejection_sampling": "Reject.",
+        "rs": "Reject.",
         "metadecode": r"\Tool",
     }.get(strategy, strategy)
 
@@ -490,12 +521,12 @@ def emit_step_budget_table(
     lines: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
-    for strategy in ["gcd", "crane", "itergen", "rejection_sampling", "metadecode"]:
+    for strategy in ["gcd", "crane", "itergen", "rs", "metadecode"]:
         strategy_label = {
             "gcd": r"\GCD",
             "crane": r"\Crane",
             "itergen": r"\IterGen",
-            "rejection_sampling": "Reject.",
+            "rs": "Reject.",
             "metadecode": r"\Tool",
         }.get(strategy, strategy)
 

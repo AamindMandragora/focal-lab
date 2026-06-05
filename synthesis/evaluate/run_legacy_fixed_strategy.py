@@ -18,10 +18,10 @@ from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importab
 ensure_vendored_syncode_importable()
 
 from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
-from synthesis.evaluate.rejection_sampling import (
-    DEFAULT_REJECTION_SEARCH_STEPS,
-    build_rejection_sampling_session,
-    rejection_sample_completion,
+from synthesis.evaluate.rs import (
+    DEFAULT_RS_SEARCH_STEPS,
+    build_rs_session,
+    rs_sample_completion,
 )
 
 
@@ -123,7 +123,7 @@ def _legacy_benchmark_prompt(
     """Render the standardized tier prompt for a legacy fixed strategy row.
 
     profile:
-      - ``expression_only`` → tier 1 (GCD, IterGen, CARS, rejection sampling).
+      - ``expression_only`` → tier 1 (GCD, IterGen, CARS, RS).
       - ``chain_of_thought`` / ``evaluator_default`` → tier 2 (Unconstrained, CRANE paths in-repo).
     """
     from synthesis.evaluate.prompt_tiers import (
@@ -140,7 +140,7 @@ def _legacy_benchmark_prompt(
         tier = prompt_tier_for_strategy(strategy)
 
     constrained = profile == "expression_only" and strategy in ("gcd", "itergen")
-    if profile == "expression_only" and strategy in ("cars", "rejection_sampling"):
+    if profile == "expression_only" and strategy in ("cars", "rs"):
         constrained = True
     return format_prompt_for_tier(
         evaluator,
@@ -179,14 +179,24 @@ def _baseline_run_metadata(
         meta["cars_search_steps"] = int(
             getattr(args, "cars_search_steps", DEFAULT_CARS_SEARCH_STEPS)
         )
+        meta["cars_success_target"] = int(
+            getattr(args, "cars_success_target", DEFAULT_CARS_SUCCESS_TARGET)
+        )
+        meta["cars_smiles_max_new_tokens"] = CARS_SMILES_MAX_NEW_TOKENS
         meta["cars_grammar"] = "legacy_lark_oracle"
         meta["cars_learn_level"] = 3
         meta["cars_constrain_first"] = True
-    if args.strategy == "rejection_sampling":
-        meta["rejection_search_steps"] = int(
-            getattr(args, "rejection_search_steps", DEFAULT_REJECTION_SEARCH_STEPS)
+        if dataset == "smiles":
+            meta["scoring"] = "attempt_normalized"
+            if args.strategy == "cars":
+                meta["prompt_style"] = "native_acrylates_txt_static"
+            else:
+                meta["prompt_style"] = "native_acrylates_txt_dynamic_good_bad"
+    if args.strategy == "rs":
+        meta["rs_search_steps"] = int(
+            getattr(args, "rs_search_steps", DEFAULT_RS_SEARCH_STEPS)
         )
-        meta["rejection_temperature"] = 1.0
+        meta["rs_temperature"] = 1.0
     return meta
 
 
@@ -274,7 +284,7 @@ def _cars_grammar_for_example(
     dataset: str,
     example: dict[str, Any],
 ) -> str:
-    """Grammar for legacy ``cars.CARS`` oracle rejection (casa: learn_level=3, constrain_first)."""
+    """Grammar for legacy ``cars.CARS`` oracle rejection (pparys/cars: learn_level=3, constrain_first)."""
     if dataset == "smiles":
         class_name = str(example.get("class_name", "")).strip()
         legacy_path = repo_root / "legacy" / "cars" / "datasets" / "smiles" / f"{class_name}.lark"
@@ -284,10 +294,23 @@ def _cars_grammar_for_example(
     return _tier1_grammar_for_example(repo_root, dataset, example)
 
 
-def _legacy_smiles_max_new_tokens(dataset: str, decode_cap: int) -> int:
-    """Shared decode cap for SMILES CARS and rejection sampling (>= RS budget)."""
+def _legacy_smiles_max_new_tokens(
+    dataset: str,
+    decode_cap: int,
+    *,
+    decode_tier: int = 1,
+) -> int:
+    """Decode budget for legacy SMILES adapters (tier 1 = body-only, tier 2 = delimited)."""
     if dataset == "gsm_symbolic":
         return min(28, decode_cap)
+    if dataset == "smiles":
+        from synthesis.evaluate.prompt_tiers import (
+            smiles_tier1_max_new_tokens,
+            smiles_tier2_max_new_tokens,
+        )
+        if int(decode_tier) == 2:
+            return smiles_tier2_max_new_tokens(decode_cap)
+        return smiles_tier1_max_new_tokens(decode_cap)
     return decode_cap
 
 
@@ -300,34 +323,25 @@ def _legacy_smiles_benchmark_prompt(
     smiles_prompt_states: dict[str, Any],
     delimited_answer: bool,
 ) -> str:
-    """Render SMILES prompt with multi-sample good/bad feedback appended when present."""
+    """Render native SMILES prompt with optional in-run exemplar growth."""
     from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState
-    from synthesis.evaluate.prompt_tiers import format_prompt_for_tier
+    from synthesis.evaluate.prompt_tiers import render_smiles_cars_prompt
 
     class_name = str(example.get("class_name", "smiles"))
     if class_name not in smiles_prompt_states:
         smiles_prompt_states[class_name] = SmilesPromptState(example.get("prompt_exemplars", []))
 
-    base_key = "_smiles_base_prompt"
-    if base_key not in example:
-        example[base_key] = format_prompt_for_tier(
-            evaluator,
-            example,
-            benchmark=dataset,
-            tier=1,
-            constrained_suffix=delimited_answer,
-            strategy=strategy,
-        )
     smiles_prompt_states[class_name].apply_to_example(example)
-    prompt = str(example.get("prompt") or example[base_key]).strip()
-    if not prompt:
+    prompt = render_smiles_cars_prompt(example, tier=1, delimited_answer=delimited_answer)
+    if not prompt.strip():
         raise RuntimeError(f"Empty SMILES prompt for class {class_name!r}")
     return prompt
 
 
-# CARS runs up to this many stochastic grammar-guided decode attempts per example
-# (separate from synthesis ``--eval-max-steps``, which only caps ``max_new_tokens``).
+# CARS SMILES runs up to this many stochastic decode attempts per class (pooled session).
 DEFAULT_CARS_SEARCH_STEPS = 200
+DEFAULT_CARS_SUCCESS_TARGET = 100
+CARS_SMILES_MAX_NEW_TOKENS = 512
 
 
 def _gsm_symbolic_scored_body(completion: str) -> str:
@@ -820,6 +834,15 @@ def _cars_set_cached_grammar(
         cars_model.grammar_constraint = cached
 
 
+def _cars_encode_prompt(cars_model: Any, prompt: str) -> Any:
+    formatted = cars_model._format_prompt(prompt)
+    return cars_model.tokenizer.encode(
+        formatted,
+        return_tensors="pt",
+        add_special_tokens=False,
+    ).to(cars_model.model.device)
+
+
 def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
@@ -863,44 +886,31 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
 
-    examples = logic.load_dataset_sample(eval_runtime)
     cars_model = ConstrainedModel(model_id, None, torch_dtype=torch.bfloat16)
 
-    from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result
-
+    run_metadata = _baseline_run_metadata(args, dataset, adapter="cars_legacy_cars")
+    output_json = Path(args.output_json)
     rows: list[dict[str, Any]] = []
-    smiles_prompt_states: dict[str, SmilesPromptState] = {}
     grammar_cache: dict[str, Any] = {}
+
+    examples = logic.load_dataset_sample(eval_runtime)
     from synthesis.evaluate.prompt_tiers import effective_max_new_tokens
 
     decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
     n_steps = max(1, int(getattr(args, "cars_search_steps", DEFAULT_CARS_SEARCH_STEPS)))
-    max_new_tokens = _legacy_smiles_max_new_tokens(dataset, decode_cap)
+    max_new_tokens = _legacy_smiles_max_new_tokens(dataset, decode_cap, decode_tier=1)
     print(
         f"CARS: {n_steps} oracle-rejection attempts/example, "
-        f"max_new_tokens={max_new_tokens} (eval-max-steps cap only)"
+        f"max_new_tokens={max_new_tokens}"
     )
-
-    run_metadata = _baseline_run_metadata(args, dataset, adapter="cars_legacy_cars")
-    output_json = Path(args.output_json)
 
     for example in examples:
         grammar_text = _cars_grammar_for_example(repo_root, dataset, example)
         _cars_set_cached_grammar(cars_model, grammar_text, grammar_cache)
 
-        if dataset == "smiles":
-            prompt = _legacy_smiles_benchmark_prompt(
-                eval_runtime,
-                example,
-                dataset=dataset,
-                strategy="cars",
-                smiles_prompt_states=smiles_prompt_states,
-                delimited_answer=False,
-            )
-        else:
-            prompt = _legacy_benchmark_prompt(
-                logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="cars"
-            )
+        prompt = _legacy_benchmark_prompt(
+            logic, eval_runtime, example, "expression_only", dataset=dataset, strategy="cars"
+        )
         gen_started = time.perf_counter()
         steps = _cars_sampler_steps(
             cars_model,
@@ -912,7 +922,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
-        elif dataset in ("spider", "smiles"):
+        elif dataset == "spider":
             output_text = (output_text or "").strip()
         completion = completion_for_scoring(prompt, output_text)
         scored_output = (
@@ -927,10 +937,6 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
         if dataset == "spider":
             syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
-        if dataset == "smiles":
-            syntax_valid = bool(aux and aux.get("syntax_valid"))
-            aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
-            is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
 
         rows.append(
             _legacy_adapter_baseline_row(
@@ -972,8 +978,8 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
-def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
-    """Standard rejection sampling: temperature-1 unconstrained decode, reject until valid."""
+def run_rs_legacy_adapter(args: argparse.Namespace) -> int:
+    """RS baseline: temperature-1 unconstrained decode, reject until valid."""
     run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
     repo_root = Path(__file__).resolve().parents[2]
@@ -1005,10 +1011,11 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
 
     decode_cap = effective_max_new_tokens(dataset, args.eval_max_steps)
 
-    def _rejection_max_new_tokens() -> int:
-        return _legacy_smiles_max_new_tokens(dataset, decode_cap)
+    def _rs_max_new_tokens() -> int:
+        rs_tier = 2 if dataset == "smiles" else 1
+        return _legacy_smiles_max_new_tokens(dataset, decode_cap, decode_tier=rs_tier)
 
-    def _rejection_output(completion: str, example: dict[str, Any]) -> str:
+    def _rs_output(completion: str, example: dict[str, Any]) -> str:
         if dataset == "gsm_symbolic":
             return _gsm_symbolic_scored_body(completion)
         return (completion or "").strip()
@@ -1016,21 +1023,22 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
     from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result
     from synthesis.evaluate.syncode_run_session import release_cuda_cache
 
-    n_attempts = max(1, int(getattr(args, "rejection_search_steps", DEFAULT_REJECTION_SEARCH_STEPS)))
+    n_attempts = max(1, int(getattr(args, "rs_search_steps", DEFAULT_RS_SEARCH_STEPS)))
     print(
-        f"Rejection sampling: {n_attempts} attempts/example at temperature 1.0, "
-        f"max_new_tokens={_rejection_max_new_tokens()} (eval-max-steps cap only)"
+        f"RS: {n_attempts} attempts/example at temperature 1.0, "
+        f"max_new_tokens={_rs_max_new_tokens()} "
+        f"({'tier-2 SMILES cap' if dataset == 'smiles' else 'eval-max-steps cap'})"
     )
 
-    session = build_rejection_sampling_session(
+    session = build_rs_session(
         args.eval_model,
         device=device,
-        max_new_tokens=_rejection_max_new_tokens(),
+        max_new_tokens=_rs_max_new_tokens(),
     )
 
     rows: list[dict[str, Any]] = []
     smiles_prompt_states: dict[str, Any] = {}
-    run_metadata = _baseline_run_metadata(args, dataset, adapter="rejection_sampling_syncode")
+    run_metadata = _baseline_run_metadata(args, dataset, adapter="rs_syncode")
     output_json = Path(args.output_json)
 
     try:
@@ -1046,7 +1054,7 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
                     eval_runtime,
                     example,
                     dataset=dataset,
-                    strategy="rejection_sampling",
+                    strategy="rs",
                     smiles_prompt_states=smiles_prompt_states,
                     delimited_answer=True,
                 )
@@ -1057,7 +1065,7 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
                     example,
                     "expression_only",
                     dataset=dataset,
-                    strategy="rejection_sampling",
+                    strategy="rs",
                 )
 
             def _syntax_valid_for_body(body: str) -> bool:
@@ -1079,11 +1087,11 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
                 return bool(syntax_ok)
 
             gen_started = time.perf_counter()
-            output_text, attempts_used = rejection_sample_completion(
+            output_text, attempts_used = rs_sample_completion(
                 session,
                 prompt,
                 max_attempts=n_attempts,
-                normalize_output=lambda raw, ex=example: _rejection_output(raw, ex),
+                normalize_output=lambda raw, ex=example: _rs_output(raw, ex),
                 is_syntax_valid=_syntax_valid_for_body,
             )
             gen_seconds = time.perf_counter() - gen_started
@@ -1117,14 +1125,14 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
                 syntax_valid=bool(syntax_valid),
                 generation_seconds=gen_seconds,
             )
-            row["rejection_attempts"] = attempts_used
+            row["rs_attempts"] = attempts_used
             rows.append(row)
             _checkpoint_baseline_json(
                 rows,
                 output_json,
                 dataset=dataset,
                 run_started=run_started,
-                extra_metrics={"adapter": "rejection_sampling_syncode"},
+                extra_metrics={"adapter": "rs_syncode"},
                 metadata=run_metadata,
             )
             print(f"Checkpoint ({len(rows)}/{len(examples)}): {output_json}", flush=True)
@@ -1133,7 +1141,7 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
         release_cuda_cache()
 
     if not rows:
-        raise RuntimeError("Rejection sampling produced no rows; refusing to write an empty baseline JSON")
+        raise RuntimeError("RS baseline produced no rows; refusing to write an empty baseline JSON")
 
     final_metadata = dict(run_metadata)
     final_metadata.pop("checkpoint", None)
@@ -1143,7 +1151,7 @@ def run_rejection_sampling_legacy_adapter(args: argparse.Namespace) -> int:
         output_json,
         dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
-        extra_metrics={"adapter": "rejection_sampling_syncode"},
+        extra_metrics={"adapter": "rs_syncode"},
         metadata=final_metadata,
     )
     print(f"Saved baseline JSON: {output_json}")
@@ -1774,7 +1782,13 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
         eval_runtime=eval_runtime,
         examples=examples,
     )
-    adapter = "crane_legacy_main" if args.strategy == "crane" else "unconstrained_crane_main"
+    from synthesis.evaluate.baselines.registry import ADAPTER_IDS
+
+    adapter = (
+        ADAPTER_IDS["crane"]
+        if args.strategy == "crane"
+        else ADAPTER_IDS["unconstrained"]
+    )
     _build_minimal_json(
         rows,
         args.output_json,
@@ -1794,7 +1808,7 @@ def main() -> None:
     parser.add_argument(
         "--strategy",
         required=True,
-        choices=["unconstrained", "gcd", "crane", "itergen", "cars", "rejection_sampling"],
+        choices=["unconstrained", "gcd", "crane", "itergen", "cars", "rs"],
     )
     parser.add_argument(
         "--dataset",
@@ -1841,18 +1855,27 @@ def main() -> None:
         type=int,
         default=DEFAULT_CARS_SEARCH_STEPS,
         help=(
-            "Max stochastic CARS decode attempts per example (grammar must accept, "
-            f"including closing >>). Default: {DEFAULT_CARS_SEARCH_STEPS}. "
-            "Not tied to --eval-max-steps."
+            "SMILES: max decode attempts per class in one pooled session. "
+            "Other benchmarks: max CARS attempts per example. "
+            f"Default: {DEFAULT_CARS_SEARCH_STEPS}."
         ),
     )
     parser.add_argument(
-        "--rejection-search-steps",
+        "--cars-success-target",
         type=int,
-        default=DEFAULT_REJECTION_SEARCH_STEPS,
+        default=DEFAULT_CARS_SUCCESS_TARGET,
         help=(
-            "Max temperature-1 rejection-sampling decode attempts per example. "
-            f"Default: {DEFAULT_REJECTION_SEARCH_STEPS}. Not tied to --eval-max-steps."
+            "SMILES only: stop a pooled CARS class session after this many "
+            f"grammar-successful generations (default: {DEFAULT_CARS_SUCCESS_TARGET})."
+        ),
+    )
+    parser.add_argument(
+        "--rs-search-steps",
+        type=int,
+        default=DEFAULT_RS_SEARCH_STEPS,
+        help=(
+            "Max temperature-1 RS decode attempts per example. "
+            f"Default: {DEFAULT_RS_SEARCH_STEPS}. Not tied to --eval-max-steps."
         ),
     )
     args = parser.parse_args()
@@ -1867,31 +1890,9 @@ def main() -> None:
     if args.eval_backend == "vllm":
         configure_vllm_multiprocessing()
 
-    dataset_normalized = _normalize_dataset(args.dataset)
-    # CRANE main.py only supports gsm_symbolic and FOL — no Spider support
-    # (no prompt_templates/spider.yaml, no generate_spider_with_itergen function).
-    # For Spider, fall through to the legacy shared-evaluator adapters which DO
-    # support Spider and were the source of the 05-18 baselines.
-    crane_repo_datasets = {"gsm_symbolic"}
-    crane_repo_strategies = {"unconstrained", "gcd", "crane", "itergen"}
-    if (
-        dataset_normalized in crane_repo_datasets
-        and args.strategy in crane_repo_strategies
-    ):
-        from synthesis.evaluate.baselines.crane_repo_runner import (
-            run_crane_repo_baseline,
-        )
-        raise SystemExit(run_crane_repo_baseline(args, dataset_normalized))
+    from synthesis.evaluate.baselines.registry import run_baseline_strategy
 
-    if args.strategy == "gcd":
-        raise SystemExit(run_gcd_legacy_adapter(args))
-    if args.strategy == "itergen":
-        raise SystemExit(run_itergen_legacy_adapter(args))
-    if args.strategy == "cars":
-        raise SystemExit(run_cars_legacy_adapter(args))
-    if args.strategy == "rejection_sampling":
-        raise SystemExit(run_rejection_sampling_legacy_adapter(args))
-    raise SystemExit(run_crane_legacy_adapter(args))
+    raise SystemExit(run_baseline_strategy(args))
 
 
 if __name__ == "__main__":

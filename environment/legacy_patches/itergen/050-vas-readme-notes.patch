@@ -1,0 +1,19 @@
+From: VAS baseline harness <vas@local>
+Subject: [PATCH] 050 vas readme notes
+
+--- a/README.md
++++ b/README.md
+@@ -79,6 +79,13 @@
+ print("Current Words:", current_words)
+ ```
+ 
++## Local Compatibility Notes
++
++This vendored copy includes a minimal compatibility fallback for newer
++Transformers versions where model classes no longer expose the private
++`_get_logits_warper` method. When absent, legacy greedy decoding uses an empty
++logits processor list.
++
+ 
+ ## Case Studies
+ The following case studies demonstrate the utility of IterGen in various applications as described in the [paper](https://arxiv.org/abs/2410.07295).

@@ -1240,12 +1240,33 @@ class SynthesisPipeline:
         attempts: list[SynthesisAttempt] = []
 
         # Create an isolated output directory for this run. The directory layout is:
-        #   outputs/generated/<output_name>_<run_id>/
+        #   outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<run_id>/
         #     - dafny/
         #     - python/
         #     - results/
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + secrets.token_hex(3)
-        run_dir = self.output_dir / f"{output_name}_{run_id}"
+        from synthesis.project_paths import (
+            generated_run_dir,
+            legacy_generated_run_dir,
+            synthesis_strategy_from_output_name,
+        )
+
+        strategy = synthesis_strategy_from_output_name(output_name)
+        run_dir = generated_run_dir(
+            self.output_dir,
+            eval_model=self.evaluator.model_name,
+            benchmark=self.evaluator.dataset_name,
+            strategy=strategy,
+            output_name=output_name,
+            run_id=run_id,
+        )
+        legacy_run_dir = legacy_generated_run_dir(
+            self.output_dir,
+            output_name=output_name,
+            run_id=run_id,
+        )
+        if legacy_run_dir.is_dir() and not run_dir.is_dir():
+            run_dir = legacy_run_dir
         run_dafny_dir = run_dir / "dafny"
         run_python_dir = run_dir / "python"
         run_results_dir = run_dir / "results"
@@ -1256,7 +1277,13 @@ class SynthesisPipeline:
         # Persist exact prompt/response records under the repo's single logs tree.
         from synthesis.project_defaults import synthesis_prompt_log_dir
 
-        prompt_log_dir = synthesis_prompt_log_dir(output_name, run_id)
+        prompt_log_dir = synthesis_prompt_log_dir(
+            output_name,
+            run_id,
+            eval_model=self.evaluator.model_name,
+            benchmark=self.evaluator.dataset_name,
+            strategy=strategy,
+        )
         prompt_log_dir.mkdir(parents=True, exist_ok=True)
         os.environ["CSD_PROMPT_LOG_DIR"] = str(prompt_log_dir)
 

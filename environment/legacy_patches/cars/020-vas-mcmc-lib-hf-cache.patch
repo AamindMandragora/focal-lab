@@ -1,0 +1,21 @@
+From: VAS baseline harness <vas@local>
+Subject: [PATCH] 020 vas mcmc lib hf cache
+
+--- a/mcmc/lib.py
++++ b/mcmc/lib.py
+@@ -71,9 +71,12 @@
+     ]
+ 
+     def __init__(self, model_id: str, grammar_str: str | None = None, **kwargs):
+-        with open("secrets.json") as f:
+-            secrets = json.load(f)
+-            os.environ["HF_TOKEN"] = secrets["HF_TOKEN"]
++        if os.path.exists("secrets.json"):
++            with open("secrets.json") as f:
++                secrets = json.load(f)
++                hf_token = secrets.get("HF_TOKEN")
++                if hf_token and hf_token != 'your_token':
++                    os.environ["HF_TOKEN"] = hf_token
+ 
+         self.model_id = model_id
+ 

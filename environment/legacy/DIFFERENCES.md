@@ -30,17 +30,28 @@ so baseline numbers remain interpretable.
 | Aspect | Raw IterGen | Our adapter |
 |--------|-------------|-------------|
 | Import layout | Expects package **`itergen`** on `PYTHONPATH` | **`_itergen_add_import_paths`** prepends the repo root and nested `syncode` paths used by upstream layouts. |
+| HF / SynCode cache | cwd-relative `cache/` | Patch **`010-vas-cache-and-hf-env`**: resolve **`CSD_CACHE_ROOT`** / repo **`cache/`**, normalize **`SYNCODE_CACHE`**, bfloat16 on CUDA, pad token fallback. |
+| Transformers sampling | Uses **`model._get_logits_warper`** directly | Patches **`020-vas-language-model-compat`**, **`040-vas-main-harness`**: warper/processor split compatible with Transformers 4.4x+, empty **`stop_strings`** guard, safer beam-mode defaults. |
+| Lark deepcopy | **`Tree.__deepcopy__`** can recurse on cyclic stacks | Patch **`030-vas-lark-tree-deepcopy`**: bounded copy for long GSM runs. |
 | GSM grammar | Static Lark / SynCode bridge | We rebuild **`gsm.lark`** per evaluation batch via **`_legacy_gsm_symbolic_grammar_base`** (allowed symbolic identifiers from `variable_types`, else numeric-only), then apply the same **`syncode: start ">>"`** body tweak as GCD so decoding starts after the prompt’s opening `<<`. |
 | Output normalization | Raw completion text | GSM completions pass **`_gsm_symbolic_completion_to_delimited`** so **`<<expr>>`** extraction matches **`benchmarks/gsm_symbolic/eval_logic.py`**. |
-| Known upstream fragility | Lark `Tree.__deepcopy__` can recurse deeply on cyclic stacks | Partners sometimes patch upstream Lark/SynCode locally so long jobs finish; if needed, capture that change as a **`environment/legacy_patches/itergen/*.patch`** applied by **`clone_legacy_csds.sh`**. |
+
+Tracked patches: **`environment/legacy_patches/itergen/`** (applied by **`clone_legacy_csds.sh`**).
 
 ## CARS (`legacy/cars`)
+
+Upstream: **[pparys/cars](https://github.com/pparys/cars)** (paper reference implementation). The newer **[large-loris-models/casa](https://github.com/large-loris-models/casa)** package is a separate refactor and is **not** what our harness imports.
 
 | Aspect | Raw CARS | Our adapter |
 |--------|----------|-------------|
 | API surface | `cars.lib.ConstrainedModel` experiments | **`run_cars_legacy_adapter`** constructs **`ConstrainedModel`**, injects per-example Lark grammar (GSM dynamic/numeric, Spider `sql.lark`, SMILES class grammar text), runs **`generate`-style loop**, scores through **`Evaluator` + benchmark `eval_logic`**. |
-| GSM answers | May emit bare expressions | **`_cars_normalize_gsm_symbolic_output`** wraps delimiter-free bodies so **`extract_actual`** sees `<<…>>` spans (see `outputs/baselines/AGENTS.md` caveat on older artifacts). |
+| Model loading | Requires **`secrets.json`**, fixed HF model list | Patch **`010-vas-lib-hf-cache-device-map`**: optional secrets, repo **`cache/`** via HF env vars, Qwen2.5-Coder 1.5B/14B ids, chat-template fallback for instruct models. |
+| MCMC path | Same secrets assumption | Patch **`020-vas-mcmc-lib-hf-cache`**: shared HF cache dir resolution. |
+| CLI entry | **`run_task.py`** model index table | Patch **`030-vas-run-task-harness`**: accepts Hugging Face model ids directly (matrix **`--eval-model`** strings). |
+| GSM answers | May emit bare expressions | **`_cars_normalize_gsm_symbolic_output`** wraps delimiter-free bodies so **`extract_actual`** sees `<<…>>` spans (see `outputs/README.md` for baseline layout). |
 | Spider syntax flag | N/A | Adapter sets syntax True when extracted SQL mentions **`SELECT`** (legacy rows lacked rich syntax metadata). |
+
+Tracked patches: **`environment/legacy_patches/cars/`** (applied by **`clone_legacy_csds.sh`**).
 
 ## GCD baseline (no `legacy/` tree)
 

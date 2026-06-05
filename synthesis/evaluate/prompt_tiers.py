@@ -1,6 +1,6 @@
 """Prompt tier selection and rendering for MetaDecode / baseline evaluation.
 
-Tier 1 (answer-only): GCD, IterGen, CARS, rejection sampling — grammar-masked from the first token.
+Tier 1 (answer-only): GCD, IterGen, CARS, RS — grammar-masked from the first token.
 Tier 2 (chain-of-thought): Unconstrained, CRANE, MetaDecode with free LM steps.
 
 Compiled metadecode strategies pick tier 1 vs 2 per iteration via
@@ -37,7 +37,7 @@ BENCHMARK_MAX_NEW_TOKENS: dict[str, int] = {
 SMILES_TIER1_MAX_NEW_TOKENS = 96
 SMILES_TIER2_MAX_NEW_TOKENS = 256
 
-TIER1_STRATEGIES = frozenset({"gcd", "itergen", "cars", "rejection_sampling"})
+TIER1_STRATEGIES = frozenset({"gcd", "itergen", "cars", "rs"})
 TIER2_STRATEGIES = frozenset({"unconstrained", "crane", "metadecode"})
 
 # Few-shot caps (full frozen shot lists live in shots.json; CRANE yaml used 8).
@@ -280,28 +280,20 @@ def render_smiles_cars_prompt(
     tier: PromptTier,
     delimited_answer: bool = False,
 ) -> str:
-    """Render a CARS-style class prompt; tier 1 is body-only, tier 2 ends before CoT."""
-    instruction = _smiles_instruction_from_example(example)
-    if tier == 1:
-        instruction += _smiles_tier1_suffix(delimited_answer=delimited_answer)
-    else:
-        instruction += _smiles_tier2_suffix()
+    """Render native SMILES prompt; non-CARS eval may append good/bad feedback."""
+    from synthesis.evaluate.benchmarks.smiles.native_prompt import (
+        render_native_smiles_prompt_with_feedback,
+    )
 
-    lines = [instruction, ""]
-    exemplars = list(example.get("prompt_exemplars") or [])[:SMILES_FEWSHOT_COUNT]
-    for smiles in exemplars:
-        value = str(smiles).strip()
-        if value:
-            lines.append(f"Molecule: {value}")
-    good_results = list(example.get("smiles_good_results") or [])
-    bad_results = list(example.get("smiles_bad_results") or [])
-    if good_results or bad_results:
-        from synthesis.evaluate.benchmarks.smiles.prompt_state import format_attempt_suffix
-
-        lines.append(format_attempt_suffix(good_results, bad_results).rstrip("\n"))
-    elif tier == 2:
-        lines.extend(["", "Reasoning:"])
-    return "\n".join(lines)
+    class_name = str(example.get("class_name") or "").strip()
+    if not class_name:
+        raise ValueError("SMILES prompt rendering requires class_name on the example row")
+    return render_native_smiles_prompt_with_feedback(
+        class_name,
+        good_results=example.get("smiles_good_results") or [],
+        bad_results=example.get("smiles_bad_results") or [],
+        tier=tier,
+    )
 
 
 def render_benchmark_prompt(
