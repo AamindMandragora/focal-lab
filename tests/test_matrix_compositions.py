@@ -13,7 +13,8 @@ def test_default_matrix_constants():
     assert matrix.DEFAULT_MAIN_GEN_PROFILE == "gemini"
     assert matrix.csv_list(matrix.DEFAULT_GEN_MODELS) == ["sonnet4.6", "gpt5.5"]
     assert "900" in matrix.csv_list(matrix.DEFAULT_STEP_BUDGETS)
-    assert "cars" not in matrix.BASELINE_TARGET_STRATEGIES
+    assert "cars" in matrix.BASELINE_TARGET_STRATEGIES
+    assert matrix.DEFAULT_BASELINE_STRATEGIES == matrix.BASELINE_TARGET_STRATEGIES
 
 
 def test_main_matrix_schedules_all_benchmarks_and_strategies(matrix_runner_factory):
@@ -40,7 +41,7 @@ def test_main_matrix_schedules_all_benchmarks_and_strategies(matrix_runner_facto
     assert ("metadecode", "gsm_symbolic") in seen
     assert ("metadecode", "spider") in seen
     assert ("metadecode", "smiles") in seen
-    for strategy in ("unconstrained", "gcd", "crane", "itergen", "rs"):
+    for strategy in matrix.DEFAULT_BASELINE_STRATEGIES:
         assert any(entry[1] == strategy for entry in seen)
 
 

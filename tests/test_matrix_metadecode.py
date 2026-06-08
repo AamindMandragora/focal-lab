@@ -55,7 +55,9 @@ def test_ensure_csd_target_baselines_skips_when_targets_exist(matrix_runner_fact
     eval_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
     for strategy in matrix.BASELINE_TARGET_STRATEGIES:
         path = runner.fixed_baseline_path(strategy, eval_model, "gsm_symbolic", "1", "900")
-        adapter = "crane_legacy_crane" if strategy == "crane" else f"{strategy}_legacy"
+        from synthesis.evaluate.baselines.registry import ADAPTER_IDS
+
+        adapter = ADAPTER_IDS[strategy]
         write_baseline_json(path, accuracy=0.4, syntax_rate=0.9, adapter=adapter)
 
     calls: list[str] = []

@@ -1,0 +1,1083 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 267.0333,
+    "mean_generation_seconds_per_example": 2.670333,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 276.4378,
+    "adapter": "cars_legacy_cars"
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # stadium ( stadium_id , location , name , capacity , highest , lowest , average )\n# singer ( singer_id , name , country , song_name , song_release_year , age , is_male )\n# concert ( concert_id , concert_name , theme , stadium_id , year )\n# singer_in_concert ( concert_id , singer_id )\n# concert.stadium_id = stadium.stadium_id\n# singer_in_concert.singer_id = singer.singer_id\n# singer_in_concert.concert_id = concert.concert_id\nQuestion: How many singers do we have?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT singer.singer_id) FROM singer",
+      "extracted": "SELECT COUNT(DISTINCT singer.singer_id) FROM singer",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT singer.singer_id) FROM singer",
+      "generation_seconds": 1.198945
+    },
+    {
+      "question": "What is the total number of singers?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # stadium ( stadium_id , location , name , capacity , highest , lowest , average )\n# singer ( singer_id , name , country , song_name , song_release_year , age , is_male )\n# concert ( concert_id , concert_name , theme , stadium_id , year )\n# singer_in_concert ( concert_id , singer_id )\n# concert.stadium_id = stadium.stadium_id\n# singer_in_concert.singer_id = singer.singer_id\n# singer_in_concert.concert_id = concert.concert_id\nQuestion: What is the total number of singers?\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM singer",
+      "extracted": "SELECT COUNT(*) FROM singer",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 0.250765
+    },
+    {
+      "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # stadium ( stadium_id , location , name , capacity , highest , lowest , average )\n# singer ( singer_id , name , country , song_name , song_release_year , age , is_male )\n# concert ( concert_id , concert_name , theme , stadium_id , year )\n# singer_in_concert ( concert_id , singer_id )\n# concert.stadium_id = stadium.stadium_id\n# singer_in_concert.singer_id = singer.singer_id\n# singer_in_concert.concert_id = concert.concert_id\nQuestion: Find the number of concerts happened in the stadium with the highest capacity .\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM concert AS c JOIN stadium AS s ON c.stadium_id = s.stadium_id WHERE s.capacity = (SELECT MAX(capacity) FROM stadium)",
+      "extracted": "SELECT COUNT(*) FROM concert AS c JOIN stadium AS s ON c.stadium_id = s.stadium_id WHERE s.capacity = (SELECT MAX(capacity) FROM stadium)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM concert AS c JOIN stadium AS s ON c.stadium_id = s.stadium_id WHERE s.capacity = (SELECT MAX(capacity) FROM stadium)",
+      "generation_seconds": 1.40263
+    },
+    {
+      "question": "Find the maximum weight for each type of pet. List the maximum weight and pet type.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # student ( stuid , lname , fname , age , sex , major , advisor , city_code )\n# has_pet ( stuid , petid )\n# pets ( petid , pettype , pet_age , weight )\n# has_pet.stuid = student.stuid\n# has_pet.petid = pets.petid\nQuestion: Find the maximum weight for each type of pet. List the maximum weight and pet type.\nSQL:\n",
+      "generated": "SELECT MAX(pets.weight), pets.pettype FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid GROUP BY pets.pettype",
+      "extracted": "SELECT MAX(pets.weight), pets.pettype FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid GROUP BY pets.pettype",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT MAX(pets.weight), pets.pettype FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid GROUP BY pets.pettype",
+      "generation_seconds": 1.191763
+    },
+    {
+      "question": "Find number of pets owned by students who are older than 20.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # student ( stuid , lname , fname , age , sex , major , advisor , city_code )\n# has_pet ( stuid , petid )\n# pets ( petid , pettype , pet_age , weight )\n# has_pet.stuid = student.stuid\n# has_pet.petid = pets.petid\nQuestion: Find number of pets owned by students who are older than 20.\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT hps.petid) AS num_pets FROM student s JOIN has_pet hp ON s.stuid = hp.stuid JOIN pets p ON hp.petid = p.petid WHERE s.age > 20",
+      "extracted": "SELECT COUNT(DISTINCT hps.petid) AS num_pets FROM student s JOIN has_pet hp ON s.stuid = hp.stuid JOIN pets p ON hp.petid = p.petid WHERE s.age > 20",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT hps.petid) AS num_pets FROM student s JOIN has_pet hp ON s.stuid = hp.stuid JOIN pets p ON hp.petid = p.petid WHERE s.age > 20",
+      "generation_seconds": 1.8613
+    },
+    {
+      "question": "What type of pet is the youngest animal, and how much does it weigh?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # student ( stuid , lname , fname , age , sex , major , advisor , city_code )\n# has_pet ( stuid , petid )\n# pets ( petid , pettype , pet_age , weight )\n# has_pet.stuid = student.stuid\n# has_pet.petid = pets.petid\nQuestion: What type of pet is the youngest animal, and how much does it weigh?\nSQL:\n",
+      "generated": "SELECT T1.pettype, T2.weight FROM pets AS T1 JOIN has_pet AS T2 ON T1.petid = T2.petid WHERE T1.petage = (SELECT MIN(petage) FROM pets)",
+      "extracted": "SELECT T1.pettype, T2.weight FROM pets AS T1 JOIN has_pet AS T2 ON T1.petid = T2.petid WHERE T1.petage = (SELECT MIN(petage) FROM pets)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.pettype, T2.weight FROM pets AS T1 JOIN has_pet AS T2 ON T1.petid = T2.petid WHERE T1.petage = (SELECT MIN(petage) FROM pets)",
+      "generation_seconds": 1.875069
+    },
+    {
+      "question": "What is the average and maximum age for each pet type?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # student ( stuid , lname , fname , age , sex , major , advisor , city_code )\n# has_pet ( stuid , petid )\n# pets ( petid , pettype , pet_age , weight )\n# has_pet.stuid = student.stuid\n# has_pet.petid = pets.petid\nQuestion: What is the average and maximum age for each pet type?\nSQL:\n",
+      "generated": "SELECT T2.pettype, AVG(T1.age) AS avg_age, MAX(T1.age) AS max_age FROM students AS T1 JOIN has_pet AS T3 ON T1.stuid = T3.stuid JOIN pets AS T4 ON T3.petid = T4.petid GROUP BY T2.pettype",
+      "extracted": "SELECT T2.pettype, AVG(T1.age) AS avg_age, MAX(T1.age) AS max_age FROM students AS T1 JOIN has_pet AS T3 ON T1.stuid = T3.stuid JOIN pets AS T4 ON T3.petid = T4.petid GROUP BY T2.pettype",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.pettype, AVG(T1.age) AS avg_age, MAX(T1.age) AS max_age FROM students AS T1 JOIN has_pet AS T3 ON T1.stuid = T3.stuid JOIN pets AS T4 ON T3.petid = T4.petid GROUP BY T2.pettype",
+      "generation_seconds": 11.261454
+    },
+    {
+      "question": "Find the name of the makers that produced some cars in the year of 1970?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: Find the name of the makers that produced some cars in the year of 1970?\nSQL:\n",
+      "generated": "SELECT DISTINCT T2.fullname FROM car_makers AS T1 JOIN model_list AS T3 ON T1.id = T3.maker WHERE T3.model IN (SELECT model FROM cars_data WHERE year = 1970) AND T1.fullname IS NOT NULL",
+      "extracted": "SELECT DISTINCT T2.fullname FROM car_makers AS T1 JOIN model_list AS T3 ON T1.id = T3.maker WHERE T3.model IN (SELECT model FROM cars_data WHERE year = 1970) AND T1.fullname IS NOT NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T2.fullname FROM car_makers AS T1 JOIN model_list AS T3 ON T1.id = T3.maker WHERE T3.model IN (SELECT model FROM cars_data WHERE year = 1970) AND T1.fullname IS NOT NULL",
+      "generation_seconds": 2.266573
+    },
+    {
+      "question": "What are the different models for the cards produced after 1980?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: What are the different models for the cards produced after 1980?\nSQL:\n",
+      "generated": "SELECT DISTINCT T2.model FROM cars_data AS T1 JOIN car_makers AS T2 ON T1.make = T2.fullname WHERE T1.year > 1980",
+      "extracted": "SELECT DISTINCT T2.model FROM cars_data AS T1 JOIN car_makers AS T2 ON T1.make = T2.fullname WHERE T1.year > 1980",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T2.model FROM cars_data AS T1 JOIN car_makers AS T2 ON T1.make = T2.fullname WHERE T1.year > 1980",
+      "generation_seconds": 1.557846
+    },
+    {
+      "question": "What is the count of the car models produced in the United States?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: What is the count of the car models produced in the United States?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT T1.model) FROM car_makers AS T1 INNER JOIN countries AS T2 ON T1.country = T2.countryid WHERE T2.continent = 'United States'",
+      "extracted": "SELECT COUNT(DISTINCT T1.model) FROM car_makers AS T1 INNER JOIN countries AS T2 ON T1.country = T2.countryid WHERE T2.continent = 'United States'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT T1.model) FROM car_makers AS T1 INNER JOIN countries AS T2 ON T1.country = T2.countryid WHERE T2.continent = 'United States'",
+      "generation_seconds": 1.703258
+    },
+    {
+      "question": "What is the average weight of cars each year?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: What is the average weight of cars each year?\nSQL:\n",
+      "generated": "SELECT AVG(weight) FROM cars_data",
+      "extracted": "SELECT AVG(weight) FROM cars_data",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT AVG(weight) FROM cars_data",
+      "generation_seconds": 0.699836
+    },
+    {
+      "question": "What is the average horsepower for all cars produced before 1980 ?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: What is the average horsepower for all cars produced before 1980 ?\nSQL:\n",
+      "generated": "SELECT AVG(horsepower) FROM cars_data WHERE year < 1980",
+      "extracted": "SELECT AVG(horsepower) FROM cars_data WHERE year < 1980",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT AVG(horsepower) FROM cars_data WHERE year < 1980",
+      "generation_seconds": 0.771157
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: For a volvo model, how many cylinders does the version with least accelerate have?\nSQL:\n",
+      "generated": "SELECT T2.cylinders FROM car_names AS T1 JOIN model_list AS T3 ON T1.make = T3.maker JOIN car_makers AS T4 ON T4.id = T3.maker JOIN cars_data AS T5 ON T1.makeid = T5.id WHERE T4.fullname = 'Volvo' AND T1.model = (SELECT model FROM model_list WHERE maker = 'Volvo' ORDER BY accelerate LIMIT 1)",
+      "extracted": "SELECT T2.cylinders FROM car_names AS T1 JOIN model_list AS T3 ON T1.make = T3.maker JOIN car_makers AS T4 ON T4.id = T3.maker JOIN cars_data AS T5 ON T1.makeid = T5.id WHERE T4.fullname = 'Volvo' AND T1.model = (SELECT model FROM model_list WHERE maker = 'Volvo' ORDER BY accelerate LIMIT 1)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.cylinders FROM car_names AS T1 JOIN model_list AS T3 ON T1.make = T3.maker JOIN car_makers AS T4 ON T4.id = T3.maker JOIN cars_data AS T5 ON T1.makeid = T5.id WHERE T4.fullname = 'Volvo' AND T1.model = (SELECT model FROM model_list WHERE maker = 'Volvo' ORDER BY accelerate LIMIT 1)",
+      "generation_seconds": 3.723985
+    },
+    {
+      "question": "What are the names of the countries with no car makers?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # continents ( contid , continent )\n# countries ( countryid , countryname , continent )\n# car_makers ( id , maker , fullname , country )\n# model_list ( modelid , maker , model )\n# car_names ( makeid , model , make )\n# cars_data ( id , mpg , cylinders , edispl , horsepower , weight , accelerate , year )\n# countries.continent = continents.contid\n# car_makers.country = countries.countryid\n# model_list.maker = car_makers.id\n# car_names.model = model_list.model\n# cars_data.id = car_names.makeid\nQuestion: What are the names of the countries with no car makers?\nSQL:\n",
+      "generated": "SELECT T1.countryname FROM countries AS T1 JOIN continents AS T2 ON T1.continuid = T2.contid WHERE T1.countryid NOT IN (SELECT T3.countryid FROM car_makers AS T3)",
+      "extracted": "SELECT T1.countryname FROM countries AS T1 JOIN continents AS T2 ON T1.continuid = T2.contid WHERE T1.countryid NOT IN (SELECT T3.countryid FROM car_makers AS T3)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.countryname FROM countries AS T1 JOIN continents AS T2 ON T1.continuid = T2.contid WHERE T1.countryid NOT IN (SELECT T3.countryid FROM car_makers AS T3)",
+      "generation_seconds": 1.910626
+    },
+    {
+      "question": "How many flights do we have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: How many flights do we have?\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM flights",
+      "extracted": "SELECT COUNT(*) FROM flights",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM flights",
+      "generation_seconds": 0.499579
+    },
+    {
+      "question": "What is the airport name for airport 'AKO'?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: What is the airport name for airport 'AKO'?\nSQL:\n",
+      "generated": "SELECT T2.airportname FROM airports AS T1 JOIN flights AS T3 ON T1.airportcode = T3.sourceairport WHERE T3.flightno LIKE '%AKO%' AND T1.airportcode = 'AKO'",
+      "extracted": "SELECT T2.airportname FROM airports AS T1 JOIN flights AS T3 ON T1.airportcode = T3.sourceairport WHERE T3.flightno LIKE '%AKO%' AND T1.airportcode = 'AKO'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.airportname FROM airports AS T1 JOIN flights AS T3 ON T1.airportcode = T3.sourceairport WHERE T3.flightno LIKE '%AKO%' AND T1.airportcode = 'AKO'",
+      "generation_seconds": 1.972743
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: Return the name of the airport with code 'AKO'.\nSQL:\n",
+      "generated": "SELECT T1.airportname FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T2.sourceairport = 'AKO'",
+      "extracted": "SELECT T1.airportname FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T2.sourceairport = 'AKO'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.airportname FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T2.sourceairport = 'AKO'",
+      "generation_seconds": 1.463728
+    },
+    {
+      "question": "Give the number of Jetblue Airways flights.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: Give the number of Jetblue Airways flights.\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM flights INNER JOIN airlines ON flights.airline = airlines.uid INNER JOIN airports ON flights.sourceairport = airports.airportcode WHERE airlines.airline = 'JetBlue Airways'",
+      "extracted": "SELECT COUNT(*) FROM flights INNER JOIN airlines ON flights.airline = airlines.uid INNER JOIN airports ON flights.sourceairport = airports.airportcode WHERE airlines.airline = 'JetBlue Airways'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM flights INNER JOIN airlines ON flights.airline = airlines.uid INNER JOIN airports ON flights.sourceairport = airports.airportcode WHERE airlines.airline = 'JetBlue Airways'",
+      "generation_seconds": 1.466088
+    },
+    {
+      "question": "How many 'United Airlines' flights depart from Airport 'AHD'?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: How many 'United Airlines' flights depart from Airport 'AHD'?\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM flights JOIN airports ON flights.sourceairport = airports.airportcode WHERE flights.airline = 'United Airlines' AND airports.city = 'AHD'",
+      "extracted": "SELECT COUNT(*) FROM flights JOIN airports ON flights.sourceairport = airports.airportcode WHERE flights.airline = 'United Airlines' AND airports.city = 'AHD'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM flights JOIN airports ON flights.sourceairport = airports.airportcode WHERE flights.airline = 'United Airlines' AND airports.city = 'AHD'",
+      "generation_seconds": 9.744358
+    },
+    {
+      "question": "Count the number of United Airlines flights that arrive in Aberdeen.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: Count the number of United Airlines flights that arrive in Aberdeen.\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM flights AS f JOIN airlines AS a ON f.airline = a.uid JOIN airports AS ap ON f.destairport = ap.airportcode WHERE a.airline = 'United' AND ap.city = 'Aberdeen'",
+      "extracted": "SELECT COUNT(*) FROM flights AS f JOIN airlines AS a ON f.airline = a.uid JOIN airports AS ap ON f.destairport = ap.airportcode WHERE a.airline = 'United' AND ap.city = 'Aberdeen'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM flights AS f JOIN airlines AS a ON f.airline = a.uid JOIN airports AS ap ON f.destairport = ap.airportcode WHERE a.airline = 'United' AND ap.city = 'Aberdeen'",
+      "generation_seconds": 2.055204
+    },
+    {
+      "question": "What is the code of airport that has fewest number of flights?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: What is the code of airport that has fewest number of flights?\nSQL:\n",
+      "generated": "SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(*) LIMIT 1",
+      "extracted": "SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(*) LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(*) LIMIT 1",
+      "generation_seconds": 2.488512
+    },
+    {
+      "question": "Which airline has most number of flights?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: Which airline has most number of flights?\nSQL:\n",
+      "generated": "SELECT T1.airline FROM flights AS T1 JOIN airports AS T2 ON T1.sourceairport = T2.airportcode OR T1.destairport = T2.airportcode GROUP BY T1.airline ORDER BY COUNT(*) DESC LIMIT 1",
+      "extracted": "SELECT T1.airline FROM flights AS T1 JOIN airports AS T2 ON T1.sourceairport = T2.airportcode OR T1.destairport = T2.airportcode GROUP BY T1.airline ORDER BY COUNT(*) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.airline FROM flights AS T1 JOIN airports AS T2 ON T1.sourceairport = T2.airportcode OR T1.destairport = T2.airportcode GROUP BY T1.airline ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.944975
+    },
+    {
+      "question": "Find all airlines that have at least 10 flights.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # airlines ( uid , airline , abbreviation , country )\n# airports ( city , airportcode , airportname , country , countryabbrev )\n# flights ( airline , flightno , sourceairport , destairport )\n# flights.destairport = airports.airportcode\n# flights.sourceairport = airports.airportcode\nQuestion: Find all airlines that have at least 10 flights.\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.airline FROM flights AS T1 JOIN airlines AS T2 ON T1.airline = T2.uid WHERE COUNT(*) >= 10",
+      "extracted": "SELECT DISTINCT T1.airline FROM flights AS T1 JOIN airlines AS T2 ON T1.airline = T2.uid WHERE COUNT(*) >= 10",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.airline FROM flights AS T1 JOIN airlines AS T2 ON T1.airline = T2.uid WHERE COUNT(*) >= 10",
+      "generation_seconds": 1.038708
+    },
+    {
+      "question": "Which cities do more than one employee under age 30 come from?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # employee ( employee_id , name , age , city )\n# shop ( shop_id , name , location , district , number_products , manager_name )\n# hiring ( shop_id , employee_id , start_from , is_full_time )\n# evaluation ( employee_id , year_awarded , bonus )\n# hiring.employee_id = employee.employee_id\n# hiring.shop_id = shop.shop_id\n# evaluation.employee_id = employee.employee_id\nQuestion: Which cities do more than one employee under age 30 come from?\nSQL:\n",
+      "generated": "SELECT T1.city FROM employee AS T1 JOIN hiring AS T2 ON T1.employee_id = T2.employee_id WHERE T1.age < 30 GROUP BY T1.city HAVING COUNT(*) > 1",
+      "extracted": "SELECT T1.city FROM employee AS T1 JOIN hiring AS T2 ON T1.employee_id = T2.employee_id WHERE T1.age < 30 GROUP BY T1.city HAVING COUNT(*) > 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.city FROM employee AS T1 JOIN hiring AS T2 ON T1.employee_id = T2.employee_id WHERE T1.age < 30 GROUP BY T1.city HAVING COUNT(*) > 1",
+      "generation_seconds": 1.431783
+    },
+    {
+      "question": "Which employee received the biggest bonus? Give me the employee name.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # employee ( employee_id , name , age , city )\n# shop ( shop_id , name , location , district , number_products , manager_name )\n# hiring ( shop_id , employee_id , start_from , is_full_time )\n# evaluation ( employee_id , year_awarded , bonus )\n# hiring.employee_id = employee.employee_id\n# hiring.shop_id = shop.shop_id\n# evaluation.employee_id = employee.employee_id\nQuestion: Which employee received the biggest bonus? Give me the employee name.\nSQL:\n",
+      "generated": "SELECT T1.name FROM employee AS T1 JOIN evaluation AS T2 ON T1.employee_id = T2.employee_id WHERE T2.bonus = (SELECT MAX(bonus) FROM evaluation)",
+      "extracted": "SELECT T1.name FROM employee AS T1 JOIN evaluation AS T2 ON T1.employee_id = T2.employee_id WHERE T2.bonus = (SELECT MAX(bonus) FROM evaluation)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM employee AS T1 JOIN evaluation AS T2 ON T1.employee_id = T2.employee_id WHERE T2.bonus = (SELECT MAX(bonus) FROM evaluation)",
+      "generation_seconds": 1.274187
+    },
+    {
+      "question": "What is the name of the shop that is hiring the largest number of employees?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # employee ( employee_id , name , age , city )\n# shop ( shop_id , name , location , district , number_products , manager_name )\n# hiring ( shop_id , employee_id , start_from , is_full_time )\n# evaluation ( employee_id , year_awarded , bonus )\n# hiring.employee_id = employee.employee_id\n# hiring.shop_id = shop.shop_id\n# evaluation.employee_id = employee.employee_id\nQuestion: What is the name of the shop that is hiring the largest number of employees?\nSQL:\n",
+      "generated": "SELECT s.name FROM shop s JOIN hiring h ON s.shop_id = h.shop_id GROUP BY s.shop_id ORDER BY COUNT(h.employee_id) DESC LIMIT 1",
+      "extracted": "SELECT s.name FROM shop s JOIN hiring h ON s.shop_id = h.shop_id GROUP BY s.shop_id ORDER BY COUNT(h.employee_id) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT s.name FROM shop s JOIN hiring h ON s.shop_id = h.shop_id GROUP BY s.shop_id ORDER BY COUNT(h.employee_id) DESC LIMIT 1",
+      "generation_seconds": 6.14238
+    },
+    {
+      "question": "How many documents do we have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: How many documents do we have?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT document_id) FROM documents",
+      "extracted": "SELECT COUNT(DISTINCT document_id) FROM documents",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT document_id) FROM documents",
+      "generation_seconds": 0.578319
+    },
+    {
+      "question": "Return the ids of templates that have the code PP or PPT.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: Return the ids of templates that have the code PP or PPT.\nSQL:\n",
+      "generated": "SELECT DISTINCT t.template_id FROM templates AS t JOIN ref_template_types AS rt ON t.template_type_code = rt.template_type_code WHERE rt.template_type_code IN ('PP', 'PPT')",
+      "extracted": "SELECT DISTINCT t.template_id FROM templates AS t JOIN ref_template_types AS rt ON t.template_type_code = rt.template_type_code WHERE rt.template_type_code IN ('PP', 'PPT')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT t.template_id FROM templates AS t JOIN ref_template_types AS rt ON t.template_type_code = rt.template_type_code WHERE rt.template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 1.226743
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: Which template type code has most number of templates?\nSQL:\n",
+      "generated": "SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "extracted": "SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.568369
+    },
+    {
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: Return the different descriptions for templates that have been used in a document.\nSQL:\n",
+      "generated": "SELECT DISTINCT T2.template_type_description FROM templates AS T1 INNER JOIN documents AS T3 ON T1.template_id = T3.template_id INNER JOIN paragraphs AS T4 ON T3.document_id = T4.document_id WHERE T4.paragraph_text IS NOT NULL",
+      "extracted": "SELECT DISTINCT T2.template_type_description FROM templates AS T1 INNER JOIN documents AS T3 ON T1.template_id = T3.template_id INNER JOIN paragraphs AS T4 ON T3.document_id = T4.document_id WHERE T4.paragraph_text IS NOT NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T2.template_type_description FROM templates AS T1 INNER JOIN documents AS T3 ON T1.template_id = T3.template_id INNER JOIN paragraphs AS T4 ON T3.document_id = T4.document_id WHERE T4.paragraph_text IS NOT NULL",
+      "generation_seconds": 1.679834
+    },
+    {
+      "question": "What are the template ids with template type description \"Presentation\".",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: What are the template ids with template type description \"Presentation\".\nSQL:\n",
+      "generated": "SELECT T2.template_id FROM templates AS T1 JOIN ref_template_types AS T3 ON T1.template_type_code = T3.template_type_code WHERE T3.template_type_description = 'Presentation'",
+      "extracted": "SELECT T2.template_id FROM templates AS T1 JOIN ref_template_types AS T3 ON T1.template_type_code = T3.template_type_code WHERE T3.template_type_description = 'Presentation'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.template_id FROM templates AS T1 JOIN ref_template_types AS T3 ON T1.template_type_code = T3.template_type_code WHERE T3.template_type_description = 'Presentation'",
+      "generation_seconds": 1.248551
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: How many paragraphs in total?\nSQL:\n",
+      "generated": "SELECT COUNT(paragraph_id) FROM paragraphs",
+      "extracted": "SELECT COUNT(paragraph_id) FROM paragraphs",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(paragraph_id) FROM paragraphs",
+      "generation_seconds": 0.292237
+    },
+    {
+      "question": "What are the paragraph texts for the document with the name 'Customer reviews'?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: What are the paragraph texts for the document with the name 'Customer reviews'?\nSQL:\n",
+      "generated": "SELECT T3.paragraph_text FROM documents AS T1 JOIN templates AS T2 ON T1.template_id = T2.template_id JOIN paragraphs AS T3 ON T1.document_id = T3.document_id WHERE T1.document_name = 'Customer reviews'",
+      "extracted": "SELECT T3.paragraph_text FROM documents AS T1 JOIN templates AS T2 ON T1.template_id = T2.template_id JOIN paragraphs AS T3 ON T1.document_id = T3.document_id WHERE T1.document_name = 'Customer reviews'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T3.paragraph_text FROM documents AS T1 JOIN templates AS T2 ON T1.template_id = T2.template_id JOIN paragraphs AS T3 ON T1.document_id = T3.document_id WHERE T1.document_name = 'Customer reviews'",
+      "generation_seconds": 6.969145
+    },
+    {
+      "question": "Show all document ids, names and the number of paragraphs in each document.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: Show all document ids, names and the number of paragraphs in each document.\nSQL:\n",
+      "generated": "SELECT T2.document_id, T2.document_name, COUNT(T1.paragraph_id) AS num_paragraphs FROM paragraphs AS T1 JOIN documents AS T2 ON T1.document_id = T2.document_id GROUP BY T2.document_id, T2.document_name",
+      "extracted": "SELECT T2.document_id, T2.document_name, COUNT(T1.paragraph_id) AS num_paragraphs FROM paragraphs AS T1 JOIN documents AS T2 ON T1.document_id = T2.document_id GROUP BY T2.document_id, T2.document_name",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.document_id, T2.document_name, COUNT(T1.paragraph_id) AS num_paragraphs FROM paragraphs AS T1 JOIN documents AS T2 ON T1.document_id = T2.document_id GROUP BY T2.document_id, T2.document_name",
+      "generation_seconds": 27.723992
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_template_types ( template_type_code , template_type_description )\n# templates ( template_id , version_number , template_type_code , date_effective_from , date_effective_to , template_details )\n# documents ( document_id , template_id , document_name , document_description , other_details )\n# paragraphs ( paragraph_id , document_id , paragraph_text , other_details )\n# templates.template_type_code = ref_template_types.template_type_code\n# documents.template_id = templates.template_id\n# paragraphs.document_id = documents.document_id\nQuestion: Give the ids of documents that have between one and two paragraphs.\nSQL:\n",
+      "generated": "SELECT d.document_id FROM documents d JOIN paragraphs p ON d.document_id = p.document_id WHERE COUNT(p.paragraph_id) BETWEEN 1 AND 2",
+      "extracted": "SELECT d.document_id FROM documents d JOIN paragraphs p ON d.document_id = p.document_id WHERE COUNT(p.paragraph_id) BETWEEN 1 AND 2",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT d.document_id FROM documents d JOIN paragraphs p ON d.document_id = p.document_id WHERE COUNT(p.paragraph_id) BETWEEN 1 AND 2",
+      "generation_seconds": 1.036641
+    },
+    {
+      "question": "How many teachers are there?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # course ( course_id , staring_date , course )\n# teacher ( teacher_id , name , age , hometown )\n# course_arrange ( course_id , teacher_id , grade )\n# course_arrange.teacher_id = teacher.teacher_id\n# course_arrange.course_id = course.course_id\nQuestion: How many teachers are there?\nSQL:\n",
+      "generated": "SELECT COUNT(teacher_id) FROM teacher",
+      "extracted": "SELECT COUNT(teacher_id) FROM teacher",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(teacher_id) FROM teacher",
+      "generation_seconds": 0.958605
+    },
+    {
+      "question": "What is the total count of teachers?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # course ( course_id , staring_date , course )\n# teacher ( teacher_id , name , age , hometown )\n# course_arrange ( course_id , teacher_id , grade )\n# course_arrange.teacher_id = teacher.teacher_id\n# course_arrange.course_id = course.course_id\nQuestion: What is the total count of teachers?\nSQL:\n",
+      "generated": "SELECT COUNT(teacher_id) FROM teacher",
+      "extracted": "SELECT COUNT(teacher_id) FROM teacher",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(teacher_id) FROM teacher",
+      "generation_seconds": 0.943713
+    },
+    {
+      "question": "What is the name of each teacher and what course they teach?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # course ( course_id , staring_date , course )\n# teacher ( teacher_id , name , age , hometown )\n# course_arrange ( course_id , teacher_id , grade )\n# course_arrange.teacher_id = teacher.teacher_id\n# course_arrange.course_id = course.course_id\nQuestion: What is the name of each teacher and what course they teach?\nSQL:\n",
+      "generated": "SELECT teacher.name, course.course FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id",
+      "extracted": "SELECT teacher.name, course.course FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT teacher.name, course.course FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id",
+      "generation_seconds": 0.726877
+    },
+    {
+      "question": "Find the average number of staff working for the museums that were open before 2009.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # museum ( museum_id , name , num_of_staff , open_year )\n# visitor ( id , name , level_of_membership , age )\n# visit ( museum_id , visitor_id , num_of_ticket , total_spent )\n# visit.visitor_id = visitor.id\n# visit.museum_id = museum.museum_id\nQuestion: Find the average number of staff working for the museums that were open before 2009.\nSQL:\n",
+      "generated": "SELECT AVG(num_of_staff) FROM museum WHERE open_year < 2009",
+      "extracted": "SELECT AVG(num_of_staff) FROM museum WHERE open_year < 2009",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT AVG(num_of_staff) FROM museum WHERE open_year < 2009",
+      "generation_seconds": 0.569383
+    },
+    {
+      "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # museum ( museum_id , name , num_of_staff , open_year )\n# visitor ( id , name , level_of_membership , age )\n# visit ( museum_id , visitor_id , num_of_ticket , total_spent )\n# visit.visitor_id = visitor.id\n# visit.museum_id = museum.museum_id\nQuestion: What are the opening year and staff number of the museum named Plaza Museum?\nSQL:\n",
+      "generated": "SELECT open_year, num_of_staff FROM museum WHERE name = 'Plaza Museum'",
+      "extracted": "SELECT open_year, num_of_staff FROM museum WHERE name = 'Plaza Museum'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT open_year, num_of_staff FROM museum WHERE name = 'Plaza Museum'",
+      "generation_seconds": 0.572654
+    },
+    {
+      "question": "find the id, name and age for visitors who visited some museums more than once.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # museum ( museum_id , name , num_of_staff , open_year )\n# visitor ( id , name , level_of_membership , age )\n# visit ( museum_id , visitor_id , num_of_ticket , total_spent )\n# visit.visitor_id = visitor.id\n# visit.museum_id = museum.museum_id\nQuestion: find the id, name and age for visitors who visited some museums more than once.\nSQL:\n",
+      "generated": "SELECT v.id, v.name, v.age FROM visitor AS v JOIN visit AS vi ON v.id = vi.visitor_id WHERE COUNT(vi.visitor_id) > 1",
+      "extracted": "SELECT v.id, v.name, v.age FROM visitor AS v JOIN visit AS vi ON v.id = vi.visitor_id WHERE COUNT(vi.visitor_id) > 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT v.id, v.name, v.age FROM visitor AS v JOIN visit AS vi ON v.id = vi.visitor_id WHERE COUNT(vi.visitor_id) > 1",
+      "generation_seconds": 2.071692
+    },
+    {
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # museum ( museum_id , name , num_of_staff , open_year )\n# visitor ( id , name , level_of_membership , age )\n# visit ( museum_id , visitor_id , num_of_ticket , total_spent )\n# visit.visitor_id = visitor.id\n# visit.museum_id = museum.museum_id\nQuestion: What are the average and maximum number of tickets bought in all visits?\nSQL:\n",
+      "generated": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "extracted": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "generation_seconds": 3.499225
+    },
+    {
+      "question": "List the first name and birth date of all players from the country with code USA.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: List the first name and birth date of all players from the country with code USA.\nSQL:\n",
+      "generated": "SELECT T1.first_name, T1.birth_date FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T1.country_code = 'USA'",
+      "extracted": "SELECT T1.first_name, T1.birth_date FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T1.country_code = 'USA'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.first_name, T1.birth_date FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T1.country_code = 'USA'",
+      "generation_seconds": 1.66565
+    },
+    {
+      "question": "List the number of all matches who played in years of 2013 or 2016.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: List the number of all matches who played in years of 2013 or 2016.\nSQL:\n",
+      "generated": "SELECT COUNT(match_num) FROM matches WHERE year IN (2013, 2016)",
+      "extracted": "SELECT COUNT(match_num) FROM matches WHERE year IN (2013, 2016)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(match_num) FROM matches WHERE year IN (2013, 2016)",
+      "generation_seconds": 1.000957
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: Find the first name and country code of the oldest player.\nSQL:\n",
+      "generated": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = ( SELECT MAX(T2.birth_date) FROM players AS T2 )",
+      "extracted": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = ( SELECT MAX(T2.birth_date) FROM players AS T2 )",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = ( SELECT MAX(T2.birth_date) FROM players AS T2 )",
+      "generation_seconds": 1.134916
+    },
+    {
+      "question": "What is the first name and country code of the oldest player?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: What is the first name and country code of the oldest player?\nSQL:\n",
+      "generated": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = (SELECT MAX(birth_date) FROM players)",
+      "extracted": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = (SELECT MAX(birth_date) FROM players)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.first_name, T1.country_code FROM players AS T1 WHERE T1.birth_date = (SELECT MAX(birth_date) FROM players)",
+      "generation_seconds": 1.016316
+    },
+    {
+      "question": "List the first and last name of all players who are left / L hand in the order of birth date.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: List the first and last name of all players who are left / L hand in the order of birth date.\nSQL:\n",
+      "generated": "SELECT T1.first_name, T1.last_name FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T2.winner_hand = 'L' ORDER BY T1.birth_date ASC",
+      "extracted": "SELECT T1.first_name, T1.last_name FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T2.winner_hand = 'L' ORDER BY T1.birth_date ASC",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.first_name, T1.last_name FROM players AS T1 JOIN matches AS T2 ON T1.player_id = T2.winner_id OR T1.player_id = T2.loser_id WHERE T2.winner_hand = 'L' ORDER BY T1.birth_date ASC",
+      "generation_seconds": 2.758938
+    },
+    {
+      "question": "What is the first name and country code of the player with the most tours?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: What is the first name and country code of the player with the most tours?\nSQL:\n",
+      "generated": "SELECT T1.first_name, T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours IN (SELECT MAX(tours) FROM rankings GROUP BY player_id)",
+      "extracted": "SELECT T1.first_name, T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours IN (SELECT MAX(tours) FROM rankings GROUP BY player_id)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.first_name, T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours IN (SELECT MAX(tours) FROM rankings GROUP BY player_id)",
+      "generation_seconds": 1.564504
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: What is the code of the country with the most players?\nSQL:\n",
+      "generated": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "extracted": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 0.972598
+    },
+    {
+      "question": "Find the codes of countries that have more than 50 players.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: Find the codes of countries that have more than 50 players.\nSQL:\n",
+      "generated": "SELECT T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours > 50 GROUP BY T1.country_code",
+      "extracted": "SELECT T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours > 50 GROUP BY T1.country_code",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tours > 50 GROUP BY T1.country_code",
+      "generation_seconds": 2.069877
+    },
+    {
+      "question": "Find the name and rank of the 3 youngest winners across all matches.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: Find the name and rank of the 3 youngest winners across all matches.\nSQL:\n",
+      "generated": "SELECT T1.winner_name, T1.winner_rank FROM matches AS T1 JOIN players AS T2 ON T1.winner_id = T2.player_id WHERE T2.birth_date IN (SELECT MIN(birth_date) FROM players GROUP BY birth_date HAVING COUNT(*) = 3)",
+      "extracted": "SELECT T1.winner_name, T1.winner_rank FROM matches AS T1 JOIN players AS T2 ON T1.winner_id = T2.player_id WHERE T2.birth_date IN (SELECT MIN(birth_date) FROM players GROUP BY birth_date HAVING COUNT(*) = 3)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.winner_name, T1.winner_rank FROM matches AS T1 JOIN players AS T2 ON T1.winner_id = T2.player_id WHERE T2.birth_date IN (SELECT MIN(birth_date) FROM players GROUP BY birth_date HAVING COUNT(*) = 3)",
+      "generation_seconds": 2.219332
+    },
+    {
+      "question": "Find the number of left handed winners who participated in the WTA Championships.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # players ( player_id , first_name , last_name , hand , birth_date , country_code )\n# matches ( best_of , draw_size , loser_age , loser_entry , loser_hand , loser_ht , loser_id , loser_ioc , loser_name , loser_rank , loser_rank_points , loser_seed , match_num , minutes , round , score , surface , tourney_date , tourney_id , tourney_level , tourney_name , winner_age , winner_entry , winner_hand , winner_ht , winner_id , winner_ioc , winner_name , winner_rank , winner_rank_points , winner_seed , year )\n# rankings ( ranking_date , ranking , player_id , ranking_points , tours )\n# matches.winner_id = players.player_id\n# matches.loser_id = players.player_id\n# rankings.player_id = players.player_id\nQuestion: Find the number of left handed winners who participated in the WTA Championships.\nSQL:\n",
+      "generated": "SELECT COUNT(*) FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE m.surface LIKE '%Left%' AND m.tourney_name LIKE 'WTA Championship'",
+      "extracted": "SELECT COUNT(*) FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE m.surface LIKE '%Left%' AND m.tourney_name LIKE 'WTA Championship'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE m.surface LIKE '%Left%' AND m.tourney_name LIKE 'WTA Championship'",
+      "generation_seconds": 1.673605
+    },
+    {
+      "question": "How many degrees does the engineering department have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: How many degrees does the engineering department have?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT T1.department_id) FROM departments AS T1 INNER JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T1.department_name = 'Engineering'",
+      "extracted": "SELECT COUNT(DISTINCT T1.department_id) FROM departments AS T1 INNER JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T1.department_name = 'Engineering'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT T1.department_id) FROM departments AS T1 INNER JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T1.department_name = 'Engineering'",
+      "generation_seconds": 1.814307
+    },
+    {
+      "question": "What is the department description for the one whose name has the word computer?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: What is the department description for the one whose name has the word computer?\nSQL:\n",
+      "generated": "SELECT T1.department_description FROM departments AS T1 JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T2.degree_summary_name LIKE '%computer%'",
+      "extracted": "SELECT T1.department_description FROM departments AS T1 JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T2.degree_summary_name LIKE '%computer%'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.department_description FROM departments AS T1 JOIN degree_programs AS T2 ON T1.department_id = T2.department_id WHERE T2.degree_summary_name LIKE '%computer%'",
+      "generation_seconds": 1.208621
+    },
+    {
+      "question": "Which student has enrolled for the most times in any program? List the id, first name, middle name, last name, the number of enrollments and student id.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: Which student has enrolled for the most times in any program? List the id, first name, middle name, last name, the number of enrollments and student id.\nSQL:\n",
+      "generated": "SELECT T1.student_id, T1.first_name, T1.middle_name, T1.last_name, COUNT(T2.student_enrolment_id) AS num_enrollments FROM students AS T1 JOIN student_enrolment AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id ORDER BY num_enrollments DESC LIMIT 1",
+      "extracted": "SELECT T1.student_id, T1.first_name, T1.middle_name, T1.last_name, COUNT(T2.student_enrolment_id) AS num_enrollments FROM students AS T1 JOIN student_enrolment AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id ORDER BY num_enrollments DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.student_id, T1.first_name, T1.middle_name, T1.last_name, COUNT(T2.student_enrolment_id) AS num_enrollments FROM students AS T1 JOIN student_enrolment AS T2 ON T1.student_id = T2.student_id GROUP BY T1.student_id ORDER BY num_enrollments DESC LIMIT 1",
+      "generation_seconds": 2.509142
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: What are the last name of the students who live in North Carolina but have not registered in any degree programs?\nSQL:\n",
+      "generated": "SELECT DISTINCT T2.last_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T2.state_province_county = 'North Carolina' AND T1.date_left IS NULL",
+      "extracted": "SELECT DISTINCT T2.last_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T2.state_province_county = 'North Carolina' AND T1.date_left IS NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T2.last_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T2.state_province_county = 'North Carolina' AND T1.date_left IS NULL",
+      "generation_seconds": 2.766029
+    },
+    {
+      "question": "How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT t1.student_enrolment_id) AS max_transcripts, t1.student_enrolment_id FROM student_enrolment_courses t1 JOIN transcripts t2 ON t1.student_course_id = t2.transcript_id GROUP BY t1.student_enrolment_id",
+      "extracted": "SELECT COUNT(DISTINCT t1.student_enrolment_id) AS max_transcripts, t1.student_enrolment_id FROM student_enrolment_courses t1 JOIN transcripts t2 ON t1.student_course_id = t2.transcript_id GROUP BY t1.student_enrolment_id",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT t1.student_enrolment_id) AS max_transcripts, t1.student_enrolment_id FROM student_enrolment_courses t1 JOIN transcripts t2 ON t1.student_course_id = t2.transcript_id GROUP BY t1.student_enrolment_id",
+      "generation_seconds": 1.888012
+    },
+    {
+      "question": "What are the different addresses that have students living there?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # addresses ( address_id , line_1 , line_2 , line_3 , city , zip_postcode , state_province_county , country , other_address_details )\n# courses ( course_id , course_name , course_description , other_details )\n# departments ( department_id , department_name , department_description , other_details )\n# degree_programs ( degree_program_id , department_id , degree_summary_name , degree_summary_description , other_details )\n# sections ( section_id , course_id , section_name , section_description , other_details )\n# semesters ( semester_id , semester_name , semester_description , other_details )\n# students ( student_id , current_address_id , permanent_address_id , first_name , middle_name , last_name , cell_mobile_number , email_address , ssn , date_first_registered , date_left , other_student_details )\n# student_enrolment ( student_enrolment_id , degree_program_id , semester_id , student_id , other_details )\n# student_enrolment_courses ( student_course_id , course_id , student_enrolment_id )\n# transcripts ( transcript_id , transcript_date , other_details )\n# transcript_contents ( student_course_id , transcript_id )\n# degree_programs.department_id = departments.department_id\n# sections.course_id = courses.course_id\n# students.permanent_address_id = addresses.address_id\n# students.current_address_id = addresses.address_id\n# student_enrolment.student_id = students.student_id\n# student_enrolment.semester_id = semesters.semester_id\n# student_enrolment.degree_program_id = degree_programs.degree_program_id\n# student_enrolment_courses.student_enrolment_id = student_enrolment.student_enrolment_id\n# student_enrolment_courses.course_id = courses.course_id\n# transcript_contents.transcript_id = transcripts.transcript_id\n# transcript_contents.student_course_id = student_enrolment_courses.student_course_id\nQuestion: What are the different addresses that have students living there?\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.line_1, T1.line_2, T1.line_3, T1.city, T1.zip_postcode, T1.state_province_county, T1.country FROM addresses AS T1 INNER JOIN students AS T2 ON T1.address_id = T2.current_address_id WHERE T2.cell_mobile_number IS NOT NULL OR T2.email_address IS NOT NULL OR T2.ssn IS NOT NULL OR T2.date_first_registered IS NOT NULL OR T2.date_left IS NOT NULL OR T2.other_student_details IS NOT NULL",
+      "extracted": "SELECT DISTINCT T1.line_1, T1.line_2, T1.line_3, T1.city, T1.zip_postcode, T1.state_province_county, T1.country FROM addresses AS T1 INNER JOIN students AS T2 ON T1.address_id = T2.current_address_id WHERE T2.cell_mobile_number IS NOT NULL OR T2.email_address IS NOT NULL OR T2.ssn IS NOT NULL OR T2.date_first_registered IS NOT NULL OR T2.date_left IS NOT NULL OR T2.other_student_details IS NOT NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.line_1, T1.line_2, T1.line_3, T1.city, T1.zip_postcode, T1.state_province_county, T1.country FROM addresses AS T1 INNER JOIN students AS T2 ON T1.address_id = T2.current_address_id WHERE T2.cell_mobile_number IS NOT NULL OR T2.email_address IS NOT NULL OR T2.ssn IS NOT NULL OR T2.date_first_registered IS NOT NULL OR T2.date_left IS NOT NULL OR T2.other_student_details IS NOT NULL",
+      "generation_seconds": 3.655699
+    },
+    {
+      "question": "What are the titles of the cartoons sorted alphabetically?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: What are the titles of the cartoons sorted alphabetically?\nSQL:\n",
+      "generated": "SELECT title FROM cartoon ORDER BY title ASC",
+      "extracted": "SELECT title FROM cartoon ORDER BY title ASC",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT title FROM cartoon ORDER BY title ASC",
+      "generation_seconds": 0.298941
+    },
+    {
+      "question": "What is the country with the most number of TV Channels and how many does it have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: What is the country with the most number of TV Channels and how many does it have?\nSQL:\n",
+      "generated": "SELECT T2.country, COUNT(T1.id) as num_channels FROM tv_channel AS T1 JOIN tv_series AS T3 ON T1.id = T3.channel WHERE T3.episode IS NULL GROUP BY T2.country ORDER BY num_channels DESC LIMIT 1",
+      "extracted": "SELECT T2.country, COUNT(T1.id) as num_channels FROM tv_channel AS T1 JOIN tv_series AS T3 ON T1.id = T3.channel WHERE T3.episode IS NULL GROUP BY T2.country ORDER BY num_channels DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.country, COUNT(T1.id) as num_channels FROM tv_channel AS T1 JOIN tv_series AS T3 ON T1.id = T3.channel WHERE T3.episode IS NULL GROUP BY T2.country ORDER BY num_channels DESC LIMIT 1",
+      "generation_seconds": 2.159947
+    },
+    {
+      "question": "How many TV Channel using language English?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: How many TV Channel using language English?\nSQL:\n",
+      "generated": "SELECT COUNT(id) FROM tv_channel WHERE language = 'English'",
+      "extracted": "SELECT COUNT(id) FROM tv_channel WHERE language = 'English'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(id) FROM tv_channel WHERE language = 'English'",
+      "generation_seconds": 0.446189
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: For each language, list the number of TV Channels that use it.\nSQL:\n",
+      "generated": "SELECT COUNT(T2.language) AS num_channels, T1.language FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel GROUP BY T1.language",
+      "extracted": "SELECT COUNT(T2.language) AS num_channels, T1.language FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel GROUP BY T1.language",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(T2.language) AS num_channels, T1.language FROM tv_channel AS T1 JOIN tv_series AS T2 ON T1.id = T2.channel GROUP BY T1.language",
+      "generation_seconds": 1.22003
+    },
+    {
+      "question": "find the id of tv channels that do not play any cartoon directed by Ben Jones.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: find the id of tv channels that do not play any cartoon directed by Ben Jones.\nSQL:\n",
+      "generated": "SELECT t1.id FROM tv_channel AS t1 JOIN tv_series AS t2 ON t1.id = t2.channel WHERE t2.directed_by != 'Ben Jones' AND EXISTS (SELECT * FROM cartoon AS t3 WHERE t3.channel = t1.id AND t3.directed_by = 'Ben Jones')",
+      "extracted": "SELECT t1.id FROM tv_channel AS t1 JOIN tv_series AS t2 ON t1.id = t2.channel WHERE t2.directed_by != 'Ben Jones' AND EXISTS (SELECT * FROM cartoon AS t3 WHERE t3.channel = t1.id AND t3.directed_by = 'Ben Jones')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT t1.id FROM tv_channel AS t1 JOIN tv_series AS t2 ON t1.id = t2.channel WHERE t2.directed_by != 'Ben Jones' AND EXISTS (SELECT * FROM cartoon AS t3 WHERE t3.channel = t1.id AND t3.directed_by = 'Ben Jones')",
+      "generation_seconds": 2.433371
+    },
+    {
+      "question": "find the package option of the tv channel that do not have any cartoon directed by Ben Jones.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # tv_channel ( id , series_name , country , language , content , pixel_aspect_ratio_par , hight_definition_tv , pay_per_view_ppv , package_option )\n# tv_series ( id , episode , air_date , rating , share , 18_49_rating_share , viewers_m , weekly_rank , channel )\n# cartoon ( id , title , directed_by , written_by , original_air_date , production_code , channel )\n# tv_series.channel = tv_channel.id\n# cartoon.channel = tv_channel.id\nQuestion: find the package option of the tv channel that do not have any cartoon directed by Ben Jones.\nSQL:\n",
+      "generated": "SELECT T2.package_option FROM cartoon AS T1 INNER JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.directed_by NOT IN ('Ben Jones')",
+      "extracted": "SELECT T2.package_option FROM cartoon AS T1 INNER JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.directed_by NOT IN ('Ben Jones')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.package_option FROM cartoon AS T1 INNER JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.directed_by NOT IN ('Ben Jones')",
+      "generation_seconds": 1.196426
+    },
+    {
+      "question": "List the names of poker players ordered by the final tables made in ascending order.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # poker_player ( poker_player_id , people_id , final_table_made , best_finish , money_rank , earnings )\n# people ( people_id , nationality , name , birth_date , height )\n# poker_player.people_id = people.people_id\nQuestion: List the names of poker players ordered by the final tables made in ascending order.\nSQL:\n",
+      "generated": "SELECT T1.name FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T1.final_table_made ASC",
+      "extracted": "SELECT T1.name FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T1.final_table_made ASC",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T1.final_table_made ASC",
+      "generation_seconds": 1.305094
+    },
+    {
+      "question": "What is the money rank of the tallest poker player?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # poker_player ( poker_player_id , people_id , final_table_made , best_finish , money_rank , earnings )\n# people ( people_id , nationality , name , birth_date , height )\n# poker_player.people_id = people.people_id\nQuestion: What is the money rank of the tallest poker player?\nSQL:\n",
+      "generated": "SELECT T1.money_rank FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T2.height DESC LIMIT 1",
+      "extracted": "SELECT T1.money_rank FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T2.height DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.money_rank FROM poker_player AS T1 JOIN people AS T2 ON T1.people_id = T2.people_id ORDER BY T2.height DESC LIMIT 1",
+      "generation_seconds": 2.804118
+    },
+    {
+      "question": "What is last date created of votes from the state 'CA'?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # area_code_state ( area_code , state )\n# contestants ( contestant_number , contestant_name )\n# votes ( vote_id , phone_number , state , contestant_number , created )\n# votes.contestant_number = contestants.contestant_number\n# votes.state = area_code_state.state\nQuestion: What is last date created of votes from the state 'CA'?\nSQL:\n",
+      "generated": "SELECT MAX(v.created) FROM votes AS v JOIN area_code_state AS a ON v.state = a.state WHERE a.state = 'CA'",
+      "extracted": "SELECT MAX(v.created) FROM votes AS v JOIN area_code_state AS a ON v.state = a.state WHERE a.state = 'CA'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT MAX(v.created) FROM votes AS v JOIN area_code_state AS a ON v.state = a.state WHERE a.state = 'CA'",
+      "generation_seconds": 0.934021
+    },
+    {
+      "question": "What are the distinct states and create time of all votes?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # area_code_state ( area_code , state )\n# contestants ( contestant_number , contestant_name )\n# votes ( vote_id , phone_number , state , contestant_number , created )\n# votes.contestant_number = contestants.contestant_number\n# votes.state = area_code_state.state\nQuestion: What are the distinct states and create time of all votes?\nSQL:\n",
+      "generated": "SELECT DISTINCT state, created FROM votes",
+      "extracted": "SELECT DISTINCT state, created FROM votes",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT state, created FROM votes",
+      "generation_seconds": 0.260244
+    },
+    {
+      "question": "What are the contestant numbers and names of the contestants who had at least two votes?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # area_code_state ( area_code , state )\n# contestants ( contestant_number , contestant_name )\n# votes ( vote_id , phone_number , state , contestant_number , created )\n# votes.contestant_number = contestants.contestant_number\n# votes.state = area_code_state.state\nQuestion: What are the contestant numbers and names of the contestants who had at least two votes?\nSQL:\n",
+      "generated": "SELECT contestants.contestant_number, contestants.contestant_name FROM contestants JOIN votes ON contestants.contestant_number = votes.contestant_number WHERE votes.state IN (SELECT state FROM area_code_state GROUP BY state HAVING COUNT(state) >= 2)",
+      "extracted": "SELECT contestants.contestant_number, contestants.contestant_name FROM contestants JOIN votes ON contestants.contestant_number = votes.contestant_number WHERE votes.state IN (SELECT state FROM area_code_state GROUP BY state HAVING COUNT(state) >= 2)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT contestants.contestant_number, contestants.contestant_name FROM contestants JOIN votes ON contestants.contestant_number = votes.contestant_number WHERE votes.state IN (SELECT state FROM area_code_state GROUP BY state HAVING COUNT(state) >= 2)",
+      "generation_seconds": 2.954232
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # area_code_state ( area_code , state )\n# contestants ( contestant_number , contestant_name )\n# votes ( vote_id , phone_number , state , contestant_number , created )\n# votes.contestant_number = contestants.contestant_number\n# votes.state = area_code_state.state\nQuestion: List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.area_code FROM area_code_state AS T1 JOIN votes AS T2 ON T1.state = T2.state WHERE T2.phone_number IN ('5678901234', '5678901235') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.created BETWEEN '2022-01-01 00:00:00' AND '2022-12-31 23:59:59' AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number')",
+      "extracted": "SELECT DISTINCT T1.area_code FROM area_code_state AS T1 JOIN votes AS T2 ON T1.state = T2.state WHERE T2.phone_number IN ('5678901234', '5678901235') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.created BETWEEN '2022-01-01 00:00:00' AND '2022-12-31 23:59:59' AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.area_code FROM area_code_state AS T1 JOIN votes AS T2 ON T1.state = T2.state WHERE T2.phone_number IN ('5678901234', '5678901235') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.created BETWEEN '2022-01-01 00:00:00' AND '2022-12-31 23:59:59' AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number') AND T2.contestant_number IN ('contestants.contestant_number', 'contestants.contestant_number')",
+      "generation_seconds": 16.881768
+    },
+    {
+      "question": "Which continent is Anguilla in?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Which continent is Anguilla in?\nSQL:\n",
+      "generated": "SELECT T1.continent FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Anguilla'",
+      "extracted": "SELECT T1.continent FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Anguilla'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.continent FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Anguilla'",
+      "generation_seconds": 1.152318
+    },
+    {
+      "question": "Which language is the most popular in Aruba?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Which language is the most popular in Aruba?\nSQL:\n",
+      "generated": "SELECT T1.language FROM countrylanguage AS T1 JOIN city AS T2 ON T1.countrycode = T2.countrycode WHERE T2.name = 'Aruba' ORDER BY T1.percentage DESC LIMIT 1",
+      "extracted": "SELECT T1.language FROM countrylanguage AS T1 JOIN city AS T2 ON T1.countrycode = T2.countrycode WHERE T2.name = 'Aruba' ORDER BY T1.percentage DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.language FROM countrylanguage AS T1 JOIN city AS T2 ON T1.countrycode = T2.countrycode WHERE T2.name = 'Aruba' ORDER BY T1.percentage DESC LIMIT 1",
+      "generation_seconds": 4.681626
+    },
+    {
+      "question": "What region does Angola belong to and what is its population?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What region does Angola belong to and what is its population?\nSQL:\n",
+      "generated": "SELECT T1.region FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Angola'",
+      "extracted": "SELECT T1.region FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Angola'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.region FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode WHERE T2.name = 'Angola'",
+      "generation_seconds": 1.091774
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Which continent has the most diverse languages?\nSQL:\n",
+      "generated": "SELECT c.continent FROM country AS c JOIN countrylanguage AS cl ON c.code = cl.countrycode GROUP BY c.continent ORDER BY COUNT(cl.language) DESC LIMIT 1",
+      "extracted": "SELECT c.continent FROM country AS c JOIN countrylanguage AS cl ON c.code = cl.countrycode GROUP BY c.continent ORDER BY COUNT(cl.language) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT c.continent FROM country AS c JOIN countrylanguage AS cl ON c.code = cl.countrycode GROUP BY c.continent ORDER BY COUNT(cl.language) DESC LIMIT 1",
+      "generation_seconds": 2.180998
+    },
+    {
+      "question": "Which continent speaks the most languages?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Which continent speaks the most languages?\nSQL:\n",
+      "generated": "SELECT T1.continent FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T1.continent ORDER BY COUNT(T2.language) DESC LIMIT 1",
+      "extracted": "SELECT T1.continent FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T1.continent ORDER BY COUNT(T2.language) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.continent FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T1.continent ORDER BY COUNT(T2.language) DESC LIMIT 1",
+      "generation_seconds": 1.64319
+    },
+    {
+      "question": "What is the number of nations that use English and Dutch?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What is the number of nations that use English and Dutch?\nSQL:\n",
+      "generated": "SELECT COUNT(countrycode) FROM country WHERE language IN ('English', 'Dutch')",
+      "extracted": "SELECT COUNT(countrycode) FROM country WHERE language IN ('English', 'Dutch')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(countrycode) FROM country WHERE language IN ('English', 'Dutch')",
+      "generation_seconds": 0.580261
+    },
+    {
+      "question": "What languages are only used by a single country with a republic government?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What languages are only used by a single country with a republic government?\nSQL:\n",
+      "generated": "SELECT T1.language FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.governmentform = 'republic' GROUP BY T1.language HAVING COUNT(T1.language) = 1",
+      "extracted": "SELECT T1.language FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.governmentform = 'republic' GROUP BY T1.language HAVING COUNT(T1.language) = 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.language FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.governmentform = 'republic' GROUP BY T1.language HAVING COUNT(T1.language) = 1",
+      "generation_seconds": 2.055099
+    },
+    {
+      "question": "Which Asian countries have a population that is larger than any country in Africa?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Which Asian countries have a population that is larger than any country in Africa?\nSQL:\n",
+      "generated": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(T3.population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "extracted": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(T3.population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(T3.population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "generation_seconds": 3.968525
+    },
+    {
+      "question": "What are the Asian countries which have a population larger than that of any country in Africa?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What are the Asian countries which have a population larger than that of any country in Africa?\nSQL:\n",
+      "generated": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "extracted": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode WHERE T1.continent = 'Asia' AND T1.population > (SELECT MAX(population) FROM country AS T3 WHERE T3.continent = 'Africa')",
+      "generation_seconds": 12.795221
+    },
+    {
+      "question": "What are the names of cities in Europe for which English is not the official language?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What are the names of cities in Europe for which English is not the official language?\nSQL:\n",
+      "generated": "SELECT T1.name FROM city AS T1 JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.continent = 'Europe' AND T2.localname NOT IN ('English')",
+      "extracted": "SELECT T1.name FROM city AS T1 JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.continent = 'Europe' AND T2.localname NOT IN ('English')",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM city AS T1 JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.continent = 'Europe' AND T2.localname NOT IN ('English')",
+      "generation_seconds": 1.385542
+    },
+    {
+      "question": "What are the names of the nations with the 3 lowest populations?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: What are the names of the nations with the 3 lowest populations?\nSQL:\n",
+      "generated": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode ORDER BY T2.population LIMIT 3",
+      "extracted": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode ORDER BY T2.population LIMIT 3",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM country AS T1 JOIN city AS T2 ON T1.code = T2.countrycode ORDER BY T2.population LIMIT 3",
+      "generation_seconds": 1.018338
+    },
+    {
+      "question": "Count the number of countries for which Spanish is the predominantly spoken language.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # city ( id , name , countrycode , district , population )\n# sqlite_sequence ( name , seq )\n# country ( code , name , continent , region , surfacearea , indepyear , population , lifeexpectancy , gnp , gnpold , localname , governmentform , headofstate , capital , code2 )\n# countrylanguage ( countrycode , language , isofficial , percentage )\n# city.countrycode = country.code\n# countrylanguage.countrycode = country.code\nQuestion: Count the number of countries for which Spanish is the predominantly spoken language.\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT T1.code) FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language = 'Spanish' AND T2.isofficial = 1",
+      "extracted": "SELECT COUNT(DISTINCT T1.code) FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language = 'Spanish' AND T2.isofficial = 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT T1.code) FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language = 'Spanish' AND T2.isofficial = 1",
+      "generation_seconds": 1.915887
+    },
+    {
+      "question": "What are the names of conductors, sorted descending by the number of years they have worked?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # conductor ( conductor_id , name , age , nationality , year_of_work )\n# orchestra ( orchestra_id , orchestra , conductor_id , record_company , year_of_founded , major_record_format )\n# performance ( performance_id , orchestra_id , type , date , official_ratings_(millions) , weekly_rank , share )\n# show ( show_id , performance_id , if_first_show , result , attendance )\n# orchestra.conductor_id = conductor.conductor_id\n# performance.orchestra_id = orchestra.orchestra_id\n# show.performance_id = performance.performance_id\nQuestion: What are the names of conductors, sorted descending by the number of years they have worked?\nSQL:\n",
+      "generated": "SELECT DISTINCT c.name FROM conductor AS c JOIN orchestra AS o ON c.conductor_id = o.conductor_id ORDER BY o.year_of_work DESC",
+      "extracted": "SELECT DISTINCT c.name FROM conductor AS c JOIN orchestra AS o ON c.conductor_id = o.conductor_id ORDER BY o.year_of_work DESC",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT c.name FROM conductor AS c JOIN orchestra AS o ON c.conductor_id = o.conductor_id ORDER BY o.year_of_work DESC",
+      "generation_seconds": 3.110784
+    },
+    {
+      "question": "What is the name of the conductor who has worked the greatest number of years?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # conductor ( conductor_id , name , age , nationality , year_of_work )\n# orchestra ( orchestra_id , orchestra , conductor_id , record_company , year_of_founded , major_record_format )\n# performance ( performance_id , orchestra_id , type , date , official_ratings_(millions) , weekly_rank , share )\n# show ( show_id , performance_id , if_first_show , result , attendance )\n# orchestra.conductor_id = conductor.conductor_id\n# performance.orchestra_id = orchestra.orchestra_id\n# show.performance_id = performance.performance_id\nQuestion: What is the name of the conductor who has worked the greatest number of years?\nSQL:\n",
+      "generated": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id ORDER BY COUNT(T1.conductor_id) DESC LIMIT 1",
+      "extracted": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id ORDER BY COUNT(T1.conductor_id) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id ORDER BY COUNT(T1.conductor_id) DESC LIMIT 1",
+      "generation_seconds": 1.489859
+    },
+    {
+      "question": "Show the names of conductors that have conducted more than one orchestras.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # conductor ( conductor_id , name , age , nationality , year_of_work )\n# orchestra ( orchestra_id , orchestra , conductor_id , record_company , year_of_founded , major_record_format )\n# performance ( performance_id , orchestra_id , type , date , official_ratings_(millions) , weekly_rank , share )\n# show ( show_id , performance_id , if_first_show , result , attendance )\n# orchestra.conductor_id = conductor.conductor_id\n# performance.orchestra_id = orchestra.orchestra_id\n# show.performance_id = performance.performance_id\nQuestion: Show the names of conductors that have conducted more than one orchestras.\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id HAVING COUNT(T1.conductor_id) > 1",
+      "extracted": "SELECT DISTINCT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id HAVING COUNT(T1.conductor_id) > 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.conductor_id HAVING COUNT(T1.conductor_id) > 1",
+      "generation_seconds": 1.994675
+    },
+    {
+      "question": "Show the ids of high schoolers who have friends and are also liked by someone else.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # highschooler ( id , name , grade )\n# friend ( student_id , friend_id )\n# likes ( student_id , liked_id )\n# friend.friend_id = highschooler.id\n# friend.student_id = highschooler.id\n# likes.student_id = highschooler.id\n# likes.liked_id = highschooler.id\nQuestion: Show the ids of high schoolers who have friends and are also liked by someone else.\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.id FROM highschooler AS T1 INNER JOIN friend AS T2 ON T1.id = T2.student_id WHERE T2.friend_id IN (SELECT T3.id FROM likes AS T4 INNER JOIN highschooler AS T5 ON T4.liked_id = T5.id) AND T1.id NOT IN (SELECT T6.id FROM likes AS T7 INNER JOIN highschooler AS T8 ON T7.student_id = T8.id)",
+      "extracted": "SELECT DISTINCT T1.id FROM highschooler AS T1 INNER JOIN friend AS T2 ON T1.id = T2.student_id WHERE T2.friend_id IN (SELECT T3.id FROM likes AS T4 INNER JOIN highschooler AS T5 ON T4.liked_id = T5.id) AND T1.id NOT IN (SELECT T6.id FROM likes AS T7 INNER JOIN highschooler AS T8 ON T7.student_id = T8.id)",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.id FROM highschooler AS T1 INNER JOIN friend AS T2 ON T1.id = T2.student_id WHERE T2.friend_id IN (SELECT T3.id FROM likes AS T4 INNER JOIN highschooler AS T5 ON T4.liked_id = T5.id) AND T1.id NOT IN (SELECT T6.id FROM likes AS T7 INNER JOIN highschooler AS T8 ON T7.student_id = T8.id)",
+      "generation_seconds": 3.336311
+    },
+    {
+      "question": "What are the names of high schoolers who have likes, and how many likes does each have?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # highschooler ( id , name , grade )\n# friend ( student_id , friend_id )\n# likes ( student_id , liked_id )\n# friend.friend_id = highschooler.id\n# friend.student_id = highschooler.id\n# likes.student_id = highschooler.id\n# likes.liked_id = highschooler.id\nQuestion: What are the names of high schoolers who have likes, and how many likes does each have?\nSQL:\n",
+      "generated": "SELECT T1.name, COUNT(T2.liked_id) AS num_likes FROM highschooler AS T1 INNER JOIN likes AS T2 ON T1.id = T2.student_id GROUP BY T1.id",
+      "extracted": "SELECT T1.name, COUNT(T2.liked_id) AS num_likes FROM highschooler AS T1 INNER JOIN likes AS T2 ON T1.id = T2.student_id GROUP BY T1.id",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T1.name, COUNT(T2.liked_id) AS num_likes FROM highschooler AS T1 INNER JOIN likes AS T2 ON T1.id = T2.student_id GROUP BY T1.id",
+      "generation_seconds": 21.903467
+    },
+    {
+      "question": "Which states have both owners and professionals living there?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: Which states have both owners and professionals living there?\nSQL:\n",
+      "generated": "SELECT DISTINCT T2.state FROM owners AS T1 INNER JOIN professionals AS T2 ON T1.owner_id = T2.professional_id WHERE T1.state IS NOT NULL AND T2.state IS NOT NULL",
+      "extracted": "SELECT DISTINCT T2.state FROM owners AS T1 INNER JOIN professionals AS T2 ON T1.owner_id = T2.professional_id WHERE T1.state IS NOT NULL AND T2.state IS NOT NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T2.state FROM owners AS T1 INNER JOIN professionals AS T2 ON T1.owner_id = T2.professional_id WHERE T1.state IS NOT NULL AND T2.state IS NOT NULL",
+      "generation_seconds": 1.477015
+    },
+    {
+      "question": "Find the owner id and zip code of the owner who spent the most money in total for his or her dogs.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: Find the owner id and zip code of the owner who spent the most money in total for his or her dogs.\nSQL:\n",
+      "generated": "SELECT o.owner_id, o.zip_code FROM owners o JOIN dogs d ON o.owner_id = d.owner_id GROUP BY o.owner_id ORDER BY SUM(t.cost_of_treatment) DESC LIMIT 1",
+      "extracted": "SELECT o.owner_id, o.zip_code FROM owners o JOIN dogs d ON o.owner_id = d.owner_id GROUP BY o.owner_id ORDER BY SUM(t.cost_of_treatment) DESC LIMIT 1",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT o.owner_id, o.zip_code FROM owners o JOIN dogs d ON o.owner_id = d.owner_id GROUP BY o.owner_id ORDER BY SUM(t.cost_of_treatment) DESC LIMIT 1",
+      "generation_seconds": 9.947299
+    },
+    {
+      "question": "List the date of each treatment, together with the first name of the professional who operated it.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: List the date of each treatment, together with the first name of the professional who operated it.\nSQL:\n",
+      "generated": "SELECT T2.date_of_treatment, T1.first_name FROM treatments AS T1 JOIN professionals AS T2 ON T1.professional_id = T2.professional_id",
+      "extracted": "SELECT T2.date_of_treatment, T1.first_name FROM treatments AS T1 JOIN professionals AS T2 ON T1.professional_id = T2.professional_id",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT T2.date_of_treatment, T1.first_name FROM treatments AS T1 JOIN professionals AS T2 ON T1.professional_id = T2.professional_id",
+      "generation_seconds": 1.179675
+    },
+    {
+      "question": "List each owner's first name, last name, and the size of his for her dog.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: List each owner's first name, last name, and the size of his for her dog.\nSQL:\n",
+      "generated": "SELECT owners.first_name, owners.last_name, sizes.size_description FROM owners INNER JOIN dogs ON owners.owner_id = dogs.owner_id INNER JOIN sizes ON dogs.size_code = sizes.size_code",
+      "extracted": "SELECT owners.first_name, owners.last_name, sizes.size_description FROM owners INNER JOIN dogs ON owners.owner_id = dogs.owner_id INNER JOIN sizes ON dogs.size_code = sizes.size_code",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT owners.first_name, owners.last_name, sizes.size_description FROM owners INNER JOIN dogs ON owners.owner_id = dogs.owner_id INNER JOIN sizes ON dogs.size_code = sizes.size_code",
+      "generation_seconds": 1.237413
+    },
+    {
+      "question": "List pairs of the owner's first name and the dogs's name.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: List pairs of the owner's first name and the dogs's name.\nSQL:\n",
+      "generated": "SELECT owners.first_name, dogs.name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id",
+      "extracted": "SELECT owners.first_name, dogs.name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT owners.first_name, dogs.name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id",
+      "generation_seconds": 0.684916
+    },
+    {
+      "question": "How many professionals have performed any treatment to dogs?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: How many professionals have performed any treatment to dogs?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT t2.professional_id) FROM treatments AS t1 JOIN dogs AS t3 ON t1.dog_id = t3.dog_id JOIN owners AS t4 ON t3.owner_id = t4.owner_id JOIN professionals AS t5 ON t1.professional_id = t5.professional_id WHERE t1.cost_of_treatment > 0",
+      "extracted": "SELECT COUNT(DISTINCT t2.professional_id) FROM treatments AS t1 JOIN dogs AS t3 ON t1.dog_id = t3.dog_id JOIN owners AS t4 ON t3.owner_id = t4.owner_id JOIN professionals AS t5 ON t1.professional_id = t5.professional_id WHERE t1.cost_of_treatment > 0",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT t2.professional_id) FROM treatments AS t1 JOIN dogs AS t3 ON t1.dog_id = t3.dog_id JOIN owners AS t4 ON t3.owner_id = t4.owner_id JOIN professionals AS t5 ON t1.professional_id = t5.professional_id WHERE t1.cost_of_treatment > 0",
+      "generation_seconds": 2.78327
+    },
+    {
+      "question": "Find the number of professionals who have ever treated dogs.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: Find the number of professionals who have ever treated dogs.\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT t.professional_id) FROM treatments AS t INNER JOIN dogs AS d ON t.dog_id = d.dog_id WHERE d.date_departed IS NULL",
+      "extracted": "SELECT COUNT(DISTINCT t.professional_id) FROM treatments AS t INNER JOIN dogs AS d ON t.dog_id = d.dog_id WHERE d.date_departed IS NULL",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT t.professional_id) FROM treatments AS t INNER JOIN dogs AS d ON t.dog_id = d.dog_id WHERE d.date_departed IS NULL",
+      "generation_seconds": 1.509559
+    },
+    {
+      "question": "How much does each charge type costs? List both charge type and amount.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: How much does each charge type costs? List both charge type and amount.\nSQL:\n",
+      "generated": "SELECT charge_type, charge_amount FROM charges",
+      "extracted": "SELECT charge_type, charge_amount FROM charges",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT charge_type, charge_amount FROM charges",
+      "generation_seconds": 0.317383
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: List the email, cell phone and home phone of all the professionals.\nSQL:\n",
+      "generated": "SELECT email_address, cell_number, home_phone FROM professionals",
+      "extracted": "SELECT email_address, cell_number, home_phone FROM professionals",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT email_address, cell_number, home_phone FROM professionals",
+      "generation_seconds": 0.410568
+    },
+    {
+      "question": "Find the distinct breed type and size type combinations for dogs.",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # breeds ( breed_code , breed_name )\n# charges ( charge_id , charge_type , charge_amount )\n# sizes ( size_code , size_description )\n# treatment_types ( treatment_type_code , treatment_type_description )\n# owners ( owner_id , first_name , last_name , street , city , state , zip_code , email_address , home_phone , cell_number )\n# dogs ( dog_id , owner_id , abandoned_yn , breed_code , size_code , name , age , date_of_birth , gender , weight , date_arrived , date_adopted , date_departed )\n# professionals ( professional_id , role_code , first_name , street , city , state , zip_code , last_name , email_address , home_phone , cell_number )\n# treatments ( treatment_id , dog_id , professional_id , treatment_type_code , date_of_treatment , cost_of_treatment )\n# dogs.owner_id = owners.owner_id\n# dogs.owner_id = owners.owner_id\n# dogs.size_code = sizes.size_code\n# dogs.breed_code = breeds.breed_code\n# treatments.dog_id = dogs.dog_id\n# treatments.professional_id = professionals.professional_id\n# treatments.treatment_type_code = treatment_types.treatment_type_code\nQuestion: Find the distinct breed type and size type combinations for dogs.\nSQL:\n",
+      "generated": "SELECT DISTINCT T1.breed_name AS breed_type, T2.size_description AS size_type FROM breeds AS T1 JOIN sizes AS T2 ON T1.breed_code = T2.size_code",
+      "extracted": "SELECT DISTINCT T1.breed_name AS breed_type, T2.size_description AS size_type FROM breeds AS T1 JOIN sizes AS T2 ON T1.breed_code = T2.size_code",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT DISTINCT T1.breed_name AS breed_type, T2.size_description AS size_type FROM breeds AS T1 JOIN sizes AS T2 ON T1.breed_code = T2.size_code",
+      "generation_seconds": 1.326384
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # singer ( singer_id , name , birth_year , net_worth_millions , citizenship )\n# song ( song_id , title , singer_id , sales , highest_position )\n# song.singer_id = singer.singer_id\nQuestion: List the name of singers whose citizenship is not \"France\".\nSQL:\n",
+      "generated": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "extracted": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "generation_seconds": 0.351509
+    },
+    {
+      "question": "For each citizenship, how many singers are from that country?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # singer ( singer_id , name , birth_year , net_worth_millions , citizenship )\n# song ( song_id , title , singer_id , sales , highest_position )\n# song.singer_id = singer.singer_id\nQuestion: For each citizenship, how many singers are from that country?\nSQL:\n",
+      "generated": "SELECT COUNT(*) AS num_singers, citizenship FROM singer GROUP BY citizenship",
+      "extracted": "SELECT COUNT(*) AS num_singers, citizenship FROM singer GROUP BY citizenship",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(*) AS num_singers, citizenship FROM singer GROUP BY citizenship",
+      "generation_seconds": 0.923794
+    },
+    {
+      "question": "How many available features are there in total?",
+      "prompt": "You answer Spider-style questions by writing a single executable SQLite SELECT query.\n\nOutput exactly one SQLite SELECT statement that answers the question.\n\nSchema: # ref_feature_types ( feature_type_code , feature_type_name )\n# ref_property_types ( property_type_code , property_type_description )\n# other_available_features ( feature_id , feature_type_code , feature_name , feature_description )\n# properties ( property_id , property_type_code , date_on_market , date_sold , property_name , property_address , room_count , vendor_requested_price , buyer_offered_price , agreed_selling_price , apt_feature_1 , apt_feature_2 , apt_feature_3 , fld_feature_1 , fld_feature_2 , fld_feature_3 , hse_feature_1 , hse_feature_2 , hse_feature_3 , oth_feature_1 , oth_feature_2 , oth_feature_3 , shp_feature_1 , shp_feature_2 , shp_feature_3 , other_property_details )\n# other_property_features ( property_id , feature_id , property_feature_description )\n# other_available_features.feature_type_code = ref_feature_types.feature_type_code\n# properties.property_type_code = ref_property_types.property_type_code\n# other_property_features.property_id = properties.property_id\n# other_property_features.feature_id = other_available_features.feature_id\nQuestion: How many available features are there in total?\nSQL:\n",
+      "generated": "SELECT COUNT(DISTINCT feature_id) FROM other_available_features",
+      "extracted": "SELECT COUNT(DISTINCT feature_id) FROM other_available_features",
+      "correct": false,
+      "syntax_valid": true,
+      "generated_answer": "SELECT COUNT(DISTINCT feature_id) FROM other_available_features",
+      "generation_seconds": 0.904345
+    }
+  ],
+  "metadata": {
+    "benchmark": "spider",
+    "strategy": "cars",
+    "prompt_tier": 1,
+    "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "benchmark_max_new_tokens": 512,
+    "effective_max_new_tokens": 512,
+    "adapter": "cars_legacy_cars",
+    "cars_search_steps": 200,
+    "cars_success_target": 100,
+    "cars_smiles_max_new_tokens": 512,
+    "cars_grammar": "legacy_lark_oracle",
+    "cars_learn_level": 3,
+    "cars_constrain_first": true,
+    "complete": true
+  },
+  "matrix_metadata": {
+    "phase": "main_matrix",
+    "strategy": "cars",
+    "benchmark": "spider",
+    "smiles_class": null,
+    "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "eval_backend": "vllm",
+    "generation_profile": null,
+    "generation_backend": null,
+    "generation_model": null,
+    "synthesis_iterations": null,
+    "eval_step_token_budget": 1,
+    "eval_max_steps": 600,
+    "sample_sizes": {
+      "synthesis_eval": 50,
+      "final_eval": 100
+    },
+    "thresholds": {
+      "min_accuracy": null,
+      "min_syntax_rate": null,
+      "accuracy_win_margin": 0.03,
+      "target_accuracy_strategy": null,
+      "target_accuracy_path": null,
+      "target_syntax_strategy": null,
+      "target_syntax_path": null
+    },
+    "runtime_controls": {
+      "eval_max_seconds_per_example": 90.0,
+      "eval_min_examples_before_threshold_stop": 15,
+      "vllm_gpu_memory_utilization": 0.8,
+      "vllm_tensor_parallel_size": 1
+    },
+    "synthesis_controls": {
+      "max_tokens": 32768,
+      "restart_after_stuck_iters": 0,
+      "adaptive_helper_mask": true,
+      "helper_selection_policy": "bandit",
+      "refinement_beam_size": 2,
+      "anthropic_thinking": "adaptive",
+      "anthropic_effort": "xhigh",
+      "anthropic_thinking_display": "summarized"
+    },
+    "splits": {
+      "spider": {
+        "split_file": "/home/advayth2/projects/verified-agent-synthesis/environment/benchmark_splits/spider_dev_proportional.json",
+        "split_name": "eval"
+      }
+    },
+    "cache": {
+      "baseline_cache_mode": "refresh"
+    },
+    "command": "python -m synthesis.evaluate.run_legacy_fixed_strategy --strategy cars --dataset spider --eval-model Qwen/Qwen2.5-1.5B-Instruct --eval-backend vllm --device auto --eval-sample-size 100 --eval-max-steps 600 --eval-step-token-budget 1 --vllm-gpu-memory-utilization 0.80 --output-json outputs/baselines/Qwen_Qwen2.5_1.5B_Instruct/spider/cars/tb1__ms600.json --vllm-tensor-parallel-size 1 --dafny-path /home/advayth2/projects/verified-agent-synthesis/dafny/dafny --spider-split-file /home/advayth2/projects/verified-agent-synthesis/environment/benchmark_splits/spider_dev_proportional.json --spider-split-name eval --cars-search-steps 200"
+  }
+}

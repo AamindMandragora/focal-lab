@@ -40,7 +40,15 @@ DEFAULT_BENCHMARKS = "gsm,spider,smiles"
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
 DEFAULT_CARS_SEARCH_STEPS = "200"
 DEFAULT_SMILES_SAMPLES_PER_CLASS = "100"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,rs,metadecode"
+DEFAULT_BASELINE_STRATEGIES = (
+    "unconstrained",
+    "gcd",
+    "crane",
+    "itergen",
+    "rs",
+    "cars",
+)
+DEFAULT_STRATEGIES = ",".join((*DEFAULT_BASELINE_STRATEGIES, "metadecode"))
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
@@ -52,13 +60,8 @@ DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
 VALID_ABLATION_SECTIONS = ("A", "B", "C", "D", "E")
 DEFAULT_ABLATION_SECTIONS = ",".join(VALID_ABLATION_SECTIONS)
 # Metadecode min thresholds: best accuracy and best syntax across all fixed baselines.
-BASELINE_TARGET_STRATEGIES = (
-    "unconstrained",
-    "gcd",
-    "crane",
-    "itergen",
-    "rs",
-)
+BASELINE_TARGET_STRATEGIES = DEFAULT_BASELINE_STRATEGIES
+ABLATION_FIXED_STRATEGIES = ("gcd", "crane", "itergen", "rs", "cars")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
@@ -1601,7 +1604,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for step_budget in self.config.step_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "rs", "metadecode"):
+                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1657,7 +1660,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for token_budget in self.config.token_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "rs", "metadecode"):
+                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
