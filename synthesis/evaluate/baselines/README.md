@@ -13,7 +13,7 @@ then emit normalized JSON under `outputs/baselines/<model>/<benchmark>/<strategy
 | `gcd.py` | gcd | vendored SynCode (`grammar_strict`) |
 | `crane.py` | crane | `legacy/CRANE` (`main.py`, adaptive mode) |
 | `itergen.py` | itergen | `legacy/itergen` |
-| `cars.py` | cars | `legacy/cars` |
+| `cars.py` | cars | `legacy/cars` — see **[CARS_SETUP.md](CARS_SETUP.md)** for clone/patch/run and speed notes |
 | `rs.py` | rs | vendored SynCode (`mode=original`, temp 1) |
 | `smiles.py` | all (SMILES dataset) | pooled native protocol (`benchmarks/smiles/pooled_baseline.py`) |
 

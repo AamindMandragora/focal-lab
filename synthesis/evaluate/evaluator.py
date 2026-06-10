@@ -2132,8 +2132,12 @@ class Evaluator:
         )
         from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState
         from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+            DEFAULT_SMILES_POOLED_MAX_ATTEMPTS,
+            DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
             SMILES_POOLED_MAX_NEW_TOKENS,
             SmilesPooledConfig,
+            SmilesStopCriterion,
+            aggregate_smiles_pooled_scores,
             score_smiles_attempt,
             should_stop_pooled_session,
             smiles_rdkit_syntax_valid,
@@ -2144,7 +2148,10 @@ class Evaluator:
         sample_outputs: List[Dict[str, Any]] = []
         logic = self._benchmark_logic()
         config = SmilesPooledConfig(
+            max_attempts=DEFAULT_SMILES_POOLED_MAX_ATTEMPTS,
+            success_target=DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
             max_new_tokens=min(self.max_steps, SMILES_POOLED_MAX_NEW_TOKENS),
+            stop_criterion=SmilesStopCriterion.UNIQUE_SYNTAX_VALID,
             prompt_tier=getattr(self, "prompt_tier", 2),
         )
         classes = normalize_smiles_classes(self.smiles_classes)
@@ -2161,7 +2168,8 @@ class Evaluator:
             tier_grammar = str(example.get("grammar_text") or "")
             base_grammar = str(example.get("base_grammar_text") or tier_grammar)
             prompt_exemplars = list(exemplars)
-            novel_valid_class = 0
+            unique_syntax_valid_class = 0
+            scoring_seen = set(exemplars)
 
             for attempt_idx in range(config.max_attempts):
                 prompt = render_native_smiles_prompt_with_feedback(
@@ -2193,9 +2201,15 @@ class Evaluator:
                         base_grammar=base_grammar,
                     )
                     syntax_pass = smiles_rdkit_syntax_valid(eval_row)
-                    is_correct = bool(eval_row.get("unique_valid_candidate"))
-                    if is_correct:
-                        novel_valid_class += 1
+                    smiles = str(eval_row.get("smiles") or "").strip()
+                    is_first_occurrence = bool(smiles and smiles not in scoring_seen)
+                    if is_first_occurrence:
+                        scoring_seen.add(smiles)
+                        if syntax_pass:
+                            unique_syntax_valid_class += 1
+                    is_correct = bool(
+                        is_first_occurrence and eval_row.get("unique_valid_candidate")
+                    )
                     prompt_state.record_attempt(
                         str(eval_row.get("smiles") or scored_output or "").strip(),
                         eval_row,
@@ -2273,30 +2287,35 @@ class Evaluator:
                         )
                     )
 
-                collected_reason = logic.should_stop_collected(sample_outputs)
+                collected_reason = logic.should_stop_collected(
+                    sample_outputs,
+                    class_name=class_name,
+                )
                 if collected_reason:
                     break
                 if should_stop_pooled_session(
                     attempt_index=attempt_idx,
                     config=config,
                     grammar_successes=0,
-                    novel_valid_count=novel_valid_class,
+                    unique_syntax_valid_count=unique_syntax_valid_class,
                 ):
                     break
 
         evaluated = len(sample_outputs)
-        num_correct = sum(1 for sample in sample_outputs if sample.get("is_correct"))
-        num_syntax = sum(1 for sample in sample_outputs if sample.get("is_syntax_valid"))
+        summary = aggregate_smiles_pooled_scores(
+            sample_outputs,
+            success_target=config.success_target,
+        )
         total_time = time.time() - start_time
         aux_metrics = self._compute_smiles_aux_metrics(sample_outputs)
         return EvaluationResult(
             success=True,
-            accuracy=num_correct / max(1, evaluated),
+            accuracy=summary.accuracy,
             contains_delimiters=False,
-            syntax_rate=num_syntax / max(1, evaluated),
+            syntax_rate=summary.syntax_rate,
             num_examples=evaluated,
-            num_correct=num_correct,
-            accuracy_denominator=evaluated,
+            num_correct=summary.unique_in_class_count,
+            accuracy_denominator=summary.success_target,
             accuracy_definition=logic.accuracy_definition(),
             invalid_outputs_excluded_from_accuracy=0,
             total_time_seconds=total_time,

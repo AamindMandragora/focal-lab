@@ -11,6 +11,7 @@ from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
     DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
     SMILES_POOLED_MAX_NEW_TOKENS,
     SmilesPooledConfig,
+    SmilesPromptFeedback,
     SmilesStopCriterion,
     finalize_pooled_smiles_metadata,
     pooled_smiles_extra_metrics,
@@ -49,6 +50,7 @@ def _smiles_baseline_row(
     )
     row["grammar_success"] = grammar_ok
     row["class_name"] = class_name
+    row["smiles_eval"] = eval_row
     row.update(extra)
     return row
 
@@ -130,17 +132,19 @@ def run_smiles_pooled_legacy_adapter(args: Any) -> int:
         require_non_empty=True,
     )
 
-    stop_criterion = (
-        SmilesStopCriterion.GRAMMAR_SUCCESS
-        if strategy == "cars"
-        else SmilesStopCriterion.NOVEL_VALID
+    prompt_feedback = (
+        SmilesPromptFeedback.STATIC
+        if strategy in {"cars", "rs"}
+        else SmilesPromptFeedback.DYNAMIC_GOOD_BAD
     )
     config = smiles_pooled_config_from_args(
         args,
-        stop_criterion=stop_criterion,
+        stop_criterion=SmilesStopCriterion.UNIQUE_SYNTAX_VALID,
+        prompt_feedback=prompt_feedback,
         prompt_tier=prompt_tier_for_strategy(strategy),
     )
     run_metadata = _baseline_run_metadata(args, dataset, adapter=adapter_by_strategy[strategy])
+    run_metadata["success_target"] = config.success_target
     if config.prompt_feedback.value == "static":
         run_metadata["prompt_style"] = "native_acrylates_txt_static"
     else:
@@ -158,7 +162,11 @@ def run_smiles_pooled_legacy_adapter(args: Any) -> int:
                 dataset=dataset,
                 run_started=run_started,
                 extra_metrics={
-                    **pooled_smiles_extra_metrics(rows, adapter=adapter_by_strategy[strategy]),
+                    **pooled_smiles_extra_metrics(
+                        rows,
+                        adapter=adapter_by_strategy[strategy],
+                        success_target=config.success_target,
+                    ),
                     "class_name": class_name,
                 },
                 metadata=run_metadata,
@@ -168,8 +176,7 @@ def run_smiles_pooled_legacy_adapter(args: Any) -> int:
 
     print(
         f"SMILES pooled {strategy}: up to {config.max_attempts} attempts/class, "
-        f"stop after {config.success_target} "
-        f"{'grammar successes' if stop_criterion == SmilesStopCriterion.GRAMMAR_SUCCESS else 'novel valid'}, "
+        f"stop after {config.success_target} unique syntax-valid molecules, "
         f"max_new_tokens={config.max_new_tokens}, "
         f"prompt={'static' if config.prompt_feedback.value == 'static' else 'dynamic good/bad'}",
         flush=True,
@@ -373,10 +380,15 @@ def run_smiles_pooled_legacy_adapter(args: Any) -> int:
         output_json,
         dataset=dataset,
         run_wall_time_seconds=time.perf_counter() - run_started,
-        extra_metrics=pooled_smiles_extra_metrics(rows, adapter=adapter_by_strategy[strategy]),
+        extra_metrics=pooled_smiles_extra_metrics(
+            rows,
+            adapter=adapter_by_strategy[strategy],
+            success_target=config.success_target,
+        ),
         metadata=finalize_pooled_smiles_metadata(
             run_metadata,
             prompt_feedback=config.prompt_feedback,
+            success_target=config.success_target,
         ),
     )
     print(f"Saved baseline JSON: {output_json}")
