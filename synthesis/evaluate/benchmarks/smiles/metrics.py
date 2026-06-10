@@ -242,9 +242,15 @@ def retrosynthesis_score(smiles: str) -> Optional[float]:
 
 def smiles_trial_metrics(
     samples: Sequence[Dict[str, Any]],
-    target_unique_valid: int = 100,
+    target_unique_valid: int | None = None,
     sample_cap: int = 1000,
 ) -> Dict[str, Any]:
+    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+    )
+
+    if target_unique_valid is None:
+        target_unique_valid = DEFAULT_SMILES_POOLED_SUCCESS_TARGET
     """
     Compute paper-aligned molecular generation metrics over one trial.
     """

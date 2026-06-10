@@ -220,27 +220,56 @@ def ensure_runtime_prereqs(evaluator: Any) -> None:
 
 def should_stop_collected(
     sample_outputs: list[dict[str, Any]],
-    target_unique_valid: int = 100,
+    target_unique_valid: int | None = None,
+    *,
+    class_name: str | None = None,
 ) -> str | None:
-    """Stop once ``target_unique_valid`` novel-valid molecules have been scored."""
+    """Stop once a class session reaches the unique syntax-valid molecule target."""
+    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+        aggregate_unique_smiles_records,
+    )
+
     if not sample_outputs:
         return None
-    novel_valid = sum(1 for sample in sample_outputs if sample.get("is_correct"))
-    if novel_valid >= target_unique_valid:
+    success_target = (
+        DEFAULT_SMILES_POOLED_SUCCESS_TARGET
+        if target_unique_valid is None
+        else max(1, int(target_unique_valid))
+    )
+    records = sample_outputs
+    if class_name:
+        records = [
+            sample
+            for sample in sample_outputs
+            if str(sample.get("class_name") or "") == class_name
+        ]
+    summary = aggregate_unique_smiles_records(records, success_target=success_target)
+    if summary.unique_syntax_valid_count >= success_target:
+        label = f"class {class_name} " if class_name else ""
         return (
             "pooled SMILES early stop: collected "
-            f"{novel_valid} novel-valid molecules (target {target_unique_valid}) "
-            f"after {len(sample_outputs)} attempts."
+            f"{summary.unique_syntax_valid_count} unique syntax-valid molecules "
+            f"for {label}(target {success_target}) after {summary.total_attempts} attempts."
         )
     return None
 
 
 def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) -> dict[str, Any]:
     from synthesis.evaluate.benchmarks.smiles.metrics import smiles_trial_metrics
+    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+        aggregate_smiles_pooled_scores,
+    )
 
+    success_target = DEFAULT_SMILES_POOLED_SUCCESS_TARGET
+    pooled_summary = aggregate_smiles_pooled_scores(
+        sample_outputs,
+        success_target=success_target,
+    )
     paper_metrics = smiles_trial_metrics(
         sample_outputs,
-        target_unique_valid=100,
+        target_unique_valid=success_target,
         sample_cap=1000,
     )
 
@@ -289,6 +318,7 @@ def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) ->
         "adjusted_membership_score": adjusted_membership,
     }
     return {
+        "smiles_pooled_summary": pooled_summary.as_dict(),
         "smiles_paper_trial": paper_metrics,
         "anti_degeneracy": anti,
     }
@@ -304,7 +334,12 @@ def accuracy_upper_bound(
 
 
 def final_accuracy_denominator(num_examples: int, num_accuracy_examples: int) -> int:
-    return num_examples
+    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+    )
+
+    del num_examples, num_accuracy_examples
+    return DEFAULT_SMILES_POOLED_SUCCESS_TARGET
 
 
 def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> int:
@@ -312,4 +347,4 @@ def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> i
 
 
 def accuracy_definition() -> str:
-    return "novel_valid_per_total_attempts"
+    return "unique_in_class_over_success_target"

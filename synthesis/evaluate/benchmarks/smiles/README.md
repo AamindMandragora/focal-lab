@@ -28,9 +28,16 @@ The synthesis loop can use these diagnostics to discourage degenerate strategies
 
 **Grammar validity:** extracted SMILES bodies are checked against the active prompt tier's grammar first. When that fails (common for tier-2 delimited grammars that expect a trailing `>>`), scoring retries with a closed tier variant and then with the class **base** body grammar (`base_grammar_text` from `dataset.py`). **`syntax_valid`** is true when grammar and RDKit (if installed) both pass.
 
-Multi-sample evaluation (synthesis eval and legacy baselines) updates each class prompt with empirical context from the current run:
+Pooled evaluation samples up to **200** attempts per class and stops early once a class reaches **`DEFAULT_SMILES_POOLED_SUCCESS_TARGET`** (CLI: `--smiles-unique-syntax-valid-target`, legacy alias `--cars-success-target`) first-occurrence **unique RDKit-valid** molecules.
 
-- **Good results:** novel, syntax-valid, in-class molecules (unique scoring numerator).
-- **Bad results:** prior failed or duplicate attempts listed so deterministic decoders do not repeat the same output.
+Scoring uses first-occurrence unique molecules only (excluding in-prompt exemplars and repeats):
 
-State is managed in `prompt_state.py` and applied through `eval_logic.py` hooks used by `evaluator.py` and `run_legacy_fixed_strategy.py`.
+- **Syntax rate** = unique syntax-valid / `success_target`
+- **Accuracy** = unique syntax-valid and in-class / `success_target`
+
+Prompt feedback:
+
+- **Greedy strategies** (`unconstrained`, `gcd`, `crane`, `itergen`, metadecode synthesis eval): dynamic **Good results** / **Bad results** suffixes via `prompt_state.py`.
+- **Stochastic strategies** (`rs`, `cars`): constant prompt so sampling diversity (and the CARS oracle trie) are not perturbed between attempts.
+
+State is managed in `prompt_state.py` and applied through `eval_logic.py` hooks used by `evaluator.py` and `run_legacy_fixed_strategy.py`. Aggregation lives in `pooled_eval.py` (`aggregate_smiles_pooled_scores`).

@@ -350,15 +350,39 @@ def build_minimal_baseline_from_rows(
             payload["metadata"] = metadata
         return payload
 
-    correct_vals = [1.0 if a["correct"] else 0.0 for a in answers]
-    syntax_vals = [1.0 if a["syntax_valid"] else 0.0 for a in answers]
+    bench = "gsm_symbolic" if dataset in ("gsm", "gsm_symbolic") else dataset
+    if bench == "smiles":
+        from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+            DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+            aggregate_smiles_pooled_scores,
+        )
 
-    payload = {
-        "accuracy": sum(correct_vals) / max(1, len(correct_vals)),
-        "syntax_rate": sum(syntax_vals) / max(1, len(syntax_vals)),
-        "metrics": metrics,
-        "answers": answers,
-    }
+        success_target = int(
+            (metadata or {}).get("success_target")
+            or (extra_metrics or {}).get("success_target")
+            or DEFAULT_SMILES_POOLED_SUCCESS_TARGET
+        )
+        summary = aggregate_smiles_pooled_scores(rows, success_target=success_target)
+        metrics.update(summary.as_dict())
+        payload = {
+            "accuracy": summary.accuracy,
+            "syntax_rate": summary.syntax_rate,
+            "metrics": metrics,
+            "answers": answers,
+            "accuracy_definition": "unique_in_class_over_success_target",
+            "syntax_definition": "unique_syntax_valid_over_success_target",
+            "accuracy_denominator": summary.success_target,
+            "syntax_denominator": summary.success_target,
+        }
+    else:
+        correct_vals = [1.0 if a["correct"] else 0.0 for a in answers]
+        syntax_vals = [1.0 if a["syntax_valid"] else 0.0 for a in answers]
+        payload = {
+            "accuracy": sum(correct_vals) / max(1, len(correct_vals)),
+            "syntax_rate": sum(syntax_vals) / max(1, len(syntax_vals)),
+            "metrics": metrics,
+            "answers": answers,
+        }
     if metadata:
         payload["metadata"] = metadata
     return payload

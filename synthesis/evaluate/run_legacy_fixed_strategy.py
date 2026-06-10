@@ -18,6 +18,9 @@ from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importab
 ensure_vendored_syncode_importable()
 
 from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
+from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+    DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
+)
 from synthesis.evaluate.rs import (
     DEFAULT_RS_SEARCH_STEPS,
     build_rs_session,
@@ -187,8 +190,13 @@ def _baseline_run_metadata(
         meta["cars_learn_level"] = 3
         meta["cars_constrain_first"] = True
         if dataset == "smiles":
-            meta["scoring"] = "attempt_normalized"
-            if args.strategy == "cars":
+            from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
+                smiles_unique_syntax_valid_target_from_args,
+            )
+
+            meta["scoring"] = "unique_over_success_target"
+            meta["success_target"] = smiles_unique_syntax_valid_target_from_args(args)
+            if args.strategy in {"cars", "rs"}:
                 meta["prompt_style"] = "native_acrylates_txt_static"
             else:
                 meta["prompt_style"] = "native_acrylates_txt_dynamic_good_bad"
@@ -340,7 +348,7 @@ def _legacy_smiles_benchmark_prompt(
 
 # CARS SMILES runs up to this many stochastic decode attempts per class (pooled session).
 DEFAULT_CARS_SEARCH_STEPS = 200
-DEFAULT_CARS_SUCCESS_TARGET = 100
+DEFAULT_CARS_SUCCESS_TARGET = DEFAULT_SMILES_POOLED_SUCCESS_TARGET
 CARS_SMILES_MAX_NEW_TOKENS = 512
 
 
@@ -1865,8 +1873,17 @@ def main() -> None:
         type=int,
         default=DEFAULT_CARS_SUCCESS_TARGET,
         help=(
-            "SMILES only: stop a pooled CARS class session after this many "
-            f"grammar-successful generations (default: {DEFAULT_CARS_SUCCESS_TARGET})."
+            "SMILES only: stop a pooled class session after this many first-occurrence "
+            f"unique RDKit-valid molecules (default: {DEFAULT_CARS_SUCCESS_TARGET})."
+        ),
+    )
+    parser.add_argument(
+        "--smiles-unique-syntax-valid-target",
+        type=int,
+        default=DEFAULT_CARS_SUCCESS_TARGET,
+        help=(
+            "SMILES only: target count of first-occurrence unique RDKit-valid molecules "
+            f"used for syntax/accuracy denominators (default: {DEFAULT_CARS_SUCCESS_TARGET})."
         ),
     )
     parser.add_argument(
