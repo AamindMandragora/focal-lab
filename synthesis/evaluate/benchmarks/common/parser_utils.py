@@ -67,9 +67,21 @@ def _tokenizer_cache_fingerprint(tokenizer) -> tuple[str, int]:
 
 
 def _ensure_syncode_import_path() -> None:
-    from synthesis.evaluate.vendored_syncode import ensure_vendored_syncode_importable
-
-    ensure_vendored_syncode_importable()
+    syncode_dir = Path(
+        os.environ.get(
+            "CSD_SYNCODE_DIR",
+            str(Path(__file__).parent.parent.parent / "syncode"),
+        )
+    ).expanduser()
+    # Vendored layout is synthesis/evaluate/syncode/syncode. We need
+    # synthesis/evaluate/syncode on sys.path so imports like
+    # `syncode.parsers` resolve correctly.
+    candidates = [str(syncode_dir)]
+    for candidate in reversed(candidates):
+        if candidate in sys.path:
+            sys.path.remove(candidate)
+    for candidate in candidates:
+        sys.path.insert(0, candidate)
 
 
 def _load_grammar_text(grammar_source: str) -> str:
@@ -173,6 +185,22 @@ def create_lark_dafny_parser(
                 if token_str:
                     self._token_str_to_idx.setdefault(token_str, []).append(idx)
 
+            # Hard-block mask: tokens whose string contains '{', '}', or '**'
+            # are permanently forbidden regardless of the DFA over-approximation.
+            # Syncode's grammar_mask mode over-approximates — e.g. whitespace-
+            # prefixed tokens like ' {' slip through because '%ignore WS' makes
+            # whitespace valid at any grammar state.  These characters are not
+            # terminals in the GSM grammar, so blocking them is always safe.
+            # The mask is True at positions that ARE allowed (i.e. not forbidden).
+            import torch as _torch
+            _forbidden_chars = ("{", "}", "**")
+            _fb = _torch.ones(len(self._token_list), dtype=_torch.bool)
+            for _idx, _token in enumerate(self._token_list):
+                _ts = dafny_seq_to_str(_token)
+                if any(_c in _ts for _c in _forbidden_chars):
+                    _fb[_idx] = False
+            self._forbidden_allow_mask: _torch.Tensor = _fb
+
             # Shared Lark parser for IsValidPrefix / IsCompletePrefix (rarely called)
             self._lark = lark_parser
             self._valid_prefix_cache = {}
@@ -263,6 +291,8 @@ def create_lark_dafny_parser(
                             token_str = dafny_seq_to_str(token)
                             if token_str and self._is_valid_prefix(current_text + token_str):
                                 accept_mask[idx] = True
+                    # Apply hard-block: remove forbidden-char tokens.
+                    accept_mask = accept_mask & self._forbidden_allow_mask
                     self._valid_next_mask_cache[current_text] = accept_mask
                     return accept_mask
 
@@ -290,6 +320,9 @@ def create_lark_dafny_parser(
                                     accept_mask &= indent_ac_token
                         with _parser_timed("accept_mask.to_cpu"):
                             accept_mask = accept_mask.to(dtype=accept_mask.dtype, device='cpu')
+                    # Apply hard-block: remove forbidden-char tokens that slipped
+                    # through syncode's over-approximation.
+                    accept_mask = accept_mask & self._forbidden_allow_mask
                     self._valid_next_mask_cache[current_text] = accept_mask
                     return accept_mask
                 except Exception:
@@ -406,6 +439,43 @@ def create_lark_dafny_parser(
                             return True
                 return False
 
+        def CompletedSchemaSymbolCount(self, prefix):
+            """Dafny interface: number of table_ref/column_ref symbols that have
+            COMPLETED within `prefix`.
+
+            Reads the IncrementalParser's SymbolPosMap side-record (IterGen's
+            mechanism, ported into the vendored parser). Drives the incremental
+            parser on this prefix's text first so the map reflects exactly this
+            prefix (the parser caches by lexer-token prefix, so re-driving a grown
+            or rolled-back prefix is cheap and restores the map to that point),
+            then counts the completed schema symbols.
+
+            PURE SIDE-RECORD: the SymbolPosMap is never read by the accept-set /
+            masking path, so reading this count cannot change decode for any
+            caller. Used as a mid-query unit boundary by the grounding helper:
+            when the count rises, one more table/column name just finished.
+            """
+            with _parser_timed("CompletedSchemaSymbolCount.dafny"):
+                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                if not current_text:
+                    return 0
+                try:
+                    # Drive the inc parser so symbol_pos_map reflects THIS prefix.
+                    self._inc_parser.get_acceptable_next_terminals(current_text)
+                except Exception:
+                    # Not parseable as a prefix here: report no completed symbols so
+                    # the boundary simply doesn't fire (caller keeps prevCount).
+                    return 0
+                spm = getattr(self._inc_parser, "symbol_pos_map", None)
+                if spm is None:
+                    return 0
+                # Schema-bearing symbols in our sql.lark: table_ref + column_ref.
+                # get_symbol_count(after=0) counts every completed span.
+                return int(
+                    spm.get_symbol_count("table_ref")
+                    + spm.get_symbol_count("column_ref")
+                )
+
     return SyncodeDafnyParser
 
 
@@ -456,3 +526,50 @@ def get_builtin_grammar(format_name: str) -> str:
         raise ValueError(f"Unknown format: {format_name}. Available: {list(grammars.keys())}")
 
     return grammars[format_name.lower()]
+
+
+def _compute_unit_rollback_info(parser, tokens):
+    """Find the last completed grammar unit in a token sequence.
+
+    Inputs:
+      parser   -- any object with an IsCompletePrefix(prefix: list) method
+      tokens   -- a list of token objects (plain strings or Dafny sequences)
+
+    Output:
+      None if no complete unit has been generated.
+      Otherwise a tuple (rollback_pos, unit_tokens) where:
+        rollback_pos  -- index into tokens where the last unit began (i.e., the
+                         position of the last complete point BEFORE this unit)
+        unit_tokens   -- tokens[rollback_pos : last_complete_end]
+
+    Algorithm:
+      1. Walk the token list left-to-right, calling IsCompletePrefix on each
+         growing prefix.
+      2. Each time IsCompletePrefix transitions from True-at-i to False-at-i+1
+         (or True-at-final), record the end position as a "complete boundary".
+      3. The last two consecutive boundaries define the last unit.
+         If only one boundary exists, the unit spans from index 0 to that boundary.
+    """
+    if not tokens:
+        return None
+
+    complete_ends = []
+    for i in range(1, len(tokens) + 1):
+        if parser.IsCompletePrefix(tokens[:i]):
+            complete_ends.append(i)
+        elif complete_ends and complete_ends[-1] == i - 1:
+            # We just stepped past a complete point; the previous boundary stands.
+            pass
+
+    if not complete_ends:
+        return None
+
+    last_end = complete_ends[-1]
+    # The unit start is right after the second-to-last complete boundary, or 0.
+    if len(complete_ends) >= 2:
+        rollback_pos = complete_ends[-2]
+    else:
+        rollback_pos = 0
+
+    unit_tokens = tokens[rollback_pos:last_end]
+    return rollback_pos, unit_tokens
