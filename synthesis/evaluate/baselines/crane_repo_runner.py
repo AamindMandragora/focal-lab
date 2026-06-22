@@ -97,11 +97,42 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
     is_grammar_constrained = mode != "original"
     grammar_flag = grammar if is_grammar_constrained else "text"
 
+    # Controlled-comparison: when a GSM split manifest is given, evaluate EXACTLY the
+    # split's eval examples (the same set CARS/metaDecode use) by passing them to
+    # CRANE main.py's --indices flag. CRANE's loader is sorted (utils.py), so these
+    # positions index into sorted(glob('*.json')) just like our split manifests do.
+    gsm_split_indices = None
+    if dataset == "gsm_symbolic":
+        split_file = getattr(args, "gsm_split_file", None)
+        if split_file:
+            split_name = getattr(args, "gsm_split_name", "eval")
+            with open(split_file) as f:
+                manifest = json.load(f)
+            key = f"{split_name}_indices"
+            if key not in manifest:
+                available = sorted(k for k in manifest if k.endswith("_indices"))
+                raise ValueError(
+                    f"Split file {split_file} does not contain {key}. "
+                    f"Available index fields: {available}"
+                )
+            gsm_split_indices = manifest[key]
+            if not isinstance(gsm_split_indices, list) or not all(
+                isinstance(i, int) for i in gsm_split_indices
+            ):
+                raise ValueError(f"{key} in {split_file} must be a list of integers")
+
+    # With explicit indices, the example count is fixed by the split, not --eval-sample-size.
+    num_examples_arg = (
+        str(len(gsm_split_indices))
+        if gsm_split_indices is not None
+        else str(args.eval_sample_size)
+    )
+
     cmd = [
         "python",
         "main.py",
         "--dataset", dataset,
-        "--num_examples", str(args.eval_sample_size),
+        "--num_examples", num_examples_arg,
         "--num_shots", "8",
         "--overwrite_results", "True",
         "--write_file", "True",
@@ -118,6 +149,8 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
     ]
     if do_cot:
         cmd.extend(["--do_cot", "True"])
+    if gsm_split_indices is not None:
+        cmd.extend(["--indices", ",".join(str(i) for i in gsm_split_indices)])
 
     legacy_device = _legacy_local_cuda_device(args.device)
     cmd.extend(["--cot_device", legacy_device, "--llm_parser_device", legacy_device])

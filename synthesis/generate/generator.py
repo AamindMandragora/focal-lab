@@ -172,6 +172,18 @@ class StrategyGenerator:
         return None
 
     @staticmethod
+    def _bedrock_runtime_base_url() -> str:
+        region = (
+            os.environ.get("AWS_REGION")
+            or os.environ.get("AWS_DEFAULT_REGION")
+            or "us-east-1"
+        )
+        return os.environ.get(
+            "BEDROCK_BASE_URL",
+            f"https://bedrock-runtime.{region}.amazonaws.com",
+        )
+
+    @staticmethod
     def _default_api_key(backend: str) -> Optional[str]:
         if backend == "openai":
             return os.environ.get("OPENAI_API_KEY")
@@ -272,30 +284,10 @@ class StrategyGenerator:
             return
 
         if self.backend == "bedrock":
-            if self._client is None:
-                from anthropic import AnthropicBedrockMantle
-
-                client_kwargs = {
-                    "aws_region": os.environ.get("AWS_REGION")
-                    or os.environ.get("AWS_DEFAULT_REGION")
-                    or "us-east-1",
-                }
-                if self.api_key:
-                    client_kwargs["api_key"] = self.api_key
-                access_key = os.environ.get("AWS_ACCESS_KEY_ID")
-                secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-                if access_key and secret_key:
-                    client_kwargs["aws_access_key"] = access_key
-                    client_kwargs["aws_secret_key"] = secret_key
-                session_token = os.environ.get("AWS_SESSION_TOKEN")
-                if session_token:
-                    client_kwargs["aws_session_token"] = session_token
-                profile = os.environ.get("AWS_PROFILE")
-                if profile:
-                    client_kwargs["aws_profile"] = profile
-                if self.api_base_url:
-                    client_kwargs["base_url"] = self.api_base_url
-                self._client = AnthropicBedrockMantle(**client_kwargs)
+            if not self.api_key:
+                raise ValueError(
+                    "AWS_BEARER_TOKEN_BEDROCK is required when --generation-backend=bedrock"
+                )
             return
 
         if self.backend == "anthropic":
@@ -480,13 +472,19 @@ class StrategyGenerator:
         ]
 
         if self.backend == "openai":
-            response = self._client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                max_completion_tokens=self.max_new_tokens,
-                temperature=self.temperature,
-                top_p=self.top_p,
-            )
+            request_kwargs = {
+                "model": self.model_name,
+                "messages": messages,
+                "max_completion_tokens": self.max_new_tokens,
+            }
+            if not self.model_name.startswith("gpt-5"):
+                request_kwargs.update(
+                    {
+                        "temperature": self.temperature,
+                        "top_p": self.top_p,
+                    }
+                )
+            response = self._client.chat.completions.create(**request_kwargs)
             content = response.choices[0].message.content or ""
             output = content.strip()
             self._log_prompt_io(system_prompt, user_prompt, output)
@@ -581,15 +579,24 @@ class StrategyGenerator:
         self._log_prompt_io(system_prompt, user_prompt, output)
         return output
 
-    def _post_json(self, url: str, headers: dict[str, str], payload: dict) -> dict:
-        max_retries = int(os.environ.get("CSD_API_MAX_RETRIES", "5"))
+    def _post_json(
+        self,
+        url: str,
+        headers: dict[str, str],
+        payload: dict,
+        max_retries: Optional[int] = None,
+        retryable_statuses: Optional[set[int]] = None,
+    ) -> dict:
+        if max_retries is None:
+            max_retries = int(os.environ.get("CSD_API_MAX_RETRIES", "5"))
         retry_base_seconds = float(os.environ.get("CSD_API_RETRY_BASE_SECONDS", "20"))
-        retryable_statuses = {408, 409, 429, 500, 502, 503, 504, 529}
+        if retryable_statuses is None:
+            retryable_statuses = {408, 409, 429, 500, 502, 503, 504, 529}
         for attempt in range(max_retries + 1):
             request = urllib.request.Request(
                 url,
                 data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json", **headers},
+                headers={"Content-Type": "application/json", "Connection": "close", **headers},
                 method="POST",
             )
             try:
@@ -611,30 +618,100 @@ class StrategyGenerator:
                 raise RuntimeError(
                     f"{self.backend} generation API returned HTTP {exc.code}: {error_body[:1000]}"
                 ) from exc
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                # Network-level failures (read timeout, connection reset) carry no
+                # HTTP status, so the branch above never sees them — retry these
+                # too, or one transient blip kills the whole synthesis run
+                # (observed 2026-06-11: a single Bedrock read timeout ended a
+                # run at attempt 18/20).
+                if attempt < max_retries:
+                    sleep_seconds = retry_base_seconds * (2 ** attempt)
+                    print(
+                        f"[api-retry] {self.backend} network error ({exc}); "
+                        f"retry {attempt + 1}/{max_retries} after {sleep_seconds:.1f}s",
+                        flush=True,
+                    )
+                    time.sleep(sleep_seconds)
+                    continue
+                raise RuntimeError(
+                    f"{self.backend} generation API failed at network level after "
+                    f"{max_retries} retries: {exc}"
+                ) from exc
         return json.loads(body)
 
+    @staticmethod
+    def _dedupe_nonempty(values: list[Optional[str]]) -> list[str]:
+        seen: set[str] = set()
+        result: list[str] = []
+        for value in values:
+            if not value or value in seen:
+                continue
+            seen.add(value)
+            result.append(value)
+        return result
+
+    @staticmethod
+    def _is_quota_exhausted_error(exc: BaseException) -> bool:
+        status = getattr(exc, "status_code", None)
+        text = " ".join(
+            str(part)
+            for part in (
+                exc,
+                getattr(exc, "response_body", ""),
+                getattr(exc, "body", ""),
+            )
+            if part
+        ).lower()
+        return status == 429 or "resource_exhausted" in text or "quota" in text
+
+    def _gemini_api_keys(self, primary: Optional[str]) -> list[str]:
+        backups = [
+            os.environ.get(f"GEMINI_API_KEY_BACKUP_{idx}")
+            for idx in range(1, 10)
+        ]
+        return self._dedupe_nonempty([
+            primary,
+            os.environ.get("GEMINI_API_KEY"),
+            os.environ.get("GOOGLE_API_KEY"),
+            *backups,
+        ])
+
     def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
-        request_kwargs = {
-            "model": self.model_name,
-            "system": system_prompt,
-            "messages": [{"role": "user", "content": user_prompt}],
-            "max_tokens": self.max_new_tokens,
+        client = getattr(self, "_client", None)
+        if client is not None and hasattr(client, "converse"):
+            data = client.converse(
+                modelId=self.model_name,
+                system=[{"text": system_prompt}],
+                messages=[{"role": "user", "content": [{"text": user_prompt}]}],
+                inferenceConfig={"maxTokens": self.max_new_tokens},
+            )
+            parts = data.get("output", {}).get("message", {}).get("content") or []
+            return "".join(part.get("text", "") for part in parts).strip()
+
+        base_url = (self.api_base_url or self._bedrock_runtime_base_url()).rstrip("/")
+        model = urllib.parse.quote(self.model_name, safe="")
+        url = f"{base_url}/model/{model}/converse"
+        payload = {
+            "system": [{"text": system_prompt}],
+            "messages": [{"role": "user", "content": [{"text": user_prompt}]}],
+            "inferenceConfig": {
+                "maxTokens": self.max_new_tokens,
+            },
         }
-        request_kwargs.update(self._anthropic_thinking_kwargs())
-        with self._client.messages.stream(**request_kwargs) as stream:
-            response = stream.get_final_message()
-        parts = []
-        for block in response.content:
-            text = getattr(block, "text", None)
-            if text:
-                parts.append(text)
-        return "".join(parts).strip()
+        data = self._post_json(
+            url,
+            {
+                "Authorization": f"Bearer {self.api_key or ''}",
+                "Accept": "application/json",
+            },
+            payload,
+        )
+        parts = data.get("output", {}).get("message", {}).get("content") or []
+        return "".join(part.get("text", "") for part in parts).strip()
 
     def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
         base_url = (self.api_base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
         model = urllib.parse.quote(self.model_name, safe="")
-        key = urllib.parse.quote(self.api_key or "", safe="")
-        url = f"{base_url}/models/{model}:generateContent?key={key}"
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
@@ -644,7 +721,27 @@ class StrategyGenerator:
                 "topP": self.top_p,
             },
         }
-        data = self._post_json(url, {}, payload)
+        keys = self._gemini_api_keys(self.api_key)
+        if not keys:
+            keys = [""]
+        last_exc: Optional[BaseException] = None
+        for idx, api_key in enumerate(keys):
+            key = urllib.parse.quote(api_key, safe="")
+            url = f"{base_url}/models/{model}:generateContent?key={key}"
+            try:
+                if len(keys) == 1:
+                    data = self._post_json(url, {}, payload)
+                else:
+                    data = self._post_json(url, {}, payload, max_retries=0, retryable_statuses=set())
+                break
+            except Exception as exc:
+                last_exc = exc
+                if idx + 1 < len(keys) and self._is_quota_exhausted_error(exc):
+                    continue
+                raise
+        else:
+            assert last_exc is not None
+            raise last_exc
         candidates = data.get("candidates") or []
         if not candidates:
             return ""
@@ -726,11 +823,34 @@ class StrategyGenerator:
                 "topP": self.top_p,
             },
         }
-        data = self._post_json(
-            url,
-            self._vertex_auth_headers(),
-            payload,
-        )
+        headers = self._vertex_auth_headers()
+        primary_key = headers.get("x-goog-api-key")
+        if primary_key:
+            keys = self._gemini_api_keys(primary_key)
+            last_exc: Optional[BaseException] = None
+            for idx, api_key in enumerate(keys):
+                try:
+                    if len(keys) == 1:
+                        data = self._post_json(url, {"x-goog-api-key": api_key}, payload)
+                    else:
+                        data = self._post_json(
+                            url,
+                            {"x-goog-api-key": api_key},
+                            payload,
+                            max_retries=0,
+                            retryable_statuses=set(),
+                        )
+                    break
+                except Exception as exc:
+                    last_exc = exc
+                    if idx + 1 < len(keys) and self._is_quota_exhausted_error(exc):
+                        continue
+                    raise
+            else:
+                assert last_exc is not None
+                raise last_exc
+        else:
+            data = self._post_json(url, headers, payload)
         candidates = data.get("candidates") or []
         if not candidates:
             return ""
@@ -829,11 +949,53 @@ class StrategyGenerator:
             return self._summarize_rationale_claim_openai(rationale, fallback=fallback)
         if backend == "anthropic":
             return self._summarize_rationale_claim_anthropic(rationale, fallback=fallback)
+        if backend == "bedrock":
+            return self._summarize_rationale_claim_bedrock(rationale, fallback=fallback)
         if backend == "gemini":
             return self._summarize_rationale_claim_gemini(rationale, fallback=fallback)
         if backend == "vertex":
             return self._summarize_rationale_claim_vertex(rationale, fallback=fallback)
         raise ValueError(f"unsupported rationale summary backend: {backend}")
+
+    def _summarize_rationale_claim_bedrock(self, rationale: str, *, fallback: bool = False) -> str:
+        token = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_API_KEY")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_API_KEY")
+        ) or os.environ.get("AWS_BEARER_TOKEN_BEDROCK")
+        if not token:
+            raise RuntimeError("AWS_BEARER_TOKEN_BEDROCK is not set")
+        model = (
+            os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_MODEL")
+            if fallback
+            else os.environ.get("CSD_RATIONALE_SUMMARY_MODEL")
+        ) or "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        base_url = (
+            (
+                os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_BASE_URL")
+                if fallback
+                else os.environ.get("CSD_RATIONALE_SUMMARY_BASE_URL")
+            )
+            or self._bedrock_runtime_base_url()
+            or ""
+        ).rstrip("/")
+        system_prompt, user_prompt = self._rationale_summary_messages(rationale)
+        url = f"{base_url}/model/{urllib.parse.quote(model, safe='')}/converse"
+        payload = {
+            "system": [{"text": system_prompt}],
+            "messages": [{"role": "user", "content": [{"text": user_prompt}]}],
+            "inferenceConfig": {
+                "maxTokens": int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
+            },
+        }
+        data = self._post_json(
+            url,
+            {"Authorization": f"Bearer {token}", "Accept": "application/json"},
+            payload,
+        )
+        parts = data.get("output", {}).get("message", {}).get("content") or []
+        content = "".join(part.get("text", "") for part in parts)
+        return self._clean_rationale_summary(content)
 
     def _summarize_rationale_claim_openai(self, rationale: str, *, fallback: bool = False) -> str:
         if fallback:
@@ -905,12 +1067,13 @@ class StrategyGenerator:
         return self._clean_rationale_summary(content)
 
     def _summarize_rationale_claim_gemini(self, rationale: str, *, fallback: bool = False) -> str:
-        api_key = (
+        primary_api_key = (
             os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_API_KEY")
             if fallback
             else os.environ.get("CSD_RATIONALE_SUMMARY_API_KEY")
         ) or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
+        api_keys = self._gemini_api_keys(primary_api_key)
+        if not api_keys:
             raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY is not set")
         model = (
             os.environ.get("CSD_RATIONALE_SUMMARY_FALLBACK_MODEL")
@@ -924,7 +1087,6 @@ class StrategyGenerator:
         ) or os.environ.get("GEMINI_BASE_URL") or "https://generativelanguage.googleapis.com/v1beta"
         system_prompt, user_prompt = self._rationale_summary_messages(rationale)
         model_path = urllib.parse.quote(model, safe="")
-        key = urllib.parse.quote(api_key, safe="")
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
@@ -932,11 +1094,33 @@ class StrategyGenerator:
                 "maxOutputTokens": int(os.environ.get("CSD_RATIONALE_SUMMARY_MAX_TOKENS", "96")),
             },
         }
-        data = self._post_json(
-            f"{base_url.rstrip('/')}/models/{model_path}:generateContent?key={key}",
-            {},
-            payload,
-        )
+        last_exc: Optional[BaseException] = None
+        for idx, api_key in enumerate(api_keys):
+            key = urllib.parse.quote(api_key, safe="")
+            try:
+                if len(api_keys) == 1:
+                    data = self._post_json(
+                        f"{base_url.rstrip('/')}/models/{model_path}:generateContent?key={key}",
+                        {},
+                        payload,
+                    )
+                else:
+                    data = self._post_json(
+                        f"{base_url.rstrip('/')}/models/{model_path}:generateContent?key={key}",
+                        {},
+                        payload,
+                        max_retries=0,
+                        retryable_statuses=set(),
+                    )
+                break
+            except Exception as exc:
+                last_exc = exc
+                if idx + 1 < len(api_keys) and self._is_quota_exhausted_error(exc):
+                    continue
+                raise
+        else:
+            assert last_exc is not None
+            raise last_exc
         candidates = data.get("candidates") or []
         if not candidates:
             raise RuntimeError("empty Gemini rationale summary")

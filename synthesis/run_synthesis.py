@@ -297,8 +297,8 @@ Examples:
     parser.add_argument(
         "--eval-max-steps",
         type=int,
-        default=150,
-        help="Maximum generation steps during evaluation (default: 150)"
+        default=600,
+        help="Maximum generation steps during evaluation (default: 600)"
     )
 
     parser.add_argument(
@@ -311,19 +311,19 @@ Examples:
     parser.add_argument(
         "--eval-max-seconds-per-example",
         type=float,
-        default=None,
-        help="Optional runtime budget per evaluated example in seconds"
+        default=90.0,
+        help="Runtime budget per evaluated example in seconds (default: 90)"
     )
 
     parser.add_argument(
         "--eval-min-examples-before-threshold-stop",
         type=int,
-        default=None,
+        default=15,
         help="Minimum number of evaluated examples before threshold-impossible "
         "early stops (target accuracy / target syntax) can fire. Suppresses the "
         "early stop until the synthesis feedback loop has at least this much "
         "evaluation signal. The runtime-budget early stop is unaffected. "
-        "Default: None (no minimum)."
+        "Default: 15."
     )
 
     parser.add_argument(
@@ -450,9 +450,9 @@ Examples:
     parser.add_argument(
         "--helper-selection-policy",
         type=str,
-        choices=["utility", "bandit"],
-        default="utility",
-        help="Helper selection policy for adaptive masking (default: utility)"
+        choices=["bandit"],
+        default="bandit",
+        help="Helper selection policy for adaptive masking; UCB/bandit only (default: bandit)"
     )
 
     parser.add_argument(
@@ -473,7 +473,7 @@ Examples:
         "--helper-mask-margin",
         type=float,
         default=0.25,
-        help="Prune helpers whose mean utility is below run mean by this margin (default: 0.25)"
+        help="Prune helpers whose mean score is below run mean by this margin (default: 0.25)"
     )
 
     parser.add_argument(
@@ -514,8 +514,8 @@ Examples:
     parser.add_argument(
         "--refinement-beam-size",
         type=int,
-        default=1,
-        help="Number of refinement candidates sampled per failure (default: 1)"
+        default=2,
+        help="Number of refinement candidates sampled per failure (default: 2)"
     )
 
     parser.add_argument(

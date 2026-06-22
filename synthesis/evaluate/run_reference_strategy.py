@@ -36,6 +36,7 @@ STRATEGY_DFY: dict[str, str] = {
     "unconstrained": "unconstrained.dfy",
     "gcd": "gcd.dfy",
     "crane": "crane.dfy",
+    "crane_faithful": "crane_faithful.dfy",
     "itergen": "itergen.dfy",
     "cars": "cars.dfy",
 }
@@ -45,12 +46,20 @@ REFERENCE_DIR = Path(__file__).resolve().parents[1] / "verify" / "reference"
 
 def _rewrite_to_generated_csd(source_text: str) -> str:
     """Rewrite the module name so the evaluator can import it as GeneratedCSD."""
-    return re.sub(
+    source_text = re.sub(
         r"module\s+Reference\w+CSD\s*\{",
         "module GeneratedCSD {",
         source_text,
         count=1,
     )
+    # The compiler stages VerifiedAgentSynthesis.dfy alongside the source (not in
+    # a library/ subdir), so strip any directory prefix from its include path.
+    source_text = re.sub(
+        r'include\s+"[^"]*VerifiedAgentSynthesis\.dfy"',
+        'include "VerifiedAgentSynthesis.dfy"',
+        source_text,
+    )
+    return source_text
 
 
 def _compile_reference(strategy: str, output_dir: Path) -> Path:

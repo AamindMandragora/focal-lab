@@ -64,6 +64,17 @@ def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
             "question": question,
             "generated_answer": str(generated_answer),
         }
+        for key in (
+            "example_index",
+            "source_index",
+            "crane_source_index",
+            "spider_source_index",
+            "db_id",
+            "id_orig",
+            "id_shuffled",
+        ):
+            if sample.get(key) is not None:
+                row[key] = sample.get(key)
         if sample.get("token_count") is not None:
             row["num_tokens"] = int(sample["token_count"])
         if sample.get("time_seconds") is not None:
@@ -76,12 +87,19 @@ def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
         evaluator_max_sample_time_seconds=result.max_sample_time_seconds,
     )
 
-    return {
+    record = {
         "accuracy": float(result.accuracy),
         "syntax_rate": float(result.syntax_rate),
         "metrics": metrics,
         "answers": answers,
     }
+    # Preserve the CARS-paper SMILES metrics (unique_valid_count, diversity_tanimoto,
+    # validity_rdkit, samples_to_target_unique_valid) so saved JSONs carry the real
+    # comparison axes instead of just the headline accuracy. Inert for other datasets.
+    trial = (result.aux_metrics or {}).get("smiles_paper_trial")
+    if trial:
+        record["smiles_paper_trial"] = trial
+    return record
 
 
 def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, Any]:

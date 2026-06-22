@@ -6,9 +6,10 @@ import argparse
 import json
 import os
 import re
+import sys
+import tempfile
 import time
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -94,7 +95,11 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
     profile:
       - ``expression_only``: one delimited answer; used by IterGen and GCD.
       - ``chain_of_thought``: explicit reasoning then answer; used by CRANE adaptive SMILES.
-      - ``evaluator_default``: ``logic.format_prompt`` (optional Spider reasoning for unconstrained paths).
+        NOTE: for Spider, ``format_prompt_chain_of_thought`` returns a list[dict] (multi-turn
+        chat messages) — do NOT use this profile for Spider; use ``evaluator_default`` instead.
+      - ``evaluator_default``: ``logic.format_prompt``; for Spider this returns the flat
+        few-shot string (the production format) and is the correct profile for all Spider
+        legacy adapters.
     """
     if profile == "evaluator_default":
         return logic.format_prompt(evaluator, example)
@@ -145,7 +150,7 @@ def _gsm_symbolic_completion_to_delimited(
     expr = completion.strip().splitlines()[0].strip()
     if expr.startswith("<<"):
         wrapped = expr if ">>" in expr else f"{expr}>>"
-        expr = re.findall(r"<<\s*([^<>]*?)\s*>>", wrapped)
+        expr = re.findall(r"<<\s*(.*?)\s*>>", wrapped, flags=re.DOTALL)
         expr = expr[-1] if expr else ""
     if expr.endswith(">>"):
         expr = expr[:-2].strip()
@@ -373,6 +378,13 @@ def _annotate_legacy_rows_with_syntax(
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file if dataset == "spider" else None,
         spider_split_name=args.spider_split_name,
+        # Forward the per-class SMILES filter; without this the Evaluator loads the
+        # default sample (all three classes x sample_size) and --smiles-classes is ignored.
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
@@ -506,28 +518,34 @@ def _cars_tokens_to_text(tokens: list[Any]) -> str:
     return "".join(text_tokens).strip()
 
 
-def _cars_generate_text(cars_model: Any, prompt: str, max_new_tokens: int, max_attempts: int) -> str:
-    formatted_prompt = cars_model._format_prompt(prompt)
-    prompt_ids = cars_model.tokenizer.encode(
-        formatted_prompt,
-        return_tensors="pt",
-        add_special_tokens=False,
-    ).to(cars_model.model.device)
-    prompt_len = int(prompt_ids.shape[1])
-    cars_model.reset_sampling(learn_level=3, constrain_first=True)
+def _cars_sampler_steps(
+    cars_model: Any,
+    prompt: str,
+    *,
+    n_steps: int,
+    max_new_tokens: int,
+) -> list[dict[str, Any]]:
+    """Run upstream ``cars.CARS`` multi-step sampling; return logged step dicts."""
+    from cars.cars import CARS
 
-    for _attempt in range(max(1, max_attempts)):
-        try:
-            current_ids, _current_scores, _current_raw_logprob = cars_model._generate(
-                prompt_ids,
-                max_new_tokens=max_new_tokens,
-            )
-        except ValueError:
-            continue
-        new_ids = current_ids[0][prompt_len:]
-        tokens = [cars_model.tokenizer.decode(token_id) for token_id in new_ids]
-        return _cars_tokens_to_text(tokens)
-    return ""
+    with tempfile.TemporaryDirectory(prefix="vas_cars_") as log_dir:
+        runner = CARS(cars_model, prompt, "cars", log_dir)
+        runner.get_samples(
+            n_samples=1,
+            n_steps=max(1, n_steps),
+            stop_after=1,
+            max_new_tokens=max(1, max_new_tokens),
+        )
+        return _load_cars_results_from_log_dir(Path(log_dir))
+
+
+def _cars_completion_from_steps(steps: list[dict[str, Any]]) -> str:
+    if not steps:
+        return ""
+    tokens = steps[-1].get("tokens")
+    if not isinstance(tokens, list):
+        return ""
+    return _cars_tokens_to_text(tokens)
 
 
 def _cars_normalize_gsm_symbolic_output(raw: str) -> str:
@@ -540,7 +558,7 @@ def _cars_normalize_gsm_symbolic_output(raw: str) -> str:
     text = (raw or "").strip()
     if not text:
         return raw
-    if re.findall(r"<<\s*([^<>]+?)\s*>>", text):
+    if re.findall(r"<<\s*(.*?)\s*>>", text, flags=re.DOTALL):
         return raw
     expr = text.splitlines()[0].strip()
     return f"<<{expr}>>" if expr else raw
@@ -562,13 +580,7 @@ def _cars_set_cached_grammar(
 def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     run_started = time.perf_counter()
     dataset = _normalize_dataset(args.dataset)
-
-    if dataset == "gsm_symbolic":
-        raise SystemExit(
-            "CARS baseline is not evaluated on GSM-Symbolic in the CARS paper; "
-            "no paper-faithful comparison exists for this combination. "
-            "Skipping CARS GSM run."
-        )
+    repo_root = Path(__file__).resolve().parents[2]
 
     model_id = _cars_model_id(args.eval_model)
 
@@ -606,6 +618,13 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file if dataset == "spider" else None,
         spider_split_name=args.spider_split_name,
+        # Forward the per-class SMILES filter; without this the Evaluator loads the
+        # default sample (all three classes x sample_size) and --smiles-classes is ignored.
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
 
@@ -615,7 +634,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_suffix: dict[str, str] = {}
     grammar_cache: dict[str, Any] = {}
-    max_attempts = max(20, min(2000, int(args.eval_max_steps) * 2))
+    n_steps = max(1, int(getattr(args, "cars_search_steps", 200)))
     max_new_tokens = max(32, int(args.eval_max_steps))
 
     gsm_cars_grammar = ""
@@ -642,12 +661,13 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
-        output_text = _cars_generate_text(
+        steps = _cars_sampler_steps(
             cars_model,
             prompt,
+            n_steps=n_steps,
             max_new_tokens=max_new_tokens,
-            max_attempts=max_attempts,
         )
+        output_text = _cars_completion_from_steps(steps)
         gen_seconds = time.perf_counter() - gen_started
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
@@ -728,6 +748,13 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file if dataset == "spider" else None,
         spider_split_name=args.spider_split_name,
+        # Forward the per-class SMILES filter; without this the Evaluator loads the
+        # default sample (all three classes x sample_size) and --smiles-classes is ignored.
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
@@ -901,6 +928,13 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file if dataset == "spider" else None,
         spider_split_name=args.spider_split_name,
+        # Forward the per-class SMILES filter; without this the Evaluator loads the
+        # default sample (all three classes x sample_size) and --smiles-classes is ignored.
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
@@ -1201,7 +1235,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     max_new = max(32, int(args.eval_max_steps))
 
     for example in examples:
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         num_toks: int | None = None
         if args.eval_backend == "vllm":
             from vllm import SamplingParams as _SP
@@ -1315,6 +1349,13 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         gsm_split_name=args.gsm_split_name,
         spider_split_file=args.spider_split_file if dataset == "spider" else None,
         spider_split_name=args.spider_split_name,
+        # Forward the per-class SMILES filter; without this the Evaluator loads the
+        # default sample (all three classes x sample_size) and --smiles-classes is ignored.
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
     examples = logic.load_dataset_sample(eval_runtime)
@@ -1368,7 +1409,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "chain_of_thought")
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         gen_started = time.perf_counter()
         completions = sc.infer(prompt)
         gen_seconds = time.perf_counter() - gen_started
@@ -1558,10 +1599,24 @@ def main() -> None:
         default=None,
         help="Samples per class for legacy CRANE main.py (default: eval-sample-size)",
     )
+    parser.add_argument(
+        "--cars-search-steps",
+        type=int,
+        default=200,
+        help=(
+            "Max stochastic CARS decode attempts per example (the grammar must accept "
+            "a sample). Default 200. Independent of --eval-max-steps."
+        ),
+    )
     args = parser.parse_args()
     from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
 
     args.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size)
+
+    # Use process spawning instead of forking when vLLM starts worker processes.
+    # Forking after CUDA is initialized in the parent crashes with
+    # "Cannot re-initialize CUDA in forked subprocess".
+    os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
     _ensure_repo_cache_env()
 

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import re
 
-DELIMITED_SPAN_PATTERN = re.compile(r"<<\s*([^<>]+?)\s*>>")
+# ``.*?`` (not ``[^<>]``) so a span body containing single ``<``/``>`` chars --
+# e.g. SQL comparison operators ``age < 30`` / ``COUNT(*) > 1`` -- is captured whole.
+# Lazy match still stops at the first ``>>`` delimiter; DOTALL keeps the old
+# behaviour of spanning newlines inside a delimited region.
+DELIMITED_SPAN_PATTERN = re.compile(r"<<\s*(.*?)\s*>>", re.DOTALL)
 
 
 def find_delimited_spans(text: str) -> list[str]:

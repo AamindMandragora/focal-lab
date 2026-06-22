@@ -39,6 +39,7 @@ so baseline numbers remain interpretable.
 | API surface | `cars.lib.ConstrainedModel` experiments | **`run_cars_legacy_adapter`** constructs **`ConstrainedModel`**, injects per-example Lark grammar (GSM dynamic/numeric, Spider `sql.lark`, SMILES class grammar text), runs **`generate`-style loop**, scores through **`Evaluator` + benchmark `eval_logic`**. |
 | GSM answers | May emit bare expressions | **`_cars_normalize_gsm_symbolic_output`** wraps delimiter-free bodies so **`extract_actual`** sees `<<…>>` spans (see `outputs/baselines/AGENTS.md` caveat on older artifacts). |
 | Spider syntax flag | N/A | Adapter sets syntax True when extracted SQL mentions **`SELECT`** (legacy rows lacked rich syntax metadata). |
+| Model id coverage (2026-06-09) | `HF_CHAT_MODELS` in `cars/lib.py` and `mcmc/lib.py` did not include `Qwen/Qwen2.5-1.5B-Instruct`, `Qwen/Qwen2.5-Coder-1.5B-Instruct`, or `Qwen/Qwen2.5-Coder-14B-Instruct`, causing `ValueError: Unknown model type` at runtime. | Added all three ids to `HF_CHAT_MODELS` in both files so CARS uses the standard chat template for those models. Tracked in `environment/legacy_patches/cars/010-add-qwen-coder-model-ids.patch`. |
 
 ## GCD baseline (no `legacy/` tree)
 

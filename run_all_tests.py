@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shlex
@@ -37,18 +38,18 @@ DEFAULT_MODELS = (
     "meta-llama/Llama-3.1-8B-Instruct"
 )
 DEFAULT_BENCHMARKS = "gsm,spider"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,cars,metadecode"
+DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,metadecode,cars"
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
-DEFAULT_GEN_MODELS = "opus4.7,gpt5.5,gemini"
+DEFAULT_GEN_MODELS = "sonnet4.6,gpt5.5,gemini"
 DEFAULT_STEP_BUDGETS = "256,512,900,1024"
 DEFAULT_GSM_MAX_STEPS = "900"
 DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
 VALID_ABLATION_SECTIONS = ("A", "B", "C", "D", "E")
 DEFAULT_ABLATION_SECTIONS = ",".join(VALID_ABLATION_SECTIONS)
 DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
-CSD_TARGET_STRATEGIES = ("crane", "itergen", "cars")
+CSD_TARGET_STRATEGIES = ("crane", "itergen")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
@@ -82,6 +83,13 @@ from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classe
 
 def csv_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def normalize_strategies(value: str) -> list[str]:
+    strategies = csv_list(value)
+    if not strategies:
+        raise SystemExit("No runnable strategies specified.")
+    return strategies
 
 
 def normalize_ablation_sections(value: str) -> set[str]:
@@ -194,6 +202,7 @@ class Runner:
     config: Config
     env: dict[str, str]
     prepared_baselines: set[tuple[str, str, str, str, str]] = field(default_factory=set)
+    last_failure_was_author_access: bool = False
 
     def configure_cuda_devices(self) -> bool:
         from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
@@ -539,6 +548,7 @@ class Runner:
         print(f"[retry-queue] queued GPU3 retry {record['id']} ({reason}) -> {queue_path}")
 
     def run_cmd(self, cmd: list[str], *, abort_on_quota: bool = True) -> bool:
+        self.last_failure_was_author_access = False
         if self.config.dry_run:
             print(f"[dry-run] {command_text(cmd)}")
             return True
@@ -576,6 +586,7 @@ class Runner:
             # Hard-stop the whole matrix on author-model quota / credit exhaustion.
             # These are NOT transient — retrying or switching GPUs won't recover.
             if QUOTA_RE.search(log_text):
+                self.last_failure_was_author_access = True
                 quota_excerpt = "\n".join(
                     ln for ln in log_text.splitlines()
                     if QUOTA_RE.search(ln)
@@ -644,11 +655,17 @@ class Runner:
 
     def resolve_gen_profile(self, profile: str) -> tuple[str, str]:
         anthropic_opus47 = self.env.get("ANTHROPIC_OPUS_MODEL", "claude-opus-4-7")
+        anthropic_sonnet46 = self.env.get("ANTHROPIC_SONNET_MODEL", "claude-sonnet-4-6")
         bedrock_opus47 = (
             self.env.get("BEDROCK_OPUS_MODEL")
             or self.env.get("BEDROCK_GENERATION_MODEL")
             or self.env.get("AWS_BEDROCK_GENERATION_MODEL")
             or "us.anthropic.claude-opus-4-7"
+        )
+        bedrock_sonnet46 = (
+            self.env.get("BEDROCK_SONNET_MODEL")
+            or self.env.get("AWS_BEDROCK_SONNET_MODEL")
+            or "us.anthropic.claude-sonnet-4-6"
         )
         openai_gpt = self.env.get("OPENAI_GENERATION_MODEL", "gpt-5.5")
         gemini_pro = self.env.get("GEMINI_GENERATION_MODEL", "gemini-3-pro-preview")
@@ -661,15 +678,31 @@ class Runner:
             return "openai", openai_gpt
         if profile == "opus4.7":
             if self.env.get("CSD_OPUS47_BACKEND", "").strip().lower() == "bedrock":
-                return "bedrock", bedrock_opus47
+                raise ValueError(
+                    "Bedrock generation profiles are disabled for the experimental matrix."
+                )
             return "anthropic", anthropic_opus47
+        if profile == "sonnet4.6":
+            if self.env.get("CSD_SONNET46_BACKEND", "").strip().lower() == "bedrock":
+                raise ValueError(
+                    "Bedrock generation profiles are disabled for the experimental matrix."
+                )
+            return "anthropic", anthropic_sonnet46
+        if profile == "bedrock-sonnet4.6":
+            raise ValueError(
+                "Bedrock generation profiles are disabled for the experimental matrix."
+            )
         if profile == "bedrock-opus4.7" or profile == "bedrock":
-            return "bedrock", bedrock_opus47
+            raise ValueError(
+                "Bedrock generation profiles are disabled for the experimental matrix."
+            )
         if profile.startswith("bedrock:"):
             model = profile.split(":", 1)[1].strip()
             if not model:
                 raise ValueError("bedrock: profiles must include a Bedrock model id.")
-            return "bedrock", model
+            raise ValueError(
+                "Bedrock generation profiles are disabled for the experimental matrix."
+            )
         if profile == "gemini":
             if self.env.get("CSD_GEMINI_BACKEND", "").strip().lower() == "vertex":
                 return "vertex", vertex_gemini
@@ -688,7 +721,7 @@ class Runner:
             )
         raise ValueError(
             f"Unknown generation profile: {profile}. "
-            "Allowed profiles are opus4.7, bedrock-opus4.7, gpt5.5, and gemini."
+            "Allowed profiles are sonnet4.6, opus4.7, gpt5.5, and gemini."
         )
 
     def baseline_case_key(
@@ -811,6 +844,8 @@ class Runner:
     def accuracy_target_with_margin(self, baseline_accuracy: float, target_strategy: str) -> float:
         if target_strategy == "none":
             return 0.0
+        if self.config.accuracy_win_margin <= 0:
+            return math.nextafter(baseline_accuracy, 1.0)
         return min(1.0, baseline_accuracy + self.config.accuracy_win_margin)
 
     def ensure_csd_target_baselines(
@@ -852,14 +887,6 @@ class Runner:
     ) -> bool:
         if benchmark == "smiles" and not smiles_class:
             print("Internal error: SMILES fixed-strategy run requires a class.", file=sys.stderr)
-            return False
-
-        if strategy == "cars" and benchmark == "gsm_symbolic":
-            print(
-                "[skip] CARS baseline is not evaluated on GSM-Symbolic in the CARS paper; "
-                "skipping for paper-faithful comparison.",
-                file=sys.stderr,
-            )
             return False
 
         model_slug = slugify(eval_model)
@@ -1048,7 +1075,7 @@ class Runner:
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
                 f"[target] metadecode {key}/{model_slug} tb{token_budget} ms{max_steps}: "
-                "no valid CRANE/IterGen/CARS baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
+                "no valid CRANE/IterGen baseline found; passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
             print(
@@ -1109,7 +1136,7 @@ class Runner:
             "--refinement-beam-size",
             self.config.refinement_beam_size,
         ]
-        if backend == "anthropic":
+        if backend in ("anthropic", "bedrock"):
             cmd += [
                 "--anthropic-thinking",
                 self.config.anthropic_thinking,
@@ -1141,7 +1168,15 @@ class Runner:
             "smiles_class": smiles_class,
             "run_name": run_name,
         }
-        if not self.run_cmd(cmd, abort_on_quota=backend != "openai"):
+        if not self.run_cmd(cmd, abort_on_quota=False):
+            if self.last_failure_was_author_access:
+                print(
+                    f"[skip] Metadecode author model unavailable for benchmark={benchmark} "
+                    f"eval_model={eval_model} token_budget={token_budget} iter={synth_iter} "
+                    f"gen={gen_profile} max_steps={max_steps}; continuing matrix.",
+                    file=sys.stderr,
+                )
+                return True
             print(
                 f"[warn] Metadecode synthesis failed for benchmark={benchmark} "
                 f"eval_model={eval_model} token_budget={token_budget} iter={synth_iter} "
@@ -1374,7 +1409,7 @@ class Runner:
         if target_strategy == "none" and target_syntax_strategy == "none":
             print(
                 f"[target] metadecode {benchmark}{class_suffix}/{slugify(eval_model)} "
-                f"tb{token_budget} ms{max_steps}: no valid CRANE/IterGen/CARS baseline found; "
+                f"tb{token_budget} ms{max_steps}: no valid CRANE/IterGen baseline found; "
                 "passing --min-accuracy 0.0 --min-syntax-rate 0.0"
             )
         else:
@@ -1495,7 +1530,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for step_budget in self.config.step_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1551,7 +1586,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for token_budget in self.config.token_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "cars", "metadecode"):
+                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1658,9 +1693,9 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--accuracy-win-margin",
         type=float,
-        default=float(os.environ.get("CSD_ACCURACY_WIN_MARGIN", "0.03")),
+        default=float(os.environ.get("CSD_ACCURACY_WIN_MARGIN", "0.0")),
         help="Absolute accuracy margin added to the best matching legacy CSD baseline "
-        "for MetaDecode success (default: 0.03).",
+        "for MetaDecode success (default: 0.0, i.e. any strict baseline win counts).",
     )
     parser.add_argument(
         "--synthesis-max-tokens",
@@ -1688,8 +1723,8 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--anthropic-thinking",
         choices=["auto", "off", "adaptive", "enabled"],
-        default="adaptive",
-        help="Forwarded for Anthropic MetaDecode author profiles (default: adaptive).",
+        default="auto",
+        help="Forwarded for Anthropic MetaDecode author profiles (default: auto).",
     )
     parser.add_argument(
         "--anthropic-effort",
@@ -1825,7 +1860,7 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
     return Config(
         models=csv_list(args.models),
         benchmarks=csv_list(args.benchmarks),
-        strategies=csv_list(args.strategies),
+        strategies=normalize_strategies(args.strategies),
         token_budgets=csv_list(args.token_budgets),
         synth_iters=csv_list(args.synthesis_iterations),
         gen_models=csv_list(args.generation_models),

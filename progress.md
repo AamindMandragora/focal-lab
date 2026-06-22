@@ -1,41 +1,63 @@
 # Experiment progress
 
-_Last updated: 2026-05-25T15:40:12+00:00_
+_Last updated: 2026-06-22T05:10:48+00:00_
 
-## Status: ✅ RUN ACTIVE  (PID 896681, uptime 03:37:02)
+## Status: ⏹  NO RUN ACTIVE  (last launcher: launch_full_matrix_20260520_024953.sh)
 
 ## GPU
 
 ```
-0, 508 MiB, 40960 MiB, 0 %
-1, 34509 MiB, 40960 MiB, 5 %
-2, 32986 MiB, 40960 MiB, 80 %
-3, 32983 MiB, 40960 MiB, 0 %
+0, 39903 MiB, 40960 MiB, 0 %
+1, 38881 MiB, 40960 MiB, 100 %
+2, 17378 MiB, 40960 MiB, 0 %
+3, 35501 MiB, 40960 MiB, 0 %
 ```
 
-## Completed cells (since launch_full_matrix_20260520_104938.sh)
+## Completed cells (since launch_full_matrix_20260520_024953.sh)
 
 | Strategy | Model | Benchmark | Acc | Syntax | N | Saved |
 |---|---|---|---|---|---|---|
-| crane | Qwen_Qwen2.5_1.5B_Instruct | gsm_symbolic | 38.0% | ? | 50 | 2026-05-25T06:23:18 |
-| crane | Qwen_Qwen2.5_1.5B_Instruct | spider | 20.0% | ? | 100 | 2026-05-24T16:47:42 |
-| crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 54.3% | ? | 70 | 2026-05-24T15:14:04 |
-| crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 50.0% | ? | 50 | 2026-05-24T23:17:21 |
-| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-20T11:45:42 |
-| gcd | Qwen_Qwen2.5_1.5B_Instruct | gsm_symbolic | 26.0% | ? | 50 | 2026-05-25T10:34:56 |
-| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 47.6% | ? | 82 | 2026-05-25T11:53:44 |
-| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 46.0% | ? | 50 | 2026-05-24T14:12:37 |
-| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 46.0% | ? | 50 | 2026-05-24T23:12:26 |
-| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 43.8% | ? | 64 | 2026-05-25T11:53:32 |
-| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 37.0% | ? | 100 | 2026-05-20T11:43:22 |
-| itergen | Qwen_Qwen2.5_1.5B_Instruct | gsm_symbolic | 20.0% | ? | 50 | 2026-05-25T06:59:18 |
-| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 22.0% | ? | 50 | 2026-05-24T15:22:38 |
-| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 24.0% | ? | 50 | 2026-05-24T23:40:10 |
-| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 24.0% | ? | 50 | 2026-05-25T08:05:02 |
-| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-25T13:56:45 |
-| metadecode | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 0.0% | ? | 0 | 2026-05-25T13:54:16 |
-| unconstrained | Qwen_Qwen2.5_1.5B_Instruct | gsm_symbolic | 28.0% | ? | 50 | 2026-05-25T10:32:31 |
-| unconstrained | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-20T11:40:45 |
+| cars | Qwen_Qwen2.5_14B_Instruct | spider_seed334_test300 | 64.7% | ? | 300 | 2026-06-12T14:16:18 |
+| cars | Qwen_Qwen2.5_1.5B_Instruct | spider_seed334_test300 | 30.0% | ? | 300 | 2026-06-11T11:30:44 |
+| cars | Qwen_Qwen2.5_7B_Instruct | spider_seed334_test300 | 61.0% | ? | 300 | 2026-06-11T10:45:58 |
+| cars | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 73.0% | ? | 100 | 2026-06-09T14:13:48 |
+| crane | Qwen_Qwen2.5_14B_Instruct | gsm_symbolic | 46.0% | ? | 100 | 2026-06-01T14:12:43 |
+| crane | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 54.0% | ? | 50 | 2026-05-26T07:12:56 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 50.0% | ? | 50 | 2026-05-25T17:31:47 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 50.0% | ? | 50 | 2026-05-26T04:28:40 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 50.0% | ? | 50 | 2026-05-26T05:33:54 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-25T19:13:59 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-25T18:55:31 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-25T19:03:28 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T15:18:08 |
+| crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T19:10:13 |
+| gcd | Qwen_Qwen2.5_14B_Instruct | spider_seed334_test300 | 0.7% | ? | 300 | 2026-06-12T17:47:12 |
+| gcd | Qwen_Qwen2.5_14B_Instruct | spider | 16.0% | ? | 100 | 2026-06-01T11:30:33 |
+| gcd | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 58.0% | ? | 50 | 2026-05-26T07:07:08 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 46.0% | ? | 50 | 2026-05-26T05:27:03 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 35.0% | ? | 100 | 2026-05-25T19:11:41 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 35.0% | ? | 100 | 2026-05-25T18:53:01 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 35.0% | ? | 100 | 2026-05-25T19:00:57 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T15:12:22 |
+| gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T19:04:14 |
+| itergen | Qwen_Qwen2.5_14B_Instruct | gsm_symbolic | 33.0% | ? | 100 | 2026-06-01T15:01:29 |
+| itergen | Qwen_Qwen2.5_14B_Instruct | spider | 46.0% | ? | 100 | 2026-06-01T11:24:04 |
+| itergen | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 44.0% | ? | 50 | 2026-05-26T07:14:08 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 24.0% | ? | 50 | 2026-05-25T18:50:03 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 24.0% | ? | 50 | 2026-05-26T05:26:01 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 24.0% | ? | 50 | 2026-05-26T07:51:08 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-25T19:16:23 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-25T18:58:02 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-25T19:06:00 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-25T19:08:51 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 73.0% | ? | 100 | 2026-05-29T15:20:11 |
+| itergen | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 73.0% | ? | 100 | 2026-05-29T19:12:39 |
+| metadecode | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 32.0% | ? | 50 | 2026-05-26T06:27:43 |
+| metadecode | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 30.0% | ? | 50 | 2026-05-26T01:48:52 |
+| metadecode | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 70.0% | ? | 100 | 2026-05-27T09:59:44 |
+| unconstrained | Qwen_Qwen2.5_1.5B_Instruct | spider_seed334_test300_unconstrained_fixedprompt.json | 40.7% | ? | 300 | 2026-06-11T11:00:02 |
+| unconstrained | Qwen_Qwen2.5_7B_Instruct | spider_seed334_test300_unconstrained_fixedprompt.json | 47.0% | ? | 300 | 2026-06-11T11:14:27 |
+| unconstrained | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 56.0% | ? | 50 | 2026-05-26T07:05:46 |
 
 ## Errors in latest log
 

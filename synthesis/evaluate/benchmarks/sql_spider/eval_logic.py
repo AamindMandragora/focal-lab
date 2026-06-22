@@ -7,7 +7,7 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
-from synthesis.evaluate.benchmarks.sql_spider.prompts import format_spider_prompt
+from synthesis.evaluate.benchmarks.sql_spider.prompts import format_spider_messages, format_spider_prompt
 
 
 uses_hidden_chunks = defaults.uses_hidden_chunks
@@ -38,6 +38,14 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
+    # Flattened few-shot format for synthesis: concise output keeps step budget
+    # well within limits so constrained <<SQL>> spans can complete.
+    # The inline few-shot example is LOAD-BEARING: a zero-shot IterGen-aligned
+    # prompt (no example) made both Qwen Instruct models stop emitting << >>
+    # entirely -> syntax collapsed to 0.7%/3.3% and accuracy fell 57.3->43.7 (7B)
+    # and 44->20.7 (1.5B), confirmed on seed334 held-out 300 on 2026-06-05.
+    # (Multi-turn lifted unconstrained 38%->44% but exhausts max_steps in
+    # constrained mode and produces 0%/0% — confirmed 2026-05-28.)
     return format_spider_prompt(
         example,
         instruction=(
@@ -60,9 +68,9 @@ def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> st
     )
 
 
-def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> list[dict]:
     """Legacy CRANE-style runs: require explicit reasoning before the delimited query."""
-    return format_spider_prompt(
+    return format_spider_messages(
         example,
         instruction=(
             "Write a SINGLE SQL query answering the question, using ONLY the tables "

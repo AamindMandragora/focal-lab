@@ -125,6 +125,23 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"rollback, current_len={current_len}"
         return event
 
+    if name == "RegenerateUnitOnCheckFailure":
+        result_len = _safe_len(result)
+        # args: lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit,
+        #       maxRetries, maxRollbackBudget, allowedUnits
+        max_steps = args[5] if len(args) > 5 else None
+        max_retries = args[6] if len(args) > 6 else None
+        allowed_count = _safe_len(args[8]) if len(args) > 8 else None
+        event["result_len"] = result_len
+        event["max_steps_per_unit"] = str(max_steps)
+        event["max_retries"] = str(max_retries)
+        event["allowed_units_count"] = allowed_count
+        event["detail"] = (
+            f"unit_rewind result_len={result_len}, max_steps={max_steps}, "
+            f"max_retries={max_retries}, allowed_units={allowed_count}"
+        )
+        return event
+
     if name in {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}:
         hit_eos = False
         steps_used = None
@@ -557,6 +574,7 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
+        "RegenerateUnitOnCheckFailure",
         "DeadEndDetection",
         "ValidTokenCount",
         "BoostTokenLogits",

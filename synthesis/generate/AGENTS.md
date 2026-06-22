@@ -16,6 +16,12 @@ Strategy **generation and refinement** prompts and orchestration.
 - Use the `gemini` matrix profile for direct Gemini API model ablations. The
   legacy `gemini-pro` profile name remains rejected because it historically
   referred to a Bedrock-backed placeholder.
+- Keep direct Gemini and Vertex API-key quota fallback in code, not prompt
+  prose: rotate through `GEMINI_API_KEY_BACKUP_N` keys on quota exhaustion and
+  avoid delayed retries on a key that has already reported quota exhaustion.
+- Keep Bedrock as an explicit low-level backend. Do not require `BEDROCK_BASE_URL`
+  for client-mode AWS Converse calls; derive regional HTTP runtime URLs lazily
+  only when the HTTP fallback path is used.
 - If prompt context needs rationale compression, use the rationale-summary path
   or preserve the full rationale. Do not replace rationale claims with
   character/word truncation in model-facing refinement context.

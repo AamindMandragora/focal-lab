@@ -62,6 +62,101 @@ class VerificationDiagnostic:
     contract_excerpt: str = ""
 
 
+def _cited_contract_line(diagnostic: "VerificationDiagnostic") -> str:
+    """Return the specific contract line Dafny cited at the Related location.
+
+    `_extract_excerpt` marks the cited line with a leading '>'. We read that line so
+    the (single) postcondition obligation_kind can be sub-typed by WHICH `ensures`
+    clause actually failed — the excerpt windows for adjacent clauses overlap, so we
+    must key off the marked line, not the whole window. Falls back to the whole
+    excerpt if no marker is present.
+    """
+    for raw in diagnostic.contract_excerpt.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith(">"):
+            return stripped[1:].strip()
+    return diagnostic.contract_excerpt.strip()
+
+
+def _remediation_for(diagnostic: "VerificationDiagnostic") -> str:
+    """Mechanism-level hint for satisfying the Dafny proof obligation that failed.
+
+    Pure function of the diagnostic. References ONLY the proof contract (the template
+    `ensures`/`requires` clauses, loop invariants, the `decreases` measure, the `cost`
+    field, the step counter) — never a decoding strategy, a preferred helper, a
+    baseline, or anything task-specific. This is the verification-side analog of the
+    evaluation refinement prompt's "## How to revise" guidance.
+
+    Returns "" for the unclassified `verification` fallback (the generic Dafny
+    reminder already in the prompt covers that case).
+    """
+    kind = diagnostic.obligation_kind
+
+    if kind == "postcondition":
+        cited = _cited_contract_line(diagnostic)
+        if "!=" in cited:
+            # progress disjunction: ... || generated != generatedPrefix || insideConstrained...
+            return (
+                "Remediation: this progress postcondition requires that on every return "
+                "path at least one of these holds — maxSteps == 0, cost > 0, "
+                "generated != generatedPrefix, or the constrained-span state changed. It "
+                "fails on a path that returns having proved none, usually (a) a return "
+                "before any step is taken, or (b) the final return where cost > 0 is not "
+                "provable because the cost out-parameter is not tied to the work done. Make "
+                "every path with maxSteps > 0 take at least one counted step, and set the "
+                "cost out-parameter from the accumulated step count."
+            )
+        if "cost" in cited and "<=" in cited:
+            return (
+                "Remediation: this cost postcondition (cost <= maxSteps) is discharged by "
+                "the per-step helpers, which each add 1 to the helpers.cost field. Set the "
+                "cost out-parameter to helpers.cost rather than a separately-tracked local "
+                "total — a hand-tracked counter is not provably equal to the field unless "
+                "every increment path matches."
+            )
+        if "|generated|" in cited:
+            return (
+                "Remediation: this length postcondition (|generated| <= |generatedPrefix| "
+                "+ maxSteps) bounds output growth to one token per counted step. Maintain a "
+                "loop invariant |generated| <= |generatedPrefix| + steps and append only "
+                "inside a counted step; appending outside the step count breaks the bound."
+            )
+        return (
+            "Remediation: identify which ensures clause is cited at the Related location, "
+            "then make every return path establish it — bind any helper result to a local "
+            "variable first, then prove the clause holds on that path."
+        )
+
+    if kind == "precondition":
+        call = diagnostic.call_name.strip()
+        subject = f"calling {call}" if call else "this call"
+        return (
+            f"Remediation: before {subject}, its precondition must hold on every path "
+            "that reaches the call. The required clause is shown in the contract excerpt "
+            "above. Add a guard so the call is only reached in states where that clause "
+            "holds, or compute and bind the value that establishes it first."
+        )
+
+    if kind == "invariant":
+        return (
+            "Remediation: the loop body must re-establish this invariant at the end of "
+            "every iteration, and it must also hold on entry. Common misses: the "
+            "|generated| <= |generatedPrefix| + steps bound (append exactly when you "
+            "increment steps), or a parser-validity invariant (change span content only "
+            "through steps whose postconditions preserve parser.IsValidPrefix)."
+        )
+
+    if kind == "decreases":
+        return (
+            "Remediation: the decreases clause requires the loop measure to strictly "
+            "decrease each iteration — the step counter must strictly increase on every "
+            "loop path. A path that does not increment it breaks termination; ensure every "
+            "loop path either increments the counter or exits."
+        )
+
+    return ""
+
+
 @dataclass
 class VerificationError:
     """A single verification error from Dafny."""
@@ -129,6 +224,9 @@ class VerificationResult:
             if diagnostic.contract_excerpt:
                 lines.append("   Relevant contract excerpt:")
                 lines.extend(f"     {line}" for line in diagnostic.contract_excerpt.splitlines())
+            remediation = _remediation_for(diagnostic)
+            if remediation:
+                lines.append(f"   {remediation}")
 
         return "\n".join(lines)
 

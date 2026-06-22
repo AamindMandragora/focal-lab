@@ -221,6 +221,19 @@ def _matrix_runner(tmp_path, *, dry_run=True):
     )
 
 
+def test_full_test_runner_defaults_anthropic_author_profiles_to_bedrock(tmp_path):
+    runner = _matrix_runner(tmp_path)
+
+    assert runner.resolve_gen_profile("opus4.7") == (
+        "bedrock",
+        "us.anthropic.claude-opus-4-7",
+    )
+    assert runner.resolve_gen_profile("sonnet4.6") == (
+        "bedrock",
+        "us.anthropic.claude-sonnet-4-6",
+    )
+
+
 def test_full_test_runner_resolves_bedrock_generation_profiles(tmp_path):
     runner = _matrix_runner(tmp_path)
 

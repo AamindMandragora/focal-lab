@@ -87,8 +87,7 @@ def _clean_sql(text: str) -> str:
     s = str(text).strip()
     # Drop anything after a blank line (matches syncode Dataset.post_process_answer)
     s = s.split("\n\n")[0]
-    cut_positions = [len(s)]
-    for marker in (
+    markers = (
         r"\bHuman\s*:",
         r"\bAssistant\s*:",
         r"\bUser\s*:",
@@ -97,7 +96,20 @@ def _clean_sql(text: str) -> str:
         r"\bdb_info\s*:",
         r"\bquestion\s*:",
         r"\bSQL\s*:",
-    ):
+    )
+    # Strip any marker the model echoed at the very start (e.g. "SQL: SELECT ..."):
+    # the trailing-cut logic below ignores position-0 markers, so without this they
+    # stay glued to the front of the query and make it fail to execute.
+    stripped = True
+    while stripped:
+        stripped = False
+        for marker in markers:
+            m = re.match(r"\s*" + marker, s, flags=re.IGNORECASE)
+            if m:
+                s = s[m.end():].lstrip()
+                stripped = True
+    cut_positions = [len(s)]
+    for marker in markers:
         match = re.search(marker, s, flags=re.IGNORECASE)
         if match and match.start() > 0:
             cut_positions.append(match.start())

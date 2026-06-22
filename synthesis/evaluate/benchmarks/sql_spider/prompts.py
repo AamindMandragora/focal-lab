@@ -32,3 +32,31 @@ def format_spider_prompt(
         f"question: {question}\n"
         "SQL: "
     )
+
+
+def format_spider_messages(
+    example: dict[str, Any],
+    *,
+    instruction: str,
+    few_shot_answer_line: str,
+) -> list[dict]:
+    """Multi-turn chat delivery of the same Spider prompt.
+
+    The single inline few-shot example is delivered as a user/assistant turn
+    pair instead of being flattened into one user message. On Spider-1.5B
+    unconstrained this lifted accuracy 38.0% -> 44.0% (+6pp) over the flattened
+    form with zero content change. Mirrors the GSM multi-turn fix.
+    """
+    db_id = example.get("db_id", "")
+    db_info = example.get("db_info", "")
+    question = example.get("question", "")
+    # The few-shot example schema/question as a clean user turn (strip the
+    # "Example:\n" label and trailing newline used only in the flattened form).
+    example_user = _SPIDER_FEW_SHOT.removeprefix("Example:\n").rstrip("\n")
+    real_user = f"db_id: {db_id}\ndb_info: {db_info}\nquestion: {question}"
+    return [
+        {"role": "system", "content": "You are given a database schema and a question. " + instruction},
+        {"role": "user", "content": example_user},
+        {"role": "assistant", "content": few_shot_answer_line},
+        {"role": "user", "content": real_user},
+    ]

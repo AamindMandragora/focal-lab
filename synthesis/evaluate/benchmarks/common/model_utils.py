@@ -10,7 +10,10 @@ samples from the model distribution.
 from __future__ import annotations
 
 import os
+import logging
+import math
 import multiprocessing as mp
+import re
 import time
 from collections import defaultdict
 from contextlib import contextmanager
@@ -18,6 +21,148 @@ from contextlib import contextmanager
 from typing import Any
 
 import torch
+
+
+# Diagnostic logging for the prompt-grounding extern (SpanGrounded) and the
+# tried-token recurrence penalty. Tagged "[grounding]" / "[recurrence]" so a run's
+# decisions can be grepped out of the log. The synthesis entrypoint never configures
+# root logging (defaults to WARNING), so these INFO lines are invisible by default.
+# Set CSD_GROUNDING_LOG=1 to attach a stderr handler at INFO and make them show — an
+# OPT-IN diagnostic only; with the env var unset this block is a no-op and behaviour
+# (masks, scoring, decode) is byte-identical to before.
+_GROUNDING_LOG = logging.getLogger("csd.grounding")
+if os.environ.get("CSD_GROUNDING_LOG"):
+    _grounding_handler = logging.StreamHandler()
+    _grounding_handler.setFormatter(logging.Formatter("%(message)s"))
+    _GROUNDING_LOG.addHandler(_grounding_handler)
+    _GROUNDING_LOG.setLevel(logging.INFO)
+    _GROUNDING_LOG.propagate = False
+
+# Keywords/functions that are never schema identifiers; excluded from the
+# grounding check so they are not mistaken for table/column names.
+_GROUNDING_STOPWORDS = frozenset({
+    "select", "from", "where", "group", "by", "order", "having", "limit", "offset",
+    "and", "or", "not", "in", "as", "on", "join", "inner", "left", "right", "outer",
+    "full", "cross", "natural", "union", "intersect", "except", "distinct", "count",
+    "sum", "avg", "min", "max", "like", "between", "is", "null", "asc", "desc", "all",
+    "any", "exists", "case", "when", "then", "else", "end", "values", "insert",
+    "update", "delete", "set", "into", "using", "true", "false", "with", "over",
+    "partition", "cast", "coalesce", "substr", "upper", "lower", "abs", "round",
+})
+
+_GROUNDING_IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# Short alias-like tokens: a single letter, or a letter (optionally repeated)
+# followed by digits (e.g. t1, t2, a1) — common query aliases, not schema names.
+_GROUNDING_ALIAS_RE = re.compile(r"^(?:[A-Za-z]|[A-Za-z]+\d+)$")
+_GROUNDING_QUOTED_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
+
+
+def _parse_schema_support(prompt_text: str) -> set:
+    """Schema identifier names (lowercased) for the CURRENT example's prompt.
+
+    Mirrors sql_spider/schema_grammar.parse_schema_names, but applied only to the
+    text after the LAST `db_info:` marker (the real example's schema) and before
+    `question:`, so the few-shot example's schema does not leak into the support
+    set. Returns an empty set when no `db_info:` block is present (e.g. non-SQL
+    prompts) — in which case grounding is a no-op.
+    """
+    if not prompt_text or "db_info:" not in prompt_text:
+        return set()
+    block = prompt_text.rsplit("db_info:", 1)[1]
+    block = block.split("question:", 1)[0]
+    names: set = set()
+    for line in block.splitlines():
+        line = line.strip()
+        if not line.startswith("#"):
+            continue
+        line = line[1:].strip()
+        m = re.match(r"(\w+)\s*\((.+)\)", line)
+        if not m:
+            continue
+        names.add(m.group(1).lower())
+        for col in m.group(2).split(","):
+            col = col.strip()
+            if "." in col:
+                col = col.split(".")[-1].strip()
+            if col and re.match(r"^\w+$", col):
+                names.add(col.lower())
+    return names
+
+
+def _candidate_identifiers(text: str) -> list:
+    """Identifier-like tokens in `text` that should be checked for grounding.
+
+    Strips quoted string-literal contents (those are values, not identifiers),
+    drops keywords/functions, and drops short alias-like tokens. Lowercased.
+    """
+    stripped = _GROUNDING_QUOTED_RE.sub(" ", text or "")
+    out: list = []
+    for tok in _GROUNDING_IDENT_RE.findall(stripped):
+        low = tok.lower()
+        if low in _GROUNDING_STOPWORDS:
+            continue
+        if _GROUNDING_ALIAS_RE.match(tok):
+            continue
+        out.append(low)
+    return out
+
+
+def _candidate_identifiers_with_pos(text: str) -> list:
+    """Same identifiers as `_candidate_identifiers`, paired with each one's
+    CHARACTER OFFSET in `text`. Returns `[(name_lower, char_offset), ...]`.
+
+    Signal-identical to `_candidate_identifiers` (same stopword / alias / quoted
+    filtering, same order) — the only addition is the offset. To keep offsets
+    truthful, quoted regions are blanked with EQUAL-LENGTH spaces (not collapsed
+    to one space), so every later identifier keeps its real position in `text`.
+    """
+    masked = _GROUNDING_QUOTED_RE.sub(lambda m: " " * len(m.group(0)), text or "")
+    out: list = []
+    for m in _GROUNDING_IDENT_RE.finditer(masked):
+        tok = m.group(0)
+        low = tok.lower()
+        if low in _GROUNDING_STOPWORDS:
+            continue
+        if _GROUNDING_ALIAS_RE.match(tok):
+            continue
+        out.append((low, m.start()))
+    return out
+
+
+def _first_ungrounded_token_idx(token_strs: list, support: set) -> tuple:
+    """Index of the token that CONTAINS the first out-of-schema identifier.
+
+    Inputs:
+      - token_strs: the unit's token strings in order (rendered by concatenation,
+        matching RenderPrefix — no separators between tokens).
+      - support: the schema identifier support set for the current example.
+    Output: `(found, idx)`. `found` is True iff some candidate identifier in the
+    rendered text is not in `support`; `idx` is the index of the token holding
+    that identifier's first character. `(False, 0)` when fully grounded or when
+    `support` is empty (no recognizable schema → grounding is a no-op).
+
+    Pure: needs no model/tokenizer, so it is unit-testable on its own. The
+    membership signal is identical to `SpanGrounded`; only the position is new.
+    """
+    if not support:
+        return (False, 0)
+    text = "".join(token_strs)
+    bad_off = None
+    for name, off in _candidate_identifiers_with_pos(text):
+        if name not in support:
+            bad_off = off
+            break
+    if bad_off is None:
+        return (False, 0)
+    cum = 0
+    for i, s in enumerate(token_strs):
+        nxt = cum + len(s)
+        if bad_off < nxt:
+            return (True, i)
+        cum = nxt
+    # Offset past the end of every token (should not happen given the text was
+    # built from these tokens) — clamp to the last token to keep idx in range.
+    return (True, max(len(token_strs) - 1, 0))
 
 
 # Per-component timing. Keyed by a short label. Values are (total_seconds, call_count).
@@ -373,7 +518,7 @@ def clear_vllm_engine_cache() -> None:
 
         current_pid = str(os.getpid())
         proc = subprocess.run(
-            ["ps", "-eo", "pid=,ppid=,comm="],
+            ["ps", "-eo", "pid=,ppid=,args="],
             check=False,
             capture_output=True,
             text=True,
@@ -383,8 +528,8 @@ def clear_vllm_engine_cache() -> None:
             parts = line.strip().split(None, 2)
             if len(parts) != 3:
                 continue
-            pid, ppid, comm = parts
-            if ppid == current_pid and "VLLM::EngineCore" in comm:
+            pid, ppid, args = parts
+            if ppid == current_pid and "VLLM::EngineCore" in args:
                 try:
                     child_pids.append(int(pid))
                 except ValueError:
@@ -504,13 +649,57 @@ class _TensorizedLMBase:
         self._logits_tensor = torch.zeros(n, dtype=torch.float32, device=self._logits_device)
         self._token_ids_tensor = torch.tensor(tids, dtype=torch.long, device=self._logits_device)
         self._full_logits: torch.Tensor | None = None
+        # Self-consistency: when > 0, the constrained-span selection
+        # (ChooseNextToken) samples from softmax(logits / T) instead of argmax,
+        # so running the SAME strategy k times yields k DIFFERENT decodes to vote
+        # over. Default 0.0 => exact argmax behavior, byte-for-byte unchanged for
+        # every benchmark that does not opt in via this env var.
+        self._constrained_temperature = float(
+            os.environ.get("CSD_CONSTRAINED_TEMPERATURE", "0.0")
+        )
         self._generate_count = 0
         self._token_id_to_str: dict[int, str] = {}
+        self._runtime_deadline: float | None = None
 
         # Prefix-cache short-circuit state.
         self._last_full_prompt: str | None = None
         self._logits_dirty: bool = False
         self._cache_hits: int = 0
+
+        # Persistent tried-token penalty (faithful IterGen recurrence_penalty
+        # analog). Maps full_prompt -> {constrained-subset-index: times_tried}.
+        # A grounding rollback registers the first token of the failed unit here;
+        # GenerateLogits then re-applies the down-weight EVERY time it regenerates
+        # at that prefix, so a greedy rollback diverges to a different token
+        # instead of looping on the same out-of-schema name. The map is empty for
+        # any run that never rolls back, so decoding is byte-identical when
+        # grounding never fires. Our logits are vLLM LOG-probs (<=0), so the
+        # IterGen "score *= 0.3" is applied as "logprob += count * ln(0.3)"
+        # (same intent: reduce the tried token's probability; cumulative so
+        # repeated tries are guaranteed to eventually demote the token within the
+        # retry budget). Factor 1.0 disables. Keyed by full_prompt (which embeds
+        # the per-example instruction_text), so cross-example contamination is
+        # impossible; cleared on instruction_text change to bound memory.
+        self._tried_token_penalties: dict[str, dict[int, int]] = {}
+        self._penalty_instruction_key: str | None = None
+        self._recurrence_penalty = float(
+            os.environ.get("CSD_RECURRENCE_PENALTY", "0.3")
+        )
+        # IterGen-faithful flat mode: when ON, each distinct previously-tried token
+        # is down-weighted by ln(factor) EXACTLY ONCE regardless of how many times
+        # it was re-tried (IterGen multiplies the fresh logits by 0.3 once per pass,
+        # no compounding). Default OFF = our cumulative ln(factor)*count behavior,
+        # which is strictly stronger on a stubborn high-gap token. Gated so the
+        # default decode for every other cell is byte-identical.
+        self._recurrence_flat = os.environ.get(
+            "CSD_RECURRENCE_FLAT", ""
+        ).strip().lower() not in ("", "0", "false", "no")
+        if _GROUNDING_LOG.isEnabledFor(logging.INFO):
+            _GROUNDING_LOG.info(
+                "[recurrence] penalty mode=%s factor=%.3f",
+                "flat(itergen)" if self._recurrence_flat else "cumulative",
+                self._recurrence_penalty,
+            )
 
         self._token_str_to_indices = {}
         for i in range(n):
@@ -525,11 +714,78 @@ class _TensorizedLMBase:
         except Exception:
             return str(obj)
 
+    def SetRuntimeDeadline(self, deadline: float | None):
+        self._runtime_deadline = deadline
+
+    def ClearRuntimeDeadline(self):
+        self._runtime_deadline = None
+
+    def _check_runtime_deadline(self):
+        if self._runtime_deadline is not None and time.monotonic() >= self._runtime_deadline:
+            raise TimeoutError("CSD example exceeded its runtime budget")
+
     def _prefix_text(self, prefix) -> str:
         return "".join(self._to_str(prefix[i]) for i in range(len(prefix)))
 
     def ResetTaskGuidance(self):
         self._task_guidance.reset()
+
+    def _maybe_reset_penalties(self) -> None:
+        """Drop the tried-token penalty map when the example (instruction_text)
+        changes, so penalties never leak across examples and memory stays bounded."""
+        it = self.instruction_text or ""
+        if self._penalty_instruction_key != it:
+            self._tried_token_penalties.clear()
+            self._penalty_instruction_key = it
+
+    def PenalizeTriedTokenAt(self, prefix, token):
+        """Dafny extern: persistently down-weight `token` as a next-token at
+        position `prefix`, so a later regeneration at this position (after a
+        rollback) picks a DIFFERENT token instead of looping. Records the
+        constrained-subset index of the token; the actual down-weight is
+        (re)applied by GenerateLogits every time it regenerates at this prefix.
+        Has NO effect on the current logits (only future regenerations).
+
+        Faithful analog of IterGen's recurrence_penalty (which down-weights the
+        previously-tried next-token at a rolled-back trace position). Fair: uses
+        only previously-tried tokens — no gold labels, no execution feedback.
+        """
+        indices = self._token_indices_for_token(token)
+        if not indices:
+            # Token not in the constrained subset vocab — nothing to penalize.
+            # (Avoids MaskToken's vocab-id/subset-index ambiguity entirely.)
+            return
+        self._maybe_reset_penalties()
+        full_prompt = self.instruction_text + self._prefix_text(prefix)
+        bucket = self._tried_token_penalties.setdefault(full_prompt, {})
+        for idx in indices:
+            bucket[idx] = bucket.get(idx, 0) + 1
+        # Invalidate the prefix cache so the very next GenerateLogits at this
+        # prefix recomputes fresh and re-applies the (now updated) penalty.
+        self._logits_dirty = True
+        _GROUNDING_LOG.info(
+            "[recurrence] penalize subset_idx=%s at prefix_len=%d; counts now=%s",
+            indices, len(prefix), {i: bucket[i] for i in indices},
+        )
+
+    def _apply_recurrence_penalty(self, full_prompt: str) -> None:
+        """Re-apply the persistent tried-token down-weight to the freshly
+        generated constrained-subset logits. No-op (and byte-identical) when no
+        token was ever penalized at this prefix."""
+        factor = self._recurrence_penalty
+        if factor >= 1.0:
+            return
+        bucket = self._tried_token_penalties.get(full_prompt)
+        if not bucket:
+            return
+        log_factor = math.log(factor)  # negative => reduces the log-prob
+        n = self._logits_tensor.numel()
+        for idx, count in bucket.items():
+            if 0 <= idx < n:
+                # Flat (IterGen-faithful): ln(factor) once per distinct token,
+                # regardless of retry count. Cumulative (default): ln(factor)*count.
+                weight = 1 if self._recurrence_flat else count
+                self._logits_tensor[idx] += log_factor * weight
 
     def set_chat_messages(self, chat_messages: list[dict]) -> None:
         """Record the chat_messages used to build instruction_text.
@@ -597,6 +853,73 @@ class _TensorizedLMBase:
     def task_guidance(self) -> str | None:
         return self._task_guidance.accepted_guidance
 
+    def SpanGrounded(self, text):
+        """Dafny extern: is every identifier-like token in `text` present in the
+        support set derived from the prompt? True when no support set is found.
+
+        Fair: the support set comes only from the prompt context (the same
+        information visible in the prompt to any baseline), never from execution
+        feedback or gold labels.
+        """
+        if not isinstance(text, str):
+            text = self._to_str(text)
+        support = self._grounding_support_set()
+        if not support:
+            return True
+        cands = _candidate_identifiers(text)
+        bad = [c for c in cands if c not in support]
+        grounded = len(bad) == 0
+        _GROUNDING_LOG.info(
+            "[grounding] span=%r support_n=%d cand_n=%d bad=%s grounded=%s",
+            (text or "")[:120], len(support), len(cands), bad[:8], grounded,
+        )
+        return grounded
+
+    def FirstUngroundedIdentifierTokenIdx(self, unitTokens):
+        """Dafny extern: index of the token holding the FIRST out-of-schema
+        identifier in `unitTokens`. Returns `(found, idx)`.
+
+        Renders `unitTokens` by concatenation (matching RenderPrefix), then reuses
+        the EXACT membership signal of `SpanGrounded` (same support set, same
+        `_candidate_identifiers` filtering) and additionally reports WHERE the
+        first bad identifier sits, so a rollback can penalize that token rather
+        than the unit's first token. `found=False, idx=0` when fully grounded or
+        when no support set was parsed.
+
+        Fair: support set comes only from the prompt context, never from gold
+        labels or execution feedback — identical provenance to SpanGrounded.
+        """
+        n = len(unitTokens)
+        token_strs = [self._to_str(unitTokens[i]) for i in range(n)]
+        support = self._grounding_support_set()
+        found, idx = _first_ungrounded_token_idx(token_strs, support)
+        if support:  # only log for SQL-like prompts that have a parsed schema
+            if found:
+                _GROUNDING_LOG.info(
+                    "[grounding] first-ungrounded token_idx=%d of %d; text=%r",
+                    idx, n, ("".join(token_strs))[:120],
+                )
+            else:
+                _GROUNDING_LOG.info(
+                    "[grounding] unit fully grounded (n=%d tokens); text=%r",
+                    n, ("".join(token_strs))[:120],
+                )
+        return (found, idx)
+
+    def _grounding_support_set(self) -> set:
+        """Schema identifier support set for the CURRENT example, cached per
+        instruction_text so it is parsed once per example, not once per token."""
+        it = self.instruction_text or ""
+        if getattr(self, "_grounding_cache_key", None) == it:
+            return self._grounding_cache_val
+        support = _parse_schema_support(it)
+        self._grounding_cache_key = it
+        self._grounding_cache_val = support
+        _GROUNDING_LOG.info(
+            "[grounding] parsed %d support identifiers for current example", len(support)
+        )
+        return support
+
     def _token_str_from_id(self, token_id: int) -> str:
         token_id = int(token_id)
         cached = self._token_id_to_str.get(token_id)
@@ -655,13 +978,26 @@ class _TensorizedLMBase:
 
     def MaskToken(self, token):
         with _timed("MaskToken"):
-            token_id = self.TokenToId(token)
-            self._logits_tensor[token_id] = -1e9
+            # All-index: a runtime "token" is tokenizer.decode([id]), so two
+            # vocab ids can decode to the SAME string. Masking only TokenToId's
+            # first match leaves duplicate copies samplable, which defeats
+            # DeadEndAvoidingStep's resample loop. Mask every id for the string.
+            # On ASCII grammars each token has exactly one id, so this is a no-op.
+            indices = self._token_indices_for_token(token)
+            if not indices:
+                indices = [self.TokenToId(token)]
+            for token_id in indices:
+                self._logits_tensor[token_id] = -1e9
             self._logits_dirty = True
 
     def IsMasked(self, token):
         with _timed("IsMasked"):
-            return self._logits_tensor[self.TokenToId(token)].item() == -1e9
+            # All-index: the string is masked (un-samplable) only when EVERY id
+            # that decodes to it is masked. Single-id ASCII tokens are unchanged.
+            indices = self._token_indices_for_token(token)
+            if not indices:
+                indices = [self.TokenToId(token)]
+            return all(self._logits_tensor[i].item() == -1e9 for i in indices)
 
     def _finalize_full_logits(self, full_logits: torch.Tensor) -> None:
         full_logits = full_logits.float().to(self._logits_device)
@@ -720,8 +1056,26 @@ class _TensorizedLMBase:
 
     def ChooseNextToken(self):
         with _timed("ChooseNextToken"):
-            best_idx = int(self._logits_tensor.argmax().item())
+            best_idx = self._select_constrained_index()
             return self._Tokens[best_idx]
+
+    def _select_constrained_index(self) -> int:
+        """Pick an index into the masked constrained-subset logits.
+
+        T <= 0  -> argmax (today's exact behavior; grammar mask already applied,
+                   invalid tokens sit at -1e9).
+        T  > 0  -> sample from softmax(logits / T). Masked (-1e9) tokens get ~0
+                   probability, so the grammar is still respected; only the choice
+                   AMONG valid tokens becomes stochastic. Falls back to argmax on
+                   a degenerate distribution (nan or non-positive mass).
+        """
+        temperature = self._constrained_temperature
+        if temperature <= 0.0:
+            return int(self._logits_tensor.argmax().item())
+        probs = torch.softmax(self._logits_tensor / temperature, dim=0)
+        if torch.isnan(probs).any() or torch.sum(probs).item() <= 0.0:
+            return int(self._logits_tensor.argmax().item())
+        return int(torch.multinomial(probs, num_samples=1).item())
 
     def ChooseNextTokenUnconstrained(self):
         with _timed("ChooseNextTokenUnconstrained"):
@@ -928,6 +1282,7 @@ def create_huggingface_lm(
             self._max_input_len = get_max_input_length(hf_model, hf_tokenizer)
 
         def GenerateLogits(self, input_prefix):
+            self._check_runtime_deadline()
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
 
@@ -956,10 +1311,12 @@ def create_huggingface_lm(
                 logits = output.logits[0, -1, :]
 
             self._finalize_full_logits(logits)
+            self._apply_recurrence_penalty(full_prompt)
             self._last_full_prompt = full_prompt
             self._logits_dirty = False
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
+            self._check_runtime_deadline()
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)
@@ -1040,6 +1397,7 @@ def create_vllm_lm(
             self.engine = engine
 
         def GenerateLogits(self, input_prefix):
+            self._check_runtime_deadline()
             with _timed("GenerateLogits.total"):
                 with _timed("GenerateLogits.prefix_text"):
                     prefix_text = self._prefix_text(input_prefix)
@@ -1076,6 +1434,7 @@ def create_vllm_lm(
                 with _timed("GenerateLogits.finalize_from_dict"):
                     self._finalize_from_logprob_dict(logprob_steps[0])
 
+                self._apply_recurrence_penalty(full_prompt)
                 self._last_full_prompt = full_prompt
                 self._logits_dirty = False
 
@@ -1083,6 +1442,7 @@ def create_vllm_lm(
                     _print_timings_breakdown(header=f"after {self._generate_count} GenerateLogits calls")
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
+            self._check_runtime_deadline()
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)

@@ -277,4 +277,24 @@ def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> i
 
 
 def accuracy_definition() -> str:
-    return "class_membership_among_syntax_valid_molecules"
+    return "unique_valid_rate_rdkit (distinct rdkit-valid + in-class + non-exemplar molecules / N)"
+
+
+def override_accuracy(aux_metrics: dict[str, Any] | None, num_examples: int) -> float | None:
+    """SMILES headline metric = unique-valid RATE, the CARS-paper axis.
+
+    accuracy = unique_valid_count / N, where unique_valid_count (from
+    smiles_trial_metrics) is the number of DISTINCT molecules that are RDKit-valid
+    AND in-class AND non-exemplar. The denominator is N (all samples), so a collapsed
+    strategy that emits one molecule x N scores ~1/N instead of the old gameable
+    membership-rate's 1.0. Diversity (Tanimoto) and validity are reported alongside
+    in smiles_paper_trial as comparable axes.
+
+    Returns None if the trial metrics are absent (caller then keeps the default
+    accuracy), so this hook stays inert for any dataset that does not define it.
+    """
+    trial = (aux_metrics or {}).get("smiles_paper_trial") or {}
+    if not trial:
+        return None
+    unique_valid = int(trial.get("unique_valid_count", 0) or 0)
+    return unique_valid / max(1, num_examples)

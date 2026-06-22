@@ -293,6 +293,45 @@ def test_openai_generation_profile_quota_failure_does_not_abort_matrix(tmp_path)
     assert calls[0][1]["abort_on_quota"] is False
 
 
+def test_sonnet_generation_profile_quota_failure_is_skipped_not_requeued(tmp_path):
+    runner = _matrix_runner(tmp_path, dry_run=False)
+    runner.ensure_csd_target_baselines = lambda *args: None
+    runner.best_csd_baseline_targets = lambda *args: (
+        0.42,
+        "crane",
+        "/tmp/crane.json",
+        "42.0%",
+        0.9,
+        "itergen",
+        "/tmp/itergen.json",
+        "90.0%",
+    )
+    calls = []
+
+    def fake_run_cmd(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        runner.last_failure_was_author_access = True
+        return False
+
+    runner.run_cmd = fake_run_cmd
+
+    assert runner.run_metadecode_case(
+        "gsm_symbolic",
+        "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "1",
+        "40",
+        "sonnet4.6",
+        "900",
+        phase="ablation_synthesizer_model",
+    )
+
+    assert len(calls) == 1
+    assert calls[0][1]["abort_on_quota"] is False
+    assert "--generation-model" in calls[0][0]
+    assert "claude-sonnet-4-6" in calls[0][0]
+    assert not runner.config.gpu3_retry_queue.exists()
+
+
 def test_metadecode_failure_on_non_gpu3_is_queued_for_gpu3_retry(tmp_path):
     import run_all_tests as matrix
 

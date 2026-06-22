@@ -71,6 +71,12 @@ try:
 except ImportError:
     from failure_taxonomy import render_cluster_block
 
+from synthesis.evaluate.benchmarks.smiles.rolling_prompt import (
+    apply_suffix as _apply_smiles_rolling_suffix,
+    update_suffix as _update_smiles_rolling_suffix,
+)
+from synthesis.evaluate.metrics import choose_denominator_basis
+
 
 class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
@@ -282,17 +288,30 @@ class EvaluationResult:
         # budget exceedances, and any unexpected exception types — without any
         # question text, expected SQL, or actual SQL strings.
         if self.sample_outputs:
+            n_total = len(self.sample_outputs)
             n_runtime_exceeded = sum(
                 1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
             )
             extras = []
             if n_runtime_exceeded:
                 extras.append(
-                    f"  Time budget exceeded on {n_runtime_exceeded} example(s)."
+                    f"  {n_runtime_exceeded}/{n_total} examples timed out "
+                    f"(exceeded the per-example time limit) and were scored as failures "
+                    f"(accuracy 0, syntax 0 for each timed-out example)."
                 )
             if extras:
                 lines.append("\nAggregate Failure Stats:")
                 lines.extend(extras)
+
+        diagnostic_metrics = self._summarize_diagnostic_metrics()
+        if diagnostic_metrics:
+            lines.append("\nDiagnostic Error Decomposition:")
+            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
+
+        structural_metrics = self._summarize_structural_metrics()
+        if structural_metrics:
+            lines.append("\nStructural Generation Metrics:")
+            lines.extend(f"  {metric}" for metric in structural_metrics)
 
         # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
         # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
@@ -396,6 +415,27 @@ class EvaluationResult:
         if not any(event.get("helper", "unknown") in cls._CONSTRAINED_HELPERS for event in sample.get("helper_trace") or []):
             tags.append("no_constrained_activity")
         return tags or ["no_trace"]
+
+    @staticmethod
+    def _sample_identity_metadata(example: Dict[str, Any], example_index: int) -> Dict[str, Any]:
+        """Return stable sample identity fields for observability and ledgers."""
+        metadata: Dict[str, Any] = {"example_index": example_index}
+        for key in (
+            "crane_source_index",
+            "spider_source_index",
+            "id_orig",
+            "id_shuffled",
+            "db_id",
+        ):
+            if key in example:
+                metadata[key] = example[key]
+        if "crane_source_index" in metadata:
+            metadata["source_index"] = metadata["crane_source_index"]
+        elif "spider_source_index" in metadata:
+            metadata["source_index"] = metadata["spider_source_index"]
+        elif "source_index" in example:
+            metadata["source_index"] = example["source_index"]
+        return metadata
 
     @classmethod
     def _derive_answer_provenance(cls, sample: Dict[str, Any]) -> str:
@@ -685,12 +725,13 @@ class EvaluationResult:
         return [(mode, count, details.get(mode, "")) for mode, count in ranked]
 
     def _pick_representative_samples_by_mode(self) -> List[Tuple[str, Dict[str, Any]]]:
-        """For each top-4 failure mode, pick up to 3 samples by `full_output`
-        length: shortest, median, longest (N=2 → shortest+longest; N=1 → only).
+        """For each representative failure mode, pick up to 3 samples by `full_output`
+        length: shortest, median, longest (N=2 -> shortest+longest; N=1 -> only).
 
         Returns a flat list [(mode_key, sample_dict), ...] ordered by mode
-        frequency (matching _summarize_failure_modes' top-4 cap). Within a
-        mode bucket picks appear in shortest→median→longest order.
+        frequency. This intentionally caps representative examples separately
+        from aggregate failure-mode counts, which list all detected buckets.
+        Within a mode bucket picks appear in shortest->median->longest order.
         """
         mode_to_samples: Dict[str, List[Dict[str, Any]]] = {}
         counters: Dict[str, int] = {}
@@ -1678,8 +1719,13 @@ class Evaluator:
         raise RuntimeError("Failed to initialize evaluation environment.")
 
     def _extract_constrained_content(self, output: str) -> List[str]:
-        """Extract content within << >> delimiters."""
-        return re.findall(r"<<\s*([^<>]+?)\s*>>", output)
+        """Extract content within << >> delimiters.
+
+        Non-greedy `.*?` with DOTALL so spans containing `<`, `>`, or
+        comparison operators (Spider SQL: `>`, `<`, `>=`, `<=`, `<>`)
+        match — SQL has no `>>` operator, so the next `>>` always closes.
+        """
+        return re.findall(r"<<\s*(.*?)\s*>>", output, flags=re.DOTALL)
 
     def _truncate_gsm_output(self, output: str) -> str:
         """Trim obvious prompt restarts so scoring focuses on the first answer block."""
@@ -1737,6 +1783,7 @@ class Evaluator:
             ast.Add: op.add, ast.Sub: op.sub,
             ast.Mult: op.mul, ast.Div: op.truediv,
             ast.FloorDiv: op.floordiv, ast.Mod: op.mod,
+            ast.Pow: op.pow,
             ast.USub: op.neg, ast.UAdd: op.pos,
         }
 
@@ -1936,8 +1983,11 @@ class Evaluator:
                     env[var] = _rng.randint(1, 100)
             val_model = self._evaluate_symbolic_expression(model_expr, env)
             val_expected = self._evaluate_symbolic_expression(expected_expr, env)
-            if val_model is None or val_expected is None:
+            if val_model is None:
                 return False
+            if val_expected is None:
+                # Match CRANE: a gold-expr eval failure is treated leniently (count correct).
+                return True
             if abs(val_model - val_expected) > 1e-6 * max(1, abs(val_expected)):
                 return False
         return True
@@ -1990,6 +2040,13 @@ class Evaluator:
             if not smiles:
                 return False, []
             return bool(eval_row["syntax_valid"]), [(smiles, bool(eval_row["syntax_valid"]))]
+
+        if self.dataset_name == "gsm_symbolic":
+            # CRANE parity: grade ONLY the final <<...>> block (check_gsm_parsed),
+            # not every visible span. Delegated to the benchmark logic so the
+            # same semantics apply in both evaluate_sample and reevaluate_compiled_csd.
+            logic = self._benchmark_logic()
+            return logic.check_syntax(self, output, example)
 
         segments: List[Tuple[str, bool]] = []
         matches = self._extract_constrained_content(output)
@@ -2112,6 +2169,8 @@ class Evaluator:
             logic = self._benchmark_logic()
             run_crane_csd = logic.get_generation_runner()
 
+            _MAX_TIMEOUTS = 10  # pathological-strategy guard: stop after this many timed-out examples
+            n_timeouts = 0
             num_correct = 0
             all_examples_contain_delimiters = True
             num_examples_syntax_pass = 0
@@ -2144,10 +2203,8 @@ class Evaluator:
                     (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
                     default=0.0,
                 )
-                denominator_basis = (
-                    planned_num_examples
-                    if early_stop_reason and "target accuracy" in early_stop_reason
-                    else evaluated_count
+                denominator_basis = choose_denominator_basis(
+                    early_stop_reason, planned_num_examples, evaluated_count
                 )
                 accuracy_denominator = logic.final_accuracy_denominator(
                     denominator_basis,
@@ -2174,11 +2231,22 @@ class Evaluator:
                     for sample in sample_outputs
                     if sample.get("task_guidance")
                 })
+                # Benchmark-specific accuracy override. Only SMILES defines this hook,
+                # repurposing `accuracy` to the unique-valid RATE (CARS axis); for all
+                # other datasets getattr returns None and the default formula stands.
+                final_accuracy = num_correct / max(1, accuracy_denominator)
+                _override = getattr(logic, "override_accuracy", None)
+                if callable(_override):
+                    _ov = _override(aux_metrics, evaluated_count)
+                    if _ov is not None:
+                        final_accuracy = _ov
                 return EvaluationResult(
                     success=True,
-                    accuracy=num_correct / max(1, accuracy_denominator),
+                    accuracy=final_accuracy,
                     contains_delimiters=all_examples_contain_delimiters,
-                    syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
+                    syntax_rate=num_examples_syntax_pass / max(1, choose_denominator_basis(
+                        early_stop_reason, planned_num_examples, evaluated_count
+                    )),
                     num_examples=evaluated_count,
                     num_correct=num_correct,
                     accuracy_denominator=accuracy_denominator,
@@ -2222,49 +2290,26 @@ class Evaluator:
                         f"{runtime_failures} example(s) exceeded the per-example runtime budget."
                     )
 
-                # Guard threshold-impossible early stops so the synthesis feedback
-                # loop always sees a usable amount of evaluation data. The
-                # runtime-failures gate above is intentionally not affected: it
-                # signals actual budget exhaustion, not an unreachable target.
-                if (
-                    min_examples_before_threshold_stop is not None
-                    and evaluated_count < min_examples_before_threshold_stop
-                ):
-                    return None
-
-                if target_min_accuracy is not None:
-                    best_possible_accuracy = _accuracy_upper_bound()
-                    if best_possible_accuracy < target_min_accuracy:
-                        return (
-                            "target accuracy unreachable: "
-                            f"best possible accuracy is {best_possible_accuracy:.1%} "
-                            f"after {evaluated_count}/{planned_num_examples} examples, "
-                            f"below required {target_min_accuracy:.1%}."
-                        )
-
-                if early_stop_min_syntax_rate is not None:
-                    best_possible_syntax = (
-                        num_examples_syntax_pass + remaining
-                    ) / max(1, planned_num_examples)
-                    if best_possible_syntax < early_stop_min_syntax_rate:
-                        return (
-                            "threshold-impossible early stop: "
-                            f"best possible syntax is {best_possible_syntax:.1%} "
-                            f"after {evaluated_count}/{planned_num_examples} examples, "
-                            f"below required {early_stop_min_syntax_rate:.1%}."
-                        )
-
+                # Threshold-impossible early stops removed 2026-06-02: they cut
+                # eval to ~9 examples once syntax-rate failures front-loaded,
+                # leaving the synthesis author with noisy small-N signal. The
+                # runtime-failures gate above is kept (signals real budget
+                # exhaustion, not unreachable targets).
                 return None
 
+            _smiles_suffix: dict[str, str] = {}
             for i, example in enumerate(dataset):
                 print(f"  [EVAL] Processing example {i+1}/{len(dataset)}...", flush=True)
                 example_start = time.time()
+                if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                    _apply_smiles_rolling_suffix(example, _smiles_suffix)
                 prompt = self._format_prompt(example)
                 expected = self._get_expected_answer(example)
                 benchmark_aux: Optional[dict[str, Any]] = None
 
                 try:
                     print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
+                    dynamic_parser = logic.build_dynamic_parser(self, env, example)
                     with _PerExampleTimer(self.max_seconds_per_example):
                         output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
                             env=env,
@@ -2272,7 +2317,7 @@ class Evaluator:
                             max_steps=self.max_steps,
                             step_token_budget=self.step_token_budget,
                             grammar_file=self._get_grammar_file(),
-                            dynamic_parser=logic.build_dynamic_parser(self, env, example),
+                            dynamic_parser=dynamic_parser,
                         )
                     example_time = time.time() - example_start
                     print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
@@ -2286,35 +2331,50 @@ class Evaluator:
                         else completion
                     )
 
-                    actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
-                    is_correct = self._is_correct_for_example(
-                        actual,
-                        expected,
-                        example,
-                        benchmark_aux,
-                        scored_output,
-                    )
+                    # Scoring can spin too (e.g. a Lark Earley parse of a
+                    # degenerate span), not just generation — run it under the
+                    # same per-example timer so a wedged example times out and
+                    # is recorded as a failure instead of hanging the run
+                    # (2+ hour wedge observed 2026-06-10 on GSM-1.5B).
+                    with _PerExampleTimer(self.max_seconds_per_example):
+                        actual, answer_source, benchmark_aux = self._extract_actual_for_example(scored_output, example)
+                        is_correct = self._is_correct_for_example(
+                            actual,
+                            expected,
+                            example,
+                            benchmark_aux,
+                            scored_output,
+                        )
 
-                    visible_delimiters = self._contains_delimiters(scored_output)
-                    used_hidden_chunk = bool(constrained_segments) or any(
-                        event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
-                        for event in (helper_trace or [])
-                    )
-                    contains_delimiters = used_hidden_chunk if self._uses_hidden_chunks() else visible_delimiters
-                    all_examples_contain_delimiters = (
-                        all_examples_contain_delimiters and contains_delimiters
-                    )
+                        visible_delimiters = self._contains_delimiters(scored_output)
+                        used_hidden_chunk = bool(constrained_segments) or any(
+                            event.get("helper") in EvaluationResult._CONSTRAINED_HELPERS
+                            for event in (helper_trace or [])
+                        )
+                        contains_delimiters = used_hidden_chunk if self._uses_hidden_chunks() else visible_delimiters
+                        all_examples_contain_delimiters = (
+                            all_examples_contain_delimiters and contains_delimiters
+                        )
 
-                    all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
-                    # Per-example syntax pass:
-                    # - GSM/Spider: visible <<...>> chunks must exist and parse.
-                    # - SMILES: the full output is the generated molecule string.
-                    example_syntax_pass = self._example_syntax_pass(
-                        all_valid_syntax,
-                        segments,
-                        used_hidden_chunk,
-                        benchmark_aux,
-                    )
+                        all_valid_syntax, segments = self._check_syntax_validity(scored_output, example=example)
+                        # Per-example syntax pass:
+                        # - GSM: visible <<...>> chunks must exist and parse.
+                        # - SMILES: the full output is the generated molecule string.
+                        # - Spider: chunks are internal/hidden; visible delimiter tokens are not
+                        #   part of the answer contract, so count parser-governed chunk usage.
+                        example_syntax_pass = self._example_syntax_pass(
+                            all_valid_syntax,
+                            segments,
+                            used_hidden_chunk,
+                            benchmark_aux,
+                        )
+                    if self.dataset_name == "smiles" and os.environ.get("CSD_SMILES_ROLLING_PROMPT", "1") != "0":
+                        _update_smiles_rolling_suffix(
+                            example,
+                            _smiles_suffix,
+                            actual,
+                            bool(benchmark_aux and benchmark_aux.get("syntax_valid")),
+                        )
                     accuracy_applicable = self._accuracy_applicable_for_example(benchmark_aux)
                     if accuracy_applicable:
                         num_accuracy_examples += 1
@@ -2392,7 +2452,12 @@ class Evaluator:
                     elapsed = time.time() - example_start
                     timed_out = isinstance(e, PerExampleTimeout)
                     if timed_out:
-                        print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
+                        n_timeouts += 1
+                        print(
+                            f"  [EVAL]   Timed out after {elapsed:.2f}s "
+                            f"({n_timeouts} of {_MAX_TIMEOUTS} timeout budget used)",
+                            flush=True,
+                        )
                     sample = {
                         "question": q_str,
                         "question_full": q_full,
@@ -2427,17 +2492,23 @@ class Evaluator:
                     }
                     sample_outputs.append(EvaluationResult._annotate_sample_observability(sample))
                     all_examples_contain_delimiters = False
+                    # Check benchmark-specific / runtime-failure early stops first.
                     early_reason = early_stop_reason_if_any()
                     if early_reason:
                         print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
                         return build_result(early_reason)
-                    if timed_out and early_stop_enabled:
+                    # Pathological-strategy guard: stop after _MAX_TIMEOUTS timed-out
+                    # examples so a runaway strategy doesn't burn the GPU indefinitely.
+                    # Timed-out examples already count as failures in the scores above.
+                    if timed_out and n_timeouts >= _MAX_TIMEOUTS:
                         reason = (
-                            "Evaluation stopped early because one example exceeded "
-                            f"the {self.max_seconds_per_example:.2f}s runtime budget."
+                            f"eval stopped early after {n_timeouts} timed-out examples "
+                            f"(pathological-strategy guard); "
+                            f"N={len(sample_outputs)} of {planned_num_examples}"
                         )
                         print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
                         return build_result(reason)
+                    # Otherwise: timeout is scored as failure above; continue to next example.
 
             return build_result()
 
