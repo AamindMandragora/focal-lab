@@ -1,19 +1,10 @@
 """Behavioral tests for the prompt-grounding extern (SpanGrounded) and helpers.
 
-Run from the repo's eval root so `benchmarks.common.model_utils` imports:
-    cd synthesis/evaluate
-    PYTHONPATH=. python benchmarks/common/test_grounding.py
-
-These tests pin the contract of the grounding helper used by the Dafny library
-method RegenerateUnitOnGroundingFailure:
-  * _parse_schema_support isolates the REAL example's schema (last db_info block)
-    from the few-shot example's schema in the same prompt.
-  * _candidate_identifiers strips string literals and short aliases, drops keywords.
-  * SpanGrounded returns True iff every identifier-like token in the span is in
-    the schema support set, and True (no-op) when the prompt has no schema.
+Run with pytest from the repo root:
+    python -m pytest synthesis/evaluate/benchmarks/common/test_grounding.py -q
 """
 
-from benchmarks.common.model_utils import (
+from synthesis.evaluate.benchmarks.common.model_utils import (
     _parse_schema_support,
     _candidate_identifiers,
     _TensorizedLMBase,

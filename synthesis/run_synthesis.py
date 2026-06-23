@@ -298,8 +298,8 @@ Examples:
     parser.add_argument(
         "--eval-max-steps",
         type=int,
-        default=150,
-        help="Maximum generation steps during evaluation (default: 150)"
+        default=600,
+        help="Maximum generation steps during evaluation (default: 600)"
     )
 
     parser.add_argument(
@@ -312,19 +312,19 @@ Examples:
     parser.add_argument(
         "--eval-max-seconds-per-example",
         type=float,
-        default=None,
-        help="Optional runtime budget per evaluated example in seconds"
+        default=90.0,
+        help="Runtime budget per evaluated example in seconds (default: 90)"
     )
 
     parser.add_argument(
         "--eval-min-examples-before-threshold-stop",
         type=int,
-        default=None,
+        default=15,
         help="Minimum number of evaluated examples before threshold-impossible "
         "early stops (target syntax rate; target accuracy for non-SMILES) can "
         "fire. Suppresses early stop until the synthesis loop has at least this "
         "much evaluation signal (including when early examples time out). "
-        "Default: None (no minimum)."
+        "The runtime-budget early stop is unaffected. Default: 15."
     )
 
     parser.add_argument(
@@ -455,8 +455,8 @@ Examples:
         "--helper-selection-policy",
         type=str,
         choices=["utility", "bandit"],
-        default="utility",
-        help="Helper selection policy for adaptive masking (default: utility)"
+        default="bandit",
+        help="Helper selection policy for adaptive masking (default: bandit)"
     )
 
     parser.add_argument(
@@ -518,8 +518,8 @@ Examples:
     parser.add_argument(
         "--refinement-beam-size",
         type=int,
-        default=1,
-        help="Number of refinement candidates sampled per failure (default: 1)"
+        default=2,
+        help="Number of refinement candidates sampled per failure (default: 2)"
     )
 
     parser.add_argument(

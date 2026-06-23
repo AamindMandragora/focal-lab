@@ -1,18 +1,12 @@
-"""Confirm the SymbolPosMap records table_ref/column_ref with positions, and that
-the count rises symbol-by-symbol mid-query (the boundary CompletedSchemaSymbolCount
-depends on). Model-free; runs against the vendored IncrementalParser on sql.lark.
+"""Confirm SymbolPosMap records table_ref/column_ref with positions."""
+from __future__ import annotations
 
-Usage (on focal):
-  export LD_LIBRARY_PATH=/apps/conda/advayth2/envs/advayth2/lib:${LD_LIBRARY_PATH:-}
-  export PYTHONPATH=/home/aadivyar/csd-generation
-  python tests/grounding_symbol_boundary/test_symbol_pos_counts.py
-"""
 import sys
 from pathlib import Path
 
-REPO = Path("/home/aadivyar/csd-generation")
-GRAMMARS = REPO / "synthesis/evaluate/grammars"
-SYNCODE_DIR = REPO / "synthesis/evaluate/syncode"
+REPO = Path(__file__).resolve().parents[2]
+GRAMMARS = REPO / "synthesis" / "evaluate" / "grammars"
+SYNCODE_DIR = REPO / "synthesis" / "evaluate" / "syncode"
 if str(SYNCODE_DIR) in sys.path:
     sys.path.remove(str(SYNCODE_DIR))
 sys.path.insert(0, str(SYNCODE_DIR))
@@ -26,7 +20,7 @@ def _count(spm, name):
     return spm.get_symbol_count(name)
 
 
-def main():
+def test_symbol_pos_map_records_schema_symbols():
     text = (GRAMMARS / "sql.lark").read_text()
     grammar = Grammar(text)
     base = create_base_parser(grammar)
@@ -83,8 +77,3 @@ def main():
     print(f"\n[join query] table_ref={jt} column_ref={jc}")
     assert jt >= 2, f"FAIL: expected >=2 table_ref on JOIN, got {jt}"
 
-    print("\n[PASS] SymbolPosMap records table_ref/column_ref; count rises mid-query.")
-
-
-if __name__ == "__main__":
-    main()

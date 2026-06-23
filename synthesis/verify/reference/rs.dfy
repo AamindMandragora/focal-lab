@@ -27,7 +27,7 @@ module ReferenceRsCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm.Logits
+    modifies lm, lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -44,9 +44,14 @@ module ReferenceRsCSD {
     ensures maxSteps == 0 || cost > 0 || generated != generatedPrefix ||
             insideConstrainedOut != insideConstrained ||
             currentConstrainedOut != currentConstrained
-
   {
-    var helpers := new CSDHelpers();
+    lm.SetUseSampling(true);
+    assert lm.Logits == old(lm.Logits);
+    var helpers := new CSDHelpers(lm, parser);
+    assert helpers.lm.Logits == old(lm.Logits);
+    assert helpers.lm == lm;
+    assert helpers.parser == parser;
+    assert lm.ValidTokensIdsLogits();
     var g := generatedPrefix;
     var inside := insideConstrained;
     var cur := currentConstrained;
@@ -55,45 +60,56 @@ module ReferenceRsCSD {
       generated := g;
       insideConstrainedOut := inside;
       currentConstrainedOut := if inside then cur else [];
-      cost := helpers.cost;
+      cost := helpers.cost();
       return;
     }
 
     if !inside {
-      g, inside, cur := helpers.OpenConstrainedSpan(lm, g);
+      assert helpers.lm.Logits == old(lm.Logits);
+      g, inside, cur := helpers.OpenConstrainedSpan(g);
+      assert helpers.lm.Logits == old(lm.Logits);
       assert parser.IsValidPrefix(cur);
     }
 
     var spanEntryLen := |g| - |cur|;
 
-    while helpers.cost < maxSteps
+    while helpers.cost() < maxSteps
+      modifies lm, old(lm.Logits)
+      invariant helpers.lm == lm
+      invariant helpers.parser == parser
       invariant lm.ValidTokensIdsLogits()
-      invariant |g| <= |generatedPrefix| + helpers.cost
+      invariant lm.Logits == old(lm.Logits)
+      invariant fresh(helpers)
+      invariant |g| <= |generatedPrefix| + helpers.cost()
       invariant inside
       invariant parser.IsValidPrefix(cur)
       invariant |cur| <= |g|
       invariant inside ==> g[|g| - |cur|..] == cur
-      invariant 0 <= helpers.cost <= maxSteps
+      invariant 0 <= helpers.cost() <= maxSteps
       invariant 0 <= spanEntryLen <= |g|
-      decreases maxSteps - helpers.cost
+      decreases maxSteps - helpers.cost()
     {
       if parser.IsCompletePrefix(cur) {
-        g, inside, cur := helpers.CloseConstrainedSpan(lm, parser, g, cur);
+        assert helpers.lm.Logits == old(lm.Logits);
+        g, inside, cur := helpers.CloseConstrainedSpan(g, cur);
+        assert helpers.lm.Logits == old(lm.Logits);
         break;
       }
 
       var next: Token;
       var isValid: bool;
-      next, isValid := helpers.SoftConstrainedStep(
-        lm, parser, prompt, cur, 0.0, eosToken
+      assert helpers.lm.Logits == old(lm.Logits);
+      next, isValid := helpers.SoftConstrainedStep(prompt, cur, 0.0, eosToken
       );
+      assert helpers.lm.Logits == old(lm.Logits);
       if next == eosToken {
         break;
       }
       if isValid {
-        g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
+        assert helpers.lm.Logits == old(lm.Logits);
+        g, inside, cur := helpers.AppendConstrainedToken(g, cur, next);
+        assert helpers.lm.Logits == old(lm.Logits);
       } else {
-        // Reject this candidate: roll back to the span entry and resample.
         g := g[..spanEntryLen];
         cur := [];
       }
@@ -102,6 +118,6 @@ module ReferenceRsCSD {
     generated := g;
     insideConstrainedOut := inside;
     currentConstrainedOut := if inside then cur else [];
-    cost := helpers.cost;
+    cost := helpers.cost();
   }
 }

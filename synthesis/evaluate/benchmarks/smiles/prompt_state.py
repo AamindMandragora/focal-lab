@@ -6,15 +6,36 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Sequence
 
 _MAX_SUFFIX_CHARS = 45000
+_MAX_DUPLICATE_RESPONSE_CHARS = 1500
+DUPLICATE_RESPONSE_PREFIX = "[response] "
+BAD_MISTAKES_LINE = "Below are past mistakes — do not repeat them."
 
 RecordOutcome = Literal["empty", "exemplar", "good", "bad", "duplicate"]
 
 
-def format_attempt_suffix(
+def normalize_duplicate_response(raw: str | None) -> str:
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    if len(text) > _MAX_DUPLICATE_RESPONSE_CHARS:
+        return text[:_MAX_DUPLICATE_RESPONSE_CHARS] + "..."
+    return text
+
+
+def _render_bad_entry_lines(entry: str) -> list[str]:
+    if entry.startswith(DUPLICATE_RESPONSE_PREFIX):
+        body = entry[len(DUPLICATE_RESPONSE_PREFIX) :]
+        return ["Response:", body]
+    return [entry]
+
+
+def format_good_bad_feedback_suffix(
     good_results: Sequence[str],
     bad_results: Sequence[str],
+    *,
+    trailing_reasoning: bool = False,
 ) -> str:
-    """Build the good/bad SMILES suffix appended before the next attempt."""
+    """Build good/bad attempt history before the next generation slot."""
     if not good_results and not bad_results:
         return ""
     lines: list[str] = []
@@ -23,10 +44,26 @@ def format_attempt_suffix(
         lines.extend(f"SMILES: {smiles}" for smiles in good_results)
     if bad_results:
         lines.append("Bad results:")
-        lines.append("These are past mistakes — do not repeat them.")
-        lines.extend(f"SMILES: {smiles}" for smiles in bad_results)
-    lines.append("Reasoning:")
-    return "\n" + "\n".join(lines) + "\n"
+        lines.append(BAD_MISTAKES_LINE)
+        lines.append("")
+        for entry in bad_results:
+            lines.extend(_render_bad_entry_lines(entry))
+    text = "\n".join(lines)
+    if trailing_reasoning:
+        text += "\nReasoning:"
+    return "\n" + text + "\n"
+
+
+def format_attempt_suffix(
+    good_results: Sequence[str],
+    bad_results: Sequence[str],
+) -> str:
+    """Build the good/bad SMILES suffix appended before the next attempt."""
+    return format_good_bad_feedback_suffix(
+        good_results,
+        bad_results,
+        trailing_reasoning=True,
+    )
 
 
 def strip_trailing_molecule_slot(prompt: str) -> str:
@@ -62,7 +99,31 @@ class SmilesPromptState:
         self.good_results = []
         self.bad_results = []
 
-    def record_attempt(self, smiles: str, eval_row: dict[str, Any] | None) -> RecordOutcome:
+    def _append_duplicate_response(self, cleaned: str, raw_response: str | None) -> None:
+        if cleaned not in self.bad_results:
+            return
+        normalized = normalize_duplicate_response(raw_response)
+        if normalized:
+            marker_entry = f"{DUPLICATE_RESPONSE_PREFIX}{normalized}"
+            if marker_entry not in self.bad_results:
+                self.bad_results.append(marker_entry)
+        repeat_n = sum(1 for entry in self.bad_results if entry.startswith("[repeat ")) + 1
+        self.bad_results.append(f"[repeat {repeat_n}]")
+
+    def _record_duplicate(self, cleaned: str, raw_response: str | None) -> RecordOutcome:
+        if cleaned not in self.bad_results:
+            self.bad_results.append(cleaned)
+        else:
+            self._append_duplicate_response(cleaned, raw_response)
+        return "duplicate"
+
+    def record_attempt(
+        self,
+        smiles: str,
+        eval_row: dict[str, Any] | None,
+        *,
+        raw_response: str | None = None,
+    ) -> RecordOutcome:
         cleaned = str(smiles or "").strip()
         if not cleaned:
             invalid_marker = "(invalid)"
@@ -75,22 +136,18 @@ class SmilesPromptState:
         is_exemplar = bool(row.get("is_prompt_exemplar")) or cleaned in self.prompt_exemplars
 
         if cleaned in self.good_results:
-            if cleaned not in self.bad_results:
-                self.bad_results.append(cleaned)
-            return "duplicate"
+            return self._record_duplicate(cleaned, raw_response)
 
         if is_exemplar:
             if cleaned in self.bad_results:
-                return "duplicate"
+                return self._record_duplicate(cleaned, raw_response)
             if cleaned not in self.bad_results:
                 self.bad_results.append(cleaned)
             self.seen.add(cleaned)
             return "exemplar"
 
         if cleaned in self.seen:
-            if cleaned not in self.bad_results:
-                self.bad_results.append(cleaned)
-            return "duplicate"
+            return self._record_duplicate(cleaned, raw_response)
 
         is_good = bool(row.get("unique_valid_candidate"))
         if is_good:
@@ -145,9 +202,11 @@ def record_prompt_result(
     states: dict[str, SmilesPromptState],
     smiles: str,
     eval_row: dict[str, Any] | None,
+    *,
+    raw_response: str | None = None,
 ) -> dict[str, Any] | None:
     class_name = str(example.get("class_name", "smiles"))
-    outcome = states[class_name].record_attempt(smiles, eval_row)
+    outcome = states[class_name].record_attempt(smiles, eval_row, raw_response=raw_response)
     updated = dict(eval_row or {})
     updated["prompt_record_outcome"] = outcome
     updated["novel_valid"] = outcome == "good"

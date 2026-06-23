@@ -454,24 +454,14 @@ def _aggregate_run_metrics(
     *,
     run_wall_time_seconds: float | None,
 ) -> dict[str, Any]:
+    from synthesis.evaluate.baseline_store import _finalize_runtime_metrics
+
     metrics: dict[str, Any] = {"num_examples": len(rows)}
-    times = [
-        float(r["generation_seconds"])
-        for r in rows
-        if r.get("generation_seconds") is not None
-    ]
-    toks = [int(r["num_tokens"]) for r in rows if r.get("num_tokens") is not None]
-    if times:
-        metrics["total_generation_seconds"] = round(sum(times), 4)
-        metrics["mean_generation_seconds_per_example"] = round(sum(times) / len(times), 6)
-        metrics["examples_with_generation_timing"] = len(times)
-    if toks:
-        metrics["total_output_tokens"] = int(sum(toks))
-        metrics["mean_output_tokens_per_example"] = round(sum(toks) / len(toks), 4)
-        metrics["examples_with_token_counts"] = len(toks)
-    if run_wall_time_seconds is not None:
-        metrics["run_wall_time_seconds"] = round(float(run_wall_time_seconds), 4)
-    return metrics
+    return _finalize_runtime_metrics(
+        metrics,
+        rows_or_samples=rows,
+        run_wall_time_seconds=run_wall_time_seconds,
+    )
 
 
 def _build_minimal_json(
@@ -580,17 +570,18 @@ def _enrich_crane_baseline_rows(
         )
         extracted = row.get("parsed_completion")
         aux_for_row: dict[str, Any] | None = None
+        scored_output = raw_generated
         if example is not None and (
-            extracted is None or dataset == "spider"
+            extracted is None or dataset in ("spider", "gsm_symbolic")
         ):
             completion = completion_for_scoring(prompt_s or None, raw_generated)
-            scored = (
+            scored_output = (
                 eval_runtime._truncate_gsm_output(completion)
                 if dataset == "gsm_symbolic"
                 else completion
             )
             extracted, _src, aux_for_row = logic.extract_actual(
-                eval_runtime, scored, example
+                eval_runtime, scored_output, example
             )
 
         correct = bool(row.get("correct")) if isinstance(row.get("correct"), bool) else False
@@ -601,6 +592,30 @@ def _enrich_crane_baseline_rows(
         )
         if aux_for_row is not None:
             syntax_valid = bool(aux_for_row.get("syntax_valid"))
+        if (
+            example is not None
+            and extracted is not None
+            and str(extracted).strip()
+            and dataset in ("spider", "gsm_symbolic")
+        ):
+            expected = logic.expected_answer(eval_runtime, example)
+            correct = bool(
+                logic.is_correct(
+                    eval_runtime,
+                    str(extracted),
+                    expected,
+                    example,
+                    aux_for_row,
+                    scored_output,
+                )
+            )
+
+        generation_seconds = row.get("generation_seconds")
+        if generation_seconds is None:
+            for key in ("resp_time", "total_time", "time_seconds"):
+                if row.get(key) is not None:
+                    generation_seconds = float(row[key])
+                    break
 
         enriched.append(
             _legacy_adapter_baseline_row(
@@ -611,8 +626,8 @@ def _enrich_crane_baseline_rows(
                 extracted=str(extracted) if extracted is not None else None,
                 correct=correct,
                 syntax_valid=syntax_valid,
-                generation_seconds=row.get("generation_seconds"),
-                num_tokens=row.get("num_tokens"),
+                generation_seconds=generation_seconds,
+                num_tokens=row.get("num_tokens") or row.get("resp_tokens") or row.get("total_tokens"),
             )
         )
     return enriched
@@ -1119,7 +1134,13 @@ def run_rs_legacy_adapter(args: argparse.Namespace) -> int:
                 syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
             if dataset == "smiles":
                 syntax_valid = bool(aux and aux.get("syntax_valid"))
-                aux = record_prompt_result(example, smiles_prompt_states, actual or "", aux)
+                aux = record_prompt_result(
+                    example,
+                    smiles_prompt_states,
+                    actual or "",
+                    aux,
+                    raw_response=scored_output,
+                )
                 is_correct = bool(
                     logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output)
                 )
@@ -1295,12 +1316,30 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     return 0
 
 
+def _itergen_syncode_root() -> Path:
+    return Path(__file__).resolve().parent / "syncode" / "syncode"
+
+
+def _purge_itergen_conflicting_imports() -> None:
+    """Drop repo-vendored SynCode so IterGen uses its bundled copy with SymbolPosMap."""
+    harness_syncode = str(_itergen_syncode_root())
+    drop_prefixes = ("syncode", "parsers")
+    for name in list(sys.modules):
+        if not any(name == prefix or name.startswith(f"{prefix}.") for prefix in drop_prefixes):
+            continue
+        mod = sys.modules.get(name)
+        mod_file = str(getattr(mod, "__file__", "") or "")
+        if name.startswith("parsers") or harness_syncode in mod_file:
+            del sys.modules[name]
+
+
 def _itergen_add_import_paths(itergen_root: Path) -> None:
     candidates = [
         itergen_root,
         itergen_root / "itergen" / "syncode",
         itergen_root / "itergen" / "syncode" / "syncode",
     ]
+    _purge_itergen_conflicting_imports()
     for candidate in candidates:
         candidate_str = str(candidate.resolve())
         if candidate_str not in sys.path:

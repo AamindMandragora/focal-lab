@@ -70,5 +70,8 @@ def test_slugify_normalizes_hf_model_ids():
 
 def test_default_models_list_matches_matrix_runner():
     models = matrix.csv_list(matrix.DEFAULT_MODELS)
-    assert "Qwen/Qwen2.5-Coder-7B-Instruct" in models
+    assert "Qwen/Qwen3.5-2B" in models
+    assert "Qwen/Qwen3.5-4B" in models
+    assert "Qwen/Qwen3.5-9B" in models
+    assert "meta-llama/Llama-3.1-8B-Instruct" in models
     assert len(models) == 4

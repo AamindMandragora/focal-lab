@@ -168,6 +168,53 @@ def baseline_answer_row_complete(row: dict[str, Any]) -> bool:
     return True
 
 
+def _finalize_runtime_metrics(
+    metrics: dict[str, Any],
+    *,
+    rows_or_samples: list[dict[str, Any]],
+    time_key: str = "generation_seconds",
+    token_key: str = "num_tokens",
+    run_wall_time_seconds: float | None = None,
+    evaluator_total_time_seconds: float | None = None,
+    evaluator_max_sample_time_seconds: float | None = None,
+) -> dict[str, Any]:
+    """Always emit runtime metric keys (null when unavailable)."""
+    times = [
+        float(item[time_key])
+        for item in rows_or_samples
+        if item.get(time_key) is not None
+    ]
+    toks = [
+        int(item[token_key])
+        for item in rows_or_samples
+        if item.get(token_key) is not None
+    ]
+    metrics["examples_with_generation_timing"] = len(times)
+    metrics["total_generation_seconds"] = round(sum(times), 4) if times else None
+    metrics["mean_generation_seconds_per_example"] = (
+        round(sum(times) / len(times), 6) if times else None
+    )
+    metrics["examples_with_token_counts"] = len(toks)
+    metrics["total_output_tokens"] = int(sum(toks)) if toks else None
+    metrics["mean_output_tokens_per_example"] = (
+        round(sum(toks) / len(toks), 4) if toks else None
+    )
+    metrics["run_wall_time_seconds"] = (
+        round(float(run_wall_time_seconds), 4) if run_wall_time_seconds is not None else None
+    )
+    metrics["evaluator_total_time_seconds"] = (
+        round(float(evaluator_total_time_seconds), 4)
+        if evaluator_total_time_seconds is not None
+        else None
+    )
+    metrics["evaluator_max_sample_time_seconds"] = (
+        round(float(evaluator_max_sample_time_seconds), 4)
+        if evaluator_max_sample_time_seconds is not None
+        else None
+    )
+    return metrics
+
+
 def build_metrics_from_eval_samples(
     samples: list[dict[str, Any]],
     *,
@@ -177,33 +224,15 @@ def build_metrics_from_eval_samples(
 ) -> dict[str, Any]:
     """Aggregate optional timing / token fields from evaluator samples."""
     metrics: dict[str, Any] = {"num_examples": len(samples)}
-    times = [
-        float(s["time_seconds"])
-        for s in samples
-        if s.get("time_seconds") is not None
-    ]
-    toks = [
-        int(s["token_count"])
-        for s in samples
-        if s.get("token_count") is not None
-    ]
-    if times:
-        metrics["total_generation_seconds"] = round(sum(times), 4)
-        metrics["mean_generation_seconds_per_example"] = round(sum(times) / len(times), 6)
-        metrics["examples_with_generation_timing"] = len(times)
-    if toks:
-        metrics["total_output_tokens"] = int(sum(toks))
-        metrics["mean_output_tokens_per_example"] = round(sum(toks) / len(toks), 4)
-        metrics["examples_with_token_counts"] = len(toks)
-    if evaluator_total_time_seconds is not None:
-        metrics["evaluator_total_time_seconds"] = round(float(evaluator_total_time_seconds), 4)
-    if evaluator_max_sample_time_seconds is not None:
-        metrics["evaluator_max_sample_time_seconds"] = round(
-            float(evaluator_max_sample_time_seconds), 4
-        )
-    if run_wall_time_seconds is not None:
-        metrics["run_wall_time_seconds"] = round(float(run_wall_time_seconds), 4)
-    return metrics
+    return _finalize_runtime_metrics(
+        metrics,
+        rows_or_samples=samples,
+        time_key="time_seconds",
+        token_key="token_count",
+        run_wall_time_seconds=run_wall_time_seconds,
+        evaluator_total_time_seconds=evaluator_total_time_seconds,
+        evaluator_max_sample_time_seconds=evaluator_max_sample_time_seconds,
+    )
 
 
 def _answers_from_rows(rows: list[dict[str, Any]], *, dataset: str) -> list[dict[str, Any]]:
@@ -314,26 +343,11 @@ def build_minimal_baseline_from_rows(
 ) -> dict[str, Any]:
     """Build baseline JSON from per-example adapter rows."""
     metrics: dict[str, Any] = {"num_examples": len(rows)}
-    times = [
-        float(r["generation_seconds"])
-        for r in rows
-        if r.get("generation_seconds") is not None
-    ]
-    toks = [
-        int(r["num_tokens"])
-        for r in rows
-        if r.get("num_tokens") is not None
-    ]
-    if times:
-        metrics["total_generation_seconds"] = round(sum(times), 4)
-        metrics["mean_generation_seconds_per_example"] = round(sum(times) / len(times), 6)
-        metrics["examples_with_generation_timing"] = len(times)
-    if toks:
-        metrics["total_output_tokens"] = int(sum(toks))
-        metrics["mean_output_tokens_per_example"] = round(sum(toks) / len(toks), 4)
-        metrics["examples_with_token_counts"] = len(toks)
-    if run_wall_time_seconds is not None:
-        metrics["run_wall_time_seconds"] = round(float(run_wall_time_seconds), 4)
+    metrics = _finalize_runtime_metrics(
+        metrics,
+        rows_or_samples=rows,
+        run_wall_time_seconds=run_wall_time_seconds,
+    )
     if extra_metrics:
         metrics.update(extra_metrics)
 

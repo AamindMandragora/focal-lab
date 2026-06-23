@@ -370,8 +370,8 @@ def run_smiles_pooled_class(
                 unique_syntax_valid_count += 1
         is_correct = bool(is_first_occurrence and eval_row.get("unique_valid_candidate"))
         if not static_prompt and prompt_state is not None:
-            attempt_value = str(eval_row.get("smiles") or output_text or "").strip()
-            prompt_state.record_attempt(attempt_value, eval_row)
+            attempt_value = str(eval_row.get("smiles") or "").strip()
+            prompt_state.record_attempt(attempt_value, eval_row, raw_response=output_text)
             prompt = _render_prompt()
 
         attempt_example = dict(example)

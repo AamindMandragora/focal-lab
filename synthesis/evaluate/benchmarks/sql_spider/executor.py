@@ -29,6 +29,22 @@ from synthesis.evaluate.benchmarks.sql_spider.dataset import (
     write_gold_file,
 )
 
+_SPIDER_NLTK_PACKAGES = ("punkt", "punkt_tab", "stopwords")
+
+
+def ensure_spider_nltk_prereqs() -> None:
+    """Download NLTK tokenizers required by the vendored Spider SQL matcher."""
+    try:
+        import nltk
+    except ImportError:
+        return
+
+    for package in _SPIDER_NLTK_PACKAGES:
+        try:
+            nltk.download(package, quiet=True)
+        except Exception:
+            continue
+
 
 def _ensure_syncode_import_path() -> None:
     """
@@ -87,8 +103,7 @@ def _clean_sql(text: str) -> str:
     s = str(text).strip()
     # Drop anything after a blank line (matches syncode Dataset.post_process_answer)
     s = s.split("\n\n")[0]
-    cut_positions = [len(s)]
-    for marker in (
+    markers = (
         r"\bHuman\s*:",
         r"\bAssistant\s*:",
         r"\bUser\s*:",
@@ -97,7 +112,17 @@ def _clean_sql(text: str) -> str:
         r"\bdb_info\s*:",
         r"\bquestion\s*:",
         r"\bSQL\s*:",
-    ):
+    )
+    stripped = True
+    while stripped:
+        stripped = False
+        for marker in markers:
+            m = re.match(r"\s*" + marker, s, flags=re.IGNORECASE)
+            if m:
+                s = s[m.end():].lstrip()
+                stripped = True
+    cut_positions = [len(s)]
+    for marker in markers:
         match = re.search(marker, s, flags=re.IGNORECASE)
         if match and match.start() > 0:
             cut_positions.append(match.start())
@@ -140,6 +165,7 @@ def execute_accuracy(
           - per_row: list of per-example dicts with {pred, gold, db_id, exec, validity}
     """
     _ensure_syncode_import_path()
+    ensure_spider_nltk_prereqs()
 
     if db_dir is None:
         db_dir = default_db_dir()

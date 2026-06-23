@@ -27,9 +27,7 @@ Types: **`Token`** is `string`; **`Prefix`** is `seq<Token>`; **`Id`** is `nat`;
 - **`MaskToken` / `MaskTokens` / `MaskTokensExcept`** — Set selected logits to the hard-mask sentinel so those tokens cannot be chosen.
 - **`IsMasked` / `HasUnmaskedToken`** — Query whether a token is masked or any vocabulary choice remains unmasked.
 - **`GenerateLogits`** — Recompute next-step logits from the given prefix (extern).
-- **`SetNonDeterministic`** — Toggle greedy (`false`) vs temperature-1 sampling
-  (`true`) for `ChooseNextToken`, `ChooseNextTokenUnconstrained`, and
-  `GenerateUnconstrainedChunk` in the current example (extern; resets each example).
+- **`SetUseSampling(enabled: bool)`** — Toggle greedy vs temperature-1 sampling for constrained `ChooseNextToken` (extern-backed field `useSampling`).
 - **`AppendTaskGuidance`** — Append a CSD-authored evaluator prompt guidance
   block in the runtime wrapper; first non-empty call wins and the Dafny cost is
   unchanged.
@@ -45,6 +43,10 @@ Types: **`Token`** is `string`; **`Prefix`** is `seq<Token>`; **`Id`** is `nat`;
 - **`ValidNextTokenCount` / `ValidNextToken` / `ValidNextTokens`** — Count or enumerate admissible next tokens at a valid prefix.
 - **`IsDeadPrefix`** — Valid but incomplete prefix with no legal continuations.
 - **`ParseG`** — Run the grammar on a raw string and report success (extern).
+- **`CompletedSchemaSymbolCount`** — Count of completed `table_ref` / `column_ref` symbols (Spider unit boundary).
+- **`GrammarSymbolCount(prefix, symbol)`** — Completed grammar-unit spans; `symbol == "token"` means `|prefix|`.
+- **`GrammarSymbolStartTokenIdx` / `GrammarSymbolEndTokenIdx`** — Token-index bounds for one completed unit occurrence.
+- **`GetGrammarSymbolUnits(prefix, symbol)`** — Rendered unit strings (IterGen `view` data).
 
 ### Module-level
 
@@ -52,12 +54,13 @@ Types: **`Token`** is `string`; **`Prefix`** is `seq<Token>`; **`Id`** is `nat`;
 
 ### `CSDHelpers` (verified strategy API)
 
-Instance field **`cost`** — Accumulated token-step budget; the constructor sets it to 0.
+Constructor **`CSDHelpers(lm, parser)`** — binds the language model and parser for the whole helper session; **`cost`** starts at 0.
 
-**Unconstrained and chunking**
+Instance fields **`lm`** / **`parser`** — same references passed to the constructor (`this.lm == lm` after construction).
 
-- **`SetNonDeterministic`** — Start-of-CSD decoding policy hook; greedy when
-  `false`, temperature-1 sampling when `true`; +0 cost.
+**Sampling**
+
+- Call **`lm.SetUseSampling(true)`** before generation when temperature-1 constrained sampling is required (RS-style); default is greedy (`false`). Python maps this to `CSD_CONSTRAINED_TEMPERATURE`.
 - **`AppendTaskGuidance`** — Start-of-CSD prompt policy hook; appends guidance
   before generation begins, keeps `cost` unchanged, and should not be used as a
   mid-generation control action.
@@ -110,6 +113,13 @@ Instance field **`cost`** — Accumulated token-step budget; the constructor set
 - **`ValidTokenCount`** — Returns `ValidNextTokenCount` for a prefix.
 - **`IsTokenValidNext`** — Boolean `ValidNextToken` for one token.
 - **`TopValidCandidates`** — One forward pass, then up to K highest-logit tokens from valid-next ∪ EOS; +1 cost.
+
+**IterGen unit API (composites)**
+
+- **`RollbackToGrammarSymbol`** — Rewind constrained suffix by N grammar units (or N tokens when `symbol == "token"`).
+- **`BackwardByGrammarSymbol`** — IterGen `backward` wrapper.
+- **`ViewGrammarSymbols`** — IterGen `view` wrapper.
+- **`ForwardUntilGrammarSymbol`** — IterGen `forward` via `SafeSoftConstrainedStep` until N units complete.
 
 **Rollback and repair**
 

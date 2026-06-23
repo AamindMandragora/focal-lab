@@ -159,10 +159,12 @@ def record_prompt_result(
     states: dict[str, Any],
     smiles: str,
     eval_row: dict[str, Any] | None,
+    *,
+    raw_response: str | None = None,
 ) -> dict[str, Any] | None:
     from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result as _record
 
-    return _record(example, states, smiles, eval_row)
+    return _record(example, states, smiles, eval_row, raw_response=raw_response)
 
 
 def uses_hidden_chunks() -> bool:

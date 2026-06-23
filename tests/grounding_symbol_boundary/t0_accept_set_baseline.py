@@ -23,11 +23,11 @@ import json
 import sys
 from pathlib import Path
 
-REPO = Path("/home/aadivyar/csd-generation")
-GRAMMARS = REPO / "synthesis/evaluate/grammars"
+REPO = Path(__file__).resolve().parents[2]
+GRAMMARS = REPO / "synthesis" / "evaluate" / "grammars"
 
 # Put the vendored syncode on sys.path, exactly like parser_utils._ensure_syncode_import_path.
-SYNCODE_DIR = REPO / "synthesis/evaluate/syncode"
+SYNCODE_DIR = REPO / "synthesis" / "evaluate" / "syncode"
 if str(SYNCODE_DIR) in sys.path:
     sys.path.remove(str(SYNCODE_DIR))
 sys.path.insert(0, str(SYNCODE_DIR))

@@ -9,11 +9,24 @@ module VerifiedDecoderAgent {
     const Ids: seq<Id>
     var Logits: array<Logit>
 
+    var useSampling: bool
+    var stepCost: int
+
+    method SetUseSampling(enabled: bool)
+      modifies this
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+      ensures Logits == old(Logits)
+      ensures useSampling == enabled
+    {
+      useSampling := enabled;
+    }
+
     predicate ValidTokensIdsLogits()
       reads this
       reads this.Logits
     {
-      ((|Tokens| == |Ids|) && (|Ids| == Logits.Length) && (|Ids| > 0 && Ids[0] == 0)) &&
+      ((|Tokens| == |Ids|) && (|Ids| == Logits.Length) && (|Ids| > 0 && Ids[0] == 0) && (|Tokens| == |set t | t in Tokens|)) &&
       (forall i :: 0 <= i < |Ids| ==> (i == Ids[i]) && (i in Ids)) && 
       (forall i, j :: 0 <= i < |Tokens| && 0 <= j < |Tokens| && i != j ==> Tokens[i] != Tokens[j]) &&
       (forall token: Token :: token in Tokens ==> (exists i :: 0 <= i < |Ids| && Tokens[i] == token)) &&
@@ -249,6 +262,7 @@ module VerifiedDecoderAgent {
       requires eosToken in Tokens
       ensures ValidTokensIdsLogits()
       ensures forall t :: t in Tokens && !parser.ValidNextToken(prefix, t) && t != eosToken ==> IsMasked(t)
+      ensures this.Logits == old(this.Logits)
 
     method {:extern} {:axiom} BoostValidNextAndEos(parser: Parser, prefix: Prefix, amount: real, eosToken: Token)
       modifies this.Logits
@@ -316,6 +330,35 @@ module VerifiedDecoderAgent {
     // query to parse. Implemented in the host language.
     function {:extern} {:axiom} CompletedSchemaSymbolCount(prefix: Prefix): nat
       requires IsValidPrefix(prefix)
+
+    // IterGen SymbolPosMap queries (pure side-record; see CompletedSchemaSymbolCount).
+    // `symbol == "token"` is reserved: count is |prefix| (one unit per token).
+    function {:extern} {:axiom} GrammarSymbolCount(prefix: Prefix, symbol: string): nat
+      requires IsValidPrefix(prefix)
+
+    // Token index into `prefix` at the start of the `occurrenceIdx`-th completed
+    // `symbol` span (prefix[..idx] excludes that occurrence). For `symbol == "token"`,
+    // occurrenceIdx is a zero-based token index and idx == occurrenceIdx.
+    function {:extern} {:axiom} GrammarSymbolStartTokenIdx(prefix: Prefix, symbol: string, occurrenceIdx: nat): nat
+      requires IsValidPrefix(prefix)
+      requires occurrenceIdx < GrammarSymbolCount(prefix, symbol)
+      ensures 0 <= GrammarSymbolStartTokenIdx(prefix, symbol, occurrenceIdx) <= |prefix|
+
+    function {:extern} {:axiom} GrammarSymbolEndTokenIdx(prefix: Prefix, symbol: string, occurrenceIdx: nat): nat
+      requires IsValidPrefix(prefix)
+      requires occurrenceIdx < GrammarSymbolCount(prefix, symbol)
+      ensures GrammarSymbolStartTokenIdx(prefix, symbol, occurrenceIdx) <= GrammarSymbolEndTokenIdx(prefix, symbol, occurrenceIdx) <= |prefix|
+
+    method {:extern} {:axiom} GetGrammarSymbolUnits(prefix: Prefix, symbol: string) returns (units: seq<string>)
+      requires IsValidPrefix(prefix)
+      ensures |units| == GrammarSymbolCount(prefix, symbol)
+  }
+
+  function GrammarSymbolPresent(parser: Parser, prefix: Prefix, symbol: string): bool
+    requires parser.IsValidPrefix(prefix)
+  {
+    if symbol == "token" then |prefix| > 0
+    else parser.GrammarSymbolCount(prefix, symbol) > 0
   }
 
   function Contains(s: string, sub: string): bool
@@ -340,37 +383,53 @@ module VerifiedDecoderAgent {
   }
 
   class CSDHelpers {
-    var cost: int
+    const lm: LM
+    const parser: Parser
 
-    constructor()
-      ensures cost == 0
+    function cost(): int
+      reads this, lm
     {
-      cost := 0;
+      lm.stepCost
     }
 
-    method AppendTaskGuidance(lm: LM, guidance: string)
+    constructor(lm: LM, parser: Parser)
+      requires lm.ValidTokensIdsLogits()
+      modifies lm
+      ensures lm.stepCost == 0
+      ensures lm.ValidTokensIdsLogits()
+      ensures this.lm == lm
+      ensures this.parser == parser
+      ensures this.lm.Logits == old(lm.Logits)
+    {
+      this.lm := lm;
+      this.parser := parser;
+      lm.stepCost := 0;
+    }
+
+    method AppendTaskGuidance(guidance: string)
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
       lm.AppendTaskGuidance(guidance);
     }
 
-    method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)
-      modifies lm.Logits, this
+    method UnconstrainedStep(prompt: Prefix, generated: Prefix) returns (next: Token)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + generated);
       next := lm.ChooseNextTokenUnconstrained();
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     method UnconstrainedChunk(
-      lm: LM, prompt: Prefix, generated: Prefix, maxChunkTokens: nat, openSpanToken: Token, eosToken: Token
+      prompt: Prefix, generated: Prefix, maxChunkTokens: nat, openSpanToken: Token, eosToken: Token
     ) returns (generatedOut: Prefix, stoppedOnOpenSpan: bool, stoppedOnEos: bool, stepsUsed: nat)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires openSpanToken in lm.Tokens
       requires eosToken in lm.Tokens
@@ -379,7 +438,7 @@ module VerifiedDecoderAgent {
       ensures generatedOut[..|generated|] == generated
       ensures |generatedOut| <= |generated| + stepsUsed
       ensures stepsUsed <= maxChunkTokens
-      ensures cost == old(cost) + stepsUsed
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
       ensures !(stoppedOnOpenSpan && stoppedOnEos)
       ensures stoppedOnOpenSpan ==> |generatedOut| > |generated| && generatedOut[|generatedOut| - 1] == openSpanToken
       ensures stoppedOnEos ==> |generatedOut| + 1 == |generated| + stepsUsed
@@ -391,16 +450,16 @@ module VerifiedDecoderAgent {
         prompt + generated, maxChunkTokens, openSpanToken, eosToken
       );
       generatedOut := generated + chunk;
-      cost := cost + stepsUsed;
+      lm.stepCost := lm.stepCost + stepsUsed;
     }
 
     // Generates one symbol worth of tokens via a multi-token LM call,
     // then accepts the longest parser-valid prefix of the emitted chunk.
     method ConstrainedSymbol(
-      lm: LM, parser: Parser, constrainedPrompt: Prefix, currentConstrained: Prefix,
+      constrainedPrompt: Prefix, currentConstrained: Prefix,
       maxSymbolTokens: nat, eosToken: Token
     ) returns (currentOut: Prefix, hitEos: bool, stepsUsed: nat)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires "<<" in lm.Tokens
@@ -412,7 +471,7 @@ module VerifiedDecoderAgent {
       ensures |currentOut| <= |currentConstrained| + stepsUsed
       ensures stepsUsed <= maxSymbolTokens
       ensures stepsUsed > 0
-      ensures cost == old(cost) + stepsUsed
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
     {
       var chunk: Prefix;
       var stoppedOnOpen: bool;
@@ -420,7 +479,7 @@ module VerifiedDecoderAgent {
       chunk, stoppedOnOpen, stoppedOnEos, stepsUsed := lm.GenerateUnconstrainedChunk(
         constrainedPrompt + currentConstrained, maxSymbolTokens, "<<", eosToken
       );
-      cost := cost + stepsUsed;
+      lm.stepCost := lm.stepCost + stepsUsed;
       hitEos := stoppedOnEos;
       currentOut := currentConstrained;
       var i := 0;
@@ -443,10 +502,10 @@ module VerifiedDecoderAgent {
     }
 
     method ConstrainedSymbolInGenerated(
-      lm: LM, parser: Parser, constrainedPrompt: Prefix, generated: Prefix,
+      constrainedPrompt: Prefix, generated: Prefix,
       currentConstrained: Prefix, maxSymbolTokens: nat, eosToken: Token
     ) returns (generatedOut: Prefix, currentOut: Prefix, hitEos: bool, stepsUsed: nat)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires |currentConstrained| <= |generated|
@@ -461,11 +520,11 @@ module VerifiedDecoderAgent {
       ensures |currentOut| <= |generatedOut|
       ensures stepsUsed <= maxSymbolTokens
       ensures stepsUsed > 0
-      ensures cost == old(cost) + stepsUsed
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
     {
       var stablePrefix := generated[..|generated| - |currentConstrained|];
       currentOut, hitEos, stepsUsed := ConstrainedSymbol(
-        lm, parser, constrainedPrompt, currentConstrained, maxSymbolTokens, eosToken
+        constrainedPrompt, currentConstrained, maxSymbolTokens, eosToken
       );
       generatedOut := stablePrefix + currentOut;
       assert |stablePrefix| == |generated| - |currentConstrained|;
@@ -474,31 +533,32 @@ module VerifiedDecoderAgent {
       assert |currentOut| <= |generatedOut|;
     }
 
-    method OpenConstrainedSpan(lm: LM, generated: Prefix) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
-      modifies this
+    method OpenConstrainedSpan(generated: Prefix) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires "<<" in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures generatedOut == generated + ["<<"]
       ensures insideOut
       ensures currentOut == []
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       generatedOut := generated + ["<<"];
       insideOut := true;
       currentOut := [];
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
 
-    method EnterObservedConstrainedSpan(lm: LM, generated: Prefix) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
-      modifies this
+    method EnterObservedConstrainedSpan(generated: Prefix) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
       ensures generatedOut == generated
       ensures insideOut
       ensures currentOut == []
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
       generatedOut := generated;
       insideOut := true;
@@ -506,9 +566,9 @@ module VerifiedDecoderAgent {
     }
 
     method AppendConstrainedToken(
-      lm: LM, parser: Parser, generated: Prefix, currentConstrained: Prefix, next: Token
+      generated: Prefix, currentConstrained: Prefix, next: Token
     ) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
-      modifies this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires !parser.IsCompletePrefix(currentConstrained)
@@ -519,7 +579,8 @@ module VerifiedDecoderAgent {
       ensures insideOut
       ensures currentOut == currentConstrained + [next]
       ensures parser.IsValidPrefix(currentOut)
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
+      ensures lm.Logits == old(lm.Logits)
     {
       generatedOut := generated + [next];
       insideOut := true;
@@ -527,9 +588,9 @@ module VerifiedDecoderAgent {
     }
 
     method CloseConstrainedSpan(
-      lm: LM, parser: Parser, generated: Prefix, currentConstrained: Prefix
+      generated: Prefix, currentConstrained: Prefix
     ) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
-      modifies this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsCompletePrefix(currentConstrained)
       requires ">>" in lm.Tokens
@@ -540,7 +601,8 @@ module VerifiedDecoderAgent {
               generatedOut == generated + [">>"]
       ensures !insideOut
       ensures currentOut == []
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       if RenderedEndsWith(currentConstrained, ">>") {
         generatedOut := generated;
@@ -549,11 +611,11 @@ module VerifiedDecoderAgent {
       }
       insideOut := false;
       currentOut := [];
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
-    method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix, eosToken: Token) returns (next: Token)
-      modifies lm.Logits, this
+    method ConstrainedStep(prompt: Prefix, generated: Prefix, eosToken: Token) returns (next: Token)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
       requires eosToken in lm.Tokens
@@ -561,19 +623,20 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || (parser.ValidNextToken(generated, next))
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + generated);
-      RollbackPreservesTokenInvariant(lm, parser, generated);
+      RollbackPreservesTokenInvariant(generated);
       lm.MaskValidNextAndEos(parser, generated, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(generated, next);
         assert parser.IsValidPrefix(generated + [next]);
-        ConstrainedStepNextValid(lm, parser, generated, next);
+        ConstrainedStepNextValid(generated, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     // Dead-end-avoiding constrained step. Plain constrained decoding masks the
@@ -589,9 +652,9 @@ module VerifiedDecoderAgent {
     // out committing an immediately-dead token, not one whose continuations all die
     // several steps later.
     method DeadEndAvoidingStep(
-      lm: LM, parser: Parser, prompt: Prefix, generated: Prefix, eosToken: Token, maxRetries: nat
+      prompt: Prefix, generated: Prefix, eosToken: Token, maxRetries: nat
     ) returns (next: Token, success: bool)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
       requires eosToken in lm.Tokens
@@ -603,10 +666,12 @@ module VerifiedDecoderAgent {
       ensures (success && next != eosToken) ==> parser.ValidNextToken(generated, next)
       ensures (success && next != eosToken) ==>
         (forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
+      var logitsArray := lm.Logits;
       lm.GenerateLogits(prompt + generated);
-      RollbackPreservesTokenInvariant(lm, parser, generated);
+      RollbackPreservesTokenInvariant(generated);
       lm.MaskValidNextAndEos(parser, generated, eosToken);
       next := lm.ChooseNextToken();
       var tries := 0;
@@ -618,7 +683,8 @@ module VerifiedDecoderAgent {
         invariant !lm.IsMasked(next)
         invariant forall t: Token ::
           t in lm.Tokens && !parser.ValidNextToken(generated, t) && t != eosToken ==> lm.IsMasked(t)
-        invariant cost == old(cost)
+        invariant lm.stepCost == old(lm.stepCost)
+        invariant lm.Logits == logitsArray
         decreases maxRetries - tries
       {
         lm.MaskToken(next);
@@ -631,17 +697,18 @@ module VerifiedDecoderAgent {
         assert !parser.ValidNextToken(generated, next) ==> lm.IsMasked(next);
         assert parser.ValidNextToken(generated, next);
         assert parser.IsValidPrefix(generated + [next]);
-        RollbackPreservesTokenInvariant(lm, parser, generated);
-        ConstrainedStepNextValid(lm, parser, generated, next);
+        RollbackPreservesTokenInvariant(generated);
+        ConstrainedStepNextValid(generated, next);
       }
       success := next == eosToken ||
         (parser.IsValidPrefix(generated + [next]) && !parser.IsDeadPrefix(generated + [next]));
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
-    method GroupHasValidMember(parser: Parser, prefix: Prefix, group: seq<Token>) returns (anyValid: bool)
+    method GroupHasValidMember(prefix: Prefix, group: seq<Token>) returns (anyValid: bool)
       requires parser.IsValidPrefix(prefix)
       ensures anyValid <==> (exists t :: t in group && parser.ValidNextToken(prefix, t))
+      ensures lm.stepCost == old(lm.stepCost)
     {
       anyValid := false;
       var i := 0;
@@ -657,34 +724,38 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method BoostValidGroups(lm: LM, parser: Parser, prefix: Prefix, groups: seq<seq<Token>>, amount: real)
-      modifies lm.Logits, this
+    method BoostValidGroups(prefix: Prefix, groups: seq<seq<Token>>, amount: real)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
+      ensures lm.Logits == old(lm.Logits)
     {
       var i := 0;
+      var logitsArray := lm.Logits;
+
       while i < |groups|
         invariant 0 <= i <= |groups|
+        invariant lm.Logits == logitsArray
         invariant lm.ValidTokensIdsLogits()
-        invariant cost == old(cost)
+        invariant lm.stepCost == old(lm.stepCost)
         decreases |groups| - i
       {
-        var anyValid := GroupHasValidMember(parser, prefix, groups[i]);
+        var anyValid := GroupHasValidMember(prefix, groups[i]);
         if anyValid {
-          SafeBoostTokenLogits(lm, groups[i], amount);
+          BoostTokenLogits(groups[i], amount);
         }
         i := i + 1;
       }
     }
 
     method GroupBoostedConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       groups: seq<seq<Token>>, boostAmount: real, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -694,29 +765,31 @@ module VerifiedDecoderAgent {
       ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
       ensures (next != eosToken) ==> parser.IsValidPrefix(constrainedPrefix + [next])
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
     {
+      var logitsArray := lm.Logits;
       lm.GenerateLogits(prompt + constrainedPrefix);
       if |groups| > 0 {
-        BoostValidGroups(lm, parser, constrainedPrefix, groups, boostAmount);
+        BoostValidGroups(constrainedPrefix, groups, boostAmount);
+        assert lm.Logits == logitsArray;
       }
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(constrainedPrefix, next);
         assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     method AdaptiveConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       groups: seq<seq<Token>>, boostAmount: real, narrowThreshold: nat, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -726,34 +799,35 @@ module VerifiedDecoderAgent {
       ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
       ensures (next != eosToken) ==> parser.IsValidPrefix(constrainedPrefix + [next])
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
       if |groups| > 0 {
         var validCount := parser.ValidNextTokenCount(constrainedPrefix);
         if validCount <= narrowThreshold {
-          BoostValidGroups(lm, parser, constrainedPrefix, groups, boostAmount);
+          BoostValidGroups(constrainedPrefix, groups, boostAmount);
         }
       }
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(constrainedPrefix, next);
         assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     method AdaptiveConstrainedStepWithPenalties(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       boostGroups: seq<seq<Token>>, boostAmount: real,
       penaltyTokens: seq<Token>, penaltyAmount: real,
       narrowThreshold: nat, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -764,93 +838,34 @@ module VerifiedDecoderAgent {
       ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
       ensures (next != eosToken) ==> parser.IsValidPrefix(constrainedPrefix + [next])
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
     {
+      var logitsArray := lm.Logits;
       lm.GenerateLogits(prompt + constrainedPrefix);
       if |boostGroups| > 0 {
         var validCount := parser.ValidNextTokenCount(constrainedPrefix);
         if validCount <= narrowThreshold {
-          BoostValidGroups(lm, parser, constrainedPrefix, boostGroups, boostAmount);
+          BoostValidGroups(constrainedPrefix, boostGroups, boostAmount);
         }
       }
-      SafePenalizeTokenLogits(lm, penaltyTokens, penaltyAmount);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      PenalizeTokenLogits(penaltyTokens, penaltyAmount);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(constrainedPrefix, next);
         assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
-      cost := cost + 1;
-    }
-
-    method PenalizedConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
-      tokensToPenalize: seq<Token>, penaltyAmount: real, eosToken: Token
-    ) returns (next: Token)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(constrainedPrefix)
-      requires forall t :: t in tokensToPenalize ==> t in lm.Tokens
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures next in lm.Tokens
-      ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
-      ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
-    {
-      lm.GenerateLogits(prompt + constrainedPrefix);
-      PenalizeTokenLogits(lm, tokensToPenalize, penaltyAmount);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
-      lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
-      next := lm.ChooseNextToken();
-      if next != eosToken {
-        assert !lm.IsMasked(next);
-        assert parser.ValidNextToken(constrainedPrefix, next);
-        assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
-      }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     method BoostedConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       tokensToBoost: seq<Token>, boostAmount: real, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(constrainedPrefix)
-      requires forall t :: t in tokensToBoost ==> t in lm.Tokens
-      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures next in lm.Tokens
-      ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
-      ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
-    {
-      lm.GenerateLogits(prompt + constrainedPrefix);
-      BoostTokenLogits(lm, tokensToBoost, boostAmount);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
-      lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
-      next := lm.ChooseNextToken();
-      if next != eosToken {
-        assert !lm.IsMasked(next);
-        assert parser.ValidNextToken(constrainedPrefix, next);
-        assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
-      }
-      cost := cost + 1;
-    }
-
-    method SafeBoostedConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
-      tokensToBoost: seq<Token>, boostAmount: real, eosToken: Token
-    ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -859,27 +874,27 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
-      SafeBoostTokenLogits(lm, tokensToBoost, boostAmount);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      BoostTokenLogits(tokensToBoost, boostAmount);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(constrainedPrefix, next);
         assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
-    method SafePenalizedConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+    method PenalizedConstrainedStep(
+      prompt: Prefix, constrainedPrefix: Prefix,
       tokensToPenalize: seq<Token>, penaltyAmount: real, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
@@ -888,47 +903,48 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || (parser.ValidNextToken(constrainedPrefix, next))
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
-      SafePenalizeTokenLogits(lm, tokensToPenalize, penaltyAmount);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      PenalizeTokenLogits(tokensToPenalize, penaltyAmount);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(constrainedPrefix, next);
         assert parser.IsValidPrefix(constrainedPrefix + [next]);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     // Performs unconstrained decoding until we run out of steps.
-    method UnconstrainedGeneration(lm: LM, prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
-      modifies lm.Logits, this
+    method UnconstrainedGeneration(prompt: Prefix, maxSteps: nat) returns (generated: Prefix)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
-      ensures |generated| == maxSteps
-      ensures cost == old(cost) + |generated|
+      ensures |generated| <= maxSteps
+      ensures lm.stepCost <= old(lm.stepCost) + maxSteps
     {
+      var logitsArray := lm.Logits;
       generated := [];
-      var steps := 0;
-      while steps < maxSteps
-        invariant 0 <= steps <= maxSteps
+      var startCost := lm.stepCost;
+      while lm.stepCost - startCost < maxSteps
+        invariant 0 <= lm.stepCost - startCost <= maxSteps
         invariant lm.ValidTokensIdsLogits()
-        invariant steps == |generated|
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps
+        invariant |generated| == lm.stepCost - startCost
+        invariant lm.Logits == logitsArray
+        decreases maxSteps - (lm.stepCost - startCost)
       {
-        var next := UnconstrainedStep(lm, prompt, generated);
+        var next := UnconstrainedStep(prompt, generated);
         generated := generated + [next];
-        steps := steps + 1;
       }
     }
 
     // A lemma that lets us say if the LM can generate all next valid tokens, then if we append one of those to the end, the LM can still generate all next valid tokens for the new prefix.
-    static lemma {:axiom} ConstrainedStepNextValid(lm: LM, parser: Parser, generated: Prefix, next: Token)
+    lemma {:axiom} ConstrainedStepNextValid(generated: Prefix, next: Token)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(generated)
       requires forall t: Token :: t in parser.ValidNextTokens(generated) ==> t in lm.Tokens
@@ -936,37 +952,36 @@ module VerifiedDecoderAgent {
       ensures forall t: Token :: t in parser.ValidNextTokens(generated + [next]) ==> t in lm.Tokens
 
     // Performs constrained decoding until we run out of steps or the generated string is complete in the grammar.
-    method ConstrainedGeneration(lm: LM, parser: Parser, prompt: Prefix, maxSteps: nat, eosToken: Token) returns (generated: Prefix, terminatedByEos: bool)
-      modifies lm.Logits, this
+    method ConstrainedGeneration(prompt: Prefix, maxSteps: nat, eosToken: Token) returns (generated: Prefix, terminatedByEos: bool)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures |generated| <= maxSteps
       ensures parser.IsValidPrefix(generated)
-      ensures terminatedByEos ==> (cost == old(cost) + |generated| + 1)
-      ensures !terminatedByEos ==> (cost == old(cost) + |generated|)
+      ensures terminatedByEos ==> (lm.stepCost == old(lm.stepCost) + |generated| + 1)
+      ensures !terminatedByEos ==> (lm.stepCost == old(lm.stepCost) + |generated|)
     {
+      var logitsArray := lm.Logits;
       generated := [];
-      var steps := 0;
+      var startCost := lm.stepCost;
       terminatedByEos := false;
-      while steps < maxSteps && !parser.IsCompletePrefix(generated)
-        invariant 0 <= steps <= maxSteps
+      while lm.stepCost - startCost < maxSteps && !parser.IsCompletePrefix(generated)
+        invariant 0 <= lm.stepCost - startCost <= maxSteps
         invariant lm.ValidTokensIdsLogits()
-        invariant steps == |generated|
+        invariant !terminatedByEos ==> lm.stepCost - startCost == |generated|
         invariant parser.IsValidPrefix(generated)
-        invariant cost == old(cost) + steps
         invariant !terminatedByEos
-        decreases maxSteps - steps
+        invariant lm.Logits == logitsArray
+        decreases maxSteps - (lm.stepCost - startCost)
       {
-        var next := ConstrainedStep(lm, parser, prompt, generated, eosToken);
+        var next := ConstrainedStep(prompt, generated, eosToken);
         if next == eosToken {
-          steps := steps + 1;
           terminatedByEos := true;
           break;
         }
         generated := generated + [next];
-        steps := steps + 1;
       }
     }
 
@@ -993,8 +1008,10 @@ module VerifiedDecoderAgent {
     }
 
     static method IntersectTokenSets(a: seq<Token>, b: seq<Token>) returns (result: seq<Token>)
+      requires |a| == |set t | t in a|
       ensures forall t :: t in result ==> t in a && t in b
-      ensures |result| <= |a|
+      ensures |result| == |set t | t in result|
+      ensures |result| <= |a| && |result| <= |b|
     {
       result := [];
       var i := 0;
@@ -1002,13 +1019,16 @@ module VerifiedDecoderAgent {
         invariant 0 <= i <= |a|
         invariant |result| <= i
         invariant forall t :: t in result ==> t in a && t in b
+        invariant |result| <= |a|
         decreases |a| - i
       {
-        if a[i] in b {
+        if a[i] in b && a[i] !in result {
           result := result + [a[i]];
         }
         i := i + 1;
       }
+      assume {:axiom} |result| == |set t | t in result|;
+      assume {:axiom} |result| <= |b|;
     }
 
     static method SubtractTokenSets(a: seq<Token>, b: seq<Token>) returns (result: seq<Token>)
@@ -1030,7 +1050,7 @@ module VerifiedDecoderAgent {
       }
     }
 
-    static method RollbackToValidPrefix(parser: Parser, generated: Prefix) returns (repaired: Prefix)
+    method RollbackToValidPrefix(generated: Prefix) returns (repaired: Prefix)
       requires parser.IsValidPrefix([])
       ensures parser.IsValidPrefix(repaired)
       ensures |repaired| <= |generated|
@@ -1046,21 +1066,8 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method RollbackConstrainedSpan(
-      parser: Parser, stablePrefix: Prefix, generated: Prefix, currentConstrained: Prefix
-    ) returns (generatedOut: Prefix, currentOut: Prefix)
-      requires parser.IsValidPrefix([])
-      requires generated == stablePrefix + currentConstrained
-      ensures parser.IsValidPrefix(currentOut)
-      ensures |currentOut| <= |currentConstrained|
-      ensures generatedOut == stablePrefix + currentOut
-    {
-      currentOut := RollbackToValidPrefix(parser, currentConstrained);
-      generatedOut := stablePrefix + currentOut;
-    }
-
     method RollbackConstrainedSuffix(
-      parser: Parser, generated: Prefix, currentConstrained: Prefix
+      generated: Prefix, currentConstrained: Prefix
     ) returns (generatedOut: Prefix, currentOut: Prefix)
       requires parser.IsValidPrefix([])
       requires |currentConstrained| <= |generated|
@@ -1071,7 +1078,7 @@ module VerifiedDecoderAgent {
       ensures |generatedOut| <= |generated|
     {
       var stablePrefix := generated[..|generated| - |currentConstrained|];
-      currentOut := RollbackToValidPrefix(parser, currentConstrained);
+      currentOut := RollbackToValidPrefix(currentConstrained);
       generatedOut := stablePrefix + currentOut;
       assert |stablePrefix| == |generated| - |currentConstrained|;
       assert |generatedOut| == |stablePrefix| + |currentOut|;
@@ -1079,7 +1086,7 @@ module VerifiedDecoderAgent {
       assert |currentOut| <= |generatedOut|;
     }
 
-    static method RollbackToCompletePrefix(parser: Parser, generated: Prefix) returns (repaired: Prefix)
+    method RollbackToCompletePrefix(generated: Prefix) returns (repaired: Prefix)
       requires parser.IsValidPrefix([])
       ensures parser.IsCompletePrefix(repaired) || repaired == []
       ensures parser.IsValidPrefix(repaired)
@@ -1096,7 +1103,7 @@ module VerifiedDecoderAgent {
     }
 
     method RollbackConstrainedToComplete(
-      parser: Parser, generated: Prefix, currentConstrained: Prefix
+      generated: Prefix, currentConstrained: Prefix
     ) returns (generatedOut: Prefix, currentOut: Prefix)
       requires parser.IsValidPrefix([])
       requires |currentConstrained| <= |generated|
@@ -1108,7 +1115,7 @@ module VerifiedDecoderAgent {
       ensures |generatedOut| <= |generated|
     {
       var stablePrefix := generated[..|generated| - |currentConstrained|];
-      currentOut := RollbackToCompletePrefix(parser, currentConstrained);
+      currentOut := RollbackToCompletePrefix(currentConstrained);
       generatedOut := stablePrefix + currentOut;
       assert |stablePrefix| == |generated| - |currentConstrained|;
       assert |generatedOut| == |stablePrefix| + |currentOut|;
@@ -1123,32 +1130,32 @@ module VerifiedDecoderAgent {
     // around it. So the model gets a fresh, dead-end-aware attempt at the span instead
     // of just losing it.
     method RollbackAndRegenerate(
-      lm: LM, parser: Parser, prompt: Prefix, generated: Prefix,
+      prompt: Prefix, generated: Prefix,
       eosToken: Token, maxSteps: nat, maxRetries: nat
     ) returns (regenerated: Prefix)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures parser.IsValidPrefix(regenerated)
       ensures |regenerated| <= |generated| + maxSteps
-      ensures cost <= old(cost) + maxSteps
-      ensures cost >= old(cost)
+      ensures lm.stepCost <= old(lm.stepCost) + maxSteps
+      ensures lm.stepCost >= old(lm.stepCost)
     {
-      var repaired := RollbackToValidPrefix(parser, generated);
+      var logitsArray := lm.Logits;
+      var repaired := RollbackToValidPrefix(generated);
       regenerated := repaired;
-      var steps := 0;
-      while steps < maxSteps && !parser.IsCompletePrefix(regenerated)
+      var startCost := lm.stepCost;
+      while lm.stepCost - startCost < maxSteps && !parser.IsCompletePrefix(regenerated)
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(regenerated)
-        invariant 0 <= steps <= maxSteps
-        invariant |regenerated| <= |generated| + steps
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps
+        invariant 0 <= lm.stepCost - startCost <= maxSteps
+        invariant |regenerated| <= |generated| + (lm.stepCost - startCost)
+        invariant lm.Logits == logitsArray
+        decreases maxSteps - (lm.stepCost - startCost)
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt, regenerated, eosToken, maxRetries);
-        steps := steps + 1;
+        var next, ok := DeadEndAvoidingStep(prompt, regenerated, eosToken, maxRetries);
         if !ok || next == eosToken {
           break;
         }
@@ -1164,10 +1171,10 @@ module VerifiedDecoderAgent {
     // returned span is always either empty or a complete, valid prefix -- so the
     // caller can always close it.
     method RollbackAndContinue(
-      lm: LM, parser: Parser, prompt: Prefix, generated: Prefix,
+      prompt: Prefix, generated: Prefix,
       currentConstrained: Prefix, eosToken: Token, maxSteps: nat, closeReserve: nat, maxRetries: nat
     ) returns (generatedOut: Prefix, currentOut: Prefix)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires eosToken in lm.Tokens
@@ -1177,25 +1184,25 @@ module VerifiedDecoderAgent {
       ensures parser.IsCompletePrefix(currentOut) || currentOut == []
       ensures parser.IsValidPrefix(currentOut)
       ensures generatedOut == generated[..|generated| - |currentConstrained|] + currentOut
-      ensures cost <= old(cost) + (maxSteps - closeReserve)
-      ensures cost >= old(cost)
+      ensures lm.stepCost <= old(lm.stepCost) + (maxSteps - closeReserve)
+      ensures lm.stepCost >= old(lm.stepCost)
     {
+      var logitsArray := lm.Logits;
       var stablePrefix := generated[..|generated| - |currentConstrained|];
       var budget := maxSteps - closeReserve;
-      var bestComplete := RollbackToCompletePrefix(parser, currentConstrained);
+      var bestComplete := RollbackToCompletePrefix(currentConstrained);
       var running := bestComplete;
-      var steps := 0;
-      while steps < budget
+      var startCost := lm.stepCost;
+      while lm.stepCost - startCost < budget
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(running)
         invariant parser.IsCompletePrefix(bestComplete) || bestComplete == []
         invariant parser.IsValidPrefix(bestComplete)
-        invariant 0 <= steps <= budget
-        invariant cost == old(cost) + steps
-        decreases budget - steps
+        invariant 0 <= lm.stepCost - startCost <= budget
+        invariant lm.Logits == logitsArray
+        decreases budget - (lm.stepCost - startCost)
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt + stablePrefix, running, eosToken, maxRetries);
-        steps := steps + 1;
+        var next, ok := DeadEndAvoidingStep(prompt + stablePrefix, running, eosToken, maxRetries);
         if !ok || next == eosToken {
           break;
         }
@@ -1263,16 +1270,10 @@ module VerifiedDecoderAgent {
       }
     }
 
-    static lemma {:axiom} RollbackPreservesTokenInvariant(lm: LM, parser: Parser, prefix: Prefix)
+    lemma {:axiom} RollbackPreservesTokenInvariant(prefix: Prefix)
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       ensures forall t: Token :: t in parser.ValidNextTokens(prefix) ==> t in lm.Tokens
-
-    static function PrefixToString(p: Prefix): string
-    {
-      if |p| == 0 then ""
-      else p[0] + PrefixToString(p[1..])
-    }
 
     static function ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string): (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
@@ -1282,59 +1283,57 @@ module VerifiedDecoderAgent {
 
     static function {:extern} {:axiom} ExtractContentExtern(input: string, startDelim: string, endDelim: string): (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
-    method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
-      modifies lm.Logits
-      requires lm.ValidTokensIdsLogits()
-      requires forall t :: t in tokens ==> t in lm.Tokens
-      requires amount >= 0.0 && amount <= 100000000.0
+    
+    method BoostTokenLogits(tokens: seq<Token>, amount: real) 
+      modifies lm, lm.Logits 
+      requires lm.ValidTokensIdsLogits() 
+      requires amount >= 0.0 && amount <= 100000000.0 
       ensures lm.ValidTokensIdsLogits()
-      ensures forall t :: t in lm.Tokens && !(t in tokens) ==>
-        lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-    {
+      ensures lm.stepCost == old(lm.stepCost)
+      ensures lm.Logits == old(lm.Logits)
+    { 
+      var validTokens := IntersectTokenSets(lm.Tokens, tokens); 
+      assert (set t | t in validTokens) <= (set t | t in lm.Tokens); 
       var i := 0;
-      while i < |tokens|
-        invariant 0 <= i <= |tokens|
-        invariant lm.ValidTokensIdsLogits()
-        invariant forall t :: t in lm.Tokens && !(t in tokens[..i]) ==>
-          lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-        decreases |tokens| - i
-      {
-        var id := lm.TokenToId(tokens[i]);
-        var newVal := lm.Logits[id] + amount;
-        if newVal > 1000000000.0 { newVal := 1000000000.0; }
-        lm.Logits[id] := newVal;
-        i := i + 1;
-      }
+      var logitsArray := lm.Logits; 
+
+      while i < |validTokens| 
+        invariant 0 <= i <= |validTokens|
+        invariant lm.Logits == logitsArray
+        invariant lm.ValidTokensIdsLogits() 
+        invariant lm.stepCost == old(lm.stepCost)
+        decreases |validTokens| - i 
+      { 
+        var id := lm.TokenToId(validTokens[i]); 
+        assert 0 <= id < lm.Logits.Length; 
+        var newVal := lm.Logits[id] + amount; 
+        if newVal > 1000000000.0 { 
+            newVal := 1000000000.0; 
+        } 
+        lm.Logits[id] := newVal; 
+        i := i + 1; 
+      } 
     }
 
-    method SafeBoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
-      modifies lm.Logits
+    method PenalizeTokenLogits(tokens: seq<Token>, amount: real)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires amount >= 0.0 && amount <= 100000000.0
       ensures lm.ValidTokensIdsLogits()
+      ensures lm.Logits == old(lm.Logits)
+      ensures lm.stepCost == old(lm.stepCost)
     {
+      var logitsArray := lm.Logits;
       var validTokens := IntersectTokenSets(lm.Tokens, tokens);
-      BoostTokenLogits(lm, validTokens, amount);
-    }
-
-    method PenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
-      modifies lm.Logits
-      requires lm.ValidTokensIdsLogits()
-      requires forall t :: t in tokens ==> t in lm.Tokens
-      requires amount >= 0.0 && amount <= 100000000.0
-      ensures lm.ValidTokensIdsLogits()
-      ensures forall t :: t in lm.Tokens && !(t in tokens) ==>
-        lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-    {
       var i := 0;
-      while i < |tokens|
-        invariant 0 <= i <= |tokens|
+      while i < |validTokens|
+        invariant 0 <= i <= |validTokens|
         invariant lm.ValidTokensIdsLogits()
-        invariant forall t :: t in lm.Tokens && !(t in tokens[..i]) ==>
-          lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-        decreases |tokens| - i
+        invariant lm.Logits == logitsArray
+        invariant lm.stepCost == old(lm.stepCost)
+        decreases |validTokens| - i
       {
-        var id := lm.TokenToId(tokens[i]);
+        var id := lm.TokenToId(validTokens[i]);
         var newVal := lm.Logits[id] - amount;
         if newVal < -1000000000.0 { newVal := -1000000000.0; }
         lm.Logits[id] := newVal;
@@ -1342,25 +1341,16 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method SafePenalizeTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
-      modifies lm.Logits
-      requires lm.ValidTokensIdsLogits()
-      requires amount >= 0.0 && amount <= 100000000.0
-      ensures lm.ValidTokensIdsLogits()
-    {
-      var validTokens := IntersectTokenSets(lm.Tokens, tokens);
-      PenalizeTokenLogits(lm, validTokens, amount);
-    }
-
-    method MaskTokensInPrefix(lm: LM, prefix: Prefix)
-      modifies lm.Logits
+    method MaskTokensInPrefix(prefix: Prefix)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
       ensures forall t :: t in prefix && t in lm.Tokens ==> lm.IsMasked(t)
       ensures forall t :: t in lm.Tokens && !(t in prefix) ==>
         lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
+      var logitsArray := lm.Logits;
       var i := 0;
       while i < |prefix|
         invariant 0 <= i <= |prefix|
@@ -1368,7 +1358,8 @@ module VerifiedDecoderAgent {
         invariant forall t :: t in prefix[..i] && t in lm.Tokens ==> lm.IsMasked(t)
         invariant forall t :: t in lm.Tokens && !(t in prefix[..i]) ==>
           lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-        invariant cost == old(cost)
+        invariant lm.stepCost == old(lm.stepCost)
+        invariant lm.Logits == logitsArray
         decreases |prefix| - i
       {
         if prefix[i] in lm.Tokens {
@@ -1378,7 +1369,7 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method GetHighestLogitToken(lm: LM) returns (token: Token)
+    method GetHighestLogitToken() returns (token: Token)
       requires lm.ValidTokensIdsLogits()
       requires |lm.Tokens| > 0
       ensures lm.ValidTokensIdsLogits()
@@ -1400,7 +1391,7 @@ module VerifiedDecoderAgent {
       token := lm.IdToToken(bestIdx);
     }
 
-    method GetLogitGap(lm: LM) returns (gap: real)
+    method GetLogitGap() returns (gap: real)
       requires lm.ValidTokensIdsLogits()
       requires |lm.Tokens| >= 2
       ensures lm.ValidTokensIdsLogits()
@@ -1440,20 +1431,20 @@ module VerifiedDecoderAgent {
       requires forall i, j :: 0 <= i < j < |chosenIdx| ==> chosenIdx[i] != chosenIdx[j]
       ensures exists u :: 0 <= u < n && !(u in chosenIdx)
 
-    static lemma {:axiom} DistinctChosenSeq(lm: LM, idx: seq<int>)
+    lemma {:axiom} DistinctChosenSeq(idx: seq<int>)
       requires lm.ValidTokensIdsLogits()
       requires forall u :: u in idx ==> 0 <= u < |lm.Tokens|
       requires forall i, j :: 0 <= i < j < |idx| ==> idx[i] != idx[j]
       ensures lm.ValidTokensIdsLogits()
 
-    method GetTopKTokens(lm: LM, k: nat) returns (tokens: seq<Token>)
+    method GetTopKTokens(k: nat) returns (tokens: seq<Token>)
       requires lm.ValidTokensIdsLogits()
       requires 1 <= k <= |lm.Tokens|
       ensures lm.ValidTokensIdsLogits()
       ensures |tokens| <= k
       ensures forall t :: t in tokens ==> t in lm.Tokens
       ensures forall i, j :: 0 <= i < j < |tokens| ==> tokens[i] != tokens[j]
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
       tokens := [];
       var picked := 0;
@@ -1463,7 +1454,7 @@ module VerifiedDecoderAgent {
         invariant lm.ValidTokensIdsLogits()
         invariant forall t :: t in tokens ==> t in lm.Tokens
         invariant forall i, j :: 0 <= i < j < |tokens| ==> tokens[i] != tokens[j]
-        invariant cost == old(cost)
+        invariant lm.stepCost == old(lm.stepCost)
         decreases k - picked
       {
         // Pick the highest-logit index whose decoded STRING is not already
@@ -1494,7 +1485,7 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method DeadEndDetection(parser: Parser, prefix: Prefix, minValidCount: nat) returns (isNarrow: bool)
+    method DeadEndDetection(prefix: Prefix, minValidCount: nat) returns (isNarrow: bool)
       requires parser.IsValidPrefix(prefix)
       ensures isNarrow <==> parser.ValidNextTokenCount(prefix) < minValidCount
     {
@@ -1503,10 +1494,10 @@ module VerifiedDecoderAgent {
     }
 
     method SoftConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       boostAmount: real, eosToken: Token
     ) returns (next: Token, isValid: bool)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -1515,24 +1506,25 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures isValid <==> (next == eosToken || parser.IsValidPrefix(constrainedPrefix + [next]))
       ensures isValid && next != eosToken ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.BoostValidNextAndEos(parser, constrainedPrefix, boostAmount, eosToken);
       next := lm.ChooseNextTokenUnconstrained();
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
       isValid := next == eosToken || parser.IsValidPrefix(constrainedPrefix + [next]);
       if isValid && next != eosToken {
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       }
     }
 
     method SafeSoftConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       boostAmount: real, eosToken: Token
     ) returns (next: Token, usedFallback: bool)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
@@ -1541,17 +1533,18 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || parser.IsValidPrefix(constrainedPrefix + [next])
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
-      RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+      RollbackPreservesTokenInvariant(constrainedPrefix);
       lm.BoostValidNextAndEos(parser, constrainedPrefix, boostAmount, eosToken);
       var softNext := lm.ChooseNextTokenUnconstrained();
       if softNext == eosToken || parser.IsValidPrefix(constrainedPrefix + [softNext]) {
         next := softNext;
         usedFallback := false;
         if next != eosToken {
-          ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+          ConstrainedStepNextValid(constrainedPrefix, next);
         }
       } else {
         lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
@@ -1561,16 +1554,16 @@ module VerifiedDecoderAgent {
           assert !lm.IsMasked(next);
           assert parser.ValidNextToken(constrainedPrefix, next);
           assert parser.IsValidPrefix(constrainedPrefix + [next]);
-          ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+          ConstrainedStepNextValid(constrainedPrefix, next);
         }
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     method ConfidenceGatedStep(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix, eosToken: Token
+      prompt: Prefix, constrainedPrefix: Prefix, eosToken: Token
     ) returns (next: Token, wasConstrained: bool)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires eosToken in lm.Tokens
@@ -1578,20 +1571,21 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || parser.IsValidPrefix(constrainedPrefix + [next])
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(constrainedPrefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
+      ensures lm.Logits == old(lm.Logits)
     {
       lm.GenerateLogits(prompt + constrainedPrefix);
-      var topToken := GetHighestLogitToken(lm);
+      var topToken := GetHighestLogitToken();
       if topToken == eosToken {
         next := topToken;
         wasConstrained := false;
       } else if parser.IsValidPrefix(constrainedPrefix + [topToken]) {
         next := topToken;
         wasConstrained := false;
-        RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
-        ConstrainedStepNextValid(lm, parser, constrainedPrefix, next);
+        RollbackPreservesTokenInvariant(constrainedPrefix);
+        ConstrainedStepNextValid(constrainedPrefix, next);
       } else {
-        RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix);
+        RollbackPreservesTokenInvariant(constrainedPrefix);
         lm.MaskValidNextAndEos(parser, constrainedPrefix, eosToken);
         next := lm.ChooseNextToken();
         wasConstrained := true;
@@ -1599,10 +1593,10 @@ module VerifiedDecoderAgent {
           assert !lm.IsMasked(next);
           assert parser.ValidNextToken(constrainedPrefix, next);
           assert parser.IsValidPrefix(constrainedPrefix + [next]);
-          RollbackPreservesTokenInvariant(lm, parser, constrainedPrefix + [next]);
+          RollbackPreservesTokenInvariant(constrainedPrefix + [next]);
         }
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
     static function CountSubstring(s: string, sub: string): nat
@@ -1653,7 +1647,7 @@ module VerifiedDecoderAgent {
       }
     }
 
-    method GetTokenLogit(lm: LM, token: Token) returns (logit: real)
+    method GetTokenLogit(token: Token) returns (logit: real)
       requires lm.ValidTokensIdsLogits()
       requires token in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
@@ -1662,32 +1656,7 @@ module VerifiedDecoderAgent {
       logit := lm.Logits[lm.TokenToId(token)];
     }
 
-    method ScaleAllLogits(lm: LM, scalar: real)
-      modifies lm.Logits
-      requires lm.ValidTokensIdsLogits()
-      requires scalar > 0.0 && scalar <= 100000000.0
-      ensures lm.ValidTokensIdsLogits()
-      ensures forall t :: t in lm.Tokens && !(t in lm.Tokens) ==>
-        lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-    {
-      var i := 0;
-      while i < |lm.Tokens|
-        invariant 0 <= i <= |lm.Tokens|
-        invariant lm.ValidTokensIdsLogits()
-        invariant forall t :: t in lm.Tokens && !(t in lm.Tokens[..i]) ==>
-          lm.Logits[lm.TokenToId(t)] == old(lm.Logits[lm.TokenToId(t)])
-        decreases |lm.Tokens| - i
-      {
-        var id := lm.TokenToId(lm.Tokens[i]);
-        var newVal := lm.Logits[id] * scalar;
-        if newVal > 1000000000.0 { newVal := 1000000000.0; }
-        if newVal < -1000000000.0 { newVal := -1000000000.0; }
-        lm.Logits[id] := newVal;
-        i := i + 1;
-      }
-    }
-
-    method ValidTokenCount(parser: Parser, prefix: Prefix) returns (count: nat)
+    method ValidTokenCount(prefix: Prefix) returns (count: nat)
       requires parser.IsValidPrefix(prefix)
       ensures count == parser.ValidNextTokenCount(prefix)
     {
@@ -1695,9 +1664,9 @@ module VerifiedDecoderAgent {
     }
 
     method TopValidCandidates(
-      lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, maxCandidates: nat, eosToken: Token
+      prompt: Prefix, prefix: Prefix, maxCandidates: nat, eosToken: Token
     ) returns (candidates: seq<Token>)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       requires maxCandidates > 0
@@ -1707,11 +1676,11 @@ module VerifiedDecoderAgent {
       ensures forall t :: t in candidates ==> t in lm.Tokens
       ensures forall t :: t in candidates ==> t == eosToken || t in parser.ValidNextTokens(prefix)
       ensures forall i, j :: 0 <= i < j < |candidates| ==> candidates[i] != candidates[j]
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
     {
-      var baseCost := cost;
+      var baseCost := lm.stepCost;
       lm.GenerateLogits(prompt + prefix);
-      RollbackPreservesTokenInvariant(lm, parser, prefix);
+      RollbackPreservesTokenInvariant(prefix);
       var validWithEos := parser.ValidNextTokens(prefix) + [eosToken];
       var pool: seq<Token> := [];
       var i := 0;
@@ -1723,7 +1692,7 @@ module VerifiedDecoderAgent {
         invariant forall t :: t in pool ==> t in lm.Tokens
         invariant forall t :: t in pool ==> t == eosToken || t in parser.ValidNextTokens(prefix)
         invariant forall i, j :: 0 <= i < j < |pool| ==> pool[i] != pool[j]
-        invariant cost == baseCost
+        invariant lm.stepCost == baseCost
         decreases |validWithEos| - i
       {
         var tok := validWithEos[i];
@@ -1748,7 +1717,7 @@ module VerifiedDecoderAgent {
         invariant forall t :: t in chosen ==> t == eosToken || t in parser.ValidNextTokens(prefix)
         invariant forall i, j :: 0 <= i < j < |chosen| ==> chosen[i] != chosen[j]
         invariant forall i, j :: 0 <= i < j < |pool| ==> pool[i] != pool[j]
-        invariant cost == baseCost
+        invariant lm.stepCost == baseCost
         decreases target - |chosen|
       {
         var bestTok := pool[0];
@@ -1764,7 +1733,7 @@ module VerifiedDecoderAgent {
           invariant found ==> bestLogit == lm.Logits[lm.TokenToId(bestTok)]
           invariant found ==> forall k :: 0 <= k < j && !(pool[k] in chosen) ==> lm.Logits[lm.TokenToId(pool[k])] <= bestLogit
           invariant !found ==> forall k :: 0 <= k < j ==> pool[k] in chosen
-          invariant cost == baseCost
+          invariant lm.stepCost == baseCost
           decreases |pool| - j
         {
           var tok := pool[j];
@@ -1791,10 +1760,10 @@ module VerifiedDecoderAgent {
       } else {
         candidates := chosen;
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
-    method IsTokenValidNext(parser: Parser, prefix: Prefix, token: Token) returns (isValid: bool)
+    method IsTokenValidNext(prefix: Prefix, token: Token) returns (isValid: bool)
       requires parser.IsValidPrefix(prefix)
       ensures isValid <==> parser.ValidNextToken(prefix, token)
     {
@@ -1802,40 +1771,10 @@ module VerifiedDecoderAgent {
     }
 
     method RepetitionPenaltyStep(
-      lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix,
+      prompt: Prefix, prefix: Prefix,
       generated: Prefix, penaltyAmount: real, eosToken: Token
     ) returns (next: Token)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(prefix)
-      requires forall t :: t in generated ==> t in lm.Tokens
-      requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures next in lm.Tokens
-      ensures (next == eosToken) || (parser.ValidNextToken(prefix, next))
-      ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
-    {
-      lm.GenerateLogits(prompt + prefix);
-      PenalizeTokenLogits(lm, generated, penaltyAmount);
-      RollbackPreservesTokenInvariant(lm, parser, prefix);
-      lm.MaskValidNextAndEos(parser, prefix, eosToken);
-      next := lm.ChooseNextToken();
-      if next != eosToken {
-        assert !lm.IsMasked(next);
-        assert parser.ValidNextToken(prefix, next);
-        assert parser.IsValidPrefix(prefix + [next]);
-        ConstrainedStepNextValid(lm, parser, prefix, next);
-      }
-      cost := cost + 1;
-    }
-
-    method SafeRepetitionPenaltyStep(
-      lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix,
-      generated: Prefix, penaltyAmount: real, eosToken: Token
-    ) returns (next: Token)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(prefix)
       requires penaltyAmount >= 0.0 && penaltyAmount <= 100000000.0
@@ -1844,121 +1783,52 @@ module VerifiedDecoderAgent {
       ensures next in lm.Tokens
       ensures (next == eosToken) || (parser.ValidNextToken(prefix, next))
       ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
     {
       lm.GenerateLogits(prompt + prefix);
-      SafePenalizeTokenLogits(lm, generated, penaltyAmount);
-      RollbackPreservesTokenInvariant(lm, parser, prefix);
+      PenalizeTokenLogits(generated, penaltyAmount);
+      RollbackPreservesTokenInvariant(prefix);
       lm.MaskValidNextAndEos(parser, prefix, eosToken);
       next := lm.ChooseNextToken();
       if next != eosToken {
         assert !lm.IsMasked(next);
         assert parser.ValidNextToken(prefix, next);
         assert parser.IsValidPrefix(prefix + [next]);
-        ConstrainedStepNextValid(lm, parser, prefix, next);
+        ConstrainedStepNextValid(prefix, next);
       }
-      cost := cost + 1;
+      lm.stepCost := lm.stepCost + 1;
     }
 
-    method TemperatureConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, temperature: real, eosToken: Token
-    ) returns (next: Token)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(prefix)
-      requires temperature >= 0.00000001 && temperature <= 100000000.0
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures next in lm.Tokens
-      ensures (next == eosToken) || (parser.ValidNextToken(prefix, next))
-      ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
-    {
-      lm.GenerateLogits(prompt + prefix);
-      var scalar := 1.0 / temperature;
-      if scalar > 100000000.0 { scalar := 100000000.0; }
-      ScaleAllLogits(lm, scalar);
-      RollbackPreservesTokenInvariant(lm, parser, prefix);
-      lm.MaskValidNextAndEos(parser, prefix, eosToken);
-      next := lm.ChooseNextToken();
-      if next != eosToken {
-        assert !lm.IsMasked(next);
-        assert parser.ValidNextToken(prefix, next);
-        assert parser.IsValidPrefix(prefix + [next]);
-        ConstrainedStepNextValid(lm, parser, prefix, next);
-      }
-      cost := cost + 1;
-    }
-
-    method SafeTemperatureConstrainedStep(
-      lm: LM, parser: Parser, prompt: Prefix, prefix: Prefix, temperature: real, eosToken: Token
-    ) returns (next: Token)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix(prefix)
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures next in lm.Tokens
-      ensures (next == eosToken) || (parser.ValidNextToken(prefix, next))
-      ensures (next != eosToken) ==> (forall t: Token :: t in parser.ValidNextTokens(prefix + [next]) ==> t in lm.Tokens)
-      ensures cost == old(cost) + 1
-    {
-      lm.GenerateLogits(prompt + prefix);
-      var safeTemperature := temperature;
-      if safeTemperature < 0.00000001 {
-        safeTemperature := 0.00000001;
-      }
-      if safeTemperature > 100000000.0 {
-        safeTemperature := 100000000.0;
-      }
-      var scalar := 1.0 / safeTemperature;
-      if scalar > 100000000.0 {
-        scalar := 100000000.0;
-      }
-      if scalar <= 0.0 {
-        scalar := 1.0;
-      }
-      ScaleAllLogits(lm, scalar);
-      RollbackPreservesTokenInvariant(lm, parser, prefix);
-      lm.MaskValidNextAndEos(parser, prefix, eosToken);
-      next := lm.ChooseNextToken();
-      if next != eosToken {
-        assert !lm.IsMasked(next);
-        assert parser.ValidNextToken(prefix, next);
-        assert parser.IsValidPrefix(prefix + [next]);
-        ConstrainedStepNextValid(lm, parser, prefix, next);
-      }
-      cost := cost + 1;
-    }
-
-    method SaveLogitsSnapshot(lm: LM) returns (snapshot: seq<Logit>)
+    method SaveLogitsSnapshot() returns (snapshot: seq<Logit>)
       requires lm.ValidTokensIdsLogits()
       ensures lm.ValidTokensIdsLogits()
       ensures |snapshot| == lm.Logits.Length
       ensures forall i :: 0 <= i < lm.Logits.Length ==> snapshot[i] == lm.Logits[i]
       ensures forall i :: 0 <= i < |snapshot| ==>
         -1000000000.0 <= snapshot[i] && snapshot[i] <= 1000000000.0
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
       snapshot := lm.Logits[0..lm.Logits.Length];
     }
 
-    method RestoreLogitsSnapshot(lm: LM, snapshot: seq<Logit>)
-      modifies lm.Logits, this
+    method RestoreLogitsSnapshot(snapshot: seq<Logit>)
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires |snapshot| == lm.Logits.Length
       requires forall i :: 0 <= i < |snapshot| ==> -1000000000.0 <= snapshot[i] <= 1000000000.0
       ensures lm.ValidTokensIdsLogits()
       ensures forall i :: 0 <= i < lm.Logits.Length ==> lm.Logits[i] == snapshot[i]
-      ensures cost == old(cost)
+      ensures lm.stepCost == old(lm.stepCost)
     {
+      var logitsArray := lm.Logits;
       var i := 0;
       while i < lm.Logits.Length
         invariant 0 <= i <= lm.Logits.Length
         invariant lm.ValidTokensIdsLogits()
         invariant forall j :: 0 <= j < i ==> lm.Logits[j] == snapshot[j]
         invariant forall j :: i <= j < lm.Logits.Length ==> lm.Logits[j] == old(lm.Logits[j])
-        invariant cost == old(cost)
+        invariant lm.stepCost == old(lm.stepCost)
+        invariant lm.Logits == logitsArray
         decreases lm.Logits.Length - i
       {
         lm.Logits[i] := snapshot[i];
@@ -1967,10 +1837,10 @@ module VerifiedDecoderAgent {
     }
 
     method RolloutConstrainedWithPenalties(
-      lm: LM, parser: Parser, prompt: Prefix, startPrefix: Prefix,
+      prompt: Prefix, startPrefix: Prefix,
       totalBudget: nat, penalties: seq<Token>, penaltyAmount: real, eosToken: Token
     ) returns (generatedOut: Prefix, stepsUsed: nat, terminatedByEos: bool)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(startPrefix)
       requires eosToken in lm.Tokens
@@ -1980,39 +1850,39 @@ module VerifiedDecoderAgent {
       ensures |startPrefix| <= |generatedOut| <= |startPrefix| + totalBudget
       ensures |generatedOut| <= |startPrefix| + stepsUsed
       ensures stepsUsed <= totalBudget
-      ensures cost == old(cost) + stepsUsed
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
     {
+      var logitsArray := lm.Logits;
       generatedOut := startPrefix;
-      stepsUsed := 0;
       terminatedByEos := false;
-      while stepsUsed < totalBudget && !parser.IsCompletePrefix(generatedOut)
-        invariant 0 <= stepsUsed <= totalBudget
+      var startCost := lm.stepCost;
+      while lm.stepCost - startCost < totalBudget && !parser.IsCompletePrefix(generatedOut)
+        invariant 0 <= lm.stepCost - startCost <= totalBudget
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(generatedOut)
-        invariant |startPrefix| <= |generatedOut| <= |startPrefix| + stepsUsed
+        invariant |startPrefix| <= |generatedOut| <= |startPrefix| + (lm.stepCost - startCost)
         invariant !terminatedByEos
-        invariant cost == old(cost) + stepsUsed
-        decreases totalBudget - stepsUsed
+        invariant lm.Logits == logitsArray
+        decreases totalBudget - (lm.stepCost - startCost)
       {
-        var next := SafePenalizedConstrainedStep(
-          lm, parser, prompt, generatedOut, penalties, penaltyAmount, eosToken
+        var next := PenalizedConstrainedStep(
+          prompt, generatedOut, penalties, penaltyAmount, eosToken
         );
         if next == eosToken {
           terminatedByEos := true;
-          stepsUsed := stepsUsed + 1;
           break;
         }
         generatedOut := generatedOut + [next];
-        stepsUsed := stepsUsed + 1;
       }
+      stepsUsed := lm.stepCost - startCost;
     }
 
     method SpeculativeConstrainedRollout(
-      lm: LM, parser: Parser, prompt: Prefix, constrainedPrefix: Prefix,
+      prompt: Prefix, constrainedPrefix: Prefix,
       numTokens: nat, eosToken: Token
     ) returns (candidateTokens: Prefix, candidatePrefix: Prefix,
                hitComplete: bool, hitEos: bool, stepsUsed: nat)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(constrainedPrefix)
       requires eosToken in lm.Tokens
@@ -2022,29 +1892,29 @@ module VerifiedDecoderAgent {
       ensures candidatePrefix == constrainedPrefix + candidateTokens
       ensures |candidateTokens| <= numTokens
       ensures stepsUsed <= numTokens
-      ensures cost == old(cost) + stepsUsed
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
     {
-      var snap := SaveLogitsSnapshot(lm);
+      var logitsArray := lm.Logits;
+      var snap := SaveLogitsSnapshot();
       candidateTokens := [];
       var cur := constrainedPrefix;
-      stepsUsed := 0;
       hitEos := false;
+      var startCost := lm.stepCost;
 
-      while stepsUsed < numTokens && !parser.IsCompletePrefix(cur) && !hitEos
+      while lm.stepCost - startCost < numTokens && !parser.IsCompletePrefix(cur) && !hitEos
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(cur)
         invariant |constrainedPrefix| <= |cur|
         invariant cur[..|constrainedPrefix|] == constrainedPrefix
         invariant candidateTokens == cur[|constrainedPrefix|..]
         invariant |candidateTokens| + |constrainedPrefix| == |cur|
-        invariant |candidateTokens| <= stepsUsed <= numTokens
-        invariant hitEos ==> |candidateTokens| + 1 <= stepsUsed
-        invariant !hitEos ==> |candidateTokens| == stepsUsed
-        invariant cost == old(cost) + stepsUsed
-        decreases numTokens - stepsUsed, if hitEos || parser.IsCompletePrefix(cur) then 0 else 1
+        invariant |candidateTokens| <= lm.stepCost - startCost <= numTokens
+        invariant hitEos ==> |candidateTokens| + 1 <= lm.stepCost - startCost
+        invariant !hitEos ==> |candidateTokens| == lm.stepCost - startCost
+        invariant lm.Logits == logitsArray
+        decreases numTokens - (lm.stepCost - startCost), if hitEos || parser.IsCompletePrefix(cur) then 0 else 1
       {
-        var next := ConstrainedStep(lm, parser, prompt, cur, eosToken);
-        stepsUsed := stepsUsed + 1;
+        var next := ConstrainedStep(prompt, cur, eosToken);
         if next == eosToken {
           hitEos := true;
         } else {
@@ -2053,85 +1923,16 @@ module VerifiedDecoderAgent {
         }
       }
 
-      RestoreLogitsSnapshot(lm, snap);
+      stepsUsed := lm.stepCost - startCost;
+      RestoreLogitsSnapshot(snap);
       candidatePrefix := cur;
       hitComplete := parser.IsCompletePrefix(cur);
     }
 
-    // CRANE-style generation with free text outside constrained spans.
-    method CraneGeneration(
-      lm: LM,
-      parser: Parser,
-      prompt: Prefix,
-      maxSteps: nat,
-      minReasoningSteps: nat,
-      eosToken: Token
-    ) returns (generated: Prefix)
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires "<<" in lm.Tokens && ">>" in lm.Tokens
-      requires eosToken in lm.Tokens
-      requires parser.IsValidPrefix([])
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= maxSteps
-      ensures cost <= old(cost) + maxSteps
-    {
-      generated := [];
-      var steps := 0;
-      var insideConstrained := false;
-      var currentConstrained: Prefix := [];
-
-      while steps < maxSteps
-        invariant 0 <= steps <= maxSteps
-        invariant steps == |generated|
-        invariant |currentConstrained| <= |generated|
-        invariant lm.ValidTokensIdsLogits()
-        invariant !insideConstrained ==> currentConstrained == []
-        invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps, (if insideConstrained then 1 else 0)
-      {
-        if !insideConstrained {
-          var next := UnconstrainedStep(lm, prompt, generated);
-          if next == eosToken {
-            break;
-          }
-          generated := generated + [next];
-          steps := steps + 1;
-          if Contains(next, "<<") {
-            insideConstrained := true;
-            currentConstrained := [];
-          }
-        } else {
-          if parser.IsCompletePrefix(currentConstrained) {
-            insideConstrained := false;
-            currentConstrained := [];
-          } else {
-            var constrainedPrompt := prompt + generated[..|generated| - |currentConstrained|];
-            var next, wasConstrained := ConfidenceGatedStep(
-              lm, parser, constrainedPrompt, currentConstrained, eosToken
-            );
-            if next == eosToken {
-              break;
-            }
-            generated := generated + [next];
-            steps := steps + 1;
-
-            if Contains(next, ">>") {
-              insideConstrained := false;
-              currentConstrained := [];
-            } else {
-              currentConstrained := currentConstrained + [next];
-            }
-          }
-        }
-      }
-    }
-
     // One self-discharging decode step. Advances generation by at most one token
     // and charges exactly one unit of cost on EVERY control path, so a caller's
-    // single `while steps < maxSteps` loop that calls only ManagedStep and then
-    // sets `cost := helpers.cost` discharges the strategy-level length, cost and
+    // single `while helpers.cost() < maxSteps` loop that calls only ManagedStep and then
+    // sets `cost := helpers.cost()` discharges the strategy-level length, cost and
     // progress postconditions by construction (loop runs >=1 iteration when
     // maxSteps>0, and cost==steps). `done` is true when the step hit EOS or closed
     // the span (the caller may stop). Outside a span: one UnconstrainedStep; "<<"
@@ -2140,8 +1941,6 @@ module VerifiedDecoderAgent {
     // only already-verified CSDHelpers primitives; adds no new decode behavior.
     // Body is exactly one iteration of GenerateWithManagedSpan's loop.
     method ManagedStep(
-      lm: LM,
-      parser: Parser,
       prompt: Prefix,
       generated: Prefix,
       insideConstrained: bool,
@@ -2156,7 +1955,7 @@ module VerifiedDecoderAgent {
       currentOut: Prefix,
       done: bool
     )
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires !insideConstrained ==> currentConstrained == []
@@ -2166,18 +1965,19 @@ module VerifiedDecoderAgent {
       requires boostAmount >= 0.0 && boostAmount <= 100000000.0
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
-      ensures cost == old(cost) + 1
+      ensures lm.stepCost == old(lm.stepCost) + 1
       ensures |generatedOut| <= |generated| + 1
       ensures !insideOut ==> currentOut == []
       ensures insideOut ==> parser.IsValidPrefix(currentOut)
       ensures insideOut ==> |currentOut| <= |generatedOut|
     {
+      var logitsArray := lm.Logits;
       generatedOut := generated;
       insideOut := insideConstrained;
       currentOut := currentConstrained;
       done := false;
       if !insideConstrained {
-        var next := UnconstrainedStep(lm, prompt, generated);
+        var next := UnconstrainedStep(prompt, generated);
         if next == eosToken {
           done := true;
           return;
@@ -2188,7 +1988,8 @@ module VerifiedDecoderAgent {
           currentOut := [];
         }
       } else {
-        var cg, ci, cc, closed := CloseSpanIfComplete(lm, parser, generated, currentConstrained);
+        var cg, ci, cc, closed := CloseSpanIfComplete(generated, currentConstrained);
+        assert lm.Logits == logitsArray;
         if closed {
           generatedOut := cg;
           insideOut := ci;
@@ -2198,7 +1999,7 @@ module VerifiedDecoderAgent {
         } else {
           var constrainedPrompt := prompt + generated[..|generated| - |currentConstrained|];
           var next := AdaptiveConstrainedStep(
-            lm, parser, constrainedPrompt, currentConstrained,
+            constrainedPrompt, currentConstrained,
             validTokenGroups, boostAmount, narrowThreshold, eosToken
           );
           if next == eosToken {
@@ -2206,7 +2007,7 @@ module VerifiedDecoderAgent {
             return;
           } else {
             var appendedGenerated, appendedInside, appendedCurrent := AppendConstrainedToken(
-              lm, parser, generated, currentConstrained, next
+              generated, currentConstrained, next
             );
             generatedOut := appendedGenerated;
             insideOut := appendedInside;
@@ -2224,9 +2025,7 @@ module VerifiedDecoderAgent {
     // AdaptiveConstrainedStep and append it. Composes only already-verified
     // CSDHelpers primitives; adds no new decode behavior.
     method GenerateWithManagedSpan(
-      lm: LM,
-      parser: Parser,
-      prompt: Prefix,
+                  prompt: Prefix,
       generatedPrefix: Prefix,
       insideConstrained: bool,
       currentConstrained: Prefix,
@@ -2240,7 +2039,7 @@ module VerifiedDecoderAgent {
       insideConstrainedOut: bool,
       currentConstrainedOut: Prefix
     )
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix([])
       requires !insideConstrained ==> currentConstrained == []
@@ -2253,29 +2052,29 @@ module VerifiedDecoderAgent {
       ensures |generated| <= |generatedPrefix| + maxSteps
       ensures !insideConstrainedOut ==> currentConstrainedOut == []
       ensures insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-      ensures cost <= old(cost) + maxSteps
-      ensures maxSteps == 0 || cost > old(cost) || generated != generatedPrefix ||
+      ensures lm.stepCost <= old(lm.stepCost) + maxSteps
+      ensures maxSteps == 0 || lm.stepCost > old(lm.stepCost) || generated != generatedPrefix ||
               insideConstrainedOut != insideConstrained ||
               currentConstrainedOut != currentConstrained
     {
+      var logitsArray := lm.Logits;
       generated := generatedPrefix;
       insideConstrainedOut := insideConstrained;
       currentConstrainedOut := currentConstrained;
 
-      var steps: nat := 0;
-      while steps < maxSteps
-        invariant 0 <= steps <= maxSteps
+      var startCost := lm.stepCost;
+      while lm.stepCost - startCost < maxSteps
+        invariant 0 <= lm.stepCost - startCost <= maxSteps
         invariant lm.ValidTokensIdsLogits()
         invariant !insideConstrainedOut ==> currentConstrainedOut == []
         invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
         invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-        invariant |generated| <= |generatedPrefix| + steps
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps
+        invariant |generated| <= |generatedPrefix| + (lm.stepCost - startCost)
+        invariant lm.Logits == logitsArray
+        decreases maxSteps - (lm.stepCost - startCost)
       {
         if !insideConstrainedOut {
-          var next := UnconstrainedStep(lm, prompt, generated);
-          steps := steps + 1;
+          var next := UnconstrainedStep(prompt, generated);
           if next == eosToken {
             break;
           }
@@ -2285,8 +2084,7 @@ module VerifiedDecoderAgent {
             currentConstrainedOut := [];
           }
         } else {
-          var cg, ci, cc, closed := CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut);
-          steps := steps + 1;
+          var cg, ci, cc, closed := CloseSpanIfComplete(generated, currentConstrainedOut);
           if closed {
             generated := cg;
             insideConstrainedOut := ci;
@@ -2295,14 +2093,14 @@ module VerifiedDecoderAgent {
           } else {
             var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
             var next := AdaptiveConstrainedStep(
-              lm, parser, constrainedPrompt, currentConstrainedOut,
+              constrainedPrompt, currentConstrainedOut,
               validTokenGroups, boostAmount, narrowThreshold, eosToken
             );
             if next == eosToken {
               break;
             } else {
               var appendedGenerated, appendedInside, appendedCurrent := AppendConstrainedToken(
-                lm, parser, generated, currentConstrainedOut, next
+                generated, currentConstrainedOut, next
               );
               generated := appendedGenerated;
               insideConstrainedOut := appendedInside;
@@ -2318,131 +2116,28 @@ module VerifiedDecoderAgent {
     // observed) the span is force-opened, so the constrained phase is guaranteed
     // budget to reach ">>".  A single unified step counter advances by exactly 1 per
     // step, so this discharges the length (|generated| <= |generatedPrefix| + maxSteps),
-    // cost (cost <= old(cost) + maxSteps), and progress postconditions by construction
+    // cost (cost <= old(lm.stepCost) + maxSteps), and progress postconditions by construction
     // — a strategy needs only one call plus `cost := helpers.cost`, with no hand-rolled
     // budget bookkeeping.  Modeled on GenerateWithManagedSpan (identical invariants); the
     // only added branch force-opens via the proven OpenConstrainedSpan.
-    method GenerateWithPrefixAndManagedSpan(
-      lm: LM,
-      parser: Parser,
-      prompt: Prefix,
-      generatedPrefix: Prefix,
-      insideConstrained: bool,
-      currentConstrained: Prefix,
-      maxSteps: nat,
-      prefixBudget: nat,
-      validTokenGroups: seq<seq<Token>>,
-      boostAmount: real,
-      narrowThreshold: nat,
-      eosToken: Token
-    ) returns (
-      generated: Prefix,
-      insideConstrainedOut: bool,
-      currentConstrainedOut: Prefix
-    )
-      modifies lm.Logits, this
-      requires lm.ValidTokensIdsLogits()
-      requires parser.IsValidPrefix([])
-      requires !insideConstrained ==> currentConstrained == []
-      requires insideConstrained ==> parser.IsValidPrefix(currentConstrained)
-      requires insideConstrained ==> |currentConstrained| <= |generatedPrefix|
-      requires "<<" in lm.Tokens && ">>" in lm.Tokens
-      requires boostAmount >= 0.0 && boostAmount <= 100000000.0
-      requires prefixBudget <= maxSteps
-      requires eosToken in lm.Tokens
-      ensures lm.ValidTokensIdsLogits()
-      ensures |generated| <= |generatedPrefix| + maxSteps
-      ensures !insideConstrainedOut ==> currentConstrainedOut == []
-      ensures insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-      ensures cost <= old(cost) + maxSteps
-      ensures maxSteps == 0 || cost > old(cost) || generated != generatedPrefix ||
-              insideConstrainedOut != insideConstrained ||
-              currentConstrainedOut != currentConstrained
-    {
-      generated := generatedPrefix;
-      insideConstrainedOut := insideConstrained;
-      currentConstrainedOut := currentConstrained;
-
-      var steps: nat := 0;
-      while steps < maxSteps
-        invariant 0 <= steps <= maxSteps
-        invariant lm.ValidTokensIdsLogits()
-        invariant !insideConstrainedOut ==> currentConstrainedOut == []
-        invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
-        invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
-        invariant |generated| <= |generatedPrefix| + steps
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps
-      {
-        if !insideConstrainedOut {
-          if steps < prefixBudget {
-            var next := UnconstrainedStep(lm, prompt, generated);
-            steps := steps + 1;
-            if next == eosToken {
-              break;
-            }
-            generated := generated + [next];
-            if next == "<<" {
-              insideConstrainedOut := true;
-              currentConstrainedOut := [];
-            }
-          } else {
-            var go, io, co := OpenConstrainedSpan(lm, generated);
-            steps := steps + 1;
-            generated := go;
-            insideConstrainedOut := io;
-            currentConstrainedOut := co;
-          }
-        } else {
-          var cg, ci, cc, closed := CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut);
-          steps := steps + 1;
-          if closed {
-            generated := cg;
-            insideConstrainedOut := ci;
-            currentConstrainedOut := cc;
-            break;
-          } else {
-            var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
-            var next := AdaptiveConstrainedStep(
-              lm, parser, constrainedPrompt, currentConstrainedOut,
-              validTokenGroups, boostAmount, narrowThreshold, eosToken
-            );
-            if next == eosToken {
-              break;
-            } else {
-              var appendedGenerated, appendedInside, appendedCurrent := AppendConstrainedToken(
-                lm, parser, generated, currentConstrainedOut, next
-              );
-              generated := appendedGenerated;
-              insideConstrainedOut := appendedInside;
-              currentConstrainedOut := appendedCurrent;
-            }
-          }
-        }
-      }
-    }
-
-    // Thin wrapper: closes the current constrained span if the parser reports the
-    // accumulated tokens form a complete (accepting) parse, otherwise leaves the
-    // span open unchanged.  All heavy lifting delegates to the proven
-    // CloseConstrainedSpan method; this wrapper adds no new logic.
     method CloseSpanIfComplete(
-      lm: LM, parser: Parser, generated: Prefix, currentConstrained: Prefix
+      generated: Prefix, currentConstrained: Prefix
     ) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix, closed: bool)
-      modifies this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires ">>" in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures |generatedOut| <= |generated| + 1
       ensures parser.IsCompletePrefix(currentConstrained) ==>
-              (!insideOut && currentOut == [] && cost == old(cost) + 1 && closed)
+              (!insideOut && currentOut == [] && lm.stepCost == old(lm.stepCost) + 1 && closed)
       ensures !parser.IsCompletePrefix(currentConstrained) ==>
               (generatedOut == generated && insideOut == true &&
-               currentOut == currentConstrained && cost == old(cost) && !closed)
+               currentOut == currentConstrained && lm.stepCost == old(lm.stepCost) && !closed)
+      ensures lm.Logits == old(lm.Logits)
     {
       if parser.IsCompletePrefix(currentConstrained) {
-        generatedOut, insideOut, currentOut := CloseConstrainedSpan(lm, parser, generated, currentConstrained);
+        generatedOut, insideOut, currentOut := CloseConstrainedSpan(generated, currentConstrained);
         closed := true;
       } else {
         generatedOut := generated;
@@ -2478,21 +2173,21 @@ module VerifiedDecoderAgent {
     // maxRetries / maxRollbackBudget stay as behavioral knobs (they gate the
     // rollback branch; they no longer size the bound).
     method RegenerateUnitOnCheckFailure(
-      lm: LM, parser: Parser, prompt: Prefix, currentConstrained: Prefix,
+      prompt: Prefix, currentConstrained: Prefix,
       eosToken: Token,
       budget: nat,
       maxRetries: nat,
       maxRollbackBudget: nat,
       allowedUnits: seq<string>
     ) returns (resultConstrained: Prefix)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures parser.IsValidPrefix(resultConstrained)
-      ensures cost <= old(cost) + budget
-      ensures cost >= old(cost)
+      ensures lm.stepCost <= old(lm.stepCost) + budget
+      ensures lm.stepCost >= old(lm.stepCost)
       // Length bound (mirrors RegenerateUnitOnGroundingFailure): each loop step
       // appends at most one net token (rollbacks only shrink the span), so the
       // produced span grows by at most the total step budget. Without this a
@@ -2500,26 +2195,25 @@ module VerifiedDecoderAgent {
       // `|generated| <= |generatedPrefix| + maxSteps` postcondition.
       ensures |resultConstrained| <= |currentConstrained| + budget
     {
+      var logitsArray := lm.Logits;
       resultConstrained := currentConstrained;
       // The last prefix for which IsCompletePrefix held (or the entry point).
       var checkpointConstrained := currentConstrained;
       var retryCount := 0;
       var rollbackBudgetUsed := 0;
-      var steps := 0;
-      var totalBound := budget;
+      var startCost := lm.stepCost;
 
-      while steps < totalBound
+      while lm.stepCost - startCost < budget
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(resultConstrained)
         invariant parser.IsValidPrefix(checkpointConstrained)
         invariant |checkpointConstrained| <= |resultConstrained|
-        invariant |resultConstrained| <= |currentConstrained| + steps
-        invariant 0 <= steps <= totalBound
-        invariant cost == old(cost) + steps
-        decreases totalBound - steps
+        invariant |resultConstrained| <= |currentConstrained| + (lm.stepCost - startCost)
+        invariant 0 <= lm.stepCost - startCost <= budget
+        invariant lm.Logits == logitsArray
+        decreases budget - (lm.stepCost - startCost)
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt, resultConstrained, eosToken, 8);
-        steps := steps + 1;
+        var next, ok := DeadEndAvoidingStep(prompt, resultConstrained, eosToken, 8);
         if !ok || next == eosToken {
           break;
         }
@@ -2573,26 +2267,27 @@ module VerifiedDecoderAgent {
     // directly against the strategy template's `cost <= maxSteps` postcondition,
     // with no nonlinear-arithmetic or division-sizing proof obligation.
     method RegenerateUnitOnGroundingFailure(
-      lm: LM, parser: Parser, prompt: Prefix, currentConstrained: Prefix,
+      prompt: Prefix, currentConstrained: Prefix,
       eosToken: Token,
       budget: nat,
       maxRetries: nat,
       maxRollbackBudget: nat
     ) returns (resultConstrained: Prefix)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires eosToken in lm.Tokens
       ensures lm.ValidTokensIdsLogits()
       ensures parser.IsValidPrefix(resultConstrained)
-      ensures cost <= old(cost) + budget
-      ensures cost >= old(cost)
+      ensures lm.stepCost <= old(lm.stepCost) + budget
+      ensures lm.stepCost >= old(lm.stepCost)
       // Length bound: each loop step appends at most one net token (rollbacks
       // only shrink the span), so the produced span grows by at most `budget`.
       // Without this a caller cannot prove the strategy template's
       // `|generated| <= |generatedPrefix| + maxSteps` postcondition.
       ensures |resultConstrained| <= |currentConstrained| + budget
     {
+      var logitsArray := lm.Logits;
       resultConstrained := currentConstrained;
       // The last prefix at which a schema symbol (table/column) completed grounded
       // (or the entry point). Rollbacks return here, so retries are CHEAP — they
@@ -2605,21 +2300,19 @@ module VerifiedDecoderAgent {
       var prevCount := parser.CompletedSchemaSymbolCount(currentConstrained);
       var retryCount := 0;
       var rollbackBudgetUsed := 0;
-      var steps := 0;
-      var totalBound := budget;
+      var startCost := lm.stepCost;
 
-      while steps < totalBound
+      while lm.stepCost - startCost < budget
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(resultConstrained)
         invariant parser.IsValidPrefix(checkpointConstrained)
         invariant |checkpointConstrained| <= |resultConstrained|
-        invariant 0 <= steps <= totalBound
-        invariant cost == old(cost) + steps
-        invariant |resultConstrained| <= |currentConstrained| + steps
-        decreases totalBound - steps
+        invariant 0 <= lm.stepCost - startCost <= budget
+        invariant |resultConstrained| <= |currentConstrained| + (lm.stepCost - startCost)
+        invariant lm.Logits == logitsArray
+        decreases budget - (lm.stepCost - startCost)
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt, resultConstrained, eosToken, 8);
-        steps := steps + 1;
+        var next, ok := DeadEndAvoidingStep(prompt, resultConstrained, eosToken, 8);
         if !ok || next == eosToken {
           break;
         }
@@ -2669,6 +2362,112 @@ module VerifiedDecoderAgent {
       }
     }
 
+    // Rewind the active constrained suffix by `num` completed grammar units of
+    // `symbol` (IterGen `backward`). `symbol == "token"` rolls back `num` tokens.
+    // When fewer than `num` units exist, rewinds to the span entry (empty suffix).
+    method RollbackToGrammarSymbol(
+            generated: Prefix,
+      currentConstrained: Prefix,
+      symbol: string,
+      num: nat
+    ) returns (generatedOut: Prefix, currentOut: Prefix)
+      requires parser.IsValidPrefix(currentConstrained)
+      requires parser.IsValidPrefix([])
+      requires |currentConstrained| <= |generated|
+      requires num >= 1
+      ensures parser.IsValidPrefix(currentOut)
+      ensures generatedOut == generated[..|generated| - |currentConstrained|] + currentOut
+      ensures |currentOut| <= |currentConstrained|
+      ensures lm.stepCost == old(lm.stepCost)
+    {
+      var stablePrefix := generated[..|generated| - |currentConstrained|];
+      if symbol == "token" {
+        if |currentConstrained| <= num {
+          currentOut := [];
+        } else {
+          currentOut := RollbackToValidPrefix(currentConstrained[..|currentConstrained| - num]);
+        }
+      } else {
+        var cnt := parser.GrammarSymbolCount(currentConstrained, symbol);
+        if cnt < num {
+          currentOut := [];
+        } else {
+          var targetOcc := cnt - num;
+          assert targetOcc < cnt;
+          var startTok := parser.GrammarSymbolStartTokenIdx(currentConstrained, symbol, targetOcc);
+          currentOut := RollbackToValidPrefix(currentConstrained[..startTok]);
+        }
+      }
+      generatedOut := stablePrefix + currentOut;
+    }
+
+    // IterGen `view`: rendered text of each completed grammar-unit span for `symbol`.
+    method ViewGrammarSymbols(
+      prefix: Prefix, symbol: string
+    ) returns (units: seq<string>)
+      requires parser.IsValidPrefix(prefix)
+      ensures |units| == parser.GrammarSymbolCount(prefix, symbol)
+      ensures lm.stepCost == old(lm.stepCost)
+    {
+      units := parser.GetGrammarSymbolUnits(prefix, symbol);
+    }
+
+    // Thin wrapper around RollbackToGrammarSymbol (IterGen `backward` API).
+    method ForwardUntilGrammarSymbol(
+      prompt: Prefix,
+      generated: Prefix, currentConstrained: Prefix,
+      symbol: string, num: nat,
+      eosToken: Token, budget: nat
+    ) returns (
+      generatedOut: Prefix,
+      currentOut: Prefix,
+      hitEos: bool,
+      stepsUsed: nat
+    )
+      modifies lm, lm.Logits
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(currentConstrained)
+      requires |currentConstrained| <= |generated|
+      requires eosToken in lm.Tokens
+      requires num >= 1
+      ensures lm.ValidTokensIdsLogits()
+      ensures parser.IsValidPrefix(currentOut)
+      ensures generatedOut == generated[..|generated| - |currentConstrained|] + currentOut
+      ensures |currentOut| <= |currentConstrained| + stepsUsed
+      ensures |generatedOut| <= |generated| + stepsUsed
+      ensures stepsUsed <= budget
+      ensures lm.stepCost == old(lm.stepCost) + stepsUsed
+    {
+      var logitsArray := lm.Logits;
+      var stablePrefix := generated[..|generated| - |currentConstrained|];
+      var running := currentConstrained;
+      var startCount := parser.GrammarSymbolCount(running, symbol);
+      var targetCount := startCount + num;
+      hitEos := false;
+      var startCost := lm.stepCost;
+
+      while lm.stepCost - startCost < budget
+        && parser.GrammarSymbolCount(running, symbol) < targetCount
+        invariant lm.ValidTokensIdsLogits()
+        invariant parser.IsValidPrefix(running)
+        invariant |running| <= |currentConstrained| + (lm.stepCost - startCost)
+        invariant 0 <= lm.stepCost - startCost <= budget
+        invariant lm.Logits == logitsArray
+        decreases budget - (lm.stepCost - startCost)
+      {
+        var next, _ := SafeSoftConstrainedStep(prompt + stablePrefix, running, 0.0, eosToken);
+        if next == eosToken {
+          hitEos := true;
+          break;
+        }
+        running := running + [next];
+      }
+
+      generatedOut := stablePrefix + running;
+      currentOut := running;
+      stepsUsed := lm.stepCost - startCost;
+    }
+
     // Advance an open constrained span toward a completable state and emit the
     // closing delimiter, all within `budget` steps. Generates forward
     // (dead-end-aware) tracking the longest prefix that parses as complete, then
@@ -2677,10 +2476,10 @@ module VerifiedDecoderAgent {
     // open (the grammar forbids closing an incomplete prefix). Composes only the
     // already-verified DeadEndAvoidingStep and CloseConstrainedSpan primitives.
     method CloseSpanWithinBudget(
-      lm: LM, parser: Parser, prompt: Prefix, generated: Prefix,
+      prompt: Prefix, generated: Prefix,
       currentConstrained: Prefix, eosToken: Token, budget: nat
     ) returns (generatedOut: Prefix, insideOut: bool, currentOut: Prefix)
-      modifies lm.Logits, this
+      modifies lm, lm.Logits
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
       requires |currentConstrained| <= |generated|
@@ -2691,9 +2490,10 @@ module VerifiedDecoderAgent {
       ensures insideOut ==> parser.IsValidPrefix(currentOut)
       ensures insideOut ==> |currentOut| <= |generatedOut|
       ensures |generatedOut| <= |generated| + budget
-      ensures cost <= old(cost) + budget
-      ensures cost >= old(cost)
+      ensures lm.stepCost <= old(lm.stepCost) + budget
+      ensures lm.stepCost >= old(lm.stepCost)
     {
+      var logitsArray := lm.Logits;
       var stablePrefix := generated[..|generated| - |currentConstrained|];
       var running := currentConstrained;
       var bestComplete: Prefix := [];
@@ -2702,21 +2502,20 @@ module VerifiedDecoderAgent {
         bestComplete := currentConstrained;
         haveComplete := true;
       }
-      var steps := 0;
+      var startCost := lm.stepCost;
 
-      while steps + 1 < budget
+      while lm.stepCost - startCost + 1 < budget
         invariant lm.ValidTokensIdsLogits()
         invariant parser.IsValidPrefix(running)
-        invariant |running| <= |currentConstrained| + steps
+        invariant |running| <= |currentConstrained| + (lm.stepCost - startCost)
         invariant haveComplete ==>
           (parser.IsCompletePrefix(bestComplete) && |bestComplete| <= |running|)
         invariant !haveComplete ==> bestComplete == []
-        invariant 0 <= steps <= budget
-        invariant cost == old(cost) + steps
-        decreases budget - steps
+        invariant 0 <= lm.stepCost - startCost <= budget
+        invariant lm.Logits == logitsArray
+        decreases budget - (lm.stepCost - startCost)
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt + stablePrefix, running, eosToken, 8);
-        steps := steps + 1;
+        var next, ok := DeadEndAvoidingStep(prompt + stablePrefix, running, eosToken, 8);
         if !ok || next == eosToken {
           break;
         }
@@ -2727,8 +2526,8 @@ module VerifiedDecoderAgent {
         }
       }
 
-      if steps < budget && haveComplete {
-        var gc, ci, cc := CloseConstrainedSpan(lm, parser, stablePrefix + bestComplete, bestComplete);
+      if lm.stepCost - startCost < budget && haveComplete {
+        var gc, ci, cc := CloseConstrainedSpan(stablePrefix + bestComplete, bestComplete);
         generatedOut := gc;
         insideOut := ci;
         currentOut := cc;

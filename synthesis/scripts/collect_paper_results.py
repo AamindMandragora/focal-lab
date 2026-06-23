@@ -60,16 +60,16 @@ def _git_tracked_json_relpaths(repo_root: Path) -> frozenset[str]:
 
 
 MODELS = [
-    ("Qwen/Qwen2.5-Coder-1.5B-Instruct", "1.5B"),
-    ("Qwen/Qwen2.5-Coder-7B-Instruct", "7B"),
-    ("Qwen/Qwen2.5-Coder-14B-Instruct", "14B"),
+    ("Qwen/Qwen3.5-2B", "Qwen3.5-2B"),
+    ("Qwen/Qwen3.5-4B", "Qwen3.5-4B"),
+    ("Qwen/Qwen3.5-9B", "Qwen3.5-9B"),
     ("meta-llama/Llama-3.1-8B-Instruct", "Llama-8B"),
 ]
 # First-column \\multirow labels for paper/experiments.tex Table~\\ref{tab:main_results}.
 MODEL_TABULAR_MACROS = [
-    r"\QwenSmall",
-    r"\QwenCoder",
-    r"\QwenBig",
+    r"\QwenThreeFiveTwo",
+    r"\QwenThreeFiveFour",
+    r"\QwenThreeFiveNine",
     r"\LlamaEight",
 ]
 BENCHMARKS = ["gsm_symbolic", "spider"]

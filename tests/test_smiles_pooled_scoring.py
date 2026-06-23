@@ -113,3 +113,62 @@ def test_rs_and_cars_use_static_prompt_feedback_from_baseline_config():
     )
     assert rs_config.prompt_feedback == SmilesPromptFeedback.STATIC
     assert rs_config.success_target == DEFAULT_SMILES_POOLED_SUCCESS_TARGET
+
+
+def test_prompt_state_records_extracted_smiles_only():
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import SmilesPromptState
+
+    state = SmilesPromptState([])
+    outcome = state.record_attempt(
+        "2-(4-fl",
+        {"syntax_valid": False, "unique_valid_candidate": False},
+    )
+    assert outcome == "bad"
+    assert state.bad_results == ["2-(4-fl"]
+
+    empty_state = SmilesPromptState([])
+    empty_outcome = empty_state.record_attempt("", {"syntax_valid": False})
+    assert empty_outcome == "empty"
+    assert empty_state.bad_results == ["(invalid)"]
+    assert all("Molecule:" not in entry for entry in empty_state.bad_results)
+
+
+def test_duplicate_appends_full_response_when_extracted_already_bad():
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import (
+        BAD_MISTAKES_LINE,
+        DUPLICATE_RESPONSE_PREFIX,
+        SmilesPromptState,
+        format_good_bad_feedback_suffix,
+    )
+    from synthesis.evaluate.benchmarks.smiles.native_prompt import native_smiles_prompt_header
+
+    state = SmilesPromptState([])
+    raw = "IUPAC-name\n\n`CCO`"
+    assert state.record_attempt("IUPAC-name", {"syntax_valid": False}) == "bad"
+    assert state.bad_results == ["IUPAC-name"]
+
+    assert state.record_attempt(
+        "IUPAC-name",
+        {"syntax_valid": False},
+        raw_response=raw,
+    ) == "duplicate"
+    assert len(state.bad_results) == 3
+    assert state.bad_results[1].startswith(DUPLICATE_RESPONSE_PREFIX)
+    assert state.bad_results[2] == "[repeat 1]"
+
+    suffix = format_good_bad_feedback_suffix([], state.bad_results)
+    assert BAD_MISTAKES_LINE in suffix
+    assert "SMILES: IUPAC-name" not in suffix
+    assert "IUPAC-name" in suffix
+    assert "Response:" in suffix
+    assert "[repeat 1]" in suffix
+
+    assert state.record_attempt(
+        "IUPAC-name",
+        {"syntax_valid": False},
+        raw_response=raw,
+    ) == "duplicate"
+    assert state.bad_results[-1] == "[repeat 2]"
+
+    assert "IUPAC" in native_smiles_prompt_header("acrylates")
+    assert "SMILES notation" in native_smiles_prompt_header("acrylates", tier=2)

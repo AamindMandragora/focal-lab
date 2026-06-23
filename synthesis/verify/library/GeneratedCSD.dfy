@@ -26,7 +26,7 @@ module GeneratedCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm.Logits
+    modifies lm, lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -72,7 +72,7 @@ module GeneratedCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm.Logits
+    modifies lm, lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -87,11 +87,13 @@ module GeneratedCSD {
     ensures insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
     ensures cost <= maxSteps
   {
-    var helpers := new CSDHelpers();
+    var helpers := new CSDHelpers(lm, parser);
+    assert helpers.lm == lm;
+    assert helpers.parser == parser;
     generated := generatedPrefix;
     insideConstrainedOut := insideConstrained;
     currentConstrainedOut := currentConstrained;
-    cost := 0;
+    cost := helpers.cost();
     // QWEN_INSERT_STRATEGY_HERE
   }
 }

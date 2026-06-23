@@ -131,6 +131,33 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
     return dfa_mask_store
 
 
+def _truncate_prefix_to_char_pos(prefix, char_pos: int):
+    """Return the longest token prefix whose rendered text has length <= char_pos."""
+    if char_pos <= 0 or len(prefix) == 0:
+        return prefix[:0]
+    acc = 0
+    for i in range(len(prefix)):
+        tok_len = len(dafny_seq_to_str(prefix[i]))
+        nxt = acc + tok_len
+        if nxt > char_pos:
+            return prefix[:i]
+        acc = nxt
+        if acc == char_pos:
+            return prefix[: i + 1]
+    return prefix
+
+
+def _drive_symbol_pos_map(inc_parser, text: str) -> Any | None:
+    """Drive the incremental parser so SymbolPosMap reflects `text`. Returns the map."""
+    if not text:
+        return getattr(inc_parser, "symbol_pos_map", None)
+    try:
+        inc_parser.get_acceptable_next_terminals(text)
+    except Exception:
+        return getattr(inc_parser, "symbol_pos_map", None)
+    return getattr(inc_parser, "symbol_pos_map", None)
+
+
 def create_lark_dafny_parser(
     grammar_source: str,
     VerifiedDecoderAgent,
@@ -459,21 +486,80 @@ def create_lark_dafny_parser(
                 current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
                 if not current_text:
                     return 0
-                try:
-                    # Drive the inc parser so symbol_pos_map reflects THIS prefix.
-                    self._inc_parser.get_acceptable_next_terminals(current_text)
-                except Exception:
-                    # Not parseable as a prefix here: report no completed symbols so
-                    # the boundary simply doesn't fire (caller keeps prevCount).
-                    return 0
-                spm = getattr(self._inc_parser, "symbol_pos_map", None)
+                spm = _drive_symbol_pos_map(self._inc_parser, current_text)
                 if spm is None:
                     return 0
-                # Schema-bearing symbols in our sql.lark: table_ref + column_ref.
-                # get_symbol_count(after=0) counts every completed span.
                 return int(
                     spm.get_symbol_count("table_ref")
                     + spm.get_symbol_count("column_ref")
+                )
+
+        def GrammarSymbolCount(self, prefix, symbol: str) -> int:
+            """Dafny interface: completed occurrences of `symbol` in `prefix`.
+
+            `symbol == "token"` counts tokens (one unit per token). Otherwise
+            reads IterGen's SymbolPosMap side-record after driving the parser.
+            """
+            with _parser_timed("GrammarSymbolCount.dafny"):
+                if symbol == "token":
+                    return int(len(prefix))
+                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                if not current_text:
+                    return 0
+                spm = _drive_symbol_pos_map(self._inc_parser, current_text)
+                if spm is None:
+                    return 0
+                return int(spm.get_symbol_count(symbol))
+
+        def GrammarSymbolStartTokenIdx(self, prefix, symbol: str, occurrence_idx: int) -> int:
+            """Dafny interface: token index where `occurrence_idx`-th unit of `symbol` starts."""
+            with _parser_timed("GrammarSymbolStartTokenIdx.dafny"):
+                if symbol == "token":
+                    if occurrence_idx >= len(prefix):
+                        return len(prefix)
+                    return int(occurrence_idx)
+                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                spm = _drive_symbol_pos_map(self._inc_parser, current_text)
+                if spm is None or occurrence_idx >= spm.get_symbol_count(symbol):
+                    return 0
+                start_char = int(spm.get_symbol_pos_start(symbol, occurrence_idx))
+                truncated = _truncate_prefix_to_char_pos(prefix, start_char)
+                return int(len(truncated))
+
+        def GrammarSymbolEndTokenIdx(self, prefix, symbol: str, occurrence_idx: int) -> int:
+            """Dafny interface: exclusive token index after `occurrence_idx`-th unit of `symbol`."""
+            with _parser_timed("GrammarSymbolEndTokenIdx.dafny"):
+                if symbol == "token":
+                    end_tok = int(occurrence_idx) + 1
+                    return min(end_tok, len(prefix))
+                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                spm = _drive_symbol_pos_map(self._inc_parser, current_text)
+                if spm is None or occurrence_idx >= spm.get_symbol_count(symbol):
+                    return 0
+                end_char = int(spm.get_symbol_pos_end(symbol, occurrence_idx))
+                truncated = _truncate_prefix_to_char_pos(prefix, end_char)
+                return int(len(truncated))
+
+        def GetGrammarSymbolUnits(self, prefix, symbol: str):
+            """Dafny interface: rendered unit strings for each completed `symbol` span."""
+            with _parser_timed("GetGrammarSymbolUnits.dafny"):
+                if symbol == "token":
+                    units = [
+                        dafny_seq_to_str(prefix[i])
+                        for i in range(len(prefix))
+                    ]
+                else:
+                    current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                    spm = _drive_symbol_pos_map(self._inc_parser, current_text)
+                    if spm is None:
+                        units = []
+                    else:
+                        units = [
+                            current_text[int(start) : int(end)]
+                            for start, end in spm.get_symbol_pos_all(symbol)
+                        ]
+                return _dafny.SeqWithoutIsStrInference(
+                    [_dafny.SeqWithoutIsStrInference(list(unit)) for unit in units]
                 )
 
     return SyncodeDafnyParser
