@@ -301,6 +301,9 @@ def _configure_vllm_multiprocessing() -> None:
         # Another library may have already locked the start method.
         pass
 
+
+configure_vllm_multiprocessing = _configure_vllm_multiprocessing
+
 def load_runtime_tokenizer(model_name: str, backend: str = "huggingface"):
     """Load the tokenizer matching the requested runtime backend."""
     cache_key = (backend, model_name)

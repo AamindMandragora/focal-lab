@@ -15,9 +15,9 @@ import os
 import sys
 from pathlib import Path
 try:
-    from synthesis.project_defaults import default_dafny_path
+    from synthesis.project_defaults import default_dafny_path, DEFAULT_EVAL_MODEL
 except ImportError:
-    from project_defaults import default_dafny_path
+    from project_defaults import default_dafny_path, DEFAULT_EVAL_MODEL
 
 try:
     from dotenv import load_dotenv
@@ -142,8 +142,8 @@ Examples:
     parser.add_argument(
         "--eval-model",
         type=str,
-        default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="Model for evaluation data generation/runtime (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
+        default=DEFAULT_EVAL_MODEL,
+        help=f"Model for evaluation data generation/runtime (default: {DEFAULT_EVAL_MODEL})"
     )
 
     parser.add_argument(

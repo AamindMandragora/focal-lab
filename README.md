@@ -98,13 +98,12 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). The experimental matrix uses **`gemini`** for main MetaDecode findings (`--main-generation-model`) and **`sonnet4.6` / `gpt5.5`** for synthesizer ablations (`--generation-models`). All three profiles use direct hosted APIs (Gemini, Anthropic, OpenAI); do not route matrix runs through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). The experimental matrix uses **`gemini`** for main MetaDecode findings (`--main-generation-model`) and **`sonnet4.6` / `gpt5.5`** for synthesizer ablations (`--generation-models`). All three profiles use direct hosted APIs (Gemini, Anthropic, OpenAI); do not route matrix runs through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Standalone evaluation defaults to local vLLM with **`Qwen/Qwen3.5-4B`** unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
   --dataset gsm_symbolic \
-  --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
   --max-iterations 5 \
   --min-accuracy 0.3 \
   --min-syntax-rate 1.0 \

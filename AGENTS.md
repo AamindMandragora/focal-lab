@@ -55,7 +55,7 @@ Disallowed prompt content:
 
 ## Pipeline Run Modes
 
-Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE_DEVICES=2,3` unless intentionally using another allocation. By default, **generation** uses **OpenAI** (`OPENAI_API_KEY` and `OPENAI_GENERATION_MODEL` / `--generation-model`); **evaluation** still defaults to local vLLM with Qwen unless you pass other flags. Matrix model ablations must use direct hosted APIs and must not route through Bedrock.
+Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE_DEVICES=2,3` unless intentionally using another allocation. By default, **generation** uses **OpenAI** (`OPENAI_API_KEY` and `OPENAI_GENERATION_MODEL` / `--generation-model`); **evaluation** defaults to local vLLM with **`Qwen/Qwen3.5-4B`** unless you pass other flags. Matrix model ablations must use direct hosted APIs and must not route through Bedrock.
 
 - Quick smoke run (fast sanity check, low sample count):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --min-accuracy 0.0 --min-syntax-rate 0.0 --max-iterations 1 --eval-sample-size 1 --eval-max-steps 256 --output-name smoke_gsm`

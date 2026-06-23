@@ -205,11 +205,36 @@ def _final_block_parser(evaluator: Any):
 
 
 def _extract_final_block(output: str) -> str:
-    return output[output.rfind("<<") : output.rfind(">>") + 2]
+    if "<<" not in output or ">>" not in output:
+        return ""
+    start = output.rfind("<<")
+    end = output.rfind(">>")
+    if start < 0 or end < start:
+        return ""
+    return output[start : end + 2]
+
+
+def _tier1_expression_body(output: str) -> str:
+    """First-line GSM body for tier-1 constrained decoders (no delimiters)."""
+    lines = (output or "").strip().splitlines()
+    if not lines:
+        return ""
+    text = lines[0].strip()
+    if text.startswith("<<") and text.endswith(">>"):
+        text = text[2:-2].strip()
+    elif text.startswith("<<"):
+        text = text[2:].strip()
+        if text.endswith(">>"):
+            text = text[:-2].strip()
+    return text
+
+
+def _gsm_body_rejected(body: str) -> bool:
+    return not body or "{" in body or "}" in body or "round(" in body
 
 
 def _check_gsm_parsed(block: str, parser) -> bool:
-    if block == "" or "{" in block or "}" in block or "round(" in block:
+    if _gsm_body_rejected(block):
         return False
     if not block.startswith("<<") or not block.endswith(">>"):
         return False
@@ -223,12 +248,21 @@ def _check_gsm_parsed(block: str, parser) -> bool:
 def check_syntax(
     evaluator: Any, output: str, example: dict[str, Any] | None
 ) -> tuple[bool, list[tuple[str, bool]]]:
-    """CRANE-faithful GSM syntax check on the FINAL ``<<...>>`` block only."""
+    """GSM syntax: CRANE final ``<<...>>`` block, else tier-1 bare expression body."""
     block = _extract_final_block(output)
-    if block == "":
-        return False, []
-    parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
-    return parses, [(block, parses)]
+    if block.startswith("<<") and block.endswith(">>"):
+        parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
+        return parses, [(block, parses)]
+
+    body = _tier1_expression_body(output)
+    if _gsm_body_rejected(body):
+        return False, [(body, False)] if body else []
+    try:
+        parser = get_syntax_parser(evaluator, example)
+        parser.parse(body)
+        return True, [(body, True)]
+    except Exception:
+        return False, [(body, False)]
 
 
 def ensure_runtime_prereqs(evaluator: Any) -> None:

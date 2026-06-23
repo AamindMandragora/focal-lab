@@ -10,6 +10,9 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+DEFAULT_EVAL_MODEL = "Qwen/Qwen3.5-4B"
+
+
 def default_logs_dir() -> Path:
     """Canonical directory for synthesis prompt/response logs."""
     raw = os.environ.get("CSD_LOGS_DIR")
