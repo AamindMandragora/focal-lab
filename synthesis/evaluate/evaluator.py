@@ -1962,7 +1962,7 @@ class Evaluator:
     def _gsm_symbolic_equivalence(
         self, model_expr: Optional[str], expected_expr: str, variable_types: dict
     ) -> bool:
-        """Check symbolic equivalence via Z3 (CRANE-primary) with substitution fallback."""
+        """Check symbolic equivalence via Z3 only (no substitution fallback)."""
         from synthesis.evaluate.benchmarks.gsm_symbolic.z3_equivalence import (
             gsm_symbolic_z3_equivalence,
         )

@@ -1,8 +1,7 @@
-"""GSM-Symbolic equivalence via Z3 (CRANE-primary) with substitution fallback."""
+"""GSM-Symbolic equivalence via Z3 only (no substitution fallback)."""
 
 from __future__ import annotations
 
-import random
 import re
 from typing import Any
 
@@ -12,15 +11,6 @@ from synthesis.evaluate.benchmarks.gsm_symbolic.expression_normalize import (
 )
 
 _Z3_TIMEOUT_MS = 5000
-_SUBSTITUTION_TRIALS = 1000
-
-# CRANE hard-codes substitution for these gold expressions.
-_SUBSTITUTION_ONLY_GOLD = frozenset(
-    {
-        "int(p * (1 + r1/100) * (1 - r2/100)) * n",
-        "(int(length / (plant_width + space)) - owned) * cost",
-    }
-)
 
 
 def _floor_div_replacer(expression: str) -> str:
@@ -63,53 +53,12 @@ def _ceiling(x: Any) -> Any:
     )
 
 
-def _substitution_equivalence(
-    expr1: str,
-    expr2: str,
-    var_names: set[str],
-    variable_types: dict[str, str],
-    *,
-    trials: int = _SUBSTITUTION_TRIALS,
-) -> bool:
-    for _ in range(trials):
-        env: dict[str, float] = {}
-        for var in var_names:
-            vtype = variable_types.get(var, "int")
-            if vtype == "float between 0 and 1":
-                env[var] = random.uniform(0.001, 1)
-            elif vtype == "float":
-                env[var] = random.uniform(0.001, 100)
-            else:
-                env[var] = float(random.randint(1, 100))
-        expr1_sub = expr1
-        expr2_sub = expr2
-        for var, value in env.items():
-            expr1_sub = re.sub(rf"\b{var}\b", str(value), expr1_sub)
-            expr2_sub = re.sub(rf"\b{var}\b", str(value), expr2_sub)
-        try:
-            ans1 = eval(expr1_sub, {"__builtins__": {}}, {})
-        except Exception:
-            return False
-        try:
-            ans2 = eval(expr2_sub, {"__builtins__": {}}, {})
-        except Exception:
-            return True
-        if ans1 != ans2:
-            return False
-    return True
-
-
 def gsm_symbolic_z3_equivalence(
     model_expr: str | None,
     expected_expr: str,
     variable_types: dict[str, str],
 ) -> bool:
-    """Return whether two GSM symbolic expressions are equivalent.
-
-  Primary path matches upstream CRANE ``validate_expression_equivalence`` (Z3).
-  Falls back to random substitution on parse failure, solver timeout, or
-  CRANE's hard-coded gold exceptions.
-    """
+    """Return whether two GSM symbolic expressions are Z3-proven equivalent."""
     if model_expr is None:
         return False
 
@@ -127,17 +76,10 @@ def gsm_symbolic_z3_equivalence(
         if name not in variable_types:
             return False
 
-    if original_expected in _SUBSTITUTION_ONLY_GOLD:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types
-        )
-
     try:
-        from z3 import And, If, Real, Solver, ToInt, ToReal, unknown, unsat
+        from z3 import If, Real, Solver, ToInt, unsat
     except ImportError:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types, trials=200
-        )
+        return False
 
     vars_dict: dict[str, Any] = {}
     constraints: list[Any] = []
@@ -182,17 +124,9 @@ def gsm_symbolic_z3_equivalence(
 
     try:
         expr2_z3 = safe_eval(expr2)
-    except Exception:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types
-        )
-
-    try:
         expr1_z3 = safe_eval(expr1)
     except Exception:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types
-        )
+        return False
 
     solver = Solver()
     solver.set("timeout", _Z3_TIMEOUT_MS)
@@ -200,15 +134,7 @@ def gsm_symbolic_z3_equivalence(
     try:
         solver.add(expr1_z3 != expr2_z3)
     except Exception:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types
-        )
+        return False
 
     result = solver.check()
-    if result == unsat:
-        return True
-    if result == unknown:
-        return _substitution_equivalence(
-            original_model, original_expected, var_names, variable_types
-        )
-    return False
+    return result == unsat

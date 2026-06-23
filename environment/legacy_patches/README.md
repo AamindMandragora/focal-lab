@@ -20,7 +20,7 @@ Current apply order:
 
 | Repo | Patches |
 |------|---------|
-| CRANE | `010-vas-prompt-tiers-base`, `020-vas-harness-utils`, `030-vas-smiles-prompt-state-grammar` |
+| CRANE | `010-vas-prompt-tiers-base`, `020-vas-harness-utils`, `030-vas-smiles-prompt-state-grammar`, `040-vas-gsm-z3-only-equivalence` |
 | itergen | `010-vas-cache-and-hf-env`, `020-vas-language-model-compat`, `030-vas-lark-tree-deepcopy`, `040-vas-main-harness`, `050-vas-readme-notes` |
 | cars | `010-vas-lib-hf-cache-device-map`, `020-vas-mcmc-lib-hf-cache`, `030-vas-run-task-harness`, `040-vas-readme-notes` |
 
