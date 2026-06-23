@@ -19,7 +19,10 @@ def native_smiles_prompt_header(class_name: str, *, tier: PromptTier = 1) -> str
     if class_name not in SMILES_CLASSES:
         raise ValueError(f"Unknown SMILES class: {class_name}")
     label = _smiles_class_label(class_name)
-    response_line = "Your response must be a single SMILES molecule and nothing else."
+    response_line = (
+        "Your response must be a single SMILES string using SMILES notation only "
+        "(not IUPAC names, systematic names, or prose). Output nothing else."
+    )
     if tier == 1:
         return (
             f"You are an expert in chemistry. Your task is to generate one new, valid "
@@ -76,17 +79,9 @@ def format_native_feedback_suffix(
     bad_results: Sequence[str],
 ) -> str:
     """Good/bad attempt history appended before the generation slot (no CoT tail)."""
-    if not good_results and not bad_results:
-        return ""
-    lines: list[str] = []
-    if good_results:
-        lines.append("Good results:")
-        lines.extend(f"SMILES: {smiles}" for smiles in good_results)
-    if bad_results:
-        lines.append("Bad results:")
-        lines.append("These are past mistakes — do not repeat them.")
-        lines.extend(f"SMILES: {smiles}" for smiles in bad_results)
-    return "\n" + "\n".join(lines) + "\n"
+    from synthesis.evaluate.benchmarks.smiles.prompt_state import format_good_bad_feedback_suffix
+
+    return format_good_bad_feedback_suffix(good_results, bad_results)
 
 
 def render_native_smiles_prompt_with_feedback(

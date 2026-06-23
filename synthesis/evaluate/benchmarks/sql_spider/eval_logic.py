@@ -96,7 +96,9 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
 
 
 def ensure_runtime_prereqs(evaluator: Any) -> None:
-    return None
+    from synthesis.evaluate.benchmarks.sql_spider.executor import ensure_spider_nltk_prereqs
+
+    ensure_spider_nltk_prereqs()
 
 
 def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) -> dict[str, Any]:

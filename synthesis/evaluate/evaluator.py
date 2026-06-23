@@ -71,6 +71,8 @@ try:
 except ImportError:
     from failure_taxonomy import render_cluster_block
 
+from synthesis.evaluate.metrics import choose_denominator_basis
+
 
 class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
@@ -282,13 +284,16 @@ class EvaluationResult:
         # budget exceedances, and any unexpected exception types — without any
         # question text, expected SQL, or actual SQL strings.
         if self.sample_outputs:
+            n_total = len(self.sample_outputs)
             n_runtime_exceeded = sum(
                 1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
             )
             extras = []
             if n_runtime_exceeded:
                 extras.append(
-                    f"  Time budget exceeded on {n_runtime_exceeded} example(s)."
+                    f"  {n_runtime_exceeded}/{n_total} examples timed out "
+                    f"(exceeded the per-example time limit) and were scored as failures "
+                    f"(accuracy 0, syntax 0 for each timed-out example)."
                 )
             if extras:
                 lines.append("\nAggregate Failure Stats:")
@@ -396,6 +401,27 @@ class EvaluationResult:
         if not any(event.get("helper", "unknown") in cls._CONSTRAINED_HELPERS for event in sample.get("helper_trace") or []):
             tags.append("no_constrained_activity")
         return tags or ["no_trace"]
+
+    @staticmethod
+    def _sample_identity_metadata(example: Dict[str, Any], example_index: int) -> Dict[str, Any]:
+        """Return stable sample identity fields for observability and ledgers."""
+        metadata: Dict[str, Any] = {"example_index": example_index}
+        for key in (
+            "crane_source_index",
+            "spider_source_index",
+            "id_orig",
+            "id_shuffled",
+            "db_id",
+        ):
+            if key in example:
+                metadata[key] = example[key]
+        if "crane_source_index" in metadata:
+            metadata["source_index"] = metadata["crane_source_index"]
+        elif "spider_source_index" in metadata:
+            metadata["source_index"] = metadata["spider_source_index"]
+        elif "source_index" in example:
+            metadata["source_index"] = example["source_index"]
+        return metadata
 
     @classmethod
     def _derive_answer_provenance(cls, sample: Dict[str, Any]) -> str:
@@ -893,15 +919,13 @@ class EvaluationResult:
     _CONFIDENCE_HELPERS = {"ConfidenceGatedStep"}
     _GROUP_OR_ADAPTIVE_HELPERS = {"AdaptiveConstrainedStep", "GroupBoostedConstrainedStep"}
     _SAFE_LOGIT_STEP_HELPERS = {
-        "SafeBoostedConstrainedStep",
-        "SafePenalizedConstrainedStep",
-        "SafeRepetitionPenaltyStep",
-        "SafeTemperatureConstrainedStep",
+        "BoostedConstrainedStep",
+        "PenalizedConstrainedStep",
+        "RepetitionPenaltyStep",
     }
     _SOFT_CONSTRAINED_HELPERS = {"SoftConstrainedStep", "SafeSoftConstrainedStep"}
     _SYMBOL_HELPERS = {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}
     _REPAIR_HELPERS = {
-        "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
     }
@@ -1938,43 +1962,12 @@ class Evaluator:
     def _gsm_symbolic_equivalence(
         self, model_expr: Optional[str], expected_expr: str, variable_types: dict
     ) -> bool:
-        """Check symbolic equivalence via random value substitution (matches CRANE's method)."""
-        if model_expr is None:
-            return False
-        import random as _rng
-
-        from synthesis.evaluate.benchmarks.gsm_symbolic.expression_normalize import (
-            normalize_gsm_symbolic_for_equivalence,
-            reserved_equivalence_names,
+        """Check symbolic equivalence via Z3 (CRANE-primary) with substitution fallback."""
+        from synthesis.evaluate.benchmarks.gsm_symbolic.z3_equivalence import (
+            gsm_symbolic_z3_equivalence,
         )
 
-        model_expr = normalize_gsm_symbolic_for_equivalence(model_expr)
-        expected_expr = normalize_gsm_symbolic_for_equivalence(expected_expr)
-
-        var_names = set(re.findall(r'\b[a-zA-Z_]\w*\b', model_expr + ' ' + expected_expr))
-        var_names -= reserved_equivalence_names()
-
-        for name in var_names:
-            if name not in variable_types:
-                return False
-
-        for _ in range(200):
-            env = {}
-            for var in var_names:
-                vtype = variable_types.get(var, 'int')
-                if vtype == 'float between 0 and 1':
-                    env[var] = _rng.uniform(0.001, 1)
-                elif vtype == 'float':
-                    env[var] = _rng.uniform(0.001, 100)
-                else:
-                    env[var] = _rng.randint(1, 100)
-            val_model = self._evaluate_symbolic_expression(model_expr, env)
-            val_expected = self._evaluate_symbolic_expression(expected_expr, env)
-            if val_model is None or val_expected is None:
-                return False
-            if abs(val_model - val_expected) > 1e-6 * max(1, abs(val_expected)):
-                return False
-        return True
+        return gsm_symbolic_z3_equivalence(model_expr, expected_expr, variable_types)
 
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
@@ -2038,6 +2031,10 @@ class Evaluator:
             if not smiles:
                 return False, []
             return bool(eval_row["syntax_valid"]), [(smiles, bool(eval_row["syntax_valid"]))]
+
+        if self.dataset_name == "gsm_symbolic":
+            logic = self._benchmark_logic()
+            return logic.check_syntax(self, output, example)
 
         segments: List[Tuple[str, bool]] = []
         matches = self._extract_constrained_content(output)
@@ -2385,6 +2382,8 @@ class Evaluator:
             logic = self._benchmark_logic()
             run_crane_csd = logic.get_generation_runner()
 
+            _MAX_TIMEOUTS = 10
+            n_timeouts = 0
             num_correct = 0
             all_examples_contain_delimiters = True
             num_examples_syntax_pass = 0
@@ -2417,10 +2416,8 @@ class Evaluator:
                     (float(sample.get("time_seconds", 0.0)) for sample in sample_outputs),
                     default=0.0,
                 )
-                denominator_basis = (
-                    planned_num_examples
-                    if early_stop_reason and "target accuracy" in early_stop_reason
-                    else evaluated_count
+                denominator_basis = choose_denominator_basis(
+                    early_stop_reason, planned_num_examples, evaluated_count
                 )
                 accuracy_denominator = logic.final_accuracy_denominator(
                     denominator_basis,
@@ -2451,7 +2448,9 @@ class Evaluator:
                     success=True,
                     accuracy=num_correct / max(1, accuracy_denominator),
                     contains_delimiters=all_examples_contain_delimiters,
-                    syntax_rate=num_examples_syntax_pass / max(1, evaluated_count),
+                    syntax_rate=num_examples_syntax_pass / max(1, choose_denominator_basis(
+                        early_stop_reason, planned_num_examples, evaluated_count
+                    )),
                     num_examples=evaluated_count,
                     num_correct=num_correct,
                     accuracy_denominator=accuracy_denominator,
@@ -2589,6 +2588,7 @@ class Evaluator:
                             smiles_prompt_states,
                             actual or "",
                             benchmark_aux,
+                            raw_response=scored_output,
                         )
                     is_correct = self._is_correct_for_example(
                         actual,
@@ -2650,6 +2650,7 @@ class Evaluator:
                         prompt if isinstance(prompt, str) else str(prompt)
                     )
                     sample = {
+                        **EvaluationResult._sample_identity_metadata(example, i),
                         "question": full_question,
                         "prompt": prompt_text,
                         "generated": completion,
@@ -2702,8 +2703,14 @@ class Evaluator:
                     elapsed = time.time() - example_start
                     timed_out = isinstance(e, PerExampleTimeout)
                     if timed_out:
-                        print(f"  [EVAL]   Timed out after {elapsed:.2f}s", flush=True)
+                        n_timeouts += 1
+                        print(
+                            f"  [EVAL]   Timed out after {elapsed:.2f}s "
+                            f"({n_timeouts} of {_MAX_TIMEOUTS} timeout budget used)",
+                            flush=True,
+                        )
                     sample = {
+                        **EvaluationResult._sample_identity_metadata(example, i),
                         "question": full_question,
                         "prompt": prompt_text,
                         "generated": "",
@@ -2742,10 +2749,11 @@ class Evaluator:
                     if early_reason:
                         print(f"  [EVAL] Early stopping synthesis eval: {early_reason}", flush=True)
                         return build_result(early_reason)
-                    if timed_out and early_stop_enabled:
+                    if timed_out and n_timeouts >= _MAX_TIMEOUTS:
                         reason = (
-                            "Evaluation stopped early because one example exceeded "
-                            f"the {self.max_seconds_per_example:.2f}s runtime budget."
+                            f"eval stopped early after {n_timeouts} timed-out examples "
+                            f"(pathological-strategy guard); "
+                            f"N={len(sample_outputs)} of {planned_num_examples}"
                         )
                         print(f"  [EVAL] Early stopping eval: {reason}", flush=True)
                         return build_result(reason)

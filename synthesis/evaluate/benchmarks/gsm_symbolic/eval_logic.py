@@ -189,6 +189,48 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
     return parser
 
 
+# CRANE-faithful GSM syntax check on the FINAL <<...>> block only.
+_FINAL_BLOCK_PARSERS: dict[str, Any] = {}
+
+
+def _final_block_parser(evaluator: Any):
+    grammar_text = evaluator._get_grammar_text()
+    parser = _FINAL_BLOCK_PARSERS.get(grammar_text)
+    if parser is None:
+        from lark import Lark
+
+        parser = Lark(grammar_text, start="syncode", parser="lalr")
+        _FINAL_BLOCK_PARSERS[grammar_text] = parser
+    return parser
+
+
+def _extract_final_block(output: str) -> str:
+    return output[output.rfind("<<") : output.rfind(">>") + 2]
+
+
+def _check_gsm_parsed(block: str, parser) -> bool:
+    if block == "" or "{" in block or "}" in block or "round(" in block:
+        return False
+    if not block.startswith("<<") or not block.endswith(">>"):
+        return False
+    try:
+        parser.parse(block)
+        return True
+    except Exception:
+        return False
+
+
+def check_syntax(
+    evaluator: Any, output: str, example: dict[str, Any] | None
+) -> tuple[bool, list[tuple[str, bool]]]:
+    """CRANE-faithful GSM syntax check on the FINAL ``<<...>>`` block only."""
+    block = _extract_final_block(output)
+    if block == "":
+        return False, []
+    parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
+    return parses, [(block, parses)]
+
+
 def ensure_runtime_prereqs(evaluator: Any) -> None:
     return None
 

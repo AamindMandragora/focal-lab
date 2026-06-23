@@ -62,13 +62,8 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
         "RepetitionPenaltyStep",
-        "TemperatureConstrainedStep",
         "GroupBoostedConstrainedStep",
         "AdaptiveConstrainedStep",
-        "SafeBoostedConstrainedStep",
-        "SafePenalizedConstrainedStep",
-        "SafeRepetitionPenaltyStep",
-        "SafeTemperatureConstrainedStep",
     }:
         # Keep delimiter tokens verbatim; redact other tokens (synthesis-sample-leaky).
         token = _safe_token(result)
@@ -386,38 +381,36 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
     _orig_top_valid = helpers_cls.TopValidCandidates
     _orig_boost = helpers_cls.BoostTokenLogits
     _orig_penalize = helpers_cls.PenalizeTokenLogits
-    _orig_scale = helpers_cls.ScaleAllLogits
 
-    def _ghl_with_fallback(self, lm):
+    def _ghl_with_fallback(self):
+        lm = self.lm
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_get_highest(self, lm)
+            return _orig_get_highest(self)
         return _fast_get_highest_logit_token(self, lm)
 
-    def _tvc_with_fallback(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
+    def _tvc_with_fallback(self, prompt, prefix, maxCandidates, eosToken):
+        lm = self.lm
+        parser = self.parser
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_top_valid(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
+            return _orig_top_valid(self, prompt, prefix, maxCandidates, eosToken)
         return _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
 
-    def _boost_with_fallback(self, lm, tokens, amount):
+    def _boost_with_fallback(self, tokens, amount):
+        lm = self.lm
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_boost(self, lm, tokens, amount)
+            return _orig_boost(self, tokens, amount)
         return _fast_boost_token_logits(self, lm, tokens, amount)
 
-    def _penalize_with_fallback(self, lm, tokens, amount):
+    def _penalize_with_fallback(self, tokens, amount):
+        lm = self.lm
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_penalize(self, lm, tokens, amount)
+            return _orig_penalize(self, tokens, amount)
         return _fast_penalize_token_logits(self, lm, tokens, amount)
-
-    def _scale_with_fallback(self, lm, scalar):
-        if not hasattr(lm, '_logits_tensor'):
-            return _orig_scale(self, lm, scalar)
-        return _fast_scale_all_logits(self, lm, scalar)
 
     helpers_cls.GetHighestLogitToken = _ghl_with_fallback
     helpers_cls.TopValidCandidates = _tvc_with_fallback
     helpers_cls.BoostTokenLogits = _boost_with_fallback
     helpers_cls.PenalizeTokenLogits = _penalize_with_fallback
-    helpers_cls.ScaleAllLogits = _scale_with_fallback
 
     # ---- Pure-Dafny helpers: O(N*M) Python-list scans -> O(N+M) Python-set ops.
     # The Dafny-compiled bodies use `t in seq` which is a linear scan over the
@@ -530,7 +523,7 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         return
 
     helper_names = [
-        "SetNonDeterministic",
+        "SetUseSampling",
         "UnconstrainedStep",
         "UnconstrainedChunk",
         "OpenConstrainedSpan",
@@ -540,17 +533,11 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "ConstrainedStep",
         "UnconstrainedGeneration",
         "ConstrainedGeneration",
-        "CraneGeneration",
         "ConfidenceGatedStep",
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
         "SoftConstrainedStep",
         "RepetitionPenaltyStep",
-        "TemperatureConstrainedStep",
-        "SafeBoostedConstrainedStep",
-        "SafePenalizedConstrainedStep",
-        "SafeRepetitionPenaltyStep",
-        "SafeTemperatureConstrainedStep",
         "SafeSoftConstrainedStep",
         "GroupBoostedConstrainedStep",
         "GroupHasValidMember",
@@ -559,21 +546,17 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "AdaptiveConstrainedStepWithPenalties",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
-        "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
         "DeadEndDetection",
         "ValidTokenCount",
         "BoostTokenLogits",
         "PenalizeTokenLogits",
-        "SafeBoostTokenLogits",
-        "SafePenalizeTokenLogits",
         "MaskTokensInPrefix",
         "GetHighestLogitToken",
         "GetLogitGap",
         "GetTopKTokens",
         "GetTokenLogit",
-        "ScaleAllLogits",
         "SaveLogitsSnapshot",
         "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
@@ -586,6 +569,12 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "GroupContaining",
         "IntersectTokenSets",
         "SubtractTokenSets",
+        "RollbackToGrammarSymbol",
+        "ViewGrammarSymbols",
+        "ForwardUntilGrammarSymbol",
+        "RegenerateUnitOnCheckFailure",
+        "RegenerateUnitOnGroundingFailure",
+        "CloseSpanWithinBudget",
     ]
 
     for name in helper_names:

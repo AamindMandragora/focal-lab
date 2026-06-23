@@ -37,7 +37,7 @@ Scoring uses first-occurrence unique molecules only (excluding in-prompt exempla
 
 Prompt feedback:
 
-- **Greedy strategies** (`unconstrained`, `gcd`, `crane`, `itergen`, metadecode synthesis eval): dynamic **Good results** / **Bad results** suffixes via `prompt_state.py`.
+- **Greedy strategies** (`unconstrained`, `gcd`, `crane`, `itergen`, metadecode synthesis eval): dynamic **Good results** / **Bad results** suffixes via `prompt_state.py`. Only extracted SMILES (from `clean_smiles_output` / delimited span parsing) are recorded; empty extraction adds `(invalid)` to bad results instead of raw completion text. Native headers require SMILES notation only (no IUPAC/systematic names). Bad suffixes use **Below are past mistakes — do not repeat them.** with one mistake per line (no inline `SMILES:` label). Repeating an extracted bad SMILES appends the capped prior completion under a **Response:** block plus `[repeat N]` so greedy runs cannot stall on an unchanged prompt.
 - **Stochastic strategies** (`rs`, `cars`): constant prompt so sampling diversity (and the CARS oracle trie) are not perturbed between attempts.
 
 State is managed in `prompt_state.py` and applied through `eval_logic.py` hooks used by `evaluator.py` and `run_legacy_fixed_strategy.py`. Aggregation lives in `pooled_eval.py` (`aggregate_smiles_pooled_scores`).

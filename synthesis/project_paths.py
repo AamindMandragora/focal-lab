@@ -424,6 +424,9 @@ def _infer_model_from_slug(model_slug: str) -> str:
         "Qwen_Qwen2.5_Coder_1.5B_Instruct": "Qwen/Qwen2.5-Coder-1.5B-Instruct",
         "Qwen_Qwen2.5_Coder_7B_Instruct": "Qwen/Qwen2.5-Coder-7B-Instruct",
         "Qwen_Qwen2.5_Coder_14B_Instruct": "Qwen/Qwen2.5-Coder-14B-Instruct",
+        "Qwen_Qwen3.5_2B": "Qwen/Qwen3.5-2B",
+        "Qwen_Qwen3.5_4B": "Qwen/Qwen3.5-4B",
+        "Qwen_Qwen3.5_9B": "Qwen/Qwen3.5-9B",
         "meta_llama_Llama_3.1_8B_Instruct": "meta-llama/Llama-3.1-8B-Instruct",
     }
     return known.get(model_slug, model_slug.replace("_", "/"))

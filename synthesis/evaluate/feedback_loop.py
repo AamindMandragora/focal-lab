@@ -25,6 +25,267 @@ from ..generate.rationale import extract_rationale
 from ..verify.verifier import DafnyVerifier, VerificationResult
 
 
+def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
+    """Localized diagnostic when the eval required << >> spans but produced none.
+
+    Two distinct root causes need different advice:
+    1. Spans never opened: strategy waits for model to emit "<<" but weak model never does.
+       Fix: force "<<" via a direct-control helper.
+    2. Spans opened but never closed: strategy gets "<<" in the output but the step budget
+       runs out before ">>" is produced — the span terminates the span incorrectly.
+       Fix: improve how the strategy decides a span is complete and exits it.
+    Returns "" when delimiters are present or not required.
+    """
+    if not require_delimiters or contains_delimiters:
+        return ""
+
+    if sample_outputs:
+        n = len(sample_outputs)
+        n_with = sum(1 for s in sample_outputs if s.get("contains_delimiters", False))
+        if n > 0 and n_with / n >= 0.05:
+            return ""
+
+    if sample_outputs:
+        n = len(sample_outputs)
+        n_open_not_closed = sum(
+            1 for s in sample_outputs
+            if not s.get("uses_hidden_chunks", False)
+            and "<<" in (s.get("full_output") or "")
+            and ">>" not in (s.get("full_output") or "")
+        )
+        if n > 0 and n_open_not_closed >= 0.2 * n:
+            return (
+                f"\n  ⚠ Delimiter check FAILED: none of the evaluated outputs "
+                f"contained a complete << >> span, but spans are required. "
+                f"{n_open_not_closed}/{n} outputs show that a `<<` span was "
+                f"opened but the strategy never produced the closing `>>` — the "
+                f"step budget ran out before the span was exited. This means `<<` "
+                f"IS being emitted, but the strategy does not successfully reach "
+                f"and emit `>>` for any example.\n"
+                f"    What to reconsider: this is a decoding-mechanism issue with "
+                f"how the strategy behaves *inside* a span — specifically, how it "
+                f"makes forward progress through the span content and how it "
+                f"recognizes that a span is complete and should be closed. The "
+                f"strategy needs a reliable path from span-open to span-close "
+                f"within the step budget. (General direction only — the specific "
+                f"mechanism is yours to design.)\n"
+            )
+
+    return (
+        "\n  ⚠ Delimiter check FAILED: none of the evaluated outputs contained a "
+        "<< >> span, but spans are required.\n"
+        "    Likely cause: the strategy opens spans by WAITING for the model to "
+        "emit \"<<\" (e.g. a `next == \"<<\"` trigger, or an unconstrained chunk "
+        "that stops on \"<<\"). A weak eval model may never emit \"<<\" on its "
+        "own, so the trigger never fires, no span opens, and \">>\" is never "
+        "reached.\n"
+        "    Fix to consider: FORCE the opening delimiter at span entry (append "
+        "\"<<\" directly via a forced-delimiter / direct-control helper) instead "
+        "of depending on the model to produce it, then force \">>\" at span exit. "
+        "This is a decoding-mechanism change, not task guidance.\n"
+    )
+
+
+def _span_not_closed_hint(require_delimiters: bool, sample_outputs, max_steps=None) -> str:
+    """Nudge when spans OPEN but never CLOSE before the step budget runs out."""
+    if not require_delimiters or not sample_outputs:
+        return ""
+    n = len(sample_outputs)
+    unterminated = [
+        s for s in sample_outputs
+        if not s.get("uses_hidden_chunks", False)
+        and "<<" in (s.get("full_output") or "")
+        and ">>" not in (s.get("full_output") or "")
+    ]
+    n_unterminated = len(unterminated)
+    n_maxsteps_nodelim = sum(
+        1 for s in sample_outputs
+        if s.get("hit_max_steps") and not s.get("contains_delimiters", False)
+    )
+    n_affected = max(n_unterminated, n_maxsteps_nodelim)
+    if n_affected == 0 or n_affected < 0.1 * n:
+        return ""
+
+    measured = ""
+    if unterminated:
+        toks = [float(s.get("token_count", 0) or 0) for s in unterminated]
+        avg_tok = int(round(sum(toks) / len(toks))) if toks else 0
+        n_hit = sum(1 for s in unterminated if s.get("hit_max_steps"))
+        pre_fracs = []
+        for s in unterminated:
+            out = s.get("full_output") or ""
+            idx = out.find("<<")
+            if idx >= 0 and len(out) > 0:
+                pre_fracs.append(idx / len(out))
+        budget_clause = f" against a step budget of {max_steps}" if max_steps else ""
+        measured = (
+            f"\n    Measured on those outputs (observed facts, not instructions): "
+            f"they generated on average {avg_tok} tokens{budget_clause}; "
+            f"{n_hit}/{n_unterminated} reached the step ceiling"
+        )
+        if pre_fracs:
+            pre_pct = int(round(100 * sum(pre_fracs) / len(pre_fracs)))
+            measured += (
+                f"; and the `<<` span did not open until on average {pre_pct}% "
+                f"of the way through the produced text"
+            )
+        measured += ".\n"
+
+    return (
+        f"\n  ⚠ Span-closure check: {n_affected}/{n} evaluated outputs opened a "
+        "`<<` span but never emitted the closing `>>` before the generation step "
+        "budget ran out. When a span never closes, the eval records no usable "
+        "answer for that example, so accuracy and syntax collapse toward zero even "
+        "though the model did start a span.\n"
+        + measured +
+        "    What to reconsider: this is a decoding-mechanism issue with how the "
+        "strategy behaves *inside* a span — how it makes forward progress and how "
+        "it decides the span is finished — not the task or the prompt. Aim for a "
+        "strategy that reliably reaches and emits `>>` within the step budget. "
+        "(General direction only — the specific mechanism is yours to design.)\n"
+    )
+
+
+def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
+    """Nudge when << >> spans APPEAR in the text but the constraint barely engaged."""
+    if not require_delimiters or not contains_delimiters or not sample_outputs:
+        return ""
+    relevant = [
+        s for s in sample_outputs
+        if not s.get("uses_hidden_chunks", False)
+        and s.get("contains_delimiters", False)
+        and "used_constrained_chunk" in s
+    ]
+    n_rel = len(relevant)
+    if n_rel == 0:
+        return ""
+    n_engaged = sum(1 for s in relevant if s.get("used_constrained_chunk"))
+    n_bypassed = n_rel - n_engaged
+    n = len(sample_outputs)
+    if n_bypassed < 0.2 * n or n_engaged >= 0.5 * n_rel:
+        return ""
+    return (
+        f"\n  ⚠ Constraint-engagement check: {n_engaged}/{n_rel} of the outputs that "
+        f"show `<< >>` actually ran the strategy's constrained branch — the other "
+        f"{n_bypassed} produced the span content UNCONSTRAINED. The delimiters appear "
+        f"in the text, so the spans LOOK present, but the constraint did not shape what "
+        f"went inside them, leaving the span syntax at the raw model's mercy.\n"
+        f"    Likely cause: the strategy enters its constrained branch by WAITING for a "
+        f"specific span-open signal (e.g. a `next == \"<<\"` trigger) that rarely "
+        f"matches the model's actual output, so the constrained path is skipped even "
+        f"though `<<` still appears.\n"
+        f"    Fix to consider: FORCE span entry — append the opening `<<` directly via "
+        f"a forced-delimiter / direct-control helper and then drive the span content "
+        f"through the constrained branch, instead of depending on a reactive trigger to "
+        f"detect span entry. This is a decoding-mechanism change at span ENTRY, not "
+        f"task guidance. (General direction only — the specific mechanism is yours to "
+        f"design.)\n"
+    )
+
+
+def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> str:
+    """Classify delimiter-bearing syntax failures into machine-checkable categories."""
+    if not require_delimiters or not sample_outputs:
+        return ""
+
+    unclosed: list[str] = []
+    no_span: list[str] = []
+    invalid: list[str] = []
+
+    for s in sample_outputs:
+        if s.get("uses_hidden_chunks"):
+            continue
+        if s.get("is_syntax_valid"):
+            continue
+        full_output = s.get("full_output") or ""
+        last_open = full_output.rfind("<<")
+        last_close = full_output.rfind(">>")
+        if last_open == -1:
+            no_span.append(full_output)
+        elif last_open > last_close:
+            unclosed.append(full_output)
+        else:
+            invalid.append(full_output)
+
+    total_classified = len(unclosed) + len(no_span) + len(invalid)
+    if total_classified == 0:
+        return ""
+
+    def _tail(output: str, max_chars: int = 120) -> str:
+        trimmed = output.strip()
+        if len(trimmed) <= max_chars:
+            return trimmed
+        return "..." + trimmed[-max_chars:]
+
+    lines = [
+        f"\n  Delimiter syntax-failure breakdown ({total_classified} examples):"
+    ]
+
+    if unclosed:
+        lines.append(
+            f"    final_span_unclosed: {len(unclosed)} example(s) — "
+            f"the generation emitted `<<` at the end and then stopped "
+            f"(EOS or dead-end) before producing any span content or `>>`."
+        )
+        for ex in unclosed[:2]:
+            lines.append(f"      output tail: {_tail(ex)!r}")
+
+    if no_span:
+        lines.append(
+            f"    no_span_emitted: {len(no_span)} example(s) — "
+            f"no `<<` appeared anywhere in the output."
+        )
+        for ex in no_span[:2]:
+            lines.append(f"      output tail: {_tail(ex)!r}")
+
+    if invalid:
+        lines.append(
+            f"    final_span_invalid: {len(invalid)} example(s) — "
+            f"a `<< >>` block was present but failed the syntax check "
+            f"(e.g. contained `{{`, `}}`, `**`, or was otherwise unparseable)."
+        )
+        for ex in invalid[:2]:
+            lines.append(f"      output tail: {_tail(ex)!r}")
+
+    lines.append(
+        "    What to reconsider: these are decoding-mechanism failures at "
+        "span entry/exit — not task guidance issues. Each category points to "
+        "a different span-lifecycle step to strengthen."
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _unit_rewind_hint(strategy_source: str, sample_outputs=None) -> str:
+    """Nudge when syntax-valid outputs are semantically wrong and unit rewind is unused."""
+    if not sample_outputs:
+        return ""
+    if "RegenerateUnitOnCheckFailure" in (strategy_source or ""):
+        return ""
+
+    n = len(sample_outputs)
+    if n == 0:
+        return ""
+
+    n_correct = sum(1 for s in sample_outputs if s.get("is_correct"))
+    n_syntax_valid = sum(1 for s in sample_outputs if s.get("is_syntax_valid"))
+    accuracy = n_correct / n
+    syntax_rate = n_syntax_valid / n
+    if syntax_rate - accuracy < 0.25:
+        return ""
+
+    return (
+        "\n  ⚠ Unit-rewind check: syntax-valid outputs dominate failures "
+        f"(syntax {syntax_rate:.1%} vs accuracy {accuracy:.1%}), but the strategy "
+        "does not call RegenerateUnitOnCheckFailure. When the grammar accepts a unit "
+        "that fails a downstream check, a unit-level rewind/resample path can replace "
+        "that fragment without abandoning the whole span.\n"
+        "    What to reconsider: add a mechanism that detects check failures on "
+        "grammar-valid units and resamples or rewinds at unit granularity instead of "
+        "committing invalid semantic content. (General direction only — the specific "
+        "mechanism is yours to design.)\n"
+    )
+
+
 class FailureStage(Enum):
     """Stage where synthesis attempt failed."""
 
@@ -72,11 +333,6 @@ def parse_strategy_type(strategy_code: str) -> dict:
             "pattern": r"SpeculativeGeneration.*?(\d+)",
             "category": "speculative",
             "comparable_to": "SpecDec-like",
-        },
-        "CraneGeneration": {
-            "pattern": r"CraneGeneration",
-            "category": "crane_style",
-            "comparable_to": "CRANE",
         },
     }
 
@@ -275,65 +531,98 @@ class SynthesisPipeline:
 
     DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
     NON_PRUNABLE_HELPERS = {
-        "SetNonDeterministic",
+        "AppendTaskGuidance",
         "UnconstrainedStep",
         "ConstrainedStep",
         "AppendConstrainedToken",
         "OpenConstrainedSpan",
         "EnterObservedConstrainedSpan",
         "CloseConstrainedSpan",
+        "CloseSpanIfComplete",
+        "Contains",
+        "RenderPrefix",
+        "GenerateLogits",
+        "ChooseNextToken",
+        "ChooseNextTokenUnconstrained",
+        "GenerateUnconstrainedChunk",
+        "MaskValidNextAndEos",
+        "BoostValidNextAndEos",
+        "IdToToken",
+        "TokenToId",
+        "TokenToIdRecursive",
+        "IdToLogit",
+        "TokenToLogit",
+        "TokensToLogits",
+        "IdsToLogits",
+        "MaskToken",
+        "MaskTokens",
+        "MaskTokensExcept",
+        "IsMasked",
+        "HasUnmaskedToken",
+        "SetUseSampling",
+        "IsValidPrefix",
+        "IsCompletePrefix",
+        "IsDeadPrefix",
+        "ValidNextTokenCount",
+        "ValidNextToken",
+        "ValidNextTokens",
+        "ParseG",
         "IsTokenValidNext",
         "ValidTokenCount",
         "DeadEndDetection",
         "TopValidCandidates",
         "RollbackConstrainedSuffix",
+        "RollbackToGrammarSymbol",
+        "ViewGrammarSymbols",
+        "ForwardUntilGrammarSymbol",
         "LastTokenBefore",
     }
     PRUNABLE_HELPERS = {
         "UnconstrainedGeneration",
+        "GenerateWithManagedSpan",
+        "ManagedStep",
+        "CloseSpanWithinBudget",
+        "RolloutConstrainedWithPenalties",
         "ConstrainedGeneration",
-        "CraneGeneration",
+        "RegenerateUnitOnGroundingFailure",
         "UnconstrainedChunk",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
         "ConfidenceGatedStep",
-        "SafeBoostedConstrainedStep",
-        "SafePenalizedConstrainedStep",
-        "SafeRepetitionPenaltyStep",
-        "SafeTemperatureConstrainedStep",
+        "BoostedConstrainedStep",
+        "PenalizedConstrainedStep",
+        "RepetitionPenaltyStep",
         "SafeSoftConstrainedStep",
         "GroupBoostedConstrainedStep",
         "GroupHasValidMember",
         "BoostValidGroups",
+        "DeadEndAvoidingStep",
+        "RollbackAndRegenerate",
+        "RegenerateUnitOnCheckFailure",
+        "RollbackAndContinue",
+        "RollbackConstrainedToComplete",
+        "RollbackToCompletePrefix",
         "AdaptiveConstrainedStep",
         "AdaptiveConstrainedStepWithPenalties",
-        "PenalizedConstrainedStep",
-        "BoostedConstrainedStep",
         "SoftConstrainedStep",
         "BoostTokenLogits",
         "PenalizeTokenLogits",
-        "SafeBoostTokenLogits",
-        "SafePenalizeTokenLogits",
         "MaskTokensInPrefix",
         "GetHighestLogitToken",
         "GetLogitGap",
         "GetTopKTokens",
         "GetTokenLogit",
-        "ScaleAllLogits",
         "SaveLogitsSnapshot",
         "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
-        "RolloutConstrainedWithPenalties",
         "RepetitionPenaltyStep",
-        "TemperatureConstrainedStep",
-        "RollbackConstrainedSpan",
         "ExtractAfterKeyword",
         "IntersectTokenSets",
         "SubtractTokenSets",
         "RollbackToValidPrefix",
         "FlattenTokenGroups",
         "GroupContaining",
-        "PrefixToString",
+        "RenderPrefix",
         "ExtractContentBetweenDelimiters",
         "CountSubstring",
         "CountTokenOccurrences",
@@ -768,9 +1057,10 @@ class SynthesisPipeline:
         keep_prunable = set(best_helpers & set(prunable_pool))
 
         total_pulls = max(1, sum(pulls.values()))
+        # Keep every untried helper on the menu; only prune helpers that have
+        # been tried and scored worse under UCB.
         untried = [helper for helper in prunable_pool if pulls[helper] == 0 and helper not in keep_prunable]
-        explore_count = min(self.helper_bandit_explore_untried, len(untried))
-        keep_prunable.update(untried[:explore_count])
+        keep_prunable.update(untried)
 
         ranked_tried = sorted(
             (helper for helper in prunable_pool if pulls[helper] > 0 and helper not in keep_prunable),
@@ -790,10 +1080,12 @@ class SynthesisPipeline:
 
         disabled = sorted(set(prunable_pool) - keep_prunable)
         allowed_helpers -= set(disabled)
+        n_untried_kept = sum(1 for helper in keep_prunable if pulls[helper] == 0)
         status = (
             "helper mask active (bandit/UCB); "
             f"kept {len(keep_prunable)}/{len(prunable_pool)} prunable helpers "
-            f"(top_k={self.helper_bandit_top_k}, explore_untried={self.helper_bandit_explore_untried})"
+            f"(top_k={self.helper_bandit_top_k}, all {n_untried_kept} untried kept, "
+            "only tried-and-worse helpers pruned)"
         )
         return sorted(allowed_helpers), status
 
@@ -1623,7 +1915,13 @@ class SynthesisPipeline:
 
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation error...")
-                evaluation_feedback = eval_result.get_feedback_summary()
+                evaluation_feedback = (
+                    eval_result.get_feedback_summary()
+                    + _final_span_failure_hint(
+                        self.require_delimiters, eval_result.sample_outputs
+                    )
+                    + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
+                )
                 mode_examples = eval_result._render_mode_examples()
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
                 if next_helper_status:
@@ -1706,6 +2004,24 @@ class SynthesisPipeline:
                     f"{'yes' if eval_result.contains_delimiters else 'no'} "
                     f"(required: {'yes' if self.require_delimiters else 'no'})"
                 )
+                _delim_hint = _delimiter_miss_hint(
+                    self.require_delimiters, eval_result.contains_delimiters,
+                    eval_result.sample_outputs
+                )
+                if _delim_hint:
+                    print(_delim_hint.rstrip("\n"))
+                _close_hint = _span_not_closed_hint(
+                    self.require_delimiters, eval_result.sample_outputs,
+                    getattr(self.evaluator, "max_steps", None)
+                )
+                if _close_hint:
+                    print(_close_hint.rstrip("\n"))
+                _bypass_hint = _constraint_bypassed_hint(
+                    self.require_delimiters, eval_result.contains_delimiters,
+                    eval_result.sample_outputs
+                )
+                if _bypass_hint:
+                    print(_bypass_hint.rstrip("\n"))
                 print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
                 if self.eval_max_seconds_per_example is not None:
                     print(
@@ -1728,6 +2044,22 @@ class SynthesisPipeline:
                         if self.eval_max_seconds_per_example is not None
                         else ""
                     )
+                    + _delimiter_miss_hint(
+                        self.require_delimiters, eval_result.contains_delimiters,
+                        eval_result.sample_outputs
+                    )
+                    + _span_not_closed_hint(
+                        self.require_delimiters, eval_result.sample_outputs,
+                        getattr(self.evaluator, "max_steps", None)
+                    )
+                    + _constraint_bypassed_hint(
+                        self.require_delimiters, eval_result.contains_delimiters,
+                        eval_result.sample_outputs
+                    )
+                    + _final_span_failure_hint(
+                        self.require_delimiters, eval_result.sample_outputs
+                    )
+                    + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
                     + "\n"
                     + eval_result.get_feedback_summary()
                 )
@@ -1866,6 +2198,7 @@ class SynthesisPipeline:
         for att in attempts:
             if (
                 att.eval_result is not None
+                and not att.eval_result.early_stopped
                 and att.eval_result.accuracy >= self.min_accuracy
                 and (
                     fallback_winner is None

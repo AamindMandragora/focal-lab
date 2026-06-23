@@ -11,6 +11,12 @@ from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
 
 
+def _resolve_device(device: str, backend: str) -> str:
+    if device == "auto" and backend == "vllm":
+        return "cuda"
+    return device
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
@@ -39,6 +45,12 @@ def main() -> None:
     p.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="eval")
     p.add_argument("--smiles-classes", type=str, default=None)
     p.add_argument("--max-seconds-per-example", type=float, default=None)
+    p.add_argument(
+        "--completion-mode",
+        action="store_true",
+        help="Feed the prompt as a raw continuation with NO chat template "
+        "(required for base / non-instruction-tuned completion models).",
+    )
     p.add_argument("--output-json", type=Path, default=None)
     args = p.parse_args()
 
@@ -55,7 +67,7 @@ def main() -> None:
         dataset_name=args.dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.sample_size,
         max_steps=args.max_steps,
         step_token_budget=args.step_token_budget,
@@ -79,6 +91,10 @@ def main() -> None:
         res = ev.evaluate_sample(compiled, sample_size=args.sample_size)
     finally:
         ev.unload_runtime()
+    if not res.success:
+        raise SystemExit(f"Evaluation failed: {res.error}")
+    if res.num_examples == 0:
+        raise SystemExit("Evaluation failed: zero examples were evaluated")
 
     print(f"accuracy: {res.accuracy:.4f}")
     print(f"syntax_rate: {res.syntax_rate:.4f}")

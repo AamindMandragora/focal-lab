@@ -1,6 +1,7 @@
 include "../library/VerifiedAgentSynthesis.dfy"
 
-// Reference reconstruction: hard-masked constrained steps inside << ... >> (CRANE-style).
+// Reference reconstruction: CRANE (confidence-gated adaptive switching with
+// substring-based << / >> span detection via Contains).
 module ReferenceCraneCSD {
   import opened VerifiedDecoderAgent
 
@@ -21,7 +22,7 @@ module ReferenceCraneCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm.Logits
+    modifies lm, lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -38,9 +39,12 @@ module ReferenceCraneCSD {
     ensures maxSteps == 0 || cost > 0 || generated != generatedPrefix ||
             insideConstrainedOut != insideConstrained ||
             currentConstrainedOut != currentConstrained
-
   {
-    var helpers := new CSDHelpers();
+    var helpers := new CSDHelpers(lm, parser);
+    assert helpers.lm.Logits == old(lm.Logits);
+    assert helpers.lm == lm;
+    assert helpers.parser == parser;
+    assert lm.ValidTokensIdsLogits();
     var g := generatedPrefix;
     var inside := insideConstrained;
     var cur := currentConstrained;
@@ -49,44 +53,69 @@ module ReferenceCraneCSD {
       generated := g;
       insideConstrainedOut := inside;
       currentConstrainedOut := if inside then cur else [];
-      cost := helpers.cost;
+      cost := helpers.cost();
       return;
     }
 
-    while helpers.cost < maxSteps
+    while helpers.cost() < maxSteps
+      modifies lm, old(lm.Logits)
+      invariant helpers.lm == lm
+      invariant helpers.parser == parser
       invariant lm.ValidTokensIdsLogits()
-      invariant |g| <= |generatedPrefix| + helpers.cost
+      invariant lm.Logits == old(lm.Logits)
+      invariant fresh(helpers)
+      invariant |g| <= |generatedPrefix| + helpers.cost()
       invariant !inside ==> cur == []
       invariant inside ==> parser.IsValidPrefix(cur)
       invariant inside ==> |cur| <= |g|
       invariant inside ==> g[|g| - |cur|..] == cur
-      invariant 0 <= helpers.cost <= maxSteps
-      decreases maxSteps - helpers.cost
+      invariant 0 <= helpers.cost() <= maxSteps
+      decreases maxSteps - helpers.cost(), if inside then |cur| else 0
     {
-      if inside && parser.IsCompletePrefix(cur) {
-        g, inside, cur := helpers.CloseConstrainedSpan(lm, parser, g, cur);
-      } else if !inside {
-        var next := helpers.UnconstrainedStep(lm, prompt, g);
-        g := g + [next];
+      if !inside {
+        var oldCost := helpers.cost();
+        assert helpers.lm.Logits == old(lm.Logits);
+        var next := helpers.UnconstrainedStep(prompt, g);
+        assert helpers.lm.Logits == old(lm.Logits);
+        assert helpers.cost() == oldCost + 1;
+        assert maxSteps - helpers.cost() < maxSteps - oldCost;
         if next == eosToken {
           break;
-        } else if next == "<<" {
+        }
+        g := g + [next];
+        if Contains(next, "<<") {
           inside := true;
           cur := [];
         }
+      } else if parser.IsCompletePrefix(cur) && |cur| > 0 {
+        inside := false;
+        cur := [];
       } else {
-        var next :=
-          helpers.GroupBoostedConstrainedStep(lm, parser, prompt, cur, [], 0.0, eosToken);
+        var constrainedPrompt := prompt + g[..|g| - |cur|];
+        var next: Token;
+        var wasConstrained: bool;
+        var oldCost := helpers.cost();
+        assert helpers.lm.Logits == old(lm.Logits);
+        next, wasConstrained := helpers.ConfidenceGatedStep(constrainedPrompt, cur, eosToken);
+        assert helpers.lm.Logits == old(lm.Logits);
+        assert helpers.cost() == oldCost + 1;
+        assert maxSteps - helpers.cost() < maxSteps - oldCost;
         if next == eosToken {
           break;
         }
-        g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
+        g := g + [next];
+        if Contains(next, ">>") {
+          inside := false;
+          cur := [];
+        } else {
+          cur := cur + [next];
+        }
       }
     }
 
     generated := g;
     insideConstrainedOut := inside;
     currentConstrainedOut := if inside then cur else [];
-    cost := helpers.cost;
+    cost := helpers.cost();
   }
 }

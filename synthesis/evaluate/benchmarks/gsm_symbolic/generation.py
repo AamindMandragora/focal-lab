@@ -33,6 +33,8 @@ def run_crane_csd(
     step_token_budget: int = 1,
     valid_tokens: Optional[List[str]] = None,
     valid_token_groups: Optional[List[List[str]]] = None,
+    max_seconds: Optional[float] = None,
+    completion_mode: bool = False,
 ) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
@@ -51,6 +53,8 @@ def run_crane_csd(
             already active. This is useful for tasks like Spider where the
             answer is parser-governed from the first token but chunk boundaries
             should not be serialized as visible delimiters.
+        completion_mode: When True, set lm.instruction_text to the raw
+            prompt_text string with no chat template applied.
 
     Returns:
         Tuple of (output_text, token_count, time_seconds, constrained_segments)
@@ -60,23 +64,30 @@ def run_crane_csd(
     lm = env["lm"]
     parser = dynamic_parser if dynamic_parser is not None else env["parser"]
 
-    if isinstance(prompt_text, list):
-        chat_messages = prompt_text
+    if completion_mode:
+        if not isinstance(prompt_text, str):
+            raise ValueError("completion_mode requires prompt_text to be a string")
+        lm.instruction_text = prompt_text
+        if hasattr(lm, "ResetTaskGuidance"):
+            lm.ResetTaskGuidance()
     else:
-        chat_messages = [{"role": "user", "content": prompt_text}]
-    lm.instruction_text = lm.tokenizer.apply_chat_template(
-        chat_messages, tokenize=False, add_generation_prompt=True
-    )
-    # Register chat_messages on the LM so AppendTaskGuidance (if the CSD
-    # calls it) can re-template with guidance injected INSIDE the last user
-    # message — instead of appending it after the assistant generation
-    # marker (which previously landed guidance in the model's output space
-    # and crashed accuracy by 18-22pp on this cell).
-    if hasattr(lm, "set_chat_messages"):
-        lm.set_chat_messages(chat_messages)
-    if hasattr(lm, "ResetTaskGuidance"):
-        lm.ResetTaskGuidance()
+        if isinstance(prompt_text, list):
+            chat_messages = prompt_text
+        else:
+            chat_messages = [{"role": "user", "content": prompt_text}]
+        lm.instruction_text = lm.tokenizer.apply_chat_template(
+            chat_messages, tokenize=False, add_generation_prompt=True
+        )
+        if hasattr(lm, "set_chat_messages"):
+            lm.set_chat_messages(chat_messages)
+        if hasattr(lm, "ResetTaskGuidance"):
+            lm.ResetTaskGuidance()
     start_time = time.time()
+    runtime_deadline = None
+    if max_seconds is not None:
+        runtime_deadline = time.monotonic() + max_seconds
+    if hasattr(lm, "SetRuntimeDeadline"):
+        lm.SetRuntimeDeadline(runtime_deadline)
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     eos_token_dafny = _dafny.Seq(eos_token_str)
@@ -108,30 +119,34 @@ def run_crane_csd(
     _sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
     _param_names = list(_sig.parameters.keys())
     _n_params = len(_param_names)
-    if "validTokenGroups" in _param_names:
-        result = GeneratedCSD.default__.MyCSDStrategy(
-            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-            start_inside_constrained, current_constrained,
-            max_steps, step_token_budget, valid_token_groups_dafny, eos_token_dafny,
-        )
-    elif "validTokens" in _param_names or _n_params >= 10:
-        result = GeneratedCSD.default__.MyCSDStrategy(
-            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-            start_inside_constrained, current_constrained,
-            max_steps, step_token_budget, valid_tokens_dafny, eos_token_dafny,
-        )
-    elif _n_params >= 9:
-        result = GeneratedCSD.default__.MyCSDStrategy(
-            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-            start_inside_constrained, current_constrained,
-            max_steps, step_token_budget, eos_token_dafny,
-        )
-    else:
-        result = GeneratedCSD.default__.MyCSDStrategy(
-            lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
-            start_inside_constrained, current_constrained,
-            max_steps, eos_token_dafny,
-        )
+    try:
+        if "validTokenGroups" in _param_names:
+            result = GeneratedCSD.default__.MyCSDStrategy(
+                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+                start_inside_constrained, current_constrained,
+                max_steps, step_token_budget, valid_token_groups_dafny, eos_token_dafny,
+            )
+        elif "validTokens" in _param_names or _n_params >= 10:
+            result = GeneratedCSD.default__.MyCSDStrategy(
+                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+                start_inside_constrained, current_constrained,
+                max_steps, step_token_budget, valid_tokens_dafny, eos_token_dafny,
+            )
+        elif _n_params >= 9:
+            result = GeneratedCSD.default__.MyCSDStrategy(
+                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+                start_inside_constrained, current_constrained,
+                max_steps, step_token_budget, eos_token_dafny,
+            )
+        else:
+            result = GeneratedCSD.default__.MyCSDStrategy(
+                lm, parser, _dafny.SeqWithoutIsStrInference([]), generated_prefix,
+                start_inside_constrained, current_constrained,
+                max_steps, eos_token_dafny,
+            )
+    finally:
+        if hasattr(lm, "ClearRuntimeDeadline"):
+            lm.ClearRuntimeDeadline()
 
     final_inside_constrained = False
     final_current_constrained = _dafny.SeqWithoutIsStrInference([])

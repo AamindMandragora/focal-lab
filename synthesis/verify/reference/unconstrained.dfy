@@ -21,7 +21,7 @@ module ReferenceUnconstrainedCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm.Logits
+    modifies lm, lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -36,26 +36,36 @@ module ReferenceUnconstrainedCSD {
     ensures maxSteps == 0 || cost > 0 || generated != generatedPrefix ||
             insideConstrainedOut != insideConstrained ||
             currentConstrainedOut != currentConstrained
-
   {
-    var helpers := new CSDHelpers();
+    var helpers := new CSDHelpers(lm, parser);
+    assert helpers.lm.Logits == old(lm.Logits);
+    assert helpers.lm == lm;
+    assert helpers.parser == parser;
+    assert lm.ValidTokensIdsLogits();
     var g := generatedPrefix;
 
     if maxSteps == 0 {
       generated := g;
       insideConstrainedOut := false;
       currentConstrainedOut := [];
-      cost := helpers.cost;
+      cost := helpers.cost();
       return;
     }
 
-    while helpers.cost < maxSteps
+    while helpers.cost() < maxSteps
+      modifies lm, old(lm.Logits)
+      invariant helpers.lm == lm
+      invariant helpers.parser == parser
       invariant lm.ValidTokensIdsLogits()
-      invariant |g| <= |generatedPrefix| + helpers.cost
-      invariant 0 <= helpers.cost <= maxSteps
-      decreases maxSteps - helpers.cost
+      invariant lm.Logits == old(lm.Logits)
+      invariant fresh(helpers) 
+      invariant |g| <= |generatedPrefix| + helpers.cost()
+      invariant 0 <= helpers.cost() <= maxSteps
+      decreases maxSteps - helpers.cost()
     {
-      var next := helpers.UnconstrainedStep(lm, prompt, g);
+      assert helpers.lm.Logits == old(lm.Logits);
+      var next := helpers.UnconstrainedStep(prompt, g);
+      assert helpers.lm.Logits == old(lm.Logits);
       g := g + [next];
       if next == eosToken {
         break;
@@ -65,6 +75,6 @@ module ReferenceUnconstrainedCSD {
     generated := g;
     insideConstrainedOut := false;
     currentConstrainedOut := [];
-    cost := helpers.cost;
+    cost := helpers.cost();
   }
 }

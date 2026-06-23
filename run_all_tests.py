@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shlex
@@ -31,9 +32,9 @@ DEFAULT_GSM_SPLIT_FILE = (
 DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
 DEFAULT_MODELS = (
-    "Qwen/Qwen2.5-1.5B-Instruct,"
-    "Qwen/Qwen2.5-Coder-7B-Instruct,"
-    "Qwen/Qwen2.5-Coder-14B-Instruct,"
+    "Qwen/Qwen3.5-2B,"
+    "Qwen/Qwen3.5-4B,"
+    "Qwen/Qwen3.5-9B,"
     "meta-llama/Llama-3.1-8B-Instruct"
 )
 DEFAULT_BENCHMARKS = "gsm,spider,smiles"
@@ -902,6 +903,8 @@ class Runner:
     def accuracy_target_with_margin(self, baseline_accuracy: float, target_strategy: str) -> float:
         if target_strategy == "none":
             return 0.0
+        if self.config.accuracy_win_margin <= 0:
+            return math.nextafter(baseline_accuracy, 1.0)
         return min(1.0, baseline_accuracy + self.config.accuracy_win_margin)
 
     def ensure_csd_target_baselines(
@@ -1101,6 +1104,10 @@ class Runner:
         ]
         self.add_vllm_parallel_flags(cmd)
         self.add_evaluation_split_flags(cmd, benchmark)
+        cmd += [
+            "--max-seconds-per-example",
+            self.eval_max_seconds_per_example(benchmark),
+        ]
         if benchmark == "smiles" and smiles_class:
             cmd += ["--smiles-classes", smiles_class]
         return cmd
@@ -1234,7 +1241,7 @@ class Runner:
             "smiles_class": smiles_class,
             "run_name": run_name,
         }
-        if not self.run_cmd(cmd, abort_on_quota=backend != "openai"):
+        if not self.run_cmd(cmd, abort_on_quota=False):
             print(
                 f"[warn] Metadecode synthesis failed for benchmark={benchmark} "
                 f"eval_model={eval_model} token_budget={token_budget} iter={synth_iter} "
@@ -1596,7 +1603,7 @@ f"(gsm: {self.config.eval_max_steps_gsm})"
             return
         print("")
         print("=== Phase 2: Ablation studies ===")
-        ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
+        ablation_model = "Qwen/Qwen3.5-9B"
         sections = self.config.ablation_sections
 
         if "A" in sections:

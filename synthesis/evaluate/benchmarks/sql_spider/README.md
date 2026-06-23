@@ -25,4 +25,5 @@ Strategies decide their own constraint behaviour. The prompt instructs the model
 ## Runtime Notes
 
 - Spider evaluation is execution-grounded: generated SQL is executed and compared against gold-query behavior.
+- The vendored SQL matcher requires NLTK data packages `punkt`, `punkt_tab`, and `stopwords`. `executor.ensure_spider_nltk_prereqs()` downloads them automatically before scoring; missing `punkt_tab` causes every execution check to fail and baseline accuracy to read as 0%.
 - The benchmark includes vendored evaluator dependencies under `syncode` support paths and benchmark utilities.

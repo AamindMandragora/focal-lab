@@ -35,8 +35,8 @@ def test_reasoning_reference_uses_tier_two(crane_strategy: str) -> None:
     assert prompt_tier_for_csd_strategy(crane_strategy) == 2
 
 
-def test_crane_generation_helper_uses_tier_two() -> None:
-    body = 'generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken);'
+def test_unconstrained_generation_helper_uses_tier_two() -> None:
+    body = 'generated := helpers.UnconstrainedGeneration(prompt, maxSteps);'
     assert strategy_uses_reasoning_prompt(body) is True
 
 

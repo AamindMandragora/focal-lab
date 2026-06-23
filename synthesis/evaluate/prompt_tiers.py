@@ -230,7 +230,6 @@ _REASONING_HELPERS = frozenset(
         "UnconstrainedStep",
         "UnconstrainedChunk",
         "UnconstrainedGeneration",
-        "CraneGeneration",
     }
 )
 
@@ -257,7 +256,7 @@ def strategy_uses_reasoning_prompt(strategy_code: str) -> bool:
     Infer whether evaluation should use the tier-2 (CoT) prompt for this CSD.
 
     Strategies that call free-LM helpers (``UnconstrainedStep``, ``UnconstrainedChunk``,
-    ``UnconstrainedGeneration``, ``CraneGeneration``) are evaluated with tier-2
+    ``UnconstrainedGeneration``) are evaluated with tier-2
     chain-of-thought prompt text. Fully constrained strategies that only open a
     constrained span and append grammar-masked tokens use tier-1 answer-only text.
     """

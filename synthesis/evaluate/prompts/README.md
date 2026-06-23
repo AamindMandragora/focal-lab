@@ -22,7 +22,7 @@ Benchmarks: `gsm_symbolic`, `spider`, `smiles`.
 Compiled **metadecode** picks tier from the CSD body on every synthesis eval iteration:
 tier **1** when the strategy only uses fully constrained helpers (e.g. `OpenConstrainedSpan`
 + `ConstrainedStep`), tier **2** when it calls free-LM helpers (`UnconstrainedStep`,
-`UnconstrainedChunk`, `UnconstrainedGeneration`, `CraneGeneration`). On **SMILES**, tier-1
+`UnconstrainedChunk`, `UnconstrainedGeneration`). On **SMILES**, tier-1
 prompt text may still use a delimited `<<`/`>>` suffix while **decoder grammar stays
 tier-2 delimited**. See `strategy_uses_reasoning_prompt` and `configure_eval_prompts` in
 `prompt_tiers.py`.
