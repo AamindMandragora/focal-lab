@@ -22,8 +22,8 @@ The project is organized so the core workflow is explicit:
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
 - `environment/`: environment setup and dependency installation notes/scripts.
-- `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
-- `outputs/`: generated runs, baselines, and preserved local experiment artifacts.
+- `cache/`: default local model, parser, and DFA mask cache (override with `CSD_CACHE_ROOT`, e.g. `/share/metadecode/cache` for a shared team store).
+- `outputs/`: generated runs and baseline JSONs (override with `CSD_OUTPUTS_ROOT`; logs stay under `logs/`).
 - `logs/`: per-run LLM prompt/response records (`prompt_io.jsonl`; override root via `CSD_LOGS_DIR`).
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
@@ -156,6 +156,9 @@ Optional local-beam refinement controls:
 
 Path defaults are intentionally overrideable. Use CLI flags where available and env vars for runtime/config paths:
 
+- `CSD_CACHE_ROOT` — shared Hugging Face + SynCode cache (default: `<repo>/cache/`). Propagates to `HF_HOME`, `HF_CACHE`, `TRANSFORMERS_CACHE`, `SYNCODE_CACHE`, `ITER_SYNCODE_CACHE` via `synthesis.storage_env.ensure_repo_cache_env`.
+- `CSD_OUTPUTS_ROOT` — shared run artifacts (default: `<repo>/outputs/`). Propagates to `CSD_OUTPUT_DIR`, `CSD_BASELINE_OUTPUT_DIR`, `CSD_ABLATION_OUTPUT_DIR`, `CSD_GPU3_RETRY_QUEUE`. Does **not** relocate `logs/`.
+- `./migrate_to_shared.sh` — one-time rsync of local `cache/` and `outputs/` to `/share/metadecode/{cache,outputs}`, symlink back, and append the two roots to `synthesis/.env`.
 - `--output-dir` / `CSD_OUTPUT_DIR`
 - `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` / `CSD_GRAMMARS_DIR`

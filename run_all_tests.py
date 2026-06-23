@@ -1940,9 +1940,9 @@ def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
         print(f"conda environment python not found: {python_path}", file=sys.stderr)
         raise SystemExit(1)
 
-    from synthesis.evaluate.run_legacy_fixed_strategy import _ensure_repo_cache_env
+    from synthesis.storage_env import ensure_shared_storage_env
 
-    _ensure_repo_cache_env()
+    ensure_shared_storage_env()
     env = os.environ.copy()
     hf_token_file = Path.home() / ".cache" / "huggingface" / "token"
     if not env.get("HF_TOKEN") and hf_token_file.is_file():
@@ -2028,6 +2028,9 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
 def main(argv: list[str] | None = None) -> int:
     os.chdir(ROOT_DIR)
     load_env_file(ROOT_DIR / "synthesis" / ".env")
+    from synthesis.storage_env import ensure_shared_storage_env
+
+    ensure_shared_storage_env()
     parser = make_parser()
     args = parser.parse_args(argv)
     if args.eval_backend == "vllm":

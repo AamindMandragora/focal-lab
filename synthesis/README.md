@@ -55,6 +55,8 @@ Compile is implemented under `verify` because compilation is only valid after ve
 
 Common filesystem/tool paths can be overridden via CLI flags or environment variables:
 
+- `CSD_CACHE_ROOT` (shared model + SynCode cache; see `synthesis/storage_env.py`)
+- `CSD_OUTPUTS_ROOT` (shared `generated/`, `baselines/`, `ablations/`; logs stay under `logs/`)
 - `--output-dir` or `CSD_OUTPUT_DIR`
 - `--baseline-output-dir` or `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` or `CSD_GRAMMARS_DIR`

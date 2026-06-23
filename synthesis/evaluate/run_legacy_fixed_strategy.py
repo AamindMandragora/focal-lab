@@ -42,35 +42,11 @@ def _truncate_prompt(prompt: str, base_prompt: str) -> str:
     return base_prompt + "\n".join(lines)
 
 
-def _ensure_repo_cache_env() -> Path:
-    """Point HF + SynCode pickles at a single repo-local ``cache/`` directory.
+def _ensure_repo_cache_env():
+    """Backward-compatible alias; prefer :func:`synthesis.storage_env.ensure_repo_cache_env`."""
+    from synthesis.storage_env import ensure_repo_cache_env
 
-    Legacy CRANE/IterGen historically defaulted to ``legacy/CRANE/src/iter_cache/``
-    (cwd-relative), duplicating multi‑GB model snapshots. Setting ``CSD_CACHE_ROOT``
-    (or these defaults) keeps Hugging Face checkpoints and ``mask_stores/`` / ``parsers/``
-    together under ``<repo>/cache/``.
-    """
-    repo_root = Path(__file__).resolve().parents[2]
-    cache_root = Path(os.environ.get("CSD_CACHE_ROOT", str(repo_root / "cache"))).expanduser().resolve()
-    cache_root.mkdir(parents=True, exist_ok=True)
-    root_s = str(cache_root)
-
-    os.environ.setdefault("CSD_CACHE_ROOT", root_s)
-    os.environ.setdefault("HF_HOME", root_s)
-    os.environ.setdefault("HF_CACHE", root_s)
-    os.environ.setdefault("TRANSFORMERS_CACHE", root_s)
-
-    syn_existing = os.environ.get("SYNCODE_CACHE") or os.environ.get("ITER_SYNCODE_CACHE")
-    if syn_existing:
-        syn = syn_existing if syn_existing.endswith(os.sep) else syn_existing + os.sep
-        os.environ.setdefault("SYNCODE_CACHE", syn)
-        os.environ.setdefault("ITER_SYNCODE_CACHE", syn)
-    else:
-        syn = root_s if root_s.endswith(os.sep) else root_s + os.sep
-        os.environ.setdefault("SYNCODE_CACHE", syn)
-        os.environ.setdefault("ITER_SYNCODE_CACHE", syn)
-
-    return cache_root
+    return ensure_repo_cache_env()
 
 
 def _normalize_dataset(dataset: str) -> str:
@@ -1849,6 +1825,13 @@ def run_crane_legacy_adapter(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    from synthesis.env_utils import load_env_file
+    from synthesis.storage_env import ensure_shared_storage_env
+
+    load_env_file(repo_root / "synthesis" / ".env")
+    ensure_shared_storage_env()
+
     parser = argparse.ArgumentParser(
         description="Run legacy fixed strategy code and export minimal baseline JSON"
     )
@@ -1942,7 +1925,6 @@ def main() -> None:
 
     args.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size)
 
-    _ensure_repo_cache_env()
     if args.eval_backend == "vllm":
         configure_vllm_multiprocessing()
 

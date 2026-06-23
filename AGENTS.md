@@ -40,7 +40,7 @@ Disallowed prompt content:
 - Legacy baseline codebases (CRANE / IterGen / CARS): clone with `bash environment/clone_legacy_csds.sh` into gitignored `legacy/*`; tracked pointer `legacy/README.md`; harness-vs-upstream notes `environment/legacy/DIFFERENCES.md`; **any edit under `legacy/{CRANE,itergen,cars}` must be captured as patches under `environment/legacy_patches/`** (see `environment/legacy/AGENTS.md`).
 - Dafny binary: set `DAFNY_PATH` when needed; otherwise the runner uses repo-local `dafny/dafny` only if present, then falls back to `dafny` on `PATH` or `~/.dotnet/tools/dafny`.
 - OpenAI API key: `synthesis/.env`
-- Hugging Face checkpoints and SynCode mask/parser pickles: repository `cache/` (set `CSD_CACHE_ROOT` to relocate; legacy CRANE/IterGen/GCD paths resolve here when unset).
+- Hugging Face checkpoints and SynCode mask/parser pickles: repository `cache/` (set `CSD_CACHE_ROOT` to relocate; legacy CRANE/IterGen/GCD paths resolve here when unset). Run artifacts: `outputs/` (set `CSD_OUTPUTS_ROOT`; logs stay local under `logs/`). One-time team migration: `./migrate_to_shared.sh`.
 
 ## Core Files
 

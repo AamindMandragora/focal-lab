@@ -543,6 +543,10 @@ Examples:
         help="Verify beam candidates before selecting one (default: true)"
     )
 
+    from synthesis.storage_env import ensure_shared_storage_env
+
+    ensure_shared_storage_env()
+
     args = parser.parse_args()
 
     # Defense against the "small author model" foot-gun.
