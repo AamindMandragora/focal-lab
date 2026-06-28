@@ -149,6 +149,14 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
     ]
     if do_cot:
         cmd.extend(["--do_cot", "True"])
+    # Opt-in: raise CRANE's adaptive itergen iteration cap (default 80 in CRANE
+    # main.py). Unset => flag omitted => CRANE keeps its published default, so
+    # recorded baselines are unchanged. Set only for cap probes / a deliberate
+    # symmetric budget raise (our CSD path is bounded purely by token budget,
+    # with no iteration cap, so lifting this matches the two methods' binding).
+    _max_itergen_iter = os.environ.get("CRANE_MAX_ITERGEN_ITER")
+    if _max_itergen_iter:
+        cmd.extend(["--max_itergen_iter", str(int(_max_itergen_iter))])
     if gsm_split_indices is not None:
         cmd.extend(["--indices", ",".join(str(i) for i in gsm_split_indices)])
 

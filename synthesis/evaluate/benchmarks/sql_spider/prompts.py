@@ -34,6 +34,31 @@ def format_spider_prompt(
     )
 
 
+def format_spider_itergen_aligned_prompt(example: dict[str, Any]) -> str:
+    """IterGen's EXACT Spider prompt for fair head-to-head comparison.
+
+    IterGen feeds instruct models a single user turn whose content is built as
+    ``f"db_id: {db_id}\\ndb_info: {db_info}\\nquestion: {question}"`` + the
+    literal suffix ``" Only output the SQL quey. \\nSQL:"`` (the ``quey`` typo
+    and the leading space are IterGen's own -- preserved verbatim so the token
+    sequence matches byte-for-byte). The evaluator wraps this returned string in
+    ``[{"role": "user", "content": <this>}]`` and applies the tokenizer chat
+    template with ``add_generation_prompt=True`` -- the same call IterGen makes,
+    so the final token sequence is identical.
+
+    No few-shot example and no ``<< >>`` instruction: span opening must come from
+    a FORCING strategy (OpenConstrainedSpan), not from the model emitting ``<<``.
+    """
+    db_id = example.get("db_id", "")
+    db_info = example.get("db_info", "")
+    question = example.get("question", "")
+    return (
+        f"db_id: {db_id}\n"
+        f"db_info: {db_info}\n"
+        f"question: {question} Only output the SQL quey. \nSQL:"
+    )
+
+
 def format_spider_messages(
     example: dict[str, Any],
     *,

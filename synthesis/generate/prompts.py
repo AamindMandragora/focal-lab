@@ -122,6 +122,9 @@ var nextPen := helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, 
 var gap := helpers.GetLogitGap(lm);
 var topK := helpers.GetTopKTokens(lm, k);
 helpers.MaskTokensInPrefix(lm, generated);
+var snap := helpers.SaveLogitsSnapshot(lm);
+helpers.RestoreLogitsSnapshot(lm, snap);
+var candTok, candPre, hitComplete, hitEos, stepsUsed := helpers.SpeculativeConstrainedRollout(lm, parser, prompt, currentConstrained, numSpecSteps, eosToken);
 var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(lm, prompt, generated, maxChunkTokens, openSpanToken, eosToken);
 var currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbol(lm, parser, constrainedPrompt, currentConstrained, stepTokenBudget, eosToken);
 var generatedOut, currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbolInGenerated(lm, parser, constrainedPrompt, generated, currentConstrained, stepTokenBudget, eosToken);
@@ -130,6 +133,7 @@ var nextPenRaw := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentCo
 var nextBoostRaw := helpers.BoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToBoost, boostAmount, eosToken);
 var nextRep := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, penaltyAmount, eosToken);
 var nextTemp := helpers.TemperatureConstrainedStep(lm, parser, prompt, currentConstrained, temperature, eosToken);
+var rolloutGen, rolloutSteps, rolloutEos := helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, budget, penalties, penaltyAmount, eosToken);
 var freeGenerated := helpers.UnconstrainedGeneration(lm, prompt, maxSteps);
 var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken);
 var craneGenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken);
@@ -142,6 +146,7 @@ var subCount := CSDHelpers.CountSubstring(text, sub);
 var s := CSDHelpers.PrefixToString(prefix);
 var between := CSDHelpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
 var anyInGroup := helpers.GroupHasValidMember(parser, prefix, group);
+var rolledGen, rolledCurrent := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 ```
 `OpenConstrainedSpan` appends a new `"<<"` token and costs 1 step. If `"<<"`
 was already emitted by `UnconstrainedStep` or `UnconstrainedChunk`, use
@@ -154,8 +159,12 @@ var narrow := helpers.DeadEndDetection(parser, currentConstrained, minValidCount
 var count := helpers.ValidTokenCount(parser, currentConstrained);
 var valid := helpers.IsTokenValidNext(parser, currentConstrained, token);
 var candidates := helpers.TopValidCandidates(lm, parser, prompt, currentConstrained, maxCandidates, eosToken);
+var rolled := CSDHelpers.RollbackToValidPrefix(parser, constrainedPrefix);
+var rolled := CSDHelpers.RollbackToCompletePrefix(parser, constrainedPrefix);
+var generatedOut, currentOut := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 var generatedOut, currentOut := helpers.RollbackConstrainedSuffix(parser, generated, currentConstrained);
 var generatedOut, currentOut := helpers.RollbackConstrainedToComplete(parser, generated, currentConstrained);
+var generatedOut, currentOut := helpers.RollbackAndContinue(lm, parser, prompt, generated, currentConstrained, eosToken, maxSteps, closeReserve, maxRetries);
 var flat := CSDHelpers.FlattenTokenGroups(validTokenGroups);
 var groupIdx := CSDHelpers.GroupContaining(validTokenGroups, token);
 var prevTok, foundPrev := helpers.LastTokenBefore(generated, ">>");
@@ -222,59 +231,6 @@ consume token budget by themselves.
   uses confidence-gated parser control inside that span.
   Cost: at most +`maxSteps`.
   Control profile: free outer continuation plus parser fallback inside spans.
-
-- `helpers.GenerateWithManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
-  Role: run a full free-then-constrained decode loop from the supplied state and
-  return `(generated, insideConstrainedOut, currentConstrainedOut)`, establishing the
-  length, cost, progress and parser-validity postconditions internally.
-  Mechanics: while steps remain, outside a span it takes `UnconstrainedStep` until
-  `"<<"` is observed; inside a span it calls `CloseSpanIfComplete` (closing and
-  stopping when the parser reports a complete prefix), otherwise one
-  `AdaptiveConstrainedStep(..., validTokenGroups, boostAmount, narrowThreshold, ...)`
-  followed by `AppendConstrainedToken`. Composes only already-verified primitives.
-  Requires: `lm.ValidTokensIdsLogits()`, `parser.IsValidPrefix([])`,
-  `!insideConstrained ==> currentConstrained == []`,
-  `insideConstrained ==> parser.IsValidPrefix(currentConstrained)`,
-  `insideConstrained ==> |currentConstrained| <= |generatedPrefix|`,
-  `"<<" in lm.Tokens && ">>" in lm.Tokens`, `0.0 <= boostAmount <= 1e8`,
-  `eosToken in lm.Tokens`.
-  Returns: `(generated, insideConstrainedOut, currentConstrainedOut)` with
-  `|generated| <= |generatedPrefix| + maxSteps`,
-  `!insideConstrainedOut ==> currentConstrainedOut == []`,
-  `insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)`,
-  `cost <= old(cost) + maxSteps`, and the progress disjunction
-  `maxSteps == 0 || cost > old(cost) || generated != generatedPrefix ||
-  insideConstrainedOut != insideConstrained || currentConstrainedOut != currentConstrained`.
-  Cost: ≤ `maxSteps` token-steps.
-  Control profile: whole-loop generator whose returned `cost` (read via `helpers.cost`)
-  and state satisfy the strategy method's postconditions with no caller-side loop or proof.
-
-- `helpers.ManagedStep(lm, parser, prompt, generated, insideConstrained, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
-  Role: take exactly one managed decode step from the supplied state and return
-  `(generatedOut, insideConstrainedOut, currentConstrainedOut, done)`, advancing
-  visible output by at most one token. `done` is `true` when the step hit `eosToken`
-  or closed the span. This is one iteration of `GenerateWithManagedSpan`'s loop body.
-  Mechanics: outside a span it takes one `UnconstrainedStep`; observing `"<<"` opens a
-  constrained span. Inside a span it calls `CloseSpanIfComplete` (closing and setting
-  `done` when the parser reports a complete prefix), otherwise one
-  `AdaptiveConstrainedStep(..., validTokenGroups, boostAmount, narrowThreshold, ...)`
-  followed by `AppendConstrainedToken`. Composes only already-verified primitives.
-  Requires: `lm.ValidTokensIdsLogits()`, `parser.IsValidPrefix([])`,
-  `!insideConstrained ==> currentConstrained == []`,
-  `insideConstrained ==> parser.IsValidPrefix(currentConstrained)`,
-  `insideConstrained ==> |currentConstrained| <= |generated|`,
-  `"<<" in lm.Tokens && ">>" in lm.Tokens`, `0.0 <= boostAmount <= 1e8`,
-  `eosToken in lm.Tokens`.
-  Returns: `(generatedOut, insideConstrainedOut, currentConstrainedOut, done)` with
-  `cost == old(cost) + 1`, `|generatedOut| <= |generated| + 1`,
-  `!insideConstrainedOut ==> currentConstrainedOut == []`,
-  `insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)`,
-  `insideConstrainedOut ==> |currentConstrainedOut| <= |generatedOut|`.
-  Cost: +1 token-step on every path.
-  Control profile: per-step primitive whose uniform `cost == old(cost) + 1` and
-  at-most-one-token growth let a single `while steps < maxSteps` loop that sets
-  `cost := helpers.cost` satisfy the strategy method's length, cost and progress
-  postconditions, with the per-branch step accounting handled inside the helper.
 
 - `helpers.OpenConstrainedSpan(lm, generated)`
   Role: explicit transition from free generation into constrained generation.
@@ -478,6 +434,13 @@ consume token budget by themselves.
   Mechanics: walks `prefix` and calls `lm.MaskToken` for in-vocabulary entries.
   Cost: +0.
 
+- `helpers.SpeculativeConstrainedRollout(lm, parser, prompt, constrainedPrefix, numTokens, eosToken)`
+  Role: run up to `numTokens` `ConstrainedStep` calls from `constrainedPrefix`, then
+  restore logits from a snapshot so the caller can inspect the candidate without
+  committing logits state (cost still includes the speculative forward steps).
+  Mechanics: internal `SaveLogitsSnapshot` / `RestoreLogitsSnapshot`.
+  Cost: +`stepsUsed` token-steps (`stepsUsed <= numTokens`).
+
 ### Parser queries, repair, and context extraction
 
 - `helpers.ValidTokenCount(parser, currentConstrained)`
@@ -514,6 +477,13 @@ consume token budget by themselves.
   Cost: +0.
   Control profile: parser repair by deletion.
 
+- `CSDHelpers.RollbackToCompletePrefix(parser, prefix)` (static)
+  Role: shorten `prefix` from the end until it is a complete parse or empty.
+  Mechanics: drops trailing tokens while the prefix is not `IsCompletePrefix`;
+  returns the longest complete prefix, or empty if none exists.
+  Cost: +0.
+  Control profile: parser repair by deletion.
+
 - `helpers.RollbackConstrainedToComplete(parser, generated, currentConstrained)`
   Role: repair active constrained state by shortening the constrained suffix to
   a complete parse.
@@ -523,12 +493,65 @@ consume token budget by themselves.
   Cost: +0.
   Control profile: parser repair by deletion.
 
-- `helpers.RegenerateUnitOnGroundingFailure(lm, parser, prompt, currentConstrained, eosToken, budget, maxRetries, maxRollbackBudget)`
+- `helpers.RollbackAndContinue(lm, parser, prompt, generated, currentConstrained, eosToken, maxSteps, closeReserve, maxRetries)`
+  Role: repair active constrained state by rolling the constrained suffix back to
+  a complete parse and then regenerating forward from that point.
+  Mechanics: computes the stable prefix from the current suffix length, rolls
+  `currentConstrained` back to its last `IsCompletePrefix` (or empty), then steps
+  the LM forward, avoiding dead-end tokens (up to `maxRetries` retries per step)
+  and tracking the longest complete prefix reached. Stops after at most
+  `maxSteps - closeReserve` steps. `currentOut` is `IsCompletePrefix` or empty;
+  `generatedOut` is the stable prefix followed by `currentOut`.
+  The constrained span is left open — no closing delimiter is emitted — and the
+  `closeReserve` steps withheld from the step budget remain available for closing
+  it afterward.
+  Requires `closeReserve <= maxSteps` and `|currentConstrained| <= |generated|`.
+  Cost: at most +`(maxSteps - closeReserve)`.
+  Control profile: parser repair by deletion plus dead-end-avoiding regeneration.
+
+- `helpers.RegenerateUnitOnCheckFailure(lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit, maxRetries, maxRollbackBudget, allowedUnits)`
   Role: generate a constrained span unit-by-unit, rewinding and resampling any
-  unit whose identifier-like tokens are not grounded in the prompt context. The
-  per-unit acceptance test is `lm.SpanGrounded(renderedUnit)` (see below), which
-  tests the identifier-like tokens WITHIN each completed unit rather than the
-  unit as a whole, so it needs no `allowedUnits` argument.
+  unit whose rendered text is not in a caller-supplied allowed set.
+  When to use: when evaluation shows outputs that are syntax-valid but score
+  incorrect — i.e. the failure is in WHICH units the model chose, not in
+  structure. If outputs are already well-formed (grammar-valid) yet wrong, the
+  problem is unit selection; this helper directly addresses that by checking each
+  completed grammar unit against a set of acceptable values and resampling on
+  mismatch.
+  How to use: build `allowedUnits` from the identifiers or names that appear
+  in the per-example prompt context (e.g. scan `prompt` for recognizable tokens
+  using `CSDHelpers.PrefixToString` or by extracting from the rendered input
+  string). Pass this as a `seq<string>`. Start with conservative retry values
+  such as `maxStepsPerUnit := 20`, `maxRetries := 3`, `maxRollbackBudget := 10`.
+  Example call shape:
+    var allowed: seq<string> := /* names extracted from prompt context */;
+    var result := helpers.RegenerateUnitOnCheckFailure(
+        lm, parser, prompt, currentConstrained, eosToken,
+        20, 3, 10, allowed);
+  If `allowedUnits` is empty (e.g. because no names were found in context), the
+  check is disabled and the helper degrades gracefully to plain dead-end-avoiding
+  generation — so it is always safe to call.
+  Mechanics: generates tokens via `DeadEndAvoidingStep`. At each grammar-unit
+  boundary (`parser.IsCompletePrefix` becomes true), it renders the new unit text
+  and checks it against `allowedUnits`. On a failed check and with remaining retry
+  budget, it rolls back to the last accepted checkpoint, penalizes the rejected
+  first token, and regenerates from there. After `maxRetries` failures on one
+  unit, the unit is accepted to preserve termination. Returns `resultConstrained:
+  Prefix`, which is always parser-valid.
+  Cost: bounded by `(maxRetries + 1) * maxStepsPerUnit` total steps; degrades to
+  plain generation when `allowedUnits` is empty or the budget is exhausted.
+  Control profile: unit-level rollback-and-resample with bounded retry and
+  budget; grammar-driven boundary detection; caller-supplied allowed-unit set.
+
+- `helpers.RegenerateUnitOnGroundingFailure(lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit, maxRetries, maxRollbackBudget)`
+  Role: same control loop as `RegenerateUnitOnCheckFailure`, except the per-unit
+  acceptance test is `lm.SpanGrounded(renderedUnit)` (see below) instead of
+  membership of the whole rendered unit in a caller-supplied set. It therefore
+  tests the identifier-like tokens WITHIN each completed unit, not the unit as a
+  whole, and needs no `allowedUnits` argument.
+  When to use: when outputs are grammar-valid but score incorrect because of
+  WHICH content tokens were chosen, and the acceptable content tokens are
+  determined by identifiers already present in the per-example prompt context.
   Mechanics: generates tokens via dead-end-avoiding steps; at each grammar-unit
   boundary (`parser.IsCompletePrefix` becomes true) it renders the new unit and
   calls `lm.SpanGrounded` on it. On a false result and with remaining budget it
@@ -536,9 +559,11 @@ consume token budget by themselves.
   and regenerates from there; after `maxRetries` failures on one unit the unit is
   accepted to preserve termination. Returns `resultConstrained: Prefix`, always
   parser-valid.
-  Cost: bounded by `budget` total steps.
+  Cost: bounded by `(maxRetries + 1) * maxStepsPerUnit` total steps.
   Control profile: unit-level rollback-and-resample with bounded retry and
   budget; grammar-driven boundary detection; prompt-grounded acceptance test.
+  Suggested starting values: `maxStepsPerUnit := 20`, `maxRetries := 3`,
+  `maxRollbackBudget := 10`.
 
 - `lm.SpanGrounded(text)` (predicate)
   Returns true iff every identifier-like token in `text` appears in the support
@@ -584,6 +609,12 @@ consume token budget by themselves.
   Mechanics: linear scan over `group`; no LM call or logit change.
   Cost: +0.
 
+- `helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained)`
+  Role: repair constrained text when `generated == stablePrefix + currentConstrained`.
+  Mechanics: rolls back `currentConstrained` with `RollbackToValidPrefix`, then
+  reattaches `stablePrefix`.
+  Cost: +0.
+
 - `helpers.SoftConstrainedStep(lm, parser, prompt, constrainedPrefix, boostAmount, eosToken)`
   Role: one step that boosts grammar-valid logits (and EOS) then samples without a hard mask.
   Mechanics: `BoostValidNextAndEos`, `ChooseNextTokenUnconstrained`; `isValid` reports
@@ -624,6 +655,11 @@ consume token budget by themselves.
   scale helper.
   Cost: +1 token-step.
 
+- `helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, totalBudget, penalties, penaltyAmount, eosToken)`
+  Role: bounded loop of `SafePenalizedConstrainedStep` until completion, EOS, or budget.
+  Mechanics: extends `generatedOut` token by token; `cost` increases by `stepsUsed`.
+  Cost: +`stepsUsed` token-steps (each inner step +1).
+
 - `helpers.GetHighestLogitToken(lm)`
   Role: read the argmax from the current logit vector.
   Mechanics: no forward pass; assumes logits already match the intended prefix.
@@ -638,6 +674,17 @@ consume token budget by themselves.
   Role: multiply every vocabulary logit by a positive scalar with bounds clamping.
   Mechanics: no LM call; use before a sampling helper that reads the same logits.
   Cost: +0.
+
+- `helpers.SaveLogitsSnapshot(lm)`
+  Role: copy logits for branching or speculation.
+  Mechanics: full-array read; use with a later restore when a speculative path
+  should not commit logit state.
+  Cost: +0 for snapshot ops alone.
+
+- `helpers.RestoreLogitsSnapshot(lm, snapshot)`
+  Role: restore copied logits after branching or speculation.
+  Mechanics: full-array write; restores prior logits without changing `cost` by itself.
+  Cost: +0 for snapshot ops alone.
 
 - `CSDHelpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
   Role: count non-overlapping occurrences of `sub` in string `s`.
@@ -816,15 +863,11 @@ Keep all intermediate reasoning outside visible spans; a visible span should
 contain only the final exact expression or answer content, not setup or prose.
 If the task allows it, use only one visible span for the final answer rather
 than emitting multiple visible spans throughout the solution.
-For visible spans that are exact arithmetic, prefer parser-valid token steps
+For visible spans that contain exact content, prefer parser-valid token steps
 over free-form chunks, and avoid repetition penalties that can amplify valid
 symbol loops.
 For exact visible spans, use hard parser-controlled helpers such as
 `ConstrainedStep`; do not use `ConfidenceGatedStep` inside exact spans.
-
-When the task output includes arithmetic expressions that will be evaluated as
-code or parsed for exactness, keep them in standard Python syntax: use `**` for
-exponentiation, `//` for integer division, and never use `^` as exponentiation.
 
 ```dafny
 // CSD_RATIONALE_BEGIN
@@ -1775,6 +1818,94 @@ cost := steps;
 
 ```dafny
 // CSD_RATIONALE_BEGIN
+// Grounded-and-closed constrained CSD. Phase 1 generates unconstrained until
+// "<<" opens a visible span, reserving step budget. Phase 2 fills the span with
+// RegenerateUnitOnGroundingFailure using HALF the remaining budget, so a reserve
+// is kept for closing; the helper rewinds and resamples any completed unit whose
+// identifier-like tokens are not grounded in the prompt context. Phase 3 calls
+// CloseSpanWithinBudget on the remaining budget to bring the span to a completable
+// state and emit the closing ">>". Per-phase budgets keep the length/cost bounds.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Phase 1 sets insideConstrainedOut true only on next == "<<",
+//   clearing currentConstrainedOut to [] (a valid prefix). Phase 2 stores the
+//   helper's result (parser-valid by its postcondition) into currentConstrainedOut.
+//   Phase 3 stores CloseSpanWithinBudget's result: on close, insideConstrainedOut is
+//   false and currentConstrainedOut == []; otherwise currentConstrainedOut stays a
+//   valid prefix. So !insideConstrainedOut ==> currentConstrainedOut == [] and
+//   insideConstrainedOut ==> IsValidPrefix(currentConstrainedOut) both hold.
+// length/cost: Phase 1 grows generated and steps by 1 per iteration, keeping
+//   |generated| <= |generatedPrefix| + steps. Phase 2 runs the helper with
+//   maxStepsPerUnit = fillBudget/4 (fillBudget = rem/2), maxRetries = 3; by its
+//   length/cost postconditions generated and cost grow by at most 4*(fillBudget/4)
+//   <= rem, added to steps. Phase 3 runs CloseSpanWithinBudget with closeBudget =
+//   maxSteps - steps; by its length/cost postconditions |generated| <=
+//   |generatedPrefix| + maxSteps, and we set steps := maxSteps.
+// progress: maxSteps > 0 ==> Phase 1 takes a step (cost > 0), or the span was open
+//   on entry and Phase 3 flips insideConstrainedOut.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps && !insideConstrainedOut
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  var next := helpers.UnconstrainedStep(lm, prompt, generated);
+  steps := steps + 1;
+  if next == eosToken {{
+    break;
+  }}
+  generated := generated + [next];
+  if next == "<<" {{
+    insideConstrainedOut := true;
+    currentConstrainedOut := [];
+  }}
+}}
+
+if insideConstrainedOut && steps < maxSteps {{
+  var rem := maxSteps - steps;
+  var fillBudget := rem / 2;
+  if fillBudget >= 4 {{
+    var perUnit := fillBudget / 4;
+    assert fillBudget == 4 * (fillBudget / 4) + fillBudget % 4;
+    assert 4 * perUnit <= fillBudget;
+    assert 4 * perUnit <= rem;
+    var stable := generated[..|generated| - |currentConstrainedOut|];
+    var filled := helpers.RegenerateUnitOnGroundingFailure(
+      lm, parser, prompt + stable, currentConstrainedOut, eosToken, perUnit, 3, perUnit
+    );
+    generated := stable + filled;
+    currentConstrainedOut := filled;
+    steps := steps + 4 * perUnit;
+  }}
+}}
+
+if insideConstrainedOut && steps < maxSteps {{
+  var closeBudget := maxSteps - steps;
+  var cg, ci, cc := helpers.CloseSpanWithinBudget(
+    lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget
+  );
+  generated := cg;
+  insideConstrainedOut := ci;
+  currentConstrainedOut := cc;
+  steps := maxSteps;
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
 // Open-then-reliably-close CSD. Phase 1 generates unconstrained until "<<" opens
 // a visible span. Phase 2 calls CloseSpanWithinBudget on the entire remaining
 // budget to advance the span to a completable state and emit the closing ">>",
@@ -1834,6 +1965,85 @@ if insideConstrainedOut && steps < maxSteps {{
 cost := steps;
 ```
 
+```dafny
+// CSD_RATIONALE_BEGIN
+// Token-0 grounded constrained CSD. The eval surface is grammar-constrained from
+// the very first token and carries NO visible << >> delimiters, so this strategy
+// never emits "<<". If it is not already inside a constrained span it ENTERS one
+// silently via EnterObservedConstrainedSpan (sets inside=true, current=[], costs 0
+// tokens) instead of opening a visible span. It then GROUNDS the constrained
+// content unit-by-unit with RegenerateUnitOnGroundingFailure, which rewinds and
+// resamples any completed identifier whose tokens are unsupported by the prompt
+// context. Half the remaining step budget goes to grounding; the other half is
+// reserved so CloseSpanWithinBudget can always advance the span to a completable
+// state. Every budget is charged into `steps`, so the length and cost bounds hold.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: EnterObservedConstrainedSpan returns current == [] (valid);
+//   RegenerateUnitOnGroundingFailure returns a valid prefix; CloseSpanWithinBudget
+//   returns either a closed span (current == []) or a valid open prefix. So both
+//   span invariants hold after every phase.
+// length/cost: steps starts at 0. The grounding phase spends fillBudget =
+//   (maxSteps - steps)/2 and raises steps by that amount; |generated| grows by at
+//   most fillBudget because the regenerated unit replaces a suffix of length
+//   |currentConstrainedOut| and RegenerateUnitOnGroundingFailure bounds the result
+//   by |currentConstrainedOut| + fillBudget. The close phase spends the rest
+//   (closeBudget = maxSteps - steps) and sets steps := maxSteps; by
+//   CloseSpanWithinBudget's |generatedOut| <= |generated| + closeBudget we get
+//   |generated| <= |generatedPrefix| + maxSteps. cost := steps <= maxSteps.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+// (1) Enter a constrained span with NO visible "<<" if not already inside.
+if !insideConstrainedOut {{
+  generated, insideConstrainedOut, currentConstrainedOut :=
+    helpers.EnterObservedConstrainedSpan(lm, generated);
+}}
+assert insideConstrainedOut;
+assert parser.IsValidPrefix(currentConstrainedOut);
+assert |currentConstrainedOut| <= |generated|;
+assert |generated| <= |generatedPrefix| + steps;
+
+// (2) Ground the constrained content unit-by-unit on half the remaining budget.
+if steps < maxSteps {{
+  var rem: nat := maxSteps - steps;
+  var fillBudget: nat := rem / 2;
+  if fillBudget >= 1 {{
+    assert |currentConstrainedOut| <= |generated|;
+    var stable := generated[..|generated| - |currentConstrainedOut|];
+    var filled := helpers.RegenerateUnitOnGroundingFailure(
+      lm, parser, prompt + stable, currentConstrainedOut, eosToken, fillBudget, 3, fillBudget);
+    generated := stable + filled;
+    currentConstrainedOut := filled;
+    steps := steps + fillBudget;
+    assert |generated| <= |generatedPrefix| + steps;
+  }}
+}}
+assert insideConstrainedOut;
+assert parser.IsValidPrefix(currentConstrainedOut);
+assert |currentConstrainedOut| <= |generated|;
+assert |generated| <= |generatedPrefix| + steps;
+assert steps <= maxSteps;
+
+// (3) Advance the span to a completable state on the reserved budget.
+if steps < maxSteps {{
+  var closeBudget: nat := maxSteps - steps;
+  generated, insideConstrainedOut, currentConstrainedOut :=
+    helpers.CloseSpanWithinBudget(
+      lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget);
+  steps := maxSteps;
+}}
+assert |generated| <= |generatedPrefix| + steps;
+assert steps <= maxSteps;
+
+cost := steps;
+```
+
 ## Requirements
 - Output a COMPLETE method body with concrete Dafny statements in every required branch.
 - The rationale block should briefly explain:
@@ -1865,7 +2075,9 @@ _VERIFIED_EXAMPLE_PREFIXES = (
     "// Simple delimiter-triggered CSD.",
     "// Group-aware constrained CSD.",
     "// Adaptive-narrowness CSD.",
+    "// Grounded-unit constrained CSD.",
     "// Open-then-reliably-close CSD.",
+    "// Token-0 grounded constrained CSD.",
 )
 
 
@@ -2000,11 +2212,11 @@ Evaluation feedback:
 ## How to revise
 
 Choose the change size that matches your diagnosis. Numeric tweaks, helper swaps, and structural rewrites are all on the table — pick whatever the failure pattern most directly calls for.
-If the task contract includes exact arithmetic or visible delimiter spans, treat syntax failures as structural: prefer parser-controlled token generation and immediate span closure over longer unconstrained chunks.
+If the task contract includes exact content or visible delimiter spans, treat syntax failures as structural: prefer parser-controlled token generation and immediate span closure over longer unconstrained chunks.
 When a visible span is left unterminated or malformed, repair the active constrained state so the span returns to a point the parser can close cleanly, and emit the closing delimiter as soon as it can — before the step budget runs out.
 If the output uses visible spans, avoid opening them until the content is settled; once open, keep them to the smallest exact unit the contract allows.
 Do not place reasoning text inside a visible span; reserve visible spans for the final exact content only.
-When a visible span contains exact arithmetic, use parser-guided token selection and keep the span content to a single finished expression rather than a loose sequence of partial fragments.
+When a visible span contains exact content, use parser-guided token selection and keep the span content to a single finished expression rather than a loose sequence of partial fragments.
 If a visible span is exact, keep it under hard parser control until the parser
 can close it cleanly, without falling back to `ConfidenceGatedStep`.
 

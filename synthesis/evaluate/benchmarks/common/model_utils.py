@@ -832,9 +832,14 @@ class _TensorizedLMBase:
                     f"{self._task_guidance.HEADER}\n{text}"
                 )
                 try:
-                    self.instruction_text = self.tokenizer.apply_chat_template(
-                        messages, tokenize=False, add_generation_prompt=True
-                    )
+                    try:
+                        self.instruction_text = self.tokenizer.apply_chat_template(
+                            messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
+                        )
+                    except TypeError:
+                        self.instruction_text = self.tokenizer.apply_chat_template(
+                            messages, tokenize=False, add_generation_prompt=True
+                        )
                     return
                 except Exception:
                     # If re-templating fails for any tokenizer-specific reason,

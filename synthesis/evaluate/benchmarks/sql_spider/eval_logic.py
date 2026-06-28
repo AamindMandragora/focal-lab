@@ -7,11 +7,48 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
-from synthesis.evaluate.benchmarks.sql_spider.prompts import format_spider_messages, format_spider_prompt
+from synthesis.evaluate.benchmarks.sql_spider.prompts import (
+    format_spider_itergen_aligned_prompt,
+    format_spider_messages,
+    format_spider_prompt,
+)
 
 
-uses_hidden_chunks = defaults.uses_hidden_chunks
-example_syntax_pass = defaults.example_syntax_pass_from_segments
+def _token0_enabled() -> bool:
+    """Spider no-delimiter / token-0-constrained mode. DEFAULT ON (2026-06-22):
+    the whole answer is grammar-constrained from the first token with NO visible
+    << >> delimiters — the IterGen-aligned decoding surface. Set
+    SPIDER_TOKEN0_CONSTRAINED=0 to opt back into the legacy visible-<<>>-span path
+    (needed to reproduce the pre-2026-06-22 accepted-board strategies, which force
+    << via OpenConstrainedSpan). GSM is a separate benchmark and is unaffected.
+    """
+    import os
+
+    return os.environ.get("SPIDER_TOKEN0_CONSTRAINED", "1") != "0"
+
+
+def uses_hidden_chunks() -> bool:
+    # Token-0-constrained (no << >>) mode: the whole output is parser-governed,
+    # so chunk usage is "hidden" (no visible delimiter tokens). Mirrors how the
+    # SMILES benchmark treats its single constrained span.
+    return _token0_enabled()
+
+
+def example_syntax_pass(
+    all_valid_syntax: bool,
+    segments: list,
+    used_hidden_chunk: bool,
+    aux: dict | None,
+) -> bool:
+    if _token0_enabled():
+        # No << >> spans exist to extract in token-0 mode, so `segments` is empty
+        # and the default `bool(segments) and all_valid_syntax` would score 0%.
+        # Credit the grammar-parse result computed over the EXTRACTED SQL in
+        # extract_actual instead (does not touch the grammar or correctness grader).
+        return bool(aux and aux.get("syntax_valid"))
+    return bool(segments) and all_valid_syntax
+
+
 accuracy_applicable = defaults.accuracy_applicable_always
 accuracy_upper_bound = defaults.accuracy_upper_bound_with_remaining
 final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
@@ -46,6 +83,24 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     # and 44->20.7 (1.5B), confirmed on seed334 held-out 300 on 2026-06-05.
     # (Multi-turn lifted unconstrained 38%->44% but exhausts max_steps in
     # constrained mode and produces 0%/0% — confirmed 2026-05-28.)
+    #
+    # Token-0 mode (DEFAULT, see _token0_enabled) uses IterGen's EXACT bare prompt
+    # (no few-shot, no << >> instruction) for a fair head-to-head: the model is
+    # grammar-constrained from token 0 so it emits no delimiters and no SQL! echo,
+    # making the bare prompt safe (the recorded zero-shot collapse above was a
+    # REACTIVE <<>> strategy, which no longer applies). SPIDER_ALIGNED_PROMPT=1
+    # forces the aligned prompt even under the legacy <<>> opt-out path.
+    import os
+
+    if _token0_enabled() or os.environ.get("SPIDER_ALIGNED_PROMPT") == "1":
+        return format_spider_itergen_aligned_prompt(example)
+
+    # CRANE baseline (SPIDER_CRANE_COT=1, legacy visible-<<>> path): CRANE is
+    # reasoning-based, so it gets the chain-of-thought prompt (reason step by
+    # step, then wrap the query in << >>) paired with the CraneGeneration body.
+    if os.environ.get("SPIDER_CRANE_COT") == "1":
+        return format_prompt_chain_of_thought(evaluator, example)
+
     return format_spider_prompt(
         example,
         instruction=(
@@ -96,7 +151,21 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
 
 def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) -> tuple[str | None, str, dict[str, Any] | None]:
     actual, source = extract_sql_scored_output(scored_output)
-    return actual, source, None
+    if not _token0_enabled():
+        return actual, source, None
+    # Token-0 mode: the syntax metric has no << >> spans to parse, so compute
+    # grammar validity here over the EXTRACTED SQL and stash it in aux (the same
+    # pattern SMILES uses). Reuses the evaluator's cached sql.lark parser; does
+    # NOT modify the grammar file or the correctness grader (prediction_matches_gold).
+    syntax_valid = False
+    if actual:
+        try:
+            parser = evaluator._get_syntax_parser(example)
+            parser.parse(actual.strip())
+            syntax_valid = True
+        except Exception:
+            syntax_valid = False
+    return actual, source, {"syntax_valid": syntax_valid}
 
 
 def is_correct(
@@ -117,6 +186,16 @@ def is_correct(
 def get_generation_runner():
     from synthesis.evaluate.benchmarks.sql_spider.generation import run_crane_csd
 
+    if _token0_enabled():
+        # Begin inside a constrained chunk from token 0 (no leading << forced, no
+        # visible delimiters) — the IterGen-style decoding surface. completion_mode
+        # is left False so the instruct chat template is still applied (the same
+        # apply_chat_template call IterGen makes for instruct models).
+        def _token0_runner(*args, **kwargs):
+            kwargs.setdefault("start_inside_constrained", True)
+            return run_crane_csd(*args, **kwargs)
+
+        return _token0_runner
     return run_crane_csd
 
 

@@ -104,7 +104,20 @@ def _get_parser_components(grammar_text: str, start: str):
         grammar = Grammar(grammar_text)
         base_parser = create_base_parser(grammar)
         lark_parser = Lark(grammar_text, start=start, parser='lalr')
-        cached_components = (grammar, base_parser, lark_parser)
+        # Separate parser for IsCompletePrefix / _is_complete.  The prefix/validity
+        # parser above uses the CSD start rule (e.g. gsm csd_start = `any_expr ">>"`,
+        # sql csd_start = `sql_stmt EOQ`), which REQUIRES the closing delimiter.  But
+        # that closer (">>" / EOQ) is permanently grammar-masked during constrained
+        # decoding, so checking "is this span content complete?" against csd_start can
+        # never return True -> spans never close (the 0/0 wedge).  Completeness is about
+        # the CONTENT rule "start" (any_expr / sql_stmt / smiles) WITHOUT the closer; the
+        # strategy force-appends the closer itself via CloseConstrainedSpan.  Every
+        # grammar (gsm/sql/smiles) defines a "start" rule, so this is uniform.  This only
+        # changes the generation loop's completeness signal -- it does NOT touch scoring:
+        # the syntax-rate metric uses a separate start="syncode" parser (eval_logic) that
+        # still requires the literal "<<...>>".
+        complete_lark_parser = Lark(grammar_text, start="start", parser='lalr')
+        cached_components = (grammar, base_parser, lark_parser, complete_lark_parser)
         _PARSER_COMPONENT_CACHE[component_key] = cached_components
     return cached_components
 
@@ -157,7 +170,7 @@ def create_lark_dafny_parser(
     from syncode.parsers.incremental_parser import IncrementalParser
 
     grammar_text = _load_grammar_text(grammar_source)
-    grammar, base_parser, lark_parser = _get_parser_components(grammar_text, start)
+    grammar, base_parser, lark_parser, complete_lark_parser = _get_parser_components(grammar_text, start)
     dfa_mask_store = _get_cached_dfa_mask_store(grammar_text, grammar, tokenizer)
 
     class SyncodeDafnyParser(VerifiedDecoderAgent.Parser):
@@ -201,8 +214,14 @@ def create_lark_dafny_parser(
                     _fb[_idx] = False
             self._forbidden_allow_mask: _torch.Tensor = _fb
 
-            # Shared Lark parser for IsValidPrefix / IsCompletePrefix (rarely called)
+            # Lark parser for the rare IsValidPrefix fallback (keeps the CSD start
+            # rule, e.g. csd_start, which requires the closing delimiter).
             self._lark = lark_parser
+            # Separate parser for IsCompletePrefix completeness checks: its start rule
+            # is the CONTENT rule "start" (any_expr / sql_stmt / smiles) WITHOUT the
+            # grammar-masked closer, so span content can be recognized as complete and
+            # the span can actually close.  See _get_parser_components for the why.
+            self._complete_lark = complete_lark_parser
             self._valid_prefix_cache = {}
             self._complete_cache = {}
             self._valid_next_mask_cache = {}
@@ -268,7 +287,7 @@ def create_lark_dafny_parser(
             if cached is not None:
                 return cached
             try:
-                self._lark.parse(text)
+                self._complete_lark.parse(text)
                 result = True
             except Exception:
                 result = False

@@ -82,9 +82,14 @@ def run_crane_csd(
             chat_messages = prompt_text
         else:
             chat_messages = [{"role": "user", "content": prompt_text}]
-        lm.instruction_text = lm.tokenizer.apply_chat_template(
-            chat_messages, tokenize=False, add_generation_prompt=True
-        )
+        try:
+            lm.instruction_text = lm.tokenizer.apply_chat_template(
+                chat_messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
+            )
+        except TypeError:
+            lm.instruction_text = lm.tokenizer.apply_chat_template(
+                chat_messages, tokenize=False, add_generation_prompt=True
+            )
         # Register chat_messages on the LM so AppendTaskGuidance (if the CSD
         # calls it) can re-template with guidance injected INSIDE the last user
         # message — instead of appending it after the assistant generation

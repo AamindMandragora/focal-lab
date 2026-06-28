@@ -166,8 +166,16 @@ class EvaluationResult:
             and self.syntax_rate >= min_syntax_rate
         )
 
-    def get_feedback_summary(self) -> str:
-        """Generate a summary for feedback to the generator."""
+    def get_feedback_summary(self, require_delimiters: bool = True) -> str:
+        """Generate a summary for feedback to the generator.
+
+        When ``require_delimiters`` is False (i.e. the run was launched with
+        --no-require-delimiters), the visible ``<<``/``>>`` span diagnostics are
+        omitted: the "Contains << >>" header line, the whole "Structural
+        Generation Metrics" block, and the span-centric lines of the diagnostic
+        decomposition. Those statistics are meaningless when the model is not
+        asked to emit spans and have misled the author into chasing a non-issue.
+        """
         eval_count_label = (
             f"{self.num_examples}/{self.planned_num_examples}"
             if self.early_stopped and self.planned_num_examples
@@ -180,11 +188,17 @@ class EvaluationResult:
                 f"{self.accuracy:.1%} "
                 f"({self.num_correct}/{self.accuracy_denominator or self.num_examples})"
             ),
-            f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}",
             f"  Syntax Rate: {self.syntax_rate:.1%}",
             f"  Total Time: {self.total_time_seconds:.2f}s",
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
+        # The "Contains << >>" status only matters when delimiters are required;
+        # omit it under --no-require-delimiters (insert after Accuracy to keep
+        # the original line order).
+        if require_delimiters:
+            lines.insert(
+                2, f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}"
+            )
         if self.early_stopped:
             lines.append("  Early Stop: yes")
             if self.early_stop_reason:
@@ -303,15 +317,18 @@ class EvaluationResult:
                 lines.append("\nAggregate Failure Stats:")
                 lines.extend(extras)
 
-        diagnostic_metrics = self._summarize_diagnostic_metrics()
+        diagnostic_metrics = self._summarize_diagnostic_metrics(require_delimiters)
         if diagnostic_metrics:
             lines.append("\nDiagnostic Error Decomposition:")
             lines.extend(f"  {metric}" for metric in diagnostic_metrics)
 
-        structural_metrics = self._summarize_structural_metrics()
-        if structural_metrics:
-            lines.append("\nStructural Generation Metrics:")
-            lines.extend(f"  {metric}" for metric in structural_metrics)
+        # The structural block is entirely visible-`<<`-span statistics, which
+        # are meaningless when delimiters are not required — omit the whole block.
+        if require_delimiters:
+            structural_metrics = self._summarize_structural_metrics()
+            if structural_metrics:
+                lines.append("\nStructural Generation Metrics:")
+                lines.extend(f"  {metric}" for metric in structural_metrics)
 
         # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
         # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
@@ -592,7 +609,9 @@ class EvaluationResult:
             )
         return lines
 
-    def get_behavioral_context_summary(self, max_examples: int = 1, max_trace_events: int = 12) -> str:
+    def get_behavioral_context_summary(
+        self, max_examples: int = 1, max_trace_events: int = 12, require_delimiters: bool = True
+    ) -> str:
         traced_examples = [s for s in self.sample_outputs if s.get("helper_trace")]
         if not traced_examples:
             return ""
@@ -604,9 +623,17 @@ class EvaluationResult:
             lines.append(f"Example {idx + 1}:")
             if "provenance_tags" not in sample:
                 self._annotate_sample_observability(sample)
+            # The "Contains << >>" status only matters when delimiters are required;
+            # omit it under --no-require-delimiters so the author is not fed an
+            # irrelevant span signal on tasks (e.g. SQL) that use no << >> delimiters.
+            delim_segment = (
+                f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
+                if require_delimiters
+                else ""
+            )
             lines.append(
                 f"  Token count: {sample.get('token_count', 'N/A')} | "
-                f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
+                f"{delim_segment}"
                 f"Syntax rate: {sample.get('syntax_rate', 0.0):.1%} | "
                 f"Provenance: {sample.get('answer_provenance', 'unknown')} | "
                 f"Location: {sample.get('failure_location', 'unknown')}"
@@ -1108,14 +1135,20 @@ class EvaluationResult:
             lines.append(f"per-example time budget exceeded: {timeouts}/{n}")
         return lines
 
-    def _summarize_diagnostic_metrics(self) -> List[str]:
-        """Summarize where failures enter without exposing example content."""
+    def _summarize_diagnostic_metrics(self, require_delimiters: bool = True) -> List[str]:
+        """Summarize where failures enter without exposing example content.
+
+        When ``require_delimiters`` is False, the span-centric lines
+        (no-complete-span counts, answer-extraction source, span usefulness) are
+        omitted — they only describe visible ``<<``/``>>`` behavior, which is not
+        expected under --no-require-delimiters.
+        """
         if not self.sample_outputs:
             return []
 
         counts = self.get_diagnostic_counts()
         n = counts["examples"]
-        return [
+        metrics = [
             (
                 "Correctness by syntax bucket: "
                 f"syntax_valid_correct {counts['syntax_valid_correct']}/{n}, "
@@ -1123,20 +1156,25 @@ class EvaluationResult:
                 f"syntax_invalid_correct {counts['syntax_invalid_correct']}/{n}, "
                 f"syntax_invalid_wrong {counts['syntax_invalid_wrong']}/{n}"
             ),
-            f"No-complete-span wrong answers: {counts['no_complete_span_wrong']}/{n}",
-            (
-                "Answer extraction source: "
-                f"last_visible_span {counts['answer_from_last_visible_span']}/{n}, "
-                f"text_fallback {counts['answer_from_text_fallback']}/{n}, "
-                f"hidden_or_task_extractor {counts['answer_from_hidden_or_task_extractor']}/{n}, "
-                f"none {counts['no_extracted_answer']}/{n}"
-            ),
-            (
-                "Span usefulness: "
-                f"final_answer_span {counts['examples_with_final_answer_span']}/{n}, "
-                f"valid_nonfinal_spans_only {counts['examples_with_valid_nonfinal_spans_only']}/{n}, "
-                f"no_valid_span {counts['examples_with_no_valid_span']}/{n}"
-            ),
+        ]
+        if require_delimiters:
+            metrics.extend([
+                f"No-complete-span wrong answers: {counts['no_complete_span_wrong']}/{n}",
+                (
+                    "Answer extraction source: "
+                    f"last_visible_span {counts['answer_from_last_visible_span']}/{n}, "
+                    f"text_fallback {counts['answer_from_text_fallback']}/{n}, "
+                    f"hidden_or_task_extractor {counts['answer_from_hidden_or_task_extractor']}/{n}, "
+                    f"none {counts['no_extracted_answer']}/{n}"
+                ),
+                (
+                    "Span usefulness: "
+                    f"final_answer_span {counts['examples_with_final_answer_span']}/{n}, "
+                    f"valid_nonfinal_spans_only {counts['examples_with_valid_nonfinal_spans_only']}/{n}, "
+                    f"no_valid_span {counts['examples_with_no_valid_span']}/{n}"
+                ),
+            ])
+        metrics.extend([
             (
                 "Constrained intervention activity: "
                 f"examples_with_activity {counts['examples_with_constrained_activity']}/{n}, "
@@ -1150,7 +1188,8 @@ class EvaluationResult:
                 f"correct_without_activity {counts['correct_without_constrained_activity']}/{n}, "
                 f"wrong_without_activity {counts['wrong_without_constrained_activity']}/{n}"
             ),
-        ]
+        ])
+        return metrics
 
     def _summarize_structural_metrics(self) -> List[str]:
         """Summarize neutral span/search behavior for refinement feedback."""
@@ -1355,6 +1394,170 @@ class EvaluationResult:
             "sample_outputs": self.sample_outputs,
             "aux_metrics": self.aux_metrics,
         }
+
+
+# ---------------------------------------------------------------------------
+# CRANE-faithful GSM-Symbolic correctness check.
+#
+# Ported from legacy/CRANE/src/prompting/gsm_symbolic.py so OUR grader scores
+# correctness exactly the way the CRANE baseline does. The primary method is a
+# z3 "for-all" proof: the model expression is counted correct only if it can be
+# proven equal to the gold expression for EVERY valid assignment of the named
+# variables (subject to their integer/float type constraints) -- not by plugging
+# in one instance's numbers. A 1000-random-sample check is the fallback when the
+# solver fails or times out, matching CRANE. Argument order matches CRANE
+# parse_answer: expr1 = model completion, expr2 = gold answer.
+# ---------------------------------------------------------------------------
+def _crane_floor_div_replacer(expression: str) -> str:
+    regex_with_groups = r"(?P<left>.+?)\s*//\s*(?P<right>.+)"
+
+    def replace_floor_div(match):
+        left = match.group("left").strip()
+        right = match.group("right").strip()
+        return f"z3_floor_div({left}, {right})"
+
+    return re.sub(regex_with_groups, replace_floor_div, expression)
+
+
+def _crane_test_expression_equivalence(expr1_gsm, expr2_gsm, var_names, var_types):
+    """1000-random-sample fallback (faithful CRANE test_expression_equivalence)."""
+    import random as _rng
+
+    for _ in range(1000):
+        test_case = {}
+        for var in var_names:
+            vt = var_types.get(var)
+            if vt == "float between 0 and 1":
+                test_case[var] = _rng.uniform(0.001, 1)
+            elif vt == "float":
+                test_case[var] = _rng.uniform(0.001, 100)
+            elif vt == "int":
+                test_case[var] = _rng.randint(1, 100)
+            else:
+                # untyped variable -> cannot sample reliably; treat as not provable
+                return False
+        expr1_sub = expr1_gsm
+        expr2_sub = expr2_gsm
+        for var, value in test_case.items():
+            expr1_sub = re.sub(rf"\b{re.escape(var)}\b", str(value), expr1_sub)
+            expr2_sub = re.sub(rf"\b{re.escape(var)}\b", str(value), expr2_sub)
+        try:
+            ans1 = eval(expr1_sub)  # noqa: S307 - numeric arithmetic only (CRANE parity)
+        except Exception:
+            return False
+        try:
+            ans2 = eval(expr2_sub)  # noqa: S307
+        except Exception:
+            return True
+        if ans1 != ans2:
+            return False
+    return True
+
+
+def _crane_validate_expression_equivalence(expr1, expr2, var_types) -> bool:
+    """z3 for-all proof of equivalence (faithful CRANE validate_expression_equivalence).
+
+    expr1 = model completion, expr2 = gold answer. Returns True only if expr1 is
+    provably equal to expr2 for all valid variable values. Model answers
+    containing round( are rejected. Falls back to random sampling on solver/eval
+    failure or timeout.
+    """
+    from z3 import Solver, unsat, unknown, Real, ToInt, ToReal, And, If
+
+    original_expr1 = expr1
+    original_expr2 = expr2
+
+    var_names = set(re.findall(r"\b[a-zA-Z_]\w*\b", expr1 + " " + expr2))
+    var_names -= {"int"}
+
+    def Floor(x):
+        return If(x >= 0, ToInt(x), ToInt(x) - If(ToReal(ToInt(x)) == x, 0, 1))
+
+    def Ceiling(x):
+        return If(x >= 0, ToInt(x) + If(ToReal(ToInt(x)) == x, 0, 1), ToInt(x))
+
+    def IntegerCheck(x):
+        return And(x == Floor(x), x == Ceiling(x))
+
+    # Two CRANE golds that z3 cannot encode cleanly -> random-sample method.
+    if original_expr1 in (
+        "int(p * (1 + r1/100) * (1 - r2/100)) * n",
+        "(int(length / (plant_width + space)) - owned) * cost",
+    ):
+        return _crane_test_expression_equivalence(
+            original_expr1, original_expr2, var_names, var_types
+        )
+
+    vars_dict = {}
+    constraints = []
+    for name in var_names:
+        var = Real(name)
+        vars_dict[name] = var
+        var_type = var_types.get(name, "str")
+        if var_type == "float between 0 and 1":
+            constraints.append(var > 0)
+            constraints.append(var <= 1)
+        elif var_type == "float":
+            constraints.append(var > 0)
+        elif var_type == "int":
+            constraints.append(var > 0)
+            constraints.append(IntegerCheck(var))
+        else:
+            return False
+
+    expr1 = re.sub(r"\bint\(", "ToInt(", expr1)
+    expr2 = re.sub(r"\bint\(", "ToInt(", expr2)
+
+    if "round(" in expr1:
+        return False
+    expr2 = re.sub(r"round\(", "ToInt(", expr2)
+
+    if "//" in expr1:
+        expr1 = _crane_floor_div_replacer(expr1)
+    if "//" in expr2:
+        expr2 = _crane_floor_div_replacer(expr2)
+
+    def z3_floor_div(x, y):
+        return If(y != 0, ToInt(x / y), 0)
+
+    def safe_eval(expr):
+        return eval(  # noqa: S307 - restricted env: only z3 vars + ToInt/z3_floor_div
+            expr,
+            {"__builtins__": None},
+            {**vars_dict, "ToInt": ToInt, "z3_floor_div": z3_floor_div},
+        )
+
+    try:
+        expr2_z3 = safe_eval(expr2)
+    except Exception:
+        return _crane_test_expression_equivalence(
+            original_expr1, original_expr2, var_names, var_types
+        )
+    try:
+        expr1_z3 = safe_eval(expr1)
+    except Exception:
+        return _crane_test_expression_equivalence(
+            original_expr1, original_expr2, var_names, var_types
+        )
+
+    s = Solver()
+    s.set("timeout", 5000)
+    s.add(constraints)
+    try:
+        s.add(expr1_z3 != expr2_z3)
+    except Exception:
+        return _crane_test_expression_equivalence(
+            original_expr1, original_expr2, var_names, var_types
+        )
+
+    result = s.check()
+    if result == unsat:
+        return True
+    elif result == unknown:
+        return _crane_test_expression_equivalence(
+            original_expr1, original_expr2, var_names, var_types
+        )
+    return False
 
 
 class Evaluator:
@@ -1959,38 +2162,36 @@ class Evaluator:
     def _gsm_symbolic_equivalence(
         self, model_expr: Optional[str], expected_expr: str, variable_types: dict
     ) -> bool:
-        """Check symbolic equivalence via random value substitution (matches CRANE's method)."""
+        """Check symbolic equivalence the way CRANE does: a z3 for-all proof that the
+        model expression equals the gold for EVERY valid variable assignment, with a
+        1000-random-sample fallback. This replaces the old single-instance numeric
+        substitution, which mis-scored every int()-containing gold (z3 port lives in
+        _crane_validate_expression_equivalence above)."""
         if model_expr is None:
             return False
-        import random as _rng
+        model_expr = str(model_expr).strip()
+        expected_expr = str(expected_expr).strip()
+        # CRANE rejects model completions containing ** (parse_answer guard).
+        if "**" in model_expr:
+            return False
+        if isinstance(variable_types, str):
+            import ast as _ast
 
-        var_names = set(re.findall(r'\b[a-zA-Z_]\w*\b', model_expr + ' ' + expected_expr))
-        var_names -= {'int'}
-
-        for name in var_names:
-            if name not in variable_types:
-                return False
-
-        for _ in range(200):
-            env = {}
-            for var in var_names:
-                vtype = variable_types.get(var, 'int')
-                if vtype == 'float between 0 and 1':
-                    env[var] = _rng.uniform(0.001, 1)
-                elif vtype == 'float':
-                    env[var] = _rng.uniform(0.001, 100)
-                else:
-                    env[var] = _rng.randint(1, 100)
-            val_model = self._evaluate_symbolic_expression(model_expr, env)
-            val_expected = self._evaluate_symbolic_expression(expected_expr, env)
-            if val_model is None:
-                return False
-            if val_expected is None:
-                # Match CRANE: a gold-expr eval failure is treated leniently (count correct).
-                return True
-            if abs(val_model - val_expected) > 1e-6 * max(1, abs(val_expected)):
-                return False
-        return True
+            try:
+                variable_types = _ast.literal_eval(variable_types)
+            except Exception:
+                variable_types = {}
+        if not isinstance(variable_types, dict):
+            variable_types = {}
+        try:
+            return bool(
+                _crane_validate_expression_equivalence(
+                    model_expr, expected_expr, variable_types
+                )
+            )
+        except Exception:
+            # Any hard failure in the proof path -> conservatively not-correct.
+            return False
 
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
