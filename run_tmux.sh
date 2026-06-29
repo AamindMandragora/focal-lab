@@ -5,9 +5,7 @@
 #   ./run_tmux.sh shell                 # interactive shell (default)
 #   ./run_tmux.sh -d matrix -- [args]   # start detached (no attach)
 #   ./run_tmux.sh run -- <command...>   # run command in tmux (logs to logs/tmux/)
-#   ./run_tmux.sh matrix [-- args]      # run_all_tests.py (baselines + ablations; no metadecode by default)
-#   ./run_tmux.sh baselines [-- args]   # same default strategies; often used with --skip-ablations
-#   ./run_tmux.sh metadecode [-- args]  # run_all_tests.py with metadecode + synthesis ablations
+#   ./run_tmux.sh matrix [-- args]      # python run_all_tests.py ...
 #   ./run_tmux.sh synthesis [-- args]   # python -m synthesis.run_synthesis ...
 #   ./run_tmux.sh attach [session]      # attach to existing session
 #   ./run_tmux.sh kill [session]        # kill session
@@ -29,21 +27,6 @@ DETACHED=0
 FRESH=0
 CONDA_ENV="${METADECODE_CONDA_ENV:-${METADECODE_RDKIT_CONDA_ENV:-/apps/conda/advayth2/envs/advayth2}}"
 PYTHON="${CONDA_ENV}/bin/python"
-# Matches run_all_tests.py DEFAULT_BASELINE_STRATEGIES (no metadecode): unconstrained,gcd,crane,itergen,rs,cars
-LEGACY_BASELINE_STRATEGIES="${LEGACY_BASELINE_STRATEGIES:-unconstrained,gcd,crane,itergen,rs,cars}"
-METADECODE_STRATEGIES="${METADECODE_STRATEGIES:-unconstrained,gcd,crane,itergen,rs,cars,metadecode}"
-
-argv_has_flag() {
-  local flag="$1"
-  shift
-  while [[ $# -gt 0 ]]; do
-    if [[ "$1" == "$flag" ]]; then
-      return 0
-    fi
-    shift
-  done
-  return 1
-}
 
 usage() {
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -66,14 +49,7 @@ require_python_env() {
 }
 
 # Shell snippet run inside tmux (bash -lc).
-# Bake GPU env from the invoking shell: tmux often carries a stale
-# CUDA_VISIBLE_DEVICES (e.g. 2,3) that would override launch-time values.
 project_env_script() {
-  local cuda_visible="${CUDA_VISIBLE_DEVICES:-0}"
-  local vas_max_cuda="${VAS_MAX_CUDA_DEVICES:-1}"
-  local vas_tp="${VAS_VLLM_TENSOR_PARALLEL_SIZE:-$vas_max_cuda}"
-  local vas_gpu_mem="${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
-  local vas_mp="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
   cat <<EOF
 set -euo pipefail
 cd "$ROOT_DIR"
@@ -89,11 +65,9 @@ if [[ -d "$CONDA_ENV/lib" ]]; then
   export LD_LIBRARY_PATH="$CONDA_ENV/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 fi
 export PYTHONUNBUFFERED=1
-export CUDA_VISIBLE_DEVICES="$cuda_visible"
-export VAS_MAX_CUDA_DEVICES="$vas_max_cuda"
-export VAS_VLLM_TENSOR_PARALLEL_SIZE="$vas_tp"
-export VAS_VLLM_GPU_MEMORY_UTILIZATION="$vas_gpu_mem"
-export VLLM_WORKER_MULTIPROC_METHOD="$vas_mp"
+export CUDA_VISIBLE_DEVICES="\${CUDA_VISIBLE_DEVICES:-2}"
+export VAS_MAX_CUDA_DEVICES="\${VAS_MAX_CUDA_DEVICES:-1}"
+export VAS_VLLM_GPU_MEMORY_UTILIZATION="\${VAS_VLLM_GPU_MEMORY_UTILIZATION:-0.80}"
 EOF
 }
 
@@ -182,49 +156,7 @@ run_command() {
 
 run_matrix() {
   require_python_env
-  local -a extra=()
-  if [[ "${1:-}" == "--" ]]; then
-    extra=("${@:1}")
-  else
-    extra=("$@")
-  fi
-  if argv_has_flag --strategies "${extra[@]}"; then
-    run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" "${extra[@]}"
-  else
-    run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" \
-      --strategies "$LEGACY_BASELINE_STRATEGIES" \
-      "${extra[@]}"
-  fi
-}
-
-run_baselines() {
-  require_python_env
-  local -a extra=()
-  if [[ "${1:-}" == "--" ]]; then
-    extra=("${@:1}")
-  else
-    extra=("$@")
-  fi
-  if argv_has_flag --strategies "${extra[@]}"; then
-    run_matrix "${extra[@]}"
-  else
-    run_matrix --strategies "$LEGACY_BASELINE_STRATEGIES" "${extra[@]}"
-  fi
-}
-
-run_metadecode_matrix() {
-  require_python_env
-  local -a extra=()
-  if [[ "${1:-}" == "--" ]]; then
-    extra=("${@:1}")
-  else
-    extra=("$@")
-  fi
-  if argv_has_flag --strategies "${extra[@]}"; then
-    run_matrix "${extra[@]}"
-  else
-    run_matrix --strategies "$METADECODE_STRATEGIES" "${extra[@]}"
-  fi
+  run_command "$PYTHON" "$ROOT_DIR/run_all_tests.py" "$@"
 }
 
 run_synthesis() {
@@ -287,22 +219,6 @@ main() {
         run_matrix "${args[@]:1}"
       else
         run_matrix "${args[@]}"
-      fi
-      ;;
-    baselines|legacy-baselines)
-      require_tmux
-      if [[ "${args[0]:-}" == "--" ]]; then
-        run_baselines "${args[@]:1}"
-      else
-        run_baselines "${args[@]}"
-      fi
-      ;;
-    metadecode|metadecode-matrix)
-      require_tmux
-      if [[ "${args[0]:-}" == "--" ]]; then
-        run_metadecode_matrix "${args[@]:1}"
-      else
-        run_metadecode_matrix "${args[@]}"
       fi
       ;;
     synthesis)

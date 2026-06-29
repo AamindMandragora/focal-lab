@@ -10,9 +10,6 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-DEFAULT_EVAL_MODEL = "Qwen/Qwen3.5-4B"
-
-
 def default_logs_dir() -> Path:
     """Canonical directory for synthesis prompt/response logs."""
     raw = os.environ.get("CSD_LOGS_DIR")
@@ -21,27 +18,8 @@ def default_logs_dir() -> Path:
     return repo_root() / "logs"
 
 
-def synthesis_prompt_log_dir(
-    output_name: str,
-    run_id: str,
-    *,
-    eval_model: str | None = None,
-    benchmark: str | None = None,
-    strategy: str | None = None,
-) -> Path:
+def synthesis_prompt_log_dir(output_name: str, run_id: str) -> Path:
     """Per-run prompt log directory under :func:`default_logs_dir`."""
-    from synthesis.project_paths import prompt_log_dir, synthesis_strategy_from_output_name
-
-    if eval_model and benchmark:
-        resolved_strategy = strategy or synthesis_strategy_from_output_name(output_name)
-        return prompt_log_dir(
-            default_logs_dir(),
-            eval_model=eval_model,
-            benchmark=benchmark,
-            strategy=resolved_strategy,
-            output_name=output_name,
-            run_id=run_id,
-        )
     return default_logs_dir() / f"{output_name}_{run_id}"
 
 
@@ -59,6 +37,9 @@ def default_crane_repo() -> Path:
 def default_itergen_repo() -> Path:
     return default_repo_path("ITERGEN_REPO", "itergen")
 
+
+def default_cars_repo() -> Path:
+    return default_repo_path("CARS_REPO", "cars")
 
 
 def default_gsm_source_dir() -> Path:
@@ -79,16 +60,11 @@ def default_gsm_source_dir() -> Path:
 
 
 def default_dafny_path() -> str:
-    """Resolve the Dafny executable for verify/compile subprocesses.
-
-    Precedence: ``DAFNY_PATH`` env, then repo ``dafny/dafny``, then ``dafny`` on
-    ``PATH``, then ``~/.dotnet/tools/dafny``.
-    """
     env_dafny = os.environ.get("DAFNY_PATH")
     if env_dafny:
         return env_dafny
-    repo_dafny = repo_root() / "dafny" / "dafny"
-    if repo_dafny.is_file():
+    repo_dafny = Path(__file__).resolve().parent.parent / "dafny" / "dafny"
+    if repo_dafny.exists():
         return str(repo_dafny)
     path_dafny = which("dafny")
     if path_dafny:

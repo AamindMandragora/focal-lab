@@ -30,8 +30,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from synthesis.project_defaults import default_dafny_path
-
 
 def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
     """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
@@ -65,7 +63,14 @@ class VerificationDiagnostic:
 
 
 def _cited_contract_line(diagnostic: "VerificationDiagnostic") -> str:
-    """Return the specific contract line Dafny cited at the Related location."""
+    """Return the specific contract line Dafny cited at the Related location.
+
+    `_extract_excerpt` marks the cited line with a leading '>'. We read that line so
+    the (single) postcondition obligation_kind can be sub-typed by WHICH `ensures`
+    clause actually failed — the excerpt windows for adjacent clauses overlap, so we
+    must key off the marked line, not the whole window. Falls back to the whole
+    excerpt if no marker is present.
+    """
     for raw in diagnostic.contract_excerpt.splitlines():
         stripped = raw.strip()
         if stripped.startswith(">"):
@@ -74,12 +79,23 @@ def _cited_contract_line(diagnostic: "VerificationDiagnostic") -> str:
 
 
 def _remediation_for(diagnostic: "VerificationDiagnostic") -> str:
-    """Mechanism-level hint for satisfying the Dafny proof obligation that failed."""
+    """Mechanism-level hint for satisfying the Dafny proof obligation that failed.
+
+    Pure function of the diagnostic. References ONLY the proof contract (the template
+    `ensures`/`requires` clauses, loop invariants, the `decreases` measure, the `cost`
+    field, the step counter) — never a decoding strategy, a preferred helper, a
+    baseline, or anything task-specific. This is the verification-side analog of the
+    evaluation refinement prompt's "## How to revise" guidance.
+
+    Returns "" for the unclassified `verification` fallback (the generic Dafny
+    reminder already in the prompt covers that case).
+    """
     kind = diagnostic.obligation_kind
 
     if kind == "postcondition":
         cited = _cited_contract_line(diagnostic)
         if "!=" in cited:
+            # progress disjunction: ... || generated != generatedPrefix || insideConstrained...
             return (
                 "Remediation: this progress postcondition requires that on every return "
                 "path at least one of these holds — maxSteps == 0, cost > 0, "
@@ -236,7 +252,7 @@ class DafnyVerifier:
     
     def __init__(
         self,
-        dafny_path: str | None = None,
+        dafny_path: str = "dafny",
         timeout: int = 60,
         extra_args: Optional[list[str]] = None
     ):
@@ -248,7 +264,7 @@ class DafnyVerifier:
             timeout: Verification timeout in seconds
             extra_args: Additional arguments to pass to dafny
         """
-        self.dafny_path = dafny_path or default_dafny_path()
+        self.dafny_path = dafny_path
         self.timeout = timeout
         self.extra_args = extra_args or []
         

@@ -15,9 +15,9 @@ import os
 import sys
 from pathlib import Path
 try:
-    from synthesis.project_defaults import default_dafny_path, DEFAULT_EVAL_MODEL
+    from synthesis.project_defaults import default_dafny_path
 except ImportError:
-    from project_defaults import default_dafny_path, DEFAULT_EVAL_MODEL
+    from project_defaults import default_dafny_path
 
 try:
     from dotenv import load_dotenv
@@ -28,7 +28,7 @@ except ImportError:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies (default generation: Bedrock Claude Opus; OpenAI optional; eval often vLLM)",
+        description="Synthesize constrained decoding strategies (default generation: OpenAI; Bedrock optional for Claude; eval often vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -54,8 +54,8 @@ Examples:
     parser.add_argument(
         "--max-iterations", "-n",
         type=int,
-        default=5,
-        help="Maximum refinement iterations (default: 5)"
+        default=40,
+        help="Maximum refinement iterations (default: 40)"
     )
 
     parser.add_argument(
@@ -64,8 +64,7 @@ Examples:
         default=None,
         help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
         "Bedrock model id when using bedrock; HF id for huggingface/vllm). "
-        "Bedrock defaults from BEDROCK_OPUS_MODEL / BEDROCK_GENERATION_MODEL; "
-        "OpenAI from OPENAI_GENERATION_MODEL or gpt-5.4.",
+        "OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4; Bedrock from BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL.",
     )
 
     parser.add_argument(
@@ -142,8 +141,8 @@ Examples:
     parser.add_argument(
         "--eval-model",
         type=str,
-        default=DEFAULT_EVAL_MODEL,
-        help=f"Model for evaluation data generation/runtime (default: {DEFAULT_EVAL_MODEL})"
+        default="Qwen/Qwen2.5-Coder-7B-Instruct",
+        help="Model for evaluation data generation/runtime (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
     )
 
     parser.add_argument(
@@ -321,10 +320,10 @@ Examples:
         type=int,
         default=15,
         help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops (target syntax rate; target accuracy for non-SMILES) can "
-        "fire. Suppresses early stop until the synthesis loop has at least this "
-        "much evaluation signal (including when early examples time out). "
-        "The runtime-budget early stop is unaffected. Default: 15."
+        "early stops (target accuracy / target syntax) can fire. Suppresses the "
+        "early stop until the synthesis feedback loop has at least this much "
+        "evaluation signal. The runtime-budget early stop is unaffected. "
+        "Default: 15."
     )
 
     parser.add_argument(
@@ -376,11 +375,8 @@ Examples:
     parser.add_argument(
         "--smiles-samples-per-class",
         type=int,
-        default=100,
-        help=(
-            "Number of SMILES attempts per molecular class during synthesis feedback "
-            "(default: 100, paper-aligned with the CARS unique-valid target per class)"
-        ),
+        default=10,
+        help="Number of SMILES attempts per molecular class during synthesis feedback (default: 10)"
     )
 
     parser.add_argument(
@@ -413,7 +409,7 @@ Examples:
         "--vllm-tensor-parallel-size",
         type=int,
         default=None,
-        help="Explicit tensor parallel size for vLLM (default: VAS_MAX_CUDA_DEVICES; capped by that env)"
+        help="Explicit tensor parallel size for vLLM (default: 1; capped by VAS_MAX_CUDA_DEVICES)"
     )
 
     parser.add_argument(
@@ -454,9 +450,9 @@ Examples:
     parser.add_argument(
         "--helper-selection-policy",
         type=str,
-        choices=["utility", "bandit"],
+        choices=["bandit"],
         default="bandit",
-        help="Helper selection policy for adaptive masking (default: bandit)"
+        help="Helper selection policy for adaptive masking; UCB/bandit only (default: bandit)"
     )
 
     parser.add_argument(
@@ -477,7 +473,7 @@ Examples:
         "--helper-mask-margin",
         type=float,
         default=0.25,
-        help="Prune helpers whose mean utility is below run mean by this margin (default: 0.25)"
+        help="Prune helpers whose mean score is below run mean by this margin (default: 0.25)"
     )
 
     parser.add_argument(
@@ -542,10 +538,6 @@ Examples:
         default=True,
         help="Verify beam candidates before selecting one (default: true)"
     )
-
-    from synthesis.storage_env import ensure_shared_storage_env
-
-    ensure_shared_storage_env()
 
     args = parser.parse_args()
 
@@ -618,17 +610,13 @@ Examples:
 
     if args.generation_model is None:
         if args.generation_backend == "bedrock":
-            resolved = (
-                os.environ.get("BEDROCK_OPUS_MODEL")
-                or os.environ.get("BEDROCK_PROFILE_OPUS")
-                or os.environ.get("BEDROCK_GENERATION_MODEL")
-                or os.environ.get("AWS_BEDROCK_GENERATION_MODEL")
+            resolved = os.environ.get("BEDROCK_GENERATION_MODEL") or os.environ.get(
+                "AWS_BEDROCK_GENERATION_MODEL"
             )
             if not resolved:
                 parser.error(
                     "Bedrock synthesis requires --generation-model or "
-                    "BEDROCK_OPUS_MODEL / BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL "
-                    "in the environment."
+                    "BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL in the environment."
                 )
             args.generation_model = resolved
         elif args.generation_backend == "openai":
@@ -717,12 +705,6 @@ Examples:
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
     print(f"  Evaluation model: {args.eval_model}")
-    smiles_grammar_tier = None
-    if args.dataset == "smiles":
-        from synthesis.evaluate.prompt_tiers import smiles_grammar_tier_for_csd
-
-        smiles_grammar_tier = smiles_grammar_tier_for_csd()
-
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
@@ -731,7 +713,6 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        grammar_prompt_tier=smiles_grammar_tier,
         load_in_4bit=args.load_in_4bit,
         load_in_8bit=args.load_in_8bit,
         vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,

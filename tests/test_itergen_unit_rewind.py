@@ -173,7 +173,7 @@ def env(tmp_path_factory):
     e.tok_a = tok_a
     e.seq = seq
     e.text = text
-    e.agent = lambda: VDA.CSDHelpers(lm, env.parser)
+    e.agent = lambda: VDA.CSDHelpers()
     e.aa = lambda n: seq([tok_a] * n)  # span of n "a" tokens
     yield e
 

@@ -41,23 +41,14 @@ def clean_smiles_output(output: str | None) -> str:
     text = str(output).strip()
     for marker in EOS_MARKERS:
         text = text.replace(marker, "")
-
-    from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
-
-    span, found = extract_last_delimited_span(text)
-    if found and span:
-        return span.strip()
-
+    text = text.replace("<<", "").replace(">>", "")
+    # Safety net: remove orphan angle-bracket control tokens that can leak from
+    # delimiter generation into the extracted molecule string.
+    text = text.replace("<", "").replace(">", "")
     text = text.split("\n\n", 1)[0].strip()
     if "Molecule:" in text:
         text = text.rsplit("Molecule:", 1)[-1].strip()
-    text = text.splitlines()[0].strip() if text else ""
-    # Tier-1 body-only outputs may still contain stray angle brackets; strip wrappers.
-    if text.startswith("<<") and text.endswith(">>"):
-        text = text[2:-2].strip()
-    text = text.replace("<<", "").replace(">>", "")
-    text = text.replace("<", "").replace(">", "")
-    return text.strip()
+    return text.splitlines()[0].strip() if text else ""
 
 
 @lru_cache(maxsize=None)
@@ -73,53 +64,6 @@ def grammar_valid(smiles: str, grammar_text: str) -> bool:
         return True
     except LarkError:
         return False
-
-
-def body_grammar_from_base(base_grammar_text: str) -> str:
-    """Tier-1 body grammar used to validate extracted SMILES spans."""
-    from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
-        build_smiles_tier1_body_grammar,
-    )
-
-    return build_smiles_tier1_body_grammar(base_grammar_text.strip())
-
-
-def grammar_valid_with_fallback(
-    smiles: str,
-    grammar_text: str,
-    *,
-    base_grammar_text: str | None = None,
-) -> tuple[bool, str]:
-    """
-    Validate a SMILES body against tier-specific grammar, then base body grammar.
-
-    Tier-2 delimited grammars often require a closing ``>>``; those variants are
-    tried before falling back to the raw class grammar.
-    """
-    if not smiles:
-        return False, "empty"
-
-    primary = grammar_text.strip()
-    base = (base_grammar_text or primary).strip()
-    body_grammar = body_grammar_from_base(base)
-
-    attempts: list[tuple[str, str, str]] = [
-        ("tier", primary, smiles),
-    ]
-    if '">>"' in primary or primary != body_grammar:
-        attempts.append(("tier_closed", primary, f"{smiles}>>"))
-    if body_grammar not in {primary}:
-        attempts.append(("base", body_grammar, smiles))
-
-    seen: set[tuple[str, str]] = set()
-    for source, grammar, candidate in attempts:
-        key = (grammar, candidate)
-        if key in seen:
-            continue
-        seen.add(key)
-        if grammar_valid(candidate, grammar):
-            return True, source
-    return False, "none"
 
 
 def rdkit_available() -> bool:
@@ -160,14 +104,9 @@ def evaluate_smiles_output(
     grammar_text: str,
     prompt_exemplars: Sequence[str],
     require_rdkit: bool = True,
-    base_grammar_text: str | None = None,
 ) -> Dict[str, Any]:
     smiles = clean_smiles_output(output)
-    grammar_ok, grammar_source = grammar_valid_with_fallback(
-        smiles,
-        grammar_text,
-        base_grammar_text=base_grammar_text,
-    )
+    grammar_ok = grammar_valid(smiles, grammar_text)
     rdkit_ok = rdkit_valid(smiles)
     # RDKit validates chemistry when installed; when it is unavailable, fall
     # back to the project grammar so syntax rate remains measurable.
@@ -182,7 +121,6 @@ def evaluate_smiles_output(
     return {
         "smiles": smiles,
         "grammar_valid": grammar_ok,
-        "grammar_source": grammar_source,
         "rdkit_available": rdkit_available(),
         "rdkit_valid": rdkit_ok,
         "syntax_valid": syntax_ok,
@@ -242,15 +180,9 @@ def retrosynthesis_score(smiles: str) -> Optional[float]:
 
 def smiles_trial_metrics(
     samples: Sequence[Dict[str, Any]],
-    target_unique_valid: int | None = None,
+    target_unique_valid: int = 100,
     sample_cap: int = 1000,
 ) -> Dict[str, Any]:
-    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
-        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
-    )
-
-    if target_unique_valid is None:
-        target_unique_valid = DEFAULT_SMILES_POOLED_SUCCESS_TARGET
     """
     Compute paper-aligned molecular generation metrics over one trial.
     """

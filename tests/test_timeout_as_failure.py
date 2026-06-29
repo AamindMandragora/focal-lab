@@ -43,9 +43,8 @@ def _src():
 
 
 def _find_eval_fn(src: str):
-    """Return the AST node for evaluate_sample (the main per-example eval loop)."""
+    """Return the AST node for the method that contains the eval example loop."""
     tree = ast.parse(src)
-    candidates = []
     for fn in ast.walk(tree):
         if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
             calls = {
@@ -54,11 +53,8 @@ def _find_eval_fn(src: str):
                 if isinstance(c, ast.Call)
             }
             if "run_crane_csd" in calls:
-                candidates.append(fn)
-    for fn in candidates:
-        if fn.name == "evaluate_sample":
-            return fn
-    return candidates[0] if candidates else None
+                return fn
+    return None
 
 
 def test_timed_out_does_not_immediately_stop_eval():

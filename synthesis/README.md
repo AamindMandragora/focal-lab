@@ -11,7 +11,7 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Main CLI entry point for iterative synthesis.
   - Configures models, thresholds, evaluation settings, and output layout.
   - **GSM-Symbolic:** the only supported data source is local CRANE-style JSONs. `--gsm-source-dir` auto-resolves to vendored `legacy/CRANE/src/gsm_symbolic` (or `$CRANE_GSM_SYMBOLIC_DIR`) when unset. HuggingFace loading has been removed; runs error out if no CRANE folder is resolvable.
-  - Generation backends: local HuggingFace/vLLM, **OpenAI** (default for CLI), **Anthropic** (`sonnet4.6`), **Gemini** (main matrix), or **Amazon Bedrock** when configured.
+  - Generation backends: local HuggingFace/vLLM and **OpenAI** (default for CLI). The generator still has a Bedrock-compatible fallback for targeted experiments, but the public matrix treats Bedrock profiles as experimental and rejects them.
   - Includes UCB/bandit helper-mask controls to constrain helper-call search space:
     `--adaptive-helper-mask`, `--helper-selection-policy`,
     `--helper-bandit-min-evals`, `--helper-bandit-top-k`,
@@ -19,7 +19,6 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Includes local-beam refinement controls:
     `--refinement-beam-size`, `--local-neighborhood-refinement`,
     `--max-local-edit-ratio`, `--beam-verify-candidates`.
-  - **SMILES:** synthesis feedback evaluates `--smiles-samples-per-class` attempts per CARS class (default **100**, 300 total across the three default classes).
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
 
@@ -55,9 +54,6 @@ Compile is implemented under `verify` because compilation is only valid after ve
 
 Common filesystem/tool paths can be overridden via CLI flags or environment variables:
 
-- `CSD_CACHE_ROOT` (shared model + SynCode cache; see `synthesis/storage_env.py`)
-- `CSD_OUTPUTS_ROOT` (shared `generated/`, `baselines/`, `ablations/`; logs stay under `logs/`)
-- `--eval-model` or default `Qwen/Qwen3.5-4B` (`synthesis.project_defaults.DEFAULT_EVAL_MODEL`)
 - `--output-dir` or `CSD_OUTPUT_DIR`
 - `--baseline-output-dir` or `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` or `CSD_GRAMMARS_DIR`
@@ -69,8 +65,8 @@ Common filesystem/tool paths can be overridden via CLI flags or environment vari
 - `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY` (Spider evaluator location)
 - `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
 - `CSD_JSON_GRAMMAR_PATH` (JSON grammar for smoke-test runner)
-- `AWS_BEARER_TOKEN_BEDROCK`, `BEDROCK_OPUS_MODEL`, and related Bedrock ids (default `--generation-backend bedrock` in `run_synthesis`).
-- `OPENAI_API_KEY` / `OPENAI_GENERATION_MODEL` for OpenAI (`--generation-backend openai`, model `gpt-5.4` unless overridden).
+- `OPENAI_API_KEY` / `OPENAI_GENERATION_MODEL` for OpenAI (default `--generation-backend openai` in `run_synthesis`, model `gpt-5.4` unless overridden).
+- `AWS_BEARER_TOKEN_BEDROCK` and Bedrock model ids when using `--generation-backend bedrock`.
 
 ## Design Philosophy
 

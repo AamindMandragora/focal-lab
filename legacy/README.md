@@ -21,7 +21,7 @@ Override upstream URLs or refs with environment variables (see
 |------|-----------|
 | `legacy/CRANE/` | `unconstrained`, `crane` strategies (`legacy/CRANE/src/main.py`) |
 | `legacy/itergen/` | `itergen` strategy (`from itergen.main import IterGen`) |
-| `legacy/cars/` | `cars` strategy (`from cars.lib import ConstrainedModel`; upstream [pparys/cars](https://github.com/pparys/cars)) |
+| `legacy/cars/` | `cars` strategy (`from cars.lib import ConstrainedModel`) |
 
 ## How this repo differs from upstream
 
@@ -41,6 +41,5 @@ python synthesis/scripts/report_legacy_upstream_diff.py --upstream-base /path/wi
 ```
 
 Optional unified patches applied after clone live under **`environment/legacy_patches/`**
-(see that folder’s README). CRANE apply order ends with **`030-vas-smiles-prompt-state-grammar`**
-(SMILES **`SmilesPromptState`** + base-grammar scoring fallback). **Policy:** any manual change under **`legacy/*`** must be
+(see that folder’s README). **Policy:** any manual change under **`legacy/*`** must be
 mirrored there — see **`environment/legacy/AGENTS.md`**.

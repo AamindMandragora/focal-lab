@@ -21,11 +21,14 @@ def main() -> None:
         default=DEFAULT_OUTPUT_DIR,
         help="Directory for split manifest JSON files",
     )
-    parser.add_argument("--gsm-train-size", type=int, default=0)
-    parser.add_argument("--gsm-eval-size", type=int, default=100)
-    parser.add_argument("--spider-train-size", type=int, default=50)
-    parser.add_argument("--spider-test-size", type=int, default=100)
-    parser.add_argument("--seed", type=int, default=123)
+    parser.add_argument("--gsm-train-size", type=int, default=49)
+    parser.add_argument("--gsm-eval-size", type=int, default=49)
+    parser.add_argument("--spider-train-size", type=int, default=300)
+    parser.add_argument("--spider-test-size", type=int, default=300)
+    # --seed drives the GSM split (429 = the canonical 49/49 comparison split).
+    # Spider has its own seed because its canonical comparison split is seed 334.
+    parser.add_argument("--seed", type=int, default=429)
+    parser.add_argument("--spider-seed", type=int, default=334)
     args = parser.parse_args()
 
     output_dir = args.output_dir
@@ -48,7 +51,7 @@ def main() -> None:
         spider_path,
         train_size=args.spider_train_size,
         test_size=args.spider_test_size,
-        seed=args.seed,
+        seed=args.spider_seed,
     )
     print(f"Wrote {spider_path} (test={spider_split['test_size']}, train={spider_split['train_size']})")
     print(f"  population={spider_split.get('population_composition')}")

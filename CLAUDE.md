@@ -36,7 +36,7 @@ To measure CRANE baseline: run the evaluator on a strategy body of just `generat
 
 ## Working Run Command (GSM-Symbolic)
 ```bash
-CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
+CUDA_VISIBLE_DEVICES=1,2 python run_synthesis.py \
     --task "Solve math word problems step by step. Write the final numeric answer inside << >> delimiters." \
     --dataset gsm_symbolic \
     --max-iterations 15 \

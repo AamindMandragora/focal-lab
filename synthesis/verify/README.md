@@ -14,14 +14,12 @@ It has two tightly coupled jobs: formal verification and compilation.
 
 - `verifier.py`
   - Dafny verification wrapper and diagnostics parsing.
-  - Default executable: `synthesis.project_defaults.default_dafny_path()` (repo `dafny/dafny` when present).
 - `compiler.py`
   - Dafny build wrapper (`--target:py`) with output capture and error parsing.
-  - Same default Dafny resolution as `verifier.py`.
 - `library/`
   - Dafny source files used as synthesis substrate; see `library/README.md` for a member-by-member index of `VerifiedAgentSynthesis.dfy`.
 - `reference/`
-  - Verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`, `rs.dfy`); see `reference/README.md`.
+  - Verified baseline-style example strategies (`crane.dfy`, `itergen.dfy`, `cars.dfy`); see `reference/README.md`.
 
 ## Verification and Compile Relationship
 

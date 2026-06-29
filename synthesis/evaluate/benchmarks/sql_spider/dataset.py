@@ -309,11 +309,17 @@ def make_spider_proportional_train_test_split(
     *,
     source: str = "auto",
     spider_dir: Optional[Path | str] = None,
-    train_size: int = 50,
-    test_size: int = 100,
-    seed: int = 123,
+    train_size: int = 300,
+    test_size: int = 300,
+    seed: int = 334,
 ) -> Dict[str, Any]:
-    """Create a disjoint train/test split with benchmark-proportional hardness mix."""
+    """Create a disjoint train/test split with benchmark-proportional hardness mix.
+
+    Defaults encode the canonical Spider split used for the IterGen comparison:
+    300 train / 300 held-out at seed 334. These exact values reproduce the
+    committed manifest IterGen was scored against
+    (spider_dev_proportional_300x300_seed334).
+    """
     if train_size < 0 or test_size < 0:
         raise ValueError("train_size and test_size must be non-negative")
     if train_size + test_size <= 0:
@@ -368,11 +374,17 @@ def make_spider_proportional_train_test_split(
 
 def make_spider_train_test_split(
     total_examples: int,
-    train_size: int = 50,
-    test_size: int = 100,
+    train_size: int = 300,
+    test_size: int = 300,
     seed: int = 123,
 ) -> Dict[str, Any]:
-    """Create a deterministic non-overlapping Spider train/test index split."""
+    """Create a deterministic non-overlapping Spider train/test index split.
+
+    Legacy plain-random ("random_non_overlapping") path, not used for the IterGen
+    comparison. Sizes default to 300/300 for consistency with the proportional path;
+    seed stays 123 because this draw differs from the seed-334 proportional split and
+    does not reproduce IterGen's held-out 300.
+    """
     if total_examples <= 0:
         raise ValueError("total_examples must be positive")
     if train_size <= 0 or test_size <= 0:
@@ -427,12 +439,16 @@ def write_spider_proportional_train_test_split(
     *,
     source: str = "auto",
     spider_dir: Optional[Path | str] = None,
-    train_size: int = 50,
-    test_size: int = 100,
-    seed: int = 123,
+    train_size: int = 300,
+    test_size: int = 300,
+    seed: int = 334,
     include_preview: bool = True,
 ) -> Dict[str, Any]:
-    """Write a proportional stratified Spider train/test manifest."""
+    """Write a proportional stratified Spider train/test manifest.
+
+    Defaults to the canonical 300 train / 300 held-out at seed 334 (the IterGen
+    comparison split).
+    """
     rows = load_spider(source=source, spider_dir=spider_dir)
     split = make_spider_proportional_train_test_split(
         source=source,
@@ -455,13 +471,18 @@ def write_spider_train_test_split(
     *,
     source: str = "auto",
     spider_dir: Optional[Path | str] = None,
-    train_size: int = 50,
-    test_size: int = 100,
-    seed: int = 123,
+    train_size: int = 300,
+    test_size: int = 300,
+    seed: int = 334,
     include_preview: bool = True,
     proportional: bool = True,
 ) -> Dict[str, Any]:
-    """Write a deterministic Spider split manifest for synthesis/test workflows."""
+    """Write a deterministic Spider split manifest for synthesis/test workflows.
+
+    Defaults to the canonical 300 train / 300 held-out at seed 334 via the
+    proportional path. When proportional=False, the legacy plain-random draw is used
+    (seed 334 there does not reproduce IterGen's held-out 300).
+    """
     if proportional:
         return write_spider_proportional_train_test_split(
             output_path,
@@ -500,14 +521,23 @@ def write_gold_file(examples: List[Dict[str, Any]], path: Path) -> None:
 
 
 def default_db_dir() -> Path:
-    """Default SQLite databases directory for Spider."""
+    """Default SQLite databases directory for Spider.
+
+    Prefer the vendored test-suite ("fixed") databases — these are the SAME
+    .sqlite files the baselines (IterGen/CRANE) score against, and the ones the
+    Spider gold queries were validated on. The raw `DEFAULT_SPIDER_DIR/database`
+    copy has divergent .sqlite contents that under-count by ~8pp (proven
+    2026-06-06: identical code + predictions + gold give 57.9% on the raw copy
+    vs 65.2% on the vendored copy for the Spider-7B held-out set). Scoring
+    against the baseline's databases is the fair, CLAUDE.md-mandated choice.
+    """
     env = os.environ.get("SPIDER_DB_DIR")
     if env:
         return Path(env)
-    local = DEFAULT_SPIDER_DIR / "database"
-    if local.exists():
-        return local
-    return _vendored_spider_eval_dir() / "databases"
+    vendored = _vendored_spider_eval_dir() / "databases"
+    if vendored.exists():
+        return vendored
+    return DEFAULT_SPIDER_DIR / "database"
 
 
 def default_tables_json() -> Path:

@@ -54,7 +54,9 @@ def run_crane_csd(
             answer is parser-governed from the first token but chunk boundaries
             should not be serialized as visible delimiters.
         completion_mode: When True, set lm.instruction_text to the raw
-            prompt_text string with no chat template applied.
+            prompt_text string with no chat template applied. Required for base
+            (non-instruction-tuned) completion models, which must see the prompt
+            as a raw continuation rather than ChatML-wrapped.
 
     Returns:
         Tuple of (output_text, token_count, time_seconds, constrained_segments)
@@ -65,6 +67,11 @@ def run_crane_csd(
     parser = dynamic_parser if dynamic_parser is not None else env["parser"]
 
     if completion_mode:
+        # Base (non-instruction-tuned) completion models: feed the prompt as a
+        # raw continuation with NO chat template. The model continues directly
+        # from prompt_text (full_prompt = instruction_text + generated prefix),
+        # matching how IterGen drives the base Coder model. Chat scaffolding is
+        # intentionally left unset so no ChatML markers leak into the prompt.
         if not isinstance(prompt_text, str):
             raise ValueError("completion_mode requires prompt_text to be a string")
         lm.instruction_text = prompt_text
@@ -75,9 +82,19 @@ def run_crane_csd(
             chat_messages = prompt_text
         else:
             chat_messages = [{"role": "user", "content": prompt_text}]
-        lm.instruction_text = lm.tokenizer.apply_chat_template(
-            chat_messages, tokenize=False, add_generation_prompt=True
-        )
+        try:
+            lm.instruction_text = lm.tokenizer.apply_chat_template(
+                chat_messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
+            )
+        except TypeError:
+            lm.instruction_text = lm.tokenizer.apply_chat_template(
+                chat_messages, tokenize=False, add_generation_prompt=True
+            )
+        # Register chat_messages on the LM so AppendTaskGuidance (if the CSD
+        # calls it) can re-template with guidance injected INSIDE the last user
+        # message — instead of appending it after the assistant generation
+        # marker (which previously landed guidance in the model's output space
+        # and crashed accuracy by 18-22pp on this cell).
         if hasattr(lm, "set_chat_messages"):
             lm.set_chat_messages(chat_messages)
         if hasattr(lm, "ResetTaskGuidance"):

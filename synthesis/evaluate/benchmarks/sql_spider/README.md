@@ -20,10 +20,9 @@ This module evaluates synthesized CSD strategies on text-to-SQL tasks using the 
 
 ## Constraint mode
 
-Strategies decide their own constraint behaviour. The prompt instructs the model to wrap its SQL query in `<< >>` delimiters — CRANE can reason before emitting `<<SELECT ...>>`, while GCD constrains from token 1. The evaluator extracts the answer from `<< >>` when present and falls back to the raw first paragraph for unconstrained baselines.
+The evaluator exposes two prompt surfaces. `format_prompt_expression_only` renders the flattened string prompt used by hard-mask / constrained decoders, while `format_prompt_chain_of_thought` returns the chat-style legacy CRANE prompt. Both paths instruct the model to wrap its SQL query in `<< >>` delimiters — CRANE can reason before emitting `<<SELECT ...>>`, while GCD constrains from token 1. The evaluator extracts the answer from `<< >>` when present and falls back to the raw first paragraph for unconstrained baselines.
 
 ## Runtime Notes
 
 - Spider evaluation is execution-grounded: generated SQL is executed and compared against gold-query behavior.
-- The vendored SQL matcher requires NLTK data packages `punkt`, `punkt_tab`, and `stopwords`. `executor.ensure_spider_nltk_prereqs()` downloads them automatically before scoring; missing `punkt_tab` causes every execution check to fail and baseline accuracy to read as 0%.
 - The benchmark includes vendored evaluator dependencies under `syncode` support paths and benchmark utilities.

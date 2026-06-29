@@ -22,7 +22,7 @@ module ReferenceIterGenCSD {
     currentConstrainedOut: Prefix,
     cost: int
   )
-    modifies lm, lm.Logits
+    modifies lm.Logits
     requires lm.ValidTokensIdsLogits()
     requires parser.IsValidPrefix([])
     requires !insideConstrained ==> currentConstrained == []
@@ -39,12 +39,9 @@ module ReferenceIterGenCSD {
     ensures maxSteps == 0 || cost > 0 || generated != generatedPrefix ||
             insideConstrainedOut != insideConstrained ||
             currentConstrainedOut != currentConstrained
+
   {
-    var helpers := new CSDHelpers(lm, parser);
-    assert helpers.lm.Logits == old(lm.Logits);
-    assert helpers.lm == lm;
-    assert helpers.parser == parser;
-    assert lm.ValidTokensIdsLogits();
+    var helpers := new CSDHelpers();
     var g := generatedPrefix;
     var inside := insideConstrained;
     var cur := currentConstrained;
@@ -53,33 +50,24 @@ module ReferenceIterGenCSD {
       generated := g;
       insideConstrainedOut := inside;
       currentConstrainedOut := if inside then cur else [];
-      cost := helpers.cost();
+      cost := helpers.cost;
       return;
     }
 
-    while helpers.cost() < maxSteps
-      modifies lm, old(lm.Logits)
-      invariant helpers.lm == lm
-      invariant helpers.parser == parser
+    while helpers.cost < maxSteps
       invariant lm.ValidTokensIdsLogits()
-      invariant lm.Logits == old(lm.Logits)
-      invariant fresh(helpers)
-      invariant |g| <= |generatedPrefix| + helpers.cost()
+      invariant |g| <= |generatedPrefix| + helpers.cost
       invariant !inside ==> cur == []
       invariant inside ==> parser.IsValidPrefix(cur)
       invariant inside ==> |cur| <= |g|
       invariant inside ==> g[|g| - |cur|..] == cur
-      invariant 0 <= helpers.cost() <= maxSteps
-      decreases maxSteps - helpers.cost()
+      invariant 0 <= helpers.cost <= maxSteps
+      decreases maxSteps - helpers.cost
     {
       if inside && parser.IsCompletePrefix(cur) {
-        assert helpers.lm.Logits == old(lm.Logits);
-        g, inside, cur := helpers.CloseConstrainedSpan(g, cur);
-        assert helpers.lm.Logits == old(lm.Logits);
+        g, inside, cur := helpers.CloseConstrainedSpan(lm, parser, g, cur);
       } else if !inside {
-        assert helpers.lm.Logits == old(lm.Logits);
-        var next := helpers.UnconstrainedStep(prompt, g);
-        assert helpers.lm.Logits == old(lm.Logits);
+        var next := helpers.UnconstrainedStep(lm, prompt, g);
         g := g + [next];
         if next == eosToken {
           break;
@@ -90,22 +78,19 @@ module ReferenceIterGenCSD {
       } else {
         var next: Token;
         var fb: bool;
-        assert helpers.lm.Logits == old(lm.Logits);
-        next, fb := helpers.SafeSoftConstrainedStep(prompt, cur, 0.0, eosToken
+        next, fb := helpers.SafeSoftConstrainedStep(
+          lm, parser, prompt, cur, 0.0, eosToken
         );
-        assert helpers.lm.Logits == old(lm.Logits);
         if next == eosToken {
           break;
         }
-        assert helpers.lm.Logits == old(lm.Logits);
-        g, inside, cur := helpers.AppendConstrainedToken(g, cur, next);
-        assert helpers.lm.Logits == old(lm.Logits);
+        g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
       }
     }
 
     generated := g;
     insideConstrainedOut := inside;
     currentConstrainedOut := if inside then cur else [];
-    cost := helpers.cost();
+    cost := helpers.cost;
   }
 }

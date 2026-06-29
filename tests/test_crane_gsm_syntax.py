@@ -206,27 +206,6 @@ def test_valid_static_grammar_expression_passes():
         )
 
 
-def test_tier1_bare_expression_passes_with_example_grammar():
-    """GCD/IterGen/CARS tier-1 outputs omit delimiters but must still score syntax-valid."""
-    ev = _make_evaluator()
-    example = {
-        "variable_types": {
-            "n": "int",
-            "x": "float",
-            "big_fish": "str",
-            "k": "int",
-            "y": "int",
-        }
-    }
-    assert _syntax_pass(ev, "int(100 * k * y // x)", example)
-
-
-def test_tier1_bare_expression_rejects_invalid_body():
-    ev = _make_evaluator()
-    example = {"variable_types": {"n": "int", "x": "int"}}
-    assert not _syntax_pass(ev, "The answer is 42.", example)
-
-
 # ---------------------------------------------------------------------------
 # Test 8 — SOURCE-LEVEL check: evaluator must delegate to benchmark logic
 #           for GSM, not use the old all-spans per-example path.

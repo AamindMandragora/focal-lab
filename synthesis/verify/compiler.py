@@ -33,8 +33,6 @@ from pathlib import Path
 import secrets
 from typing import Optional
 
-from synthesis.project_defaults import default_dafny_path
-
 
 def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
     """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
@@ -107,7 +105,7 @@ class DafnyCompiler:
     
     def __init__(
         self,
-        dafny_path: str | None = None,
+        dafny_path: str = "dafny",
         output_dir: Optional[Path] = None,
         timeout: int = 120,
         extra_args: Optional[list[str]] = None
@@ -121,7 +119,7 @@ class DafnyCompiler:
             timeout: Compilation timeout in seconds
             extra_args: Additional arguments to pass to dafny
         """
-        self.dafny_path = dafny_path or default_dafny_path()
+        self.dafny_path = dafny_path
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
         self.timeout = timeout
         self.extra_args = extra_args or []

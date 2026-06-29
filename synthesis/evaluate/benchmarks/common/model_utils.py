@@ -301,9 +301,6 @@ def _configure_vllm_multiprocessing() -> None:
         # Another library may have already locked the start method.
         pass
 
-
-configure_vllm_multiprocessing = _configure_vllm_multiprocessing
-
 def load_runtime_tokenizer(model_name: str, backend: str = "huggingface"):
     """Load the tokenizer matching the requested runtime backend."""
     cache_key = (backend, model_name)
@@ -660,7 +657,6 @@ class _TensorizedLMBase:
         self._constrained_temperature = float(
             os.environ.get("CSD_CONSTRAINED_TEMPERATURE", "0.0")
         )
-        self.useSampling = self._constrained_temperature > 0.0
         self._generate_count = 0
         self._token_id_to_str: dict[int, str] = {}
         self._runtime_deadline: float | None = None
@@ -720,10 +716,6 @@ class _TensorizedLMBase:
 
     def SetRuntimeDeadline(self, deadline: float | None):
         self._runtime_deadline = deadline
-
-    def SetUseSampling(self, enabled):
-        self.useSampling = bool(enabled)
-        self._constrained_temperature = 1.0 if self.useSampling else 0.0
 
     def ClearRuntimeDeadline(self):
         self._runtime_deadline = None
@@ -840,9 +832,14 @@ class _TensorizedLMBase:
                     f"{self._task_guidance.HEADER}\n{text}"
                 )
                 try:
-                    self.instruction_text = self.tokenizer.apply_chat_template(
-                        messages, tokenize=False, add_generation_prompt=True
-                    )
+                    try:
+                        self.instruction_text = self.tokenizer.apply_chat_template(
+                            messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
+                        )
+                    except TypeError:
+                        self.instruction_text = self.tokenizer.apply_chat_template(
+                            messages, tokenize=False, add_generation_prompt=True
+                        )
                     return
                 except Exception:
                     # If re-templating fails for any tokenizer-specific reason,

@@ -67,15 +67,6 @@ def build_numeric_only_grammar(base_grammar: str) -> str:
     )
 
 
-def build_gcd_span_grammar(base_grammar: str) -> str:
-    """Delegate to the shared delimiter grammar helper (alias for historical imports)."""
-    from synthesis.evaluate.benchmarks.common.delimiter_grammar import (
-        build_delimited_span_grammar,
-    )
-
-    return build_delimited_span_grammar(base_grammar)
-
-
 def extract_variables_from_mapping(
     variable_mapping: dict,
     include_string_variables: bool = False,

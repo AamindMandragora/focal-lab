@@ -62,8 +62,13 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
         "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
         "GroupBoostedConstrainedStep",
         "AdaptiveConstrainedStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
     }:
         # Keep delimiter tokens verbatim; redact other tokens (synthesis-sample-leaky).
         token = _safe_token(result)
@@ -118,6 +123,23 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         current_len = _safe_len(result[1]) if isinstance(result, tuple) and len(result) >= 2 else _safe_len(result)
         event["current_len"] = current_len
         event["detail"] = f"rollback, current_len={current_len}"
+        return event
+
+    if name == "RegenerateUnitOnCheckFailure":
+        result_len = _safe_len(result)
+        # args: lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit,
+        #       maxRetries, maxRollbackBudget, allowedUnits
+        max_steps = args[5] if len(args) > 5 else None
+        max_retries = args[6] if len(args) > 6 else None
+        allowed_count = _safe_len(args[8]) if len(args) > 8 else None
+        event["result_len"] = result_len
+        event["max_steps_per_unit"] = str(max_steps)
+        event["max_retries"] = str(max_retries)
+        event["allowed_units_count"] = allowed_count
+        event["detail"] = (
+            f"unit_rewind result_len={result_len}, max_steps={max_steps}, "
+            f"max_retries={max_retries}, allowed_units={allowed_count}"
+        )
         return event
 
     if name in {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}:
@@ -188,12 +210,6 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"forward_pass, prefix_len={prefix_len}"
         return event
 
-    if name == "SetNonDeterministic":
-        enabled = bool(args[-1]) if args else False
-        event["non_deterministic"] = enabled
-        event["detail"] = f"non_deterministic={enabled}"
-        return event
-
     if name == "ChooseNextTokenUnconstrained":
         # Keep delimiter tokens verbatim; redact schema/identifier tokens.
         token = _safe_token(result)
@@ -245,10 +261,12 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
         return
 
     def _fast_get_highest_logit_token(self, lm):
-        # Always argmax: GetHighestLogitToken must not sample even when the CSD
-        # enabled non-deterministic decoding for ChooseNextToken.
-        best_idx = lm._argmax_subset_token_index()
-        return lm._Tokens[best_idx]
+        # Delegate to the tensor-backed argmax. lm.ChooseNextToken does a
+        # single argmax over the constrained logits tensor and returns the
+        # corresponding Dafny token sequence -- exactly what the Dafny spec
+        # for GetHighestLogitToken requires, but O(1) GPU syncs instead of
+        # O(vocab_size).
+        return lm.ChooseNextToken()
 
     def _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
         """Vectorized top-K over parser-valid + EOS tokens.
@@ -381,36 +399,38 @@ def _attach_helper_fastpath(VerifiedDecoderAgent) -> None:
     _orig_top_valid = helpers_cls.TopValidCandidates
     _orig_boost = helpers_cls.BoostTokenLogits
     _orig_penalize = helpers_cls.PenalizeTokenLogits
+    _orig_scale = helpers_cls.ScaleAllLogits
 
-    def _ghl_with_fallback(self):
-        lm = self.lm
+    def _ghl_with_fallback(self, lm):
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_get_highest(self)
+            return _orig_get_highest(self, lm)
         return _fast_get_highest_logit_token(self, lm)
 
-    def _tvc_with_fallback(self, prompt, prefix, maxCandidates, eosToken):
-        lm = self.lm
-        parser = self.parser
+    def _tvc_with_fallback(self, lm, parser, prompt, prefix, maxCandidates, eosToken):
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_top_valid(self, prompt, prefix, maxCandidates, eosToken)
+            return _orig_top_valid(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
         return _fast_top_valid_candidates(self, lm, parser, prompt, prefix, maxCandidates, eosToken)
 
-    def _boost_with_fallback(self, tokens, amount):
-        lm = self.lm
+    def _boost_with_fallback(self, lm, tokens, amount):
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_boost(self, tokens, amount)
+            return _orig_boost(self, lm, tokens, amount)
         return _fast_boost_token_logits(self, lm, tokens, amount)
 
-    def _penalize_with_fallback(self, tokens, amount):
-        lm = self.lm
+    def _penalize_with_fallback(self, lm, tokens, amount):
         if not hasattr(lm, '_logits_tensor'):
-            return _orig_penalize(self, tokens, amount)
+            return _orig_penalize(self, lm, tokens, amount)
         return _fast_penalize_token_logits(self, lm, tokens, amount)
+
+    def _scale_with_fallback(self, lm, scalar):
+        if not hasattr(lm, '_logits_tensor'):
+            return _orig_scale(self, lm, scalar)
+        return _fast_scale_all_logits(self, lm, scalar)
 
     helpers_cls.GetHighestLogitToken = _ghl_with_fallback
     helpers_cls.TopValidCandidates = _tvc_with_fallback
     helpers_cls.BoostTokenLogits = _boost_with_fallback
     helpers_cls.PenalizeTokenLogits = _penalize_with_fallback
+    helpers_cls.ScaleAllLogits = _scale_with_fallback
 
     # ---- Pure-Dafny helpers: O(N*M) Python-list scans -> O(N+M) Python-set ops.
     # The Dafny-compiled bodies use `t in seq` which is a linear scan over the
@@ -523,7 +543,6 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         return
 
     helper_names = [
-        "SetUseSampling",
         "UnconstrainedStep",
         "UnconstrainedChunk",
         "OpenConstrainedSpan",
@@ -533,11 +552,17 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "ConstrainedStep",
         "UnconstrainedGeneration",
         "ConstrainedGeneration",
+        "CraneGeneration",
         "ConfidenceGatedStep",
         "PenalizedConstrainedStep",
         "BoostedConstrainedStep",
         "SoftConstrainedStep",
         "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
         "SafeSoftConstrainedStep",
         "GroupBoostedConstrainedStep",
         "GroupHasValidMember",
@@ -546,17 +571,22 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "AdaptiveConstrainedStepWithPenalties",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
+        "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
+        "RegenerateUnitOnCheckFailure",
         "DeadEndDetection",
         "ValidTokenCount",
         "BoostTokenLogits",
         "PenalizeTokenLogits",
+        "SafeBoostTokenLogits",
+        "SafePenalizeTokenLogits",
         "MaskTokensInPrefix",
         "GetHighestLogitToken",
         "GetLogitGap",
         "GetTopKTokens",
         "GetTokenLogit",
+        "ScaleAllLogits",
         "SaveLogitsSnapshot",
         "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
@@ -569,12 +599,6 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "GroupContaining",
         "IntersectTokenSets",
         "SubtractTokenSets",
-        "RollbackToGrammarSymbol",
-        "ViewGrammarSymbols",
-        "ForwardUntilGrammarSymbol",
-        "RegenerateUnitOnCheckFailure",
-        "RegenerateUnitOnGroundingFailure",
-        "CloseSpanWithinBudget",
     ]
 
     for name in helper_names:
@@ -605,7 +629,6 @@ def _attach_lm_trace(lm: Any, trace_state: Dict[str, Any]) -> None:
         return
 
     lm_method_names = [
-        "SetNonDeterministic",
         "GenerateLogits",
         "ChooseNextTokenUnconstrained",
         "MaskValidNextAndEos",

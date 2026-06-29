@@ -58,22 +58,25 @@ def _gsm_question_text(example: dict[str, Any]) -> str:
     )
 
 
-def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-2 chain-of-thought prompt (Unconstrained, CRANE, MetaDecode)."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+def format_prompt(evaluator: Any, example: dict[str, Any]) -> list[dict]:
+    # Multi-turn chat delivery (system + 8 user/assistant pairs + question),
+    # matching CRANE. Lifted GSM-1.5B unconstrained 22.0% -> 30.0% over the
+    # flattened single-user-message form. generation.py passes a list straight
+    # through as chat_messages; the CSD path templates from the same messages.
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_messages
 
-    return render_benchmark_prompt("gsm_symbolic", tier=2, example=example)
+    return reasoning_with_symbolic_expr_messages(_gsm_question_text(example))
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-1 answer-only prompt (GCD, IterGen, CARS)."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt
+    """GSM prompt without CoT instructions (e.g. legacy IterGen grammar-masked generation)."""
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import symbolic_expression_only_prompt
 
-    return render_benchmark_prompt("gsm_symbolic", tier=1, example=example)
+    return symbolic_expression_only_prompt(_gsm_question_text(example))
 
 
-def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-2 chain-of-thought prompt."""
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> list[dict]:
+    """Same instructions as ``format_prompt``: reasoning then ``<<expression>>``."""
     return format_prompt(evaluator, example)
 
 
@@ -120,13 +123,8 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
 
 def extract_actual(evaluator: Any, scored_output: str, example: dict[str, Any]) -> tuple[str | None, str, dict[str, Any] | None]:
     actual, found = extract_last_delimited_span(scored_output)
-    if found:
-        return actual, "last_visible_span", None
-    lines = (scored_output or "").strip().splitlines()
-    body = lines[0].strip() if lines else ""
-    if body:
-        return body, "constrained_body", None
-    return None, "none", None
+    source = "last_visible_span" if found else "none"
+    return actual, source, None
 
 
 def is_correct(
@@ -161,6 +159,8 @@ def get_generation_runner():
 
 
 def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
+    """Returns the per-example dynamic Lark parser (used only as a secondary
+    diagnostic; the primary GSM syntax check is check_syntax / CRANE-faithful)."""
     from lark import Lark
     from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
         build_dynamic_grammar,
@@ -189,7 +189,24 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
     return parser
 
 
+# ---------------------------------------------------------------------------
 # CRANE-faithful GSM syntax check on the FINAL <<...>> block only.
+#
+# CRANE reports GSM syntax as `parses` from get_avgs.py -> check_gsm_parsed:
+# it grades ONLY the last <<...>> block per example. The block is rejected if
+# it is empty, contains a brace, or contains "round("; it must be wrapped in
+# << >>; then the full block (delimiters included) is parsed against the GSM
+# grammar. We mirror that here so our syntax_rate is the same kind of number
+# CRANE reports (final block only, any identifier allowed, per-example).
+#
+# This replaces the OLD metric (all visible spans + per-example variable
+# restriction) which was stricter than CRANE and caused phantom-variable
+# expressions to count as syntax failures even though CRANE would pass them.
+# The per-example dynamic grammar is still used at DECODE TIME (in
+# build_dynamic_parser) to restrict what the LM can generate — this only
+# changes the post-hoc scoring metric.
+# ---------------------------------------------------------------------------
+
 _FINAL_BLOCK_PARSERS: dict[str, Any] = {}
 
 
@@ -205,36 +222,14 @@ def _final_block_parser(evaluator: Any):
 
 
 def _extract_final_block(output: str) -> str:
-    if "<<" not in output or ">>" not in output:
-        return ""
-    start = output.rfind("<<")
-    end = output.rfind(">>")
-    if start < 0 or end < start:
-        return ""
-    return output[start : end + 2]
-
-
-def _tier1_expression_body(output: str) -> str:
-    """First-line GSM body for tier-1 constrained decoders (no delimiters)."""
-    lines = (output or "").strip().splitlines()
-    if not lines:
-        return ""
-    text = lines[0].strip()
-    if text.startswith("<<") and text.endswith(">>"):
-        text = text[2:-2].strip()
-    elif text.startswith("<<"):
-        text = text[2:].strip()
-        if text.endswith(">>"):
-            text = text[:-2].strip()
-    return text
-
-
-def _gsm_body_rejected(body: str) -> bool:
-    return not body or "{" in body or "}" in body or "round(" in body
+    # CRANE parse_completion_regex: response[rfind('<<') : rfind('>>') + 2].
+    # When a delimiter is missing, rfind returns -1 and the slice is empty.
+    return output[output.rfind("<<") : output.rfind(">>") + 2]
 
 
 def _check_gsm_parsed(block: str, parser) -> bool:
-    if _gsm_body_rejected(block):
+    # Faithful port of CRANE src/get_avgs.py check_gsm_parsed.
+    if block == "" or "{" in block or "}" in block or "round(" in block:
         return False
     if not block.startswith("<<") or not block.endswith(">>"):
         return False
@@ -248,21 +243,24 @@ def _check_gsm_parsed(block: str, parser) -> bool:
 def check_syntax(
     evaluator: Any, output: str, example: dict[str, Any] | None
 ) -> tuple[bool, list[tuple[str, bool]]]:
-    """GSM syntax: CRANE final ``<<...>>`` block, else tier-1 bare expression body."""
-    block = _extract_final_block(output)
-    if block.startswith("<<") and block.endswith(">>"):
-        parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
-        return parses, [(block, parses)]
+    """CRANE-faithful GSM syntax check on the FINAL ``<<...>>`` block only.
 
-    body = _tier1_expression_body(output)
-    if _gsm_body_rejected(body):
-        return False, [(body, False)] if body else []
-    try:
-        parser = get_syntax_parser(evaluator, example)
-        parser.parse(body)
-        return True, [(body, True)]
-    except Exception:
-        return False, [(body, False)]
+    Returns ``(parses, [(block, parses)])`` when a final block exists, else
+    ``(False, [])`` when no ``<<...>>`` block is present. Composed with the
+    default ``example_syntax_pass_from_segments`` (``bool(segments) and
+    all_valid``) this yields exactly CRANE's per-example pass/fail.
+
+    Semantics:
+    - Only the FINAL << >> block is checked (CRANE scores the last answer block)
+    - Any identifier name is allowed (static grammar, VARIABLE = any CNAME)
+    - Explicit rejections: block containing '{', '}', or 'round('
+    - Must be a complete parse of the full delimited block including << >>
+    """
+    block = _extract_final_block(output)
+    if block == "":
+        return False, []
+    parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
+    return parses, [(block, parses)]
 
 
 def ensure_runtime_prereqs(evaluator: Any) -> None:
@@ -271,5 +269,3 @@ def ensure_runtime_prereqs(evaluator: Any) -> None:
 
 def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) -> dict[str, Any]:
     return {}
-
-

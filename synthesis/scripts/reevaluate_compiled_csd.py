@@ -9,7 +9,6 @@ from typing import Any
 
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
-from synthesis.project_defaults import DEFAULT_EVAL_MODEL
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -26,7 +25,7 @@ def main() -> None:
         help="Path to GeneratedCSD.py inside the compiled output folder",
     )
     p.add_argument("--dataset", default="gsm_symbolic")
-    p.add_argument("--eval-model", default=DEFAULT_EVAL_MODEL)
+    p.add_argument("--eval-model", default="Qwen/Qwen2.5-Coder-7B-Instruct")
     p.add_argument("--eval-backend", default="vllm")
     p.add_argument("--device", default="cuda")
     p.add_argument("--sample-size", type=int, default=15)
@@ -104,7 +103,7 @@ def main() -> None:
     syn = sum(1 for s in res.sample_outputs if s.get("is_syntax_valid"))
     print(f"per_example_syntax_pass: {syn} / {len(res.sample_outputs)}")
     if args.output_json is not None:
-        save_minimal_baseline_json(res, args.output_json, dataset=args.dataset)
+        save_minimal_baseline_json(res, args.output_json)
         print(f"wrote_json: {args.output_json}")
 
 

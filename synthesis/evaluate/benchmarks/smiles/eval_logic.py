@@ -16,9 +16,11 @@ def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
     from synthesis.evaluate.benchmarks.smiles.dataset import get_smiles_task
 
     classes = normalize_classes(evaluator)
-    if not classes:
-        raise ValueError("At least one SMILES class is required via --smiles-classes.")
-    # Bootstrap parser only: per-example decoding uses build_dynamic_parser().
+    if len(classes) != 1:
+        raise ValueError(
+            "SMILES CSD evaluation uses class-specific grammars; "
+            "pass exactly one class via --smiles-classes."
+        )
     return Path(get_smiles_task(classes[0])["grammar_path"])
 
 
@@ -29,60 +31,44 @@ def load_dataset_sample(evaluator: Any) -> list[dict[str, Any]]:
 
 
 def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
-    """SMILES prompt for tier 2 or synthesis-selected tier; ``prompt_state`` may append suffix rows."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt, render_smiles_eval_prompt
-
-    if getattr(evaluator, "grammar_prompt_tier", None) is not None:
-        return render_smiles_eval_prompt(evaluator, example)
-    return render_benchmark_prompt("smiles", tier=2, example=example)
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nWrap your answer molecule in << >> delimiters, e.g. <<CC(=O)OC=C>>.\n"
+        "Molecule: "
+    )
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-1 SMILES prompt (legacy body-only adapters) or synthesis answer-only delimited text."""
-    from synthesis.evaluate.prompt_tiers import render_benchmark_prompt, render_smiles_eval_prompt
-
-    if getattr(evaluator, "grammar_prompt_tier", None) is not None:
-        return render_smiles_eval_prompt(evaluator, example)
-    return render_benchmark_prompt("smiles", tier=1, example=example)
+    """Grammar-masked legacy adapters: single delimited SMILES span."""
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nReturn exactly one line containing `<<SMILES>>` "
+        "(example: <<CC(=O)OC=C>>).\n"
+        "Molecule: "
+    )
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """Tier-2 SMILES prompt."""
-    return format_prompt(evaluator, example)
+    """CRANE-style adaptive SMILES: reasoning allowed before the delimited molecule."""
+    base_prompt = example.get("prompt", "")
+    return (
+        base_prompt.rstrip()
+        + "\n\nThink step by step about how to satisfy the structural constraints, "
+        "then wrap your final SMILES in << >> delimiters.\n"
+        "Molecule: "
+    )
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
     return str(example.get("class_name", ""))
 
 
-def grammar_text_for_prompt_tier(example: dict[str, Any], prompt_tier: int) -> str:
-    """Return decoder grammar: tier 1 body-only; tier 2 delimited ``<<`` SMILES ``>>`` span."""
-    from synthesis.evaluate.benchmarks.smiles.grammar_helpers import (
-        build_smiles_tier1_body_grammar,
-        build_smiles_tier2_delimited_grammar,
-    )
-
-    base = str(example.get("grammar_text", ""))
-    if int(prompt_tier) == 1:
-        return build_smiles_tier1_body_grammar(base)
-    return build_smiles_tier2_delimited_grammar(base)
-
-
-def grammar_tier_for_evaluator(evaluator: Any) -> int:
-    """Grammar tier may differ from prompt tier during compiled CSD evaluation."""
-    grammar_tier = getattr(evaluator, "grammar_prompt_tier", None)
-    if grammar_tier is not None:
-        return int(grammar_tier)
-    prompt_tier = getattr(evaluator, "prompt_tier", None)
-    if prompt_tier is not None:
-        return int(prompt_tier)
-    return 2
-
-
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
 
-    grammar_text = grammar_text_for_prompt_tier(example, grammar_tier_for_evaluator(evaluator))
+    grammar_text = example.get("grammar_text", "")
     class_name = str(example.get("class_name", "smiles"))
     cache_key = ("smiles", class_name, grammar_text)
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
@@ -107,10 +93,7 @@ def extract_actual(
     from synthesis.evaluate.benchmarks.smiles.metrics import evaluate_smiles_output
 
     class_name = example.get("class_name", "smiles")
-    base_grammar_text = str(
-        example.get("base_grammar_text") or example.get("grammar_text") or ""
-    )
-    tier_grammar_text = grammar_text_for_prompt_tier(example, grammar_tier_for_evaluator(evaluator))
+    grammar_text = example.get("grammar_text", "")
     prompt_exemplars = example.get("prompt_exemplars", [])
 
     from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
@@ -121,10 +104,9 @@ def extract_actual(
     smiles_eval = evaluate_smiles_output(
         class_name,
         candidate,
-        tier_grammar_text,
+        grammar_text,
         prompt_exemplars,
         require_rdkit=True,
-        base_grammar_text=base_grammar_text,
     )
     return smiles_eval["smiles"] or None, "smiles_eval", smiles_eval
 
@@ -137,34 +119,7 @@ def is_correct(
     aux: dict[str, Any] | None,
     scored_output: str,
 ) -> bool:
-    if aux and "novel_valid" in aux:
-        return bool(aux.get("novel_valid"))
     return bool(aux and aux.get("unique_valid_candidate"))
-
-
-def init_prompt_states(dataset: list[dict[str, Any]]) -> dict[str, Any]:
-    from synthesis.evaluate.benchmarks.smiles.prompt_state import init_prompt_states as _init
-
-    return _init(dataset)
-
-
-def apply_prompt_state(example: dict[str, Any], states: dict[str, Any]) -> None:
-    from synthesis.evaluate.benchmarks.smiles.prompt_state import apply_prompt_state as _apply
-
-    _apply(example, states)
-
-
-def record_prompt_result(
-    example: dict[str, Any],
-    states: dict[str, Any],
-    smiles: str,
-    eval_row: dict[str, Any] | None,
-    *,
-    raw_response: str | None = None,
-) -> dict[str, Any] | None:
-    from synthesis.evaluate.benchmarks.smiles.prompt_state import record_prompt_result as _record
-
-    return _record(example, states, smiles, eval_row, raw_response=raw_response)
 
 
 def uses_hidden_chunks() -> bool:
@@ -177,15 +132,11 @@ def example_syntax_pass(
     used_hidden_chunk: bool,
     aux: dict[str, Any] | None,
 ) -> bool:
-    if aux is not None and "syntax_valid" in aux:
-        return bool(aux.get("syntax_valid"))
-    if segments:
-        return all(is_valid for _, is_valid in segments)
-    return bool(all_valid_syntax)
+    return bool(aux and aux.get("syntax_valid"))
 
 
 def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
-    return True
+    return bool(aux and aux.get("accuracy_applicable"))
 
 
 def get_generation_runner():
@@ -222,56 +173,39 @@ def ensure_runtime_prereqs(evaluator: Any) -> None:
 
 def should_stop_collected(
     sample_outputs: list[dict[str, Any]],
-    target_unique_valid: int | None = None,
-    *,
-    class_name: str | None = None,
+    target_unique_valid: int = 100,
 ) -> str | None:
-    """Stop once a class session reaches the unique syntax-valid molecule target."""
-    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
-        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
-        aggregate_unique_smiles_records,
-    )
-
+    """Paper-aligned stop: CARS generates until 100 unique-valid molecules are
+    collected (subject to a 1000-sample cap). Once we cross the target the
+    headline `samples_to_target_unique_valid` metric is already determined, so
+    further generation is wasted work. Returns a reason string when the target
+    is reached, else None.
+    """
     if not sample_outputs:
         return None
-    success_target = (
-        DEFAULT_SMILES_POOLED_SUCCESS_TARGET
-        if target_unique_valid is None
-        else max(1, int(target_unique_valid))
-    )
-    records = sample_outputs
-    if class_name:
-        records = [
-            sample
-            for sample in sample_outputs
-            if str(sample.get("class_name") or "") == class_name
-        ]
-    summary = aggregate_unique_smiles_records(records, success_target=success_target)
-    if summary.unique_syntax_valid_count >= success_target:
-        label = f"class {class_name} " if class_name else ""
-        return (
-            "pooled SMILES early stop: collected "
-            f"{summary.unique_syntax_valid_count} unique syntax-valid molecules "
-            f"for {label}(target {success_target}) after {summary.total_attempts} attempts."
-        )
+    seen: set[str] = set()
+    for sample in sample_outputs:
+        smiles_eval = sample.get("smiles_eval") or {}
+        if not smiles_eval.get("unique_valid_candidate"):
+            continue
+        smiles = str(smiles_eval.get("smiles") or "").strip()
+        if smiles and smiles not in seen:
+            seen.add(smiles)
+            if len(seen) >= target_unique_valid:
+                return (
+                    "paper-aligned early stop: collected "
+                    f"{len(seen)} unique-valid molecules (target {target_unique_valid}) "
+                    f"after {len(sample_outputs)} samples."
+                )
     return None
 
 
 def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) -> dict[str, Any]:
     from synthesis.evaluate.benchmarks.smiles.metrics import smiles_trial_metrics
-    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
-        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
-        aggregate_smiles_pooled_scores,
-    )
 
-    success_target = DEFAULT_SMILES_POOLED_SUCCESS_TARGET
-    pooled_summary = aggregate_smiles_pooled_scores(
-        sample_outputs,
-        success_target=success_target,
-    )
     paper_metrics = smiles_trial_metrics(
         sample_outputs,
-        target_unique_valid=success_target,
+        target_unique_valid=100,
         sample_cap=1000,
     )
 
@@ -320,7 +254,6 @@ def compute_aux_metrics(evaluator: Any, sample_outputs: list[dict[str, Any]]) ->
         "adjusted_membership_score": adjusted_membership,
     }
     return {
-        "smiles_pooled_summary": pooled_summary.as_dict(),
         "smiles_paper_trial": paper_metrics,
         "anti_degeneracy": anti,
     }
@@ -336,17 +269,32 @@ def accuracy_upper_bound(
 
 
 def final_accuracy_denominator(num_examples: int, num_accuracy_examples: int) -> int:
-    from synthesis.evaluate.benchmarks.smiles.pooled_eval import (
-        DEFAULT_SMILES_POOLED_SUCCESS_TARGET,
-    )
-
-    del num_examples, num_accuracy_examples
-    return DEFAULT_SMILES_POOLED_SUCCESS_TARGET
+    return num_accuracy_examples
 
 
 def invalid_outputs_excluded(num_examples: int, num_accuracy_examples: int) -> int:
-    return 0
+    return num_examples - num_accuracy_examples
 
 
 def accuracy_definition() -> str:
-    return "unique_in_class_over_success_target"
+    return "unique_valid_rate_rdkit (distinct rdkit-valid + in-class + non-exemplar molecules / N)"
+
+
+def override_accuracy(aux_metrics: dict[str, Any] | None, num_examples: int) -> float | None:
+    """SMILES headline metric = unique-valid RATE, the CARS-paper axis.
+
+    accuracy = unique_valid_count / N, where unique_valid_count (from
+    smiles_trial_metrics) is the number of DISTINCT molecules that are RDKit-valid
+    AND in-class AND non-exemplar. The denominator is N (all samples), so a collapsed
+    strategy that emits one molecule x N scores ~1/N instead of the old gameable
+    membership-rate's 1.0. Diversity (Tanimoto) and validity are reported alongside
+    in smiles_paper_trial as comparable axes.
+
+    Returns None if the trial metrics are absent (caller then keeps the default
+    accuracy), so this hook stays inert for any dataset that does not define it.
+    """
+    trial = (aux_metrics or {}).get("smiles_paper_trial") or {}
+    if not trial:
+        return None
+    unique_valid = int(trial.get("unique_valid_count", 0) or 0)
+    return unique_valid / max(1, num_examples)

@@ -29,22 +29,6 @@ from synthesis.evaluate.benchmarks.sql_spider.dataset import (
     write_gold_file,
 )
 
-_SPIDER_NLTK_PACKAGES = ("punkt", "punkt_tab", "stopwords")
-
-
-def ensure_spider_nltk_prereqs() -> None:
-    """Download NLTK tokenizers required by the vendored Spider SQL matcher."""
-    try:
-        import nltk
-    except ImportError:
-        return
-
-    for package in _SPIDER_NLTK_PACKAGES:
-        try:
-            nltk.download(package, quiet=True)
-        except Exception:
-            continue
-
 
 def _ensure_syncode_import_path() -> None:
     """
@@ -113,6 +97,9 @@ def _clean_sql(text: str) -> str:
         r"\bquestion\s*:",
         r"\bSQL\s*:",
     )
+    # Strip any marker the model echoed at the very start (e.g. "SQL: SELECT ..."):
+    # the trailing-cut logic below ignores position-0 markers, so without this they
+    # stay glued to the front of the query and make it fail to execute.
     stripped = True
     while stripped:
         stripped = False
@@ -165,7 +152,6 @@ def execute_accuracy(
           - per_row: list of per-example dicts with {pred, gold, db_id, exec, validity}
     """
     _ensure_syncode_import_path()
-    ensure_spider_nltk_prereqs()
 
     if db_dir is None:
         db_dir = default_db_dir()

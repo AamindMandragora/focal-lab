@@ -34,6 +34,7 @@ from synthesis.generate.prompts import (
     build_compilation_error_prompt,
     build_format_repair_prompt,
 )
+from synthesis.evaluate.benchmarks.smiles import eval_logic as smiles_eval_logic
 from synthesis.evaluate.benchmarks.sql_spider import eval_logic as sql_spider_eval_logic
 
 
@@ -273,66 +274,6 @@ def test_format_repair_prompt_has_no_strategy_guidance():
     _assert_no_forbidden(user, "format-repair user prompt")
 
 
-def test_prompt_surface_makes_required_visible_delimiters_authoritative():
-    assert "For hidden constrained chunks, fully constrained objects" not in SYSTEM_PROMPT
-    assert "treat those delimiters as part of the target output and emit them exactly" in SYSTEM_PROMPT
-    assert "Raw task-native surfaces apply only when the task or evaluator explicitly requests them" in SYSTEM_PROMPT
-
-    system, user = build_format_repair_prompt(
-        previous_strategy="// prev",
-        task_description=(
-            "Generate a single valid SQL query as exactly SQL: <<YOUR QUERY>>, "
-            "using only the provided schema context."
-        ),
-    )
-
-    _assert_no_forbidden(system, "format-repair task-contract system prompt")
-    _assert_no_forbidden(user, "format-repair task-contract user prompt")
-    assert "Task:" in user
-    assert "SQL: <<YOUR QUERY>>" in user
-    assert "Concrete output-format text in the task is authoritative" in user
-    assert "visible delimiter tokens rather than converting the answer to hidden or raw output" in user
-
-
-def test_error_and_repair_prompts_carry_task_contract_when_available():
-    task = (
-        "Generate a single valid SQL query as exactly SQL: <<YOUR QUERY>>, "
-        "using only the provided schema context."
-    )
-    rendered_prompts = [
-        (
-            "runtime",
-            build_runtime_error_prompt(
-                previous_strategy="// prev",
-                error_traceback="IndexError: boom",
-                task_description=task,
-            ),
-        ),
-        (
-            "compilation",
-            build_compilation_error_prompt(
-                previous_strategy="// prev",
-                error_message="undefined identifier",
-                task_description=task,
-            ),
-        ),
-        (
-            "format repair",
-            build_format_repair_prompt(
-                previous_strategy="// prev",
-                task_description=task,
-            ),
-        ),
-    ]
-
-    for label, (system, user) in rendered_prompts:
-        _assert_no_forbidden(system, f"{label} task-contract system prompt")
-        _assert_no_forbidden(user, f"{label} task-contract user prompt")
-        assert "Task:" in user
-        assert task in user
-        assert "SQL: <<YOUR QUERY>>" in user
-
-
 # Search-memory leakage guards. The FeedbackLoop previously injected a
 # multi-line "Search memory:" block (built by _get_compact_search_memory)
 # into the search_memory parameter of refinement/restart prompts. That
@@ -503,11 +444,17 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
         "db_info": "# singer ( singer_id , name )",
         "question": "How many singers do we have?",
     }
-    rendered_surfaces.append(
-        (
-            "Spider expression-only prompt",
-            sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example),
-        )
+    rendered_surfaces.extend(
+        [
+            (
+                "SMILES expression-only prompt",
+                smiles_eval_logic.format_prompt_expression_only(None, benchmark_example),
+            ),
+            (
+                "Spider expression-only prompt",
+                sql_spider_eval_logic.format_prompt_expression_only(None, benchmark_example),
+            ),
+        ]
     )
 
     hits = {
@@ -520,8 +467,8 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
     combined = "\n".join(rendered for _label, rendered in rendered_surfaces)
     assert "Assign the existing out-parameters directly" in combined
     assert "Call instance helper methods as `helpers.<Method>`" in combined
-    assert "treat those delimiters as part of the target output and emit them exactly" in combined
-    assert "Raw task-native surfaces apply only when the task or evaluator explicitly requests them" in combined
+    assert "Use visible delimiters only when the task or evaluator requires visible constrained spans" in combined
     assert "Call it once at method start" in combined
     assert "Return exactly the Dafny method body" in combined
-    assert "<<SELECT COUNT(*) FROM singer>>" in combined or "SQL:" in combined
+    assert "Return exactly one line containing `<<SMILES>>`" in combined
+    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in combined

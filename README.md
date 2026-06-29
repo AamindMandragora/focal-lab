@@ -22,8 +22,8 @@ The project is organized so the core workflow is explicit:
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
 - `environment/`: environment setup and dependency installation notes/scripts.
-- `cache/`: default local model, parser, and DFA mask cache (override with `CSD_CACHE_ROOT`, e.g. `/share/metadecode/cache` for a shared team store).
-- `outputs/`: generated runs and baseline JSONs (override with `CSD_OUTPUTS_ROOT`; logs stay under `logs/`).
+- `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
+- `outputs/`: generated runs, baselines, and preserved local experiment artifacts.
 - `logs/`: per-run LLM prompt/response records (`prompt_io.jsonl`; override root via `CSD_LOGS_DIR`).
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
@@ -45,24 +45,25 @@ Runtime artifacts now live under `outputs/`:
 - `outputs/generated/`
 - `outputs/baselines/`
 
-Each synthesis run creates a dedicated folder inside `outputs/generated/<model>/<benchmark>/<strategy>/`:
+Each synthesis run creates a dedicated folder inside `outputs/generated/`:
 
-- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/dafny/`
-- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/python/`
-- `outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<timestamp>_<token>/results/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/dafny/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/python/`
+- `outputs/generated/<output_name>_<timestamp>_<token>/results/`
 
 This makes it easy to inspect strategy source, compiled runtime code, and reports without mixing files across runs.
 
 Baseline storage is intentionally minimal:
 
-- One JSON file per `(eval_model, benchmark, strategy)` cell under `outputs/baselines/<model>/<benchmark>/<strategy>/`.
+- One JSON file per `(baseline_strategy, model, benchmark)` pair under `outputs/baselines/`.
 - Only `accuracy`, `syntax_rate`, and per-question generated answers are stored.
 
 Fixed-strategy baselines use legacy codepaths:
 - `unconstrained` / `crane`: `legacy/CRANE`
 - `itergen`: `legacy/itergen`
+- `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
-Those `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
+Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
 
 ## Long runs (tmux)
 
@@ -70,17 +71,29 @@ Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CU
 
 ```bash
 ./run_tmux.sh shell                              # interactive shell
-./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session (no metadecode by default)
-./run_tmux.sh baselines -- --skip-ablations    # legacy fixed strategies only
-./run_tmux.sh metadecode --                    # includes metadecode + synthesis ablations B/C/E
+./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session
 ./run_tmux.sh attach                           # attach to session
 ./run_tmux.sh synthesis -- --dataset gsm_symbolic --output-name smoke_gsm ...
 ./run_tmux.sh run -- python -m synthesis.run_synthesis --help
 ```
 
-**`matrix`** and **`baselines`** inject **`--strategies`** without **metadecode** unless you pass **`--strategies`** yourself. Phase 2 then runs fixed-strategy arms of ablations A/D only; ablations B/C/E and metadecode arms require **metadecode** in **`--strategies`** (use **`metadecode`** subcommand or **`python run_all_tests.py --strategies ...`**).
-
 Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
+
+## Live Dashboard
+
+Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
+
+```bash
+python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
+```
+
+If the server is remote, open it through an SSH tunnel:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 focal
+```
+
+Then visit `http://127.0.0.1:8765/`.
 
 ## Quick Start
 
@@ -98,12 +111,13 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). The experimental matrix uses **`gemini`** for main MetaDecode findings (`--main-generation-model`) and **`sonnet4.6` / `gpt5.5`** for synthesizer ablations (`--generation-models`). All three profiles use direct hosted APIs (Gemini, Anthropic, OpenAI); do not route matrix runs through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Standalone evaluation defaults to local vLLM with **`Qwen/Qwen3.5-4B`** unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
   --dataset gsm_symbolic \
+  --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
   --max-iterations 5 \
   --min-accuracy 0.3 \
   --min-syntax-rate 1.0 \
@@ -140,24 +154,21 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order and strategies in `unconstrained, gcd, crane, itergen, rs, cars, metadecode` order to reduce model reload churn.
-- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `sonnet4.6` profile uses the Anthropic API (`claude-sonnet-4-6` by default); the `gemini` profile uses Gemini thinking level `high` by default.
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider` order (GSM and SQL/Spider) and strategies in `unconstrained, gcd, crane, itergen, cars, metadecode` order to reduce model reload churn. The CARS molecular/SMILES benchmark remains available for explicit manual runs, but it is not part of the default matrix. Metadecode runs use `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and use `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
+- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
 - `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
-- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `rs` so those strategies compare against the same questions.
+- Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. Main-matrix MetaDecode defaults to **`gemini`** (`--main-generation-model`); Ablation~C and other Phase~2 MetaDecode ablations default to **`sonnet4.6,gpt5.5`** (`--generation-models`). **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default; **`sonnet4.6`** uses the **Anthropic** backend (`ANTHROPIC_SONNET_MODEL`, default `claude-sonnet-4-6`); **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
+- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking; **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
 
 ## Path Configuration
 
 Path defaults are intentionally overrideable. Use CLI flags where available and env vars for runtime/config paths:
 
-- `CSD_CACHE_ROOT` — shared Hugging Face + SynCode cache (default: `<repo>/cache/`). Propagates to `HF_HOME`, `HF_CACHE`, `TRANSFORMERS_CACHE`, `SYNCODE_CACHE`, `ITER_SYNCODE_CACHE` via `synthesis.storage_env.ensure_repo_cache_env`.
-- `CSD_OUTPUTS_ROOT` — shared run artifacts (default: `<repo>/outputs/`). Propagates to `CSD_OUTPUT_DIR`, `CSD_BASELINE_OUTPUT_DIR`, `CSD_ABLATION_OUTPUT_DIR`, `CSD_GPU3_RETRY_QUEUE`. Does **not** relocate `logs/`.
-- `./migrate_to_shared.sh` — one-time rsync of local `cache/` and `outputs/` to `/share/metadecode/{cache,outputs}`, symlink back, and append the two roots to `synthesis/.env`.
 - `--output-dir` / `CSD_OUTPUT_DIR`
 - `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` / `CSD_GRAMMARS_DIR`
@@ -168,4 +179,5 @@ Path defaults are intentionally overrideable. Use CLI flags where available and 
 - `CSD_SYNCODE_DIR`
 - `SPIDER_DATA_DIR`, `SPIDER_DB_DIR`, `SPIDER_TABLES_JSON`
 - `SPIDER_EVAL_DIR` / `SPIDER_EVAL_PY`
+- `SMILES_DATA_DIR`, `SMILES_GRAMMAR_DIR`
 - `CSD_JSON_GRAMMAR_PATH`

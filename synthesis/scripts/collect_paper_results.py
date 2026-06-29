@@ -25,12 +25,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from synthesis.project_paths import (
-    iter_generated_run_dirs,
-    resolve_baseline_json_path,
-    slugify as path_slugify,
-)
-
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
@@ -60,35 +54,26 @@ def _git_tracked_json_relpaths(repo_root: Path) -> frozenset[str]:
 
 
 MODELS = [
-    ("Qwen/Qwen3.5-2B", "Qwen3.5-2B"),
-    ("Qwen/Qwen3.5-4B", "Qwen3.5-4B"),
-    ("Qwen/Qwen3.5-9B", "Qwen3.5-9B"),
+    ("Qwen/Qwen2.5-Coder-1.5B-Instruct", "1.5B"),
+    ("Qwen/Qwen2.5-Coder-7B-Instruct", "7B"),
+    ("Qwen/Qwen2.5-Coder-14B-Instruct", "14B"),
     ("meta-llama/Llama-3.1-8B-Instruct", "Llama-8B"),
 ]
 # First-column \\multirow labels for paper/experiments.tex Table~\\ref{tab:main_results}.
 MODEL_TABULAR_MACROS = [
-    r"\QwenThreeFiveTwo",
-    r"\QwenThreeFiveFour",
-    r"\QwenThreeFiveNine",
+    r"\QwenSmall",
+    r"\QwenCoder",
+    r"\QwenBig",
     r"\LlamaEight",
 ]
-BENCHMARKS = ["gsm_symbolic", "spider"]
-STRATEGIES = [
-    "unconstrained",
-    "gcd",
-    "crane",
-    "itergen",
-    "rs",
-    "metadecode",
-]
-# Main matrix MetaDecode runs (run_all_tests.py --main-generation-model).
-DEFAULT_MAIN_GEN_PROFILE = "gemini"
-DEFAULT_ABLATION_GEN_PROFILES = ("sonnet4.6", "gpt5.5")
+BENCHMARKS = ["gsm_symbolic", "spider", "smiles"]
+STRATEGIES = ["unconstrained", "gcd", "crane", "itergen", "cars", "metadecode"]
+SMILES_CLASSES = ("acrylates", "chain_extenders", "isocyanates")
 MASK_LABELS = ("mask_on", "mask_off")
 
 
 def _slugify(s: str) -> str:
-    return path_slugify(s)
+    return s.replace("/", "_").replace(":", "_").replace(" ", "_").replace("-", "_")
 
 
 def _record_num_examples(record: dict[str, Any]) -> int:
@@ -161,46 +146,19 @@ def _load_baseline_single(
     tracked_relpaths: frozenset[str] | None = None,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
-    benchmark = benchmark_key
-    smiles_class = ""
-    if benchmark_key.startswith("smiles__class_"):
-        benchmark = "smiles"
-        smiles_class = benchmark_key.split("smiles__class_", 1)[1]
-
-    token_budget = str(kwargs.get("token_budget") or "1")
-    max_steps = str(kwargs.get("max_steps") or "900")
-    gen_profile = str(kwargs.get("gen_profile") or "")
-    synth_iter = str(kwargs.get("synth_iter") or "")
-    rs_search_steps = str(kwargs.get("rs_search_steps") or "200")
-    cars_search_steps = str(kwargs.get("cars_search_steps") or "200")
-
-    candidates: list[Path] = []
-    resolved = resolve_baseline_json_path(
-        baselines_dir,
-        eval_model=model,
-        benchmark=benchmark,
-        strategy=strategy,
-        token_budget=token_budget,
-        max_steps=max_steps,
-        smiles_class=smiles_class,
-        rs_search_steps=rs_search_steps,
-        cars_search_steps=cars_search_steps,
-        gen_profile=gen_profile,
-        synth_iter=synth_iter,
-    )
-    if resolved.is_file() and _matches_name_filters(resolved, **kwargs):
-        candidates.append(resolved)
-
-    # Legacy glob fallback for partially migrated trees.
-    legacy_dir = baselines_dir / strategy / _slugify(model)
-    if legacy_dir.is_dir():
-        candidates.extend(
-            path
-            for path in legacy_dir.glob(f"{benchmark_key}__*.json")
-            if _matches_name_filters(path, **kwargs)
+    model_slug = _slugify(model)
+    model_dir = baselines_dir / strategy / model_slug
+    candidates = []
+    if model_dir.is_dir():
+        candidates = sorted(
+            (
+                path
+                for path in model_dir.glob(f"{benchmark_key}__*.json")
+                if _matches_name_filters(path, **kwargs)
+            ),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
         )
-
-    candidates = sorted(set(candidates), key=lambda p: p.stat().st_mtime, reverse=True)
     if tracked_relpaths is not None and repo_root is not None:
         candidates = [
             p
@@ -218,10 +176,29 @@ def _load_baseline(
     model: str,
     benchmark: str,
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
+    if benchmark == "smiles":
+        class_records = [
+            _load_baseline_single(
+                baselines_dir,
+                strategy,
+                model,
+                f"smiles__class_{_slugify(class_name)}",
+                repo_root=repo_root,
+                tracked_relpaths=tracked_relpaths,
+                **kwargs,
+            )
+            for class_name in smiles_classes
+        ]
+        if any(record is not None for record in class_records):
+            if any(record is None for record in class_records):
+                return None
+            return _aggregate_records(class_records)
+
     return _load_baseline_single(
         baselines_dir,
         strategy,
@@ -253,7 +230,12 @@ def _load_generated_prefix(
     best: Path | None = None
     best_mtime = -1.0
 
-    for run_dir in iter_generated_run_dirs(generated_dir, name_prefix=prefix):
+    if not generated_dir.is_dir():
+        return None
+
+    for run_dir in generated_dir.iterdir():
+        if not run_dir.is_dir() or not run_dir.name.startswith(prefix):
+            continue
         success = run_dir / "results" / "success_report.json"
         if not success.is_file():
             continue
@@ -295,35 +277,57 @@ def _load_metadecode(
     benchmark: str,
     model: str,
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
+    smiles_class: str | None = None,
     baselines_dir: Path | None = None,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """Find the most recent metadecode success report matching the given criteria."""
+    if benchmark == "smiles" and smiles_class is None:
+        class_records = [
+            _load_metadecode(
+                generated_dir,
+                benchmark,
+                model,
+                smiles_classes=smiles_classes,
+                smiles_class=class_name,
+                baselines_dir=baselines_dir,
+                repo_root=repo_root,
+                tracked_relpaths=tracked_relpaths,
+                **kwargs,
+            )
+            for class_name in smiles_classes
+        ]
+        if any(record is not None for record in class_records):
+            if any(record is None for record in class_records):
+                return None
+            return _aggregate_records(class_records)
+
     model_slug = _slugify(model)
     prefix = f"metadecode_{benchmark}_{model_slug}"
+    class_token = f"_class_{_slugify(smiles_class)}" if smiles_class else None
     best: Path | None = None
     best_mtime = -1.0
 
-    for run_dir in iter_generated_run_dirs(
-        generated_dir,
-        eval_model=model,
-        benchmark=benchmark,
-        strategy="metadecode",
-        name_prefix=prefix,
-    ):
-        success = run_dir / "results" / "success_report.json"
-        if not success.is_file():
-            continue
-        if not _generated_run_matches(run_dir.name, **kwargs):
-            continue
-        if tracked_relpaths is not None and repo_root is not None:
-            rel = _json_relpath_under_repo(success, repo_root)
-            if rel not in tracked_relpaths:
+    if generated_dir.is_dir():
+        for run_dir in generated_dir.iterdir():
+            if not run_dir.is_dir() or not run_dir.name.startswith(prefix):
                 continue
+            if class_token is not None and class_token not in run_dir.name:
+                continue
+            success = run_dir / "results" / "success_report.json"
+            if not success.is_file():
+                continue
+            if not _generated_run_matches(run_dir.name, **kwargs):
+                continue
+            if tracked_relpaths is not None and repo_root is not None:
+                rel = _json_relpath_under_repo(success, repo_root)
+                if rel not in tracked_relpaths:
+                    continue
 
-        mtime = success.stat().st_mtime
+            mtime = success.stat().st_mtime
             if mtime > best_mtime:
                 best = success
                 best_mtime = mtime
@@ -354,10 +358,36 @@ def _load_factorial_run(
     mask_label: str,
     policy: str,
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
+    smiles_class: str | None = None,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> dict[str, Any] | None:
+    if benchmark == "smiles" and smiles_class is None:
+        class_records = [
+            _load_factorial_run(
+                generated_dir,
+                benchmark,
+                beam_size,
+                mask_label,
+                policy,
+                smiles_classes=smiles_classes,
+                smiles_class=class_name,
+                repo_root=repo_root,
+                tracked_relpaths=tracked_relpaths,
+            )
+            for class_name in smiles_classes
+        ]
+        if any(record is not None for record in class_records):
+            if any(record is None for record in class_records):
+                return None
+            return _aggregate_records(class_records)
+
     class_suffix = ""
+    if benchmark == "smiles":
+        if smiles_class is None:
+            return None
+        class_suffix = f"_class_{_slugify(smiles_class)}"
     prefix = f"ablat_beam{beam_size}_{mask_label}_{policy}_{benchmark}{class_suffix}"
     return _load_generated_prefix(
         generated_dir,
@@ -381,7 +411,7 @@ def _strategy_display(strategy: str) -> str:
         "gcd": r"\GCD",
         "crane": r"\Crane",
         "itergen": r"\IterGen",
-        "rs": "Reject.",
+        "cars": r"\CARS",
         "metadecode": r"\Tool",
     }.get(strategy, strategy)
 
@@ -390,6 +420,7 @@ def _main_table_rows_raw(
     baselines_dir: Path,
     generated_dir: Path,
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> list[tuple[str, list[tuple[str, list[tuple[float | None, float | None]]]]]]:
@@ -405,7 +436,7 @@ def _main_table_rows_raw(
                         generated_dir,
                         benchmark,
                         model_full,
-                        gen_profile=DEFAULT_MAIN_GEN_PROFILE,
+                        smiles_classes=smiles_classes,
                         baselines_dir=baselines_dir,
                         repo_root=repo_root,
                         tracked_relpaths=tracked_relpaths,
@@ -416,6 +447,7 @@ def _main_table_rows_raw(
                         strategy,
                         model_full,
                         benchmark,
+                        smiles_classes=smiles_classes,
                         repo_root=repo_root,
                         tracked_relpaths=tracked_relpaths,
                     )
@@ -447,6 +479,7 @@ def emit_main_table(
     baselines_dir: Path,
     generated_dir: Path,
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     paper_multirow: bool = False,
     bold_best: bool = False,
     repo_root: Path | None = None,
@@ -456,6 +489,7 @@ def emit_main_table(
     raw_blocks = _main_table_rows_raw(
         baselines_dir,
         generated_dir,
+        smiles_classes=smiles_classes,
         repo_root=repo_root,
         tracked_relpaths=tracked_relpaths,
     )
@@ -515,32 +549,34 @@ def emit_step_budget_table(
     generated_dir: Path,
     step_budgets: list[int],
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> str:
     lines: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
-    for strategy in ["gcd", "crane", "itergen", "rs", "metadecode"]:
+    for strategy in ["gcd", "crane", "itergen", "cars", "metadecode"]:
         strategy_label = {
             "gcd": r"\GCD",
             "crane": r"\Crane",
             "itergen": r"\IterGen",
-            "rs": "Reject.",
+            "cars": r"\CARS",
             "metadecode": r"\Tool",
         }.get(strategy, strategy)
 
         gsm_cells: list[str] = []
         spider_cells: list[str] = []
+        smiles_cells: list[str] = []
         for ms in step_budgets:
-            for benchmark, cells in [("gsm_symbolic", gsm_cells), ("spider", spider_cells)]:
+            for benchmark, cells in [("gsm_symbolic", gsm_cells), ("spider", spider_cells), ("smiles", smiles_cells)]:
                 if strategy == "metadecode":
                     data = _load_metadecode(
                         generated_dir,
                         benchmark,
                         ablation_model,
-                        gen_profile=DEFAULT_MAIN_GEN_PROFILE,
                         max_steps=ms,
+                        smiles_classes=smiles_classes,
                         baselines_dir=baselines_dir,
                         repo_root=repo_root,
                         tracked_relpaths=tracked_relpaths,
@@ -552,12 +588,13 @@ def emit_step_budget_table(
                         ablation_model,
                         benchmark,
                         max_steps=ms,
+                        smiles_classes=smiles_classes,
                         repo_root=repo_root,
                         tracked_relpaths=tracked_relpaths,
                     )
                 cells.append(_fmt(data.get("accuracy") if data else None))
 
-        all_cells = " & ".join(gsm_cells + spider_cells)
+        all_cells = " & ".join(gsm_cells + spider_cells + smiles_cells)
         lines.append(f"{strategy_label:<12s} & {all_cells} \\\\")
 
     return "\n".join(lines)
@@ -568,6 +605,7 @@ def emit_synth_iter_table(
     synth_iters: list[int],
     *,
     baselines_dir: Path | None = None,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> str:
@@ -575,7 +613,7 @@ def emit_synth_iter_table(
     lines_acc: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
 
-    for benchmark in ["gsm_symbolic", "spider"]:
+    for benchmark in ["gsm_symbolic", "spider", "smiles"]:
         verif_cells: list[str] = []
         acc_cells: list[str] = []
         for k in synth_iters:
@@ -583,8 +621,8 @@ def emit_synth_iter_table(
                 generated_dir,
                 benchmark,
                 ablation_model,
-                gen_profile=DEFAULT_MAIN_GEN_PROFILE,
                 synth_iter=k,
+                smiles_classes=smiles_classes,
                 baselines_dir=baselines_dir,
                 repo_root=repo_root,
                 tracked_relpaths=tracked_relpaths,
@@ -604,25 +642,27 @@ def emit_synth_model_table(
     gen_profiles: list[str],
     *,
     baselines_dir: Path | None = None,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> str:
     lines: list[str] = []
     ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
     labels = {
-        "gpt5.5": r"\SynthGPT",
-        "sonnet4.6": r"\SynthSonnet",
-        "gemini": r"\SynthGemini",
+        "gpt5.4": r"\SynthGPT",
+        "opus4.7": r"\SynthOpus",
+        "gemini-pro": r"\SynthGemini",
     }
 
     for profile in gen_profiles:
         cells: list[str] = []
-        for benchmark in ["gsm_symbolic", "spider"]:
+        for benchmark in ["gsm_symbolic", "spider", "smiles"]:
             data = _load_metadecode(
                 generated_dir,
                 benchmark,
                 ablation_model,
                 gen_profile=profile,
+                smiles_classes=smiles_classes,
                 baselines_dir=baselines_dir,
                 repo_root=repo_root,
                 tracked_relpaths=tracked_relpaths,
@@ -641,6 +681,7 @@ def emit_factorial_table(
     beam_sizes: list[int],
     helper_policies: list[str],
     *,
+    smiles_classes: tuple[str, ...] = SMILES_CLASSES,
     repo_root: Path | None = None,
     tracked_relpaths: frozenset[str] | None = None,
 ) -> str:
@@ -656,6 +697,7 @@ def emit_factorial_table(
                         beam_size,
                         mask_label,
                         policy,
+                        smiles_classes=smiles_classes,
                         repo_root=repo_root,
                         tracked_relpaths=tracked_relpaths,
                     )
@@ -669,39 +711,6 @@ def emit_factorial_table(
     return "\n".join(lines)
 
 
-MAIN_RESULTS_BEGIN = "% BEGIN:main_results_table_body"
-MAIN_RESULTS_END = "% END:main_results_table_body"
-
-
-def write_main_results_to_paper(
-    body: str,
-    *,
-    paper_experiments: Path | None = None,
-) -> Path:
-    """Replace the auto-generated Table~1 body in paper/experiments.tex."""
-    repo = _repo_root()
-    tex_path = paper_experiments or (repo / "paper" / "experiments.tex")
-    text = tex_path.read_text(encoding="utf-8")
-    if MAIN_RESULTS_BEGIN not in text or MAIN_RESULTS_END not in text:
-        raise SystemExit(
-            f"Missing {MAIN_RESULTS_BEGIN!r} / {MAIN_RESULTS_END!r} markers in {tex_path}"
-        )
-    indented = "\n".join(body.splitlines())
-    replacement = (
-        f"{MAIN_RESULTS_BEGIN}\n"
-        f"{indented}\n"
-        f"{MAIN_RESULTS_END}"
-    )
-    start = text.find(MAIN_RESULTS_BEGIN)
-    end = text.find(MAIN_RESULTS_END, start)
-    if start < 0 or end < 0:
-        raise SystemExit(f"Could not locate main results block in {tex_path}")
-    end += len(MAIN_RESULTS_END)
-    new_text = text[:start] + replacement + text[end:]
-    tex_path.write_text(new_text, encoding="utf-8")
-    return tex_path
-
-
 def main() -> None:
     repo = _repo_root()
     p = argparse.ArgumentParser(description=__doc__)
@@ -709,11 +718,8 @@ def main() -> None:
     p.add_argument("--generated-dir", type=Path, default=repo / "outputs" / "generated")
     p.add_argument("--step-budgets", default="256,512,1024")
     p.add_argument("--synth-iters", default="3,5,10")
-    p.add_argument(
-        "--gen-profiles",
-        default=",".join(DEFAULT_ABLATION_GEN_PROFILES),
-        help="Synthesizer profiles for Ablation C table (default: sonnet4.6,gpt5.5).",
-    )
+    p.add_argument("--gen-profiles", default="gpt5.4,opus4.7,gemini-pro")
+    p.add_argument("--smiles-classes", default=",".join(SMILES_CLASSES))
     p.add_argument(
         "--paper-main-table",
         action="store_true",
@@ -731,27 +737,19 @@ def main() -> None:
         action="store_true",
         help="Only read JSON files tracked by git under outputs/ (via git ls-files)",
     )
-    p.add_argument(
-        "--write-paper",
-        action="store_true",
-        help="Write Table 1 body into paper/experiments.tex (implies --paper-main-table --paper-bold-best)",
-    )
-    p.add_argument(
-        "--paper-experiments",
-        type=Path,
-        default=repo / "paper" / "experiments.tex",
-        help="Target experiments.tex for --write-paper",
-    )
     args = p.parse_args()
-    if args.write_paper:
-        args.paper_main_table = True
-        args.paper_bold_best = True
 
     step_budgets = [int(x) for x in args.step_budgets.split(",")]
     synth_iters = [int(x) for x in args.synth_iters.split(",")]
     gen_profiles = [x.strip() for x in args.gen_profiles.split(",")]
+    smiles_classes = tuple(x.strip() for x in args.smiles_classes.split(",") if x.strip())
     beam_sizes = [int(x) for x in args.beam_sizes.split(",")]
     helper_policies = [x.strip() for x in args.helper_policies.split(",") if x.strip()]
+    unknown_smiles = sorted(set(smiles_classes) - set(SMILES_CLASSES))
+    if unknown_smiles:
+        raise SystemExit(
+            f"Unknown SMILES class(es): {unknown_smiles}. Expected one of {SMILES_CLASSES}."
+        )
 
     tracked = _git_tracked_json_relpaths(repo) if args.git_tracked_only else None
     repo_for_track = repo if tracked is not None else None
@@ -759,23 +757,17 @@ def main() -> None:
     print("=" * 60)
     print("Table 1: Main Results")
     print("=" * 60)
-    main_table_body = emit_main_table(
-        args.baselines_dir,
-        args.generated_dir,
-        paper_multirow=args.paper_main_table,
-        bold_best=args.paper_bold_best,
-        repo_root=repo_for_track,
-        tracked_relpaths=tracked,
-    )
-    print(main_table_body)
-    if args.write_paper:
-        if not args.paper_main_table:
-            raise SystemExit("--write-paper requires --paper-main-table")
-        out_path = write_main_results_to_paper(
-            main_table_body,
-            paper_experiments=args.paper_experiments,
+    print(
+        emit_main_table(
+            args.baselines_dir,
+            args.generated_dir,
+            smiles_classes=smiles_classes,
+            paper_multirow=args.paper_main_table,
+            bold_best=args.paper_bold_best,
+            repo_root=repo_for_track,
+            tracked_relpaths=tracked,
         )
-        print(f"\nWrote Table 1 body to {out_path}")
+    )
     print()
 
     print("=" * 60)
@@ -786,6 +778,7 @@ def main() -> None:
             args.baselines_dir,
             args.generated_dir,
             step_budgets,
+            smiles_classes=smiles_classes,
             repo_root=repo_for_track,
             tracked_relpaths=tracked,
         )
@@ -800,6 +793,7 @@ def main() -> None:
             args.generated_dir,
             synth_iters,
             baselines_dir=args.baselines_dir,
+            smiles_classes=smiles_classes,
             repo_root=repo_for_track,
             tracked_relpaths=tracked,
         )
@@ -814,6 +808,7 @@ def main() -> None:
             args.generated_dir,
             gen_profiles,
             baselines_dir=args.baselines_dir,
+            smiles_classes=smiles_classes,
             repo_root=repo_for_track,
             tracked_relpaths=tracked,
         )
@@ -828,6 +823,7 @@ def main() -> None:
             args.generated_dir,
             beam_sizes,
             helper_policies,
+            smiles_classes=smiles_classes,
             repo_root=repo_for_track,
             tracked_relpaths=tracked,
         )

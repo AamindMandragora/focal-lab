@@ -194,34 +194,19 @@ class _FakeAnthropicSummaryClient:
         self.messages = _FakeAnthropicMessages()
 
 
-class _FakeBedrockStream:
-    def __init__(self, final_message):
-        self._final_message = final_message
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        return False
-
-    def get_final_message(self):
-        return self._final_message
-
-
-class _FakeBedrockMessages:
+class _FakeBedrockClient:
     def __init__(self):
         self.kwargs = None
 
-    def stream(self, **kwargs):
+    def converse(self, **kwargs):
         self.kwargs = kwargs
-        return _FakeBedrockStream(
-            SimpleNamespace(content=[SimpleNamespace(type="text", text="bedrock strategy")])
-        )
-
-
-class _FakeBedrockClient:
-    def __init__(self):
-        self.messages = _FakeBedrockMessages()
+        return {
+            "output": {
+                "message": {
+                    "content": [{"text": "bedrock strategy"}],
+                },
+            },
+        }
 
 
 def test_rationale_summary_falls_back_to_anthropic_haiku_when_primary_fails():
@@ -295,16 +280,13 @@ def test_rationale_summary_defaults_to_anthropic_haiku_without_openai():
                 os.environ[key] = value
 
 
-def test_bedrock_generation_uses_mantle_messages_without_sampling(monkeypatch):
+def test_bedrock_generation_uses_aws_converse_without_anthropic_client(monkeypatch):
     monkeypatch.delenv("BEDROCK_BASE_URL", raising=False)
     generator = StrategyGenerator(
-        model_name="anthropic.claude-opus-4-7",
+        model_name="us.anthropic.claude-sonnet-4-6",
         backend="bedrock",
         api_key="bedrock-key",
         max_new_tokens=8192,
-        anthropic_thinking="adaptive",
-        anthropic_effort="xhigh",
-        anthropic_thinking_display="summarized",
     )
     generator._client = _FakeBedrockClient()
 
@@ -312,13 +294,15 @@ def test_bedrock_generation_uses_mantle_messages_without_sampling(monkeypatch):
 
     assert output == "bedrock strategy"
     assert generator.api_base_url is None
-    kwargs = generator._client.messages.kwargs
-    assert kwargs["model"] == "anthropic.claude-opus-4-7"
-    assert kwargs["system"] == "system prompt"
-    assert kwargs["messages"] == [{"role": "user", "content": "user prompt"}]
-    assert kwargs["max_tokens"] == 8192
-    assert kwargs["thinking"] == {"type": "adaptive", "display": "summarized"}
-    assert kwargs["output_config"] == {"effort": "xhigh"}
+    kwargs = generator._client.kwargs
+    assert kwargs["modelId"] == "us.anthropic.claude-sonnet-4-6"
+    assert kwargs["system"] == [{"text": "system prompt"}]
+    assert kwargs["messages"] == [
+        {"role": "user", "content": [{"text": "user prompt"}]},
+    ]
+    assert kwargs["inferenceConfig"] == {"maxTokens": 8192}
+    assert "model" not in kwargs
+    assert "max_tokens" not in kwargs
     assert "temperature" not in kwargs
     assert "top_p" not in kwargs
 
@@ -365,6 +349,46 @@ def test_gemini_generation_uses_google_ai_studio_generate_content(monkeypatch):
     assert captured["payload"]["generationConfig"]["maxOutputTokens"] == 2048
 
 
+def test_gemini_generation_rotates_to_backup_key_on_quota_exhaustion(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY_BACKUP_1", "backup-1-key")
+    monkeypatch.setenv("GEMINI_API_KEY_BACKUP_2", "backup-2-key")
+    generator = StrategyGenerator(
+        model_name="gemini-3.1-flash-lite",
+        backend="gemini",
+        api_key="primary-key",
+        max_new_tokens=2048,
+    )
+    calls = []
+
+    def fake_post_json(url, headers, payload, max_retries=None, retryable_statuses=None):
+        calls.append((url, max_retries))
+        if "primary-key" in url:
+            error = RuntimeError("HTTP 429: RESOURCE_EXHAUSTED: Gemini credits depleted")
+            error.status_code = 429
+            error.response_body = "RESOURCE_EXHAUSTED: Gemini credits depleted"
+            raise error
+        return {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "// CSD_RATIONALE_BEGIN\n// backup key ok\n// CSD_RATIONALE_END\n"}
+                        ]
+                    }
+                }
+            ]
+        }
+
+    generator._post_json = fake_post_json
+
+    output = generator._generate_gemini("system prompt", "user prompt")
+
+    assert output.startswith("// CSD_RATIONALE_BEGIN")
+    assert any("primary-key" in url for url, _ in calls)
+    assert any("backup-1-key" in url for url, _ in calls)
+    assert all(max_retries == 0 for _, max_retries in calls)
+
+
 def test_rationale_summary_uses_gemini_flash_lite_backend(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
     monkeypatch.setenv("CSD_RATIONALE_SUMMARY_BACKEND", "gemini")
@@ -393,6 +417,40 @@ def test_rationale_summary_uses_gemini_flash_lite_backend(monkeypatch):
     assert "key=gemini-key" in captured["url"]
     assert captured["headers"] == {}
     assert captured["payload"]["generationConfig"]["maxOutputTokens"] == 96
+
+
+def test_rationale_summary_rotates_to_backup_key_on_quota_exhaustion(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "primary-key")
+    monkeypatch.setenv("GEMINI_API_KEY_BACKUP_1", "backup-1-key")
+    monkeypatch.setenv("GEMINI_API_KEY_BACKUP_2", "backup-2-key")
+    monkeypatch.setenv("CSD_RATIONALE_SUMMARY_BACKEND", "gemini")
+    monkeypatch.delenv("CSD_RATIONALE_SUMMARY_MODEL", raising=False)
+    generator = StrategyGenerator()
+    calls = []
+
+    def fake_post_json(url, headers, payload, max_retries=None, retryable_statuses=None):
+        calls.append((url, max_retries))
+        if "primary-key" in url:
+            error = RuntimeError("HTTP 429: RESOURCE_EXHAUSTED: Gemini credits depleted")
+            error.status_code = 429
+            error.response_body = "RESOURCE_EXHAUSTED: Gemini credits depleted"
+            raise error
+        return {
+            "candidates": [
+                {"content": {"parts": [{"text": "short backup summary"}]}}
+            ]
+        }
+
+    generator._post_json = fake_post_json
+
+    summary = generator.summarize_rationale_claim(
+        "Attempt changed the branch by keeping chunked outside generation."
+    )
+
+    assert summary == "short backup summary"
+    assert any("primary-key" in url for url, _ in calls)
+    assert any("backup-1-key" in url for url, _ in calls)
+    assert all(max_retries == 0 for _, max_retries in calls)
 
 
 def test_vertex_generation_uses_aiplatform_generate_content(monkeypatch):
@@ -440,6 +498,47 @@ def test_vertex_generation_uses_aiplatform_generate_content(monkeypatch):
         {"role": "user", "parts": [{"text": "user prompt"}]}
     ]
     assert captured["payload"]["generationConfig"]["maxOutputTokens"] == 4096
+
+
+def test_vertex_generation_rotates_to_backup_gemini_key_on_quota_exhaustion(monkeypatch):
+    monkeypatch.setenv("VERTEX_AI_PROJECT", "paper-project")
+    monkeypatch.setenv("VERTEX_AI_LOCATION", "us-central1")
+    monkeypatch.setenv("GEMINI_API_KEY", "primary-key")
+    monkeypatch.setenv("GEMINI_API_KEY_BACKUP_1", "backup-1-key")
+    generator = StrategyGenerator(
+        model_name="gemini-3-pro-preview",
+        backend="vertex",
+        max_new_tokens=4096,
+    )
+    captured = []
+
+    def fake_post_json(url, headers, payload, max_retries=None, retryable_statuses=None):
+        captured.append((url, headers, max_retries))
+        if headers.get("x-goog-api-key") == "primary-key":
+            error = RuntimeError("HTTP 429: RESOURCE_EXHAUSTED: Gemini credits depleted")
+            error.status_code = 429
+            error.response_body = "RESOURCE_EXHAUSTED: Gemini credits depleted"
+            raise error
+        return {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {"text": "// CSD_RATIONALE_BEGIN\n// vertex backup ok\n// CSD_RATIONALE_END\n"}
+                        ]
+                    }
+                }
+            ]
+        }
+
+    generator._post_json = fake_post_json
+
+    output = generator._generate_vertex("system prompt", "user prompt")
+
+    assert output.startswith("// CSD_RATIONALE_BEGIN")
+    assert any(headers.get("x-goog-api-key") == "primary-key" for _, headers, _ in captured)
+    assert any(headers.get("x-goog-api-key") == "backup-1-key" for _, headers, _ in captured)
+    assert all(max_retries == 0 for _, _, max_retries in captured if max_retries is not None)
 
 
 def test_rationale_summary_uses_vertex_flash_lite_backend(monkeypatch):

@@ -1,9 +1,0 @@
-You answer Spider-style questions by writing a single executable SQLite SELECT query.
-
-Briefly outline the tables and filters, then give your final answer as exactly one SQLite SELECT statement inside double angle brackets, for example: <<SELECT COUNT(*) FROM singer>>.
-
-Keep reasoning short (one or two sentences). Do not wrap the query in markdown code fences.
-
-{FEWSHOT_BLOCK}Schema: {TARGET_SCHEMA}
-Question: {TARGET_QUESTION}
-Reasoning:

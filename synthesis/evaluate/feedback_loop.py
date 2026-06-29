@@ -39,12 +39,19 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
     if not require_delimiters or contains_delimiters:
         return ""
 
+    # contains_delimiters is True only when ALL examples had spans (strict AND).
+    # If sample data shows spans are being produced for most outputs, the "none
+    # had spans" message is wrong — suppress the hint entirely so the author isn't
+    # misled into forcing delimiters when they're already mostly working.
     if sample_outputs:
         n = len(sample_outputs)
         n_with = sum(1 for s in sample_outputs if s.get("contains_delimiters", False))
         if n > 0 and n_with / n >= 0.05:
             return ""
 
+    # Determine which root cause applies by inspecting sample outputs.
+    # n_open_not_closed: outputs where "<<" IS present but ">>" is absent —
+    # the span was opened but the strategy never closed it.
     if sample_outputs:
         n = len(sample_outputs)
         n_open_not_closed = sum(
@@ -54,6 +61,7 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
             and ">>" not in (s.get("full_output") or "")
         )
         if n > 0 and n_open_not_closed >= 0.2 * n:
+            # Root cause 2: spans opened but never closed.
             return (
                 f"\n  ⚠ Delimiter check FAILED: none of the evaluated outputs "
                 f"contained a complete << >> span, but spans are required. "
@@ -86,18 +94,28 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
     )
 
 
-def _span_not_closed_hint(require_delimiters: bool, sample_outputs, max_steps=None) -> str:
-    """Nudge when spans OPEN but never CLOSE before the step budget runs out."""
+def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:
+    """Nudge when spans OPEN but never CLOSE before the step budget runs out.
+
+    Distinct from _delimiter_miss_hint (no span opened at all): here the model
+    DID emit "<<" but the strategy never brought the span to a ">>", so it burns
+    the whole step budget inside one open span and the eval records no usable
+    answer (accuracy/syntax collapse toward 0). Common when the strategy advances
+    many constrained tokens per step with no way to recognize/terminate a complete
+    span. We deliberately name only the SYMPTOM and the AREA to reconsider (how the
+    strategy progresses and decides it is done inside a span) and leave the specific
+    mechanism to the author — a general decoding-mechanism nudge, not task guidance.
+    Returns "" when not required, no samples, or the pattern is not prevalent.
+    """
     if not require_delimiters or not sample_outputs:
         return ""
     n = len(sample_outputs)
-    unterminated = [
-        s for s in sample_outputs
+    n_unterminated = sum(
+        1 for s in sample_outputs
         if not s.get("uses_hidden_chunks", False)
         and "<<" in (s.get("full_output") or "")
         and ">>" not in (s.get("full_output") or "")
-    ]
-    n_unterminated = len(unterminated)
+    )
     n_maxsteps_nodelim = sum(
         1 for s in sample_outputs
         if s.get("hit_max_steps") and not s.get("contains_delimiters", False)
@@ -105,39 +123,12 @@ def _span_not_closed_hint(require_delimiters: bool, sample_outputs, max_steps=No
     n_affected = max(n_unterminated, n_maxsteps_nodelim)
     if n_affected == 0 or n_affected < 0.1 * n:
         return ""
-
-    measured = ""
-    if unterminated:
-        toks = [float(s.get("token_count", 0) or 0) for s in unterminated]
-        avg_tok = int(round(sum(toks) / len(toks))) if toks else 0
-        n_hit = sum(1 for s in unterminated if s.get("hit_max_steps"))
-        pre_fracs = []
-        for s in unterminated:
-            out = s.get("full_output") or ""
-            idx = out.find("<<")
-            if idx >= 0 and len(out) > 0:
-                pre_fracs.append(idx / len(out))
-        budget_clause = f" against a step budget of {max_steps}" if max_steps else ""
-        measured = (
-            f"\n    Measured on those outputs (observed facts, not instructions): "
-            f"they generated on average {avg_tok} tokens{budget_clause}; "
-            f"{n_hit}/{n_unterminated} reached the step ceiling"
-        )
-        if pre_fracs:
-            pre_pct = int(round(100 * sum(pre_fracs) / len(pre_fracs)))
-            measured += (
-                f"; and the `<<` span did not open until on average {pre_pct}% "
-                f"of the way through the produced text"
-            )
-        measured += ".\n"
-
     return (
         f"\n  ⚠ Span-closure check: {n_affected}/{n} evaluated outputs opened a "
         "`<<` span but never emitted the closing `>>` before the generation step "
         "budget ran out. When a span never closes, the eval records no usable "
         "answer for that example, so accuracy and syntax collapse toward zero even "
         "though the model did start a span.\n"
-        + measured +
         "    What to reconsider: this is a decoding-mechanism issue with how the "
         "strategy behaves *inside* a span — how it makes forward progress and how "
         "it decides the span is finished — not the task or the prompt. Aim for a "
@@ -147,9 +138,28 @@ def _span_not_closed_hint(require_delimiters: bool, sample_outputs, max_steps=No
 
 
 def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
-    """Nudge when << >> spans APPEAR in the text but the constraint barely engaged."""
+    """Nudge when << >> spans APPEAR in the text but the constraint barely engaged.
+
+    Distinct from the other two delimiter hints:
+      - _delimiter_miss_hint  : no spans at all (delimiters absent).
+      - _span_not_closed_hint : spans open but never reach ">>".
+    Here the delimiters ARE present, yet the strategy's constrained branch ran on
+    almost none of the examples (`used_constrained_chunk` low) — so the span content
+    was produced UNCONSTRAINED and its syntax is at the raw model's mercy. This is the
+    failure mode where a reactive span-entry trigger (e.g. `next == "<<"`) never matches
+    because the model emits a space-prefixed delimiter token, so the constrained path is
+    skipped even though "<<" still shows up in the output text.
+
+    We name only the SYMPTOM (constraint engaged on few examples) and the AREA to
+    reconsider (span ENTRY — how the strategy decides to enter the constrained branch)
+    and leave the mechanism to the author. Decoding-mechanism nudge, not task guidance.
+    Returns "" when not required, delimiters absent, no samples, or the field is unrecorded.
+    """
     if not require_delimiters or not contains_delimiters or not sample_outputs:
         return ""
+    # Only examples that (a) actually show delimiters, (b) record whether the
+    # constrained branch ran, and (c) are not using a different (hidden-chunk)
+    # constraint mechanism can tell us whether the span content was constrained.
     relevant = [
         s for s in sample_outputs
         if not s.get("uses_hidden_chunks", False)
@@ -184,10 +194,29 @@ def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: boo
 
 
 def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> str:
-    """Classify delimiter-bearing syntax failures into machine-checkable categories."""
+    """Classify delimiter-bearing syntax failures into machine-checkable categories.
+
+    The three categories are:
+      - ``final_span_unclosed``: output has ``<<`` after the last ``>>``, so the
+        final answer span opened but the generation stopped before ``>>`` was
+        emitted.  (rfind('<<') > rfind('>>'))
+      - ``no_span_emitted``: output has no ``<<`` at all — the model never
+        started a constrained span.
+      - ``final_span_invalid``: the final span closed (a complete ``<< >>``
+        block exists) but the block fails the CRANE GSM syntax check (e.g.
+        contains ``{``, ``}``, or ``**``).
+
+    Returns a non-empty hint string when ``require_delimiters`` is True, there
+    are sample outputs, and at least one syntax-failing example exists.
+    Matches the style of ``_delimiter_miss_hint`` / ``_span_not_closed_hint``
+    (symptom + area, no task-specific guidance).
+    """
     if not require_delimiters or not sample_outputs:
         return ""
 
+    # Collect syntax-failing examples (ones where the final span was expected
+    # but either absent or invalid).  We look at full_output for each sample
+    # that is NOT marked is_syntax_valid and is NOT using hidden chunks.
     unclosed: list[str] = []
     no_span: list[str] = []
     invalid: list[str] = []
@@ -201,10 +230,13 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         last_open = full_output.rfind("<<")
         last_close = full_output.rfind(">>")
         if last_open == -1:
+            # No << at all
             no_span.append(full_output)
         elif last_open > last_close:
+            # << exists but either >> is absent or << appears after the last >>
             unclosed.append(full_output)
         else:
+            # Closed block exists but failed syntax — final_span_invalid
             invalid.append(full_output)
 
     total_classified = len(unclosed) + len(no_span) + len(invalid)
@@ -212,6 +244,7 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         return ""
 
     def _tail(output: str, max_chars: int = 120) -> str:
+        """Return the last ``max_chars`` characters of ``output``, trimmed."""
         trimmed = output.strip()
         if len(trimmed) <= max_chars:
             return trimmed
@@ -255,11 +288,23 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
     return "\n".join(lines) + "\n"
 
 
-def _unit_rewind_hint(strategy_source: str, sample_outputs=None) -> str:
-    """Nudge when syntax-valid outputs are semantically wrong and unit rewind is unused."""
+def _unit_rewind_hint(strategy_source: str, sample_outputs) -> str:
+    """Nudge toward RegenerateUnitOnCheckFailure when semantic failures dominate.
+
+    Fires when BOTH:
+      (a) Failures are dominated by syntax-valid but semantically wrong outputs
+          (syntax_rate - accuracy >= 0.25, or most failing examples pass syntax).
+      (b) The strategy source does NOT reference RegenerateUnitOnCheckFailure.
+
+    The hint text is mechanism-level and task-agnostic: it describes what the
+    helper does (unit-level rewind and resample on check failure) without
+    mentioning SQL, joins, grammar specifics, or any other task detail.
+    Returns "" when conditions are not met.
+    """
     if not sample_outputs:
         return ""
-    if "RegenerateUnitOnCheckFailure" in (strategy_source or ""):
+    src = strategy_source or ""
+    if "RegenerateUnitOnCheckFailure" in src or "RegenerateUnitOnGroundingFailure" in src:
         return ""
 
     n = len(sample_outputs)
@@ -270,19 +315,31 @@ def _unit_rewind_hint(strategy_source: str, sample_outputs=None) -> str:
     n_syntax_valid = sum(1 for s in sample_outputs if s.get("is_syntax_valid"))
     accuracy = n_correct / n
     syntax_rate = n_syntax_valid / n
-    if syntax_rate - accuracy < 0.25:
+
+    # Condition (a): failures dominated by well-formed-but-wrong outputs.
+    # Either the gap between syntax rate and accuracy is large (>= 0.25),
+    # or the majority of failing examples are syntax-valid.
+    n_failing = n - n_correct
+    if n_failing == 0:
+        return ""
+    n_syntax_valid_wrong = sum(
+        1 for s in sample_outputs
+        if s.get("is_syntax_valid") and not s.get("is_correct")
+    )
+    semantic_dominated = (
+        (syntax_rate - accuracy) >= 0.25
+        or (n_failing > 0 and n_syntax_valid_wrong / n_failing >= 0.5)
+    )
+    if not semantic_dominated:
         return ""
 
     return (
-        "\n  ⚠ Unit-rewind check: syntax-valid outputs dominate failures "
-        f"(syntax {syntax_rate:.1%} vs accuracy {accuracy:.1%}), but the strategy "
-        "does not call RegenerateUnitOnCheckFailure. When the grammar accepts a unit "
-        "that fails a downstream check, a unit-level rewind/resample path can replace "
-        "that fragment without abandoning the whole span.\n"
-        "    What to reconsider: add a mechanism that detects check failures on "
-        "grammar-valid units and resamples or rewinds at unit granularity instead of "
-        "committing invalid semantic content. (General direction only — the specific "
-        "mechanism is yours to design.)\n"
+        "\n  Unit-rewind opportunity: most failing examples produced well-formed output "
+        "that passed the syntax check but scored incorrect — the errors are semantic, "
+        "not structural. The library helper RegenerateUnitOnCheckFailure can check each "
+        "completed grammar unit during generation against a caller-supplied set of allowed "
+        "units and rewind-and-resample the unit on mismatch, catching wrong choices before "
+        "the full span is committed. Consider whether unit-level checking applies here.\n"
     )
 
 
@@ -333,6 +390,11 @@ def parse_strategy_type(strategy_code: str) -> dict:
             "pattern": r"SpeculativeGeneration.*?(\d+)",
             "category": "speculative",
             "comparable_to": "SpecDec-like",
+        },
+        "CraneGeneration": {
+            "pattern": r"CraneGeneration",
+            "category": "crane_style",
+            "comparable_to": "CRANE",
         },
     }
 
@@ -559,7 +621,6 @@ class SynthesisPipeline:
         "MaskTokensExcept",
         "IsMasked",
         "HasUnmaskedToken",
-        "SetUseSampling",
         "IsValidPrefix",
         "IsCompletePrefix",
         "IsDeadPrefix",
@@ -572,26 +633,22 @@ class SynthesisPipeline:
         "DeadEndDetection",
         "TopValidCandidates",
         "RollbackConstrainedSuffix",
-        "RollbackToGrammarSymbol",
-        "ViewGrammarSymbols",
-        "ForwardUntilGrammarSymbol",
         "LastTokenBefore",
+        "RegenerateUnitOnGroundingFailure",
+        "CloseSpanWithinBudget",
     }
     PRUNABLE_HELPERS = {
         "UnconstrainedGeneration",
-        "GenerateWithManagedSpan",
-        "ManagedStep",
-        "CloseSpanWithinBudget",
-        "RolloutConstrainedWithPenalties",
         "ConstrainedGeneration",
-        "RegenerateUnitOnGroundingFailure",
+        "CraneGeneration",
         "UnconstrainedChunk",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
         "ConfidenceGatedStep",
-        "BoostedConstrainedStep",
-        "PenalizedConstrainedStep",
-        "RepetitionPenaltyStep",
+        "SafeBoostedConstrainedStep",
+        "SafePenalizedConstrainedStep",
+        "SafeRepetitionPenaltyStep",
+        "SafeTemperatureConstrainedStep",
         "SafeSoftConstrainedStep",
         "GroupBoostedConstrainedStep",
         "GroupHasValidMember",
@@ -604,25 +661,33 @@ class SynthesisPipeline:
         "RollbackToCompletePrefix",
         "AdaptiveConstrainedStep",
         "AdaptiveConstrainedStepWithPenalties",
+        "PenalizedConstrainedStep",
+        "BoostedConstrainedStep",
         "SoftConstrainedStep",
         "BoostTokenLogits",
         "PenalizeTokenLogits",
+        "SafeBoostTokenLogits",
+        "SafePenalizeTokenLogits",
         "MaskTokensInPrefix",
         "GetHighestLogitToken",
         "GetLogitGap",
         "GetTopKTokens",
         "GetTokenLogit",
+        "ScaleAllLogits",
         "SaveLogitsSnapshot",
         "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
+        "RolloutConstrainedWithPenalties",
         "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
+        "RollbackConstrainedSpan",
         "ExtractAfterKeyword",
         "IntersectTokenSets",
         "SubtractTokenSets",
         "RollbackToValidPrefix",
         "FlattenTokenGroups",
         "GroupContaining",
-        "RenderPrefix",
+        "PrefixToString",
         "ExtractContentBetweenDelimiters",
         "CountSubstring",
         "CountTokenOccurrences",
@@ -814,7 +879,9 @@ class SynthesisPipeline:
         """Return a compact behavior summary from the most recent evaluated attempt."""
         for attempt in reversed(attempts):
             if attempt.eval_result is not None:
-                summary = attempt.eval_result.get_behavioral_context_summary()
+                summary = attempt.eval_result.get_behavioral_context_summary(
+                    require_delimiters=self.require_delimiters
+                )
                 if summary:
                     return summary
         return ""
@@ -900,32 +967,103 @@ class SynthesisPipeline:
         return set(calls)
 
     def _evaluation_scalar_score(self, result: EvaluationResult) -> float:
-        """Scalar score used for helper utility estimates."""
-        delimiter_score = 1.0 if (result.contains_delimiters or not self.require_delimiters) else 0.0
-        runtime_score = (
-            1.0
-            if self.eval_max_seconds_per_example is None
-            or result.max_sample_time_seconds <= self.eval_max_seconds_per_example
-            else 0.0
-        )
-        return result.accuracy + result.syntax_rate + delimiter_score + runtime_score
+        """Scalar score used for helper utility estimates.
 
-    def _collect_prunable_helper_scores(
+        Accuracy is weighted 3x so it dominates the two secondary terms, which
+        are each scaled to 0.25. Runtime is graded as the fraction of examples
+        that stayed within the per-example budget (not a binary 0/1), so a
+        single slow example cannot sink an otherwise-strong attempt below a
+        low-accuracy-but-fast one.
+        """
+        delimiter_score = 1.0 if (result.contains_delimiters or not self.require_delimiters) else 0.0
+
+        if self.eval_max_seconds_per_example is None:
+            runtime_frac = 1.0
+        else:
+            samples = getattr(result, "sample_outputs", None) or []
+            if not samples:
+                runtime_frac = 1.0
+            else:
+                within = sum(
+                    1 for s in samples if not s.get("runtime_budget_exceeded", False)
+                )
+                runtime_frac = within / len(samples)
+
+        return (
+            3.0 * result.accuracy
+            + result.syntax_rate
+            + 0.25 * delimiter_score
+            + 0.25 * runtime_frac
+        )
+
+    def _compute_prunable_helper_marginals(
         self,
         evaluated_attempts: list[SynthesisAttempt],
-    ) -> dict[str, list[float]]:
-        """Collect scalar rewards for each prunable helper across evaluated attempts."""
-        helper_scores: dict[str, list[float]] = {}
+    ) -> dict[str, tuple[float, int, bool]]:
+        """Counterfactual marginal credit for each prunable helper.
+
+        For each prunable helper that appeared in at least one attempt, credit
+        it by `mean(scalar | helper used) - mean(scalar | helper NOT used)`.
+        This isolates the helper's own contribution instead of appending the
+        full composite scalar of every attempt it co-occurred in (which let a
+        slow/bad co-occurring helper drag down a helper that actually drove
+        accuracy).
+
+        Returns {helper: (marginal, n_with, ubiquitous)} where:
+          - marginal: with_mean - without_mean (0.0 when ubiquitous)
+          - n_with: number of attempts that used the helper (UCB pull count)
+          - ubiquitous: True when EVERY attempt used the helper (no "without"
+            set; marginal is undefined, so the bandit protects rather than
+            prunes it)
+        Untried prunable helpers (n_with == 0) are omitted; the bandit keeps
+        every untried helper on the menu separately.
+        """
+        per_attempt: list[tuple[float, set[str]]] = []
         for attempt in evaluated_attempts:
             score = self._evaluation_scalar_score(attempt.eval_result)
-            used_helpers = set(self._get_helper_calls_for_evaluation_history(attempt.strategy_code))
-            for helper in used_helpers:
-                if helper not in self.PRUNABLE_HELPERS:
-                    continue
-                if helper not in self._helper_universe:
-                    continue
-                helper_scores.setdefault(helper, []).append(score)
-        return helper_scores
+            used = set(self._get_helper_calls_for_evaluation_history(attempt.strategy_code))
+            per_attempt.append((score, used))
+
+        marginals: dict[str, tuple[float, int, bool]] = {}
+        for helper in (self.PRUNABLE_HELPERS & self._helper_universe):
+            with_scores = [s for s, used in per_attempt if helper in used]
+            without_scores = [s for s, used in per_attempt if helper not in used]
+            if not with_scores:
+                continue
+            if not without_scores:
+                marginals[helper] = (0.0, len(with_scores), True)
+                continue
+            with_mean = sum(with_scores) / len(with_scores)
+            without_mean = sum(without_scores) / len(without_scores)
+            marginals[helper] = (with_mean - without_mean, len(with_scores), False)
+        return marginals
+
+    def _pareto_best_prunable_helpers(
+        self,
+        evaluated_attempts: list[SynthesisAttempt],
+        prunable_pool: list[str],
+    ) -> set[str]:
+        """Prunable helpers used by the pareto-best (refinement-anchor) attempt.
+
+        Seeds the bandit's keep-set from the SAME anchor the author is told to
+        beat (the threshold-shortfall pareto-best), so the protected helpers
+        belong to the branch being chased rather than to whichever attempt
+        happened to win the composite scalar. Falls back to the scalar-best
+        attempt when no pareto anchor exists (e.g. nothing evaluated on >=1
+        example yet).
+        """
+        pareto_n, _, _ = self._compute_pareto_best(evaluated_attempts)
+        best_attempt = next(
+            (a for a in evaluated_attempts if a.attempt_number == pareto_n),
+            None,
+        )
+        if best_attempt is None:
+            best_attempt = max(
+                evaluated_attempts,
+                key=lambda attempt: self._evaluation_scalar_score(attempt.eval_result),
+            )
+        best_helpers = set(self._get_helper_calls_for_evaluation_history(best_attempt.strategy_code))
+        return best_helpers & set(prunable_pool)
 
     def _compute_allowed_helpers_utility(
         self,
@@ -1038,27 +1176,31 @@ class SynthesisPipeline:
         if not prunable_pool:
             return sorted(allowed_helpers), "helper bandit active; no prunable helpers in universe"
 
-        helper_scores = self._collect_prunable_helper_scores(evaluated_attempts)
-        pulls = {helper: len(helper_scores.get(helper, [])) for helper in prunable_pool}
-        means = {
-            helper: (
-                sum(helper_scores.get(helper, [])) / pulls[helper]
-                if pulls[helper] > 0
-                else 0.0
-            )
-            for helper in prunable_pool
-        }
+        marginals = self._compute_prunable_helper_marginals(evaluated_attempts)
+        pulls = {helper: (marginals[helper][1] if helper in marginals else 0) for helper in prunable_pool}
+        # UCB exploitation term is each helper's counterfactual marginal
+        # (with-minus-without), not the absolute mean scalar of attempts using
+        # it -- so a helper is not credited or penalised for what its
+        # co-occurring helpers did.
+        means = {helper: (marginals[helper][0] if helper in marginals else 0.0) for helper in prunable_pool}
+        ubiquitous = {helper for helper in prunable_pool if helper in marginals and marginals[helper][2]}
 
-        best_attempt = max(
-            evaluated_attempts,
-            key=lambda attempt: self._evaluation_scalar_score(attempt.eval_result),
-        )
-        best_helpers = set(self._get_helper_calls_for_evaluation_history(best_attempt.strategy_code))
-        keep_prunable = set(best_helpers & set(prunable_pool))
+        # Protect the helpers used by the pareto-best (refinement-anchor)
+        # attempt -- the same branch the author is told to beat -- rather than
+        # whichever attempt won the composite scalar.
+        keep_prunable = set(self._pareto_best_prunable_helpers(evaluated_attempts, prunable_pool))
+        # Helpers used by EVERY attempt have no counterfactual signal; protect
+        # them from pruning rather than ranking them out on exploration alone.
+        keep_prunable.update(ubiquitous)
 
         total_pulls = max(1, sum(pulls.values()))
-        # Keep every untried helper on the menu; only prune helpers that have
-        # been tried and scored worse under UCB.
+        # Keep EVERY untried helper on the menu each iteration. An arm with zero
+        # pulls has no evidence against it, so pruning it would hide a helper the
+        # author never had the chance to try (the old policy kept only the single
+        # alphabetically-first untried helper, which froze the rest out for the
+        # whole run in low-adoption cases). The mask still prunes helpers that HAVE
+        # been tried and did worse -- see the UCB ranking + target_size below --
+        # it just never prunes untried ones. (User ruling 2026-06-19.)
         untried = [helper for helper in prunable_pool if pulls[helper] == 0 and helper not in keep_prunable]
         keep_prunable.update(untried)
 
@@ -1179,44 +1321,6 @@ class SynthesisPipeline:
             best.attempt_number,
             best.eval_result.accuracy,
             best.eval_result.syntax_rate,
-        )
-
-    def _lookup_best_so_far(
-        self,
-        attempts: list["SynthesisAttempt"],
-        anchor_n: int | None,
-        current_attempt: "SynthesisAttempt",
-        current_strategy_code: str,
-        current_eval_result,
-    ) -> tuple[str, float, float]:
-        """Resolve (best_strategy_code, best_accuracy, best_syntax_rate).
-
-        Falls back to the current attempt when no prior evaluated attempt
-        wins on (accuracy, syntax_rate). The fallback keeps the restart
-        prompt's "score to beat" block well-defined even on the very first
-        eval failure.
-        """
-        if anchor_n is not None:
-            match = next(
-                (
-                    a for a in attempts
-                    if a.attempt_number == anchor_n
-                    and a is not current_attempt
-                    and a.eval_result is not None
-                    and (a.eval_result.num_examples or 0) > 0
-                ),
-                None,
-            )
-            if match is not None:
-                return (
-                    match.strategy_code,
-                    match.eval_result.accuracy or 0.0,
-                    match.eval_result.syntax_rate or 0.0,
-                )
-        return (
-            current_strategy_code,
-            (current_eval_result.accuracy if current_eval_result is not None else 0.0) or 0.0,
-            (current_eval_result.syntax_rate if current_eval_result is not None else 0.0) or 0.0,
         )
 
     def _lookup_best_so_far(
@@ -1532,33 +1636,12 @@ class SynthesisPipeline:
         attempts: list[SynthesisAttempt] = []
 
         # Create an isolated output directory for this run. The directory layout is:
-        #   outputs/generated/<model>/<benchmark>/<strategy>/<output_name>_<run_id>/
+        #   outputs/generated/<output_name>_<run_id>/
         #     - dafny/
         #     - python/
         #     - results/
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + secrets.token_hex(3)
-        from synthesis.project_paths import (
-            generated_run_dir,
-            legacy_generated_run_dir,
-            synthesis_strategy_from_output_name,
-        )
-
-        strategy = synthesis_strategy_from_output_name(output_name)
-        run_dir = generated_run_dir(
-            self.output_dir,
-            eval_model=self.evaluator.model_name,
-            benchmark=self.evaluator.dataset_name,
-            strategy=strategy,
-            output_name=output_name,
-            run_id=run_id,
-        )
-        legacy_run_dir = legacy_generated_run_dir(
-            self.output_dir,
-            output_name=output_name,
-            run_id=run_id,
-        )
-        if legacy_run_dir.is_dir() and not run_dir.is_dir():
-            run_dir = legacy_run_dir
+        run_dir = self.output_dir / f"{output_name}_{run_id}"
         run_dafny_dir = run_dir / "dafny"
         run_python_dir = run_dir / "python"
         run_results_dir = run_dir / "results"
@@ -1569,13 +1652,7 @@ class SynthesisPipeline:
         # Persist exact prompt/response records under the repo's single logs tree.
         from synthesis.project_defaults import synthesis_prompt_log_dir
 
-        prompt_log_dir = synthesis_prompt_log_dir(
-            output_name,
-            run_id,
-            eval_model=self.evaluator.model_name,
-            benchmark=self.evaluator.dataset_name,
-            strategy=strategy,
-        )
+        prompt_log_dir = synthesis_prompt_log_dir(output_name, run_id)
         prompt_log_dir.mkdir(parents=True, exist_ok=True)
         os.environ["CSD_PROMPT_LOG_DIR"] = str(prompt_log_dir)
 
@@ -1845,18 +1922,6 @@ class SynthesisPipeline:
             # statistically trustworthy and opus can anchor on best-so-far.
             # Overfitting concern is handled by the final held-out eval.
             print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
-            from synthesis.evaluate.prompt_tiers import configure_eval_prompts
-
-            configure_eval_prompts(self.evaluator, strategy_code)
-            grammar_note = ""
-            if self.evaluator.dataset_name == "smiles":
-                grammar_note = f", grammar_tier={self.evaluator.grammar_prompt_tier}"
-            print(
-                "  [synthesis] eval prompt: "
-                f"tier={self.evaluator.prompt_tier} "
-                f"(reasoning={'yes' if self.evaluator.use_reasoning_prompt else 'no'})"
-                f"{grammar_note}"
-            )
             eval_result = self.evaluator.evaluate_sample(
                 compiled_module_path=compilation_result.main_module_path,
                 sample_size=self.eval_sample_size,
@@ -1916,11 +1981,13 @@ class SynthesisPipeline:
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation error...")
                 evaluation_feedback = (
-                    eval_result.get_feedback_summary()
+                    eval_result.get_feedback_summary(self.require_delimiters)
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
                     )
-                    + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
+                    + _unit_rewind_hint(
+                        strategy_code, eval_result.sample_outputs
+                    )
                 )
                 mode_examples = eval_result._render_mode_examples()
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
@@ -1999,11 +2066,12 @@ class SynthesisPipeline:
             ):
                 print(f"  ✗ Evaluation below threshold:")
                 print(f"    Accuracy: {eval_result.accuracy:.1%} (min: {self.min_accuracy:.1%})")
-                print(
-                    "    Contains << >>: "
-                    f"{'yes' if eval_result.contains_delimiters else 'no'} "
-                    f"(required: {'yes' if self.require_delimiters else 'no'})"
-                )
+                if self.require_delimiters:
+                    print(
+                        "    Contains << >>: "
+                        f"{'yes' if eval_result.contains_delimiters else 'no'} "
+                        f"(required: {'yes' if self.require_delimiters else 'no'})"
+                    )
                 _delim_hint = _delimiter_miss_hint(
                     self.require_delimiters, eval_result.contains_delimiters,
                     eval_result.sample_outputs
@@ -2011,8 +2079,7 @@ class SynthesisPipeline:
                 if _delim_hint:
                     print(_delim_hint.rstrip("\n"))
                 _close_hint = _span_not_closed_hint(
-                    self.require_delimiters, eval_result.sample_outputs,
-                    getattr(self.evaluator, "max_steps", None)
+                    self.require_delimiters, eval_result.sample_outputs
                 )
                 if _close_hint:
                     print(_close_hint.rstrip("\n"))
@@ -2029,7 +2096,7 @@ class SynthesisPipeline:
                         f"(max: {self.eval_max_seconds_per_example:.2f}s)"
                     )
                 attempt.failed_at = FailureStage.EVALUATION
-                attempt.error_summary = eval_result.get_feedback_summary()
+                attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters)
                 attempts.append(attempt)
 
                 self._unload_evaluator_runtime_before_refinement()
@@ -2038,7 +2105,7 @@ class SynthesisPipeline:
                     "Required thresholds:\n"
                     f"  Accuracy: {self.min_accuracy:.1%}\n"
                     f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
-                    f"  Contains << >>: {'required' if self.require_delimiters else 'optional'}\n"
+                    + ("  Contains << >>: required\n" if self.require_delimiters else "")
                     + (
                         f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
                         if self.eval_max_seconds_per_example is not None
@@ -2049,8 +2116,7 @@ class SynthesisPipeline:
                         eval_result.sample_outputs
                     )
                     + _span_not_closed_hint(
-                        self.require_delimiters, eval_result.sample_outputs,
-                        getattr(self.evaluator, "max_steps", None)
+                        self.require_delimiters, eval_result.sample_outputs
                     )
                     + _constraint_bypassed_hint(
                         self.require_delimiters, eval_result.contains_delimiters,
@@ -2059,9 +2125,11 @@ class SynthesisPipeline:
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
                     )
-                    + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
+                    + _unit_rewind_hint(
+                        strategy_code, eval_result.sample_outputs
+                    )
                     + "\n"
-                    + eval_result.get_feedback_summary()
+                    + eval_result.get_feedback_summary(self.require_delimiters)
                 )
                 threshold_mode_examples = eval_result._render_mode_examples()
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)

@@ -53,7 +53,6 @@ def _core_lm_helpers() -> set[str]:
     return {
         "Contains",
         "RenderPrefix",
-        "SetUseSampling",
         "GenerateLogits",
         "ChooseNextToken",
         "ChooseNextTokenUnconstrained",
