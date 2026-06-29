@@ -15,3 +15,5 @@ Applies to the **`synthesis/`** Python package (pipeline implementation). Reposi
 ## Subfolder guides
 
 Each major subdirectory has its own **`README.md`** (human overview) and **`AGENTS.md`** (agent constraints). Prefer editing the leaf folder closest to your change.
+
+Repository-wide archived manual assets live under **`../experiments/`** (not imported by this package).

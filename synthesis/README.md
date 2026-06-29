@@ -21,6 +21,18 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
     `--max-local-edit-ratio`, `--beam-verify-candidates`.
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
+- `failure_taxonomy.py`
+  - Failure clustering and persistent ledger helpers for refinement prompts.
+
+## Baseline and matrix entry points (under `evaluate/`)
+
+- `run_legacy_fixed_strategy.py` — fixed baselines via legacy repos + vendored SynCode.
+- `run_reference_strategy.py` — compile/eval verified Dafny reference strategies.
+- `export_baseline_json.py` — minimal baseline JSON export helper.
+
+## Scripts
+
+- `scripts/reevaluate_compiled_csd.py` — re-evaluate a compiled strategy (used by `run_all_tests.py`).
 
 ## Stage Subpackages
 

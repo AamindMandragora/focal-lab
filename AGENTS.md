@@ -35,8 +35,9 @@ Disallowed prompt content:
 
 ## Key Paths
 
-- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
-- Fixed GSM-Symbolic / Spider eval subsets: `environment/benchmark_splits/` (proportional easy/medium/hard[/extra]; regenerate via `python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits`).
+- Top-level project directories: `synthesis/`, `environment/`, `legacy/`, `dafny/`, `cache/`, `outputs/`, `logs/`, and `experiments/` (archived manual assets only — not imported by the pipeline).
+- Root entry points: `run_all_tests.py` (matrix), `run_tmux.sh` (tmux helper).
+- Fixed GSM-Symbolic / Spider eval subsets: `environment/benchmark_splits/` (`gsm_symbolic_crane_proportional.json`, `spider_dev_proportional.json`). Extra seed/oracle/probe manifests live under `experiments/splits/`.
 - Legacy baseline codebases (CRANE / IterGen / CARS): clone with `bash environment/clone_legacy_csds.sh` into gitignored `legacy/*`; tracked pointer `legacy/README.md`; harness-vs-upstream notes `environment/legacy/DIFFERENCES.md`; **any edit under `legacy/{CRANE,itergen,cars}` must be captured as patches under `environment/legacy_patches/`** (see `environment/legacy/AGENTS.md`).
 - Dafny binary: set `DAFNY_PATH` when needed; otherwise the runner uses repo-local `dafny/dafny` only if present, then falls back to `dafny` on `PATH` or `~/.dotnet/tools/dafny`.
 - OpenAI API key: `synthesis/.env`
@@ -52,6 +53,8 @@ Disallowed prompt content:
 - `synthesis/evaluate/feedback_loop.py`
 - `synthesis/evaluate/evaluator.py`
 - `synthesis/run_synthesis.py`
+- `run_all_tests.py` (matrix launcher at repo root)
+- `synthesis/scripts/reevaluate_compiled_csd.py` (post-synthesis eval for matrix Metadecode cells)
 
 ## Pipeline Run Modes
 
@@ -99,7 +102,7 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 - When asked to modify files under `paper/`, do not run paper compilation checks; after making the requested edits, always automatically proceed with `git add`, `git commit`, and `git push` within the subdirectory to update Overleaf.
 - When using adaptive helper masking or beam refinement, keep selection rules empirical/contract-based (measured metrics, verifier checks), not heuristic strategy advice in prompts.
 - For bandit-style helper selection, keep exploration/exploitation policy in pipeline code/CLI knobs (e.g., UCB parameters), not in synthesis prompt prose.
-- For live experiment monitoring, prefer `scripts/experiment_dashboard.py` over ad hoc repeated log polling; keep it dependency-free so it can run on focal with the standard Python environment.
+- One-off experiment scripts, warm-start `.dfy` bodies, and non-default split JSONs belong under **`experiments/`**, not the repository root.
 - Always update the `README.md` and `AGENTS.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes. Occasionally scan the repo at the end of a request to ensure they are up-to-date.
 - Under `synthesis/`, update the nearest subdirectory **`README.md`** / **`AGENTS.md`** when behavior or conventions change (see `synthesis/README.md` for the layout); do not add documentation inside vendored `synthesis/evaluate/syncode/syncode/` except via the root `evaluate/syncode/AGENTS.md` policy unless upgrading the vendor drop.
 - **Legacy upstream trees:** never leave manual edits only under gitignored **`legacy/CRANE`**, **`legacy/itergen`**, or **`legacy/cars`**. Add matching unified patches under **`environment/legacy_patches/<name>/`**, refresh **`environment/legacy/DIFFERENCES.md`** when behavior changes, and verify with **`bash environment/clone_legacy_csds.sh`** (see **`environment/legacy/AGENTS.md`**).

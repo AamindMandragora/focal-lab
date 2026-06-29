@@ -32,11 +32,11 @@ The synthesis objective is to find a CSD strategy that **outperforms CRANE** on 
 To measure CRANE baseline: run the evaluator on a strategy body of just `generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken); cost := helpers.cost;`.
 
 ## GPU Assignment
-- Use GPUs 1 and 2 (`CUDA_VISIBLE_DEVICES=1,2`) — GPU 0 and 3 are often occupied by others.
+- Prefer GPUs 2 and 3 (`CUDA_VISIBLE_DEVICES=2,3`) unless intentionally using another allocation.
 
 ## Working Run Command (GSM-Symbolic)
 ```bash
-CUDA_VISIBLE_DEVICES=1,2 python run_synthesis.py \
+CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis \
     --task "Solve math word problems step by step. Write the final numeric answer inside << >> delimiters." \
     --dataset gsm_symbolic \
     --max-iterations 15 \

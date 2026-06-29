@@ -77,7 +77,37 @@ QUOTA_RE = re.compile(
 )
 
 
-from synthesis.env_utils import load_env_file
+def _parse_env_value(raw: str) -> str:
+    raw = raw.strip()
+    if not raw:
+        return ""
+    try:
+        parsed = shlex.split(raw, posix=True)
+    except ValueError:
+        return raw.strip("\"'")
+    if not parsed:
+        return ""
+    return parsed[0]
+
+
+def load_env_file(path: Path) -> None:
+    """Load KEY=VALUE lines from a dotenv-style file into ``os.environ``."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("export "):
+            stripped = stripped[len("export ") :].strip()
+        if "=" not in stripped:
+            continue
+        key, raw_value = stripped.split("=", 1)
+        key = key.strip()
+        if key:
+            os.environ[key] = _parse_env_value(raw_value)
+
+
 from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
 
 
@@ -347,8 +377,8 @@ class Runner:
             if not gsm_path.is_file():
                 raise SystemExit(
                     f"GSM split manifest not found: {gsm_path}\n"
-                    "Regenerate tracked splits with:\n"
-                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
+                    "Restore or regenerate the committed manifest; see "
+                    "environment/benchmark_splits/README.md"
                 )
 
         if "spider" in normalized:
@@ -356,8 +386,8 @@ class Runner:
             if not spider_path.is_file():
                 raise SystemExit(
                     f"Spider split manifest not found: {spider_path}\n"
-                    "Regenerate tracked splits with:\n"
-                    "  python -m synthesis.evaluate.benchmarks.write_fixed_benchmark_splits"
+                    "Restore or regenerate the committed manifest; see "
+                    "environment/benchmark_splits/README.md"
                 )
 
     def gsm_split_name_for_role(self, role: str) -> str:

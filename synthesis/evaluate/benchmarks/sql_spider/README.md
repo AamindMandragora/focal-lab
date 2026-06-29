@@ -12,11 +12,11 @@ This module evaluates synthesized CSD strategies on text-to-SQL tasks using the 
 ## Key Files
 
 - `dataset.py`: dataset loading and schema/context utilities.
-- `grammar.py`: SQL grammar helpers.
+- `prompts.py`: prompt formatting helpers.
+- `eval_logic.py`: benchmark delegation surface for `Evaluator`.
 - `generation.py`: generation wrappers integrated with evaluator.
 - `environment.py`: runtime setup for compiled strategy execution.
 - `executor.py`: execution-accuracy scoring against SQLite databases.
-- `metrics.py`: aggregate metrics and reporting helpers.
 
 ## Constraint mode
 

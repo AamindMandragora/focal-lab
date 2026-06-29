@@ -35,7 +35,7 @@ from synthesis.project_defaults import default_spider_data_dir
 DEFAULT_SPIDER_DIR = Path(
     default_spider_data_dir()
 )
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+SYNCODE_PARENT = Path(__file__).parent.parent.parent
 
 SPIDER_DIFFICULTIES: tuple[str, ...] = ("easy", "medium", "hard", "extra")
 
@@ -47,7 +47,7 @@ def _vendored_spider_eval_dir() -> Path:
         override_path = Path(override).expanduser()
         candidates.append(override_path.parent if override_path.name == "evaluation.py" else override_path)
     candidates.extend([
-        PROJECT_ROOT / "syncode" / "syncode" / "utils" / "sql_spider_eval",
+        SYNCODE_PARENT / "syncode" / "syncode" / "utils" / "sql_spider_eval",
         default_spider_data_dir(),
         Path.home() / "CRANE" / "src" / "crane" / "iter_syncode" / "utils" / "sql_spider_eval",
         Path.home() / "itergen" / "itergen" / "syncode" / "syncode" / "utils" / "sql_spider_eval",

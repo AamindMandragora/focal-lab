@@ -17,4 +17,5 @@ Each benchmark module owns its own dataset loading, prompt formatting, answer ex
 ## Architecture Rule
 
 Generic orchestration lives in `synthesis/evaluate/evaluator.py` and `feedback_loop.py`.
-Benchmark-specific logic should stay in benchmark packages so the pipeline remains modular and testable.
+Benchmark-specific logic stays in benchmark packages so the pipeline remains modular.
+Each benchmark exposes **`eval_logic.py`** as the delegation surface for **`evaluator.py`**.

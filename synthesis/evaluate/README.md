@@ -17,10 +17,12 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
   - Delegates benchmark-specific prompt/answer/parser/scoring logic to `benchmarks/*/eval_logic.py`.
 - `feedback_loop.py`
   - Generate/verify/compile/evaluate orchestration with iterative refinement.
-- `runner.py`
-  - Runtime helper paths used by local smoke/runtime routines.
-- `parser_utils.py`
-  - Compatibility wrapper re-exporting canonical parser utilities.
+- `metrics.py`, `completion_text.py`
+  - Shared scoring helpers and completion normalization.
+- `run_legacy_fixed_strategy.py`, `run_reference_strategy.py`, `export_baseline_json.py`
+  - Baseline generation and export CLIs (not used by the synthesis loop itself).
+- `baseline_store.py`, `baselines/crane_repo_runner.py`
+  - Baseline JSON helpers and optional subprocess CRANE runner.
 - `benchmarks/`
   - Dataset-specific modules (GSM-Symbolic, SQL Spider, SMILES).
   - `benchmarks/registry.py` selects the benchmark logic module.

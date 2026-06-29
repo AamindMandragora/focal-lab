@@ -11,7 +11,24 @@ The project is organized so the core workflow is explicit:
 
 ## Repository Layout
 
-- Non-hidden project directories are intentionally limited to `synthesis/`, `environment/`, `cache/`, and `outputs/`.
+Top-level directories:
+
+| Path | Role |
+|------|------|
+| `synthesis/` | Core pipeline package (generate → verify → evaluate) |
+| `environment/` | Conda/mxeval setup, benchmark splits, legacy clone scripts and patches |
+| `legacy/` | Gitignored CRANE / IterGen / CARS clones for fixed-strategy baselines |
+| `dafny/` | Optional repo-local Dafny binary (fallback when `DAFNY_PATH` unset) |
+| `cache/` | Model weights, Hugging Face cache, SynCode mask/parser pickles |
+| `outputs/` | `generated/` synthesis runs and `baselines/` JSON artifacts |
+| `logs/` | Per-run prompt/response logs (`CSD_LOGS_DIR` override) |
+| `experiments/` | Archived manual scripts, warm-start `.dfy` bodies, extra split JSONs (not imported by the pipeline) |
+
+Root entry points:
+
+- **`run_all_tests.py`** — full GSM + Spider matrix (baselines + Metadecode ablations).
+- **`run_tmux.sh`** — tmux wrapper with conda, `.env`, and GPU defaults.
+
 - `synthesis/`: core pipeline package. First-party subfolders include paired **`README.md`** and **`AGENTS.md`** for docs and agent rules (`synthesis/README.md` summarizes).
 - `synthesis/generate/`: generation prompts, rationale extraction, and generator logic.
 - `synthesis/verify/`: Dafny verification/compilation wrappers.
@@ -63,7 +80,7 @@ Fixed-strategy baselines use legacy codepaths:
 - `itergen`: `legacy/itergen`
 - `cars`: `legacy/cars` adapter across GSM-Symbolic, Spider, and SMILES.
 
-Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`python synthesis/scripts/report_legacy_upstream_diff.py --help`** for upstream-vs-local diffing.
+Those three `legacy/*` trees are **gitignored** (large upstream copies). Install them locally with **`bash environment/clone_legacy_csds.sh`** — see **`legacy/README.md`**, **`environment/legacy/DIFFERENCES.md`**, and **`environment/legacy_patches/`** for harness vs upstream behavior and tracked patches.
 
 ## Long runs (tmux)
 
@@ -78,22 +95,6 @@ Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CU
 ```
 
 Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
-
-## Live Dashboard
-
-Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
-
-```bash
-python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
-```
-
-If the server is remote, open it through an SSH tunnel:
-
-```bash
-ssh -L 8765:127.0.0.1:8765 focal
-```
-
-Then visit `http://127.0.0.1:8765/`.
 
 ## Quick Start
 
@@ -163,7 +164,7 @@ Optional local-beam refinement controls:
 - CRANE-backed GSM rows do not include `variable_types`, so the baseline exporter infers numeric symbolic identifiers from each row's `gold_answer` before syntax checking.
 - The GCD GSM-Symbolic adapter constrains only the expression body after `<<`, wraps it for scoring, finalizes the longest parseable expression prefix, and restricts identifiers to numeric placeholders from the evaluation sample so generic prose tokens such as `Let` are not accepted as variables.
 - GSM rows without exposed symbolic numeric variables use numeric-only syntax checks, so arbitrary words such as `reasoning` are not accepted as variable names.
-- `run_all_tests.py` sources `synthesis/.env` before resolving generation profiles. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking; **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
+- `run_all_tests.py` loads `synthesis/.env` (dotenv-style) before resolving generation profiles. **`gpt5.5`** uses **OpenAI** with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override); **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking; **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed `gemini-pro` profiles are rejected by the matrix runner.
 
 ## Path Configuration
 
