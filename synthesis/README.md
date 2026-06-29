@@ -19,6 +19,8 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
   - Includes local-beam refinement controls:
     `--refinement-beam-size`, `--local-neighborhood-refinement`,
     `--max-local-edit-ratio`, `--beam-verify-candidates`.
+  - Outer REx search-tree controls:
+    `--rex-temperature` (Beta-prior temperature `C` for arm selection; default `2.0`).
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
 - `failure_taxonomy.py`

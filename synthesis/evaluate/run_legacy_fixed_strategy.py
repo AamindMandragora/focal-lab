@@ -868,6 +868,157 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
+
+def run_rs_legacy_adapter(args: argparse.Namespace) -> int:
+    """RS baseline: temperature-1 unconstrained decode, reject until syntax-valid."""
+    run_started = time.perf_counter()
+    import sys
+
+    dataset = _normalize_dataset(args.dataset)
+    repo_root = Path(__file__).resolve().parents[2]
+
+    syncode_root = repo_root / "synthesis" / "evaluate" / "syncode"
+    syncode_pkg = syncode_root / "syncode"
+    for p in [str(syncode_root), str(syncode_pkg)]:
+        if p not in sys.path:
+            sys.path.insert(0, p)
+
+    from synthesis.evaluate.benchmarks.registry import get_logic
+    from synthesis.evaluate.evaluator import Evaluator
+    from synthesis.evaluate.rs import (
+        DEFAULT_RS_SEARCH_STEPS,
+        build_rs_syncode,
+        rs_sample_completion,
+    )
+
+    logic = get_logic(dataset)
+    eval_runtime = Evaluator(
+        dataset_name=dataset,
+        model_name=args.eval_model,
+        backend=args.eval_backend,
+        device=args.device,
+        sample_size=args.eval_sample_size,
+        max_steps=args.eval_max_steps,
+        step_token_budget=args.eval_step_token_budget,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
+        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
+        gsm_split_file=args.gsm_split_file if dataset == "gsm_symbolic" else None,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file if dataset == "spider" else None,
+        spider_split_name=args.spider_split_name,
+        smiles_classes=(
+            [s.strip() for s in args.smiles_classes.split(",") if s.strip()]
+            if dataset == "smiles" and getattr(args, "smiles_classes", None)
+            else None
+        ),
+    )
+    _configure_fixed_eval_runtime(eval_runtime, args, dataset)
+    examples = logic.load_dataset_sample(eval_runtime)
+
+    device = _legacy_local_cuda_device(args.device)
+    n_attempts = max(1, int(getattr(args, "rs_search_steps", DEFAULT_RS_SEARCH_STEPS)))
+
+    def _rs_max_new_tokens() -> int:
+        if dataset == "gsm_symbolic":
+            return min(96, max(32, int(args.eval_max_steps)))
+        if dataset == "smiles":
+            return min(256, max(64, int(args.eval_max_steps)))
+        return max(32, int(args.eval_max_steps))
+
+    print(
+        f"RS: {n_attempts} attempts/example at temperature 1.0, "
+        f"max_new_tokens={_rs_max_new_tokens()}"
+    )
+
+    rs_syncode = build_rs_syncode(
+        args.eval_model,
+        device=device,
+        max_new_tokens=_rs_max_new_tokens(),
+    )
+
+    rows: list[dict[str, Any]] = []
+    smiles_prompt_suffix: dict[str, str] = {}
+
+    for example in examples:
+        if dataset == "smiles":
+            cls = str(example.get("class_name", ""))
+            example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
+
+        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        rs_prompt = prompt.rstrip() + "<<" if dataset == "gsm_symbolic" else prompt
+
+        def _syntax_valid_for_body(body: str) -> bool:
+            completion = completion_for_scoring(rs_prompt, body)
+            scored = (
+                eval_runtime._truncate_gsm_output(completion)
+                if dataset == "gsm_symbolic"
+                else completion
+            )
+            syntax_ok, _segments = eval_runtime._check_syntax_validity(scored, example=example)
+            if dataset == "spider":
+                actual, _, _aux = logic.extract_actual(eval_runtime, scored, example)
+                syntax_ok = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+            if dataset == "smiles":
+                _actual, _, aux = logic.extract_actual(eval_runtime, scored, example)
+                syntax_ok = bool(aux and aux.get("syntax_valid"))
+            return bool(syntax_ok)
+
+        def _normalize_output(raw: str, ex: dict[str, Any] = example) -> str:
+            if dataset == "gsm_symbolic":
+                return _gsm_symbolic_completion_to_delimited(raw, ex, eval_runtime, logic)
+            return (raw or "").strip()
+
+        gen_started = time.perf_counter()
+        output_text, _attempts_used = rs_sample_completion(
+            rs_syncode,
+            rs_prompt,
+            max_attempts=n_attempts,
+            normalize_output=_normalize_output,
+            is_syntax_valid=_syntax_valid_for_body,
+            stop_words=[">>"] if dataset == "gsm_symbolic" else None,
+        )
+        gen_seconds = time.perf_counter() - gen_started
+
+        completion = completion_for_scoring(rs_prompt, output_text)
+        scored_output = (
+            eval_runtime._truncate_gsm_output(completion)
+            if dataset == "gsm_symbolic"
+            else completion
+        )
+        expected = logic.expected_answer(eval_runtime, example)
+        actual, _answer_source, aux = logic.extract_actual(eval_runtime, scored_output, example)
+        is_correct = bool(logic.is_correct(eval_runtime, actual, expected, example, aux, scored_output))
+
+        syntax_valid, _segments = eval_runtime._check_syntax_validity(scored_output, example=example)
+        if dataset == "spider":
+            syntax_valid = bool(actual and re.search(r"\bselect\b", actual, flags=re.IGNORECASE))
+        if dataset == "smiles":
+            syntax_valid = bool(aux and aux.get("syntax_valid"))
+            if syntax_valid and actual:
+                cls = str(example.get("class_name", ""))
+                smiles_prompt_suffix[cls] = _cap_suffix(smiles_prompt_suffix.get(cls, "") + f" {actual}\nMolecule:")
+
+        question = _baseline_row_question(dataset, example, expected)
+        rows.append(
+            {
+                "question": question,
+                "llm_response": completion,
+                "prompt_used": prompt,
+                "correct": bool(is_correct),
+                "syntax_valid": bool(syntax_valid),
+                "generation_seconds": gen_seconds,
+            }
+        )
+
+    _build_minimal_json(
+        rows,
+        args.output_json,
+        run_wall_time_seconds=time.perf_counter() - run_started,
+    )
+    print(f"Saved baseline JSON: {args.output_json}")
+    return 0
+
+
 def _itergen_add_import_paths(itergen_root: Path) -> None:
     candidates = [
         itergen_root,
@@ -1562,7 +1713,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run legacy fixed strategy code and export minimal baseline JSON"
     )
-    parser.add_argument("--strategy", required=True, choices=["unconstrained", "gcd", "crane", "itergen", "cars"])
+    parser.add_argument(
+        "--strategy",
+        required=True,
+        choices=["unconstrained", "gcd", "crane", "itergen", "rs", "cars"],
+    )
     parser.add_argument("--dataset", required=True, choices=["gsm", "gsm_symbolic", "spider", "smiles"])
     parser.add_argument("--eval-model", required=True)
     parser.add_argument("--eval-sample-size", type=int, default=10)
@@ -1608,6 +1763,15 @@ def main() -> None:
             "a sample). Default 200. Independent of --eval-max-steps."
         ),
     )
+    parser.add_argument(
+        "--rs-search-steps",
+        type=int,
+        default=200,
+        help=(
+            "Max RS decode attempts per example (temperature-1 unconstrained sampling). "
+            "Default 200. Independent of --eval-max-steps."
+        ),
+    )
     args = parser.parse_args()
     from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
 
@@ -1640,6 +1804,8 @@ def main() -> None:
         raise SystemExit(run_gcd_legacy_adapter(args))
     if args.strategy == "itergen":
         raise SystemExit(run_itergen_legacy_adapter(args))
+    if args.strategy == "rs":
+        raise SystemExit(run_rs_legacy_adapter(args))
     if args.strategy == "cars":
         raise SystemExit(run_cars_legacy_adapter(args))
     raise SystemExit(run_crane_legacy_adapter(args))

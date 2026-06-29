@@ -16,7 +16,11 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
   - Core sample evaluation loop and orchestration.
   - Delegates benchmark-specific prompt/answer/parser/scoring logic to `benchmarks/*/eval_logic.py`.
 - `feedback_loop.py`
-  - Generate/verify/compile/evaluate orchestration with iterative refinement.
+  - Generate/verify/compile/evaluate orchestration with REx search over an explicit strategy tree.
+  - Outer loop: Thompson-sampled arm selection (REx) over tree nodes; each pull refines one parent into a child.
+  - Goodness scores derive from the evaluation scalar (accuracy-weighted composite vs configured thresholds).
+  - Runs always return the argmax-goodness node; `success` iff that node meets thresholds.
+  - Inner helper UCB bandit and beam refinement on errors are unchanged.
 - `metrics.py`, `completion_text.py`
   - Shared scoring helpers and completion normalization.
 - `run_legacy_fixed_strategy.py`, `run_reference_strategy.py`, `export_baseline_json.py`

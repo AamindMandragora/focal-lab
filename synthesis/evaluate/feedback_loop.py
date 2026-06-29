@@ -19,6 +19,13 @@ from typing import Callable, Optional
 
 from ..verify.compiler import CompilationResult, DafnyCompiler
 from .evaluator import Evaluator, EvaluationResult
+from .goodness import (
+    compute_goodness_from_attempt,
+    evaluation_scalar_score,
+    scalar_target,
+)
+from .rex_bandit import RexBandit
+from .search_tree import SearchNode, SearchTree
 from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
@@ -445,6 +452,12 @@ class SynthesisAttempt:
     failed_at: Optional[FailureStage] = None
     error_summary: str = ""
 
+    # REx search-tree linkage
+    node_id: Optional[int] = None
+    parent_node_id: Optional[int] = None
+    goodness: float = 0.0
+    met_threshold: bool = False
+
     def succeeded(self) -> bool:
         """Check if this attempt passed verify, compile, and evaluation."""
         if self.failed_at is not None:
@@ -473,6 +486,10 @@ class SynthesisAttempt:
             "succeeded": self.succeeded(),
             "failed_at": self.failed_at.value if self.failed_at else None,
             "error_summary": self.error_summary,
+            "node_id": self.node_id,
+            "parent_node_id": self.parent_node_id,
+            "goodness": self.goodness,
+            "met_threshold": self.met_threshold,
             "verification": {
                 "success": self.verification_result.success if self.verification_result else None,
                 "error_count": len(self.verification_result.errors) if self.verification_result else 0,
@@ -552,7 +569,7 @@ class SynthesisExhaustionError(Exception):
 
 @dataclass
 class SynthesisResult:
-    """Result of a successful synthesis."""
+    """Result of a synthesis run (best-goodness node returned regardless of success)."""
 
     success: bool
     strategy_code: str
@@ -562,6 +579,10 @@ class SynthesisResult:
     run_dir: Optional[Path]
     attempts: list[SynthesisAttempt]
     total_time_ms: float
+    best_node_id: Optional[int] = None
+    best_goodness: float = 0.0
+    met_threshold: bool = False
+    search_tree: list[dict] | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -575,6 +596,10 @@ class SynthesisResult:
             "run_dir": str(self.run_dir) if self.run_dir else None,
             "num_attempts": len(self.attempts),
             "total_time_ms": self.total_time_ms,
+            "best_node_id": self.best_node_id,
+            "best_goodness": self.best_goodness,
+            "met_threshold": self.met_threshold,
+            "search_tree": self.search_tree,
         }
 
 
@@ -582,13 +607,11 @@ class SynthesisPipeline:
     """
     Main pipeline for synthesizing CSD strategies.
 
-    Orchestrates:
-    1. Initial strategy generation with Qwen
-    2. Dafny verification
-    3. Compilation to Python
-    4. Runtime testing
-    5. Evaluation on dataset sample (optional)
-    6. Feedback-based refinement on failure
+    Orchestrates REx search over an explicit strategy tree:
+    1. Bootstrap root strategy (author model)
+    2. Thompson-sampled arm selection (REx)
+    3. Refinement pull -> verify -> compile -> evaluate
+    4. Return argmax-goodness node after the full iteration budget
     """
 
     DEFAULT_OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs" / "generated"
@@ -728,6 +751,7 @@ class SynthesisPipeline:
         # anchor-based refinement gets stuck.
         restart_after_stuck_iters: int = 0,
         restart_cooldown_iters: int = 0,
+        rex_temperature: float = 2.0,
     ):
         """
         Initialize the synthesis pipeline.
@@ -781,6 +805,13 @@ class SynthesisPipeline:
         # back-to-back restarts.
         self.restart_after_stuck_iters = max(0, int(restart_after_stuck_iters))
         self.restart_cooldown_iters = max(0, int(restart_cooldown_iters))
+        self.rex_temperature = max(0.0, rex_temperature)
+        self._scalar_target = scalar_target(
+            min_accuracy=self.min_accuracy,
+            min_syntax_rate=self.min_syntax_rate,
+            require_delimiters=self.require_delimiters,
+            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+        )
         self._anchor_attempt_number: int | None = None
         self._iters_since_anchor_changed: int = 0
 
@@ -860,6 +891,9 @@ class SynthesisPipeline:
                 "local_neighborhood_refinement": self.local_neighborhood_refinement,
                 "max_local_edit_ratio": self.max_local_edit_ratio,
                 "beam_verify_candidates": self.beam_verify_candidates,
+                "search_policy": "rex",
+                "rex_temperature": self.rex_temperature,
+                "scalar_target": self._scalar_target,
             },
         }
 
@@ -967,33 +1001,32 @@ class SynthesisPipeline:
         return set(calls)
 
     def _evaluation_scalar_score(self, result: EvaluationResult) -> float:
-        """Scalar score used for helper utility estimates.
+        """Scalar score used for helper utility estimates and goodness."""
+        return evaluation_scalar_score(
+            result,
+            require_delimiters=self.require_delimiters,
+            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+        )
 
-        Accuracy is weighted 3x so it dominates the two secondary terms, which
-        are each scaled to 0.25. Runtime is graded as the fraction of examples
-        that stayed within the per-example budget (not a binary 0/1), so a
-        single slow example cannot sink an otherwise-strong attempt below a
-        low-accuracy-but-fast one.
-        """
-        delimiter_score = 1.0 if (result.contains_delimiters or not self.require_delimiters) else 0.0
+    def _compute_attempt_goodness(self, attempt: SynthesisAttempt) -> float:
+        return compute_goodness_from_attempt(
+            attempt,
+            min_accuracy=self.min_accuracy,
+            min_syntax_rate=self.min_syntax_rate,
+            require_delimiters=self.require_delimiters,
+            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+        )
 
-        if self.eval_max_seconds_per_example is None:
-            runtime_frac = 1.0
-        else:
-            samples = getattr(result, "sample_outputs", None) or []
-            if not samples:
-                runtime_frac = 1.0
-            else:
-                within = sum(
-                    1 for s in samples if not s.get("runtime_budget_exceeded", False)
-                )
-                runtime_frac = within / len(samples)
-
-        return (
-            3.0 * result.accuracy
-            + result.syntax_rate
-            + 0.25 * delimiter_score
-            + 0.25 * runtime_frac
+    def _attempt_met_threshold(self, attempt: SynthesisAttempt) -> bool:
+        if attempt.eval_result is None:
+            return False
+        if attempt.eval_result.early_stopped:
+            return False
+        return attempt.eval_result.meets_threshold(
+            min_accuracy=self.min_accuracy,
+            min_syntax_rate=self.min_syntax_rate,
+            require_delimiters=self.require_delimiters,
+            max_seconds_per_example=self.eval_max_seconds_per_example,
         )
 
     def _compute_prunable_helper_marginals(
@@ -1610,6 +1643,427 @@ class SynthesisPipeline:
             )
         return best["strategy"]
 
+    def _run_attempt_pipeline(
+        self,
+        *,
+        strategy_code: str,
+        attempt_num: int,
+        node_id: int,
+        parent_node_id: int | None,
+        allowed_helpers: list[str] | None,
+        compiler: DafnyCompiler,
+        output_name: str,
+    ) -> SynthesisAttempt:
+        """Verify, compile, and evaluate one strategy snapshot without refining."""
+        full_code = self.generator.inject_strategy(strategy_code)
+        attempt = SynthesisAttempt(
+            attempt_number=attempt_num,
+            strategy_code=strategy_code,
+            full_dafny_code=full_code,
+            timestamp=datetime.now().isoformat(),
+            node_id=node_id,
+            parent_node_id=parent_node_id,
+        )
+
+        disallowed_helpers = self._get_disallowed_helper_calls(strategy_code, allowed_helpers)
+        if disallowed_helpers:
+            print("  ✗ Strategy contract violation")
+            attempt.failed_at = FailureStage.SEARCH_CONTRACT
+            attempt.error_summary = (
+                "Strategy contract violation.\n"
+                f"Violations: {', '.join(disallowed_helpers)}"
+            )
+            attempt.goodness = 0.0
+            return attempt
+
+        print("\n[1/4] Verifying with Dafny...")
+        verification_result = self.verifier.verify(full_code)
+        attempt.verification_result = verification_result
+        if not verification_result.success:
+            print("  ✗ Verification failed")
+            print(f"  Error: {verification_result.get_error_summary()[:300]}")
+            attempt.failed_at = FailureStage.VERIFICATION
+            attempt.error_summary = verification_result.get_error_summary()
+            attempt.goodness = 0.0
+            return attempt
+        print("  ✓ Verification passed")
+
+        print("\n[2/4] Compiling to Python...")
+        compilation_result = compiler.compile(full_code, output_name)
+        attempt.compilation_result = compilation_result
+        if not compilation_result.success:
+            print("  ✗ Compilation failed")
+            attempt.failed_at = FailureStage.COMPILATION
+            attempt.error_summary = compilation_result.get_error_summary()
+            attempt.goodness = 0.0
+            return attempt
+        print(f"  ✓ Compiled to {compilation_result.output_dir}")
+
+        if compilation_result.main_module_path is None:
+            print("  ✗ No main module found")
+            attempt.failed_at = FailureStage.RUNTIME
+            attempt.error_summary = "No main module path in compilation result"
+            attempt.goodness = 0.0
+            return attempt
+
+        print("\n[3/4] Evaluating compiled strategy (runtime smoke test removed).")
+        print("\n[4/4] Evaluating on dataset sample...")
+        if self.generator._model is not None:
+            del self.generator._model
+            self.generator._model = None
+            import gc
+            gc.collect()
+            import torch
+            torch.cuda.empty_cache()
+            print("  Generator model (HF) unloaded to free GPU memory")
+        if getattr(self.generator, "_vllm", None) is not None:
+            import gc
+            import torch
+            vllm_obj = self.generator._vllm
+            self.generator._vllm = None
+            try:
+                vllm_obj._run_engine = None
+            except Exception:
+                pass
+            del vllm_obj
+            try:
+                from vllm.distributed import destroy_model_parallel, destroy_distributed_environment
+                destroy_model_parallel()
+                destroy_distributed_environment()
+            except Exception:
+                pass
+            gc.collect()
+            torch.cuda.empty_cache()
+            print("  Generator vllm engine unloaded to free GPU memory")
+
+        print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
+        eval_result = self.evaluator.evaluate_sample(
+            compiled_module_path=compilation_result.main_module_path,
+            sample_size=self.eval_sample_size,
+            early_stop_min_accuracy=self.min_accuracy
+            if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+            else None,
+            early_stop_min_syntax_rate=self.min_syntax_rate
+            if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+            else None,
+            early_stop_runtime_failures=(
+                int(os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP_RUNTIME_FAILURES", "3"))
+                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
+                else None
+            ),
+            min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
+        )
+        if not hasattr(self, "_failure_ledger"):
+            try:
+                from synthesis.failure_taxonomy import make_persistent_ledger
+            except ImportError:
+                from failure_taxonomy import make_persistent_ledger
+            self._failure_ledger = make_persistent_ledger()
+        eval_result._failure_ledger = self._failure_ledger
+        eval_result._attempt_index = attempt.attempt_number
+        attempt.eval_result = eval_result
+
+        smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
+        if isinstance(smiles_trial, dict) and smiles_trial:
+            membership = smiles_trial.get("membership")
+            validity = smiles_trial.get("validity_rdkit")
+            samples_to_target = smiles_trial.get("samples_to_target_unique_valid")
+            unique_valid = smiles_trial.get("unique_valid_count")
+            sample_count = smiles_trial.get("sample_count")
+            print("  [smiles] paper-aligned metrics:")
+            if membership is not None:
+                print(f"    Membership: {float(membership):.1%}")
+            if validity is not None:
+                print(f"    RDKit Validity: {float(validity):.1%}")
+            print(
+                "    Samples to 100 unique valid (cap 1000): "
+                f"{samples_to_target}"
+            )
+            print(
+                "    Unique valid molecules this eval: "
+                f"{unique_valid}/{sample_count}"
+            )
+
+        if not eval_result.success:
+            print(f"  ✗ Evaluation failed: {eval_result.error}")
+            attempt.failed_at = FailureStage.EVALUATION
+            attempt.error_summary = eval_result.error or "Evaluation failed"
+            self._unload_evaluator_runtime_before_refinement()
+            attempt.goodness = self._compute_attempt_goodness(attempt)
+            return attempt
+
+        attempt.met_threshold = self._attempt_met_threshold(attempt)
+        if not attempt.met_threshold:
+            print("  ✗ Evaluation below threshold:")
+            print(f"    Accuracy: {eval_result.accuracy:.1%} (min: {self.min_accuracy:.1%})")
+            if self.require_delimiters:
+                print(
+                    "    Contains << >>: "
+                    f"{'yes' if eval_result.contains_delimiters else 'no'} "
+                    f"(required: {'yes' if self.require_delimiters else 'no'})"
+                )
+            print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
+            attempt.failed_at = FailureStage.EVALUATION
+            attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters)
+            self._unload_evaluator_runtime_before_refinement()
+        else:
+            print("  ✓ Evaluation passed:")
+            print(f"    Accuracy: {eval_result.accuracy:.1%}")
+            print(f"    Contains << >>: {'yes' if eval_result.contains_delimiters else 'no'}")
+            print(f"    Syntax: {eval_result.syntax_rate:.1%}")
+
+        attempt.goodness = self._compute_attempt_goodness(attempt)
+        return attempt
+
+    def _produce_child_code(
+        self,
+        parent: SearchNode,
+        attempts: list[SynthesisAttempt],
+        task_description: str,
+        allowed_helpers: list[str] | None,
+    ) -> str:
+        """Refine a selected tree arm into a child strategy body."""
+        strategy_code = parent.strategy_code
+        anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
+        if anchor_n is not None:
+            print(
+                f"  [synthesis] anchor for refinement: attempt {anchor_n} "
+                f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
+            )
+        attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, anchor_n)
+
+        if parent.failed_at == FailureStage.SEARCH_CONTRACT:
+            error_msg = parent.error_summary
+            return self._refine_with_beam(
+                stage_label="search_contract",
+                previous_strategy=strategy_code,
+                allowed_helpers=allowed_helpers,
+                refine_once=lambda: self.generator.refine_after_verification_error(
+                    strategy_code,
+                    error_msg,
+                    allowed_helpers=allowed_helpers,
+                ),
+            )
+
+        if parent.failed_at == FailureStage.VERIFICATION:
+            error_msg = parent.error_summary
+            structured_feedback = (
+                parent.verification_result.get_structured_feedback()
+                if parent.verification_result is not None
+                else None
+            )
+            error_history = self._get_verification_history_summary(attempts)
+            behavioral_context = self._get_recent_behavioral_context(attempts)
+            return self._refine_with_beam(
+                stage_label="verification",
+                previous_strategy=strategy_code,
+                allowed_helpers=allowed_helpers,
+                refine_once=lambda: self.generator.refine_after_verification_error(
+                    strategy_code,
+                    error_msg,
+                    behavioral_context=behavioral_context,
+                    structured_feedback=structured_feedback,
+                    error_history=error_history,
+                    allowed_helpers=allowed_helpers,
+                ),
+            )
+
+        if parent.failed_at == FailureStage.COMPILATION:
+            error_msg = (
+                parent.compilation_result.get_error_summary()
+                if parent.compilation_result is not None
+                else parent.error_summary
+            )
+            return self._refine_with_beam(
+                stage_label="compilation",
+                previous_strategy=strategy_code,
+                allowed_helpers=allowed_helpers,
+                refine_once=lambda: self.generator.refine_after_compilation_error(
+                    strategy_code,
+                    error_msg,
+                    allowed_helpers=allowed_helpers,
+                ),
+            )
+
+        if parent.failed_at == FailureStage.RUNTIME:
+            return self._refine_with_beam(
+                stage_label="runtime",
+                previous_strategy=strategy_code,
+                allowed_helpers=allowed_helpers,
+                refine_once=lambda: self.generator.refine_after_runtime_error(
+                    strategy_code,
+                    parent.error_summary or "Runtime failure",
+                    allowed_helpers=allowed_helpers,
+                ),
+            )
+
+        eval_result = parent.eval_result
+        if eval_result is None:
+            return self.generator.generate_initial(
+                task_description,
+                allowed_helpers=allowed_helpers,
+            )
+
+        best_strategy_code, best_acc_val, best_syn_val = self._lookup_best_so_far(
+            attempts,
+            anchor_n,
+            SynthesisAttempt(
+                attempt_number=parent.attempt_number,
+                strategy_code=strategy_code,
+                full_dafny_code=parent.full_dafny_code,
+                timestamp=parent.timestamp,
+                eval_result=eval_result,
+            ),
+            strategy_code,
+            eval_result,
+        )
+        refine_best_strategy = (
+            best_strategy_code if best_strategy_code != strategy_code else None
+        )
+        refine_best_acc = best_acc_val if refine_best_strategy is not None else None
+        refine_best_syn = best_syn_val if refine_best_strategy is not None else None
+        prev_acc = eval_result.accuracy or 0.0
+        prev_syn = eval_result.syntax_rate or 0.0
+        prev_n = eval_result.num_examples or 0
+
+        if not eval_result.success:
+            evaluation_feedback = (
+                eval_result.get_feedback_summary(self.require_delimiters)
+                + _final_span_failure_hint(
+                    self.require_delimiters, eval_result.sample_outputs
+                )
+                + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
+            )
+            mode_examples = eval_result._render_mode_examples()
+            return self._refine_with_beam(
+                stage_label="evaluation_error",
+                previous_strategy=strategy_code,
+                allowed_helpers=allowed_helpers,
+                refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                    previous_strategy=strategy_code,
+                    previous_accuracy=prev_acc,
+                    previous_syntax_rate=prev_syn,
+                    num_examples=prev_n,
+                    goal_accuracy=self.min_accuracy,
+                    goal_syntax_rate=self.min_syntax_rate,
+                    evaluation_feedback=evaluation_feedback,
+                    best_strategy=refine_best_strategy,
+                    best_accuracy=refine_best_acc,
+                    best_syntax_rate=refine_best_syn,
+                    allowed_helpers=allowed_helpers,
+                    eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                    mode_examples=mode_examples,
+                    attempt_outcome_ledger=attempt_outcome_ledger,
+                ),
+            )
+
+        threshold_feedback = (
+            "Required thresholds:\n"
+            f"  Accuracy: {self.min_accuracy:.1%}\n"
+            f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
+            + ("  Contains << >>: required\n" if self.require_delimiters else "")
+            + (
+                f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
+                if self.eval_max_seconds_per_example is not None
+                else ""
+            )
+            + _delimiter_miss_hint(
+                self.require_delimiters, eval_result.contains_delimiters,
+                eval_result.sample_outputs
+            )
+            + _span_not_closed_hint(
+                self.require_delimiters, eval_result.sample_outputs
+            )
+            + _constraint_bypassed_hint(
+                self.require_delimiters, eval_result.contains_delimiters,
+                eval_result.sample_outputs
+            )
+            + _final_span_failure_hint(
+                self.require_delimiters, eval_result.sample_outputs
+            )
+            + _unit_rewind_hint(strategy_code, eval_result.sample_outputs)
+            + "\n"
+            + eval_result.get_feedback_summary(self.require_delimiters)
+        )
+        mode_examples = eval_result._render_mode_examples()
+        stage_label = "evaluation_threshold" if not parent.met_threshold else "evaluation_improve"
+        return self._refine_with_beam(
+            stage_label=stage_label,
+            previous_strategy=strategy_code,
+            allowed_helpers=allowed_helpers,
+            refine_once=lambda: self.generator.refine_after_evaluation_failure(
+                previous_strategy=strategy_code,
+                previous_accuracy=prev_acc,
+                previous_syntax_rate=prev_syn,
+                num_examples=prev_n,
+                goal_accuracy=self.min_accuracy,
+                goal_syntax_rate=self.min_syntax_rate,
+                evaluation_feedback=threshold_feedback,
+                best_strategy=refine_best_strategy,
+                best_accuracy=refine_best_acc,
+                best_syntax_rate=refine_best_syn,
+                allowed_helpers=allowed_helpers,
+                eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                mode_examples=mode_examples,
+                attempt_outcome_ledger=attempt_outcome_ledger,
+            ),
+        )
+
+    def _write_fallback_winner(
+        self,
+        attempts: list[SynthesisAttempt],
+        run_results_dir: Path,
+    ) -> None:
+        fallback_winner = None
+        for att in attempts:
+            if (
+                att.eval_result is not None
+                and not att.eval_result.early_stopped
+                and att.eval_result.accuracy >= self.min_accuracy
+                and (
+                    fallback_winner is None
+                    or att.eval_result.accuracy > fallback_winner.eval_result.accuracy
+                )
+            ):
+                fallback_winner = att
+
+        if fallback_winner is None:
+            print(
+                "[FALLBACK] No accuracy-only candidate found either "
+                "(no attempt met the min_accuracy threshold); no fallback saved."
+            )
+            return
+
+        fb_path = run_results_dir / "fallback_winner.json"
+        try:
+            with open(fb_path, "w") as f:
+                json.dump(
+                    {
+                        "fallback_reason": "accuracy_met_but_syntax_below_threshold",
+                        "min_accuracy": self.min_accuracy,
+                        "min_syntax_rate": self.min_syntax_rate,
+                        "winner_attempt_number": fallback_winner.attempt_number,
+                        "winner_node_id": fallback_winner.node_id,
+                        "winner_accuracy": fallback_winner.eval_result.accuracy,
+                        "winner_syntax_rate": fallback_winner.eval_result.syntax_rate,
+                        "winner_goodness": fallback_winner.goodness,
+                        "winner_strategy_code": fallback_winner.strategy_code,
+                        "winner_full_dafny_code": fallback_winner.full_dafny_code,
+                        "evaluation": fallback_winner.eval_result.to_dict(),
+                    },
+                    f,
+                    indent=2,
+                )
+            print(
+                f"[FALLBACK] accuracy-only winner: attempt "
+                f"{fallback_winner.attempt_number}, "
+                f"acc={fallback_winner.eval_result.accuracy:.1%} "
+                f"(syntax {fallback_winner.eval_result.syntax_rate:.1%} below "
+                f"required {self.min_syntax_rate:.1%}). Saved to {fb_path}."
+            )
+        except Exception as fb_err:
+            print(f"[FALLBACK] Failed to write fallback_winner.json: {fb_err}")
+
     def synthesize(
         self,
         task_description: str,
@@ -1618,28 +2072,17 @@ class SynthesisPipeline:
         initial_attempt_offset: int = 0,
     ) -> SynthesisResult:
         """
-        Synthesize a CSD strategy for the given task.
+        Synthesize a CSD strategy using REx search over an explicit strategy tree.
 
-        Args:
-            task_description: Description of what the strategy should accomplish
-            output_name: Name for the output module
-
-        Returns:
-            SynthesisResult on success
-
-        Raises:
-            SynthesisExhaustionError: If all attempts fail
+        Returns the best-goodness node after the full iteration budget is consumed.
         """
         import time
 
         start_time = time.time()
         attempts: list[SynthesisAttempt] = []
+        tree = SearchTree()
+        rex = RexBandit(temperature=self.rex_temperature)
 
-        # Create an isolated output directory for this run. The directory layout is:
-        #   outputs/generated/<output_name>_<run_id>/
-        #     - dafny/
-        #     - python/
-        #     - results/
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + secrets.token_hex(3)
         run_dir = self.output_dir / f"{output_name}_{run_id}"
         run_dafny_dir = run_dir / "dafny"
@@ -1649,20 +2092,17 @@ class SynthesisPipeline:
         run_python_dir.mkdir(parents=True, exist_ok=True)
         run_results_dir.mkdir(parents=True, exist_ok=True)
 
-        # Persist exact prompt/response records under the repo's single logs tree.
         from synthesis.project_defaults import synthesis_prompt_log_dir
 
         prompt_log_dir = synthesis_prompt_log_dir(output_name, run_id)
         prompt_log_dir.mkdir(parents=True, exist_ok=True)
         os.environ["CSD_PROMPT_LOG_DIR"] = str(prompt_log_dir)
 
-        # Update a convenience pointer to the most recent run
         try:
             (self.output_dir / "latest_run.txt").write_text(str(run_dir) + "\n")
         except Exception:
             pass
 
-        # Use a per-run compiler output directory.
         compiler = DafnyCompiler(
             dafny_path=self.compiler.dafny_path,
             output_dir=run_python_dir,
@@ -1681,640 +2121,181 @@ class SynthesisPipeline:
         if helper_status:
             print(f"Helper policy: {helper_status}")
 
-        # Initial generation, or a caller-provided recovery seed.
         if initial_strategy_code is not None:
             print("Using caller-provided initial strategy seed")
-            strategy_code = initial_strategy_code
+            root_strategy = initial_strategy_code
         else:
             print(f"Generating initial strategy for: {task_description}")
-            strategy_code = self.generator.generate_initial(
+            root_strategy = self.generator.generate_initial(
                 task_description,
                 allowed_helpers=allowed_helpers,
             )
 
-        # Index in `attempts` after which we last performed a fresh restart.
-        # Used to bound the "consecutive verification failures since last restart"
-        # counter so that a restart resets it.
-        last_restart_index = 0
+        attempt_total = initial_attempt_offset + self.max_iterations
 
-        for iteration in range(self.max_iterations):
+        def _register_attempt(
+            attempt: SynthesisAttempt,
+            *,
+            parent_id: int | None,
+        ) -> SearchNode:
+            node = tree.add_node(
+                parent_id=parent_id,
+                attempt_number=attempt.attempt_number,
+                strategy_code=attempt.strategy_code,
+                full_dafny_code=attempt.full_dafny_code,
+                timestamp=attempt.timestamp,
+                goodness=attempt.goodness,
+                met_threshold=attempt.met_threshold,
+                failed_at=attempt.failed_at,
+                error_summary=attempt.error_summary,
+                verification_result=attempt.verification_result,
+                compilation_result=attempt.compilation_result,
+                eval_result=attempt.eval_result,
+            )
+            attempt.node_id = node.node_id
+            attempt.parent_node_id = parent_id
+            return node
+
+        # Bootstrap root (attempt 1)
+        attempt_num = initial_attempt_offset + 1
+        print(f"\n{'='*60}")
+        print(f"Attempt {attempt_num}/{attempt_total} [bootstrap root]")
+        print(f"{'='*60}")
+        if helper_status:
+            print(f"Helper policy: {helper_status}")
+        print(f"Strategy: {root_strategy}")
+        root_attempt = self._run_attempt_pipeline(
+            strategy_code=root_strategy,
+            attempt_num=attempt_num,
+            node_id=tree._next_id,
+            parent_node_id=None,
+            allowed_helpers=allowed_helpers,
+            compiler=compiler,
+            output_name=output_name,
+        )
+        attempts.append(root_attempt)
+        _register_attempt(root_attempt, parent_id=None)
+        print(f"  Goodness: {root_attempt.goodness:.3f}")
+
+        # REx pulls for remaining budget
+        for iteration in range(1, self.max_iterations):
             attempt_num = initial_attempt_offset + iteration + 1
-            attempt_total = initial_attempt_offset + self.max_iterations
             allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
+            parent = rex.select_arm(tree.all_nodes())
             print(f"\n{'='*60}")
-            print(f"Attempt {attempt_num}/{attempt_total}")
+            print(
+                f"Attempt {attempt_num}/{attempt_total} "
+                f"[REx pull from node {parent.node_id}, goodness={parent.goodness:.3f}]"
+            )
             print(f"{'='*60}")
             if helper_status:
                 print(f"Helper policy: {helper_status}")
-            print(f"Strategy: {strategy_code}")
-
-            # Create full Dafny code
-            full_code = self.generator.inject_strategy(strategy_code)
-
-            # Create attempt record
-            attempt = SynthesisAttempt(
-                attempt_number=attempt_num,
-                strategy_code=strategy_code,
-                full_dafny_code=full_code,
-                timestamp=datetime.now().isoformat(),
-            )
-
-            disallowed_helpers = self._get_disallowed_helper_calls(strategy_code, allowed_helpers)
-            if disallowed_helpers:
-                print("  ✗ Strategy contract violation")
-                error_msg = (
-                    "Strategy contract violation.\n"
-                    f"Violations: {', '.join(disallowed_helpers)}"
-                )
-                attempt.failed_at = FailureStage.SEARCH_CONTRACT
-                attempt.error_summary = error_msg
-                attempts.append(attempt)
-
-                print("  Refining based on strategy contract violation...")
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                strategy_code = self._refine_with_beam(
-                    stage_label="search_contract",
-                    previous_strategy=strategy_code,
-                    allowed_helpers=next_allowed_helpers,
-                    refine_once=lambda: self.generator.refine_after_verification_error(
-                        strategy_code,
-                        error_msg,
-                        allowed_helpers=next_allowed_helpers,
-                    ),
-                )
-                continue
-
-            # Stage 1: Verification
-            print("\n[1/4] Verifying with Dafny...")
-            verification_result = self.verifier.verify(full_code)
-            attempt.verification_result = verification_result
-
-            if not verification_result.success:
-                print("  ✗ Verification failed")
-                print(f"  Error: {verification_result.get_error_summary()[:300]}")
-                attempt.failed_at = FailureStage.VERIFICATION
-                attempt.error_summary = verification_result.get_error_summary()
-                attempts.append(attempt)
-
-                # Check if we're stuck on the same error repeatedly
-                error_msg = verification_result.get_error_summary()
-                consecutive_same = 0
-                for prev in reversed(attempts[:-1]):
-                    if prev.failed_at == FailureStage.VERIFICATION and prev.error_summary == error_msg:
-                        consecutive_same += 1
-                    else:
-                        break
-
-                if consecutive_same >= 2:
-                    # After 3+ identical errors, abandon refinement and start fresh
-                    print(f"  Stuck on same error for {consecutive_same + 1} attempts — restarting with fresh generation...")
-                    next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                    if next_helper_status:
-                        print(f"  Helper policy: {next_helper_status}")
-                    strategy_code = self.generator.generate_initial(
-                        task_description,
-                        allowed_helpers=next_allowed_helpers,
-                    )
-                    last_restart_index = len(attempts)
-                    continue
-
-                # Also restart if the last 3 attempts since the most recent
-                # restart all failed verification, even when the specific
-                # errors differ. This catches cases where the model is
-                # rewriting the strategy every iteration and each broken
-                # version surfaces a fresh error.
-                post_restart_attempts = attempts[last_restart_index:]
-                consecutive_verif_failures = 0
-                for prev in reversed(post_restart_attempts):
-                    if prev.failed_at == FailureStage.VERIFICATION:
-                        consecutive_verif_failures += 1
-                    else:
-                        break
-
-                if consecutive_verif_failures >= 3:
-                    print(
-                        f"  {consecutive_verif_failures} consecutive verification failures "
-                        f"since last restart — restarting with fresh generation..."
-                    )
-                    next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                    if next_helper_status:
-                        print(f"  Helper policy: {next_helper_status}")
-                    strategy_code = self.generator.generate_initial(
-                        task_description,
-                        allowed_helpers=next_allowed_helpers,
-                    )
-                    last_restart_index = len(attempts)
-                    continue
-
-                # Refine based on verification error
-                print("  Refining based on verification error...")
-                structured_feedback = verification_result.get_structured_feedback()
-                error_history = self._get_verification_history_summary(attempts)
-                behavioral_context = self._get_recent_behavioral_context(attempts)
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                strategy_code = self._refine_with_beam(
-                    stage_label="verification",
-                    previous_strategy=strategy_code,
-                    allowed_helpers=next_allowed_helpers,
-                    refine_once=lambda: self.generator.refine_after_verification_error(
-                        strategy_code,
-                        error_msg,
-                        behavioral_context=behavioral_context,
-                        structured_feedback=structured_feedback,
-                        error_history=error_history,
-                        allowed_helpers=next_allowed_helpers,
-                    ),
-                )
-                continue
-
-            print("  ✓ Verification passed")
-
-            # Stage 2: Compilation
-            print("\n[2/4] Compiling to Python...")
-            compilation_result = compiler.compile(full_code, output_name)
-            attempt.compilation_result = compilation_result
-
-            if not compilation_result.success:
-                print("  ✗ Compilation failed")
-                attempt.failed_at = FailureStage.COMPILATION
-                attempt.error_summary = compilation_result.get_error_summary()
-                attempts.append(attempt)
-
-                # Refine based on compilation error
-                print("  Refining based on compilation error...")
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                strategy_code = self._refine_with_beam(
-                    stage_label="compilation",
-                    previous_strategy=strategy_code,
-                    allowed_helpers=next_allowed_helpers,
-                    refine_once=lambda: self.generator.refine_after_compilation_error(
-                        strategy_code,
-                        compilation_result.get_error_summary(),
-                        allowed_helpers=next_allowed_helpers,
-                    ),
-                )
-                continue
-
-            print(f"  ✓ Compiled to {compilation_result.output_dir}")
-
-            if compilation_result.main_module_path is None:
-                print("  ✗ No main module found")
-                attempt.failed_at = FailureStage.RUNTIME
-                attempt.error_summary = "No main module path in compilation result"
-                attempts.append(attempt)
-
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                strategy_code = self._refine_with_beam(
-                    stage_label="runtime",
-                    previous_strategy=strategy_code,
-                    allowed_helpers=next_allowed_helpers,
-                    refine_once=lambda: self.generator.refine_after_runtime_error(
-                        strategy_code,
-                        "Compilation succeeded but no Python module was generated",
-                        allowed_helpers=next_allowed_helpers,
-                    ),
-                )
-                continue
-
-            print("\n[3/4] Evaluating compiled strategy (runtime smoke test removed).")
-
-            # Stage 4: Evaluation
-            print("\n[4/4] Evaluating on dataset sample...")
-            # Unload generator model to free GPU memory for eval model
-            if self.generator._model is not None:
-                del self.generator._model
-                self.generator._model = None
-                import gc
-                gc.collect()
-                import torch
-                torch.cuda.empty_cache()
-                print("  Generator model (HF) unloaded to free GPU memory")
-            # Also unload vllm engine if present (vllm backend keeps workers in subprocesses)
-            if getattr(self.generator, '_vllm', None) is not None:
-                import gc
-                import torch
-                vllm_obj = self.generator._vllm
-                self.generator._vllm = None
-                try:
-                    vllm_obj._run_engine = None  # sever reference to engine
-                except Exception:
-                    pass
-                del vllm_obj
-                try:
-                    from vllm.distributed import destroy_model_parallel, destroy_distributed_environment
-                    destroy_model_parallel()
-                    destroy_distributed_environment()
-                except Exception:
-                    pass
-                gc.collect()
-                torch.cuda.empty_cache()
-                print("  Generator vllm engine unloaded to free GPU memory")
-
-            # Eval seed is fixed across iterations so per-iter deltas are
-            # statistically trustworthy and opus can anchor on best-so-far.
-            # Overfitting concern is handled by the final held-out eval.
-            print(f"  [synthesis] eval seed for this iteration: {self.evaluator.sample_seed}")
-            eval_result = self.evaluator.evaluate_sample(
-                compiled_module_path=compilation_result.main_module_path,
-                sample_size=self.eval_sample_size,
-                early_stop_min_accuracy=self.min_accuracy
-                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
-                else None,
-                early_stop_min_syntax_rate=self.min_syntax_rate
-                if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
-                else None,
-                early_stop_runtime_failures=(
-                    int(os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP_RUNTIME_FAILURES", "3"))
-                    if os.environ.get("CSD_SYNTHESIS_EVAL_EARLY_STOP", "1") != "0"
-                    else None
-                ),
-                min_examples_before_threshold_stop=self.min_examples_before_threshold_stop,
-            )
-            # Change 2: stamp the cross-attempt cluster ledger on the result
-            # so EvaluationResult.get_feedback_summary can emit persistent
-            # mode IDs (mode_A appeared in attempts 1,3,5…).
-            if not hasattr(self, "_failure_ledger"):
-                try:
-                    from synthesis.failure_taxonomy import make_persistent_ledger
-                except ImportError:
-                    from failure_taxonomy import make_persistent_ledger
-                self._failure_ledger = make_persistent_ledger()
-            eval_result._failure_ledger = self._failure_ledger
-            eval_result._attempt_index = attempt.attempt_number
-            attempt.eval_result = eval_result
-
-            smiles_trial = (eval_result.aux_metrics or {}).get("smiles_paper_trial", {})
-            if isinstance(smiles_trial, dict) and smiles_trial:
-                membership = smiles_trial.get("membership")
-                validity = smiles_trial.get("validity_rdkit")
-                samples_to_target = smiles_trial.get("samples_to_target_unique_valid")
-                unique_valid = smiles_trial.get("unique_valid_count")
-                sample_count = smiles_trial.get("sample_count")
-                print("  [smiles] paper-aligned metrics:")
-                if membership is not None:
-                    print(f"    Membership: {float(membership):.1%}")
-                if validity is not None:
-                    print(f"    RDKit Validity: {float(validity):.1%}")
-                print(
-                    "    Samples to 100 unique valid (cap 1000): "
-                    f"{samples_to_target}"
-                )
-                print(
-                    "    Unique valid molecules this eval: "
-                    f"{unique_valid}/{sample_count}"
-                )
-
-            if not eval_result.success:
-                print(f"  ✗ Evaluation failed: {eval_result.error}")
-                attempt.failed_at = FailureStage.EVALUATION
-                attempt.error_summary = eval_result.error or "Evaluation failed"
-                attempts.append(attempt)
-
-                self._unload_evaluator_runtime_before_refinement()
-                print("  Refining based on evaluation error...")
-                evaluation_feedback = (
-                    eval_result.get_feedback_summary(self.require_delimiters)
-                    + _final_span_failure_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + _unit_rewind_hint(
-                        strategy_code, eval_result.sample_outputs
-                    )
-                )
-                mode_examples = eval_result._render_mode_examples()
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
-                self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
-                    print(
-                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
-                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
-                    )
-                best_strategy_code, best_acc_val, best_syn_val = (
-                    self._lookup_best_so_far(attempts, anchor_n, attempt, strategy_code, eval_result)
-                )
-                attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, anchor_n)
-                prev_acc = eval_result.accuracy or 0.0
-                prev_syn = eval_result.syntax_rate or 0.0
-                prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_error_restart",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_error",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
-                            previous_strategy=strategy_code,
-                            previous_accuracy=prev_acc,
-                            previous_syntax_rate=prev_syn,
-                            num_examples=prev_n,
-                            goal_accuracy=self.min_accuracy,
-                            goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=evaluation_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
-                            allowed_helpers=next_allowed_helpers,
-                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
-                            mode_examples=mode_examples,
-                            attempt_outcome_ledger=attempt_outcome_ledger,
-                        ),
-                    )
-                continue
-
-            # Check if evaluation meets thresholds
-            if not eval_result.meets_threshold(
-                min_accuracy=self.min_accuracy,
-                min_syntax_rate=self.min_syntax_rate,
-                require_delimiters=self.require_delimiters,
-                max_seconds_per_example=self.eval_max_seconds_per_example,
-            ):
-                print(f"  ✗ Evaluation below threshold:")
-                print(f"    Accuracy: {eval_result.accuracy:.1%} (min: {self.min_accuracy:.1%})")
-                if self.require_delimiters:
-                    print(
-                        "    Contains << >>: "
-                        f"{'yes' if eval_result.contains_delimiters else 'no'} "
-                        f"(required: {'yes' if self.require_delimiters else 'no'})"
-                    )
-                _delim_hint = _delimiter_miss_hint(
-                    self.require_delimiters, eval_result.contains_delimiters,
-                    eval_result.sample_outputs
-                )
-                if _delim_hint:
-                    print(_delim_hint.rstrip("\n"))
-                _close_hint = _span_not_closed_hint(
-                    self.require_delimiters, eval_result.sample_outputs
-                )
-                if _close_hint:
-                    print(_close_hint.rstrip("\n"))
-                _bypass_hint = _constraint_bypassed_hint(
-                    self.require_delimiters, eval_result.contains_delimiters,
-                    eval_result.sample_outputs
-                )
-                if _bypass_hint:
-                    print(_bypass_hint.rstrip("\n"))
-                print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
-                if self.eval_max_seconds_per_example is not None:
-                    print(
-                        f"    Slowest Example Time: {eval_result.max_sample_time_seconds:.2f}s "
-                        f"(max: {self.eval_max_seconds_per_example:.2f}s)"
-                    )
-                attempt.failed_at = FailureStage.EVALUATION
-                attempt.error_summary = eval_result.get_feedback_summary(self.require_delimiters)
-                attempts.append(attempt)
-
-                self._unload_evaluator_runtime_before_refinement()
-                print("  Refining based on evaluation results...")
-                threshold_feedback = (
-                    "Required thresholds:\n"
-                    f"  Accuracy: {self.min_accuracy:.1%}\n"
-                    f"  Syntax Rate: {self.min_syntax_rate:.1%}\n\n"
-                    + ("  Contains << >>: required\n" if self.require_delimiters else "")
-                    + (
-                        f"  Max Runtime / Example: {self.eval_max_seconds_per_example:.2f}s\n"
-                        if self.eval_max_seconds_per_example is not None
-                        else ""
-                    )
-                    + _delimiter_miss_hint(
-                        self.require_delimiters, eval_result.contains_delimiters,
-                        eval_result.sample_outputs
-                    )
-                    + _span_not_closed_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + _constraint_bypassed_hint(
-                        self.require_delimiters, eval_result.contains_delimiters,
-                        eval_result.sample_outputs
-                    )
-                    + _final_span_failure_hint(
-                        self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + _unit_rewind_hint(
-                        strategy_code, eval_result.sample_outputs
-                    )
-                    + "\n"
-                    + eval_result.get_feedback_summary(self.require_delimiters)
-                )
-                threshold_mode_examples = eval_result._render_mode_examples()
-                next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
-                if next_helper_status:
-                    print(f"  Helper policy: {next_helper_status}")
-                anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
-                self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
-                    print(
-                        f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
-                        f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
-                    )
-                best_strategy_code, best_acc_val, best_syn_val = (
-                    self._lookup_best_so_far(attempts, anchor_n, attempt, strategy_code, eval_result)
-                )
-                attempt_outcome_ledger = self._build_attempt_outcome_ledger(attempts, anchor_n)
-                prev_acc = eval_result.accuracy or 0.0
-                prev_syn = eval_result.syntax_rate or 0.0
-                prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold_restart",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
-                            previous_strategy=strategy_code,
-                            previous_accuracy=prev_acc,
-                            previous_syntax_rate=prev_syn,
-                            num_examples=prev_n,
-                            goal_accuracy=self.min_accuracy,
-                            goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=threshold_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
-                            allowed_helpers=next_allowed_helpers,
-                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
-                            mode_examples=threshold_mode_examples,
-                            attempt_outcome_ledger=attempt_outcome_ledger,
-                        ),
-                    )
-                continue
-
-            print(f"  ✓ Evaluation passed:")
-            print(f"    Accuracy: {eval_result.accuracy:.1%}")
-            print(f"    Contains << >>: {'yes' if eval_result.contains_delimiters else 'no'}")
-            print(f"    Syntax: {eval_result.syntax_rate:.1%}")
-
-            # Success!
-            attempts.append(attempt)
-            total_time = (time.time() - start_time) * 1000
-
-            print(f"\n{'='*60}")
-            print(f"SUCCESS after {attempt_num} attempt(s)")
-            print(f"Total time: {total_time:.1f}ms")
-            print(f"{'='*60}")
-
-            # Save successful strategy
-            self._save_success_report(
-                strategy_code,
-                full_code,
-                compilation_result,
+            child_strategy = self._produce_child_code(
+                parent,
                 attempts,
                 task_description,
-                output_name,
-                run_dir,
-                run_dafny_dir,
-                run_results_dir,
-                eval_result,
+                allowed_helpers,
             )
-
-            return SynthesisResult(
-                success=True,
-                strategy_code=strategy_code,
-                full_dafny_code=full_code,
-                compiled_module_path=compilation_result.main_module_path,
-                output_dir=compilation_result.output_dir,
-                run_dir=run_dir,
-                attempts=attempts,
-                total_time_ms=total_time,
+            print(f"Strategy: {child_strategy[:120]}{'...' if len(child_strategy) > 120 else ''}")
+            child_attempt = self._run_attempt_pipeline(
+                strategy_code=child_strategy,
+                attempt_num=attempt_num,
+                node_id=tree._next_id,
+                parent_node_id=parent.node_id,
+                allowed_helpers=allowed_helpers,
+                compiler=compiler,
+                output_name=output_name,
             )
+            attempts.append(child_attempt)
+            _register_attempt(child_attempt, parent_id=parent.node_id)
+            rex.record_pull(parent, child_attempt.met_threshold)
+            print(f"  Goodness: {child_attempt.goodness:.3f}")
 
-        # All attempts exhausted
         total_time = (time.time() - start_time) * 1000
+        best_node = tree.best_by_goodness()
+        best_attempt = next(
+            a for a in attempts if a.node_id == best_node.node_id
+        )
+        met_threshold = best_attempt.met_threshold
+        success = met_threshold
 
         print(f"\n{'='*60}")
-        print(f"FAILED after {self.max_iterations} attempts")
+        print(
+            f"REx search complete after {len(attempts)} attempt(s); "
+            f"best node {best_node.node_id} goodness={best_node.goodness:.3f}"
+        )
         print(f"Total time: {total_time:.1f}ms")
         print(f"{'='*60}")
 
-        # Save failure report
-        report_path = None
-        if self.save_reports:
-            report_path = self._save_failure_report(
-                attempts,
-                task_description,
-                output_name,
-                run_dir,
-                run_results_dir,
-            )
+        compiled_module_path = None
+        compilation_result = best_attempt.compilation_result
+        if (
+            compilation_result is not None
+            and compilation_result.success
+            and compilation_result.main_module_path is not None
+        ):
+            compiled_module_path = compilation_result.main_module_path
+        elif best_attempt.verification_result is not None and best_attempt.verification_result.success:
+            recompile = compiler.compile(best_attempt.full_dafny_code, output_name)
+            if recompile.success and recompile.main_module_path is not None:
+                compilation_result = recompile
+                compiled_module_path = recompile.main_module_path
+                best_attempt.compilation_result = recompile
 
-        # Best-accuracy fallback: if any attempt's accuracy beat min_accuracy
-        # (even if syntax fell short of min_syntax_rate), save a side-channel
-        # `fallback_winner.json` so this cell can be harvested as an accuracy-only
-        # win in post-hoc analysis. Does NOT change exception semantics — the
-        # subprocess still exits non-zero so existing flows aren't affected.
-        fallback_winner = None
-        for att in attempts:
-            if (
-                att.eval_result is not None
-                and not att.eval_result.early_stopped
-                and att.eval_result.accuracy >= self.min_accuracy
-                and (
-                    fallback_winner is None
-                    or att.eval_result.accuracy > fallback_winner.eval_result.accuracy
-                )
-            ):
-                fallback_winner = att
-
-        if fallback_winner is not None:
-            fb_path = run_results_dir / "fallback_winner.json"
-            try:
-                with open(fb_path, "w") as f:
-                    json.dump(
-                        {
-                            "fallback_reason": "accuracy_met_but_syntax_below_threshold",
-                            "min_accuracy": self.min_accuracy,
-                            "min_syntax_rate": self.min_syntax_rate,
-                            "winner_attempt_number": fallback_winner.attempt_number,
-                            "winner_accuracy": fallback_winner.eval_result.accuracy,
-                            "winner_syntax_rate": fallback_winner.eval_result.syntax_rate,
-                            "winner_strategy_code": fallback_winner.strategy_code,
-                            "winner_full_dafny_code": fallback_winner.full_dafny_code,
-                            "evaluation": fallback_winner.eval_result.to_dict(),
-                        },
-                        f,
-                        indent=2,
-                    )
-                print(
-                    f"[FALLBACK] accuracy-only winner: attempt "
-                    f"{fallback_winner.attempt_number}, "
-                    f"acc={fallback_winner.eval_result.accuracy:.1%} "
-                    f"(syntax {fallback_winner.eval_result.syntax_rate:.1%} below "
-                    f"required {self.min_syntax_rate:.1%}). Saved to {fb_path}."
-                )
-            except Exception as fb_err:
-                print(f"[FALLBACK] Failed to write fallback_winner.json: {fb_err}")
-        else:
-            print(
-                "[FALLBACK] No accuracy-only candidate found either "
-                "(no attempt met the min_accuracy threshold); no fallback saved."
-            )
-
-        error = SynthesisExhaustionError(
-            f"Synthesis failed after {self.max_iterations} attempts", attempts, report_path
+        output_dir = (
+            compilation_result.output_dir
+            if compilation_result is not None and compilation_result.success
+            else run_python_dir
         )
 
-        print(error.get_failure_summary())
-        raise error
+        search_tree_export = tree.export()
+        if self.save_reports:
+            if success and best_attempt.eval_result is not None and compilation_result is not None:
+                self._save_success_report(
+                    best_attempt.strategy_code,
+                    best_attempt.full_dafny_code,
+                    compilation_result,
+                    attempts,
+                    task_description,
+                    output_name,
+                    run_dir,
+                    run_dafny_dir,
+                    run_results_dir,
+                    best_attempt.eval_result,
+                    search_tree=search_tree_export,
+                    best_node_id=best_node.node_id,
+                    best_goodness=best_node.goodness,
+                )
+            else:
+                self._save_best_effort_report(
+                    best_attempt=best_attempt,
+                    attempts=attempts,
+                    task_description=task_description,
+                    output_name=output_name,
+                    run_dir=run_dir,
+                    run_dafny_dir=run_dafny_dir,
+                    run_results_dir=run_results_dir,
+                    search_tree=search_tree_export,
+                    best_node_id=best_node.node_id,
+                    best_goodness=best_node.goodness,
+                    met_threshold=met_threshold,
+                )
+                self._write_fallback_winner(attempts, run_results_dir)
+
+        return SynthesisResult(
+            success=success,
+            strategy_code=best_attempt.strategy_code,
+            full_dafny_code=best_attempt.full_dafny_code,
+            compiled_module_path=compiled_module_path,
+            output_dir=output_dir,
+            run_dir=run_dir,
+            attempts=attempts,
+            total_time_ms=total_time,
+            best_node_id=best_node.node_id,
+            best_goodness=best_node.goodness,
+            met_threshold=met_threshold,
+            search_tree=search_tree_export,
+        )
 
     def _save_failure_report(
         self,
@@ -2323,6 +2304,10 @@ class SynthesisPipeline:
         output_name: str,
         run_dir: Path,
         results_dir: Path,
+        *,
+        search_tree: list[dict] | None = None,
+        best_node_id: int | None = None,
+        best_goodness: float | None = None,
     ) -> Path:
         """Save a detailed failure report to disk."""
         report_path = results_dir / "failure_report.json"
@@ -2334,6 +2319,9 @@ class SynthesisPipeline:
             "timestamp": datetime.now().isoformat(),
             "attempts": [attempt.to_dict() for attempt in attempts],
             "failure_patterns": self._analyze_failure_patterns(attempts),
+            "search_tree": search_tree,
+            "best_node_id": best_node_id,
+            "best_goodness": best_goodness,
         }
 
         with open(report_path, "w") as f:
@@ -2353,6 +2341,66 @@ class SynthesisPipeline:
 
         return report_path
 
+    def _save_best_effort_report(
+        self,
+        *,
+        best_attempt: SynthesisAttempt,
+        attempts: list[SynthesisAttempt],
+        task_description: str,
+        output_name: str,
+        run_dir: Path,
+        run_dafny_dir: Path,
+        run_results_dir: Path,
+        search_tree: list[dict],
+        best_node_id: int,
+        best_goodness: float,
+        met_threshold: bool,
+    ) -> None:
+        """Persist the argmax-goodness node when thresholds were not met."""
+        dafny_path = run_dafny_dir / f"{output_name}.dfy"
+        with open(dafny_path, "w") as f:
+            f.write(best_attempt.full_dafny_code)
+        canonical_dafny_path = run_dafny_dir / "GeneratedCSD.dfy"
+        with open(canonical_dafny_path, "w") as f:
+            f.write(best_attempt.full_dafny_code)
+
+        report_path = run_results_dir / "best_effort_report.json"
+        report = {
+            "run_configuration": self._run_configuration_metadata(
+                task_description=task_description,
+                output_name=output_name,
+            ),
+            "strategy_code": best_attempt.strategy_code,
+            "dafny_file": str(dafny_path),
+            "dafny_file_canonical": str(canonical_dafny_path),
+            "total_attempts": len(attempts),
+            "timestamp": datetime.now().isoformat(),
+            "best_node_id": best_node_id,
+            "best_goodness": best_goodness,
+            "met_threshold": met_threshold,
+            "search_tree": search_tree,
+            "evaluation": (
+                best_attempt.eval_result.to_dict()
+                if best_attempt.eval_result is not None
+                else None
+            ),
+        }
+        with open(report_path, "w") as f:
+            json.dump(report, f, indent=2)
+
+        self._save_failure_report(
+            attempts,
+            task_description,
+            output_name,
+            run_dir,
+            run_results_dir,
+            search_tree=search_tree,
+            best_node_id=best_node_id,
+            best_goodness=best_goodness,
+        )
+        print(f"Best-effort strategy saved to: {dafny_path}")
+        print(f"Best-effort report saved to: {report_path}")
+
     def _save_success_report(
         self,
         strategy_code: str,
@@ -2365,6 +2413,10 @@ class SynthesisPipeline:
         dafny_dir: Path,
         results_dir: Path,
         evaluation_result: EvaluationResult,
+        *,
+        search_tree: list[dict] | None = None,
+        best_node_id: int | None = None,
+        best_goodness: float | None = None,
     ) -> None:
         """Save a success report and the final strategy."""
         # Save the Dafny source
@@ -2398,6 +2450,9 @@ class SynthesisPipeline:
             "timestamp": datetime.now().isoformat(),
             "evaluation_result": evaluation_result.to_dict(),
             "sample_outputs": evaluation_result.sample_outputs,
+            "search_tree": search_tree,
+            "best_node_id": best_node_id,
+            "best_goodness": best_goodness,
         }
 
         with open(report_path, "w") as f:

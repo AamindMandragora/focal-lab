@@ -32,13 +32,24 @@ DEFAULT_GSM_SPLIT_FILE = (
 DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
 DEFAULT_MODELS = (
-    "Qwen/Qwen2.5-1.5B-Instruct,"
-    "Qwen/Qwen2.5-Coder-7B-Instruct,"
-    "Qwen/Qwen2.5-Coder-14B-Instruct,"
+    "Qwen/Qwen3.5-2B,"
+    "Qwen/Qwen3.5-4B,"
+    "Qwen/Qwen3.5-9B,"
     "meta-llama/Llama-3.1-8B-Instruct"
 )
-DEFAULT_BENCHMARKS = "gsm,spider"
-DEFAULT_STRATEGIES = "unconstrained,gcd,crane,itergen,metadecode,cars"
+DEFAULT_BENCHMARKS = "gsm,spider,smiles"
+DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
+DEFAULT_CARS_SEARCH_STEPS = "200"
+DEFAULT_SMILES_SAMPLES_PER_CLASS = "100"
+DEFAULT_BASELINE_STRATEGIES = (
+    "unconstrained",
+    "gcd",
+    "crane",
+    "itergen",
+    "rs",
+    "cars",
+)
+DEFAULT_STRATEGIES = ",".join(DEFAULT_BASELINE_STRATEGIES)
 DEFAULT_TOKEN_BUDGETS = "1,2,4"
 DEFAULT_SYNTH_ITERS = "3,5,10,30,40"
 DEFAULT_MAIN_SYNTH_ITERS = "40"
@@ -48,8 +59,8 @@ DEFAULT_GSM_MAX_STEPS = "900"
 DEFAULT_GPU3_RETRY_QUEUE = ROOT_DIR / "outputs" / "gpu3_retry_queue.jsonl"
 VALID_ABLATION_SECTIONS = ("A", "B", "C", "D", "E")
 DEFAULT_ABLATION_SECTIONS = ",".join(VALID_ABLATION_SECTIONS)
-DEFAULT_SMILES_CLASSES = "acrylates,chain_extenders,isocyanates"
-CSD_TARGET_STRATEGIES = ("crane", "itergen")
+BASELINE_TARGET_STRATEGIES = DEFAULT_BASELINE_STRATEGIES
+ABLATION_FIXED_STRATEGIES = ("gcd", "crane", "itergen", "rs", "cars")
 OOM_RE = re.compile(
     r"out of memory|OutOfMemoryError|CUDA out of memory|"
     r"CUDA error: out of memory|torch\.cuda\.OutOfMemoryError|"
@@ -195,6 +206,9 @@ class Config:
     eval_max_steps: str
     eval_max_steps_gsm: str
     eval_max_steps_smiles: str
+    rs_search_steps: str
+    cars_search_steps: str
+    smiles_samples_per_class: str
     eval_max_seconds_per_example: str
     eval_min_examples_before_threshold_stop: str
     accuracy_win_margin: float
@@ -231,7 +245,7 @@ class Config:
 class Runner:
     config: Config
     env: dict[str, str]
-    prepared_baselines: set[tuple[str, str, str, str, str]] = field(default_factory=set)
+    prepared_baselines: set[tuple[str, ...]] = field(default_factory=set)
     last_failure_was_author_access: bool = False
 
     def configure_cuda_devices(self) -> bool:
@@ -367,6 +381,8 @@ class Runner:
     def evaluation_sample_size(self, benchmark: str) -> str:
         if benchmark == "gsm_symbolic":
             return self.config.gsm_eval_sample_size
+        if benchmark == "smiles":
+            return self.config.smiles_samples_per_class
         return self.config.eval_sample_size
 
     def ensure_split_manifests(self) -> None:
@@ -761,8 +777,13 @@ class Runner:
         benchmark_key: str,
         token_budget: str,
         max_steps: str,
-    ) -> tuple[str, str, str, str, str]:
-        return strategy, model_slug, benchmark_key, token_budget, max_steps
+    ) -> tuple[str, ...]:
+        key: tuple[str, ...] = (strategy, model_slug, benchmark_key, token_budget, max_steps)
+        if strategy == "rs":
+            return key + (self.config.rs_search_steps,)
+        if strategy == "cars" and benchmark_key.startswith("smiles__class_"):
+            return key + (self.config.cars_search_steps,)
+        return key
 
     def baseline_json_complete(self, path: Path) -> bool:
         try:
@@ -827,7 +848,7 @@ class Runner:
     ) -> tuple[float, str, str, str, float, str, str, str]:
         best_accuracy: tuple[float, str, str, str] | None = None
         best_syntax: tuple[float, str, str, str] | None = None
-        for strategy in CSD_TARGET_STRATEGIES:
+        for strategy in BASELINE_TARGET_STRATEGIES:
             path = self.fixed_baseline_path(
                 strategy, eval_model, benchmark, token_budget, max_steps, smiles_class
             )
@@ -886,7 +907,7 @@ class Runner:
         max_steps: str,
         smiles_class: str = "",
     ) -> None:
-        for strategy in CSD_TARGET_STRATEGIES:
+        for strategy in BASELINE_TARGET_STRATEGIES:
             ok = self.run_fixed_strategy_case(
                 strategy,
                 benchmark,
@@ -969,13 +990,17 @@ class Runner:
         if self.config.dafny_path:
             cmd += ["--dafny-path", self.config.dafny_path]
         self.add_evaluation_split_flags(cmd, benchmark)
-        if benchmark == "smiles":
+        if benchmark == "smiles" and smiles_class:
             cmd += [
                 "--smiles-classes",
                 smiles_class,
                 "--smiles-samples-per-class",
-                self.evaluation_sample_size(benchmark),
+                self.config.smiles_samples_per_class,
             ]
+        if strategy == "rs":
+            cmd += ["--rs-search-steps", self.config.rs_search_steps]
+        if strategy == "cars":
+            cmd += ["--cars-search-steps", self.config.cars_search_steps]
 
         if self.run_cmd(cmd):
             self.prepared_baselines.add(case_key)
@@ -1359,8 +1384,13 @@ class Runner:
         print(
             "split policy: "
             f"GSM generation={self.config.gsm_generation_sample_size}/eval={self.config.gsm_eval_sample_size}; "
+            f"SMILES per-class={self.config.smiles_samples_per_class}; "
             f"other generation={self.config.generation_sample_size}/eval={self.config.eval_sample_size}"
-            )
+        )
+        print(
+            f"CARS search steps: {self.config.cars_search_steps}; "
+            f"RS search steps: {self.config.rs_search_steps}"
+        )
         print(f"accuracy win margin (metadecode): +{self.config.accuracy_win_margin:.1%}")
         print(f"main synthesis iterations (metadecode): {self.config.main_synthesis_iterations}")
         if self.config.gpu3_retry_enabled:
@@ -1552,7 +1582,7 @@ class Runner:
             return
         print("")
         print("=== Phase 2: Ablation studies ===")
-        ablation_model = "Qwen/Qwen2.5-Coder-7B-Instruct"
+        ablation_model = "Qwen/Qwen3.5-9B"
         sections = self.config.ablation_sections
 
         if "A" in sections:
@@ -1560,7 +1590,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for step_budget in self.config.step_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
+                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1616,7 +1646,7 @@ class Runner:
             for raw_benchmark in self.config.benchmarks:
                 benchmark = normalize_benchmark(raw_benchmark)
                 for token_budget in self.config.token_budgets:
-                    for strategy in ("gcd", "crane", "itergen", "metadecode"):
+                    for strategy in (*ABLATION_FIXED_STRATEGIES, "metadecode"):
                         if strategy == "metadecode":
                             self.run_metadecode_cases(
                                 benchmark,
@@ -1707,6 +1737,21 @@ def make_parser() -> argparse.ArgumentParser:
         "--eval-max-steps-smiles",
         default="400",
         help="Per-benchmark override for --eval-max-steps used on SMILES classes.",
+    )
+    parser.add_argument(
+        "--rs-search-steps",
+        default="200",
+        help="Max RS decode attempts per baseline example (default: 200).",
+    )
+    parser.add_argument(
+        "--cars-search-steps",
+        default=DEFAULT_CARS_SEARCH_STEPS,
+        help="Max CARS rejection attempts per SMILES class session (default: 200).",
+    )
+    parser.add_argument(
+        "--smiles-samples-per-class",
+        default=DEFAULT_SMILES_SAMPLES_PER_CLASS,
+        help="Attempt budget per SMILES class for fixed-strategy baselines (default: 100).",
     )
     parser.add_argument(
         "--eval-max-seconds-per-example",
@@ -1906,6 +1951,9 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         eval_max_steps=str(args.eval_max_steps),
         eval_max_steps_gsm=str(args.eval_max_steps_gsm),
         eval_max_steps_smiles=str(args.eval_max_steps_smiles),
+        rs_search_steps=str(args.rs_search_steps),
+        cars_search_steps=str(args.cars_search_steps),
+        smiles_samples_per_class=str(args.smiles_samples_per_class),
         eval_max_seconds_per_example=str(args.eval_max_seconds_per_example),
         eval_min_examples_before_threshold_stop=str(args.eval_min_examples_before_threshold_stop),
         accuracy_win_margin=float(args.accuracy_win_margin),

@@ -519,6 +519,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--rex-temperature",
+        type=float,
+        default=2.0,
+        help="REx exploration temperature C for outer search-tree arm selection (default: 2.0)"
+    )
+
+    parser.add_argument(
         "--local-neighborhood-refinement",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -763,6 +770,7 @@ Examples:
         local_neighborhood_refinement=args.local_neighborhood_refinement,
         max_local_edit_ratio=args.max_local_edit_ratio,
         beam_verify_candidates=args.beam_verify_candidates,
+        rex_temperature=args.rex_temperature,
     )
 
     initial_strategy_code = None
@@ -788,9 +796,11 @@ Examples:
         if getattr(result, "run_dir", None):
             print(f"Run directory: {result.run_dir}")
         print(f"Total attempts: {len(result.attempts)}")
+        print(f"Best node: {result.best_node_id} (goodness={result.best_goodness:.3f})")
+        print(f"Met threshold: {result.met_threshold}")
         print(f"Total time: {result.total_time_ms:.1f}ms")
 
-        sys.exit(0)
+        sys.exit(0 if result.success else 1)
 
     except SynthesisExhaustionError as e:
         print("\n" + "=" * 60)
