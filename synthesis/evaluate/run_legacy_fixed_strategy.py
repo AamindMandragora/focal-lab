@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import sys
 import tempfile
 import time
@@ -890,6 +891,49 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
     return str(generated)
 
 
+# Robustness guard, not an evaluation change: greedy (do_sample=False) IterGen can enter a
+# non-terminating regeneration loop on a degenerate example (e.g. an unbounded ``.``-repeated
+# SMILES) and never return from ``forward()``. A per-example wall-clock cap treats such a stuck
+# example as a non-answer (empty completion -> scored incorrect + syntax-invalid), which is exactly
+# how a fair harness handles a baseline that cannot produce an answer in bounded time. It does NOT
+# touch the grammar, grader, or scorer, and applies symmetrically to every method/example.
+# Override with CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS. Default 300s: a legitimate capped decode
+# (max_new_tokens 256 for SMILES) finishes in well under a minute on a 9B, so 300s only ever fires
+# on the pathological non-terminating case.
+_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS = float(
+    os.environ.get("CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS", "300")
+)
+
+
+class _ItergenPerExampleTimeout(Exception):
+    """Raised when a single IterGen ``forward()`` exceeds the per-example wall-clock cap."""
+
+
+def _itergen_generate_with_timeout(
+    iter_gen: Any, prompt: Any, cap_seconds: float
+) -> tuple[str, bool]:
+    """Run ``_itergen_generate`` under a SIGALRM wall-clock cap.
+
+    Returns ``(completion, timed_out)``. On timeout returns ``("", True)`` so the caller scores the
+    example as a non-answer. A cap of <= 0 disables the guard (unbounded, legacy behaviour).
+    """
+    if cap_seconds <= 0:
+        return _itergen_generate(iter_gen, prompt), False
+
+    def _handler(signum: int, frame: Any) -> None:
+        raise _ItergenPerExampleTimeout()
+
+    old_handler = signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, cap_seconds)
+    try:
+        return _itergen_generate(iter_gen, prompt), False
+    except _ItergenPerExampleTimeout:
+        return "", True
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+
 def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
     prev_recursion = sys.getrecursionlimit()
     sys.setrecursionlimit(max(prev_recursion, 100_000))
@@ -1008,7 +1052,15 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             prompt = prompt.rstrip() + "<<"
 
         gen_started = time.perf_counter()
-        raw_completion = _itergen_generate(iter_gen, prompt)
+        raw_completion, _timed_out = _itergen_generate_with_timeout(
+            iter_gen, prompt, _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS
+        )
+        if _timed_out:
+            print(
+                f"[itergen] per-example wall-clock timeout after "
+                f"{_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS:g}s on {dataset} example "
+                f"{example.get('class_name', example.get('id', '?'))} -- scoring as non-answer"
+            )
         if dataset == "gsm_symbolic":
             raw_completion = _gsm_symbolic_completion_to_delimited(
                 raw_completion, example, eval_runtime, logic

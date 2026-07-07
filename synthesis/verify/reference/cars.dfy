@@ -16,6 +16,13 @@ include "../library/VerifiedAgentSynthesis.dfy"
 //       penalised and generation is hard-masked (SafePenalizedConstrainedStep),
 //       modelling CARS revisited trie nodes where log_theta carries both
 //       the grammar bitmask and accumulated failure penalties.
+//   5.  Termination — the span closes only when the MODEL signals a stop
+//       (samples eos or ">>") over a complete molecule; eos over an
+//       incomplete molecule is a rejected sample. CARS never force-stops a
+//       molecule: sample length is the model's choice, and completion is
+//       checked at the model's own eos. (An earlier version of this file
+//       closed the span at the first complete prefix, which collapsed every
+//       answer to the shortest valid molecule — 35/50 answers were "<<C>>".)
 module ReferenceCarsCSD {
   import opened VerifiedDecoderAgent
 
@@ -62,6 +69,13 @@ module ReferenceCarsCSD {
 
     var rejectedTokens: seq<Token> := [];
     var spanEntryLen := if inside then |g| - |cur| else 0;
+    // Set when the model has signalled a stop (eos or ">>") over a complete
+    // molecule; the span is closed at the top of the next iteration so each
+    // iteration still costs exactly one step.
+    var closeRequested := false;
+    // eos ends the whole sample (CARS: accepted sample -> done); ">>" only
+    // closes the span and generation continues unconstrained.
+    var stopAfterClose := false;
 
     if maxSteps == 0 {
       generated := g;
@@ -81,10 +95,16 @@ module ReferenceCarsCSD {
       invariant 0 <= helpers.cost <= maxSteps
       invariant inside ==> 0 <= spanEntryLen <= |g|
       invariant inside ==> spanEntryLen <= |generatedPrefix| + helpers.cost
+      invariant closeRequested ==> inside && parser.IsCompletePrefix(cur)
       decreases maxSteps - helpers.cost
     {
-      if inside && parser.IsCompletePrefix(cur) {
+      if inside && closeRequested {
+        // The model signalled a stop over a complete molecule last step.
         g, inside, cur := helpers.CloseConstrainedSpan(lm, parser, g, cur);
+        closeRequested := false;
+        if stopAfterClose {
+          break;
+        }
       } else if !inside {
         var next := helpers.UnconstrainedStep(lm, prompt, g);
         g := g + [next];
@@ -119,10 +139,22 @@ module ReferenceCarsCSD {
           lm, parser, prompt, cur, 0.0, eosToken
         );
         if next == eosToken {
-          break;
-        }
-        if isValid {
+          // The model wants to stop. CARS accepts the sample iff the
+          // accumulated molecule parses completely; otherwise the sample is
+          // rejected and eos is penalised at this node.
+          if parser.IsCompletePrefix(cur) {
+            closeRequested := true;
+            stopAfterClose := true;
+          } else {
+            rejectedTokens := rejectedTokens + [next];
+            g := g[..spanEntryLen];
+            cur := [];
+          }
+        } else if isValid {
           g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
+        } else if next == ">>" && parser.IsCompletePrefix(cur) {
+          // The model closed the span itself over a complete molecule.
+          closeRequested := true;
         } else {
           // ---- rejection (trie learning) ------------------------------------
           // CARS sets log_theta[failing_token] = -inf at the current trie node
@@ -144,9 +176,19 @@ module ReferenceCarsCSD {
           lm, parser, prompt, cur, rejectedTokens, 100000000.0, eosToken
         );
         if next == eosToken {
-          break;
+          // Same stop rule as exploration: accept only a complete molecule,
+          // otherwise reject the sample and penalise eos.
+          if parser.IsCompletePrefix(cur) {
+            closeRequested := true;
+            stopAfterClose := true;
+          } else {
+            rejectedTokens := rejectedTokens + [next];
+            g := g[..spanEntryLen];
+            cur := [];
+          }
+        } else {
+          g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
         }
-        g, inside, cur := helpers.AppendConstrainedToken(lm, parser, g, cur, next);
       }
     }
 

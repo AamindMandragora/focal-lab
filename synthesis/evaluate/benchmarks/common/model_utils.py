@@ -165,6 +165,122 @@ def _first_ungrounded_token_idx(token_strs: list, support: set) -> tuple:
     return (True, max(len(token_strs) - 1, 0))
 
 
+_PROMPT_MOLECULE_LABEL_RE = re.compile(r"^\s*Molecule:\s*(.*?)\s*$", re.IGNORECASE)
+
+
+def _normalize_prompt_visible_span(text: str) -> str:
+    """Normalize one prompt-visible candidate span for exact duplicate checks.
+
+    This is intentionally conservative. SMILES candidates should be single
+    whitespace-free spans; broad substring search would create false positives
+    such as treating `CC` as already present when only `CCO` appears.
+    """
+    text = (text or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"^\s*Molecule:\s*", "", text, flags=re.IGNORECASE).strip()
+    if text.startswith("<<") and text.endswith(">>"):
+        text = text[2:-2].strip()
+    text = text.strip("`'\"")
+    if not text or text.lower() == "molecule:":
+        return ""
+    if "\n" in text or re.search(r"\s", text):
+        return ""
+    return text
+
+
+def _prompt_visible_span_set(prompt_text: str) -> set[str]:
+    """Candidate spans visible in the prompt, parsed without gold/scorer state.
+
+    Supports both ordinary SMILES examples (`Molecule: CCO`) and the rolling
+    suffix shape used by the evaluator (`CCO` on the line before `Molecule:`).
+    The returned set is exact-match only after normalization.
+    """
+    spans: set[str] = set()
+    lines = (prompt_text or "").splitlines()
+    for i, line in enumerate(lines):
+        match = _PROMPT_MOLECULE_LABEL_RE.match(line)
+        if not match:
+            continue
+        inline = _normalize_prompt_visible_span(match.group(1))
+        if inline:
+            spans.add(inline)
+            continue
+        if i > 0:
+            previous = _normalize_prompt_visible_span(lines[i - 1])
+            if previous:
+                spans.add(previous)
+    return spans
+
+
+def _candidate_smiles(text: str) -> str:
+    """Extract a bare SMILES candidate from rendered span text.
+
+    Local normalization only: strips a leading `Molecule:` label, `<< >>` span
+    delimiters, surrounding quotes/backticks, and whitespace, then keeps the first
+    whitespace-free token. Never calls the SMILES scorer or its class functions.
+    """
+    s = (text or "").strip()
+    if not s:
+        return ""
+    s = re.sub(r"^\s*Molecule:\s*", "", s, flags=re.IGNORECASE).strip()
+    if s.startswith("<<") and s.endswith(">>"):
+        s = s[2:-2].strip()
+    s = s.strip("`'\"").strip()
+    parts = s.split()
+    return parts[0] if parts else ""
+
+
+def _morgan_fp(smiles: str):
+    """Morgan (ECFP4) fingerprint of a SMILES string via RDKit, or None.
+
+    Uses RDKit directly -- the same general cheminformatics tooling the baselines
+    use for diversity. It does NOT import or reference the SMILES scorer
+    (`benchmarks.smiles.metrics`), its class-membership function, or CLASS_MOTIFS.
+    """
+    if not smiles:
+        return None
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+    except Exception:
+        return None
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+
+
+def _smiles_resemblance(candidate_text: str, exemplars) -> tuple[str, float]:
+    """Max Tanimoto similarity (0..1) of a candidate to any prompt-visible exemplar.
+
+    Fair: exemplars come only from prompt-visible text and similarity uses generic
+    RDKit fingerprints. Returns ("", 0.0) when the candidate is empty, and
+    (candidate, 0.0) when RDKit is unavailable, the candidate is unparseable, or no
+    exemplar parses. Never reads gold labels, scorer state, the SMILES scorer's
+    class-membership function, or held-out data.
+    """
+    candidate = _candidate_smiles(candidate_text)
+    if not candidate:
+        return "", 0.0
+    cand_fp = _morgan_fp(candidate)
+    if cand_fp is None:
+        return candidate, 0.0
+    try:
+        from rdkit import DataStructs
+    except Exception:
+        return candidate, 0.0
+    best = 0.0
+    for ex in exemplars:
+        ex_fp = _morgan_fp(ex)
+        if ex_fp is None:
+            continue
+        sim = DataStructs.TanimotoSimilarity(cand_fp, ex_fp)
+        if sim > best:
+            best = sim
+    return candidate, float(best)
+
+
 # Per-component timing. Keyed by a short label. Values are (total_seconds, call_count).
 # Printed periodically from GenerateLogits to break down where per-step time goes.
 # Set CSD_DISABLE_TIMING=1 to turn off.
@@ -222,6 +338,15 @@ _VLLM_ENGINE_CACHE: dict[tuple[Any, ...], tuple[Any, Any]] = {}
 # value used by `MaskToken`), which is indistinguishable from a masked token.
 # Raise this if strategies begin reporting all-masked argmaxes.
 VLLM_TOPK_LOGPROBS = 1000
+
+# HF backend: decode with a KV cache (feed only new tokens each step) instead
+# of re-running the full prompt every call. This is the same kernel path the
+# CRANE/IterGen baselines use; the full-re-forward path flips argmax at
+# near-tie tokens (probe 2026-07-02: cached replica reached `<<` on 39/49 GSM
+# examples vs ~24/49 without). Set CSD_HF_KV_CACHE=0 to restore the old path.
+HF_KV_CACHE_ENABLED = os.environ.get("CSD_HF_KV_CACHE", "1") != "0"
+
+from synthesis.evaluate.benchmarks.common.kv_reuse import plan_kv_reuse
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -657,6 +782,14 @@ class _TensorizedLMBase:
         self._constrained_temperature = float(
             os.environ.get("CSD_CONSTRAINED_TEMPERATURE", "0.0")
         )
+        # Unconstrained selection (ChooseNextTokenUnconstrained) samples from
+        # softmax(logits / T). Default 1.0 = today's behavior for every run
+        # that does not opt in. 0 => argmax, used by baseline-parity evals:
+        # CRANE/IterGen decode greedy, and a sampled unconstrained phase can
+        # never reproduce their scores.
+        self._unconstrained_temperature = float(
+            os.environ.get("CSD_UNCONSTRAINED_TEMPERATURE", "1.0")
+        )
         self._generate_count = 0
         self._token_id_to_str: dict[int, str] = {}
         self._runtime_deadline: float | None = None
@@ -880,6 +1013,53 @@ class _TensorizedLMBase:
         )
         return grounded
 
+    def SpanAppearsInPrompt(self, text):
+        """Dafny extern: exact normalized prompt-visible duplicate check.
+
+        Fair: reads only the current prompt/instruction text. It does not read
+        gold labels, evaluator state, scorer results, dataset metadata, or class-
+        specific win rules.
+        """
+        if not isinstance(text, str):
+            text = self._to_str(text)
+        candidate = _normalize_prompt_visible_span(text)
+        if not candidate:
+            return False
+        visible = self._prompt_visible_span_set()
+        found = candidate in visible
+        _GROUNDING_LOG.info(
+            "[grounding] prompt-duplicate span=%r visible_n=%d found=%s",
+            candidate[:120], len(visible), found,
+        )
+        return found
+
+    def SpanResemblanceToPromptExamples(self, text):
+        """Dafny extern: structural resemblance (0..1) of a candidate to the
+        example molecules shown in the prompt.
+
+        Renders `text` as a candidate, then returns the maximum RDKit Tanimoto
+        similarity between it and the prompt-visible example spans (the same span
+        set used by SpanAppearsInPrompt). Returns 0.0 when RDKit is unavailable,
+        the candidate is unparseable, or the prompt shows no examples.
+
+        Fair: reads only prompt-visible examples and uses generic RDKit
+        fingerprints. It does not read gold labels, evaluator results, held-out
+        data, scorer state, the SMILES scorer's class-membership function, or
+        class-specific strategy advice.
+        """
+        if not isinstance(text, str):
+            text = self._to_str(text)
+        exemplars = self._prompt_visible_span_set()
+        if not exemplars:
+            return self._dafny.BigRational(0.0)
+        candidate, score = _smiles_resemblance(text, exemplars)
+        if candidate:
+            _GROUNDING_LOG.info(
+                "[grounding] prompt-resemblance span=%r exemplars_n=%d score=%.3f",
+                candidate[:120], len(exemplars), score,
+            )
+        return self._dafny.BigRational(score)
+
     def FirstUngroundedIdentifierTokenIdx(self, unitTokens):
         """Dafny extern: index of the token holding the FIRST out-of-schema
         identifier in `unitTokens`. Returns `(found, idx)`.
@@ -908,8 +1088,21 @@ class _TensorizedLMBase:
                 _GROUNDING_LOG.info(
                     "[grounding] unit fully grounded (n=%d tokens); text=%r",
                     n, ("".join(token_strs))[:120],
-                )
+        )
         return (found, idx)
+
+    def _prompt_visible_span_set(self) -> set[str]:
+        """Prompt-visible candidate spans, cached per instruction text."""
+        it = self.instruction_text or ""
+        if getattr(self, "_prompt_visible_span_cache_key", None) == it:
+            return self._prompt_visible_span_cache_val
+        spans = _prompt_visible_span_set(it)
+        self._prompt_visible_span_cache_key = it
+        self._prompt_visible_span_cache_val = spans
+        _GROUNDING_LOG.info(
+            "[grounding] parsed %d prompt-visible spans for current example", len(spans)
+        )
+        return spans
 
     def _grounding_support_set(self) -> set:
         """Schema identifier support set for the CURRENT example, cached per
@@ -1014,7 +1207,10 @@ class _TensorizedLMBase:
         if self._full_logits is None:
             raise RuntimeError("Must call GenerateLogits before sampling unconstrained tokens")
 
-        probs = torch.softmax(self._full_logits, dim=0)
+        temperature = self._unconstrained_temperature
+        if temperature <= 0.0:
+            return int(self._full_logits.argmax().item())
+        probs = torch.softmax(self._full_logits / temperature, dim=0)
         if torch.isnan(probs).any() or torch.sum(probs).item() <= 0.0:
             return int(self._full_logits.argmax().item())
         sampled_idx = int(torch.multinomial(probs, num_samples=1).item())
@@ -1218,7 +1414,20 @@ def create_huggingface_lm(
     load_in_8bit: bool = False,
 ):
     """Create a HuggingFace LM wrapped with a Dafny-compatible interface."""
-    prec_str = "FP16"
+    # CUDA full-precision dtype is bfloat16 to match the baseline repos:
+    # CRANE loads via syncode/iter_syncode load_model(quantize=True) ->
+    # torch_dtype=torch.bfloat16 (syncode common.py:15, iter_syncode
+    # common.py:36), and IterGen shares the same loader. Verified 2026-07-02:
+    # a bf16 unconstrained probe reproduced the original CRANE Qwen3.5-2B
+    # response 771/784 chars where the fp16 harness diverged at char ~25.
+    # Baseline parity requires the same dtype. Override with
+    # CSD_TORCH_DTYPE=float16 if the old behavior is ever needed.
+    _cuda_dtype = (
+        torch.float16
+        if os.environ.get("CSD_TORCH_DTYPE") == "float16"
+        else torch.bfloat16
+    )
+    prec_str = "BF16" if _cuda_dtype == torch.bfloat16 else "FP16"
     if load_in_4bit:
         prec_str = "4-bit"
     elif load_in_8bit:
@@ -1246,7 +1455,7 @@ def create_huggingface_lm(
         elif load_in_8bit:
             kwargs["load_in_8bit"] = True
         else:
-            kwargs["torch_dtype"] = torch.float16
+            kwargs["torch_dtype"] = _cuda_dtype
 
         model = AutoModelForCausalLM.from_pretrained(**kwargs)
         input_device = get_model_input_device(model)
@@ -1285,6 +1494,9 @@ def create_huggingface_lm(
             self.model = hf_model
             self._input_device = dev
             self._max_input_len = get_max_input_length(hf_model, hf_tokenizer)
+            # KV-cached decode state (see HF_KV_CACHE_ENABLED at module top).
+            self._kv_cache = None
+            self._kv_ids: list[int] = []
 
         def GenerateLogits(self, input_prefix):
             self._check_runtime_deadline()
@@ -1309,16 +1521,47 @@ def create_huggingface_lm(
                 inputs["input_ids"] = inputs["input_ids"][:, -self._max_input_len:]
                 if "attention_mask" in inputs:
                     inputs["attention_mask"] = inputs["attention_mask"][:, -self._max_input_len:]
-            inputs = inputs.to(self._input_device)
 
-            with torch.no_grad():
-                output = self.model(**inputs)
-                logits = output.logits[0, -1, :]
+            if HF_KV_CACHE_ENABLED:
+                logits = self._kv_cached_forward(inputs["input_ids"][0].tolist())
+            else:
+                inputs = inputs.to(self._input_device)
+                with torch.no_grad():
+                    output = self.model(**inputs)
+                    logits = output.logits[0, -1, :]
 
             self._finalize_full_logits(logits)
             self._apply_recurrence_penalty(full_prompt)
             self._last_full_prompt = full_prompt
             self._logits_dirty = False
+
+        def _kv_cached_forward(self, ids):
+            """Next-token logits after `ids`, reusing the KV cache like the
+            baselines' decoders: prefill once, then feed only new tokens
+            (normally exactly one) per call. Rollbacks crop the cache to the
+            surviving prefix."""
+            from transformers.cache_utils import DynamicCache
+
+            keep, feed = plan_kv_reuse(self._kv_ids, ids)
+            if keep == 0:
+                self._kv_cache = DynamicCache(config=self.model.config)
+            elif self._kv_cache.get_seq_length() > keep:
+                self._kv_cache.crop(keep)
+            feed_tensor = torch.tensor(
+                [feed], dtype=torch.long, device=self._input_device
+            )
+            attention_mask = torch.ones(
+                (1, len(ids)), dtype=torch.long, device=self._input_device
+            )
+            with torch.no_grad():
+                output = self.model(
+                    feed_tensor,
+                    attention_mask=attention_mask,
+                    past_key_values=self._kv_cache,
+                )
+                logits = output.logits[0, -1, :]
+            self._kv_ids = ids
+            return logits
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
             self._check_runtime_deadline()

@@ -226,6 +226,17 @@ def create_lark_dafny_parser(
             self._complete_cache = {}
             self._valid_next_mask_cache = {}
             self._valid_next_indices_cache = {}
+            self._valid_next_count_cache = {}
+            # Dafny Seq objects are immutable in the generated runtime, but
+            # converting one to text is O(len(prefix)). Cache by object identity
+            # before conversion so repeated helper checks on the same prefix do
+            # not rescan the token sequence.
+            self._prefix_text_cache = {}
+            self._valid_prefix_by_prefix_cache = {}
+            self._complete_by_prefix_cache = {}
+            self._valid_next_mask_by_prefix_cache = {}
+            self._valid_next_count_by_prefix_cache = {}
+            self._dead_prefix_by_prefix_cache = {}
 
         def _tokens_to_text(self, tokens) -> str:
             """Convert Dafny token sequence to text."""
@@ -234,14 +245,49 @@ def create_lark_dafny_parser(
             except (TypeError, AttributeError, IndexError):
                 return str(tokens)
 
+        def _prefix_cache_key(self, prefix):
+            """Return a stable-enough cache key for one immutable Dafny prefix."""
+            try:
+                return (id(prefix), len(prefix))
+            except (TypeError, AttributeError):
+                return None
+
+        def _prefix_cache_get(self, cache, prefix):
+            key = self._prefix_cache_key(prefix)
+            if key is None:
+                return None
+            cached = cache.get(key)
+            if cached is None:
+                return None
+            cached_prefix, cached_value = cached
+            if cached_prefix is prefix:
+                return cached_value
+            return None
+
+        def _prefix_cache_set(self, cache, prefix, value):
+            key = self._prefix_cache_key(prefix)
+            if key is not None:
+                cache[key] = (prefix, value)
+
+        def _prefix_to_text(self, prefix) -> str:
+            """Convert prefix to text once per prefix object."""
+            if len(prefix) == 0:
+                return ""
+            cached = self._prefix_cache_get(self._prefix_text_cache, prefix)
+            if cached is not None:
+                return cached
+            text = self._tokens_to_text(prefix)
+            self._prefix_cache_set(self._prefix_text_cache, prefix, text)
+            return text
+
         def _is_valid_prefix(self, text: str) -> bool:
             """Check if text is a valid prefix of the grammar.
 
             Uses Syncode's IncrementalParser — which caches parser states
             keyed by lexer-token prefixes and only feeds the delta — instead
-            of re-running Lark end-to-end. For append-only decoding this is
-            O(1) amortized per call, vs. O(len(text)) for the full reparse
-            path (and O(N^2) over a single generation).
+            of re-running Lark end-to-end. The call still lexes the current
+            text, so prefix-object caches avoid repeated Dafny-prefix scans
+            before this fast path is reached.
 
             Falls back to full Lark.parse on unexpected exceptions so we
             never silently return a wrong answer.
@@ -287,10 +333,25 @@ def create_lark_dafny_parser(
             if cached is not None:
                 return cached
             try:
-                self._complete_lark.parse(text)
-                result = True
-            except Exception:
+                with _parser_timed("is_complete.inc_parser"):
+                    parse_result = self._inc_parser.get_acceptable_next_terminals(text)
+                remainder_state = getattr(parse_result, "remainder_state", None)
+                remainder_state_name = getattr(remainder_state, "name", str(remainder_state))
+                result = bool(
+                    getattr(parse_result, "function_end", False)
+                    and remainder_state_name in {"COMPLETE", "MAYBE_COMPLETE"}
+                )
+            except (self._UnexpectedToken, self._UnexpectedCharacters, self._UnexpectedEOF):
                 result = False
+            except Exception:
+                # Unknown failure inside the incremental path: keep the old full
+                # parse behavior as a correctness fallback.
+                with _parser_timed("is_complete.lark_fallback"):
+                    try:
+                        self._complete_lark.parse(text)
+                        result = True
+                    except Exception:
+                        result = False
             self._complete_cache[text] = result
             return result
 
@@ -351,8 +412,13 @@ def create_lark_dafny_parser(
 
         def _get_accept_mask_for_prefix(self, prefix):
             """Get boolean accept mask for a Dafny prefix sequence."""
-            current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
-            return self._get_accept_mask_for_text(current_text)
+            cached = self._prefix_cache_get(self._valid_next_mask_by_prefix_cache, prefix)
+            if cached is not None:
+                return cached
+            current_text = self._prefix_to_text(prefix)
+            accept_mask = self._get_accept_mask_for_text(current_text)
+            self._prefix_cache_set(self._valid_next_mask_by_prefix_cache, prefix, accept_mask)
+            return accept_mask
 
         def _get_valid_token_indices(self, current_text: str):
             """Get list of valid token indices using a cached accept mask."""
@@ -363,6 +429,16 @@ def create_lark_dafny_parser(
             valid_indices = accept_mask.nonzero(as_tuple=False).flatten().tolist()
             self._valid_next_indices_cache[current_text] = valid_indices
             return valid_indices
+
+        def _valid_next_token_count_for_text(self, current_text: str) -> int:
+            """Count valid next tokens once per text prefix."""
+            cached = self._valid_next_count_cache.get(current_text)
+            if cached is not None:
+                return cached
+            accept_mask = self._get_accept_mask_for_text(current_text)
+            count = int(accept_mask.sum().item())
+            self._valid_next_count_cache[current_text] = count
+            return count
 
         def is_valid_prefix(self, text: str) -> bool:
             return self._is_valid_prefix(text)
@@ -375,22 +451,32 @@ def create_lark_dafny_parser(
             with _parser_timed("IsValidPrefix.dafny"):
                 if len(prefix) == 0:
                     return True
-                text = self._tokens_to_text(prefix)
-                return self._is_valid_prefix(text)
+                cached = self._prefix_cache_get(self._valid_prefix_by_prefix_cache, prefix)
+                if cached is not None:
+                    return cached
+                text = self._prefix_to_text(prefix)
+                result = self._is_valid_prefix(text)
+                self._prefix_cache_set(self._valid_prefix_by_prefix_cache, prefix, result)
+                return result
 
         def IsCompletePrefix(self, prefix) -> bool:
             """Dafny interface: Check if prefix is complete."""
             with _parser_timed("IsCompletePrefix.dafny"):
                 if len(prefix) == 0:
                     return False
-                text = self._tokens_to_text(prefix)
-                return self._is_complete(text)
+                cached = self._prefix_cache_get(self._complete_by_prefix_cache, prefix)
+                if cached is not None:
+                    return cached
+                text = self._prefix_to_text(prefix)
+                result = self._is_complete(text)
+                self._prefix_cache_set(self._complete_by_prefix_cache, prefix, result)
+                return result
 
         def ValidNextTokens(self, prefix):
             """Dafny interface: Get valid next tokens using DFA mask store."""
             with _parser_timed("ValidNextTokens.total"):
                 with _parser_timed("ValidNextTokens.tokens_to_text"):
-                    current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                    current_text = self._prefix_to_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
                     return _dafny.SeqWithoutIsStrInference([])
@@ -405,18 +491,41 @@ def create_lark_dafny_parser(
         def ValidNextTokenCount(self, prefix):
             """Dafny interface: Count valid next tokens without materializing them."""
             with _parser_timed("ValidNextTokenCount.dafny"):
-                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                cached = self._prefix_cache_get(self._valid_next_count_by_prefix_cache, prefix)
+                if cached is not None:
+                    return cached
+                current_text = self._prefix_to_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
+                    self._prefix_cache_set(self._valid_next_count_by_prefix_cache, prefix, 0)
                     return 0
 
-                accept_mask = self._get_accept_mask_for_text(current_text)
-                return int(accept_mask.sum().item())
+                count = self._valid_next_token_count_for_text(current_text)
+                self._prefix_cache_set(self._valid_next_count_by_prefix_cache, prefix, count)
+                return count
+
+        def IsDeadPrefix(self, prefix):
+            """Dafny interface: Check dead-end status using one text conversion."""
+            with _parser_timed("IsDeadPrefix.dafny"):
+                cached = self._prefix_cache_get(self._dead_prefix_by_prefix_cache, prefix)
+                if cached is not None:
+                    return cached
+
+                current_text = self._prefix_to_text(prefix)
+                if current_text and not self._is_valid_prefix(current_text):
+                    result = True
+                elif self._is_complete(current_text):
+                    result = False
+                else:
+                    result = self._valid_next_token_count_for_text(current_text) == 0
+
+                self._prefix_cache_set(self._dead_prefix_by_prefix_cache, prefix, result)
+                return result
 
         def ValidNextToken(self, prefix, token):
             """Dafny interface: Check one candidate token against the DFA mask."""
             with _parser_timed("ValidNextToken.dafny"):
-                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                current_text = self._prefix_to_text(prefix)
 
                 if current_text and not self._is_valid_prefix(current_text):
                     return False
@@ -440,7 +549,7 @@ def create_lark_dafny_parser(
             loop, instead of one DFA query per token in a Dafny-compiled loop.
             """
             with _parser_timed("GroupHasValidMember.dafny"):
-                current_text = self._tokens_to_text(prefix) if len(prefix) > 0 else ""
+                current_text = self._prefix_to_text(prefix)
                 if current_text and not self._is_valid_prefix(current_text):
                     return False
                 accept_mask = self._get_accept_mask_for_text(current_text)

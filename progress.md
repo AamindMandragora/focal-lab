@@ -1,16 +1,16 @@
 # Experiment progress
 
-_Last updated: 2026-06-22T05:10:48+00:00_
+_Last updated: 2026-07-07T11:07:36+00:00_
 
 ## Status: ⏹  NO RUN ACTIVE  (last launcher: launch_full_matrix_20260520_024953.sh)
 
 ## GPU
 
 ```
-0, 39903 MiB, 40960 MiB, 0 %
-1, 38881 MiB, 40960 MiB, 100 %
-2, 17378 MiB, 40960 MiB, 0 %
-3, 35501 MiB, 40960 MiB, 0 %
+0, 32902 MiB, 40960 MiB, 60 %
+1, 34478 MiB, 40960 MiB, 0 %
+2, 36238 MiB, 40960 MiB, 0 %
+3, 33604 MiB, 40960 MiB, 0 %
 ```
 
 ## Completed cells (since launch_full_matrix_20260520_024953.sh)
@@ -21,6 +21,10 @@ _Last updated: 2026-06-22T05:10:48+00:00_
 | cars | Qwen_Qwen2.5_1.5B_Instruct | spider_seed334_test300 | 30.0% | ? | 300 | 2026-06-11T11:30:44 |
 | cars | Qwen_Qwen2.5_7B_Instruct | spider_seed334_test300 | 61.0% | ? | 300 | 2026-06-11T10:45:58 |
 | cars | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 73.0% | ? | 100 | 2026-06-09T14:13:48 |
+| cars | Qwen_Qwen3-5-2B | gsm_symbolic | 8.2% | ? | 49 | 2026-07-02T23:32:50 |
+| cars | Qwen_Qwen3-5-2B | spider_seed334_test300 | 16.0% | ? | 300 | 2026-07-05T02:40:15 |
+| cars | Qwen_Qwen3-5-4B | gsm_symbolic | 20.4% | ? | 49 | 2026-07-02T23:37:15 |
+| cars | Qwen_Qwen3-5-9B | gsm_symbolic | 40.8% | ? | 49 | 2026-07-02T23:41:11 |
 | crane | Qwen_Qwen2.5_14B_Instruct | gsm_symbolic | 46.0% | ? | 100 | 2026-06-01T14:12:43 |
 | crane | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 54.0% | ? | 50 | 2026-05-26T07:12:56 |
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | gsm_symbolic | 50.0% | ? | 50 | 2026-05-25T17:31:47 |
@@ -31,6 +35,7 @@ _Last updated: 2026-06-22T05:10:48+00:00_
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 69.0% | ? | 100 | 2026-05-25T19:03:28 |
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T15:18:08 |
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T19:10:13 |
+| crane | Qwen_Qwen3-5-2B | spider_seed334_test300 | 3.0% | ? | 300 | 2026-07-05T02:10:50 |
 | gcd | Qwen_Qwen2.5_14B_Instruct | spider_seed334_test300 | 0.7% | ? | 300 | 2026-06-12T17:47:12 |
 | gcd | Qwen_Qwen2.5_14B_Instruct | spider | 16.0% | ? | 100 | 2026-06-01T11:30:33 |
 | gcd | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 58.0% | ? | 50 | 2026-05-26T07:07:08 |
@@ -40,6 +45,7 @@ _Last updated: 2026-06-22T05:10:48+00:00_
 | gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 35.0% | ? | 100 | 2026-05-25T19:00:57 |
 | gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T15:12:22 |
 | gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T19:04:14 |
+| gcd | Qwen_Qwen3-5-2B | spider_seed334_test300 | 3.0% | ? | 300 | 2026-07-04T23:47:14 |
 | itergen | Qwen_Qwen2.5_14B_Instruct | gsm_symbolic | 33.0% | ? | 100 | 2026-06-01T15:01:29 |
 | itergen | Qwen_Qwen2.5_14B_Instruct | spider | 46.0% | ? | 100 | 2026-06-01T11:24:04 |
 | itergen | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 44.0% | ? | 50 | 2026-05-26T07:14:08 |

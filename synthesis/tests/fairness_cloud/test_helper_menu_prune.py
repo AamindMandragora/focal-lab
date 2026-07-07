@@ -75,7 +75,26 @@ UNRELATED_SURVIVORS = (
     "CloseConstrainedSpan",
     "AdaptiveConstrainedStep",
 )
-EXPECTED_UNIVERSE_SIZE = 63
+
+# Fair prompt-grounding helpers that read ONLY prompt-visible text. Both must be
+# in the menu universe. They are the reason the universe is 65 (= blessed 63 + 2),
+# not 63: the prune baseline predates them.
+PROMPT_GROUNDING_HELPERS = (
+    "PrefixAppearsInPrompt",
+    "PrefixResemblesPromptExamples",
+)
+
+# The unfair molecule-class helper (removed 2026-07-01): it called the SMILES
+# scorer's own class-membership function + our hardcoded CLASS_MOTIFS at decode
+# time, leaking the answer key, and its name/description named the dataset. It was
+# replaced by the fair PrefixResemblesPromptExamples (prompt-visible RDKit
+# resemblance, no scorer import). It must appear nowhere in the menu.
+UNFAIR_REMOVED = (
+    "PrefixMatchesPromptMoleculeClass",
+    "SpanMatchesPromptMoleculeClass",
+)
+
+EXPECTED_UNIVERSE_SIZE = 65
 
 
 def test_removed_helpers_left_the_universe():
@@ -96,11 +115,28 @@ def test_unrelated_helpers_untouched():
         assert name in p._ALL_HELPER_NAMES, f"{name} was over-pruned"
 
 
-def test_universe_size_dropped_to_63():
+def test_universe_size():
     p = _load_prompts()
     assert len(p._ALL_HELPER_NAMES) == EXPECTED_UNIVERSE_SIZE, (
         f"universe is {len(p._ALL_HELPER_NAMES)}, expected {EXPECTED_UNIVERSE_SIZE}"
     )
+
+
+def test_prompt_grounding_helpers_present():
+    p = _load_prompts()
+    for name in PROMPT_GROUNDING_HELPERS:
+        assert name in p._ALL_HELPER_NAMES, f"{name} must stay selectable"
+    ref = p._build_tool_reference_block(None)
+    for name in PROMPT_GROUNDING_HELPERS:
+        assert f"helpers.{name}(" in ref, f"helpers.{name}( missing from menu"
+
+
+def test_unfair_molecule_class_helper_removed():
+    p = _load_prompts()
+    ref = p._build_tool_reference_block(None)
+    for name in UNFAIR_REMOVED:
+        assert name not in p._ALL_HELPER_NAMES, f"{name} must not be in the menu universe"
+        assert name not in ref, f"{name} must not appear anywhere in the rendered menu"
 
 
 def test_removed_call_shapes_gone_from_rendered_menu():

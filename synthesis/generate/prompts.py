@@ -145,6 +145,8 @@ helpers.PenalizeTokenLogits(lm, tokensInVocab, amount);
 var subCount := CSDHelpers.CountSubstring(text, sub);
 var s := CSDHelpers.PrefixToString(prefix);
 var between := CSDHelpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
+var seenInPrompt := helpers.PrefixAppearsInPrompt(lm, prefix);
+var promptResemblance: real := helpers.PrefixResemblesPromptExamples(lm, prefix);
 var anyInGroup := helpers.GroupHasValidMember(parser, prefix, group);
 var rolledGen, rolledCurrent := helpers.RollbackConstrainedSpan(parser, stablePrefix, generated, currentConstrained);
 ```
@@ -325,6 +327,46 @@ consume token budget by themselves.
   `cost <= old(cost) + budget`, and `cost >= old(cost)`.
   Cost: ≤ `budget` token-steps.
   Control profile: budget-bounded completeness-tracking close that needs no caller-side proof of completeness.
+
+- `helpers.ManagedStep(lm, parser, prompt, generated, insideConstrained, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: one self-contained free-or-constrained decode step with delimiter/state
+  management built in.
+  Mechanics: outside a span, takes one `UnconstrainedStep` and enters constrained
+  mode if it emits `"<<"`; inside a span, closes when `currentConstrained` is
+  complete, otherwise takes one `AdaptiveConstrainedStep` and appends it.
+  Returns `(generatedOut, insideOut, currentOut, done)` where `done` means EOS or
+  span close was reached.
+  Requires: same parser-valid/current-state shape as the lower-level span helpers,
+  `"<<", ">>", eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
+  Cost: exactly +1 token-step on every path.
+  Control profile: proof-friendly single-step state machine for strategies that
+  need to manage spans without hand-writing delimiter and parser-state branches.
+
+- `helpers.GenerateWithManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: bounded full decode loop with free preamble, constrained span handling,
+  completeness-gated close, and proof obligations discharged inside the helper.
+  Mechanics: loops up to `maxSteps`; outside a span it samples freely until EOS
+  or `"<<"`; inside a span it closes when complete, otherwise advances with
+  `AdaptiveConstrainedStep`. The caller receives `(generated,
+  insideConstrainedOut, currentConstrainedOut)` and does not need to prove a
+  custom loop.
+  Requires: same parser-valid/current-state shape as `ManagedStep`, `"<<", ">>",
+  eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
+  Cost: at most +`maxSteps`.
+  Control profile: high-level span manager for cold strategies that are losing
+  budget or correctness in hand-written free/inside-span loops.
+
+- `helpers.GenerateWithPrefixAndManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, prefixBudget, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: bounded full decode loop that hard-caps the unconstrained preamble before
+  forcing entry into a constrained span.
+  Mechanics: like `GenerateWithManagedSpan`, but while outside a span it allows
+  at most `prefixBudget` free steps; after that it calls `OpenConstrainedSpan`
+  so the remaining budget can be spent on parser-controlled content and closing.
+  Requires: same requirements as `GenerateWithManagedSpan`, plus
+  `prefixBudget <= maxSteps`.
+  Cost: at most +`maxSteps`.
+  Control profile: output-budget guard for failures where the model stays in
+  free text too long or enters constrained mode too late.
 
 ### Soft preferences and group-aware constrained decoding
 
@@ -544,14 +586,9 @@ consume token budget by themselves.
   budget; grammar-driven boundary detection; caller-supplied allowed-unit set.
 
 - `helpers.RegenerateUnitOnGroundingFailure(lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit, maxRetries, maxRollbackBudget)`
-  Role: same control loop as `RegenerateUnitOnCheckFailure`, except the per-unit
-  acceptance test is `lm.SpanGrounded(renderedUnit)` (see below) instead of
-  membership of the whole rendered unit in a caller-supplied set. It therefore
-  tests the identifier-like tokens WITHIN each completed unit, not the unit as a
-  whole, and needs no `allowedUnits` argument.
-  When to use: when outputs are grammar-valid but score incorrect because of
-  WHICH content tokens were chosen, and the acceptable content tokens are
-  determined by identifiers already present in the per-example prompt context.
+  Role: generate a constrained span unit-by-unit, rewinding and resampling any
+  completed unit whose identifier-like tokens are not grounded in the prompt
+  context.
   Mechanics: generates tokens via dead-end-avoiding steps; at each grammar-unit
   boundary (`parser.IsCompletePrefix` becomes true) it renders the new unit and
   calls `lm.SpanGrounded` on it. On a false result and with remaining budget it
@@ -562,8 +599,6 @@ consume token budget by themselves.
   Cost: bounded by `(maxRetries + 1) * maxStepsPerUnit` total steps.
   Control profile: unit-level rollback-and-resample with bounded retry and
   budget; grammar-driven boundary detection; prompt-grounded acceptance test.
-  Suggested starting values: `maxStepsPerUnit := 20`, `maxRetries := 3`,
-  `maxRollbackBudget := 10`.
 
 - `lm.SpanGrounded(text)` (predicate)
   Returns true iff every identifier-like token in `text` appears in the support
@@ -573,6 +608,27 @@ consume token budget by themselves.
   (a single letter, or letters followed by digits). Pure with respect to the
   Dafny heap. Fair: the support set is derived only from prompt text, never from
   execution feedback or gold answers.
+
+- `helpers.PrefixAppearsInPrompt(lm, prefix)`
+  Role: no-gold duplicate/exemplar check for a generated prefix.
+  Mechanics: renders `prefix` and asks whether the normalized span already
+  appears in the current prompt context, including prompt examples and rolling
+  suffix text visible to the model. It uses exact normalized span matching, not
+  substring search.
+  Cost: +0.
+  Fair: reads only prompt-visible text; never reads gold labels, scorer state,
+  evaluator results, or class-specific win rules.
+
+- `helpers.PrefixResemblesPromptExamples(lm, prefix)`
+  Role: no-gold resemblance score for a generated prefix.
+  Mechanics: renders `prefix` and returns a real number in [0,1] measuring how
+  structurally similar it is to the example spans shown in the current prompt
+  (the same prompt-visible examples `PrefixAppearsInPrompt` inspects). Similarity
+  is computed with generic tooling. Returns 0.0 when the prompt shows no examples
+  or the prefix cannot be parsed. The strategy chooses its own threshold.
+  Cost: +0.
+  Fair: reads only prompt-visible examples; never reads gold labels, scorer
+  state, held-out data, evaluator results, or class-specific strategy advice.
 
 - `helpers.LastTokenBefore(generated, sep)` and
   `CSDHelpers.ExtractAfterKeyword(prefix, keyword)`
@@ -747,7 +803,23 @@ _HELPER_CALL_RE = re.compile(
 _HELPER_REF_RE = re.compile(
     r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\b"
 )
-_ALL_HELPER_NAMES = set(_HELPER_REF_RE.findall(TOOL_REFERENCE))
+_MENU_PRUNED_HELPERS = {
+    "RollbackToValidPrefix",
+    "RollbackToCompletePrefix",
+    "RollbackConstrainedSpan",
+    "RollbackAndRegenerate",
+    "RollbackAndContinue",
+    "SaveLogitsSnapshot",
+    "RestoreLogitsSnapshot",
+    "RolloutConstrainedWithPenalties",
+    "SpeculativeConstrainedRollout",
+    "RegenerateUnitOnCheckFailure",
+}
+_ALL_HELPER_NAMES = (
+    set(_HELPER_REF_RE.findall(TOOL_REFERENCE))
+    - _MENU_PRUNED_HELPERS
+    | {"GenerateWithManagedSpan", "GenerateWithPrefixAndManagedSpan", "ManagedStep"}
+)
 
 
 def _filter_code_fence_lines(text: str, allowed: set[str]) -> str:
@@ -821,9 +893,6 @@ def _filter_tool_api_reference(text: str, allowed: set[str]) -> str:
 def _filter_tool_reference(allowed_helpers: list[str]) -> str:
     """Render a reduced tool catalog for the currently allowed helper set."""
     allowed = set(allowed_helpers)
-    if _ALL_HELPER_NAMES and _ALL_HELPER_NAMES.issubset(allowed):
-        return TOOL_REFERENCE
-
     if "\n## Tool API Reference\n" not in TOOL_REFERENCE:
         return _filter_code_fence_lines(TOOL_REFERENCE, allowed)
 
@@ -2075,9 +2144,7 @@ _VERIFIED_EXAMPLE_PREFIXES = (
     "// Simple delimiter-triggered CSD.",
     "// Group-aware constrained CSD.",
     "// Adaptive-narrowness CSD.",
-    "// Grounded-unit constrained CSD.",
     "// Open-then-reliably-close CSD.",
-    "// Token-0 grounded constrained CSD.",
 )
 
 
@@ -2241,7 +2308,7 @@ def _build_allowed_helpers_block(allowed_helpers: list[str] | None) -> str:
 def _build_tool_reference_block(allowed_helpers: list[str] | None) -> str:
     """Build the helper/API reference the model sees for this attempt."""
     if not allowed_helpers:
-        return TOOL_REFERENCE + "\n\n"
+        return _filter_tool_reference(sorted(_ALL_HELPER_NAMES)) + "\n\n"
     return _filter_tool_reference(allowed_helpers) + "\n\n"
 
 

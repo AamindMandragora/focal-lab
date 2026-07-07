@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import ast
 import re
+import sys
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 def _prompt_helper_refs() -> set[str]:
@@ -16,6 +19,14 @@ def _prompt_helper_refs() -> set[str]:
             prompt_source,
         )
     )
+
+
+def _all_helper_names() -> set[str]:
+    from synthesis.generate import prompts
+
+    helper_names = getattr(prompts, "_ALL_HELPER_NAMES")
+    assert isinstance(helper_names, set)
+    return set(helper_names)
 
 
 def _dafny_helper_defs() -> set[str]:
@@ -94,3 +105,20 @@ def test_prompt_exposed_helpers_are_classified_for_feedback_policy():
 def test_core_lm_helpers_are_classified_for_feedback_policy():
     missing = _core_lm_helpers() - _feedback_helper_classifications()
     assert not missing
+
+
+def test_all_prompt_universe_helpers_have_docs_and_feedback_classification():
+    """Name-only helpers are too weak for cold discovery.
+
+    Every helper in the generated helper universe must have prompt-visible docs
+    and a feedback-loop classification. Otherwise the allowed-helper block can
+    name a helper without giving the model the call shape or letting the helper
+    policy reason about it.
+    """
+    helper_names = _all_helper_names()
+
+    missing_docs = helper_names - _prompt_helper_refs()
+    assert not missing_docs
+
+    missing_classification = helper_names - _feedback_helper_classifications()
+    assert not missing_classification

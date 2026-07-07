@@ -39,6 +39,8 @@ def _make_pipeline(universe):
     pipe.helper_bandit_explore_untried = 1
     pipe.require_delimiters = False
     pipe.eval_max_seconds_per_example = None
+    pipe.min_accuracy = 0.40
+    pipe.min_syntax_rate = 0.80
     return pipe
 
 
@@ -46,6 +48,7 @@ def _eval_result(accuracy, syntax_rate):
     return SimpleNamespace(
         accuracy=accuracy,
         syntax_rate=syntax_rate,
+        num_examples=1,
         contains_delimiters=True,
         max_sample_time_seconds=1.0,
     )

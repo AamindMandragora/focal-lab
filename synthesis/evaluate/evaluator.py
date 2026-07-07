@@ -82,6 +82,34 @@ class PerExampleTimeout(Exception):
     """Raised when a single evaluation example exceeds its runtime budget."""
 
 
+_MAX_GSM_SCORING_EXPRESSION_CHARS = 512
+_MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
+_MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
+_MAX_GSM_SCORING_DIGIT_RUN = 64
+
+
+def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
+    """Return whether a generated GSM expression is too large for safe scoring.
+
+    This guard is intentionally far above the current GSM split's gold answers:
+    a 2026-06-29 audit found max gold length 119 chars and max operator count
+    22 across the train/eval split. Outputs above this guard are treated as
+    wrong before entering native parser/prover code that Python alarms may not
+    interrupt reliably.
+    """
+
+    text = str(expression or "").strip()
+    if len(text) > _MAX_GSM_SCORING_EXPRESSION_CHARS:
+        return True
+    if len(text.split()) > _MAX_GSM_SCORING_EXPRESSION_TOKENS:
+        return True
+    if len(re.findall(r"[+\-*/%()]", text)) > _MAX_GSM_SCORING_EXPRESSION_OPERATORS:
+        return True
+    if re.search(r"\d{" + str(_MAX_GSM_SCORING_DIGIT_RUN) + r",}", text):
+        return True
+    return False
+
+
 class _PerExampleTimer:
     """Unix wall-clock timer for interrupting a single long-running example."""
 
@@ -2171,6 +2199,8 @@ class Evaluator:
             return False
         model_expr = str(model_expr).strip()
         expected_expr = str(expected_expr).strip()
+        if _is_pathological_gsm_scoring_expression(model_expr):
+            return False
         # CRANE rejects model completions containing ** (parse_answer guard).
         if "**" in model_expr:
             return False
