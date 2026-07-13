@@ -22,7 +22,7 @@ Top-level directories:
 | `cache/` | Model weights, Hugging Face cache, SynCode mask/parser pickles |
 | `outputs/` | `generated/` synthesis runs and `baselines/` JSON artifacts |
 | `logs/` | Per-run prompt/response logs (`CSD_LOGS_DIR` override) |
-| `experiments/` | Archived manual scripts, warm-start `.dfy` bodies, extra split JSONs (not imported by the pipeline) |
+| `experiments/` | Archived manual scripts, historical strategy `.dfy` bodies, extra split JSONs (not imported by the pipeline) |
 
 Root entry points:
 
@@ -112,7 +112,7 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation defaults to local vLLM with **`Qwen/Qwen3.5-4B`** (first model in the matrix list) unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** only for explicit smoke or infrastructure checks, not synthesis-quality runs. Evaluation defaults to local vLLM with **`Qwen/Qwen3.5-4B`** (first model in the matrix list) unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \

@@ -58,7 +58,9 @@ Output:
 
 - **Amazon Bedrock** (`--generation-backend bedrock`): retained only as a low-level explicit backend. The AWS Converse client path does not require `BEDROCK_BASE_URL`; the HTTP fallback derives the regional Bedrock runtime URL lazily when no explicit base URL is configured. Do not use Bedrock for matrix model ablations.
 
-For local runs use **`--generation-backend huggingface`** or **`vllm`**.
+For explicit local smoke or infrastructure checks, use
+**`--generation-backend huggingface`** or **`vllm`**. Do not use a small
+local author for synthesis-quality runs or quality diagnosis.
 
 The legacy `gemini-pro` matrix profile name is intentionally rejected because it used to mean a Bedrock-backed placeholder. Use the direct `gemini` profile instead.
 

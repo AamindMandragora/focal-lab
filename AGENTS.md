@@ -33,6 +33,19 @@ Disallowed prompt content:
 - Benchmark-specific answer hints, dataset shortcuts, or evaluation leaks.
 - Procedural "NOTE" hints about when or why to apply a tool.
 
+## Hypothesis Ledger Comes Before the Experiment
+
+Before running any experiment meant to validate a hypothesis, write the
+hypothesis in the experiment ledger first. The ledger entry must include the
+hypothesis number, the single variable or tweak, prior belief, and falsifiable
+prediction before code changes, launches, or measurements begin.
+
+For the active metaDecode/Qwen3.5 campaign, the ledger is
+`docs/experiments/metadecode-fast-iteration-log.md`. Autonomous runs may waive
+waiting for user confirmation, but they do not waive the ledger-first rule.
+Monitoring an already-running job does not need a new ledger row unless a new
+hypothesis or tweak is introduced.
+
 ## Key Paths
 
 - Top-level project directories: `synthesis/`, `environment/`, `legacy/`, `dafny/`, `cache/`, `outputs/`, `logs/`, and `experiments/` (archived manual assets only — not imported by the pipeline).
@@ -70,13 +83,35 @@ Use `python -m synthesis.run_synthesis` from the repo root. Prefer `CUDA_VISIBLE
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Generate executable SQL queries from natural language questions." --dataset spider --spider-split-file <path/to/split.json> --spider-split-name train --min-accuracy 0.6 --min-syntax-rate 0.95 --max-iterations 5 --eval-sample-size 20 --output-name spider_split`
 - SMILES synthesis run (all classes or class subset):
   `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Generate valid molecules in the requested class." --dataset smiles --smiles-classes acrylates,chain_extenders,isocyanates --smiles-samples-per-class 10 --min-accuracy 0.5 --min-syntax-rate 1.0 --max-iterations 5 --output-name smiles_main`
-- Local generation with vLLM (override default hosted generation):
-  `CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis --task "Solve math word problems with constrained symbolic expressions." --dataset gsm_symbolic --generation-backend vllm --generation-model Qwen/Qwen2.5-Coder-7B-Instruct --eval-backend vllm --min-accuracy 0.4 --min-syntax-rate 1.0 --output-name vllm_run`
 - Hosted generation defaults to **OpenAI** (`OPENAI_API_KEY`, model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). **`gpt5.5`** in `run_all_tests.py` uses OpenAI with synthesis author reasoning effort `xhigh` by default (`CSD_OPENAI_REASONING_EFFORT` / `OPENAI_GENERATION_REASONING_EFFORT` override). **`opus4.7`** uses the **Anthropic** backend (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_OPUS_MODEL`) with adaptive thinking, `xhigh` effort, and summarized thinking by default. **`gemini`** uses the direct **Gemini** API (`GEMINI_API_KEY`, optional `GEMINI_GENERATION_MODEL`, default `gemini-3-pro-preview`) with `CSD_GEMINI_THINKING_LEVEL=high` by default. Bedrock and Bedrock-backed **`gemini-pro`** profiles are rejected by the matrix runner.
 - Full matrix runs cover `gsm, spider, smiles` by default (`run_all_tests.py --benchmarks`). Default eval models: `Qwen/Qwen3.5-2B`, `Qwen/Qwen3.5-4B`, `Qwen/Qwen3.5-9B`, and `meta-llama/Llama-3.1-8B-Instruct`. Default fixed strategies: `unconstrained, gcd, crane, itergen, rs, cars` (add `metadecode` to `--strategies` for synthesis). Run matrix jobs with `--reuse-baselines` when cached baseline JSONs are acceptable; matrix Metadecode launches should keep `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15` unless a specific ablation intentionally changes one of those knobs. The accuracy target should be a real margin over the best matching legacy CSD baseline; syntax remains a thresholded floor, not a paper win margin.
 - Full repository test sweep:
   `python run_all_tests.py`
 - `run_all_tests.py` activates `/apps/conda/advayth2/envs/advayth2` by default and verifies RDKit import before starting the matrix. Partners using a different prefix should `export VAS_CONDA_ENV=/path/to/env`; `VAS_RDKIT_CONDA_ENV` remains as a legacy alias. The launcher prepends `CONDA_PREFIX/lib` to `LD_LIBRARY_PATH` so SciPy/transformers wheels resolve `libstdc++` correctly; Syncode needs **`mxeval`** with bundled **`data/`** — run **`bash environment/install_mxeval_into_env.sh`** once per env (see **`environment/README.md`**).
+
+## Synthesis Runs Start Cold
+
+Never warm-start a synthesis run. Do not use `--initial-strategy-file` to seed
+synthesis from a prior strategy, including a strategy from an earlier attempt
+in the same run. Cross-split warm starts are also prohibited because they can
+leak information between training and evaluation splits.
+
+`--initial-strategy-file` remains valid for pure re-evaluation of an already
+recorded strategy when `--max-iterations 1` and the acceptance bars are zero.
+If synthesis fails, improve the framework and relaunch cold rather than
+continuing from the failed run's best strategy. Historical warm-start rows in
+`results_matrix.md` must be flagged when relevant but must not be removed
+without user approval.
+
+## Verify the Strategy Author Model
+
+Before diagnosing synthesis quality, verify the author model from
+`--generation-model` and `--generation-backend`. Quality runs must use a
+large reasoning model, such as `gpt-5.4` through the OpenAI backend or
+`us.anthropic.claude-sonnet-4-6` through Bedrock with thinking enabled and
+high effort. Do not use a local small model such as a 7B Qwen model to author
+strategies for a quality run; small local authors are permitted only for
+explicit smoke or infrastructure checks.
 
 ## Evaluation Expectations
 
@@ -102,7 +137,7 @@ When touching parser validity logic, preserve DFA-mask-based validity checks (Sy
 - When asked to modify files under `paper/`, do not run paper compilation checks; after making the requested edits, always automatically proceed with `git add`, `git commit`, and `git push` within the subdirectory to update Overleaf.
 - When using adaptive helper masking or beam refinement, keep selection rules empirical/contract-based (measured metrics, verifier checks), not heuristic strategy advice in prompts.
 - For bandit-style helper selection, keep exploration/exploitation policy in pipeline code/CLI knobs (e.g., UCB parameters), not in synthesis prompt prose.
-- One-off experiment scripts, warm-start `.dfy` bodies, and non-default split JSONs belong under **`experiments/`**, not the repository root.
+- One-off experiment scripts, historical strategy `.dfy` bodies, and non-default split JSONs belong under **`experiments/`**, not the repository root.
 - Always update the `README.md` and `AGENTS.md` local to the folder you made changes in, and the global `README.md` and `AGENTS.md` for large changes. Occasionally scan the repo at the end of a request to ensure they are up-to-date.
 - Under `synthesis/`, update the nearest subdirectory **`README.md`** / **`AGENTS.md`** when behavior or conventions change (see `synthesis/README.md` for the layout); do not add documentation inside vendored `synthesis/evaluate/syncode/syncode/` except via the root `evaluate/syncode/AGENTS.md` policy unless upgrading the vendor drop.
 - **Legacy upstream trees:** never leave manual edits only under gitignored **`legacy/CRANE`**, **`legacy/itergen`**, or **`legacy/cars`**. Add matching unified patches under **`environment/legacy_patches/<name>/`**, refresh **`environment/legacy/DIFFERENCES.md`** when behavior changes, and verify with **`bash environment/clone_legacy_csds.sh`** (see **`environment/legacy/AGENTS.md`**).

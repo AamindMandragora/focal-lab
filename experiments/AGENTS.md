@@ -7,9 +7,10 @@
 ## Rules
 
 - Do **not** import from `experiments/` in `synthesis/`, `run_all_tests.py`, or shared pipeline modules.
-- New one-off shell drivers, warm-start `.dfy` bodies, and non-default split JSONs belong here (or in a subfolder), not at the repository root.
+- New one-off shell drivers, historical strategy `.dfy` bodies, and non-default split JSONs belong here (or in a subfolder), not at the repository root.
 - Scripts should **source `experiments/scripts/lib.sh`** for `ROOT`, `PY`, `SPLITS_DIR`, `ENV_SPLITS_DIR`, and `WARMSTARTS_DIR` instead of hard-coded machine paths.
-- Do not add synthesis **strategy guidance** to warm-start bodies beyond what a normal CSD strategy would contain.
+- Do not use archived strategy bodies to seed new synthesis. They may be used only for pure re-evaluation under the root `AGENTS.md` rule.
+- Preserve historical strategy bodies as provenance; do not rewrite them to add synthesis guidance.
 
 ## See also
 
