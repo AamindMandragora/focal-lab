@@ -31,23 +31,9 @@ The synthesis objective is to find a CSD strategy that **outperforms CRANE** on 
 
 To measure CRANE baseline: run the evaluator on a strategy body of just `generated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken); cost := helpers.cost;`.
 
-## GPU Assignment
-- Prefer GPUs 2 and 3 (`CUDA_VISIBLE_DEVICES=2,3`) unless intentionally using another allocation.
+## Current Launch Instructions
 
-## Working Run Command (GSM-Symbolic)
-```bash
-CUDA_VISIBLE_DEVICES=2,3 python -m synthesis.run_synthesis \
-    --task "Solve math word problems step by step. Write the final numeric answer inside << >> delimiters." \
-    --dataset gsm_symbolic \
-    --max-iterations 15 \
-    --generation-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
-    --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
-    --output-name "gsm_new_tools_csd" \
-    --temperature 0.7 \
-    --max-tokens 1024 \
-    --device cuda \
-    --min-accuracy 0.3 \
-    --min-format-rate 1.0 \
-    --min-syntax-rate 1.0 \
-    --eval-sample-size 10
-```
+Use **`AGENTS.md`** as the source of truth for GPU selection, supported launch
+commands, split manifests, and author-model requirements. In particular,
+synthesis authoring must use one of the large reasoning models allowed there;
+local Qwen evaluation models must not be reused as synthesis authors.

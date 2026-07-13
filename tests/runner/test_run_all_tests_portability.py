@@ -57,3 +57,32 @@ def test_docs_match_executable_matrix_defaults_and_python_command():
     assert "gsm_symbolic_crane_proportional_49x49_seed123.json" in environment_readme
     assert "gsm_symbolic_crane_proportional_49x49_seed123.json" in split_readme
     assert "environment/clone_legacy/repos.json" not in legacy_readme
+
+
+def test_nested_docs_match_current_split_and_python3_contracts():
+    split_docs = [
+        REPO_ROOT / "environment/AGENTS.md",
+        REPO_ROOT / "environment/benchmark_splits/AGENTS.md",
+        REPO_ROOT / "experiments/README.md",
+    ]
+    for path in split_docs:
+        text = path.read_text()
+        assert "gsm_symbolic_crane_proportional_49x49_seed123.json" in text, path
+        assert "spider_dev_proportional.json" in text, path
+
+    command_docs = [
+        REPO_ROOT / "run_tmux.sh",
+        REPO_ROOT / "experiments/README.md",
+        REPO_ROOT / "experiments/warmstarts/README.md",
+        REPO_ROOT / "synthesis/scripts/README.md",
+        REPO_ROOT / "synthesis/verify/reference/README.md",
+    ]
+    for path in command_docs:
+        assert "python -m " not in path.read_text(), path
+
+
+def test_claude_launch_guide_defers_to_current_agents_contract():
+    guide = (REPO_ROOT / "CLAUDE.md").read_text()
+    assert "CUDA_VISIBLE_DEVICES=2,3" not in guide
+    assert '--generation-model "Qwen/Qwen2.5-Coder-7B-Instruct"' not in guide
+    assert "AGENTS.md" in guide

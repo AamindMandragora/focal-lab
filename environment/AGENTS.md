@@ -6,7 +6,7 @@
 
 ## Rules
 
-- Matrix-default split JSONs live in **`benchmark_splits/`** only (`gsm_symbolic_crane_proportional.json`, `spider_dev_proportional.json`). Archive non-default splits under **`experiments/splits/`**.
+- Matrix defaults are **`experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json`** for GSM and **`benchmark_splits/spider_dev_proportional.json`** for Spider. Archive other campaign splits under **`experiments/splits/`**.
 - **`legacy/`** trees are gitignored; never commit manual edits there without matching **`legacy_patches/`** (see **`legacy/AGENTS.md`**).
 - Document new install steps in **`README.md`** here when adding dependencies.
 

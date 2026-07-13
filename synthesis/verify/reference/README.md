@@ -6,8 +6,8 @@ Verified **formal specifications** that mirror published strategy families (Unco
 
 | Path | Entry point | Uses these files? |
 |------|-------------|-------------------|
-| **Legacy baselines** | `python -m synthesis.evaluate.run_legacy_fixed_strategy` | No — runs `legacy/CRANE`, `legacy/itergen`, `legacy/cars`, or vendored SynCode |
-| **Reference baselines** | `python -m synthesis.evaluate.run_reference_strategy` | **Yes** — compiles a chosen `*.dfy` here to Python and evaluates via `Evaluator` |
+| **Legacy baselines** | `python3 -m synthesis.evaluate.run_legacy_fixed_strategy` | No — runs `legacy/CRANE`, `legacy/itergen`, `legacy/cars`, or vendored SynCode |
+| **Reference baselines** | `python3 -m synthesis.evaluate.run_reference_strategy` | **Yes** — compiles a chosen `*.dfy` here to Python and evaluates via `Evaluator` |
 
 Each file defines its own module (`ReferenceGcdCSD`, `ReferenceCraneCSD`, etc.) for standalone `dafny verify`. `run_reference_strategy` rewrites the module name to `GeneratedCSD` before compilation.
 

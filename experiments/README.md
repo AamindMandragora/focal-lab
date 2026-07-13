@@ -15,8 +15,8 @@ Use it to keep the repository root clean while preserving one-off campaign scrip
 
 ## Relationship to the main pipeline
 
-- **Matrix / baselines:** `python run_all_tests.py` uses the committed manifests in `environment/benchmark_splits/` only.
-- **Synthesis:** `python -m synthesis.run_synthesis` from the repo root.
+- **Matrix / baselines:** `python3 run_all_tests.py` uses `experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json` for GSM and `environment/benchmark_splits/spider_dev_proportional.json` for Spider.
+- **Synthesis:** `python3 -m synthesis.run_synthesis` from the repo root.
 - **Historical strategies:** do not use these bodies to seed synthesis. They may be passed through `--initial-strategy-file` only for pure re-evaluation with `--max-iterations 1` and zero acceptance bars.
 
 ## See also

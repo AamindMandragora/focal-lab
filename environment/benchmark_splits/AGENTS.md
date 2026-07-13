@@ -6,7 +6,7 @@
 
 ## Rules
 
-- Matrix defaults (`gsm_symbolic_crane_proportional.json`, `spider_dev_proportional.json`) must stay in sync with **`run_all_tests.py`** defaults.
+- The Spider matrix default, **`spider_dev_proportional.json`**, lives here. The GSM matrix default is **`experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json`**. Both must stay in sync with **`run_all_tests.py`**.
 - Non-default or campaign-specific splits belong under **`experiments/splits/`**, not here.
 - Changing index sets changes reported metrics; document rationale when updating committed files.
 

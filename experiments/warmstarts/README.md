@@ -5,7 +5,7 @@ past synthesis attempts. They are retained as provenance and must not seed new
 synthesis. The only supported use is pure re-evaluation:
 
 ```bash
-python -m synthesis.run_synthesis \
+python3 -m synthesis.run_synthesis \
   --task "..." \
   --dataset gsm_symbolic \
   --initial-strategy-file experiments/warmstarts/<file>.dfy \
