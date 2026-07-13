@@ -15,7 +15,17 @@ Scripts and manifests for running synthesis, baselines, and the full matrix loca
 
 ## Conda environment
 
-Default conda prefix for **`run_all_tests.py`**: **`/apps/conda/advayth2/envs/advayth2`**. Override with **`VAS_CONDA_ENV`** (legacy alias **`VAS_RDKIT_CONDA_ENV`**).
+`run_all_tests.py` uses the active Python environment by default. Override it
+with **`VAS_CONDA_ENV`** (legacy alias **`VAS_RDKIT_CONDA_ENV`**). Real runs
+check that the selected environment exists and can import RDKit; `--dry-run`
+only renders commands and does not require that environment to exist.
+
+Spider SQL tokenization uses NLTK data installed outside the Python wheel. Run
+this once in each environment after installing requirements:
+
+```bash
+python3 -m nltk.downloader punkt punkt_tab
+```
 
 ### `mxeval` (Syncode / legacy adapters)
 
@@ -35,14 +45,16 @@ If **SciPy** / **transformers** fail with **`CXXABI_1.3.15`** on **`libstdc++`**
 
 ## Fixed benchmark splits
 
-Proportional GSM-Symbolic and Spider manifests for the matrix live under **`environment/benchmark_splits/`**:
+The matrix uses these disjoint tracked manifests:
 
-- `gsm_symbolic_crane_proportional.json`
-- `spider_dev_proportional.json`
+- `experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json` (49 train / 49 eval, seed 123)
+- `environment/benchmark_splits/spider_dev_proportional.json` (300 train / 300 eval, seed 334)
 
-See **`environment/benchmark_splits/README.md`**. **`run_all_tests.py`** passes these with `--gsm-split-name eval` and `--spider-split-name eval`.
+See **`environment/benchmark_splits/README.md`**. Synthesis receives the
+`train` split and final scoring receives the disjoint `eval` split.
 
-Additional seed-specific or probe splits are archived under **`experiments/splits/`** and are not used unless passed explicitly on the CLI.
+Additional seed-specific or probe splits are archived under
+**`experiments/splits/`** and are not used unless passed explicitly on the CLI.
 
 ## Legacy baseline repositories (`legacy/`)
 

@@ -25,7 +25,7 @@ N = 49 held-out examples for all points. ms1024 was also measured and equals 57.
 
 ## How produced
 
-- **Launch script:** `launch_gsm1p5b_msweep_20260611.sh` on focal GPU 1
+- **Launch script:** `experiments/scripts/launch_gsm1p5b_msweep_20260611.sh` on focal GPU 1
 - **Runtime:** ~3–7 minutes per point
 - **Results location:** `/home/aadivyar/csd-generation/outputs/generated/gsm1p5b_seed429_ablate_tb1_ms{64,128,192,384,700,1024}_20260611/<timestamp>/results/success_report.json`
 - ms256 and ms512 were already run on 2026-06-11 under the earlier coarse ablation; confirmed identical here.
@@ -38,11 +38,12 @@ The strategy reaches its full accuracy (57.1%) and syntax rate (87.8%) by ms384 
 ## Commands to reproduce
 
 ```bash
-# On focal, for each MS in 64 128 192 384 700:
-python run_eval_only.py \
-  --eval-strategy gsm1p5b_seed429_warmstart_body.dfy \
-  --eval-split seed429-heldout-49 \
-  --token-budget 1 \
-  --eval-max-steps $MS \
-  --output-tag gsm1p5b_seed429_ablate_tb1_ms${MS}_20260611
+# From the repository root on a machine with the evaluation model available:
+GPU=1 bash experiments/scripts/launch_gsm1p5b_msweep_20260611.sh
 ```
+
+The launcher covers every reported point (64, 128, 192, 256, 384, 512, 700,
+900, and 1024). It uses the tracked strategy and split under `experiments/`, runs
+`python -m synthesis.run_synthesis` with `--max-iterations 1`, and sets both
+acceptance bars to zero. It therefore only re-evaluates the recorded strategy;
+it does not ask the author model for a new strategy.

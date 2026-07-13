@@ -32,6 +32,29 @@ def test_load_gsm_split_examples_uses_manifest_indices(tmp_path):
     assert [example["variable_types"] for example in examples] == [{"x": "int"}, {"x": "int"}]
 
 
+def test_load_gsm_split_examples_falls_back_from_stale_manifest_path(
+    tmp_path,
+    monkeypatch,
+):
+    crane_dir = tmp_path / "portable-crane" / "src" / "gsm_symbolic"
+    crane_dir.mkdir(parents=True)
+    (crane_dir / "000.json").write_text(json.dumps({
+        "question_parsed": "portable question",
+        "answer_parsed": "x",
+        "variable_types": {"x": "int"},
+    }))
+    split_file = tmp_path / "split.json"
+    split_file.write_text(json.dumps({
+        "crane_dir": "/home/someone-else/missing/CRANE/src/gsm_symbolic",
+        "train_indices": [0],
+    }))
+    monkeypatch.setenv("CRANE_GSM_SYMBOLIC_DIR", str(crane_dir))
+
+    examples = load_gsm_split_examples(split_file, split_name="train")
+
+    assert [example["question"] for example in examples] == ["portable question"]
+
+
 def test_score_gsm_expression_normalizes_placeholder_multiplication():
     example = {
         "answer_parsed": "g - n_1 - 3*n_2",

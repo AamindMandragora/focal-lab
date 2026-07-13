@@ -18,9 +18,8 @@ Top-level directories:
 | `synthesis/` | Core pipeline package (generate → verify → evaluate) |
 | `environment/` | Conda/mxeval setup, benchmark splits, legacy clone scripts and patches |
 | `legacy/` | Gitignored CRANE / IterGen / CARS clones for fixed-strategy baselines |
-| `dafny/` | Optional repo-local Dafny binary (fallback when `DAFNY_PATH` unset) |
-| `cache/` | Model weights, Hugging Face cache, SynCode mask/parser pickles |
-| `outputs/` | `generated/` synthesis runs and `baselines/` JSON artifacts |
+| `cache/` | Local, gitignored model and parser caches; create or mount as needed |
+| `outputs/` | Local, gitignored synthesis runs and baseline JSON artifacts |
 | `logs/` | Per-run prompt/response logs (`CSD_LOGS_DIR` override) |
 | `experiments/` | Archived manual scripts, historical strategy `.dfy` bodies, extra split JSONs (not imported by the pipeline) |
 
@@ -39,8 +38,8 @@ Root entry points:
 - `synthesis/evaluate/grammars/`: Lark grammar files used by constrained decoding.
 - `synthesis/evaluate/syncode/`: vendored Syncode dependency for DFA-mask parser acceleration.
 - `environment/`: environment setup and dependency installation notes/scripts.
-- `cache/`: local model, parser, DFA mask, and preserved cache artifacts.
-- `outputs/`: generated runs, baselines, and preserved local experiment artifacts.
+- `cache/`: local model, parser, and DFA-mask caches; not included in Git.
+- `outputs/`: generated runs and baselines; not included in Git.
 - `logs/`: per-run LLM prompt/response records (`prompt_io.jsonl`; override root via `CSD_LOGS_DIR`).
 - `outputs/generated/`: synthesis outputs (one folder per synthesized CSD run).
 - `outputs/baselines/`: baseline result artifacts.
@@ -84,17 +83,18 @@ Those three `legacy/*` trees are **gitignored** (large upstream copies). Install
 
 ## Long runs (tmux)
 
-Use **`./run_tmux.sh`** to start or attach a session with conda, `.env`, and `CUDA_VISIBLE_DEVICES=2,3` already set:
+Use **`./run_tmux.sh`** to start or attach a session with the active Python
+environment, `.env`, and the local CUDA defaults already set:
 
 ```bash
 ./run_tmux.sh shell                              # interactive shell
 ./run_tmux.sh -d -f matrix -- --dry-run        # detached; -f replaces old session
 ./run_tmux.sh attach                           # attach to session
 ./run_tmux.sh synthesis -- --dataset gsm_symbolic --output-name smoke_gsm ...
-./run_tmux.sh run -- python -m synthesis.run_synthesis --help
+./run_tmux.sh run -- python3 -m synthesis.run_synthesis --help
 ```
 
-Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`VAS_TMUX_SESSION`**.
+Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp>.log`**. Override the session name with **`METADECODE_TMUX_SESSION`**.
 
 ## Quick Start
 
@@ -102,9 +102,13 @@ Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp
 
 ```bash
 pip install -r requirements.txt
+# Apple Silicon (without NVIDIA-only vLLM):
+pip install -r requirements-mac.txt
+python3 -m nltk.downloader punkt punkt_tab
 ```
 
-2. Verify Dafny is available.
+2. Verify Dafny is installed externally and available through `PATH` or
+   `DAFNY_PATH`.
 
 ```bash
 dafny --version
@@ -112,10 +116,10 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** only for explicit smoke or infrastructure checks, not synthesis-quality runs. Evaluation defaults to local vLLM with **`Qwen/Qwen3.5-4B`** (first model in the matrix list) unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** only for explicit smoke or infrastructure checks, not synthesis-quality runs. Evaluation defaults to local vLLM with **`Qwen/Qwen3.5-2B`** (first model in the matrix list) unless you override `--eval-backend` / `--eval-model`.
 
 ```bash
-CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
+CUDA_VISIBLE_DEVICES=1,2 python3 -m synthesis.run_synthesis \
   --task "Solve math word problems step by step, writing each arithmetic computation inside << >> delimiters." \
   --dataset gsm_symbolic \
   --eval-model "Qwen/Qwen2.5-Coder-7B-Instruct" \
@@ -141,6 +145,29 @@ Optional local-beam refinement controls:
 - `--max-local-edit-ratio`
 - `--beam-verify-candidates` / `--no-beam-verify-candidates`
 
+## Reproduce the recorded seed tables
+
+These commands use the tracked disjoint manifests and repository-relative
+paths. They run the fixed-strategy baselines only; add `metadecode` to
+`--strategies` only when intentionally running paid synthesis with an approved
+author-model account.
+
+```bash
+python3 run_all_tests.py \
+  --models Qwen/Qwen3.5-2B,Qwen/Qwen3.5-4B,Qwen/Qwen3.5-9B \
+  --benchmarks gsm \
+  --strategies unconstrained,gcd,crane,itergen,rs,cars \
+  --gsm-split-file experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json \
+  --skip-ablations
+
+python3 run_all_tests.py \
+  --models Qwen/Qwen3.5-2B,Qwen/Qwen3.5-4B,Qwen/Qwen3.5-9B \
+  --benchmarks spider \
+  --strategies unconstrained,gcd,crane,itergen,rs,cars \
+  --spider-split-file experiments/splits/spider_dev_proportional_300x300_seed334.json \
+  --skip-ablations
+```
+
 ## Dafny Files Used by Synthesis
 
 - `synthesis/verify/library/GeneratedCSD.dfy`
@@ -155,9 +182,12 @@ Optional local-beam refinement controls:
 - Generated CSDs may append their own evaluator prompt guidance through `helpers.AppendTaskGuidance(lm, guidance)` as a first action after output initialization. The runtime records the first non-empty guidance block and reports it in evaluation feedback.
 - Do not replace Syncode DFA-mask validity checks with brute-force vocabulary parsing.
 - If you change benchmark contracts, update both runtime code and benchmark READMEs so experiments remain auditable.
-- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order and strategies in `unconstrained, gcd, crane, itergen, rs, cars` order to reduce model reload churn. Default eval models are `Qwen/Qwen3.5-2B`, `Qwen/Qwen3.5-4B`, `Qwen/Qwen3.5-9B`, and `meta-llama/Llama-3.1-8B-Instruct`. Add `metadecode` to `--strategies` for synthesis runs; Metadecode uses `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and `--min-accuracy` as the best matching legacy baseline accuracy plus `--accuracy-win-margin 0.03`.
-- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.03`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
-- `run_all_tests.py` must run inside the RDKit-capable conda environment. It activates `/apps/conda/advayth2/envs/advayth2` by default, verifies RDKit import at startup, and fails fast if activation does not succeed. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) when your conda prefix differs (see `environment/README.md`).
+- `run_all_tests.py` schedules the main matrix model-first, then benchmarks in `gsm, spider, smiles` order and strategies in `unconstrained, gcd, crane, itergen, rs, cars` order to reduce model reload churn. Default eval models are `Qwen/Qwen3.5-2B`, `Qwen/Qwen3.5-4B`, `Qwen/Qwen3.5-9B`, and `meta-llama/Llama-3.1-8B-Instruct`. Add `metadecode` to `--strategies` for synthesis runs; Metadecode uses `--min-syntax-rate` from the best matching legacy baseline JSON (same eval model, benchmark, token budget, max steps), capped at the 0.90 syntax target ceiling, and `--min-accuracy` as the best matching legacy baseline accuracy plus the configured margin (default `--accuracy-win-margin 0.0`).
+- Matrix Metadecode runs explicitly forward the synthesis launch contract: `--accuracy-win-margin 0.0`, `--max-tokens 32768`, `--restart-after-stuck-iters 0`, `--adaptive-helper-mask`, `--helper-selection-policy bandit`, `--refinement-beam-size 2`, `--eval-max-seconds-per-example 90`, and `--eval-min-examples-before-threshold-stop 15`. The `opus4.7` profile also forwards Anthropic adaptive thinking with `--anthropic-effort xhigh` and summarized thinking; the `gemini` profile uses Gemini thinking level `high` by default.
+- `run_all_tests.py` uses the active Python environment by default, verifies
+  RDKit import before a real run, and fails fast when the selected environment
+  is incomplete. Use `VAS_CONDA_ENV` (or legacy `VAS_RDKIT_CONDA_ENV`) to select
+  another environment (see `environment/README.md`).
 - Existing baseline JSONs are skipped only when they contain at least one answer entry with a `generated_answer` field. Empty strings are allowed answers; empty `answers: []` artifacts are treated as incomplete and rerun.
 - Fixed-strategy GSM baselines use the local CRANE GSM rows across `unconstrained`, `gcd`, `crane`, `itergen`, `rs`, and `cars` so those strategies compare against the same questions.
 - Fixed-strategy exports do not assume missing syntax metadata means valid syntax. Legacy rows are annotated with benchmark parser checks where possible; otherwise missing syntax booleans count as invalid.
@@ -174,7 +204,7 @@ Path defaults are intentionally overrideable. Use CLI flags where available and 
 - `--baseline-output-dir` / `CSD_BASELINE_OUTPUT_DIR`
 - `--grammars-dir` / `CSD_GRAMMARS_DIR`
 - `--dafny-path` / `DAFNY_PATH`
-- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (conda prefix for `run_all_tests.py`; default `/apps/conda/advayth2/envs/advayth2`; see `environment/README.md`)
+- `VAS_CONDA_ENV` / `VAS_RDKIT_CONDA_ENV` (optional Python environment prefix for `run_all_tests.py`; defaults to the active environment; see `environment/README.md`)
 - `DAFNY_EXTRA_PATH` (extra PATH entries for Dafny subprocesses)
 - `VERIFIED_AGENT_SYNTHESIS_DFY` / `DAFNY_PROOFS_DIR`
 - `CSD_SYNCODE_DIR`

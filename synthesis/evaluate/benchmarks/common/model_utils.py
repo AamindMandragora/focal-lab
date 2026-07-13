@@ -165,6 +165,92 @@ def _first_ungrounded_token_idx(token_strs: list, support: set) -> tuple:
     return (True, max(len(token_strs) - 1, 0))
 
 
+_PROMPT_MOLECULE_LABEL_RE = re.compile(r"^\s*Molecule:\s*(.*?)\s*$", re.IGNORECASE)
+
+
+def _normalize_prompt_visible_span(text: str) -> str:
+    """Normalize one prompt-visible candidate span for exact duplicate checks."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"^\s*Molecule:\s*", "", text, flags=re.IGNORECASE).strip()
+    if text.startswith("<<") and text.endswith(">>"):
+        text = text[2:-2].strip()
+    text = text.strip("`'\"")
+    if not text or text.lower() == "molecule:":
+        return ""
+    if "\n" in text or re.search(r"\s", text):
+        return ""
+    return text
+
+
+def _prompt_visible_span_set(prompt_text: str) -> set[str]:
+    """Return exact candidate spans visible in ordinary or rolling prompts."""
+    spans: set[str] = set()
+    lines = (prompt_text or "").splitlines()
+    for index, line in enumerate(lines):
+        match = _PROMPT_MOLECULE_LABEL_RE.match(line)
+        if not match:
+            continue
+        inline = _normalize_prompt_visible_span(match.group(1))
+        if inline:
+            spans.add(inline)
+            continue
+        if index > 0:
+            previous = _normalize_prompt_visible_span(lines[index - 1])
+            if previous:
+                spans.add(previous)
+    return spans
+
+
+def _candidate_smiles(text: str) -> str:
+    """Extract a bare SMILES candidate without calling the scorer."""
+    candidate = (text or "").strip()
+    if not candidate:
+        return ""
+    candidate = re.sub(r"^\s*Molecule:\s*", "", candidate, flags=re.IGNORECASE).strip()
+    if candidate.startswith("<<") and candidate.endswith(">>"):
+        candidate = candidate[2:-2].strip()
+    candidate = candidate.strip("`'\"").strip()
+    parts = candidate.split()
+    return parts[0] if parts else ""
+
+
+def _morgan_fp(smiles: str):
+    """Return a generic RDKit Morgan fingerprint, or None."""
+    if not smiles:
+        return None
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+    except Exception:
+        return None
+    molecule = Chem.MolFromSmiles(smiles)
+    if molecule is None:
+        return None
+    return AllChem.GetMorganFingerprintAsBitVect(molecule, 2, nBits=2048)
+
+
+def _smiles_resemblance(candidate_text: str, exemplars) -> tuple[str, float]:
+    """Max prompt-example Tanimoto similarity without scorer or gold access."""
+    candidate = _candidate_smiles(candidate_text)
+    if not candidate:
+        return "", 0.0
+    candidate_fp = _morgan_fp(candidate)
+    if candidate_fp is None:
+        return candidate, 0.0
+    try:
+        from rdkit import DataStructs
+    except Exception:
+        return candidate, 0.0
+    best = 0.0
+    for exemplar in exemplars:
+        exemplar_fp = _morgan_fp(exemplar)
+        if exemplar_fp is not None:
+            best = max(best, float(DataStructs.TanimotoSimilarity(candidate_fp, exemplar_fp)))
+    return candidate, best
+
+
 # Per-component timing. Keyed by a short label. Values are (total_seconds, call_count).
 # Printed periodically from GenerateLogits to break down where per-step time goes.
 # Set CSD_DISABLE_TIMING=1 to turn off.
@@ -785,7 +871,12 @@ class _TensorizedLMBase:
                 # Flat (IterGen-faithful): ln(factor) once per distinct token,
                 # regardless of retry count. Cumulative (default): ln(factor)*count.
                 weight = 1 if self._recurrence_flat else count
-                self._logits_tensor[idx] += log_factor * weight
+                delta = log_factor * weight
+                self._logits_tensor[idx] += delta
+                if self._full_logits is not None:
+                    full_idx = int(self._token_ids_tensor[idx].item())
+                    if 0 <= full_idx < self._full_logits.numel():
+                        self._full_logits[full_idx] += delta
 
     def set_chat_messages(self, chat_messages: list[dict]) -> None:
         """Record the chat_messages used to build instruction_text.
@@ -880,6 +971,36 @@ class _TensorizedLMBase:
         )
         return grounded
 
+    def SpanAppearsInPrompt(self, text):
+        """Dafny extern: exact normalized prompt-visible duplicate check."""
+        if not isinstance(text, str):
+            text = self._to_str(text)
+        candidate = _normalize_prompt_visible_span(text)
+        if not candidate:
+            return False
+        visible = self._prompt_visible_span_set()
+        found = candidate in visible
+        _GROUNDING_LOG.info(
+            "[grounding] prompt-duplicate span=%r visible_n=%d found=%s",
+            candidate[:120], len(visible), found,
+        )
+        return found
+
+    def SpanResemblanceToPromptExamples(self, text):
+        """Dafny extern: prompt-example structural resemblance in [0, 1]."""
+        if not isinstance(text, str):
+            text = self._to_str(text)
+        exemplars = self._prompt_visible_span_set()
+        if not exemplars:
+            return self._dafny.BigRational(0.0)
+        candidate, score = _smiles_resemblance(text, exemplars)
+        if candidate:
+            _GROUNDING_LOG.info(
+                "[grounding] prompt-resemblance span=%r exemplars_n=%d score=%.3f",
+                candidate[:120], len(exemplars), score,
+            )
+        return self._dafny.BigRational(score)
+
     def FirstUngroundedIdentifierTokenIdx(self, unitTokens):
         """Dafny extern: index of the token holding the FIRST out-of-schema
         identifier in `unitTokens`. Returns `(found, idx)`.
@@ -910,6 +1031,16 @@ class _TensorizedLMBase:
                     n, ("".join(token_strs))[:120],
                 )
         return (found, idx)
+
+    def _prompt_visible_span_set(self) -> set[str]:
+        """Prompt-visible candidate spans, cached per instruction text."""
+        instruction = self.instruction_text or ""
+        if getattr(self, "_prompt_visible_span_cache_key", None) == instruction:
+            return self._prompt_visible_span_cache_val
+        spans = _prompt_visible_span_set(instruction)
+        self._prompt_visible_span_cache_key = instruction
+        self._prompt_visible_span_cache_val = spans
+        return spans
 
     def _grounding_support_set(self) -> set:
         """Schema identifier support set for the CURRENT example, cached per

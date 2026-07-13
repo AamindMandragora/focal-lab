@@ -6,18 +6,29 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR="$ROOT/environment/vendor/mxeval"
 REPO="https://github.com/amazon-science/mxeval.git"
+MXEVAL_COMMIT="${MXEVAL_COMMIT:-e09974f990eeaf0c0e8f2b5eaff4be66effb2c86}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 
-if [[ ! -f "$VENDOR/setup.py" ]]; then
+if [[ ! -d "$VENDOR/.git" ]]; then
   mkdir -p "$(dirname "$VENDOR")"
-  git clone --depth 1 "$REPO" "$VENDOR"
+  git init "$VENDOR"
+  git -C "$VENDOR" remote add origin "$REPO"
+fi
+git -C "$VENDOR" fetch --depth 1 origin "$MXEVAL_COMMIT"
+if [[ "$(git -C "$VENDOR" rev-parse HEAD 2>/dev/null || true)" != "$MXEVAL_COMMIT" ]]; then
+  git -C "$VENDOR" checkout --detach --force FETCH_HEAD
+fi
+if [[ "$(git -C "$VENDOR" rev-parse HEAD)" != "$MXEVAL_COMMIT" ]]; then
+  echo "mxeval checkout does not match pinned commit: $MXEVAL_COMMIT" >&2
+  exit 1
 fi
 
 if ! grep -q "evaluate_functional_correctness:main" "$VENDOR/setup.py"; then
   sed -i.bak 's/evaluate_functional_correctness = mxeval.evaluate_functional_correctness"/evaluate_functional_correctness = mxeval.evaluate_functional_correctness:main"/' "$VENDOR/setup.py"
 fi
 
-SITE="$(python -c 'import site; print(site.getsitepackages()[0])')"
+SITE="$("$PYTHON_BIN" -c 'import site; print(site.getsitepackages()[0])')"
 rm -rf "${SITE:?}/data"
 cp -a "$VENDOR/data" "$SITE/"
-python -m pip install "$VENDOR" --no-build-isolation --no-deps
-python -c "from mxeval.data import write_jsonl; print('mxeval import OK')"
+"$PYTHON_BIN" -m pip install "$VENDOR" --no-build-isolation --no-deps
+"$PYTHON_BIN" -c "from mxeval.data import write_jsonl; print('mxeval import OK')"

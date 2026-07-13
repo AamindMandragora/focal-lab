@@ -130,6 +130,7 @@ module ReferenceCarsCSD {
           // ValueError to abort the sample.  Model the token-level penalty as
           // an addition to rejectedTokens and the sample abort as a rollback
           // to the span entry point.
+          lm.PenalizeTriedTokenAt(prompt + cur, next);
           rejectedTokens := rejectedTokens + [next];
           g := g[..spanEntryLen];
           cur := [];

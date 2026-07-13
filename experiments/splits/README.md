@@ -2,12 +2,12 @@
 
 Extra GSM-Symbolic and Spider index manifests used by scripts under `experiments/scripts/`. Examples include seed-specific 49×49 GSM pools, 300×300 Spider subsets, and oracle/probe structural splits.
 
-The **matrix defaults** remain in `environment/benchmark_splits/`:
+The matrix uses these tracked defaults:
 
-- `gsm_symbolic_crane_proportional.json`
-- `spider_dev_proportional.json`
+- `experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json`
+- `environment/benchmark_splits/spider_dev_proportional.json`
 
-Pass archived splits explicitly when re-running a campaign, e.g.:
+Pass other archived splits explicitly when re-running a campaign, e.g.:
 
 ```bash
 --gsm-split-file experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json \

@@ -1,7 +1,7 @@
 # Legacy baseline codebases (local only)
 
 These directories are **not** committed: they are large upstream snapshots used by
-`python -m synthesis.evaluate.run_legacy_fixed_strategy` for CRANE / IterGen /
+`python3 -m synthesis.evaluate.run_legacy_fixed_strategy` for CRANE / IterGen /
 CARS baselines (GCD uses vendored SynCode under `synthesis/evaluate/syncode/`).
 
 ## Install
@@ -13,7 +13,7 @@ bash environment/clone_legacy_csds.sh
 ```
 
 Override upstream URLs or refs with environment variables (see
-`environment/clone_legacy/repos.json` and the clone script header).
+`environment/legacy/repos.json` and the clone script header).
 
 ## Expected layout
 

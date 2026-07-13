@@ -265,6 +265,10 @@ module VerifiedDecoderAgent {
     // in host state, not in any Dafny field. Implemented in the host language.
     predicate {:extern} {:axiom} SpanGrounded(text: string)
 
+    // Prompt-only checks for exact duplication and structural resemblance.
+    predicate {:extern} {:axiom} SpanAppearsInPrompt(text: string)
+    function {:extern} {:axiom} SpanResemblanceToPromptExamples(text: string): real
+
     // Locate the FIRST identifier-like token in `unitTokens` whose rendered text
     // is out-of-schema for the current example. The membership signal is identical
     // to SpanGrounded (same prompt-derived support set, same identifier filtering);
@@ -354,6 +358,20 @@ module VerifiedDecoderAgent {
       ensures cost == old(cost)
     {
       lm.AppendTaskGuidance(guidance);
+    }
+
+    method PrefixAppearsInPrompt(lm: LM, prefix: Prefix) returns (appears: bool)
+      ensures appears == lm.SpanAppearsInPrompt(RenderPrefix(prefix))
+      ensures cost == old(cost)
+    {
+      appears := lm.SpanAppearsInPrompt(RenderPrefix(prefix));
+    }
+
+    method PrefixResemblesPromptExamples(lm: LM, prefix: Prefix) returns (score: real)
+      ensures score == lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix))
+      ensures cost == old(cost)
+    {
+      score := lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix));
     }
 
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)

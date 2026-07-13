@@ -18,7 +18,6 @@ final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
 invalid_outputs_excluded = defaults.invalid_outputs_excluded_none
 accuracy_definition = defaults.accuracy_definition_standard
 
-
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
     return grammars_dir / "gsm.lark"
 

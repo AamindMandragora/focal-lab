@@ -1,0 +1,38 @@
+# CSD Synthesis Pipeline Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core ML dependencies
+torch>=2.0.0
+transformers>=4.35.0
+accelerate>=0.24.0
+numpy>=1.24.0
+openai>=1.30.0
+anthropic>=0.40.0
+vllm>=0.8.0
+python-dotenv>=1.0.0
+google-auth>=2.0.0
+z3-solver>=4.12.0
+rdkit>=2023.9.1
+nltk>=3.8.1
+fire>=0.5.0
+matplotlib>=3.7.0
+
+# For Qwen model support
+tiktoken>=0.5.0
+einops>=0.7.0
+
+# Optional: for faster inference
+# bitsandbytes>=0.41.0  # Uncomment for 8-bit quantization
+# flash-attn>=2.3.0      # Uncomment for Flash Attention (requires CUDA)
+
+# Development/testing
+pytest>=7.0.0
+pytest-timeout>=2.0.0
+
+# Evaluation harnesses (apples-to-apples-ish vs Syncode/IterGen papers)
+datasets>=2.16.0
+jsonschema>=4.20.0
+lark>=1.1.9
+interegular>=0.3.3
+regex==2023.8.8
+tqdm>=4.66.0

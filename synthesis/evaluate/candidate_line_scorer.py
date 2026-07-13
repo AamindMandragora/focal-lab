@@ -35,6 +35,7 @@ from synthesis.evaluate.evaluator import (
     _crane_validate_expression_equivalence,
 )
 from synthesis.evaluate.benchmarks.gsm_symbolic.dataset import load_gsm_from_crane_folder
+from synthesis.project_defaults import default_gsm_source_dir
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ def load_gsm_split_examples(
     split_file: str | Path,
     *,
     split_name: str = "train",
+    crane_dir: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Load canonical GSM examples in the order used by a split manifest."""
 
@@ -68,10 +70,22 @@ def load_gsm_split_examples(
     indices = manifest.get(key)
     if not isinstance(indices, list) or not all(isinstance(index, int) for index in indices):
         raise ValueError(f"{key} must be a list of integer example indices")
-    crane_dir = manifest.get("crane_dir")
-    if not crane_dir:
+    manifest_crane_dir = manifest.get("crane_dir")
+    if crane_dir is None and not manifest_crane_dir:
         raise ValueError("split manifest must include crane_dir")
-    return load_gsm_from_crane_folder(crane_dir, indices=indices)
+
+    source_dir = Path(crane_dir or manifest_crane_dir).expanduser()
+    if crane_dir is None and not source_dir.exists():
+        portable_default = default_gsm_source_dir()
+        if portable_default.exists():
+            source_dir = portable_default
+        else:
+            raise FileNotFoundError(
+                "CRANE GSM folder not found at the recorded manifest path "
+                f"({source_dir}) or the local default ({portable_default}). "
+                "Set CRANE_GSM_SYMBOLIC_DIR or pass crane_dir explicitly."
+            )
+    return load_gsm_from_crane_folder(source_dir, indices=indices)
 
 
 def score_candidate_lines(

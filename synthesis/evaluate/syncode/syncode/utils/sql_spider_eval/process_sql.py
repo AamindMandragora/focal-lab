@@ -27,10 +27,6 @@
 import json
 import sqlite3
 from nltk import word_tokenize
-import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
-# nltk.download('corpus')
 
 CLAUSE_KEYWORDS = ('select', 'from', 'where', 'group', 'order', 'limit', 'intersect', 'union', 'except')
 JOIN_KEYWORDS = ('join', 'on', 'as')

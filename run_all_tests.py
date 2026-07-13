@@ -27,7 +27,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
 CALLER_CUDA_VISIBLE_DEVICES = os.environ.get("CUDA_VISIBLE_DEVICES", "")
 DEFAULT_GSM_SPLIT_FILE = (
-    ROOT_DIR / "environment" / "benchmark_splits" / "gsm_symbolic_crane_proportional.json"
+    ROOT_DIR
+    / "experiments"
+    / "splits"
+    / "gsm_symbolic_crane_proportional_49x49_seed123.json"
 )
 DEFAULT_SPIDER_SPLIT_FILE = ROOT_DIR / "environment" / "benchmark_splits" / "spider_dev_proportional.json"
 
@@ -69,6 +72,24 @@ OOM_RE = re.compile(
     r"Engine core initialization failed",
     re.IGNORECASE,
 )
+
+
+def matrix_max_cuda_devices() -> int:
+    raw = os.environ.get(
+        "VAS_MAX_CUDA_DEVICES",
+        os.environ.get("CSD_MAX_CUDA_DEVICES", "1"),
+    )
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 1
+
+
+def limit_matrix_cuda_visible_devices(value: str | None) -> str | None:
+    if not value:
+        return value
+    parts = [part.strip() for part in value.split(",") if part.strip()]
+    return ",".join(parts[:matrix_max_cuda_devices()])
 # Quota / credit exhaustion on the AUTHOR-model API (OpenAI / Anthropic / Bedrock).
 # These errors are NOT transient — retrying or moving GPUs won't help. We abort
 # the whole matrix run so the user is forced to notice and fix the credit issue
@@ -231,7 +252,7 @@ class Config:
     dry_run: bool = False
     skip_main: bool = False
     skip_ablations: bool = False
-    conda_env_path: Path = Path("/apps/conda/advayth2/envs/advayth2")
+    conda_env_path: Path = Path(sys.prefix)
     cuda_devices: str = "auto"
     cuda_oom_fallback: str = "auto"
     free_gpu_max_used_mb: int = 1024
@@ -249,11 +270,9 @@ class Runner:
     last_failure_was_author_access: bool = False
 
     def configure_cuda_devices(self) -> bool:
-        from synthesis.evaluate.benchmarks.common.model_utils import limit_cuda_visible_devices
-
         selected = self.resolve_cuda_visible_devices("primary", ())
         if selected:
-            selected = limit_cuda_visible_devices(selected) or selected
+            selected = limit_matrix_cuda_visible_devices(selected) or selected
             self.env["CUDA_VISIBLE_DEVICES"] = selected
             os.environ["CUDA_VISIBLE_DEVICES"] = selected
             if self.config.cuda_devices == "auto" and not CALLER_CUDA_VISIBLE_DEVICES:
@@ -396,6 +415,14 @@ class Runner:
                     "Restore or regenerate the committed manifest; see "
                     "environment/benchmark_splits/README.md"
                 )
+            manifest = json.loads(gsm_path.read_text())
+            train = set(manifest.get("train_indices", []))
+            evaluation = set(manifest.get("eval_indices", []))
+            if not train or not evaluation or not train.isdisjoint(evaluation):
+                raise SystemExit(
+                    "GSM split manifest must contain non-empty, disjoint "
+                    f"train_indices and eval_indices: {gsm_path}"
+                )
 
         if "spider" in normalized:
             spider_path = Path(self.config.spider_split_file)
@@ -407,18 +434,7 @@ class Runner:
                 )
 
     def gsm_split_name_for_role(self, role: str) -> str:
-        """
-        Map generation/evaluation roles to manifest keys.
-
-        The default CRANE proportional manifest has train_size=0; use the eval
-        pool for synthesis as well so metadecode tunes on the same fixed subset.
-        """
-        path = Path(self.config.gsm_split_file)
-        if not path.is_file():
-            return "eval" if role != "train" else "train"
-        manifest = json.loads(path.read_text())
-        if role == "train" and not manifest.get("train_indices"):
-            return "eval"
+        """Map generation/evaluation roles to disjoint manifest keys."""
         return "train" if role == "train" else "eval"
 
     def add_generation_split_flags(self, cmd: list[str], benchmark: str) -> None:
@@ -1816,7 +1832,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--gsm-split-file",
         default=os.environ.get("CSD_GSM_SPLIT_FILE", str(DEFAULT_GSM_SPLIT_FILE)),
-        help="Stratified GSM-Symbolic manifest (default: environment/benchmark_splits/gsm_symbolic_crane_proportional.json)",
+        help="Stratified GSM-Symbolic manifest (default: experiments/splits/gsm_symbolic_crane_proportional_49x49_seed123.json)",
     )
     parser.add_argument(
         "--spider-split-file",
@@ -1885,15 +1901,23 @@ def normalize_smiles_classes_for_cli(raw: str) -> list[str]:
         raise SystemExit(str(exc)) from exc
 
 
-def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
-    default_env = Path("/apps/conda/advayth2/envs/advayth2")
-    conda_env_path = Path(
-        os.environ.get("VAS_CONDA_ENV")
-        or os.environ.get("VAS_RDKIT_CONDA_ENV")
-        or str(default_env)
+def resolve_matrix_tensor_parallel_size(requested: int | None = None) -> int:
+    """Resolve the matrix GPU count without importing the heavy model runtime."""
+    cap = matrix_max_cuda_devices()
+    return max(1, min(requested or 1, cap))
+
+
+def configure_conda_environment(
+    root: Path,
+    *,
+    validate: bool = True,
+) -> tuple[Path, dict[str, str]]:
+    configured_env = os.environ.get("VAS_CONDA_ENV") or os.environ.get(
+        "VAS_RDKIT_CONDA_ENV"
     )
+    conda_env_path = Path(configured_env).expanduser() if configured_env else Path(sys.prefix)
     python_path = conda_env_path / "bin" / "python"
-    if not python_path.exists():
+    if validate and not python_path.exists():
         print(f"conda environment python not found: {python_path}", file=sys.stderr)
         raise SystemExit(1)
 
@@ -1905,25 +1929,28 @@ def configure_conda_environment(root: Path) -> tuple[Path, dict[str, str]]:
         env["LD_LIBRARY_PATH"] = f"{lib_dir}{os.pathsep}{env['LD_LIBRARY_PATH']}" if env.get("LD_LIBRARY_PATH") else str(lib_dir)
     env["PYTHONUNBUFFERED"] = "1"
 
-    rdkit_check = subprocess.run(
-        [str(python_path), "-c", "import rdkit"],
-        cwd=root,
-        env=env,
-        text=True,
-        capture_output=True,
-    )
-    if rdkit_check.returncode != 0:
-        sys.stderr.write(rdkit_check.stderr)
-        print(f"failed to import rdkit in conda environment: {conda_env_path}", file=sys.stderr)
-        raise SystemExit(rdkit_check.returncode)
+    if validate:
+        rdkit_check = subprocess.run(
+            [str(python_path), "-c", "import rdkit"],
+            cwd=root,
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+        if rdkit_check.returncode != 0:
+            sys.stderr.write(rdkit_check.stderr)
+            print(
+                f"failed to import rdkit in environment: {conda_env_path}",
+                file=sys.stderr,
+            )
+            raise SystemExit(rdkit_check.returncode)
 
-    print(f"[env] using conda environment: {conda_env_path}")
+    mode = "configured" if configured_env else "active"
+    print(f"[env] using {mode} Python environment: {conda_env_path}")
     return conda_env_path, env
 
 
 def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
-    from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
-
     dafny_path = args.dafny_path
     if not dafny_path and (ROOT_DIR / "dafny" / "dafny").is_file():
         dafny_path = str(ROOT_DIR / "dafny" / "dafny")
@@ -1965,7 +1992,9 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         anthropic_effort=str(args.anthropic_effort),
         anthropic_thinking_display=str(args.anthropic_thinking_display),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
-        vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
+        vllm_tensor_parallel_size=resolve_matrix_tensor_parallel_size(
+            args.vllm_tensor_parallel_size
+        ),
         dafny_path=dafny_path,
         generated_output_dir=Path(args.generated_output_dir),
         baseline_output_dir=Path(args.baseline_output_dir),
@@ -1993,7 +2022,10 @@ def main(argv: list[str] | None = None) -> int:
     load_env_file(ROOT_DIR / "synthesis" / ".env")
     parser = make_parser()
     args = parser.parse_args(argv)
-    conda_env_path, env = configure_conda_environment(ROOT_DIR)
+    conda_env_path, env = configure_conda_environment(
+        ROOT_DIR,
+        validate=not args.dry_run,
+    )
     config = build_config(args, conda_env_path)
     return Runner(config=config, env=env).run()
 
