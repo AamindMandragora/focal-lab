@@ -52,7 +52,7 @@ Output:
 
 - **OpenAI** (`--generation-backend openai`): **`OPENAI_API_KEY`** (and optional **`OPENAI_BASE_URL`**). Default model **`gpt-5.4`** or **`OPENAI_GENERATION_MODEL`**. Synthesis author calls request reasoning effort **`xhigh`** by default; override with **`CSD_OPENAI_REASONING_EFFORT`** or **`OPENAI_GENERATION_REASONING_EFFORT`**, or set it to `off` only for intentional non-reasoning experiments. Used by the **`gpt5.5`** profile in `run_all_tests.py`.
 
-- **Anthropic** (`--generation-backend anthropic`): **`ANTHROPIC_API_KEY`** and optional **`ANTHROPIC_OPUS_MODEL`**. The **`opus4.7`** profile in `run_all_tests.py` uses adaptive thinking with `xhigh` effort by default.
+- **Anthropic** (`--generation-backend anthropic`): **`ANTHROPIC_API_KEY`**. The default matrix profile is **`sonnet4.6`**, with optional **`ANTHROPIC_SONNET_MODEL`**; it uses adaptive thinking with `xhigh` effort by default. **`opus4.7`** remains a supported optional profile using **`ANTHROPIC_OPUS_MODEL`**.
 
 - **Gemini** (`--generation-backend gemini`): **`GEMINI_API_KEY`** (or `GOOGLE_API_KEY`) and optional **`GEMINI_GENERATION_MODEL`**. On quota exhaustion, direct Gemini and Vertex API-key calls rotate through **`GEMINI_API_KEY_BACKUP_1`**, **`GEMINI_API_KEY_BACKUP_2`**, ... with no retry delay on the exhausted key. The **`gemini`** profile in `run_all_tests.py` uses the direct Gemini API with default model **`gemini-3-pro-preview`** and `CSD_GEMINI_THINKING_LEVEL=high`. Do not route Gemini through Bedrock.
 

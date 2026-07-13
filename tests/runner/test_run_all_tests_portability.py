@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -86,3 +87,33 @@ def test_claude_launch_guide_defers_to_current_agents_contract():
     assert "CUDA_VISIBLE_DEVICES=2,3" not in guide
     assert '--generation-model "Qwen/Qwen2.5-Coder-7B-Instruct"' not in guide
     assert "AGENTS.md" in guide
+
+
+def test_supported_docs_leave_gpu_selection_to_the_caller():
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "run_tmux.sh",
+    ]
+    for path in docs:
+        text = path.read_text()
+        assert re.search(r"CUDA_VISIBLE_DEVICES=\d", text) is None, path
+
+    assert "Prefer GPUs `2,3`" not in (REPO_ROOT / "AGENTS.md").read_text()
+    assert "GPU defaults" not in (REPO_ROOT / "README.md").read_text()
+    assert "default: 2" not in (REPO_ROOT / "run_tmux.sh").read_text()
+
+
+def test_docs_name_the_default_anthropic_matrix_profile():
+    runner = (REPO_ROOT / "run_all_tests.py").read_text()
+    assert 'DEFAULT_GEN_MODELS = "sonnet4.6,gpt5.5,gemini"' in runner
+
+    docs = [
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "synthesis/generate/README.md",
+    ]
+    for path in docs:
+        text = path.read_text()
+        assert "sonnet4.6" in text, path
+        assert "ANTHROPIC_SONNET_MODEL" in text, path

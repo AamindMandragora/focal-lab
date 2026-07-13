@@ -18,7 +18,7 @@
 #   METADECODE_TMUX_SESSION     session name (default: metadecode)
 #   METADECODE_CONDA_ENV        Python environment prefix (default: active environment)
 #   VAS_CONDA_ENV               shared fallback environment prefix
-#   CUDA_VISIBLE_DEVICES GPU for local runs (default: 2; set VAS_MAX_CUDA_DEVICES>1 to allow more)
+#   CUDA_VISIBLE_DEVICES optional caller-selected GPU list (unset by default)
 
 set -euo pipefail
 
