@@ -1,0 +1,2265 @@
+{
+  "records": [
+    {
+      "helper": "AdaptiveConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py",
+        "tests/test_helper_bandit_keep_untried.py"
+      ]
+    },
+    {
+      "helper": "AdaptiveConstrainedStepWithPenalties",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "AppendConstrainedToken",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "AppendTaskGuidance",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "BoostTokenLogits",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "BoostValidGroups",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "BoostValidNextAndEos",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "BoostedConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ChooseNextToken",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py"
+      ]
+    },
+    {
+      "helper": "ChooseNextTokenUnconstrained",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "CloseConstrainedSpan",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py",
+        "tests/test_unit_rewind_hint.py"
+      ]
+    },
+    {
+      "helper": "CloseSpanIfComplete",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "CloseSpanWithinBudget",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "CompletedSchemaSymbolCount",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": false,
+      "in_non_prunable": false,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "tests/grounding_symbol_boundary/test_symbol_pos_counts.py"
+      ]
+    },
+    {
+      "helper": "ConfidenceGatedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ConstrainedGeneration",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_bandit_keep_untried.py"
+      ]
+    },
+    {
+      "helper": "ConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/generate/test_prompt_fairness.py",
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "ConstrainedSymbol",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ConstrainedSymbolInGenerated",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "Contains",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "Dafny definition not currently exposed to generated helper universe"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_delimiter_feedback_gating.py",
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "CountSubstring",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "CountTokenOccurrences",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "CraneGeneration",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "DeadEndAvoidingStep",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": false,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "DeadEndDetection",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "EnterObservedConstrainedSpan",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ExtractAfterKeyword",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ExtractContentBetweenDelimiters",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "FlattenTokenGroups",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GenerateLogits",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py"
+      ]
+    },
+    {
+      "helper": "GenerateUnconstrainedChunk",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "GenerateWithManagedSpan",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GenerateWithPrefixAndManagedSpan",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GetHighestLogitToken",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GetLogitGap",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GetTokenLogit",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GetTopKTokens",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GroupBoostedConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GroupContaining",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "GroupHasValidMember",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "HasUnmaskedToken",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "IdToLogit",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "IdToToken",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "IdsToLogits",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "IntersectTokenSets",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "IsCompletePrefix",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py",
+        "tests/test_parser_helper_big_o.py"
+      ]
+    },
+    {
+      "helper": "IsDeadPrefix",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py",
+        "tests/test_parser_helper_big_o.py"
+      ]
+    },
+    {
+      "helper": "IsMasked",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "Dafny definition not currently exposed to generated helper universe"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "IsTokenValidNext",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "IsValidPrefix",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py"
+      ]
+    },
+    {
+      "helper": "LastTokenBefore",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ManagedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_itergen_promotion_removed.py"
+      ]
+    },
+    {
+      "helper": "MaskToken",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "MaskTokens",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "MaskTokensExcept",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "MaskTokensInPrefix",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "MaskValidNextAndEos",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py",
+        "tests/test_mask_brace_block.py"
+      ]
+    },
+    {
+      "helper": "OccurrencesInRange",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "OpenConstrainedSpan",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py",
+        "tests/test_unit_rewind_hint.py"
+      ]
+    },
+    {
+      "helper": "ParseG",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "PenalizeTokenLogits",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "PenalizedConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "PrefixAppearsInPrompt",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "PrefixToString",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "RegenerateUnitOnCheckFailure",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py",
+        "synthesis/tests/fairness_cloud/test_itergen_promotion_removed.py",
+        "tests/test_itergen_unit_rewind.py",
+        "tests/test_unit_rewind_hint.py"
+      ]
+    },
+    {
+      "helper": "RegenerateUnitOnGroundingFailure",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "likely GSM/Spider-stage helper; defer until staged policy reaches that dataset unless active evidence points here"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": [
+        "synthesis/evaluate/benchmarks/common/test_grounding.py",
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py",
+        "synthesis/tests/fairness_cloud/test_itergen_promotion_removed.py",
+        "tests/grounding_symbol_boundary/test_first_ungrounded_token_idx.py"
+      ]
+    },
+    {
+      "helper": "RenderPrefix",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "RenderedEndsWith",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": false,
+      "in_non_prunable": false,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "Dafny definition not currently exposed to generated helper universe"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": []
+    },
+    {
+      "helper": "RepetitionPenaltyStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "RestoreLogitsSnapshot",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackAndContinue",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackAndRegenerate",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": false,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "likely GSM/Spider-stage helper; defer until staged policy reaches that dataset unless active evidence points here"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackConstrainedSpan",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackConstrainedSuffix",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "likely GSM/Spider-stage helper; defer until staged policy reaches that dataset unless active evidence points here"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackConstrainedToComplete",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "likely GSM/Spider-stage helper; defer until staged policy reaches that dataset unless active evidence points here"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackToCompletePrefix",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RollbackToValidPrefix",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "RolloutConstrainedWithPenalties",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "SafeBoostTokenLogits",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SafeBoostedConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SafePenalizeTokenLogits",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SafePenalizedConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SafeRepetitionPenaltyStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_unit_rewind_hint.py"
+      ]
+    },
+    {
+      "helper": "SafeSoftConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SafeTemperatureConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SaveLogitsSnapshot",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "ScaleAllLogits",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SoftConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "SpeculativeConstrainedRollout",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "documented/implemented helper is not in generated helper universe"
+      ],
+      "tag": "expose_now",
+      "test_files_sample": [
+        "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+      ]
+    },
+    {
+      "helper": "SubtractTokenSets",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "TemperatureConstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "TokenToId",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "TokenToIdRecursive",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "TokenToLogit",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "TokensSinceLastOccurrence",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "TokensToLogits",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py"
+      ]
+    },
+    {
+      "helper": "TopValidCandidates",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "UnconstrainedChunk",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": true,
+      "reasons": [
+        "prompt-universe helper surface is complete"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_bandit_keep_untried.py",
+        "tests/test_unit_rewind_hint.py"
+      ]
+    },
+    {
+      "helper": "UnconstrainedGeneration",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": false,
+      "in_prompt_docs": true,
+      "in_prunable": true,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "UnconstrainedStep",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ValidNextToken",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py"
+      ]
+    },
+    {
+      "helper": "ValidNextTokenCount",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+      ],
+      "tag": "profile_later",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py",
+        "tests/test_parser_helper_big_o.py"
+      ]
+    },
+    {
+      "helper": "ValidNextTokens",
+      "in_all_helper_names": false,
+      "in_dafny": false,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": true,
+      "reasons": [
+        "no active-stage gap detected"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": [
+        "tests/test_helper_surface_contract.py",
+        "tests/test_itergen_unit_rewind.py"
+      ]
+    },
+    {
+      "helper": "ValidTokenCount",
+      "in_all_helper_names": true,
+      "in_dafny": true,
+      "in_feedback_classification": true,
+      "in_non_prunable": true,
+      "in_prompt_docs": true,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "generated/classified helper has no direct test reference found"
+      ],
+      "tag": "stage_later",
+      "test_files_sample": []
+    },
+    {
+      "helper": "ValidTokensIdsLogits",
+      "in_all_helper_names": false,
+      "in_dafny": true,
+      "in_feedback_classification": false,
+      "in_non_prunable": false,
+      "in_prompt_docs": false,
+      "in_prunable": false,
+      "in_tests": false,
+      "reasons": [
+        "implemented/internal-looking helper not exposed to generated CSDs"
+      ],
+      "tag": "leave_alone",
+      "test_files_sample": []
+    }
+  ],
+  "summary": {
+    "audit_type": "cpu_only_helper_surface_inventory",
+    "billed_api_calls": 0,
+    "classified_without_prompt_doc_count": 29,
+    "created_at": "2026-06-30T16:26:29.009521+00:00",
+    "files_read": [
+      "synthesis/verify/library/VerifiedAgentSynthesis.dfy",
+      "synthesis/generate/prompts.py",
+      "synthesis/evaluate/feedback_loop.py"
+    ],
+    "gpu_calls": 0,
+    "hypothesis_id": "H90",
+    "key_findings": [
+      "All helpers in _ALL_HELPER_NAMES are now implemented, prompt-documented, and feedback-classified.",
+      "51 prompt-universe helper(s) have no direct test reference found by text scan; prioritize only when tied to an active failure path.",
+      "Speed-sensitive helpers should remain profile-gated: GenerateLogits.prefix_text after H86, CompletedSchemaSymbolCount in GSM/Spider stages, GetTopKTokens only if a strategy uses top-k heavily."
+    ],
+    "model_calls": 0,
+    "num_records": 105,
+    "prompt_doc_without_classification_count": 0,
+    "prompt_universe_count": 64,
+    "prompt_universe_gap_count": 0,
+    "score_artifact_edits": 0,
+    "tag_counts": {
+      "expose_now": 9,
+      "leave_alone": 34,
+      "profile_later": 7,
+      "stage_later": 55
+    },
+    "top_actionable": [
+      {
+        "helper": "BoostValidNextAndEos",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "ChooseNextToken",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py"
+        ]
+      },
+      {
+        "helper": "ChooseNextTokenUnconstrained",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "Contains",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "Dafny definition not currently exposed to generated helper universe"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_delimiter_feedback_gating.py",
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "DeadEndAvoidingStep",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": false,
+        "in_prompt_docs": false,
+        "in_prunable": true,
+        "in_tests": false,
+        "reasons": [
+          "generated/classified helper has no direct test reference found"
+        ],
+        "tag": "stage_later",
+        "test_files_sample": []
+      },
+      {
+        "helper": "GenerateLogits",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+        ],
+        "tag": "profile_later",
+        "test_files_sample": [
+          "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py"
+        ]
+      },
+      {
+        "helper": "GenerateUnconstrainedChunk",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "HasUnmaskedToken",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "IdToLogit",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "IdToToken",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "IdsToLogits",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "IsCompletePrefix",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+        ],
+        "tag": "profile_later",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py",
+          "tests/test_parser_helper_big_o.py"
+        ]
+      },
+      {
+        "helper": "IsDeadPrefix",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py",
+          "tests/test_parser_helper_big_o.py"
+        ]
+      },
+      {
+        "helper": "IsMasked",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "Dafny definition not currently exposed to generated helper universe"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "IsValidPrefix",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+        ],
+        "tag": "profile_later",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py"
+        ]
+      },
+      {
+        "helper": "MaskToken",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "synthesis/evaluate/benchmarks/common/test_recurrence_penalty.py",
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "MaskTokens",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "MaskTokensExcept",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "MaskValidNextAndEos",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+        ],
+        "tag": "profile_later",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py",
+          "tests/test_mask_brace_block.py"
+        ]
+      },
+      {
+        "helper": "ParseG",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "RenderPrefix",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "RollbackAndRegenerate",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": false,
+        "in_prompt_docs": false,
+        "in_prunable": true,
+        "in_tests": true,
+        "reasons": [
+          "likely GSM/Spider-stage helper; defer until staged policy reaches that dataset unless active evidence points here"
+        ],
+        "tag": "stage_later",
+        "test_files_sample": [
+          "synthesis/tests/fairness_cloud/test_helper_menu_prune.py"
+        ]
+      },
+      {
+        "helper": "TokenToId",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "TokenToIdRecursive",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "TokenToLogit",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "TokensToLogits",
+        "in_all_helper_names": false,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "implemented/internal-looking helper not exposed to generated CSDs"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py"
+        ]
+      },
+      {
+        "helper": "ValidNextToken",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py"
+        ]
+      },
+      {
+        "helper": "ValidNextTokenCount",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "known or suspected runtime-sensitive helper; patch only if active profile shows material cost"
+        ],
+        "tag": "profile_later",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py",
+          "tests/test_parser_helper_big_o.py"
+        ]
+      },
+      {
+        "helper": "ValidNextTokens",
+        "in_all_helper_names": false,
+        "in_dafny": false,
+        "in_feedback_classification": true,
+        "in_non_prunable": true,
+        "in_prompt_docs": false,
+        "in_prunable": false,
+        "in_tests": true,
+        "reasons": [
+          "no active-stage gap detected"
+        ],
+        "tag": "leave_alone",
+        "test_files_sample": [
+          "tests/test_helper_surface_contract.py",
+          "tests/test_itergen_unit_rewind.py"
+        ]
+      },
+      {
+        "helper": "AdaptiveConstrainedStepWithPenalties",
+        "in_all_helper_names": true,
+        "in_dafny": true,
+        "in_feedback_classification": true,
+        "in_non_prunable": false,
+        "in_prompt_docs": true,
+        "in_prunable": true,
+        "in_tests": false,
+        "reasons": [
+          "generated/classified helper has no direct test reference found"
+        ],
+        "tag": "stage_later",
+        "test_files_sample": []
+      }
+    ],
+    "untested_prompt_helper_count": 51
+  }
+}

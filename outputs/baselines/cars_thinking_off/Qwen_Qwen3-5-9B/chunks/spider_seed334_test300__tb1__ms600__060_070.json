@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1013.3886,
+    "mean_generation_seconds_per_example": 101.338858,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1037.449,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 60,
+    "eval_end_index": 70
+  },
+  "answers": [
+    {
+      "question": "What are the names of airports in Aberdeen?",
+      "generated_answer": "SELECT airportname FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 9.923042
+    },
+    {
+      "question": "How many flights depart from 'APG'?",
+      "generated_answer": "SELECT COUNT(*) FROM flights WHERE sourceairport = 'APG'",
+      "generation_seconds": 27.50856
+    },
+    {
+      "question": "Count the number of flights departing from 'APG'.",
+      "generated_answer": "SELECT COUNT(*) FROM flights JOIN airports ON flights.destairport = airports.airportcode WHERE airports.airportname = 'APG'",
+      "generation_seconds": 34.014804
+    },
+    {
+      "question": "How many flights have destination ATO?",
+      "generated_answer": "SELECT COUNT(*) FROM flights WHERE destairport = 'ATO'",
+      "generation_seconds": 27.26223
+    },
+    {
+      "question": "Return the number of flights departing from Aberdeen.",
+      "generated_answer": "SELECT DESTAIRPORT, COUNT(FLIGHTNO) AS FLTNUM FROM FLIGHTS WHERE DESTAIRPORT = (SELECT AIRPORTCODE FROM AIRPORTS WHERE CITY = 'Aberdeen') GROUP BY DESTAIRPORT",
+      "generation_seconds": 57.178336
+    },
+    {
+      "question": "How many flights depart from City 'Aberdeen' and have destination City 'Ashley'?",
+      "generated_answer": "select count(*) from flights join airports dest on flights.destairport = dest.airportcode join airports src on flights.sourceairport = src.airportcode where dest.city = 'Ashley' and src.city = 'Aberdeen'",
+      "generation_seconds": 279.516698
+    },
+    {
+      "question": "Count the number of United Airlines flights arriving in ASY Airport.",
+      "generated_answer": "SELECT COUNT(*) FROM flights F, airlines A, airports AR WHERE F.airline = A.abbreviation AND A.airline = 'United Airlines' AND F.destairport = AR.airportcode AND AR.city = 'ASY'",
+      "generation_seconds": 110.980781
+    },
+    {
+      "question": "Return the number of United Airlines flights leaving from AHD Airport.",
+      "generated_answer": "SELECT COUNT(*) FROM flights f JOIN airlines a ON f.airline = a.airline WHERE a.airline = 'United Airlines' AND f.sourceairport IN (SELECT airportcode FROM airports WHERE city = 'AHD')",
+      "generation_seconds": 216.822279
+    },
+    {
+      "question": "How many United Airlines flights go to City 'Aberdeen'?",
+      "generated_answer": "SELECT COUNT(*) FROM airlines f, airports a WHERE f.abbreviation = 'United' AND a.airportcode = 'ABD' AND f.sourceairport = a.airportcode",
+      "generation_seconds": 44.100292
+    },
+    {
+      "question": "Which city has most number of arriving flights?",
+      "generated_answer": "SELECT a.city FROM airports a INNER JOIN flights f ON f.sourceairport = a.city GROUP BY a.city ORDER BY COUNT(f.sourceairport) DESC LIMIT 1",
+      "generation_seconds": 206.081562
+    }
+  ]
+}

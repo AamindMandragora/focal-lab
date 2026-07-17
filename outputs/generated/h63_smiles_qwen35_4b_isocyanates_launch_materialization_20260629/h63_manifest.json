@@ -1,0 +1,52 @@
+{
+  "hypothesis_id": "H63",
+  "created_at_utc": "2026-06-29T17:15:00Z",
+  "purpose": "Launch-readiness artifact for the next paid Qwen3.5 SMILES cell; no run is launched by materializing this artifact.",
+  "cell": {
+    "dataset": "SMILES",
+    "class": "isocyanates",
+    "model": "Qwen/Qwen3.5-4B",
+    "tag": "qwen35_4b"
+  },
+  "baseline_artifact": {
+    "path": "outputs/controlled_comparison/smiles_qwen35/4B/isocyanates/cars.json",
+    "accuracy": 0.16,
+    "syntax_rate": 1.0,
+    "num_examples": 50
+  },
+  "planned_command": [
+    "./pilot_smiles_uv_qwen35_i40.sh",
+    "Qwen/Qwen3.5-4B",
+    "qwen35_4b",
+    "isocyanates",
+    "${SAFE_GPU_ID}",
+    "0.40",
+    "0.16",
+    "0.50"
+  ],
+  "planned_outputs": {
+    "output_root": "outputs/generated/smiles_qwen35_4b_isocyanates_uv_qwen35_0627",
+    "heldout_json": "outputs/controlled_comparison/smiles_qwen35_4b/isocyanates/metadecode_uv.json",
+    "pid_file": "/tmp/csd_h63_logs/h63_smiles_qwen35_4b_isocyanates_20260629.pid",
+    "log_file": "/tmp/csd_h63_logs/h63_smiles_qwen35_4b_isocyanates_20260629.log"
+  },
+  "safety": {
+    "dry_run_default": true,
+    "requires_explicit_safe_gpu_id": true,
+    "min_free_mib_default": 20000,
+    "rejects_non_aadivyar_processes_on_selected_gpu": true,
+    "requires_account_confirmation_env": "CONFIRM_BEDROCK_ACCOUNT_887730490125=yes",
+    "paid_account_recorded_by_user": "887730490125",
+    "does_not_store_secret_values": true
+  },
+  "repo_root_default": "/home/aadivyar/csd-generation",
+  "launch": {
+    "status": "launched_running",
+    "launched_at_utc": "2026-06-29T17:23:26Z",
+    "pid": 193596,
+    "safe_gpu_id": 2,
+    "latest_run_file": "outputs/generated/smiles_qwen35_4b_isocyanates_uv_qwen35_0627/latest_run.txt",
+    "latest_run_path_observed": "outputs/generated/smiles_qwen35_4b_isocyanates_uv_qwen35_0627/smiles_qwen35_4b_isocyanates_uv_qwen35_0627_20260629_172330_b62714"
+  },
+  "status": "launched_running"
+}

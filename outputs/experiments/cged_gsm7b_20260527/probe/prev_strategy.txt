@@ -1,0 +1,201 @@
+// CSD_RATIONALE_BEGIN
+// DEEP ANALYSIS OF FAILURE MODES:
+//
+// Attempt 9 introduced a NEW dominant failure: mode_L (30 examples, 70% of failures).
+// mode_L: syntax_valid=yes, has_extracted_answer=yes, but WRONG answer, token_budget_band=LOW.
+//
+// The guidance "write ONLY ONE << >> at the end" backfired badly:
+// - token_budget_band=LOW means the model is using FEW tokens.
+// - The model generates very short output, then ONE << >> span, but it's WRONG.
+// - The examples show: model generates VERY LITTLE reasoning, then generates an incomplete
+//   or wrong formula in << >>.
+// - The "only one << >>" guidance caused the model to RUSH to << >> without doing proper reasoning.
+// - This is the opposite of what we wanted - the model now generates LESS thinking.
+//
+// PREVIOUS BEST (mode_H dominant, attempts 1,2,5,7,8):
+// - 11.1% accuracy (attempt 8), 83.3% syntax
+// - Models generate CORRECT intermediate steps but the LAST span is sometimes wrong/incomplete
+// - The reasoning was BETTER but answer extraction failed
+//
+// KEY INSIGHT: The model needs to THINK MORE (more unconstrained reasoning) before 
+// generating the final answer. The guidance "only one << >>" caused less thinking.
+//
+// WHAT WORKS in the correct answer examples:
+// - "<<t + (k * t) / (mult * m)>>" - the model needs to REASON about the formula
+// - "<<int(n1*c1 + n2*c2 + c3)>>" - complex expression
+// - The model CAN generate correct formulas BUT needs enough unconstrained space to reason
+//
+// NEW STRATEGY - CRITICAL CHANGE:
+// The mode_L problem (30/38 wrong = 79%) is that the model generates VERY QUICKLY 
+// (token_budget_band=LOW) without enough reasoning. The guidance was too aggressive.
+//
+// APPROACH: Let the model think FREELY for a LONG time, then at the end, the << >> span
+// should contain the complete answer. Key changes:
+//
+// 1. GUIDANCE: "Think step by step extensively. At the end of your work, place the final
+//    answer expression in << >> (e.g., <<n1 * c1 + n2 * c2>>). Work through all steps
+//    before writing << >>."
+//    -> Encourage MORE thinking before << >>
+//    -> Keep "one << >> at the end" but emphasize THINKING FIRST
+//
+// 2. CHUNK SIZE: Use larger chunks (50-60) to allow more unconstrained reasoning per loop
+//    iteration. This reduces LM call overhead and lets the model build more context.
+//
+// 3. For too_slow (2 examples): These examples timed out even at chunkSize=30.
+//    Root cause: The while loop ITSELF is slow because each iteration takes time.
+//    With chunkSize=60 and maxSteps=900, we'd have ~15 iterations max, each generating
+//    up to 60 tokens. That should be fast enough.
+//
+// 4. For unterminated spans (2 examples): Keep the rollback + close logic.
+//    The "<<int(1 + ((n1 * w1 *" pattern shows the model starts a complex expression
+//    that doesn't complete. The parser grammar may not allow "int(" - need to check.
+//    For unterminated spans, after rollback, if not complete, just exit span gracefully.
+//
+// 5. GUIDANCE REFINEMENT: The key issue is that the model with "only one << >>" guidance
+//    generates TOO LITTLE text. We need to encourage it to generate a FULL solution
+//    with multiple intermediate << >> spans (like the task says), but we want the LAST
+//    completed << >> span to have the FINAL ANSWER.
+//
+// ALTERNATIVE: Instead of "only one << >>", tell the model to "wrap EACH calculation
+// in << >>, with the FINAL computation last". This matches the original task description
+// and may work better because:
+// - Mode_H (original) had 26 wrong examples but more correct examples (11.1-15% accuracy)
+// - Mode_L (new) has 30 wrong examples and fewer correct (10% accuracy)
+// - So original guidance was BETTER for accuracy
+//
+// BACK TO ORIGINAL GUIDANCE but with TWO improvements:
+// (a) Tell the model "the LAST << >> expression will be evaluated as your answer"
+// (b) Tell the model to make the LAST << >> the complete final computation
+//
+// This way the model generates FULL reasoning + MULTIPLE << >> spans + final answer last.
+//
+// TIMING FIX:
+// mode_I (too_slow) examples have blank output = model generates NOTHING useful.
+// This is likely the examples where the model gets confused early and generates many
+// tokens without making progress (or the tokenizer is slow per token).
+// Fix: increase chunkSize to reduce iterations.
+//
+// ROLLBACK FIX:
+// The "<<int(1 + ((n1 * w1 *" example: parser says EOS because the expression is still
+// being built. We need to rollback to a complete point or just exit gracefully.
+// The rollback logic from attempt 9 should handle this.
+//
+// FINAL DECISION:
+// - Guidance: encourage full step-by-step reasoning with multiple << >> spans,
+//   emphasize the LAST << >> is the final answer that gets evaluated
+// - chunkSize = 50 (reduce iterations, help with too_slow)
+// - Keep rollback + graceful close logic
+// - The original mode_H had "correct but last span wrong" - we need last span correct
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   Outside-span / UnconstrainedChunk branch: when stoppedOnOpenSpan=true, generated
+//   already ends with "<<". EnterObservedConstrainedSpan sets currentConstrainedOut := []
+//   which satisfies IsValidPrefix([]) by precondition. insideConstrainedOut := true.
+//   When stoppedOnOpenSpan=false, insideConstrainedOut stays false, implication vacuous.
+//   Complete-prefix branch: CloseConstrainedSpan sets insideConstrainedOut := false,
+//   making the implication vacuously true.
+//   Active-constrained branch: SafeRepetitionPenaltyStep returns a parser-valid token or EOS.
+//   AppendConstrainedToken preserves IsValidPrefix by contract.
+//   EOS-inside-span with rollback: RollbackConstrainedSuffix returns a valid prefix by
+//   contract. If IsCompletePrefix after rollback, CloseConstrainedSpan sets
+//   insideConstrainedOut := false. Otherwise we set insideConstrainedOut := false,
+//   currentConstrainedOut := [].
+// progress:
+//   UnconstrainedChunk branch: steps += stepsUsed (>= 1). Generated grows by at most
+//   stepsUsed tokens (one per step). |generated| <= |generatedPrefix| + steps preserved.
+//   Complete-prefix branch: steps += 1, CloseConstrainedSpan appends at most 1 token (>>).
+//   Active-constrained branch: steps += 1, AppendConstrainedToken appends at most 1 token.
+//   EOS rollback: steps already incremented; rollback only removes tokens (decreases
+//   |generated| or leaves unchanged), so the bound still holds. CloseConstrainedSpan
+//   costs +1 (guarded by steps < maxSteps check).
+//   All branches maintain |generated| <= |generatedPrefix| + steps.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+helpers.AppendTaskGuidance(lm, "Solve this math word problem step by step. Show your reasoning using the symbolic variables. Wrap EACH intermediate calculation inside << >> delimiters (e.g., <<n1 * c1>>, <<n1 * c1 + n2 * c2>>). Make the LAST << >> expression your complete final answer computation - this is what will be evaluated. Work through all steps thoroughly before writing the final << >>.");
+
+var steps: nat := 0;
+var chunkSize: nat := 50;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    var remainingSteps := maxSteps - steps;
+    var thisChunk := if remainingSteps < chunkSize then remainingSteps else chunkSize;
+    if thisChunk == 0 {
+      break;
+    }
+    var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(
+      lm, prompt, generated, thisChunk, "<<", eosToken
+    );
+    generated := generatedOut;
+    steps := steps + stepsUsed;
+    if stoppedOnEos {
+      break;
+    } else if stoppedOnOpenSpan {
+      var g2, i2, c2 := helpers.EnterObservedConstrainedSpan(lm, generated);
+      generated := g2;
+      insideConstrainedOut := i2;
+      currentConstrainedOut := c2;
+    }
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    if steps < maxSteps {
+      var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+        lm, parser, generated, currentConstrainedOut
+      );
+      generated := closedGenerated;
+      insideConstrainedOut := closedInside;
+      currentConstrainedOut := closedCurrent;
+      steps := steps + 1;
+    } else {
+      break;
+    }
+  } else {
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.SafeRepetitionPenaltyStep(
+      lm, parser, constrainedPrompt, currentConstrainedOut, generated, 1.5, eosToken
+    );
+    steps := steps + 1;
+    if next == eosToken {
+      // Rollback to a valid prefix, then close if complete, else exit span
+      var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+        parser, generated, currentConstrainedOut
+      );
+      generated := rolledGenerated;
+      currentConstrainedOut := rolledCurrent;
+      if parser.IsCompletePrefix(currentConstrainedOut) && steps < maxSteps {
+        var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+          lm, parser, generated, currentConstrainedOut
+        );
+        generated := closedGenerated;
+        insideConstrainedOut := closedInside;
+        currentConstrainedOut := closedCurrent;
+        steps := steps + 1;
+      } else {
+        insideConstrainedOut := false;
+        currentConstrainedOut := [];
+        break;
+      }
+    } else {
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }
+  }
+}
+
+cost := steps;

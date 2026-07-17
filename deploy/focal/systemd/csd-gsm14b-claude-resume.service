@@ -1,0 +1,18 @@
+[Unit]
+Description=Resume GSM 14B synthesis with isolated Claude Code Max authoring
+After=network-online.target
+Wants=network-online.target
+Before=csd-warm-recovery.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aadivyar/csd-generation
+ExecStart=/home/aadivyar/csd-generation/.recovery/claude-code-gsm14b/launch_resume_from55.sh
+Restart=on-abnormal
+RestartSec=60
+SuccessExitStatus=75
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

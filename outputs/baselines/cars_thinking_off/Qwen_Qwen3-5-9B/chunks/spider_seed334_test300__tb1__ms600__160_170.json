@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1050.6251,
+    "mean_generation_seconds_per_example": 105.06251,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1069.9007,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 160,
+    "eval_end_index": 170
+  },
+  "answers": [
+    {
+      "question": "Who are enrolled in 2 degree programs in one semester? List the first name, middle name and last name and the id.",
+      "generated_answer": "SELECT first_name, middle_name, last_name, student_id FROM students WHERE student_id IN (SELECT student_id FROM ( SELECT degree_program_id, COUNT(DISTINCT student_id) as cnt FROM student_enrolment WHERE semester_id = (SELECT MAX(semester_id) FROM semesters) GROUP BY student_id, semester_id HAVING COUNT(DISTINCT degree_program_id) = 2) AS enrolled_students)",
+      "generation_seconds": 86.818803
+    },
+    {
+      "question": "What is the first, middle, and last name, along with the id and number of enrollments, for the student who enrolled the most in any program?",
+      "generated_answer": "",
+      "generation_seconds": 454.922426
+    },
+    {
+      "question": "What's the name of the course with most number of enrollments?",
+      "generated_answer": "SELECT c.course_name FROM courses c WHERE c.course_id = (SELECT sc.course_id FROM student_enrolment_courses sc GROUP BY sc.course_id ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 33.255168
+    },
+    {
+      "question": "What is the date and id of the transcript with at least 2 courses listed?",
+      "generated_answer": "SELECT transcript_id, transcript_date FROM transcripts WHERE transcript_id IN (SELECT DISTINCT tc.transcript_id FROM transcript_contents tc GROUP BY tc.transcript_id HAVING COUNT(*) >= 2)",
+      "generation_seconds": 209.117154
+    },
+    {
+      "question": "What is the phone number of the man with the first name Timmothy and the last name Ward?",
+      "generated_answer": "SELECT cell_mobile_number FROM students WHERE first_name = 'Timmothy' AND last_name = 'Ward'",
+      "generation_seconds": 40.45562
+    },
+    {
+      "question": "What is the first, middle, and last name of the earliest school graduate?",
+      "generated_answer": "SELECT first_name, middle_name, last_name FROM students WHERE date_left = (SELECT MIN(date_left) FROM students WHERE date_left IS NOT NULL) AND date_left IS NOT NULL",
+      "generation_seconds": 68.687073
+    },
+    {
+      "question": "Whose permanent address is different from his or her current address? List his or her first name.",
+      "generated_answer": "SELECT first_name FROM students WHERE students.current_address_id != students.permanent_address_id",
+      "generation_seconds": 29.440565
+    },
+    {
+      "question": "What is the first name of the student whose permanent address is different from his or her current one?",
+      "generated_answer": "SELECT first_name FROM students WHERE permanent_address_id != current_address_id",
+      "generation_seconds": 83.737254
+    },
+    {
+      "question": "On average, when were the transcripts printed?",
+      "generated_answer": "SELECT AVG(transcript_date) FROM transcripts",
+      "generation_seconds": 19.611059
+    },
+    {
+      "question": "What is the average transcript date?",
+      "generated_answer": "SELECT AVG(transcript_date) FROM transcripts",
+      "generation_seconds": 24.579975
+    }
+  ]
+}

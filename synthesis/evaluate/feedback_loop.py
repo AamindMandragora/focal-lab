@@ -6,6 +6,7 @@ iterative refinement based on errors.
 """
 
 import json
+import logging
 import math
 import os
 import re
@@ -17,12 +18,16 @@ from enum import Enum
 from pathlib import Path
 from typing import Callable, Optional
 
+from ..split_provenance import split_provenance_metadata
 from ..verify.compiler import CompilationResult, DafnyCompiler
 from .evaluator import Evaluator, EvaluationResult
 from ..generate.generator import StrategyGenerator
 from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
 from ..verify.verifier import DafnyVerifier, VerificationResult
+
+
+logger = logging.getLogger(__name__)
 
 
 def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
@@ -91,6 +96,39 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
         "\"<<\" directly via a forced-delimiter / direct-control helper) instead "
         "of depending on the model to produce it, then force \">>\" at span exit. "
         "This is a decoding-mechanism change, not task guidance.\n"
+    )
+
+
+def _token_cap_exhaustion_hint(sample_outputs, max_steps) -> str:
+    """Causal diagnostic when most outputs ran all the way to the step cap.
+
+    Flag-gated (SynthesisPipeline token_cap_feedback, default OFF). Without
+    this hint the author sees only counts ("Examples hitting max steps: X/N")
+    with no explanation of WHY that produces wrong/invalid answers. Fires when
+    >=50% of evaluated outputs hit max_steps. Names the mechanism (truncation
+    mid-generation; the grader scores the last complete span standing at
+    cutoff) and the decoding-level direction (terminate once the answer is
+    complete) — mechanism guidance only, no task content."""
+    if not sample_outputs:
+        return ""
+    n = len(sample_outputs)
+    n_capped = sum(1 for s in sample_outputs if s.get("hit_max_steps"))
+    if n_capped / n < 0.5:
+        return ""
+    return (
+        f"\n  ⚠ Token-budget exhaustion: {n_capped}/{n} evaluated outputs ran all "
+        f"the way to the maxSteps cap ({max_steps} steps) and were CUT OFF "
+        f"mid-generation.\n"
+        f"    Why this hurts: a truncated output usually ends inside an "
+        f"unfinished sentence or span; the grader scores the LAST complete "
+        f"<< >> span standing at the cutoff, which is often an intermediate "
+        f"expression — not the final answer — so accuracy and syntax both "
+        f"suffer even when the reasoning was on track.\n"
+        f"    Direction to consider: make the strategy TERMINATE generation "
+        f"(emit EOS / stop stepping) once the final answer span is complete, "
+        f"and budget reasoning length so the answer span is reached well "
+        f"before the cap. This is a decoding-mechanism change, not task "
+        f"guidance.\n"
     )
 
 
@@ -581,6 +619,10 @@ class SynthesisPipeline:
         "LastTokenBefore",
         "RegenerateUnitOnGroundingFailure",
         "CloseSpanWithinBudget",
+        # These form one state-management API. Keeping both visible prevents
+        # adaptive menu pruning from offering save without restore (or vice versa).
+        "SaveLogitsSnapshot",
+        "RestoreLogitsSnapshot",
     }
     PRUNABLE_HELPERS = {
         "UnconstrainedGeneration",
@@ -622,8 +664,6 @@ class SynthesisPipeline:
         "GetTopKTokens",
         "GetTokenLogit",
         "ScaleAllLogits",
-        "SaveLogitsSnapshot",
-        "RestoreLogitsSnapshot",
         "SpeculativeConstrainedRollout",
         "RolloutConstrainedWithPenalties",
         "RepetitionPenaltyStep",
@@ -656,6 +696,9 @@ class SynthesisPipeline:
         # Evaluation thresholds
         min_accuracy: float = 0.0,
         min_syntax_rate: float = 0.0,
+        # Split the accuracy bar was measured on (see synthesis/split_provenance.py);
+        # recorded in run_configuration so cross-split comparisons are auditable.
+        bar_split_name: Optional[str] = None,
         require_delimiters: bool = True,
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = 90.0,
@@ -678,6 +721,7 @@ class SynthesisPipeline:
         # anchor-based refinement gets stuck.
         restart_after_stuck_iters: int = 0,
         restart_cooldown_iters: int = 0,
+        token_cap_feedback: bool = False,
     ):
         """
         Initialize the synthesis pipeline.
@@ -736,6 +780,7 @@ class SynthesisPipeline:
 
         self.min_accuracy = min_accuracy
         self.min_syntax_rate = min_syntax_rate
+        self.bar_split_name = bar_split_name
         self.require_delimiters = require_delimiters
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
@@ -759,6 +804,9 @@ class SynthesisPipeline:
         self.local_neighborhood_refinement = local_neighborhood_refinement
         self.max_local_edit_ratio = max(0.0, max_local_edit_ratio)
         self.beam_verify_candidates = beam_verify_candidates
+        # Flag-gated (default OFF): append _token_cap_exhaustion_hint to the
+        # author feedback when most outputs ran to the maxSteps cap.
+        self.token_cap_feedback = token_cap_feedback
         self._helper_universe = self._extract_helper_universe_from_prompts()
 
         # Ensure output directory exists
@@ -796,6 +844,12 @@ class SynthesisPipeline:
                 "eval_step_token_budget": getattr(evaluator, "step_token_budget", None),
                 "eval_max_seconds_per_example": self.eval_max_seconds_per_example,
                 "min_examples_before_threshold_stop": self.min_examples_before_threshold_stop,
+                # Which split file/side this run evaluated on, plus the declared
+                # split of the accuracy bar — absence of this field is what made
+                # the 2026-07-17 train-vs-eval mismatch unrecoverable from reports.
+                "split_provenance": split_provenance_metadata(
+                    evaluator, self.bar_split_name
+                ),
             },
             "synthesis_controls": {
                 "restart_after_stuck_iters": self.restart_after_stuck_iters,
@@ -1566,6 +1620,7 @@ class SynthesisPipeline:
         output_name: str = "generated_csd",
         initial_strategy_code: str | None = None,
         initial_attempt_offset: int = 0,
+        initial_attempts: list[SynthesisAttempt] | None = None,
     ) -> SynthesisResult:
         """
         Synthesize a CSD strategy for the given task.
@@ -1583,7 +1638,7 @@ class SynthesisPipeline:
         import time
 
         start_time = time.time()
-        attempts: list[SynthesisAttempt] = []
+        attempts: list[SynthesisAttempt] = list(initial_attempts or [])
 
         # Create an isolated output directory for this run. The directory layout is:
         #   outputs/generated/<output_name>_<run_id>/
@@ -1626,6 +1681,7 @@ class SynthesisPipeline:
             max_steps=self.evaluator.max_steps,
             step_token_budget=self.evaluator.step_token_budget,
         )
+        self.generator.set_task_description(task_description)
 
         allowed_helpers, helper_status = self._compute_allowed_helpers(attempts)
         if helper_status:
@@ -1633,6 +1689,12 @@ class SynthesisPipeline:
 
         # Initial generation, or a caller-provided recovery seed.
         if initial_strategy_code is not None:
+            logger.warning(
+                "[warm-resume] task context initialized before strategy replay; "
+                "task_chars=%d initial_attempt_offset=%d",
+                len(task_description),
+                initial_attempt_offset,
+            )
             print("Using caller-provided initial strategy seed")
             strategy_code = initial_strategy_code
         else:
@@ -2036,6 +2098,12 @@ class SynthesisPipeline:
                 )
                 if _bypass_hint:
                     print(_bypass_hint.rstrip("\n"))
+                if self.token_cap_feedback:
+                    _cap_hint = _token_cap_exhaustion_hint(
+                        eval_result.sample_outputs, self.evaluator.max_steps
+                    )
+                    if _cap_hint:
+                        print(_cap_hint.rstrip("\n"))
                 print(f"    Syntax: {eval_result.syntax_rate:.1%} (min: {self.min_syntax_rate:.1%})")
                 if self.eval_max_seconds_per_example is not None:
                     print(
@@ -2071,6 +2139,13 @@ class SynthesisPipeline:
                     )
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
+                    )
+                    + (
+                        _token_cap_exhaustion_hint(
+                            eval_result.sample_outputs, self.evaluator.max_steps
+                        )
+                        if self.token_cap_feedback
+                        else ""
                     )
                     + "\n"
                     + eval_result.get_feedback_summary(self.require_delimiters)

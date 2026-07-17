@@ -1,0 +1,2597 @@
+{
+  "billed_api_calls": 0,
+  "candidate_count": 130,
+  "created_at_utc": "2026-06-29T11:55:00Z",
+  "gold_used_only_after_selection_for_measurement": true,
+  "gpu_calls": 0,
+  "hypothesis": "H60",
+  "model_calls": 0,
+  "num_examples": 49,
+  "oracle_union_accuracy": 0.08163265306122448,
+  "oracle_union_correct_count": 4,
+  "oracle_union_correct_indices": [
+    16,
+    17,
+    39,
+    47
+  ],
+  "paid_credential_key_name_hits": [],
+  "passed_prediction_true_branch": true,
+  "per_report": [
+    {
+      "accuracy": 0.061224489795918366,
+      "candidate_count": 43,
+      "correct_indices": [
+        16,
+        17,
+        39
+      ],
+      "elapsed_seconds": 8798.66094827652,
+      "median_actual_length": 69,
+      "num_examples": 49,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+      "path": "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t0/results/direct_eval_success.json",
+      "source_id": "h37_gsm2b_t0",
+      "syntax_rate": 0.8775510204081632
+    },
+    {
+      "accuracy": 0.04081632653061224,
+      "candidate_count": 43,
+      "correct_indices": [
+        16,
+        17
+      ],
+      "elapsed_seconds": 1835.9341404438019,
+      "median_actual_length": 73,
+      "num_examples": 49,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+      "path": "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t1/results/direct_eval_success.json",
+      "source_id": "h37_gsm2b_t1",
+      "syntax_rate": 0.8775510204081632
+    },
+    {
+      "accuracy": 0.061224489795918366,
+      "candidate_count": 44,
+      "correct_indices": [
+        16,
+        17,
+        47
+      ],
+      "elapsed_seconds": 1341.0293157100677,
+      "median_actual_length": 71,
+      "num_examples": 49,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+      "path": "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t2/results/direct_eval_success.json",
+      "source_id": "h37_gsm2b_t2",
+      "syntax_rate": 0.8979591836734694
+    }
+  ],
+  "repo_root": "/home/aadivyar/csd-generation",
+  "report_paths": [
+    "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t0/results/direct_eval_success.json",
+    "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t1/results/direct_eval_success.json",
+    "/home/aadivyar/csd-generation/outputs/generated/h37_gsm2b_repeat_probe_20260629_t2/results/direct_eval_success.json"
+  ],
+  "selected_accuracy": 0.061224489795918366,
+  "selected_correct_count": 3,
+  "selected_correct_indices": [
+    16,
+    17,
+    47
+  ],
+  "selected_group_count": 44,
+  "selected_records": [
+    {
+      "expression": "4*(sides - target) / sides 2",
+      "group_id": 1,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "0 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3",
+      "group_id": 2,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "50000000000000000000000000000000000000000000000000000000000000",
+      "group_id": 3,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.7,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n * k * x",
+      "group_id": 4,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+      "group_id": 5,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "group_id": 6,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+      "group_id": 7,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "100 / (n1 + n2)",
+      "group_id": 8,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 * c1 * c1 - n2 * c2 * c2 - c3 * c3 + n1 * c1 * c1 + n2 * c2",
+      "group_id": 9,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+      "group_id": 11,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "(total - spent) * n / cal",
+      "group_id": 12,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "total - frac - daily * period * 7",
+      "group_id": 13,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "000000000000000000000000000000000000000000000000000000000000000",
+      "group_id": 14,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n1 * p1 + n2 * p2 + n3 * p3",
+      "group_id": 16,
+      "is_correct_after_selection": true,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 1.0,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n // (x * (1 + mult))",
+      "group_id": 17,
+      "is_correct_after_selection": true,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 1.0,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "5 * n * t / 3 * h",
+      "group_id": 18,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "total - n1 - mult 10000000000000000000000000000000000000000000000000000000",
+      "group_id": 19,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n + mult * n 7 - n + mult * n - n * (1 + mult) - n * (1 + mult) * n + mult * n * n * (1 + mult) * n * (1 + mult)",
+      "group_id": 21,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "(space + owned * plant_width) * cost",
+      "group_id": 22,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1",
+      "group_id": 23,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "n_first * a * f * r * (2 + p/100)",
+      "group_id": 24,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n - (m * (p1)) - (k * (p2))",
+      "group_id": 25,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "1+n211111111111111111111111111111111111111111111111111111111111",
+      "group_id": 26,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.7,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n * (mult1 + mult2) * days",
+      "group_id": 27,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+      "group_id": 28,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "100 * p * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100",
+      "group_id": 29,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "n * m / k",
+      "group_id": 30,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+      "group_id": 31,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3) + (n1 * p1 * p1) + (n2 * p2 * p2)",
+      "group_id": 33,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+      "group_id": 34,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+      "group_id": 35,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60",
+      "group_id": 36,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "n2 + n1 / n1 * n2",
+      "group_id": 37,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+      "group_id": 38,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "total - n1 - n2 1",
+      "group_id": 39,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n * (1 + r1/100) * (1 - r2/100) * p * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+      "group_id": 40,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+      "group_id": 41,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.7,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+      "group_id": 43,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "mult + n - t1",
+      "group_id": 44,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "n * p1 / 100 * p2 / 100 * 1 / 100",
+      "group_id": 45,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t1"
+    },
+    {
+      "expression": "n1 + mult + n2 + n3 1",
+      "group_id": 46,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "7*n + 7*mult*n",
+      "group_id": 47,
+      "is_correct_after_selection": true,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 1.0,
+      "source": "h37_gsm2b_t2",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2"
+    },
+    {
+      "expression": "-1111111111111111111111111111111111111111111111111111111111111",
+      "group_id": 48,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.7,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    },
+    {
+      "expression": "n1 * d1 + n2 * d2 - 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12",
+      "group_id": 49,
+      "is_correct_after_selection": false,
+      "is_syntax_valid_after_selection": true,
+      "quality_score": 0.8,
+      "source": "h37_gsm2b_t0",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0"
+    }
+  ],
+  "selected_syntax_count": 44,
+  "selected_syntax_rate": 0.8979591836734694,
+  "selection_uses_gold": false,
+  "split_path": "/home/aadivyar/csd-generation/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json",
+  "structured_artifact_candidate_counts": [
+    43,
+    43,
+    44
+  ],
+  "structured_artifacts_preview": [
+    {
+      "candidate_count": 43,
+      "candidates": [
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "4*(sides - target) / sides 2",
+          "expression": "4*(sides - target) / sides 2",
+          "group_id": 1,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 1,
+          "scorer_metadata": {
+            "split_row_index": 1,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "0 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3",
+          "expression": "0 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3*n2 - n1 - 3",
+          "group_id": 2,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 2,
+          "scorer_metadata": {
+            "split_row_index": 2,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "50000000000000000000000000000000000000000000000000000000000000",
+          "expression": "50000000000000000000000000000000000000000000000000000000000000",
+          "group_id": 3,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.7,
+          "sample_index": 3,
+          "scorer_metadata": {
+            "split_row_index": 3,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * k * x",
+          "expression": "n * k * x",
+          "group_id": 4,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 4,
+          "scorer_metadata": {
+            "split_row_index": 4,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "expression": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "group_id": 5,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 5,
+          "scorer_metadata": {
+            "split_row_index": 5,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "expression": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "group_id": 6,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 6,
+          "scorer_metadata": {
+            "split_row_index": 6,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "expression": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "group_id": 7,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 7,
+          "scorer_metadata": {
+            "split_row_index": 7,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "100 / (n1 + n2)",
+          "expression": "100 / (n1 + n2)",
+          "group_id": 8,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 8,
+          "scorer_metadata": {
+            "split_row_index": 8,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 + n1 * c1 * c2 + n2 * c2 * c3 + c3 * c1 + n1 * c1 * c3 + n2 * c2",
+          "expression": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 + n1 * c1 * c2 + n2 * c2 * c3 + c3 * c1 + n1 * c1 * c3 + n2 * c2",
+          "group_id": 9,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 9,
+          "scorer_metadata": {
+            "split_row_index": 9,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+          "expression": "2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2",
+          "group_id": 11,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 11,
+          "scorer_metadata": {
+            "split_row_index": 11,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "(total - spent) * n / cal",
+          "expression": "(total - spent) * n / cal",
+          "group_id": 12,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 12,
+          "scorer_metadata": {
+            "split_row_index": 12,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "total - frac - daily * period * 7",
+          "expression": "total - frac - daily * period * 7",
+          "group_id": 13,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 13,
+          "scorer_metadata": {
+            "split_row_index": 13,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n1 * p1 + n2 * p2 + n3 * p3",
+          "expression": "n1 * p1 + n2 * p2 + n3 * p3",
+          "group_id": 16,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 1.0,
+          "sample_index": 16,
+          "scorer_metadata": {
+            "split_row_index": 16,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n // (x * (1 + mult))",
+          "expression": "n // (x * (1 + mult))",
+          "group_id": 17,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 1.0,
+          "sample_index": 17,
+          "scorer_metadata": {
+            "split_row_index": 17,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "5 * n * t / 3 * h",
+          "expression": "5 * n * t / 3 * h",
+          "group_id": 18,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 18,
+          "scorer_metadata": {
+            "split_row_index": 18,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "total - n1 - mult 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "expression": "total - n1 - mult 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "group_id": 19,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 19,
+          "scorer_metadata": {
+            "split_row_index": 19,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n + mult * n 7 - n + mult * n - n * (1 + mult) - n * (1 + mult) * n + mult * n * n * (1 + mult) * n * (1 + mult)",
+          "expression": "n + mult * n 7 - n + mult * n - n * (1 + mult) - n * (1 + mult) * n + mult * n * n * (1 + mult) * n * (1 + mult)",
+          "group_id": 21,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 21,
+          "scorer_metadata": {
+            "split_row_index": 21,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "(space + owned * plant_width) * cost",
+          "expression": "(space + owned * plant_width) * cost",
+          "group_id": 22,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 22,
+          "scorer_metadata": {
+            "split_row_index": 22,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1",
+          "expression": "total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1 + (total * t) / n2 - total / n1 - (total * t) / n2 + total / n1",
+          "group_id": 23,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 23,
+          "scorer_metadata": {
+            "split_row_index": 23,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n_first * a * f * r * (2 + p/100)",
+          "expression": "n_first * a * f * r * (2 + p/100)",
+          "group_id": 24,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 24,
+          "scorer_metadata": {
+            "split_row_index": 24,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n - (m * (p1)) - (k * (p2))",
+          "expression": "n - (m * (p1)) - (k * (p2))",
+          "group_id": 25,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 25,
+          "scorer_metadata": {
+            "split_row_index": 25,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "1+n211111111111111111111111111111111111111111111111111111111111",
+          "expression": "1+n211111111111111111111111111111111111111111111111111111111111",
+          "group_id": 26,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.7,
+          "sample_index": 26,
+          "scorer_metadata": {
+            "split_row_index": 26,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * (mult1 + mult2) * days",
+          "expression": "n * (mult1 + mult2) * days",
+          "group_id": 27,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 27,
+          "scorer_metadata": {
+            "split_row_index": 27,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+          "expression": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+          "group_id": 28,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 28,
+          "scorer_metadata": {
+            "split_row_index": 28,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/10",
+          "expression": "100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/100 * p/10",
+          "group_id": 29,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.7,
+          "sample_index": 29,
+          "scorer_metadata": {
+            "split_row_index": 29,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * m / k",
+          "expression": "n * m / k",
+          "group_id": 30,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 30,
+          "scorer_metadata": {
+            "split_row_index": 30,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+          "expression": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+          "group_id": 31,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 31,
+          "scorer_metadata": {
+            "split_row_index": 31,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3) + (n1 * p1 * p1) + (n2 * p2 * p2)",
+          "expression": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3) + (n1 * p1 * p1) + (n2 * p2 * p2)",
+          "group_id": 33,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 33,
+          "scorer_metadata": {
+            "split_row_index": 33,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+          "expression": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+          "group_id": 34,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 34,
+          "scorer_metadata": {
+            "split_row_index": 34,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "expression": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "group_id": 35,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 35,
+          "scorer_metadata": {
+            "split_row_index": 35,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60",
+          "expression": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60",
+          "group_id": 36,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 36,
+          "scorer_metadata": {
+            "split_row_index": 36,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n2 + n1 / n1 * n2",
+          "expression": "n2 + n1 / n1 * n2",
+          "group_id": 37,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 37,
+          "scorer_metadata": {
+            "split_row_index": 37,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+          "expression": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+          "group_id": 38,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 38,
+          "scorer_metadata": {
+            "split_row_index": 38,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "total - n1 - n2",
+          "expression": "total - n1 - n2",
+          "group_id": 39,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 1.0,
+          "sample_index": 39,
+          "scorer_metadata": {
+            "split_row_index": 39,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * (1 + r1/100) * (1 - r2/100) * p * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+          "expression": "n * (1 + r1/100) * (1 - r2/100) * p * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+          "group_id": 40,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 40,
+          "scorer_metadata": {
+            "split_row_index": 40,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+          "expression": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+          "group_id": 41,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.7,
+          "sample_index": 41,
+          "scorer_metadata": {
+            "split_row_index": 41,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "expression": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "group_id": 43,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 43,
+          "scorer_metadata": {
+            "split_row_index": 43,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "mult + n - t1",
+          "expression": "mult + n - t1",
+          "group_id": 44,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 44,
+          "scorer_metadata": {
+            "split_row_index": 44,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n * p1 / 100 * p2 / 100 * 1 / 100",
+          "expression": "n * p1 / 100 * p2 / 100 * 1 / 100",
+          "group_id": 45,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 45,
+          "scorer_metadata": {
+            "split_row_index": 45,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n1 + mult + n2 + n3 1",
+          "expression": "n1 + mult + n2 + n3 1",
+          "group_id": 46,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 46,
+          "scorer_metadata": {
+            "split_row_index": 46,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "7 + 7*mult*n",
+          "expression": "7 + 7*mult*n",
+          "group_id": 47,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 47,
+          "scorer_metadata": {
+            "split_row_index": 47,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "-1111111111111111111111111111111111111111111111111111111111111",
+          "expression": "-1111111111111111111111111111111111111111111111111111111111111",
+          "group_id": 48,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.7,
+          "sample_index": 48,
+          "scorer_metadata": {
+            "split_row_index": 48,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t0",
+          "equivalence_key": "n1 * d1 + n2 * d2 - 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12",
+          "expression": "n1 * d1 + n2 * d2 - 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12 * 12 / 12 + 12",
+          "group_id": 49,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+          "quality_score": 0.8,
+          "sample_index": 49,
+          "scorer_metadata": {
+            "split_row_index": 49,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t0",
+          "source_id": "h37_gsm2b_t0"
+        }
+      ],
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+      "selection_uses_gold": false,
+      "source_id": "h37_gsm2b_t0"
+    },
+    {
+      "candidate_count": 43,
+      "candidates": [
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "4*(sides - target) / sides 2",
+          "expression": "4*(sides - target) / sides 2",
+          "group_id": 1,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 1,
+          "scorer_metadata": {
+            "split_row_index": 1,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "0 - n1 - 3*n2 - 1000000000000000000000000000000000000000000000000000",
+          "expression": "0 - n1 - 3*n2 - 1000000000000000000000000000000000000000000000000000",
+          "group_id": 2,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 2,
+          "scorer_metadata": {
+            "split_row_index": 2,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "57313400000000000000000000000000000000000000000000000000000000",
+          "expression": "57313400000000000000000000000000000000000000000000000000000000",
+          "group_id": 3,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.7,
+          "sample_index": 3,
+          "scorer_metadata": {
+            "split_row_index": 3,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * k * x",
+          "expression": "n * k * x",
+          "group_id": 4,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 4,
+          "scorer_metadata": {
+            "split_row_index": 4,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "expression": "1/n*n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "group_id": 5,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 5,
+          "scorer_metadata": {
+            "split_row_index": 5,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "2*total - t / 1*1*2*1*1*2*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "expression": "2*total - t / 1*1*2*1*1*2*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "group_id": 6,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 6,
+          "scorer_metadata": {
+            "split_row_index": 6,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "expression": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "group_id": 7,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 7,
+          "scorer_metadata": {
+            "split_row_index": 7,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "100 / (n1 + n2) - -100 / (n1 + n2) - -100 / (n1 + n2) - -100 / (n1 + n2) - -10",
+          "expression": "100 / (n1 + n2) - -100 / (n1 + n2) - -100 / (n1 + n2) - -100 / (n1 + n2) - -10",
+          "group_id": 8,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.7,
+          "sample_index": 8,
+          "scorer_metadata": {
+            "split_row_index": 8,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 * c1 * c1 - n2 * c2 * c2 - c3 * c3 + n1 * c1 * c1 + n2 * c2",
+          "expression": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 * c1 * c1 - n2 * c2 * c2 - c3 * c3 + n1 * c1 * c1 + n2 * c2",
+          "group_id": 9,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 9,
+          "scorer_metadata": {
+            "split_row_index": 9,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "2 * (n4 + n5) / 2 + n4 + n5 - n4 - n5 + 2 * n4 + 2 * n5 - 2 * n4 - 2 * n5 + 2 * n4 + 2 * n5",
+          "expression": "2 * (n4 + n5) / 2 + n4 + n5 - n4 - n5 + 2 * n4 + 2 * n5 - 2 * n4 - 2 * n5 + 2 * n4 + 2 * n5",
+          "group_id": 11,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 11,
+          "scorer_metadata": {
+            "split_row_index": 11,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "(total - spent) * n / cal",
+          "expression": "(total - spent) * n / cal",
+          "group_id": 12,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 12,
+          "scorer_metadata": {
+            "split_row_index": 12,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "total - frac - daily * period * 7",
+          "expression": "total - frac - daily * period * 7",
+          "group_id": 13,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 13,
+          "scorer_metadata": {
+            "split_row_index": 13,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n1 * p1 + n2 * p2 + n3 * p3",
+          "expression": "n1 * p1 + n2 * p2 + n3 * p3",
+          "group_id": 16,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 1.0,
+          "sample_index": 16,
+          "scorer_metadata": {
+            "split_row_index": 16,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n // (x * (1 + mult))",
+          "expression": "n // (x * (1 + mult))",
+          "group_id": 17,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 1.0,
+          "sample_index": 17,
+          "scorer_metadata": {
+            "split_row_index": 17,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "5 * n * t / 3 * h",
+          "expression": "5 * n * t / 3 * h",
+          "group_id": 18,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 18,
+          "scorer_metadata": {
+            "split_row_index": 18,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "total - n1 - mult 10000000000000000000000000000000000000000000000000000000",
+          "expression": "total - n1 - mult 10000000000000000000000000000000000000000000000000000000",
+          "group_id": 19,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 19,
+          "scorer_metadata": {
+            "split_row_index": 19,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n + mult * n 7 + 8 * 9",
+          "expression": "n + mult * n 7 + 8 * 9",
+          "group_id": 21,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 21,
+          "scorer_metadata": {
+            "split_row_index": 21,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "(space + owned * plant_width) * cost",
+          "expression": "(space + owned * plant_width) * cost",
+          "group_id": 22,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 22,
+          "scorer_metadata": {
+            "split_row_index": 22,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "total / n1 + total / n2 * t 111111111111111111111111111111111111111111111111111",
+          "expression": "total / n1 + total / n2 * t 111111111111111111111111111111111111111111111111111",
+          "group_id": 23,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 23,
+          "scorer_metadata": {
+            "split_row_index": 23,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n_first * a * f * r * (2 + p/100)",
+          "expression": "n_first * a * f * r * (2 + p/100)",
+          "group_id": 24,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 24,
+          "scorer_metadata": {
+            "split_row_index": 24,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n - (m * (p1)) - (k * (p2))",
+          "expression": "n - (m * (p1)) - (k * (p2))",
+          "group_id": 25,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 25,
+          "scorer_metadata": {
+            "split_row_index": 25,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "1+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211",
+          "expression": "1+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211+n211",
+          "group_id": 26,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 26,
+          "scorer_metadata": {
+            "split_row_index": 26,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * (mult1 + mult2) * days",
+          "expression": "n * (mult1 + mult2) * days",
+          "group_id": 27,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 27,
+          "scorer_metadata": {
+            "split_row_index": 27,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+          "expression": "frac12*n1 + 2/3*n2*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2*3*2",
+          "group_id": 28,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 28,
+          "scorer_metadata": {
+            "split_row_index": 28,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "100 * p * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100",
+          "expression": "100 * p * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100",
+          "group_id": 29,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 29,
+          "scorer_metadata": {
+            "split_row_index": 29,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * m / k",
+          "expression": "n * m / k",
+          "group_id": 30,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 30,
+          "scorer_metadata": {
+            "split_row_index": 30,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+          "expression": "n1 * l * t / (60 * p) / 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60 * 60",
+          "group_id": 31,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 31,
+          "scorer_metadata": {
+            "split_row_index": 31,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3)",
+          "expression": "(n1 * p1 * p1) + (n2 * p2 * p2) + (n3 * p3 * p3)",
+          "group_id": 33,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 33,
+          "scorer_metadata": {
+            "split_row_index": 33,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+          "expression": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+          "group_id": 34,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 34,
+          "scorer_metadata": {
+            "split_row_index": 34,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "expression": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "group_id": 35,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 35,
+          "scorer_metadata": {
+            "split_row_index": 35,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60*40000000000000000000000000000000000000",
+          "expression": "frac*n2*t*d - (n1+n2)/7*(n1+n2)*t*d/60*40000000000000000000000000000000000000",
+          "group_id": 36,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 36,
+          "scorer_metadata": {
+            "split_row_index": 36,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n2 + n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2",
+          "expression": "n2 + n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2 - n1 / n1 * n2 - n2",
+          "group_id": 37,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 37,
+          "scorer_metadata": {
+            "split_row_index": 37,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+          "expression": "total - 2*n - m 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 100",
+          "group_id": 38,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 38,
+          "scorer_metadata": {
+            "split_row_index": 38,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "total - n1 - n2 1",
+          "expression": "total - n1 - n2 1",
+          "group_id": 39,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 39,
+          "scorer_metadata": {
+            "split_row_index": 39,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+          "expression": "n * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100) * (1 - r2/100) * n * (1 + r1/100)",
+          "group_id": 40,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 40,
+          "scorer_metadata": {
+            "split_row_index": 40,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+          "expression": "p4* d / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+          "group_id": 41,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.7,
+          "sample_index": 41,
+          "scorer_metadata": {
+            "split_row_index": 41,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "expression": "frac2 * mult1 * frac1 * n1 100% 100% 100% 100% 100% 100% 100% 100% 100% 100% 1",
+          "group_id": 43,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 43,
+          "scorer_metadata": {
+            "split_row_index": 43,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "mult + n - t1",
+          "expression": "mult + n - t1",
+          "group_id": 44,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 44,
+          "scorer_metadata": {
+            "split_row_index": 44,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n * p1 / 100 * p2 / 100 * 1 / 100",
+          "expression": "n * p1 / 100 * p2 / 100 * 1 / 100",
+          "group_id": 45,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 45,
+          "scorer_metadata": {
+            "split_row_index": 45,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n1 + mult + n2 + n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2",
+          "expression": "n1 + mult + n2 + n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2 - n3 - n1 - mult - n2",
+          "group_id": 46,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 46,
+          "scorer_metadata": {
+            "split_row_index": 46,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "7 + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n",
+          "expression": "7 + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n * mult + 7 * n",
+          "group_id": 47,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 47,
+          "scorer_metadata": {
+            "split_row_index": 47,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "12800000000000000000000000000000000000000000000000000000000000",
+          "expression": "12800000000000000000000000000000000000000000000000000000000000",
+          "group_id": 48,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.7,
+          "sample_index": 48,
+          "scorer_metadata": {
+            "split_row_index": 48,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t1",
+          "equivalence_key": "n1 * d1 + n2 * d2 - 12*12*12*12*12*12*12*12*12*12*12*12*12*12*12*12*12",
+          "expression": "n1 * d1 + n2 * d2 - 12*12*12*12*12*12*12*12*12*12*12*12*12*12*12*12*12",
+          "group_id": 49,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+          "quality_score": 0.8,
+          "sample_index": 49,
+          "scorer_metadata": {
+            "split_row_index": 49,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t1",
+          "source_id": "h37_gsm2b_t1"
+        }
+      ],
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+      "selection_uses_gold": false,
+      "source_id": "h37_gsm2b_t1"
+    },
+    {
+      "candidate_count": 44,
+      "candidates": [
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "4*(sides - target) / sides 2",
+          "expression": "4*(sides - target) / sides 2",
+          "group_id": 1,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 1,
+          "scorer_metadata": {
+            "split_row_index": 1,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "0 - 1 - 2 - 3 - 4 - 5 - 6 - 7 - 8 - 9 - 10 - 11 - 12 - 13 - 14 - 15 - 16 - 17 - 1",
+          "expression": "0 - 1 - 2 - 3 - 4 - 5 - 6 - 7 - 8 - 9 - 10 - 11 - 12 - 13 - 14 - 15 - 16 - 17 - 1",
+          "group_id": 2,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 2,
+          "scorer_metadata": {
+            "split_row_index": 2,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "50000000000000000000000000000000000000000000000000000000000000",
+          "expression": "50000000000000000000000000000000000000000000000000000000000000",
+          "group_id": 3,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.7,
+          "sample_index": 3,
+          "scorer_metadata": {
+            "split_row_index": 3,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * k * x",
+          "expression": "n * k * x",
+          "group_id": 4,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 4,
+          "scorer_metadata": {
+            "split_row_index": 4,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "expression": "1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+          "group_id": 5,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 5,
+          "scorer_metadata": {
+            "split_row_index": 5,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "expression": "2*total - t / 1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+          "group_id": 6,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 6,
+          "scorer_metadata": {
+            "split_row_index": 6,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "expression": "n - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n",
+          "group_id": 7,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 7,
+          "scorer_metadata": {
+            "split_row_index": 7,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "100 / (n1 + n2)",
+          "expression": "100 / (n1 + n2)",
+          "group_id": 8,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 8,
+          "scorer_metadata": {
+            "split_row_index": 8,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 * c1 * c1 - n2 * c2 * c2 - c3 * c3 + n1 * c1 * c1 + n2 * c2",
+          "expression": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 * c1 * c1 - n2 * c2 * c2 - c3 * c3 + n1 * c1 * c1 + n2 * c2",
+          "group_id": 9,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 9,
+          "scorer_metadata": {
+            "split_row_index": 9,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "2 * (n4 + n5) / 2 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5",
+          "expression": "2 * (n4 + n5) / 2 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5 + n4 + n5 - n4 - n5",
+          "group_id": 11,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 11,
+          "scorer_metadata": {
+            "split_row_index": 11,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total - spent * n / cal",
+          "expression": "total - spent * n / cal",
+          "group_id": 12,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 12,
+          "scorer_metadata": {
+            "split_row_index": 12,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total - frac - daily * period * 7",
+          "expression": "total - frac - daily * period * 7",
+          "group_id": 13,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 13,
+          "scorer_metadata": {
+            "split_row_index": 13,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "000000000000000000000000000000000000000000000000000000000000000",
+          "expression": "000000000000000000000000000000000000000000000000000000000000000",
+          "group_id": 14,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 14,
+          "scorer_metadata": {
+            "split_row_index": 14,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 * p1 + n2 * p2 + n3 * p3",
+          "expression": "n1 * p1 + n2 * p2 + n3 * p3",
+          "group_id": 16,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 1.0,
+          "sample_index": 16,
+          "scorer_metadata": {
+            "split_row_index": 16,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n // (x * (1 + mult))",
+          "expression": "n // (x * (1 + mult))",
+          "group_id": 17,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 1.0,
+          "sample_index": 17,
+          "scorer_metadata": {
+            "split_row_index": 17,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "5 * n * t / 3 * h",
+          "expression": "5 * n * t / 3 * h",
+          "group_id": 18,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 18,
+          "scorer_metadata": {
+            "split_row_index": 18,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total - n1 - mult 10000000000000000000000000000000000000000000000000000000",
+          "expression": "total - n1 - mult 10000000000000000000000000000000000000000000000000000000",
+          "group_id": 19,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 19,
+          "scorer_metadata": {
+            "split_row_index": 19,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n + mult * n 1 + 2 + 3 + 4 + 5 + 6 + 1 + 2 + 3 + 4 + 5 + 6 + 1 + 2 + 3 + 4 + 5 + 6",
+          "expression": "n + mult * n 1 + 2 + 3 + 4 + 5 + 6 + 1 + 2 + 3 + 4 + 5 + 6 + 1 + 2 + 3 + 4 + 5 + 6",
+          "group_id": 21,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 21,
+          "scorer_metadata": {
+            "split_row_index": 21,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "(space + owned * plant_width) * cost",
+          "expression": "(space + owned * plant_width) * cost",
+          "group_id": 22,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 22,
+          "scorer_metadata": {
+            "split_row_index": 22,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1",
+          "expression": "total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1 + (total * t) / n2 + total / n1",
+          "group_id": 23,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 23,
+          "scorer_metadata": {
+            "split_row_index": 23,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n_first * a * f * r * (2 + p/100)",
+          "expression": "n_first * a * f * r * (2 + p/100)",
+          "group_id": 24,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 24,
+          "scorer_metadata": {
+            "split_row_index": 24,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n - (m * (p1)) - (k * (p2))",
+          "expression": "n - (m * (p1)) - (k * (p2))",
+          "group_id": 25,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 25,
+          "scorer_metadata": {
+            "split_row_index": 25,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "1+n211111111111111111111111111111111111111111111111111111111111",
+          "expression": "1+n211111111111111111111111111111111111111111111111111111111111",
+          "group_id": 26,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.7,
+          "sample_index": 26,
+          "scorer_metadata": {
+            "split_row_index": 26,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * (mult1 + mult2) * days 0",
+          "expression": "n * (mult1 + mult2) * days 0",
+          "group_id": 27,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 27,
+          "scorer_metadata": {
+            "split_row_index": 27,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "frac12 * n1 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3",
+          "expression": "frac12 * n1 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3 * n2/3 * n2 + 2/3",
+          "group_id": 28,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 28,
+          "scorer_metadata": {
+            "split_row_index": 28,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1",
+          "expression": "1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1",
+          "group_id": 29,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.7,
+          "sample_index": 29,
+          "scorer_metadata": {
+            "split_row_index": 29,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * m / k",
+          "expression": "n * m / k",
+          "group_id": 30,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 30,
+          "scorer_metadata": {
+            "split_row_index": 30,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 * l * t / (60 * p) - n1 * l / p * t / 60 - n1 * l * t / (p * 60) - n1 * l * t / (60 * p)",
+          "expression": "n1 * l * t / (60 * p) - n1 * l / p * t / 60 - n1 * l * t / (p * 60) - n1 * l * t / (60 * p)",
+          "group_id": 31,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 31,
+          "scorer_metadata": {
+            "split_row_index": 31,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 * p1 * (n1 + n2 + n3) + n2 * p2 * (n1 + n2 + n3) + n3 * p3 * (n1 + n2 + n3) + n1 * p1",
+          "expression": "n1 * p1 * (n1 + n2 + n3) + n2 * p2 * (n1 + n2 + n3) + n3 * p3 * (n1 + n2 + n3) + n1 * p1",
+          "group_id": 33,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 33,
+          "scorer_metadata": {
+            "split_row_index": 33,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+          "expression": "(w1 + w2 + w3) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3)) * (price * (w1 + w2 + w3))",
+          "group_id": 34,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 34,
+          "scorer_metadata": {
+            "split_row_index": 34,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "expression": "n * (1 - frac) / 100000000000000000000000000000000000000000000000000000",
+          "group_id": 35,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 35,
+          "scorer_metadata": {
+            "split_row_index": 35,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "frac*n2*t*d - frac*n1+n2*7*1000*(n1+n2)*t*d*60/7*1000*1000*1000*1000*1000*1000*1",
+          "expression": "frac*n2*t*d - frac*n1+n2*7*1000*(n1+n2)*t*d*60/7*1000*1000*1000*1000*1000*1000*1",
+          "group_id": 36,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 36,
+          "scorer_metadata": {
+            "split_row_index": 36,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2",
+          "expression": "n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2 + n1 / n1 * n2 / n2",
+          "group_id": 37,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 37,
+          "scorer_metadata": {
+            "split_row_index": 37,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total - 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m",
+          "expression": "total - 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m 2*n - m",
+          "group_id": 38,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 38,
+          "scorer_metadata": {
+            "split_row_index": 38,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "total - n1 - n2 1",
+          "expression": "total - n1 - n2 1",
+          "group_id": 39,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 39,
+          "scorer_metadata": {
+            "split_row_index": 39,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * (1 + r1/100) * (1 - r2/100) * p * n * r1/100 * p * n * r2/100 * p * n * r1/100 * p * n * r2",
+          "expression": "n * (1 + r1/100) * (1 - r2/100) * p * n * r1/100 * p * n * r2/100 * p * n * r1/100 * p * n * r2",
+          "group_id": 40,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 40,
+          "scorer_metadata": {
+            "split_row_index": 40,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100",
+          "expression": "p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100 * p4 - d/100",
+          "group_id": 41,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.7,
+          "sample_index": 41,
+          "scorer_metadata": {
+            "split_row_index": 41,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "frac2 * mult1 * frac1 * n1",
+          "expression": "frac2 * mult1 * frac1 * n1",
+          "group_id": 43,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 43,
+          "scorer_metadata": {
+            "split_row_index": 43,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "mult + n - t1",
+          "expression": "mult + n - t1",
+          "group_id": 44,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 44,
+          "scorer_metadata": {
+            "split_row_index": 44,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n * p1 / 100 * p2 / 100 * 1/100",
+          "expression": "n * p1 / 100 * p2 / 100 * 1/100",
+          "group_id": 45,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 45,
+          "scorer_metadata": {
+            "split_row_index": 45,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 + mult + n2 + n3",
+          "expression": "n1 + mult + n2 + n3",
+          "group_id": 46,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 46,
+          "scorer_metadata": {
+            "split_row_index": 46,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "7*n + 7*mult*n",
+          "expression": "7*n + 7*mult*n",
+          "group_id": 47,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 1.0,
+          "sample_index": 47,
+          "scorer_metadata": {
+            "split_row_index": 47,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "10000000000000000000000000000000000000000000000000000000000000",
+          "expression": "10000000000000000000000000000000000000000000000000000000000000",
+          "group_id": 48,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.7,
+          "sample_index": 48,
+          "scorer_metadata": {
+            "split_row_index": 48,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        },
+        {
+          "candidate_kind": "final_actual",
+          "candidate_source": "h37_gsm2b_t2",
+          "equivalence_key": "n1 * d1 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12",
+          "expression": "n1 * d1 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12 + n2 * d2 + 12 / 12",
+          "group_id": 49,
+          "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+          "quality_score": 0.8,
+          "sample_index": 49,
+          "scorer_metadata": {
+            "split_row_index": 49,
+            "variable_types": {}
+          },
+          "source_family": "h37_gsm2b_repeat_probe_20260629_t2",
+          "source_id": "h37_gsm2b_t2"
+        }
+      ],
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+      "selection_uses_gold": false,
+      "source_id": "h37_gsm2b_t2"
+    }
+  ],
+  "worktree": "/home/aadivyar/.config/superpowers/worktrees/csd-generation/h31-candidate-consensus"
+}

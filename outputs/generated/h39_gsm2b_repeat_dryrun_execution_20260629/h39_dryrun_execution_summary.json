@@ -1,0 +1,123 @@
+{
+  "all_outputs_exist": true,
+  "all_payload_checks_true": true,
+  "all_returncode_zero": true,
+  "command_count": 3,
+  "no_billed_credentials": true,
+  "no_gpu_job": true,
+  "no_model_calls": true,
+  "outdir": "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629",
+  "plans_path": "/home/aadivyar/csd-generation/outputs/generated/h38_gsm2b_repeat_materialized_commands_20260629/materialized_commands.json",
+  "results": [
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t0",
+        "--source-id",
+        "h37_gsm2b_t0",
+        "--dry-run",
+        "--dry-run-output",
+        "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t0_dry_run.json"
+      ],
+      "dry_run_output": "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t0_dry_run.json",
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+      "payload_checks": {
+        "dataset": "gsm_symbolic",
+        "dry_run": true,
+        "gsm_split_name": "train",
+        "max_steps": 900,
+        "no_billed_credentials": true,
+        "no_model_calls": true,
+        "output_name_matches": true,
+        "sample_size": 49,
+        "source_id_matches": true
+      },
+      "returncode": 0,
+      "source_id": "h37_gsm2b_t0",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t1",
+        "--source-id",
+        "h37_gsm2b_t1",
+        "--dry-run",
+        "--dry-run-output",
+        "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t1_dry_run.json"
+      ],
+      "dry_run_output": "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t1_dry_run.json",
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+      "payload_checks": {
+        "dataset": "gsm_symbolic",
+        "dry_run": true,
+        "gsm_split_name": "train",
+        "max_steps": 900,
+        "no_billed_credentials": true,
+        "no_model_calls": true,
+        "output_name_matches": true,
+        "sample_size": 49,
+        "source_id_matches": true
+      },
+      "returncode": 0,
+      "source_id": "h37_gsm2b_t1",
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t2",
+        "--source-id",
+        "h37_gsm2b_t2",
+        "--dry-run",
+        "--dry-run-output",
+        "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t2_dry_run.json"
+      ],
+      "dry_run_output": "/home/aadivyar/csd-generation/outputs/generated/h39_gsm2b_repeat_dryrun_execution_20260629/h37_gsm2b_t2_dry_run.json",
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+      "payload_checks": {
+        "dataset": "gsm_symbolic",
+        "dry_run": true,
+        "gsm_split_name": "train",
+        "max_steps": 900,
+        "no_billed_credentials": true,
+        "no_model_calls": true,
+        "output_name_matches": true,
+        "sample_size": 49,
+        "source_id_matches": true
+      },
+      "returncode": 0,
+      "source_id": "h37_gsm2b_t2",
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "returncodes": [
+    0,
+    0,
+    0
+  ]
+}

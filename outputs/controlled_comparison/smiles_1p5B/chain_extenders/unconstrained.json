@@ -1,0 +1,616 @@
+{
+  "accuracy": 0.07,
+  "syntax_rate": 0.47,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 144.7793,
+    "mean_generation_seconds_per_example": 1.447793,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 31214,
+    "mean_output_tokens_per_example": 312.14,
+    "examples_with_token_counts": 100,
+    "run_wall_time_seconds": 181.9979
+  },
+  "answers": [
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CC2=C(CCCCCC2)C1C(=O)CNCCO\nMolecule: 1CC2=C(CCCCCC2)C1C(=O)CNC(=O)C(=O)COC1\nMolecule: 1CC2=C(CCCCCC2)C1C(=O)CN(COCO)CO2\nMolecule: 1CC2=C(CCCCCC2)C1C(=O)CO(=O)CCO2\nMolecule: OCC1(C)CC(C2=O)N=CN(C2=C1)C(=O)COC1\nMolecule: OCC1CCCN(C2=O)C(C2=C1)C(=O)COC1\nMolecule: OCC1CCC1(C=O)N(C=O)COC1\nMolecule: OCC1CCCN(C2=O)C(C2=C1)C(=O)C(=O)COC1\nMolecule: OCC1CNC(C2=O)C(C2=C1)C(=O)COC1\nMolecule: OCC1CCCN(C2=O)C(C2=C1)C(=O)CNCO1\nMolecule: OCC1CCCN(C2=O)C(C2=C1)C(=O)NC(=O)COC1\nMolecule: OCC1CCCN(C2=O)C(C2=C1)C(=O)CN(=O)COC1",
+      "num_tokens": 339,
+      "generation_seconds": 1.668329
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0COC1CCC(=O)NC(=O)C(N)NCCOC1\nMolecule: 0OC(=O)C(C)CCCOC(=O)C(NC1C(=O)C(C)CCCOC(=O)CN1)O\nMolecule: OCCCNC(=O)NCCCCOC(=O)C(=O)NCCNOC",
+      "num_tokens": 91,
+      "generation_seconds": 0.427445
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NOC\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)COC1\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)NC(=O)COC1\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)COC1\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)C(=O)NC(=O)COC1\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)C(=O)NC(=O)COC1\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)C(=O)C1OC\nMolecule: 1NNCOC(=O)NCCCN2C3CC(=O)N2CCCN3C(=O)NC(=O)C(=O)C(=O)C(=O)NC(=O)COC1",
+      "num_tokens": 400,
+      "generation_seconds": 1.82713
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0CCCCCCCCC0\nMolecule: 0OCCCO0\nMolecule: OC(=O)CNC(=O)C\nMolecule: OCOC(C)COC(C)C\nMolecule: OCOC(C)CC(O)C\nMolecule: OCCCNC(=O)C(C)CC(=O)O\nMolecule: 0OCOC(=O)C(C)C(=O)0\nMolecule: 0OCCO0\nMolecule: OCOOC(O)O\nMolecule: OCCN1C(=O)NC(C1(=O)N)CCCCN\nMolecule: OCCCNC(=O)NC(=O)COC(=O)C(O)N\nMolecule: 0OCOC(=O)C(=O)OOC1C(=O)N(C1)C(=O)C\n0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 0OCCO0 ",
+      "num_tokens": 400,
+      "generation_seconds": 1.825517
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0C(C)c1ccc(Cc2ccccc2)cc1C(=O)NOC(\n```\nCOCO(COC1)C(=O)OCC1\n```",
+      "num_tokens": 43,
+      "generation_seconds": 0.207345
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1H-PCP(O)O-CH2=CH-CH=CH-CH=CH-CH=CH-CH=O\nMolecule: C1=CC=CC=C1C2=C(CN(C)CC3=CC=C4=CC=CC=C5=CC=C4=3C4=C=CC=C5=C2O2C(=O)NC(=O)C(O)=O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C(C=C5)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5CN5=C(C=C5)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O",
+      "num_tokens": 221,
+      "generation_seconds": 1.016754
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C2=CC=CC=C2C(=O)O\nMolecule: OCC(=O)C(O)N(C)C(C)COC(=O)COC(=O)CC(=O)COC(=O)C1=CC=N(C=C1)CS\nMolecule: 1C(C)CC1OC(=O)C(O)C(C)COC(=O)COC(=O)CC(=O)COC(=O)C1=CC=N(C=C1)CS\nMolecule: OCCC(=O)COC(=O)CCOC(=O)CCOC(=O)CCOC(=O)C1=CC=N(C=C1)CS\nMolecule: OCCC(=O)C(O)NCCOC(=O)CCOC(=O)CCOC(=O)CCOC(=O)C1=CC=N(C=C1)CS\nMolecule: COCON1CCNC(=O)NCCON1CCN1C(=O)N1CCC1\nMolecule: OCCN1C(=O)NC(C1=O)CCO\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)O\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)OC\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)CC1\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)C(=O)C1\nM",
+      "num_tokens": 400,
+      "generation_seconds": 1.824451
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1(C=C1)3(C=CC=C3)4(C=CC=C4)5(C=CC=C5)6(C=CC=C6)7(C=CC=C7)8(C=CC=C8)9(C=CC=C9)\nMolecule: C1=CC=C2C=C(C=C2)C(=O)OCC1\nMolecule: OCCCNC(=O)NCCCCNOC\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4\nMolecule: CCCCN1C(=O)NC(C1(=O)C)CCCCNC(=O)NCCO C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4 1 (ccc1ccccc1)cc2ccc(cc2)ccccc2ccc3ccccc3cc4ccccc4 1 (Cc1ccccc1)cc2cccc(cc2)[N+](CN)2 C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4 C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4 [N+]1CCCN1CCCN1 1 (ccc1ccccc1)cc2cccc(cc2)[N+](CN)2 [O-]1CCCN1CCCN1 C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4 C1=CC=C2C=C(C=C2)C3=CC=C4=C3C(=O)OOC4 [N+]1CCCN1CCCN1 C1=CC=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.826558
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "18N-C(=O)C(=O)CC(=O)NCC(=O)CN(C1=O)C(C2=O)C(=O)NCC(=O)CN(C3=O)C(=O)NCC(=O)CN(C(C4=O)C(=O)NCC(=O)CN5=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN6=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN7=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN8=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN9=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN10=O)C(=O)NCC(=O)CN(C(=O)C(=O)CC(=O)NCC(=O)CN11=O)",
+      "num_tokens": 317,
+      "generation_seconds": 1.453935
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1OC(C)=O3\nMolecule: 1[6]OCCO3",
+      "num_tokens": 20,
+      "generation_seconds": 0.102813
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C=C(C=C1)C(=O)C1C(=O)C1\nMolecule: (COC)(COC)OC(O)(COC)OC(O)(COC)OC(O)(COC)OC(O)(COC)OC(O)\nMolecule: (C)c1ccc(ccc1)c2ccccc2c1ccc(ccc1)c3ccc(ccc3)c4ccc(ccc4)c5ccc(ccc5)c6ccc(ccc6)c7ccc(ccc7)c8ccc(ccc8)c9ccc(ccc9)c10ccc(ccc10)c11ccc(ccc11)c12ccc(ccc12)c13ccc(ccc13)c14ccc(ccc14)c15ccc(ccc15)c16ccc(ccc16)c17ccc(ccc17)c18ccc(ccc18)c19ccc(ccc19)c20ccc(ccc20)c21ccc(ccc21)c22ccc(ccc22)c23ccc(ccc23)c24ccc(ccc24)c25ccc(ccc25)c26ccc(ccc26)c27ccc(ccc27)c28ccc(ccc28)c29ccc(ccc29)c30ccc(ccc30)c31ccc(ccc31)c32ccc(ccc32)c33ccc(ccc33)c34ccc(ccc34)c35ccc(ccc35)c36ccc(ccc36)c37ccc(ccc37)c38ccc(ccc38)c39ccc(ccc39)c40ccc(ccc40)c41ccc(ccc41)c42ccc(ccc42)c43ccc(ccc43)c44ccc(cc",
+      "num_tokens": 400,
+      "generation_seconds": 1.823369
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0CN1C(C2=O)C3=C(C=C4C(C4=C3)C(=O)C(=O)NC(=O)C5CCO5)C(=O)NC(=O)C6C(=O)NC(=O)C6(=O)NC(=O)C6C(=O)N1\nMolecule: 0CN1C(C2=O)C3=C(C=C4C(C4=C3)C(=O)C(=O)NC(=O)C5CCO5)C(=O)N6C(=O)NC(=O)C6(=O)NC(=O)C6C(=O)N1\nMolecule: 0CN1C(C2=O)C3=C(C=C4C(C4=C3)C(=O)C(=O)NC(=O)C5CCO5)C(=O)N6C(=O)NC(=O)C6(=O)C(=O)NC(=O)C6C(=O)N1\nMolecule: 0CN1C(C2=O)C3=C(C=C4C(C4=C3)C(=O)C(=O)NC(=O)C5CCO5)C(=O)N6C(=O)NC(=O)C6(=O)CN(=O)C6C(=O)N1",
+      "num_tokens": 342,
+      "generation_seconds": 1.562849
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1H-110-1H-100-1H-20-100-2H-100-1H-110-1H-20-100-2H \nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O",
+      "num_tokens": 192,
+      "generation_seconds": 0.884198
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C2C3C4C5C6C7C8C9C10C11C12C13C14C15C16C17C18C19C20C21C22C23C24C25C26C27C28C29C30C31C32C33C34C35C36C37C38C39C40C41C42C43C44C45C46C47C48C49C50C51C52C53C54C55C56C57C58C59C60C61C62C63C64C65C66C67C68C69C70C71C72C73C74C75C76C77C78C79C80C81C82C83C84C85C86C87C88C89C90C91C92C93C94C95C96C97C98C99C100C101C102Cs1C2C3C4C5C6C7C8C9Cl10Cl11Cl12Cl13Cl14Cl15Cl16Cl17Cl18Cl19Cl20Cl21Cl22Cl23Cl24Cl25Cl26Cl27Cl28Cl29Cl30Cl31Cl32Cl33Cl34Cl35Cl36Cl3",
+      "num_tokens": 400,
+      "generation_seconds": 1.823902
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CCCCCO1\nMolecule: 1C2C(C3C=C(C=C3)C4=CC=C4)C5=CC=5C5=C6C=C5C6=C(C=C6)C(=O)O",
+      "num_tokens": 55,
+      "generation_seconds": 0.258471
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C2=CCCC2COC(=O)NCC(=O)C2\nMolecule: C(N)C(=O)CNC1CCC1C(=O)OC(=O)C(NC1)C1 \nMolecule: CC1CCCCC1C(=O)C(=O)C1 \nMolecule: OCCC(=O)COC(=O)C1CCCCC1CC(=O)CN(=O)C1\nMolecule: CC(=O)C(=O)C1CCCCC1C(=O)OC(=O)CNC1CCCCC1CC(=O)CN(=O)C1  \nMolecule: OCCC(=O)COC(=O)C1CCCCC1C(=O)CN(=O)C1  \nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: CC1CCCCC1C(=O)C(=O)C1  \nMolecule: CC(=O)C(=O)C1CCCCC1C(=O)OC(=O)CNC1CCCCC1CC(=O)CN(=O)C1  \nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule",
+      "num_tokens": 400,
+      "generation_seconds": 1.82602
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C(O)C(O)C(O)C(O)\nMolecule: 1OC(O)C(O)C(O)C(O)1\nMolecule: 1C(NC(=O)N)C(NC(=O)N)C(NC(=O)N)C(=O)1\nMolecule: 1CNC(=O)NC(=O)NC(=O)1\nCertainly! Let's break down the constraints and provide a new valid chain_extenders molecule:",
+      "num_tokens": 112,
+      "generation_seconds": 0.520115
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1S,3S-1,3-Dihydroxy-2-naphthol\nMolecule: 1R,3R-1,3-Dihydroxy-2-naphthol\nMolecule: 1R,2R-1,2-Dihydroxybenzene\nMolecule: 1R,2S-1,2-Dihydroxybenzene\nMolecule: 2,2,6,6-tetramethylpiperidin-4-yl-4-methylpentan-2-ol\nMolecule: 1-hexanol\nMolecule: 2-hexanol\nMolecule: 3-hexanol\nMolecule: 4-hexanol\nMolecule: 2,3-dihydroxybenzene\nMolecule: 2,4-dihydroxybenzene\nMolecule: 2,5-dihydroxybenzene\nMolecule: 2-methyl-2-hexene\nMolecule: 2-methyl-3-hexene\nMolecule: 2-methyl-4-hexene\nMolecule: 3-methyl-2-hexene\nMolecule: 3-methyl-3-hexene\nMolecule: 3-methyl-4-hexene\nMolecule: 4-methyl-2-hexene\nMolecule: 4-methyl-3-hexene\nMolecule: 5-methyl-2-hexene\nMolecule: 5-methyl-4-hexene\nMolecule: 2-methyl-2-butene\nMolecule: 2-methyl-3-butene\nMolecule: 2-methyl-4-butene\nMolecule: 3-methyl-2-butene\nMolecule: 3-methyl-3-butene\nMolecule: 3-methyl-4",
+      "num_tokens": 400,
+      "generation_seconds": 1.826375
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0COC1CC(C)=O1\nMolecule: 0COC1CC(C)=O1\nMolecule: 0COC1CC(C)=O1\nMolecule: 0COC1CC(C)=O1\nMolecule: 0COC1CC(C)=O1\nMolecule: 0COC1CC(C)=O1",
+      "num_tokens": 80,
+      "generation_seconds": 0.378966
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CCCC2CCCCCCCC3CCCC4CCCC5CCCC6CCCC7CCCC8CCCC9CCCC10CCCCC11CCCCC12CCCCC13CCCCC14CCCCC15CCCCC16CCCCC17CCCCC18CCCCC19CCCCC20CCCCC21CCCCC22CCCCC23CCCCC24CCCCC25CCCCC26CCCCC27CCCCC28CCCCC29CCCCC30CCCCC31CCCCC32CCCCC33CCCCC34CCCCC35CCCCC36CCCCC37CCCCC38CCCCC39CCCCC40CCCCC41CCCCC42CCCCC43CCCCC44CCCCC45CCCCC46CCCCC47CCCCC48CCCCC49CCCCC50CCCCC51CCCCC52CCCCC53CCCCC54CCCCC55CCCCC56CCCCC57CCCCC58CCCCC59CCCCC60CCCCC61CCCCC62CCCCC63CCCCC64CCCCC65CCCCC66CCCCC67CCCCC68CCCCC69CCCCC70CCCCC71CCCCC72CCCCC73CCCCC74CCCCC75CCCCC76CCCCC77CCCCC78CCCCC79CCCCC80CCCCC81CCCCC82CCCCC83CCCCC84CCCCC85CCCCC86CCCCC87CCCCC88CCCCC89CCCCC90CCCCC91CCCCC92CCCCC93CCCCC94CCCCC95CCCCC96CCCCC97CCCCC98CCCCC99CCCC\nMolecule: Oc1ccccc1CC(=O)OCC(=O)OCC",
+      "num_tokens": 400,
+      "generation_seconds": 1.82197
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "3-C5H9-O-C1CCN(C=C2=C1)C3=C4C=C3C5=C4C=C5C(=O)O\nMolecule: Oc1ccc2ccc(c2ccccc21)OC(=O)C(N)c3ccccc3OC(=O)C(C)(C)C\nMolecule: COc1ccc(C(NC2=CC=CC=2)C3=C4C=C3C(=O)O)Cc2ccn(n2)ccc(C)ccccc2\nMolecule: OCC1=C(C=C2)C=C(C=C2)C(=O)C(=O)C1\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O",
+      "num_tokens": 198,
+      "generation_seconds": 0.912123
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "\u3014C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\u3015\nMolecule: \u3014C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)C(=O)C1\u3015\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nSMILES: CCNC(=O)NC(=O)NC(=O)CC(=O)NOC(=O)CCNC(=O)NC(=O)COC(=O)CCCN1C(=O)C(=O)C1OC2=NC(=O)NCC(=O)N1C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(=O)C(=O)CC(=O)N2C(",
+      "num_tokens": 400,
+      "generation_seconds": 1.824214
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1OC(NC(=O)CC1)C(=O)OCC(NC(=O)CC1)O\nMolecule: Nc1ccc(cc1)Cc2ccc(cc2)NCC(=O)NC(=O)COC2\nMolecule: Nc1ccc(cc1)Cc2ccc(cc2)NCC(=O)NC(=O)COC2\nMolecule: OCCCCOC(=O)C(=O)COC(=O)C(=O)COC(=O)C(=O)COC(=O)C(=O)COC1\nMolecule: Nc1ccc(cc1)Cc2ccc(cc2)NCC(=O)NC(=O)COC2\nMolecule: OCCCNC(=O)NCCCCOC(=O)C(=O)NCCNOC\nMolecule: Nc1ccc(cc1)Cc2ccc(cc2)NCC(=O)NC(=O)COC2\nMolecule: Nc1ccc(cc1)c2ccccc2NC(=O)COC1\nMolecule: OCCC(N)=NCCCC(=O)COC(=O)C(=O)C(=O)C(=O)C(=O)C(=O)C(=O)C1\nMolecule: Nc1ccc(cc1)Cc2ccc(cc2)NCC(=O)NC(=O)COC2\nMolecule: Nc1ccc(cc1)c2ccccc2NCC(=O)NC(=O)COC2\nMolecule: Nc1ccc(cc1)c2ccccc2NCC(=O)NC(=O)COC2\nMolecule: N",
+      "num_tokens": 400,
+      "generation_seconds": 1.833552
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "16S\nMolecule: ClCN\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2",
+      "num_tokens": 400,
+      "generation_seconds": 1.833294
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: N1CCCN1\nMolecule: N(C)c1cc([N+]([N-])c2ccccc2)cc1c2cccc12\nMolecule: Nc1ccc(cc1)c2ncn21\nMolecule: Nc1ccc(cc1)c2ccc(cc2)N\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: Nc1ccc(cc1)c2ccc(cc2)N\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nMolecule: Nc1ccc(cc1)c2ccc(cc2)N\nMolecule: Nc1ccc(cc1)c2ccc(cc2)N\nMolecule: Nc1ccc(cc1)c2ccc(cc2)N\nMolecule: Nc1ccccc1c2c1ccc(cc2)c1ccccc1\nMolecule: OCCCNC(=O)NCCCCOC(=O)C(",
+      "num_tokens": 400,
+      "generation_seconds": 1.828465
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CN(C)C1\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4=C3C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3",
+      "num_tokens": 400,
+      "generation_seconds": 1.826986
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "2C1=CC=C2C=C(C=C2)C3=CC=C4C=C5C=C4C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: CC(=O)OCC(=O)OCCOC(=O)CCc1ccc(cc1)O\nMolecule: 2C1=CC=C2C=C(C=C2)C3=CC=C4C=C5C=C4C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: Cc1ccc(cc1)CCC(=O)OCC(=O)OCc1ccc(cc1)O\nMolecule: 2C1=CC=C2C=C(C=C2)C3=CC=C4C=C5C=C4C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: OC1CCCN(C2=O)C(C2=C1)C(=O)OC1\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nMolecule: C1=CC=C2C=C(C=C2)C3=CC=C4C=C5C=C4C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nMolecule: C1=CC=C2C=C(C=C2",
+      "num_tokens": 400,
+      "generation_seconds": 1.825849
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " NSc1ccccc1C(=O)C(=O)OCCOC(=O)OCC\nMolecule: C1=CC(C=C1)CCC1C=C2C=C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O",
+      "num_tokens": 72,
+      "generation_seconds": 0.338133
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CCCCC1C(=O)O",
+      "num_tokens": 11,
+      "generation_seconds": 0.062003
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: Nc1ccc(cc1)C(=O)N(=O)C(=O)N(=O)C(=O)C1\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: CCC1CCN(C=C1)C=C2C=C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: CC1=CC(C=C1)CCC1\nMolecule: Nc1ccccc1N\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: OC1=CC=CC=C1OC\nMolecule: Nc1c2ccccc2c1N\nMolecule: N(CC[C@H]5[C@H]5COCN)C(=O)O\nMolecule: NCC1=CC(C=C1)CC1\nMolecule: Nc1ccc(cc1)C1ccccc1C(=O)N\nMolecule: C1=CC(C=C1)CCCCC1\nMolecule: Nc1ccccc1Nc(=O)c2ccccc2c1N\nMolecule: Nc1ccccc1Nc1ccccc1N\nMolecule: Nc1ccccc1N\nMolecule: Nc1ccccc1N\nMolecule: Nc1ccccc1N\nMolecule: Nc1ccccc1N\nMolecule: Nc1ccccc1N\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3\n",
+      "num_tokens": 400,
+      "generation_seconds": 1.82531
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1OC(C)CCO1\nMolecule: OC(=O)C(CCNC(=O)C1CCNC(=O)C2CC1CC2)C(C)N\nMolecule: OC(=O)C(CCNC(=O)C1CCNC(=O)C2CC1CC2)C(=O)N1CCN(C2CC(=O)N2C(=O)C2CCN(C3CC(=O)NC(=O)C3CCN(C4C(=O)C5C(=O)NC(=O)C5CCN(C6C(=O)C7C(=O)NC(=O)C6CCN(C8C(=O)C9C(=O)NC(=O)C8CCN(C10C(=O)C10CCN(C11C(=O)C11CC(=O)C11CC11C11C11C11C11C11)C(=O)N)C10))C10)C10)(=O)N2=O)C(=O)N2CCN(C3CC(=O)NC(=O)C3CCN(C4C(=O)C5C(=O)NC(=O)C5CCN(C6C(=O)C7C(=O)NC(=O)C6CCN(C8C(=O)C9C(=O)NC(=O)C8CCN(C10C(=O)C10CCN(C11C(=O)C11CC(=O)C11CC11C11C11C1",
+      "num_tokens": 400,
+      "generation_seconds": 1.826585
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1O=C=C(=CN=C1)C(=O)NCC1=C(C=C1)C=N\nMolecule: C1=C(C=C1)CC(=O)O",
+      "num_tokens": 43,
+      "generation_seconds": 0.209751
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "15665NCS\nMolecule: 2C#CC=C#C\nMolecule: o-C6H3-N=C(C=C(C=C(N=C1O)C=C1)Cl)Cl\nMolecule: 15613NO2\nMolecule: COCOC(=O)C1=CC=C(C=C2C=C(C=C3C=C(C=C2C=1O)Cl)O)C=2C=3CC\nMolecule: COC=C1=CC=C2C=C(OCC1=C2)C=O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3",
+      "num_tokens": 163,
+      "generation_seconds": 0.74718
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: OC(=O)C(C)C(C)C(=O)C(C)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\n",
+      "num_tokens": 400,
+      "generation_seconds": 1.827637
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2C=O\nMolecule: 1CC2=CC=CC=C2",
+      "num_tokens": 400,
+      "generation_seconds": 1.824565
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-ethyl-3-methylcyclohexane\nMolecule: C1=CC=CC=C2C=CC=C3C=CC=C4C=CC=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)",
+      "num_tokens": 400,
+      "generation_seconds": 1.829187
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "2CN(C)CO\nMolecule: 2C(C)CO\nMolecule: 2NCCN\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC1\nMolecule: 2N(C)C1C1\nMolecule: 2CN(C)C1CC1\nMolecule: 2C(C)C1CC",
+      "num_tokens": 400,
+      "generation_seconds": 1.829212
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "num_tokens": 400,
+      "generation_seconds": 1.831195
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nJustify your choice. The SMILES string for the new chain_extenders molecule is **O=C(C)C(C)C(C)C(O)=O**. ",
+      "num_tokens": 134,
+      "generation_seconds": 0.621161
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1F2C3=O4C5=C4C=C5C6=C4C=C5C6=C1C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: CC1C2=C(C=C1=CN=CN=C1C2=C)CC1\nMolecule: C1=CC=CC2=C(C=C2)C3=C5=C3C=C4=C4C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: Nc1ccc(cc1)c2ccccc2n1\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C",
+      "num_tokens": 400,
+      "generation_seconds": 1.830799
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1",
+      "num_tokens": 2,
+      "generation_seconds": 0.019927
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C(C=C2)C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=C(C=C1)CCC1C=C2C=C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6) \nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C",
+      "num_tokens": 400,
+      "generation_seconds": 1.824302
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " O=C(NC1=CN=C(Cl)=N1)C2=C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2",
+      "num_tokens": 400,
+      "generation_seconds": 1.830708
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1389414771\nMolecule: C1C(C2=O)=CC(C3=O)=CC(C4=O)=C3(C5=O)C(C6=O)=CC=C5(C7=O)=C6(C8=O)=C7C8=O\nMolecule: F\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: Nc1ccccc1\nMolecule: C1=CC(C=C1)CCC1C=C2C=C3C=C4C=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C5=C6C=C5C6=C(C=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.830899
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: 2\nMolecule: C1=CC(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C7=C\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C8=C\nMolecule: C1=CC=C2C=C(C=C2)C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C9=C\nMolecule: C1=CC=C2\nMolecule: C1=CC(C=C1)CC(=O)O\nMolecule: Nc1ccccc1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10",
+      "num_tokens": 400,
+      "generation_seconds": 1.826788
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-Phenethylamine C\nMolecule: 1,3-Dimethylpiperazine-2-carboxylic acid M\nMolecule: C5H9NO C\nMolecule: Heterocycle: N2H5 B\nMolecule: Heterocycle: HCONH2 B\nMolecule: Heterocycle: CH2OH C\nMolecule: Heterocycle: CH2O2 C To determine which molecule does not match the connection pattern of a chain_extender, we need to understand the constraint that a chain_extender molecule must be a monosubstituted chain. This means it should have a central carbon atom with only one substituent attached, with the substituent being another carbon chain (chain_extender).",
+      "num_tokens": 161,
+      "generation_seconds": 0.746113
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C",
+      "num_tokens": 400,
+      "generation_seconds": 1.826685
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C\nMolecule: C1=CC=C3C=C3C=C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7\nMolecule: C1=CC=C2C=C(C=C2)C3 =C4C=C4C=C4\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C=C4\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C=C6\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C=C6C7=C7C=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C=C5C6=C6C=C6C=C6C7=C7C=C7C=C7C8=C8C=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.83239
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0   O C O",
+      "num_tokens": 6,
+      "generation_seconds": 0.045201
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0\nMolecule: 0CC\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C11=C11C1=C12\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C6C=C6C7=C7C=C8C=C8C9=C10C=C10C11=C11C=C11C12=C12C13=C13C1=C14\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C6C=C6C7=C7C=C8C=C8C9=C10C=C10C11=C11C=C11C12=C12C13=C13C1=C14\nMolecule: C1=CC=C2C=C(C",
+      "num_tokens": 400,
+      "generation_seconds": 1.829701
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " Nc1ccccc1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6\nMolecule: Nc1c2ccnc2ccc12\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)C(=O)C1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6\nMolecule: C1=C(C=C1)CC(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6\nMolecule: C1=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(=O)C(=O)C1\nMolecule: C1=CC=2C=C(C=C2)",
+      "num_tokens": 400,
+      "generation_seconds": 1.830766
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1=CC=2C=C(C=C2)C3",
+      "num_tokens": 14,
+      "generation_seconds": 0.07914
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0OC(=O)1CC(=O)2CC(=O)3CC(=O)4CC(=O)5OC(=O)6CC(=O)7CC(=O)8CC(=O)9CC(=O)10OC(=O)11CC(=O)12CC(=O)13CC(=O)14OC(=O)15CC(=O)16CC(=O)17OC(=O)18CC(=O)19CC(=O)20OC(=O)21CC(=O)22CC(=O)23CC(=O)24OC(=O)25CC(=O)26CC(=O)27OC(=O)28CC(=O)29CC(=O)30OC(=O)31CC(=O)32CC(=O)33OC(=O)34CC(=O)35CC(=O)36OC(=O)37CC(=O)38CC(=O)39CC(=O)40OC(=O)41CC(=O)42CC(=O)43OC(=O)44CC(=O)45CC(=O)46OC(=O)47CC(=O)58CC(=O)59CC(=O)60OC(=O)61CC(=O)62CC(=O)63OC(=O)64CC(=O)65CC(=O)66OC(=O)67CC(=O)68CC(",
+      "num_tokens": 400,
+      "generation_seconds": 1.82963
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1=CC=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C22C=C23C=C24C=C25C=C26C=C27C=C28C=C29C=C30C=C31C=C32C=C33C=C34C=C35C=C36C=C37C=C38C=C39C=C40C=C41C=C42C=C43C=C44C=C45C=C46C=C47C=C48C=C49C=C50C=C51C=C52C=C53C=C54C=C55C=C56C=C57C=C58C=C59C=C60C=C61C=C62C=C63C=C64C=C65C=C66C=C67C=C68C=C69C=C70C=C71C=C72C=C73C=C74C=C75C=C76C=C77C=C78C=C79C=C80C=C81C=C82C=C83C=C84C=C85C=C90C=C91C=C92C=C93C=C94C=C95C=C96C=C97C=C98C=C99C=C90C=C91C=C92C=C93C=C94C=C95C=C96C=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.829717
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C(C)C(C(C1C)C)C(C(C1C)C)C(C(C1C)C)C(C(C1C)C)C(C(C1C)C)OC\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=CC=C(C=C1)CC1=C2C2=C3C3=C4C4=C5C5=C6C6=C7C7=C8\nMolecule: C1=CC=C2C=C(C=C2)C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C2",
+      "num_tokens": 400,
+      "generation_seconds": 1.833694
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C\nMolecule: C1=CC=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15\nMolecule: C1=CC=C2C=C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C",
+      "num_tokens": 400,
+      "generation_seconds": 1.834325
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0CC1=CC=CC=C1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C\nMolecule: 0CC1=CC=C2C=C3=C4=CC=C5=C6=C7=C8=C9=C10=C11=C12=C13=C14=C15=C16=C17=C18=C19=C20=C21=C22=C23=C24=C25=C26=C27=C28=C29=C30",
+      "num_tokens": 400,
+      "generation_seconds": 1.832481
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C\nMolecule: C1=C(C=C1)C(=O)C(=O)C1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C\nMolecule: C1=CC=C(C=C1)CCC1C=C2C=C3C=C4C=C5C=C6C=C5C6=C(C=C6)C(=O)O\nMolecule: C1=CCC=C2C=C(C=C2)C3\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C\nMolecule: C1=CC=C2C=C(C=C2)C3=C(C=C3)C4=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C",
+      "num_tokens": 400,
+      "generation_seconds": 1.831162
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C2\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C2\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C2\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C1",
+      "num_tokens": 400,
+      "generation_seconds": 1.82931
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C22C=C23C=C24C=C25C=C26C=C27C=C28C=C29C=C30C=C31C=C32C=C33C=C3C=C34C=C35C=C36C=C37C=C38C=C39C=C40C=C41C=C42C=C43C=C44C=C45C=C46C=C47C=C48C=C49C=C50C=C51C=C52C=C53C=C54C=C55C=C56C=C57C=C58C=C59C=C60C=C61C=C62C=C63C=C64C=C65C=C66C=C67C=C68C=C69C=C70C=C71C=C72C=C73C=C74C=C75C=C76C=C77C=C78C=C79C=C80C=C81C=C82C=C83C=C84C=C85C=C86C=C87C=C88C=C89C=C90C=C91C=C92C=C93C=C94C=C95C=C96C=C97C=C98C=C99C=C100",
+      "num_tokens": 400,
+      "generation_seconds": 1.840448
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " CO\nMolecule: COCl\nMolecule: COCl2\nMolecule: CO\nMolecule: C1=CC=C2C=C(C=C2)C3\nMolecule: C1=C(C=C1)CC1=C2C=C3C=C4C=C5C=C6C=C7C=C8C=C9C=C10C=C11C=C12C=C13C=C14C=C15C=C16C=C17C=C18C=C19C=C20C=C21C=C22C=C23C=C24C=C25C=C26C=C27C=C28C=C29C=C30C=C31C=C32C=C33C=C34C=C35C=C36C=C37C=C38C=C39C=C40C=C41C=C42C=C43C=C44C=C45C=C46C=C47C=C48C=C49C=C50C=C51C=C52C=C53C=C54C=C55C=C56C=C57C=C58C=C59C=C60C=C61C=C62C=C63C=C64C=C65C=C66C=C67C=C68C=C69C=C70C=C71C=C72C=C73C=C74C=C75C=C76C=C77C=C78C=C79C=C80C=C81C=C82C=C83C=C84C=C85C=C86C=C87C=C88C=C89C=C90C=C9",
+      "num_tokens": 400,
+      "generation_seconds": 1.840527
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C43C",
+      "num_tokens": 400,
+      "generation_seconds": 1.841414
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "4-[(3,4-Dimethylthio)-1-phenylindol-2-yl]-4-oxo-2,3-dihydro-1H-tetrahydrofurano[2,3-b]pyran-2-one",
+      "num_tokens": 55,
+      "generation_seconds": 0.27469
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C",
+      "num_tokens": 400,
+      "generation_seconds": 1.84522
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=CC=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C",
+      "num_tokens": 400,
+      "generation_seconds": 1.849611
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-Phenyl-1-()\nMolecule: Cl C C",
+      "num_tokens": 16,
+      "generation_seconds": 0.096254
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "2-CF3OC1=C(C=C1)C(=O)OCC2=C(C=C2)C(=O)OCC3=C(C=C3)C(=O)OCC(C)C4=C5C=C(C=C5)C=C2C=C3C=C4C5=C6C=C5C6=C7C=C5C6=C8C=C5C6=C9C=C5C6=C10C=C5C6=C11C=C5C6=C12C=C5C6=C13C=C5C6=C14C=C5C6=C15C=C5C6=C16C=C5C6=C17C=C5C6=C18C=C5C6=C19C=C5C6=C20C=C5C6=C21C=C5C6=C22C=C5C6=C23C=C5C6=C24C=C5C6=C25C=C5C6=C26C=C5C6=C27C=C5C6=C28C=C5C6=C29C=C5C6=C30C=C5C6=C31C=C5C6=C32C=C5C6=C33C=C5C6=C34C=C5C6=C35C=C5C6=C36C=C5C6=C37C=C5C6=C38C=C5C6=C39C=C5C6=C40C=C5C6=C41C=C5C6=C42C=C5C6=C43C=C5C6=C44C=C5C6=C45C=C5C6=C46C=C5C6=C47C=C5C6=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.853851
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-ethyl-1-nitro-2,3-dimethyl-4-pyrrolidinone",
+      "num_tokens": 24,
+      "generation_seconds": 0.135801
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C43C",
+      "num_tokens": 400,
+      "generation_seconds": 1.852555
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C43C",
+      "num_tokens": 400,
+      "generation_seconds": 1.860541
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1495507820907122939886030453741917253687490278007765732042780735892880999097277432768167554761970978842199922535909656831716187789065441248619543555417681744785140819282892996947123241503554433486084958334132348356175962184689772073456687341108747216368166004178882785072342608784600270944594460164669939707949406149024336867905232767862282280691071638527981473706671923116256069394885139123107994954",
+      "num_tokens": 400,
+      "generation_seconds": 1.867625
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23\nMolecule: CCCCCC1\nMolecule: CCCCCC1C(=O)O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12\nMolecule: O\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.862396
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1CC\nYou are an expert in chemistry. You are given several examples of chain_extenders molecules in SMILES format. Your task is to provide one new, valid chain_extenders molecule in SMILES format.",
+      "num_tokens": 43,
+      "generation_seconds": 0.223264
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule: 1\nMolecule",
+      "num_tokens": 400,
+      "generation_seconds": 1.863914
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "num_tokens": 400,
+      "generation_seconds": 1.863957
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "100 100",
+      "num_tokens": 8,
+      "generation_seconds": 0.064107
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0",
+      "num_tokens": 400,
+      "generation_seconds": 1.863912
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: OC(=O)CC(N)=O\nMolecule: O=C(C)CNC(=O)COC(=O)C\nMolecule: OC(C)CCO=C(O)\nMolecule: O=C(C)CNC=O C(=O)O\nMolecule: O=C(C)CNC(=O)=O\nMolecule: OC(=O)C(C)CCCN\nMolecule: O=C(C)CNC(=O)=OC\nMolecule: O=c1ccccc1O\nMolecule: OC(=O)CCCN=C4OC(=O)CC4C(=O)O\nMolecule: OC(=O)CCCN=C4OC(=O)CC4C(=O)O\nMolecule: OC(=O)CC(N)=O\nMolecule: O=C(C)CNC(=O)COC(=O)C\nMolecule: O=C(C)CNC=O C(=O)O\nMolecule: O=C(C)CNC(=O)=O\nMolecule: O=C(C)CNC(=O)=OC\nMolecule: OC(=O)CCCN=C4OC(=O)CC4C(=O)O\nMolecule: OCC(=O)C(N)CCC=OOC(=O)CCN=C4O\nMolecule: O=C(C)CNC(=O)=OC\nMolecule: OC(=O)C(C)CCCN=C4OC(=O)CC4C(=O)O\nMolecule: O=C(C)CNC=O C(=O)O\nMolecule: O=C(C)CNC(=O)=O\nMolecule: O=C(C)CNC=O C(=O)O\n",
+      "num_tokens": 400,
+      "generation_seconds": 1.863786
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " The molecule with the SMILES string \"C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C",
+      "num_tokens": 400,
+      "generation_seconds": 1.867386
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-In-vitro-Indicators-and-Countermeasures-Report-Measurements-and-Results.pdf",
+      "num_tokens": 24,
+      "generation_seconds": 0.135554
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1. C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C43C\nMolecule",
+      "num_tokens": 400,
+      "generation_seconds": 1.862304
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C3=C4C=C4C\nMolecule: CC(=O)OCC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)",
+      "num_tokens": 400,
+      "generation_seconds": 1.864643
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "4-CH3-OC(=O)OCC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)\nMolecule: 4-CH3-OC(=O)OCC(=O)OC(=O)OC(=O)OC(=O)OC(=O",
+      "num_tokens": 400,
+      "generation_seconds": 1.871453
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "0:1:CC1=C(C(N(C[N+](N)C)=O)C(C(C(=O)O)O)C)C(=O)C1:1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C",
+      "num_tokens": 400,
+      "generation_seconds": 1.87136
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-C1CCCCN(C1=O)C2CCCCC3CCC4CC5CC6CC7CC8CC9CCC10CC11C(C11C=O)C(C(C)=C1)C=O\nMolecule: O=C1CCCC(C1=O)C2CCC(C2=O)C3CC(C3=O)C4CC(C4=O)C5CC(C5=O)C(F)=C5C6C#C(=C5)C7C#C(C#CC=CC#C)C8CC(C8=O)C9CC(C9=O)C10CC(C10=O)C11C(C11=O)C(C(C)=C1)C=O\nMolecule: C1=CC=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C",
+      "num_tokens": 400,
+      "generation_seconds": 1.874845
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: Cl\nMolecule: N(C)C\nMolecule: O\nMolecule: C(C)C\nMolecule: C(C)C(C)C\nMolecule: C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C\nMolecule: C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)",
+      "num_tokens": 400,
+      "generation_seconds": 1.876473
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1\nMolecule: N1CCNCC1",
+      "num_tokens": 12,
+      "generation_seconds": 0.087237
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "16NN1CCNCC1\nMolecule: 16NNN1C(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(",
+      "num_tokens": 400,
+      "generation_seconds": 1.876965
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "213131266688.1183954671390464\nMolecule: OCC1=C(C=C1)CC1=CCC1\nMolecule: C1=CC=CC(C=C1)=C=C1\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37",
+      "num_tokens": 400,
+      "generation_seconds": 1.870928
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " N(CC)(C)C(C)(C)C(C)(C)\nMolecule: OCC(N)C(=O)N(C)C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C",
+      "num_tokens": 400,
+      "generation_seconds": 1.87976
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " O=C(N)=N\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C",
+      "num_tokens": 400,
+      "generation_seconds": 1.902987
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1-Phenylpropane\nMolecule: 1-Pyrrolidinone\nMolecule: 1-Phenylhexane\nMolecule: 1,4-Dioxane\nMolecule: 1,2,4-Trimethylbenzene\nMolecule: 1,2,3-Trimethylcyclohexane\nMolecule: 1,2,3,4-Tetramethylbenzene\nMolecule: 1-Butene\nMolecule: 1-Pentene\nMolecule: 1,3-Dibromo-1-propanone\nMolecule: 1-Bromopropane\nMolecule: 1-Buten-1-ol\nMolecule: 1-Butyric acid methyl ester\nMolecule: 1-Chlorobutane\nMolecule: 1-Chloropropane\nMolecule: 1-Cyclohexane\nMolecule: 1-Cyclopentane\nMolecule: 1-Ethanol\nMolecule: 1-Isobutyl propyl ether\nMolecule: 1-Methylbutane\nMolecule: 1-Methylcyclohexane\nMolecule: 1-Methylpentane\nMolecule: 1-Methyl-2-butanone\nMolecule: 1-Methylcyclopentane\nMolecule: 1-Propanol\nMolecule: 1,2-Dibromo-2-propanone\nMolecule: 1,2-Dibromo-2-propanone\nMolecule: 1-Phenyl-1-propanone\nMolecule: 1-Propanol\nMolecule: 1-Propanol\nMolecule: 1-Propanol\nMolecule: 1-Propanol\nMolecule: 1-Propanol Ethyl Ether\nMolecule: 1-Pro",
+      "num_tokens": 400,
+      "generation_seconds": 1.915139
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " clo-C1=c2ccccc2CC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(=O)OCC(",
+      "num_tokens": 400,
+      "generation_seconds": 1.912403
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " N1CCCN1C\nMolecule: OC(C)CCO",
+      "num_tokens": 16,
+      "generation_seconds": 0.109251
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": " C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29C30=C30C=C30C31=C31C=C31C32=C32C=C32C33=C33C=C33C34=C34C=C34C35=C35C=C35C36=C36C=C36C37=C37C=C37C38=C38C=C38C39=C39C=C39C40=C40C=C40C41=C41C=C41C42=C42C=C42C43=C43C=C43C\nMolecule: Oc",
+      "num_tokens": 400,
+      "generation_seconds": 1.912816
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "138 \nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C\nMolecule: C1=CC=C2C=C(C=C2)C3=C4C=C4C5=C5C=C5C6=C6C=C6C7=C7C=C7C8=C8C=C8C9=C9C=C9C10=C10C=C10C11=C11C=C11C12=C12C=C12C13=C13C=C13C14=C14C=C14C15=C15C=C15C16=C16C=C16C17=C17C=C17C18=C18C=C18C19=C19C=C19C20=C20C=C20C21=C21C=C21C22=C22C=C22C23=C23C=C23C24=C24C=C24C25=C25C=C25C26=C26C=C26C27=C27C=C27C28=C28C=C28C29=C29C=C29",
+      "num_tokens": 400,
+      "generation_seconds": 1.917621
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "\u202aC1=CC=C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1)C(C=C1",
+      "num_tokens": 400,
+      "generation_seconds": 1.914479
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1503393\nMolecule: OCCC(C)NN(C)NN(C)NN(C)NC(=O)NCCCC(NC(=O)NC(=O)NCCCCNCC(=O)NCCCCCCNC(=O)NCC)CN\nMolecule: OCCCNC(=O)NCCCCOC(=O)OCC(=O)OCN\nMolecule: OC(N)N(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)\nMolecule: OC(C)OC(=O)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)OC(=O)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C)C(C",
+      "num_tokens": 400,
+      "generation_seconds": 1.920153
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "1C2C3C4C5C1C2C3C\nMolecule: OCCCNO\nMolecule: CC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)\nMolecule: OCC(=O)C(=O)O(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)\nMolecule: OC(C)CCO\nMolecule: OC(=O)C\nMolecule: N(C)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O)NC(=O",
+      "num_tokens": 400,
+      "generation_seconds": 1.918567
+    },
+    {
+      "question": "chain_extenders",
+      "generated_answer": "2-((2R)-3,4-difluorobenzylidene)ethene\nMolecule: OCCCCO\nMolecule: N1CCNCC1\nMolecule: OCC1CCCC(O)C(O)C1\nMolecule: OCCNC(=O)NCCCCCNOCC1\nMolecule: OC(=O)N1CCNCC1\nMolecule: OC(=O)C(N)C(N)C(=O)NCCNOC\nMolecule: OC(=O)OCC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=O)OC(=",
+      "num_tokens": 400,
+      "generation_seconds": 1.916464
+    }
+  ]
+}

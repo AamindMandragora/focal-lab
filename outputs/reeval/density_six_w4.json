@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.25,
+  "syntax_rate": 0.625,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 33.6398,
+    "mean_generation_seconds_per_example": 4.204976,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 1091,
+    "mean_output_tokens_per_example": 136.375,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 74.1323,
+    "evaluator_max_sample_time_seconds": 7.0453
+  },
+  "answers": [
+    {
+      "question": "There are currently {n1} {c1} balls, {n2} {c2} balls, and {n3} {c3} balls in the {place}. {c1} balls cost {cur}{p1}, {c3} balls cost {cur}{p3}, and {c2} balls cost {cur}{p2}. How much will the {place}",
+      "generated_answer": "Let's think step by step. The current count of balls is <<n1 + n2 + n3>>. The total revenue from {c1} balls is <<n1 * p1>> from the first type, from the second type <<n2 * p2>> and from the third type <<n3 * p3>>. The total revenue is <<n1 * p1 + n2 * p2 + n3 * p3>>. The final answer is <<n1 * p1 + n2 * p2 + n3 * p3>>.",
+      "num_tokens": 118,
+      "generation_seconds": 4.587554,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} caught {n} {fish}s last {day}, the first {fish} he caught weighs {w1} {unit}, the second {fish} he caught weighs {w2} {unit}, and the last {fish} he caught weighs {w3} {unit}. If a {unit} of {f",
+      "generated_answer": "Let's think step by step. {{w1 + w2 + w3} / {price}} * {n} + {w1} + {w2} + {w3} \ufffd={sells} 1. The price of a unit is \u00a5{price}. 2. The total weight of n fish is (w1 + w2 + w3) {unit}. 3. The total cost is (w1 + w2 + w3) / {price} \u00a5. 4. After selling all the fish, the user earns (w1 + w2 + w3) \u00a5. 5. Additionally, the user sells one more unit for \u00a5{price}. 6. The total earnings are sells + {price}. The final answer is <<{sells + price}>>.",
+      "num_tokens": 169,
+      "generation_seconds": 5.216801,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{name} is required to submit a {n}-page {document}. She already finished writing {frac} of the {document}. How many pages does she have left to write?",
+      "generated_answer": "Let's think step by step. The document is supposed to have {n} pages. She has written <<n * frac/100>> pages already. The number of pages she has left to write is the difference <<n - n * frac/100>>. The final answer is <<n - n * frac/100>>.",
+      "num_tokens": 73,
+      "generation_seconds": 1.959098,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are {n1} periods in the day for a normal student but {name} has to take {n2} extra classes. Each class is {t} minutes long. He goes to class for {d} days a week. He then spends {frac} of his wee",
+      "generated_answer": "Let's think step by step.\nInitially, a normal student has {n1} periods in the day. {name} has to take {n2} extra classes. Each class is {t} minutes long. He goes to class for {d} days a week. He spends {frac} of his weekly minutes every weekend on extra learning time. In one week, the time taken for extra classes is <<n2 * t * d>> and the time spent on extra learning on weekends is <<frac * 7 * t * (d - 1)>>. The total time spent learning in a week is <<n2 * t * d + frac * 7 * t * (d - 1)>>. The fraction of time is given in terms of {frac}, the time period in which extra learning is spent is in {t}, and the number of days a week is {d}. \n\nThe final answer is <<n2 * t * d + frac * 7 * t * (d - 1)>>.",
+      "num_tokens": 211,
+      "generation_seconds": 6.541738,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} finished {frac} of a {n1} piece puzzle, and then started and finished another {n2} piece puzzle within an hour. How many puzzle pieces did {name} place during that hour?",
+      "generated_answer": "Let's think step by step. First, {name} finished {frac/n1} of a {n1} piece puzzle, which is <<{frac/n1} * n1>> pieces. Then, {name} started and finished another {n2} piece puzzle within an hour, which is <<{n2} pieces>>. The total number of puzzle pieces {{name}} placed during that hour is <<{frac/n1} * n1 + {n2}>>. The final answer is <<{frac/n1} * n1 + {n2}>>.",
+      "num_tokens": 120,
+      "generation_seconds": 3.751737,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "The {event} team hid {total} {item}. The {family} twins each found {n} {item}. All the other {item} except {m} were found by their friends. How many {item} did the friends find?",
+      "generated_answer": "Let's think step by step. Initially, there were {total} {item}. The {family} twins found {n} {item} each, so they together found <<n + n>> = <<2n>>. A number of {total} - {2n} remained to be found. All other {item} except {m} were found by the friends, so the friends found <<total - 2n + m>>. The final answer is <<total - 2n + m>>.",
+      "num_tokens": 105,
+      "generation_seconds": 3.157978,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "The {family} family is busy making {item}. So far, they've made {total} {item}. They have {n1} {flavor1} {item}, {n2} {flavor2} {item}, and some {flavor3} {item}. How many {flavor3} {item} have they m",
+      "generated_answer": "Let's think step by step. The {family} family has made <<total - (n1 + n2)>> {flavor3} {item}. The final answer is <<total - (n1 + n2)>>.",
+      "num_tokens": 47,
+      "generation_seconds": 1.379631,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} buys {n} shares of a stock for {cur}{p} each. The stock price increases {r1}% the first year {name} holds it, then decreases {r2}% in the second year. What is the final value of all {name}'s sh",
+      "generated_answer": "Let's think step by step. First, {name} buys {n} shares at {cur}{p} each, so the initial cost is <<n * cur >>. After the first year, the stock price increases by {r1}%, so the new price is <<cur * (100 + r1) / 100 >>. Therefore, the value of the shares at the end of the first year is <<n * cur * (100 + r1) / 100 >>. In the second year, the stock price decreases by {r2}%, so the new price is <<(100 - r2) / 100 * (cur * (100 + r1) / 100) >>. Finally, the value of all {name}'s shares at the end of the second year is <<n * cur * (100 + r1) * (100 - r2) / 10000 >>. The final answer is <<n * cur * (100 + r1) * (100 - r2) / 10000 >>.",
+      "num_tokens": 248,
+      "generation_seconds": 7.045271,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

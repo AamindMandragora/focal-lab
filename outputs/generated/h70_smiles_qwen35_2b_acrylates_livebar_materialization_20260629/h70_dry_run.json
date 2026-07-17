@@ -1,0 +1,31 @@
+{
+  "account_record": "887730490125",
+  "billed_api_calls": 0,
+  "class": "acrylates",
+  "dry_run": true,
+  "eval_model": "Qwen/Qwen3.5-2B",
+  "gpu_calls": 0,
+  "h65_guard": "real launch refuses while H65 pid is alive unless ALLOW_WHILE_H65_RUNNING=yes",
+  "hypothesis": "H70",
+  "max_iterations": 40,
+  "min_acc": 0.36,
+  "min_syn": 0.5,
+  "model_calls": 0,
+  "planned_command": "./pilot_smiles_uv_qwen35_i40.shQwen/Qwen3.5-2Bqwen35_2bacrylates00.200.360.50",
+  "planned_generated_root": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627",
+  "planned_output_json": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+  "provenance_hardening": {
+    "artifact_root": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629",
+    "postlaunch_snapshot_dir": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/provenance_20260629T205636Z/postlaunch",
+    "prelaunch_snapshot_dir": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/provenance_20260629T205636Z/prelaunch",
+    "snapshots_current_heldout_json": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+    "snapshots_latest_run_metadata": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627/latest_run.txt"
+  },
+  "requires_real_launch_env": [
+    "DRY_RUN=0",
+    "SAFE_GPU_ID=<gpu>",
+    "CONFIRM_BEDROCK_ACCOUNT_887730490125=yes"
+  ],
+  "scientific_single_variable": "min_acc raised to live CARS UV bar 0.36",
+  "util": 0.2
+}

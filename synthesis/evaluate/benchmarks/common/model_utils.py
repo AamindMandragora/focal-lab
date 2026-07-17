@@ -753,6 +753,38 @@ class _TaskGuidanceState:
         return text[: self.MAX_GUIDANCE_CHARS]
 
 
+class AnswerCompleteStop(Exception):
+    """Generation-complete signal, NOT a failure: the final answer span is
+    finished, so generation can stop early (CRANE-style answer stopping).
+    Raised by the per-step hooks when answer early-stop is enabled and caught
+    in run_crane_csd, which returns the output-so-far through the normal
+    scoring path. Must never reach the evaluator's per-example except-block
+    (that path scores the example as a total failure with empty output)."""
+
+
+def _answer_complete(text: str) -> bool:
+    """True when the output contains the FINISHED final answer: 'final answer'
+    (case-insensitive) followed by a complete <<...>> span whose closing '>>'
+    is followed by a non-continuation character. The lookahead matters:
+    strategies often close tiny spans mid-expression ("<<n1>> + <<mult>>"),
+    and stopping at the first '>>' would freeze a fragment as the last span
+    the grader extracts. Spans that closed BEFORE the phrase never count."""
+    idx = text.lower().rfind("final answer")
+    if idx == -1:
+        return False
+    tail = text[idx:]
+    open_pos = tail.find("<<")
+    if open_pos == -1:
+        return False
+    last_close = tail.rfind(">>")
+    if last_close < open_pos + 2:
+        return False
+    after = tail[last_close + 2:].lstrip(" \t")
+    if not after:
+        return False  # not decidable yet — wait for the next token
+    return after[0] not in "+-*/%(<"
+
+
 class _TensorizedLMBase:
     """Shared tensorized behavior for Dafny LM wrappers."""
 
@@ -793,6 +825,12 @@ class _TensorizedLMBase:
         self._generate_count = 0
         self._token_id_to_str: dict[int, str] = {}
         self._runtime_deadline: float | None = None
+        # CRANE-style answer early stop (flag-gated, default OFF): when
+        # enabled, per-step hooks raise AnswerCompleteStop once the output
+        # contains a finished final-answer span; the tokens generated so far
+        # are stashed here for run_crane_csd to return as the output.
+        self._answer_early_stop_enabled: bool = False
+        self._early_stop_tokens: list[str] | None = None
 
         # Prefix-cache short-circuit state.
         self._last_full_prompt: str | None = None
@@ -856,6 +894,18 @@ class _TensorizedLMBase:
     def _check_runtime_deadline(self):
         if self._runtime_deadline is not None and time.monotonic() >= self._runtime_deadline:
             raise TimeoutError("CSD example exceeded its runtime budget")
+
+    def SetAnswerEarlyStop(self, enabled: bool):
+        self._answer_early_stop_enabled = bool(enabled)
+        self._early_stop_tokens = None
+
+    def _check_answer_early_stop(self, input_prefix):
+        if not self._answer_early_stop_enabled:
+            return
+        tokens = [self._to_str(input_prefix[i]) for i in range(len(input_prefix))]
+        if _answer_complete("".join(tokens)):
+            self._early_stop_tokens = tokens
+            raise AnswerCompleteStop("final answer span complete — stopping generation")
 
     def _prefix_text(self, prefix) -> str:
         return "".join(self._to_str(prefix[i]) for i in range(len(prefix)))
@@ -1500,6 +1550,7 @@ def create_huggingface_lm(
 
         def GenerateLogits(self, input_prefix):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             prefix_text = self._prefix_text(input_prefix)
             full_prompt = self.instruction_text + prefix_text
 
@@ -1565,6 +1616,7 @@ def create_huggingface_lm(
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)
@@ -1646,6 +1698,7 @@ def create_vllm_lm(
 
         def GenerateLogits(self, input_prefix):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             with _timed("GenerateLogits.total"):
                 with _timed("GenerateLogits.prefix_text"):
                     prefix_text = self._prefix_text(input_prefix)
@@ -1691,6 +1744,7 @@ def create_vllm_lm(
 
         def GenerateUnconstrainedChunk(self, input_prefix, maxNewTokens, openSpanToken, eosToken):
             self._check_runtime_deadline()
+            self._check_answer_early_stop(input_prefix)
             max_new_tokens = int(maxNewTokens)
             if max_new_tokens <= 0:
                 return self._build_unconstrained_chunk_result([], openSpanToken, eosToken, 0)

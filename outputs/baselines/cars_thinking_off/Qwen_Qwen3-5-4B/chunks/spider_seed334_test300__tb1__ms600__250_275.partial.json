@@ -1,0 +1,136 @@
+{
+  "accuracy": 0.375,
+  "syntax_rate": 0.9166666666666666,
+  "metrics": {
+    "num_examples": 24,
+    "total_generation_seconds": 3365.5316,
+    "mean_generation_seconds_per_example": 140.230485,
+    "examples_with_generation_timing": 24,
+    "run_wall_time_seconds": 3390.0059,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 250,
+    "eval_end_index": 275
+  },
+  "answers": [
+    {
+      "question": "Find the number of orchestras whose record format is \"CD\" or \"DVD\".",
+      "generated_answer": "SELECT COUNT(*) FROM orchestra WHERE major_record_format IN ('CD', 'DVD')",
+      "generation_seconds": 72.332116
+    },
+    {
+      "question": "Show the years in which orchestras that have given more than one performance are founded.",
+      "generated_answer": "SELECT year_of_founded FROM orchestra WHERE orchestra_id IN (SELECT orchestra_id FROM performance WHERE performance_id < (SELECT MAX(performance_id) FROM performance p2 WHERE p2.orchestra_id = p1.orchestra_id))",
+      "generation_seconds": 181.160891
+    },
+    {
+      "question": "What are years of founding for orchestras that have had more than a single performance?",
+      "generated_answer": "SELECT orchestra.major_record_format FROM orchestra LEFT JOIN performance ON orchestra.orchestra_id = performance.orchestra_id GROUP BY performance.performance_id HAVING COUNT(performance.performance_id) > 1",
+      "generation_seconds": 316.627637
+    },
+    {
+      "question": "What are the names and grades for each high schooler?",
+      "generated_answer": "SELECT name, grade FROM highschooler",
+      "generation_seconds": 39.386708
+    },
+    {
+      "question": "What grade is Kyle in?",
+      "generated_answer": "SELECT grade FROM highschooler WHERE name = 'Kyle'",
+      "generation_seconds": 64.473425
+    },
+    {
+      "question": "Return the grade for the high schooler named Kyle.",
+      "generated_answer": "SELECT grade FROM highschooler WHERE name = 'Kyle'",
+      "generation_seconds": 69.501114
+    },
+    {
+      "question": "What are the names of all high schoolers in grade 10?",
+      "generated_answer": "select name from highschooler where grade = 10",
+      "generation_seconds": 23.737098
+    },
+    {
+      "question": "Which grade has the most high schoolers?",
+      "generated_answer": "select grade, count(*) as cnt from highschooler group by grade order by cnt desc limit 1",
+      "generation_seconds": 72.491251
+    },
+    {
+      "question": "What are the names of high schoolers who have 3 or more friends?",
+      "generated_answer": "select name from highschooler where id in (select friend_id from friend group by friend_id having count(*) >= 3)",
+      "generation_seconds": 215.623687
+    },
+    {
+      "question": "Show the names of all of the high schooler Kyle's friends.",
+      "generated_answer": "SELECT name FROM highschooler JOIN friend ON highschooler.id = friend.friend_id WHERE name = 'Kyle'",
+      "generation_seconds": 70.178588
+    },
+    {
+      "question": "Show ids of all students who do not have any friends.",
+      "generated_answer": "SELECT student_id FROM highschooler WHERE student_id NOT IN (SELECT DISTINCT friend_id FROM friend)",
+      "generation_seconds": 49.954185
+    },
+    {
+      "question": "How many likes correspond to each student id?",
+      "generated_answer": "select highschooler.id, count(*) as like_count from highschooler join likes on highschooler.id = likes.liked_id group by highschooler.id",
+      "generation_seconds": 168.198437
+    },
+    {
+      "question": "Show the names of high schoolers who have likes, and numbers of likes for each.",
+      "generated_answer": "",
+      "generation_seconds": 641.549701
+    },
+    {
+      "question": "What are the names of high schoolers who have likes, and how many likes does each have?",
+      "generated_answer": "SELECT name, COUNT(*) AS like_count FROM likes JOIN highschooler ON likes.liked_id = highschooler.id GROUP BY likes.liked_id",
+      "generation_seconds": 43.244341
+    },
+    {
+      "question": "What is the name of the high schooler who has the greatest number of likes?",
+      "generated_answer": "SELECT name FROM highschooler WHERE id = (SELECT MAX(total_likes) FROM (SELECT liked_id AS total_likes FROM likes GROUP BY liked_id) AS subquery)",
+      "generation_seconds": 21.383787
+    },
+    {
+      "question": "What are the names of students who have 2 or more likes?",
+      "generated_answer": "SELECT name FROM highschooler WHERE id IN (SELECT liked_id FROM likes GROUP BY liked_id HAVING COUNT(*) >= 2)",
+      "generation_seconds": 28.521605
+    },
+    {
+      "question": "Find the average grade of all students who have some friends.",
+      "generated_answer": "select avg(h.grade) from highschooler h left join friend f on h.id = f.friend_id where f.student_id is not null group by h.id",
+      "generation_seconds": 132.377165
+    },
+    {
+      "question": "What is the average grade of students who have friends?",
+      "generated_answer": "select avg(gr.id) from (select student_id, grade, count(student_id) from highschooler group by student_id) g where g.gr = (select student_id from highschooler) and student_id in (select distinct friend_id from friend)",
+      "generation_seconds": 39.390017
+    },
+    {
+      "question": "What is the lowest grade of students who do not have any friends?",
+      "generated_answer": "",
+      "generation_seconds": 494.241221
+    },
+    {
+      "question": "What is the average age of the dogs who have gone through any treatments?",
+      "generated_answer": "SELECT AVG(d.ages) FROM dogs d JOIN treatments t ON d.dog_id = t.dog_id",
+      "generation_seconds": 16.574153
+    },
+    {
+      "question": "Which professionals live in the state of Indiana or have done treatment on more than 2 treatments? List his or her id, last name and cell phone.",
+      "generated_answer": "SELECT professional_id, last_name, cell_number FROM professionals WHERE state = 'Indiana' OR professional_id IN (SELECT DISTINCT professional_id FROM treatments GROUP BY professional_id HAVING COUNT(*) > 2)",
+      "generation_seconds": 212.628182
+    },
+    {
+      "question": "Which dogs have not cost their owner more than 1000 for treatment ? List the dog names .",
+      "generated_answer": "SELECT d.name FROM dogs AS d JOIN owners AS o ON d.owner_id = o.owner_id LEFT JOIN treatments AS t ON d.dog_id = t.dog_id AND d.abandoned_yn = 0 AND t.cost_of_treatment > 0 GROUP BY d.name HAVING SUM(t.cost_of_treatment) <= 1000",
+      "generation_seconds": 258.354616
+    },
+    {
+      "question": "Give me the description of the treatment type whose total cost is the lowest.",
+      "generated_answer": "SELECT * FROM treatment_types WHERE code = (SELECT treatment_type_code FROM treatments WHERE cost_of_treatment = (SELECT MIN(cost_of_treatment) FROM treatments))",
+      "generation_seconds": 45.008994
+    },
+    {
+      "question": "Which professionals have operated a treatment that costs less than the average? Give me theor first names and last names.",
+      "generated_answer": "SELECT first_name, last_name FROM professionals WHERE professional_id IN (SELECT professional_id FROM treatments WHERE cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM treatments))",
+      "generation_seconds": 88.592709
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 1039.924,
+    "mean_generation_seconds_per_example": 129.990501,
+    "examples_with_generation_timing": 8,
+    "run_wall_time_seconds": 1072.6357,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 40,
+    "eval_end_index": 50
+  },
+  "answers": [
+    {
+      "question": "What is the average edispl of the cars of model volvo?",
+      "generated_answer": "SELECT AVG(edispl) FROM cars_data WHERE id IN (SELECT makeid FROM car_names WHERE model = 'volvo')",
+      "generation_seconds": 89.518097
+    },
+    {
+      "question": "What is the average edispl for all volvos?",
+      "generated_answer": "SELECT AVG(cdispl) FROM cars_data c INNER JOIN car_names cn ON c.id = cn.makeid INNER JOIN car_names cn2 ON cn.makeid = cn2.makeid WHERE cn.model = 'VOLVO'",
+      "generation_seconds": 209.085433
+    },
+    {
+      "question": "What is the maximum accelerate for different number of cylinders?",
+      "generated_answer": "SELECT cylinders, MAX(accelerate) as max_accelerate FROM cars_data GROUP BY cylinders",
+      "generation_seconds": 98.096446
+    },
+    {
+      "question": "In 1980, how many cars were made?",
+      "generated_answer": "SELECT COUNT(*) FROM car_names",
+      "generation_seconds": 84.329088
+    },
+    {
+      "question": "What are the names and ids of all makers with more than 3 models?",
+      "generated_answer": "SELECT id, maker FROM car_makers WHERE id IN (SELECT maker FROM model_list GROUP BY maker HAVING COUNT(*) > 3)",
+      "generation_seconds": 386.489888
+    },
+    {
+      "question": "What are the different models created by either the car maker General Motors or weighed more than 3500?",
+      "generated_answer": "SELECT DISTINCT MODEL FROM CAR_NAMES WHERE MAKEID IN (SELECT ID FROM CAR_MAKERS WHERE MAKER = 'GM') OR ID IN (SELECT ID FROM CARS_DATA WHERE WEIGHT > 3500)",
+      "generation_seconds": 100.04519
+    },
+    {
+      "question": "What is the horsepower of the car with the largest accelerate?",
+      "generated_answer": "SELECT horsepower FROM cars_data WHERE accelerate = (SELECT MAX(accelerate) FROM cars_data)",
+      "generation_seconds": 43.988553
+    },
+    {
+      "question": "What is the horsepower of the car with the greatest accelerate?",
+      "generated_answer": "SELECT horsepower FROM cars_data WHERE accelerate = (SELECT MAX(accelerate) FROM cars_data)",
+      "generation_seconds": 28.371315
+    }
+  ]
+}

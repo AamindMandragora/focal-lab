@@ -1,0 +1,136 @@
+{
+  "accuracy": 0.7083333333333334,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 24,
+    "total_generation_seconds": 2112.4356,
+    "mean_generation_seconds_per_example": 88.018149,
+    "examples_with_generation_timing": 24,
+    "run_wall_time_seconds": 2136.8681,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 275,
+    "eval_end_index": 300
+  },
+  "answers": [
+    {
+      "question": "Which dogs are of the rarest breed? Show their names and treatment dates.",
+      "generated_answer": "select name, date_of_treatment from dogs join treatments on dogs.dog_id = treatments.dog_id where dogs.breed_code = (select breed_code from breeds where breed_name = 'rarest')",
+      "generation_seconds": 105.284529
+    },
+    {
+      "question": "Find the first names of owners living in Virginia and the names of dogs they own.",
+      "generated_answer": "SELECT first_name, name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id WHERE state = 'Virginia'",
+      "generation_seconds": 319.654396
+    },
+    {
+      "question": "List the last name of the owner owning the youngest dog.",
+      "generated_answer": "SELECT last_name FROM owners WHERE owner_id IN (SELECT owner_id FROM dogs WHERE age = (SELECT MAX(age) FROM dogs))",
+      "generation_seconds": 20.911057
+    },
+    {
+      "question": "Count the number of dogs that went through a treatment.",
+      "generated_answer": "SELECT COUNT(*) FROM treatments",
+      "generation_seconds": 152.659597
+    },
+    {
+      "question": "Find the role, street, city and state of the professionals living in a city that contains the substring 'West'.",
+      "generated_answer": "SELECT role_code, street, city, state FROM professionals WHERE city LIKE '%West%'",
+      "generation_seconds": 41.441938
+    },
+    {
+      "question": "Return the first name, last name and email of the owners living in a state whose name contains the substring 'North'.",
+      "generated_answer": "SELECT first_name, last_name, email_address FROM owners WHERE state LIKE '%North%'",
+      "generation_seconds": 109.049519
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "select count(*) from dogs, sizes, breeds where dogs.size_code = sizes.size_code and dogs.breed_code = breeds.breed_code and age < (select avg(age) from dogs)",
+      "generation_seconds": 75.061965
+    },
+    {
+      "question": "How many owners temporarily do not have any dogs?",
+      "generated_answer": "SELECT COUNT(*) FROM owners WHERE dog_id IN (SELECT dog_id FROM dogs)",
+      "generation_seconds": 126.938466
+    },
+    {
+      "question": "Find the number of professionals who have not treated any dogs.",
+      "generated_answer": "select count(*) from professionals where professional_id not in (select distinct professional_id from treatments)",
+      "generation_seconds": 49.420337
+    },
+    {
+      "question": "List the dog name, age and weight of the dogs who have been abandoned? 1 stands for yes, and 0 stands for no.",
+      "generated_answer": "SELECT name, age, weight FROM dogs WHERE abandoned_yn = 1",
+      "generation_seconds": 26.2246
+    },
+    {
+      "question": "What are the dog name, age and weight of the dogs that were abandoned? Note that 1 stands for yes, and 0 stands for no in the tables.",
+      "generated_answer": "SELECT name, age, weight FROM dogs WHERE abandoned_yn = 1",
+      "generation_seconds": 22.840127
+    },
+    {
+      "question": "What is the average age of all the dogs?",
+      "generated_answer": "SELECT AVG(age) AS average_age FROM dogs",
+      "generation_seconds": 44.502055
+    },
+    {
+      "question": "What are the email, cell phone and home phone of each professional?",
+      "generated_answer": "SELECT email_address, cell_number, home_phone FROM professionals",
+      "generation_seconds": 9.22284
+    },
+    {
+      "question": "How many singers are there?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 3.758935
+    },
+    {
+      "question": "What is the count of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 10.886338
+    },
+    {
+      "question": "List the name of singers in ascending order of net worth.",
+      "generated_answer": "SELECT name FROM singer ORDER BY net_worth_millions ASC",
+      "generation_seconds": 13.422206
+    },
+    {
+      "question": "What are the birth year and citizenship of singers?",
+      "generated_answer": "SELECT birth_year, citizenship FROM singer",
+      "generation_seconds": 6.032414
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "generation_seconds": 10.633678
+    },
+    {
+      "question": "What are the names of the singers who are not French citizens?",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "generation_seconds": 23.733445
+    },
+    {
+      "question": "Show the name of singers whose birth year is either 1948 or 1949?",
+      "generated_answer": "SELECT name FROM singer WHERE birth_year IN (1948, 1949)",
+      "generation_seconds": 38.660012
+    },
+    {
+      "question": "Show different citizenships and the maximum net worth of singers of each citizenship.",
+      "generated_answer": "SELECT c, MAX(net_worth_millions) FROM singer GROUP BY c",
+      "generation_seconds": 210.8808
+    },
+    {
+      "question": "what are the different names of the singers that have sales more than 300000?",
+      "generated_answer": "SELECT name FROM singer WHERE singer_id IN (SELECT DISTINCT singer_id FROM song WHERE sales > 300000)",
+      "generation_seconds": 100.305796
+    },
+    {
+      "question": "For each singer name, what is the total sales for their songs?",
+      "generated_answer": "SELECT name FROM singer JOIN song ON singer.singer_id = song.singer_id GROUP BY singer.name, singer.singer_id",
+      "generation_seconds": 310.22289
+    },
+    {
+      "question": "What are the citizenships that are shared by singers with a birth year before 1945 and after 1955?",
+      "generated_answer": "SELECT DISTINCT citizenship FROM singer WHERE singer.birth_year < 1945 AND singer.birth_year > 1955",
+      "generation_seconds": 280.687633
+    }
+  ]
+}

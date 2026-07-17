@@ -1,0 +1,65 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 6,
+    "total_generation_seconds": 2.1724,
+    "mean_generation_seconds_per_example": 0.362072,
+    "examples_with_generation_timing": 6,
+    "total_output_tokens": 47,
+    "mean_output_tokens_per_example": 7.8333,
+    "examples_with_token_counts": 6,
+    "evaluator_total_time_seconds": 36.2913,
+    "evaluator_max_sample_time_seconds": 0.9142
+  },
+  "answers": [
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM model>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.914174,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM cars>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.165206,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.188655,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT continents.continent ,  COUNT(car_makers.id) FROM continents>>",
+      "num_tokens": 15,
+      "generation_seconds": 0.490457,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT T2.continent FROM countries>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.204969,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT maker ,  model FROM car>>",
+      "num_tokens": 8,
+      "generation_seconds": 0.208972,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

@@ -65,6 +65,7 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         "TemperatureConstrainedStep",
         "GroupBoostedConstrainedStep",
         "AdaptiveConstrainedStep",
+        "AdaptiveConstrainedStepWithPenalties",
         "SafeBoostedConstrainedStep",
         "SafePenalizedConstrainedStep",
         "SafeRepetitionPenaltyStep",
@@ -169,7 +170,7 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         return event
 
     if name == "ValidTokenCount":
-        event["count"] = int(result) if isinstance(result, int) else str(result)
+        event["count"] = int(result) if isinstance(result, int) else None
         event["detail"] = f"count={event['count']}"
         return event
 
@@ -204,6 +205,98 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"token={token}, valid={bool(result)}"
         return event
 
+    if name == "SaveLogitsSnapshot":
+        snapshot_size = _safe_len(result)
+        event["snapshot_size"] = snapshot_size
+        event["detail"] = f"saved logits snapshot, size={snapshot_size}"
+        return event
+
+    if name == "RestoreLogitsSnapshot":
+        snapshot_size = _safe_len(args[1]) if len(args) >= 2 else None
+        event["snapshot_size"] = snapshot_size
+        event["detail"] = f"restored logits snapshot, size={snapshot_size}"
+        return event
+
+    if name == "SpeculativeConstrainedRollout":
+        candidate_token_count = _safe_len(result[0]) if isinstance(result, tuple) and len(result) >= 1 else None
+        candidate_prefix_len = _safe_len(result[1]) if isinstance(result, tuple) and len(result) >= 2 else None
+        hit_complete = bool(result[2]) if isinstance(result, tuple) and len(result) >= 3 else False
+        hit_eos = bool(result[3]) if isinstance(result, tuple) and len(result) >= 4 else False
+        steps_used = int(result[4]) if isinstance(result, tuple) and len(result) >= 5 else None
+        event["candidate_token_count"] = candidate_token_count
+        event["candidate_prefix_len"] = candidate_prefix_len
+        event["hit_complete"] = hit_complete
+        event["hit_eos"] = hit_eos
+        event["steps_used"] = steps_used
+        event["detail"] = (
+            f"speculative steps={steps_used}, candidate_tokens={candidate_token_count}, "
+            f"candidate_prefix_len={candidate_prefix_len}, hit_complete={hit_complete}, hit_eos={hit_eos}"
+        )
+        return event
+
+    if name == "RollbackAndContinue":
+        generated_len = _safe_len(result[0]) if isinstance(result, tuple) and len(result) >= 1 else None
+        current_len = _safe_len(result[1]) if isinstance(result, tuple) and len(result) >= 2 else None
+        event["generated_len"] = generated_len
+        event["current_len"] = current_len
+        event["detail"] = f"rollback-and-continue, generated_len={generated_len}, current_len={current_len}"
+        return event
+
+    if name in {"UnconstrainedGeneration", "CraneGeneration"}:
+        generated_len = _safe_len(result)
+        event["generated_len"] = generated_len
+        event["detail"] = f"generation complete, generated_len={generated_len}"
+        return event
+
+    if name == "ConstrainedGeneration":
+        generated_len = _safe_len(result[0]) if isinstance(result, tuple) and len(result) >= 1 else None
+        terminated_by_eos = bool(result[1]) if isinstance(result, tuple) and len(result) >= 2 else False
+        event["generated_len"] = generated_len
+        event["terminated_by_eos"] = terminated_by_eos
+        event["detail"] = f"constrained generation complete, generated_len={generated_len}, terminated_by_eos={terminated_by_eos}"
+        return event
+
+    if name == "RolloutConstrainedWithPenalties":
+        generated_len = _safe_len(result[0]) if isinstance(result, tuple) and len(result) >= 1 else None
+        steps_used = int(result[1]) if isinstance(result, tuple) and len(result) >= 2 else None
+        terminated_by_eos = bool(result[2]) if isinstance(result, tuple) and len(result) >= 3 else False
+        event["generated_len"] = generated_len
+        event["steps_used"] = steps_used
+        event["terminated_by_eos"] = terminated_by_eos
+        event["detail"] = (
+            f"penalized rollout, generated_len={generated_len}, steps={steps_used}, "
+            f"terminated_by_eos={terminated_by_eos}"
+        )
+        return event
+
+    if name == "GetHighestLogitToken":
+        token = _safe_token(result)
+        event["token"] = token
+        event["detail"] = f"highest-logit token={token}"
+        return event
+
+    if name == "GetTopKTokens":
+        token_count = _safe_len(result)
+        event["token_count"] = token_count
+        event["detail"] = f"top-k token count={token_count}"
+        return event
+
+    if name == "LastTokenBefore":
+        token = _safe_token(result[0]) if isinstance(result, tuple) and len(result) >= 1 else "<redacted>"
+        found = bool(result[1]) if isinstance(result, tuple) and len(result) >= 2 else False
+        event["token"] = token
+        event["found"] = found
+        event["detail"] = f"last token found={found}, token={token}"
+        return event
+
+    if name in {
+        "ExtractAfterKeyword", "FlattenTokenGroups", "IntersectTokenSets", "SubtractTokenSets",
+    }:
+        result_len = _safe_len(result)
+        event["result_len"] = result_len
+        event["detail"] = f"sequence result, length={result_len}"
+        return event
+
     if name == "GenerateLogits":
         prefix_len = _safe_len(args[0]) if args else None
         event["prefix_len"] = prefix_len
@@ -231,7 +324,10 @@ def _summarize_helper_event(name: str, args: tuple[Any, ...], result: Any, cost_
         event["detail"] = f"boost_valid, prefix_len={prefix_len}, amount={amount}"
         return event
 
-    event["detail"] = _truncate(str(result))
+    # Safe-by-default: a newly wrapped helper may return generated text, parser
+    # identifiers, or a full logit vector. Add a named summary above when its
+    # non-sensitive shape/status is useful; never serialize an unknown result.
+    event["detail"] = "result redacted"
     return event
 
 
@@ -574,6 +670,7 @@ def _attach_helper_trace(VerifiedDecoderAgent, trace_state: Dict[str, Any]) -> N
         "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
+        "RollbackAndContinue",
         "RegenerateUnitOnCheckFailure",
         "DeadEndDetection",
         "ValidTokenCount",
@@ -804,6 +901,12 @@ def setup_dafny_environment(
         _dafny,
         start="csd_start",
         tokenizer=tok,
+        # grammar_strict to match the baselines' mask-store mode: CRANE (GSM) and
+        # IterGen (Spider, itergen/main.py mode='grammar_strict') both build strict
+        # stores. This setup is shared by GSM and Spider (sql_spider/environment.py
+        # re-exports it); SMILES has its own setup and stays on grammar_mask.
+        # CSD_SYNCODE_MASK_MODE still overrides for A/Bs. User decision 2026-07-17.
+        default_mask_mode="grammar_strict",
     )
     parser = LarkDafnyParser(lm._Tokens)
 

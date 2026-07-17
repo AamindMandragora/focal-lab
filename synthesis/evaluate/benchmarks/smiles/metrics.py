@@ -19,6 +19,8 @@ except Exception:  # pragma: no cover - depends on host environment
     AllChem = None  # type: ignore
 
 EOS_MARKERS = ("<|im_end|>", "<|eot_id|>", "<|endoftext|>")
+# Text-motif fallback, used only when RDKit is unavailable. The primary check is
+# the structure-based SMARTS match below (CLASS_SMARTS), which is what CARS uses.
 CLASS_MOTIFS: dict[str, tuple[str, ...]] = {
     "acrylates": (
         "C=CC(=O)O",
@@ -32,6 +34,15 @@ CLASS_MOTIFS: dict[str, tuple[str, ...]] = {
     ),
     "chain_extenders": ("OC", "CO", "N"),
     "isocyanates": ("N=C=O", "O=C=N"),
+}
+# Structure-based membership patterns, ported verbatim from CARS
+# legacy/cars/experiments/smiles/evaluate_molecules.py::eval_membership so both
+# sides of the comparison classify molecules identically regardless of how the
+# SMILES string happens to be written.
+CLASS_SMARTS: dict[str, tuple[str, ...]] = {
+    "acrylates": ("C=CC(=O)O*",),
+    "chain_extenders": ("CO", "OC", "N"),
+    "isocyanates": ("[*]N=C=O",),
 }
 
 
@@ -87,11 +98,35 @@ def rdkit_valid(smiles: str) -> bool | None:
         return False
 
 
+@lru_cache(maxsize=None)
+def _compiled_class_smarts(class_name: str) -> tuple[Any, ...]:
+    if Chem is None:
+        return ()
+    patterns = CLASS_SMARTS.get(class_name, ())
+    compiled = tuple(Chem.MolFromSmarts(p) for p in patterns)
+    return tuple(p for p in compiled if p is not None)
+
+
 def target_class_membership(class_name: str, smiles: str) -> bool:
-    motifs = CLASS_MOTIFS.get(class_name)
-    if not motifs or not smiles:
+    if not smiles:
         return False
-    return any(motif in smiles for motif in motifs)
+    if Chem is None:
+        # RDKit unavailable: fall back to the legacy literal-motif check so the
+        # metric stays measurable (weaker: sensitive to SMILES token order).
+        motifs = CLASS_MOTIFS.get(class_name)
+        if not motifs:
+            return False
+        return any(motif in smiles for motif in motifs)
+    patterns = _compiled_class_smarts(class_name)
+    if not patterns:
+        return False
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+    except Exception:
+        return False
+    if mol is None:
+        return False
+    return any(mol.HasSubstructMatch(p) for p in patterns)
 
 
 def is_prompt_exemplar(smiles: str, prompt_exemplars: Sequence[str]) -> bool:

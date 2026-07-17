@@ -1,0 +1,52 @@
+{
+  "cluster_key_mismatch_count": 2,
+  "cluster_key_mismatches": [
+    {
+      "actual_cluster_key": "total-n*1+n*2",
+      "expected_cluster_key": "total+n*2-n*1",
+      "idx": 10
+    },
+    {
+      "actual_cluster_key": "(n*1)+(mult)+(n*2)+(n*3)",
+      "expected_cluster_key": "n1+mult+n2+n3+1000000000000000000000000000000000000000000000000000",
+      "idx": 46
+    }
+  ],
+  "group_count": 49,
+  "h27_expected_positive_count": 12,
+  "h27_expected_positive_indices": [
+    1,
+    7,
+    8,
+    10,
+    14,
+    16,
+    21,
+    26,
+    43,
+    47,
+    48,
+    49
+  ],
+  "input_summary": "/home/aadivyar/csd-generation/outputs/generated/h27_gsm_combined_pool_agreement_selector_20260629/h27_summary.json",
+  "no_billed_credentials_used": true,
+  "no_model_calls": true,
+  "selected_positive_count": 14,
+  "selected_positive_indices": [
+    1,
+    7,
+    8,
+    10,
+    14,
+    16,
+    17,
+    21,
+    26,
+    30,
+    43,
+    47,
+    48,
+    49
+  ],
+  "selected_positive_rate_over_49": 0.2857142857142857
+}

@@ -1,0 +1,263 @@
+{
+  "accuracy": 0.2,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 50,
+    "total_generation_seconds": 1614.3235,
+    "mean_generation_seconds_per_example": 32.286469,
+    "examples_with_generation_timing": 50,
+    "run_wall_time_seconds": 1643.1989
+  },
+  "answers": [
+    {
+      "question": "What are  the different countries with singers above age 20?",
+      "generated_answer": " SELECT DISTINCT country FROM singer WHERE age > 20 ORDER BY country ASC LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 21.298231
+    },
+    {
+      "question": "What are the locations and names of all stations with capacity between 5000 and 10000?",
+      "generated_answer": " SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 1.873194
+    },
+    {
+      "question": "Find the name and location of the stadiums which some concerts happened in the years of both 2014 and 2015.",
+      "generated_answer": " SELECT s.name, s.location FROM stadium s JOIN concert c ON s.stadium_id = c.stadium_id WHERE c.year IN (2014, 2015) GROUP BY s.stadium_id HAVING COUNT(DISTINCT c.year) = 2",
+      "generation_seconds": 4.755393
+    },
+    {
+      "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+      "generated_answer": " SELECT count(*) FROM concert WHERE stadium_id IN (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_id IN (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MIN(capacity) FROM stadium))  OR stadium_id IN (SELECT stadium_id FROM stadium WHERE capacity = (SELECT AVG(capacity) FROM stadium))  OR stadium_id IN (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_id IN (number_of_concerts, number_of_singers)  OR stadium_id IN (number_of_concerts, number_of_singers)  OR stadium_id IN (number_of_conqueries, number_of_singers)  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE correct_answer = 'yes')  OR stadium_with_histrical_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capcapacity) FROM stadium))  OR stadium_with_highest_capacity = (SETTLE)  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM schema WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capability) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium singer_in_concert FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity = (SELECT stadium_id FROM stadium WHERE capacity = (SELECT MAX(capacity) FROM stadium))  OR stadium_with_highest_capacity =",
+      "generation_seconds": 78.922093
+    },
+    {
+      "question": "What are the different first names and ages of the students who do have pets?",
+      "generated_answer": " SELECT DISTINCT fname, age FROM student WHERE stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stlink_id IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (student) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (example) OR stcondition_id IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM EXISTS) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (SELECT stuid FROM has_pet) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN (example) OR stuid IN",
+      "generation_seconds": 40.416453
+    },
+    {
+      "question": "What is the first name and gender of the all the students who have more than one pet?",
+      "generated_answer": " SELECT s.fname, s.sex FROM student s JOIN has_pet hp ON s.stuid = hp.stuid JOIN pets p ON hp.petid = p.petid GROUP BY s.stuid, s.fname, s.sex HAVING COUNT(*) > 1 ORDER BY s.fname, s.sex LIMIT 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 23.417246
+    },
+    {
+      "question": "What is the full name of each car maker, along with its id and how many models it produces?",
+      "generated_answer": " SELECT car_makers.fullname, car_makers.id, count(model_list.model) as model_count FROM car_makers JOIN model_list ON car_makers.id = model_list.maker GROUP BY car_makers.id, car_makers.fullname ORDER BY model_count DESC LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 25.926246
+    },
+    {
+      "question": "What is the smallest weight of the car produced with 8 cylinders on 1974 ?",
+      "generated_answer": " SELECT MIN(cars_data.weight) FROM cars_data WHERE cars_data.cylinders = 8 AND cars_data.year = 1974",
+      "generation_seconds": 1.897463
+    },
+    {
+      "question": "Which models are lighter than 3500 but not built by the 'Ford Motor Company'?",
+      "generated_answer": " SELECT model FROM car_names JOIN model_list ON car_names.model = model_list.model JOIN car_makers ON model_list.maker = car_makers.id WHERE weight < 3500 AND maker != 'Ford Motor Company' GROUP BY model HAVING count(*) > 1 ORDER BY model ASC LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 23.699572
+    },
+    {
+      "question": "How many flights arriving in Aberdeen city?",
+      "generated_answer": " SELECT count(*) FROM flights JOIN airports ON flights.destairport = airports.airportcode WHERE airports.city = 'Aberdeen'",
+      "generation_seconds": 1.636166
+    },
+    {
+      "question": "Count the number of United Airlines flights that arrive in Aberdeen.",
+      "generated_answer": " SELECT count(*) FROM flights f JOIN airports a ON f.destairport = a.airportcode WHERE a.airportname = 'Aberdeen' AND f.airline = 'United Airlines'",
+      "generation_seconds": 2.405371
+    },
+    {
+      "question": "What are flight numbers of Airline \"United Airlines\"?",
+      "generated_answer": " SELECT f.flightno FROM flights f JOIN airlines a ON f.airline = a.abbreviation WHERE a.airline = 'United Airlines'  LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 18.683558
+    },
+    {
+      "question": "Which flight numbers correspond to United Airlines flights?",
+      "generated_answer": " SELECT f.flightno FROM flights f JOIN airlines a ON f.airline = a.abbreviation WHERE a.airline = 'United Airlines'  LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 10.57878
+    },
+    {
+      "question": "Sort employee names by their age in ascending order.",
+      "generated_answer": " SELECT name FROM employee ORDER BY age ASC",
+      "generation_seconds": 0.647572
+    },
+    {
+      "question": "Which shops' number products is above the average? Give me the shop names.",
+      "generated_answer": " SELECT shop.name FROM shop WHERE number_products > (SELECT AVG(number_products) FROM shop) ORDER BY shop.name ASC LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 21.441866
+    },
+    {
+      "question": "Which employee received the biggest bonus? Give me the employee name.",
+      "generated_answer": " SELECT e.name FROM employee e JOIN hiring h ON e.employee_id = h.employee_id JOIN evaluation ev ON e.employee_id = ev.employee_id ORDER BY ev.bonus DESC LIMIT 1",
+      "generation_seconds": 2.341791
+    },
+    {
+      "question": "Count the number of documents.",
+      "generated_answer": " SELECT count(*) FROM documents WHERE template_id IS NOT NULL AND document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL AND template_id IN (SELECT template_id FROM templates WHERE template_type_code IN (SELECT template_type_code FROM ref_template_types WHERE template_type_description = 'Document Template')) AND document_id IN (SELECT document_id FROM paragraphs WHERE paragraph_text IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_name IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document JOIN documents ON documents.document_id = templates.template_id JOIN ref_template_types ON ref_template_types.template_type_code = templates.template_type_code WHERE ref_template_types.template_type_description =Document Template)AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_description IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_type IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT NULL AND other_details IS NOT NULL) AND document_id IN (SELECT document_id FROM documents WHERE document_name IS NOT NULL AND document_description IS NOT",
+      "generation_seconds": 29.356439
+    },
+    {
+      "question": "Which template type code is used by most number of documents?",
+      "generated_answer": " SELECT template_type_code, COUNT(*) as cnt FROM templates JOIN documents ON templates.template_id = documents.template_id GROUP BY template_type_code ORDER BY cnt DESC LIMIT 1",
+      "generation_seconds": 2.07567
+    },
+    {
+      "question": "What are the names of the teachers who are aged either 32 or 33?",
+      "generated_answer": " SELECT name FROM teacher WHERE age IN (32, 33) OR age = 32 OR age = 33 OR age = 33 OR age = 32 OR age =  course_arrange.teacher_id OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age =  (32) OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age =  (32) OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 33 OR age = 32 OR age = 3",
+      "generation_seconds": 52.264098
+    },
+    {
+      "question": "What is the average age of the visitors whose membership level is not higher than 4?",
+      "generated_answer": " SELECT AVG(age) FROM visitor WHERE level_of_membership <= 4",
+      "generation_seconds": 0.978506
+    },
+    {
+      "question": "Find the number of distinct name of losers.",
+      "generated_answer": " SELECT COUNT(DISTINCT matches.loser_name) FROM matches WHERE matches.loser_name IS NOT NULL AND matches.loloser_name != '' AND matches.loser_name != ' ' AND matches.loser_name != 'NULL' AND matches.loser_name != 'null' AND matches.loser_name != 'NULL' AND matches.loser_name != 'null' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches != 'NULL' AND matches != 'null' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != 'NULL' AND matches != 'null' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != 'NULL' AND matches != 'null' AND matches != 'NULL' AND matches != 'null' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != ' ' AND matches != 'NULL' AND matches != 'null' AND matches != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != 'NULL' AND matches.loser_name != 'null' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != ' ' AND matches.loser_name != 'NULL' AND matches.loser_name != 'null' AND matches.loser_matches != 'NULL' AND matches.loser_matches != 'null' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != 'NULL' AND matches.loser_matches != 'null' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.losi_matches != 'NULL' AND matches.loser_matches != 'null' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != ' ' AND matches.loser_matches != 'NULL' AND matches",
+      "generation_seconds": 75.415161
+    },
+    {
+      "question": "List the names of all winners who played in both 2013 and 2016.",
+      "generated_answer": " SELECT DISTINCT p.first_name, p.last_name FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE m.year IN (2013, 2016) GROUP BY p.player_id HAVING COUNT(DISTINCT m.year) = 2 ORDER BY p.first_name, p.player_id LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 inTersEct  SELECT DISTINCT p.first_name, p SELF_INTERSECT  FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE m.year IN (2000, 2200) GROUP BY p.player_id HAVING COUNT(DISTINCT m.yeaR) = 2 ORDER BY p.first_name, p.player_id LIMIT 10000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 32.568632
+    },
+    {
+      "question": "What are the full names of all players, sorted by birth date?",
+      "generated_answer": " SELECT first_name, last_name FROM players ORDER BY birth_date ASC LIMIT 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 inTersEct  SELECT first_name, last_name FROM players ORDER BY birth_date ASC",
+      "generation_seconds": 25.587652
+    },
+    {
+      "question": "What are the notes of the death events which has substring 'East'?",
+      "generated_answer": " SELECT note FROM death WHERE note LIKE '%East%'",
+      "generation_seconds": 0.777384
+    },
+    {
+      "question": "What are the names and descriptions of all the sections?",
+      "generated_answer": " SELECT section_name, section_description FROM sections WHERE section_name IS NOT NULL AND section_description IS NOT NULL AND section_name != '' AND section_description != '' AND section_name != 'NULL' AND section_description != 'NULL' AND section_name != 'null' AND section_description != 'null' AND section_name != 'None' AND section_description != 'None' AND section_name != ' ' AND section_description != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section  != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description != ' ' AND section_name != ' ' AND section_description !=",
+      "generation_seconds": 162.43959
+    },
+    {
+      "question": "What are the first, middle, and last names for everybody enrolled in a Bachelors program?",
+      "generated_answer": " SELECT s.first_name, s.middle_name, s.last_name FROM students s JOIN student_enrolment se ON s.student_id = se.student_id JOIN degree_programs dp ON se.degree_program_id = dp.degree_program_id WHERE dp.degree_summary_name LIKE '%Bachelors%' OR dp.degree_summary_name LIKE '%Bachelor%' OR dp.degree_summary_name LIKE '%Bachelor of Arts%' OR dp.degree_summary_name LIKE '%Bachelor of Science%' OR dp.degree_summary_name LIKE '%Bachelor of Engineering%' OR dp.degree_summary  LIKE '%Bachelor of Fine Arts%' OR dp.degree_summary_name LIKE '%Bachelor of Music%' OR dp.degree_summary_name LIKE '%Bachelor of Laws%' OR dp.degree_summary_name LIKE '%Bachelor of Business%' OR dp.degree_summary_name LIKE '%Bachelor of Education%' OR dp.degree_summary_name LIKE '%Bachelor of Pharmacy%' OR dp.degree_summary_name LIKE '%Bachelor of Social Work%' OR dp.degree_summary_name LIKE '%Bachelor of Nursing%' OR dp.degree_summary_name LIKE '%Bachelor of Public Health%' OR dp.degree_dp_id = 1 OR dp.degree_program_id = 2 OR dp.degree_program_id = 3 OR dp.degree_program_id = 4 OR dp.degree_program_id = 5 OR dp.degree_program_id = 6 OR dp.degree_program  LIKE '%Bachelor of Arts%' OR dp.degree_program_id = 7 OR dp.degree_program_id =  8 OR dp.degree_program_id = 9 OR dp.degree_program_id = 10 OR dp.degree_program_id =  clause  OR dp.degree_program_id = 11 OR dp.degree_program_id = 12 OR dp.degree_program_id = 13 OR dp.degree_program LIKE '%Bachelor of Arts%' OR dp.degree_program_id = 14 OR dp.degree_program_id = 15 OR dp.degree_program_id = 16 OR dp.degree_program_id = conditions OR dp.degree_program_id = 17 OR dp.degree_program_id = 18 OR dp.degree_program_id = 19 OR dp.degree_program_id = 20 OR dp.degree_program_id = 21 OR dp.degree_program_id = 22 OR dp.degree_program_id = 23 OR dp.degree_program_id = 24 OR dp.degree_program_id = 25 OR dp.degree_program_id = 26 OR dp.degree_program_id = 27 OR dp.degree_program_id = 28 OR dp.degree_program_id = 29 OR dp.degree_program_id = 30 OR dp.degree_program_id = 31 OR dp.degree_program  LIKE '%Bachelor of Arts%' OR dp.degree_program_id = 32 OR dp.degree  LIKE '%Bachelor of Arts%' OR dp.degree_program_id = 33 OR dp.degree_program_id = 34 OR dp.degree_program_id = _info  OR dp.degree_program_id = 35 OR dp.degree_program_id = 36 OR dp.degree_program_id = 37 OR dp.degree_program_id = 38 OR dp.degree_program_id = 39 OR dp.degree_program_id = 40 OR dp.degree_program_id = 41 OR dp.degree  LIKE '%Bachelor of Arts%' OR dp.degree_program_id = 42 OR dp.degree_program_id =  SQL  OR dp.degree_program_id = 43 OR dp.degree_program_id = 44 OR dp.degree_program_id = 45 OR dp.degree_program_id = 46 OR dp.dp_id = 47 OR dp.degree_program_id = 48 OR dp.degree_program_id = ",
+      "generation_seconds": 140.73693
+    },
+    {
+      "question": "Find the semester when both Master students and Bachelor students got enrolled in.",
+      "generated_answer": " SELECT s.semester_name FROM semesters s JOIN student_enrolment se ON s.semester_id = se.semester_id JOIN degree_programs dp ON se.degree_program_id = dp.degree_program_id JOIN departments d ON dp.department_id = d.department_id WHERE d.department_name = 'Master' OR d.department_name = 'Bachelor' GROUP BY s.semester_id HAVING COUNT(DISTINCT dp.degree_summary_name) = 2 AND dp.degree_summary_name IN ('Master', 'Bachelor') AND d.department_name IN ('Master', 'Bachelor') AND s.semester_id IN (SELECT semester_id FROM student_enrolment se2 JOIN degree_programs dp2 ON se2.degree_program_id = dp2.degree_program_id JOIN departments d2 ON dp2.department_id = d2.department_id WHERE d2.department_name = 'Master' OR d2.department_name = 'Bachelor' GROUP BY semester_id HAVING COUNT(DISTINCT dp2.degree_summary_name) = 2 AND dp2.degree_summary_name IN ('Master', 'Bachelor') AND d2.department_name IN ('Master', 'Bachelor')) ORDER BY s.semester_id LIMIT 1 OFFSET 0 UNION ALL SELECT s.semester_name FROM semesters s JOIN student_enrolment se ON s.semester_id = se.semester_id JOIN degree_programs dp ON se.degree_programer_id = dp.degree_program_id JOIN departments d ON dp.department_id = d.department_id WHERE d.department_name = 'Master' OR d.department_name = 'Bachelor' GROUP BY s.semester_id HAVING COUNT(DISTINCT dp.degree_summary_name) = 2 AND dp.degree_summary_name IN ('Model', 'Bachelor') AND d.department_name IN ('Model', 'Bachelor') AND s.semster_id IN (SELECT semester_id FROM student_enrolment se2 JOIN degree_programs dp2 ON se2.degree_program_id = dp2.degree_program_id JOIN degree_programs dp3 ON se2.degree_program_id = dp3.degree_program_id JOIN departments d3 ON dp3.department_id = d3.department_id WHERE d3.department_name = 'Model' OR d3.department_name = 'Bachelor' GROUP BY semester_id HAVING COUNT(DISTINCT dp2.degree_summary_name) = 2 AND dp2.degree_summary_name IN ('Model', 'Bachelor') AND d2.department_name IN ('Model', 'Bachelor')) ORDER BY s.semester_id LIMIT 1 OFFSET 0 UNION ALL SELECT s.semester_name FROM semesters s JOIN student_enrol semesters2 ON s.semester_id = semesters2.semester_id JOIN degree_programs dp ON se.degree_program_id = dp.degree_program_id JOIN departments d ON dp.department_id = d.department_id WHERE d.department_name = 'Master' OR d.department_name = 'Bachelor' GROUP BY s.semester_id HAVING COUNT(DISTMaster) = 2 AND dp.degree_summary_name IN ('Master', 'Bachelor') AND d.department_name IN ('Master', 'Bachelor') AND s.semester_id IN (SELECT semester_id FROM student_enrolment se2 JOIN degree_programs dp2 ON se2.degree_program_id = dp2.degree_program_id JOIN departments d2 ON dp2.department_id = d2.department_id WHERE d2.department_name = 'Master' OR d2.department_name = 'Bachelor' GROUP BY semester_id HAVING COUNT(DISTINCT dp2.degree_summary_name) = 2 AND dp2.degree_summary_name IN ('Master', 'Bachelor') AND d2.department_name IN ('Master', 'Bachelor'))",
+      "generation_seconds": 144.380666
+    },
+    {
+      "question": "What is the id of the semester that had both Masters and Bachelors students enrolled?",
+      "generated_answer": " SELECT s.semester_id FROM semesters s JOIN student_enrolment se ON s.semester_id = se.semester_id JOIN degree_programs dp ON se.degree_program_id = dp.degree_program_id WHERE dp.degree_summary_name IN ('Masters', 'Bachelors') GROUP BY s.semester_id HAVING COUNT(DISTINCT dp.degree_summary_name) = 2 ORDER BY s.semester_id LIMIT 1",
+      "generation_seconds": 5.711521
+    },
+    {
+      "question": "List the title of all cartoon directed by \"Ben Jones\" or \"Brandon Vietti\".",
+      "generated_answer": " SELECT title FROM cartoon WHERE directed_by IN ('Ben Jones', 'Brandon Viet') OR directed_by = 'Brandon Vietti'",
+      "generation_seconds": 1.645302
+    },
+    {
+      "question": "List each language and the number of TV Channels using it.",
+      "generated_answer": " SELECT language, count(*) FROM tv_channel GROUP BY language ORDER BY language ASC LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 22.597383
+    },
+    {
+      "question": "List the Episode of all TV series sorted by rating.",
+      "generated_answer": " SELECT episode FROM tv_series ORDER BY rating DESC LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 21.886717
+    },
+    {
+      "question": "What is Weekly Rank of TV series with Episode \"A Love of a Lifetime\"?",
+      "generated_answer": " SELECT weekly_rank FROM tv_series WHERE title = 'A Love of a  Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of a Lifetime') AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of title' ) AND episode = 'A Love of a Lifetime' AND title = 'A  Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series  = 'A Love of a Lifetime') AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM correlated subquery) AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = foreign_key_constraint_reference_to_tv_channel.id AND episode = 'A Love of tv_series' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of a Lifetime') AND episode = 'A Love of  Lifetime' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series_name = '_channel' ) AND episode = 'A Love of a Lifetime' AND title = 'A episode' AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of a Lifetime') AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of a Lifetime') AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = (SELECT id FROM tv_filtering) AND episode = 'A Love of a Lifetime' AND title = incorrectly_used_column_name AND channel = (SELECT id FROM tv_channel WHERE series_name = 'A Love of a Lifetime') AND episode = 'A Love of a Lifetime' AND title = 'A Love of a Lifetime' AND channel = (multiple",
+      "generation_seconds": 50.888898
+    },
+    {
+      "question": "How many poker players are there?",
+      "generated_answer": " SELECT count(*) FROM poker_player pp JOIN people p ON pp.people_id = p.people_id WHERE p.nationality = 'USA' AND p.name = 'John' AND pp.best_finish = 1 AND pp.money_rank = 1 AND pp.earnings > 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 28.15376
+    },
+    {
+      "question": "What are the final tables made and best finishes for all poker players?",
+      "generated_answer": " SELECT final_table_made, best_finish FROM poker_player ORDER BY final_table_make, best_finish DESC LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 25.411248
+    },
+    {
+      "question": "What is the average earnings of poker players?",
+      "generated_answer": " SELECT AVG(earnings) FROM poker_player WHERE earnings IS NOT NULL AND earnings > 0 AND earnings < 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 29.686948
+    },
+    {
+      "question": "What are the nationalities that are shared by at least two people?",
+      "generated_answer": " SELECT nationality FROM people GROUP BY nationality HAVING COUNT(*) >= 2 LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 24.826316
+    },
+    {
+      "question": "What is the average expected life expectancy for countries in the region of Central Africa?",
+      "generated_answer": " SELECT AVG(lifeexpectancy) FROM country WHERE region = 'Central Africa'",
+      "generation_seconds": 1.216977
+    },
+    {
+      "question": "What are the countries where either English or Dutch is the official language ?",
+      "generated_answer": " SELECT DISTINCT country.name FROM country JOIN countrylanguage ON country.code = countrylanguage.countrycode WHERE countrylanguage.isofficial = 1 AND (countrylanguage.language = 'English' OR countrylanguage.language = 'Dutch') ORDER BY country.name ASC LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 24.94576
+    },
+    {
+      "question": "What are the name, population, and life expectancy of the largest Asian country by land?",
+      "generated_answer": " SELECT c.name, c.population, c.lifeexpectancy FROM country c JOIN city ON c.capital = city.id WHERE c.continent = 'Asia' AND c.surfacearea = (SELECT MAX(surfacearea) FROM country WHERE continent = 'Asia') ORDER BY c.surfacearea DESC LIMIT 1",
+      "generation_seconds": 3.974938
+    },
+    {
+      "question": "Return the names and surface areas of the 5 largest countries.",
+      "generated_answer": " SELECT name, surfacearea FROM country ORDER BY surfacearea DESC LIMIT 5",
+      "generation_seconds": 1.046743
+    },
+    {
+      "question": "What are the country codes of the different countries, and what are the languages spoken by the greatest percentage of people for each?",
+      "generated_answer": " SELECT country.code, countrylanguage.language, MAX(countrylanguage.percentage) as max_percentage FROM countrylanguage JOIN country ON countrylanguage.countrycode = country.code GROUP BY country.code ORDER BY max_percentage DESC LIMIT 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 24.918973
+    },
+    {
+      "question": "Please show the different record companies and the corresponding number of orchestras.",
+      "generated_answer": " SELECT DISTINCT record_company, COUNT(*) FROM orchestra GROUP BY record_company ORDER BY record_company ASC LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 17.857156
+    },
+    {
+      "question": "Show the record companies shared by orchestras founded before 2003 and after 2003.",
+      "generated_answer": " SELECT DISTINCT o.record_company FROM orchestra o WHERE o.year_of_founded < 2003 OR o.year_of_founded > 2003",
+      "generation_seconds": 2.079155
+    },
+    {
+      "question": "How many friends does each student have?",
+      "generated_answer": " SELECT h.id, h.name, COUNT(f.friend_id) as num_friends FROM highschooler h LEFT JOIN friend f ON h.id = f.student_id GROUP BY h.id, h.name ORDER BY h.id, h.name LIMIT 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 20.903473
+    },
+    {
+      "question": "Count the number of friends Kyle has.",
+      "generated_answer": " SELECT count(*) FROM friend WHERE friend.student_id = (SELECT id FROM highschooler WHERE name = 'Kyle') AND friend.friend_id = (SELECT id FROM highstudenter WHERE name = 'Kyle') OR friend.student_id = (SELECT id FROM highschooler WHERE name = 'Kyle') AND friend.friend_id = (SELECT id FROM highschooler WHERE name = 'Kyle') OR friend.student_id = (SELECT id FROM highschooler WHERE name = 'Kyle') AND friend.friend_id = (SELECT id FROM highschooler WHERE name = 'Kyle') OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.studentKyle = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend_id = (Kyle) OR friend.student_id = (Kyle) AND friend.friend < 1000000000000000",
+      "generation_seconds": 68.198723
+    },
+    {
+      "question": "Which owner owns the most dogs? List the owner id, first name and last name.",
+      "generated_answer": " SELECT owner_id, first_name, last_name FROM owners WHERE owner_id IN (SELECT owner_id FROM dogs GROUP BY owner_id ORDER BY COUNT(*) DESC LIMIT 1) ORDER BY owner_id ASC LIMIT 1",
+      "generation_seconds": 2.713192
+    },
+    {
+      "question": "Who owns the youngest dog? Give me his or her last name.",
+      "generated_answer": " SELECT owners.last_name FROM owners JOIN dogs ON owners.owner_id = dogs.owner_id ORDER BY dogs.age ASC LIMIT 1",
+      "generation_seconds": 1.583531
+    },
+    {
+      "question": "Which owners live in the state whose name contains the substring 'North'? List his first name, last name and email.",
+      "generated_answer": " SELECT o.first_name, o.last_name, o.email_address FROM owners o JOIN dogs d ON o.owner_id = d.owner_id WHERE o.state LIKE '%North%' GROUP BY o.owner_id, o.first_name, o.owners_id, o.last_name, o.email_address, o.state, o.zip_code, o.home_phone, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.email_address, o.home_phone, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_info, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, BYE, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_available, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.first_name, o.last_name, o.email_address, o.state, o.zip_code, o.home_phone, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_name, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state, o.zip_code, o.home_phone, o.email_address, o.cell_number, o.street, o.city, o.email_address, o.home_phone, o.cell_number, o.state",
+      "generation_seconds": 134.611701
+    },
+    {
+      "question": "Tell me the age of the oldest dog.",
+      "generated_answer": " SELECT MAX(dogs.age) FROM dogs WHERE date_arrived IS NOT NULL AND date_departed IS NOT NULL AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_departed > CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrage < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrive < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_depart_kennels AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived < date_departed AND date_arrived < CURRENT_DATE AND date_arrived <",
+      "generation_seconds": 123.693172
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "generated_answer": " SELECT email_address, cell_number, home_phone FROM professionals WHERE 1=1 LIMIT 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "generation_seconds": 29.250158
+    }
+  ]
+}

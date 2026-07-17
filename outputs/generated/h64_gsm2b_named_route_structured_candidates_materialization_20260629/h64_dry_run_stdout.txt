@@ -1,0 +1,8 @@
+H64 dry run only; no GPU/model/API call launched.
+planned_output_root=/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0
+planned_success_json=/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_success.json
+planned_failure_json=/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_failure.json
+planned_structured_json=/home/aadivyar/csd-generation/outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/structured_candidates.json
+planned_pid_file=/tmp/csd_h64_logs/h64_gsm2b_named_route_t0_20260629.pid
+planned_log_file=/tmp/csd_h64_logs/h64_gsm2b_named_route_t0_20260629.log
+planned_command=/apps/conda/aadivyar/envs/csd/bin/python -m synthesis.evaluate.parameterized_direct_eval --repo-root /home/aadivyar/csd-generation --strategy-file /home/aadivyar/csd-generation/saved-results/2026-06-29-h64-gsm2b-named-route-candidates-body.dfy --output-name h64_gsm2b_named_route_structured_candidates_20260629_t0 --source-id h64_gsm2b_named_route_t0 --eval-model Qwen/Qwen3.5-2B --dataset gsm_symbolic --gsm-split-file /home/aadivyar/csd-generation/environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json --gsm-split-name train --sample-size 49 --max-steps 900 --max-seconds-per-example 600 --vllm-gpu-memory-utilization 0.20 

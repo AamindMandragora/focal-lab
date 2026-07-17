@@ -1,0 +1,1233 @@
+========================================================================
+  AUTHOR MODEL : 'us.anthropic.claude-sonnet-4-6' via backend='bedrock'
+  EVAL   MODEL : 'Qwen/Qwen3.5-4B' via backend='vllm'
+========================================================================
+Initializing synthesis pipeline...
+Setting up evaluator for dataset: smiles
+  Generation model: us.anthropic.claude-sonnet-4-6
+  Evaluation model: Qwen/Qwen3.5-4B
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Generating initial strategy for: Generate one new, valid, non-exemplar SMILES molecule for the acrylates class. The answer contract is a single SMILES string and nothing else.
+
+============================================================
+Attempt 1/40
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit)
+Strategy: // CSD_RATIONALE_BEGIN
+// SMILES-acrylate CSD. The task is to generate a single valid SMILES string
+// for the acrylates class (e.g., methyl acrylate, ethyl acrylate, etc.).
+// Strategy:
+//   1. Append task guidance to steer the model toward acrylate SMILES.
+//   2. Open a constrained span immediately (no free preamble needed since the
+//      answer contract is a bare SMILES string).
+//   3. Inside the span, use AdaptiveConstrainedStep with group boosts to drive
+//      parser-valid SMILES token generation.
+//   4. Use SafeRepetitionPenaltyStep to avoid repeating structural tokens.
+//   5. Close the span once the parser reports a complete prefix.
+// State tracked: insideConstrainedOut, currentConstrainedOut, steps, generated.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   OpenConstrainedSpan sets insideConstrainedOut := true and currentConstrainedOut := [],
+//   which is valid by parser.IsValidPrefix([]) precondition.
+//   In the constrained branch, AdaptiveConstrainedStep and SafeRepetitionPenaltyStep
+//   both return EOS or a parser-valid next token; AppendConstrainedToken preserves
+//   parser.IsValidPrefix(currentConstrainedOut) by its postcondition.
+//   CloseConstrainedSpan sets insideConstrainedOut := false, making the implication vacuous,
+//   and clears currentConstrainedOut to [].
+// progress:
+//   OpenConstrainedSpan costs 1 step and appends "<<" (1 visible token), so
+//   |generated| <= |generatedPrefix| + steps after it.
+//   Each loop iteration increments steps by 1 and appends at most 1 visible token,
+//   so |generated| <= |generatedPrefix| + steps is maintained throughout.
+//   CloseConstrainedSpan costs 1 step and appends ">>" (1 visible token), preserving the bound.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+helpers.AppendTaskGuidance(lm, "Generate a single valid SMILES string for the acrylates class. Acrylates contain the acrylate group (C=C-C(=O)-O). Output only the SMILES string with no explanation.");
+
+// Open the constrained span immediately if not already inside one
+if !insideConstrainedOut && steps < maxSteps {
+  var og, oi, oc := helpers.OpenConstrainedSpan(lm, generated);
+  generated := og;
+  insideConstrainedOut := oi;
+  currentConstrainedOut := oc;
+  steps := steps + 1;
+}
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{
+  if !insideConstrainedOut {
+    // Span was closed; we are done
+    break;
+  } else if parser.IsCompletePrefix(currentConstrainedOut) {
+    // Close the span
+    var cg, ci, cc := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut);
+    generated := cg;
+    insideConstrainedOut := ci;
+    currentConstrainedOut := cc;
+    steps := steps + 1;
+  } else {
+    // Inside constrained span, not yet complete
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+    var next := eosToken;
+    if validCount <= 15 {
+      // Narrow state: use group boosting
+      next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 5.0, 15, eosToken
+      );
+    } else {
+      // Wider state: use repetition penalty to encourage variety
+      next := helpers.SafeRepetitionPenaltyStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, generated, 2.0, eosToken
+      );
+    }
+    steps := steps + 1;
+    if next == eosToken {
+      break;
+    } else {
+      var ag, ai, ac := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, next);
+      generated := ag;
+      insideConstrainedOut := ai;
+      currentConstrainedOut := ac;
+    }
+  }
+}
+
+cost := steps;
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/synth_smiles_qwen35_4b_acrylates_retry_0708/synth_smiles_qwen35_4b_acrylates_retry_0708_20260710_190524_a7c599/python/synth_smiles_qwen35_4b_acrylates_retry_0708
+
+[3/4] Evaluating compiled strategy (runtime smoke test removed).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: None
+Loading model: Qwen/Qwen3.5-4B on cuda with vLLM...
+INFO 07-10 19:05:55 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:05:55 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:05:55 [model.py:1678] Using max model len 16384
+INFO 07-10 19:05:55 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+WARNING 07-10 19:05:55 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:05:55 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+`Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+INFO 07-10 19:05:57 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:05:57 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+INFO 07-10 19:05:57 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 07-10 19:05:57 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:05:57 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:05:57 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 07-10 19:05:57 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant
+The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+(EngineCore pid=3404327) INFO 07-10 19:06:20 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3404327) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3404327) INFO 07-10 19:06:25 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:39813 backend=nccl
+(EngineCore pid=3404327) INFO 07-10 19:06:25 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     super().__init__(
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     self._init_executor()
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108]     raise ValueError(
+(EngineCore pid=3404327) ERROR 07-10 19:06:26 [core.py:1108] ValueError: Free memory on device cuda:0 (10.87/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3404327) Process EngineCore:
+(EngineCore pid=3404327) Traceback (most recent call last):
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3404327)     self.run()
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3404327)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3404327)     raise e
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3404327)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3404327)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327)     return func(*args, **kwargs)
+(EngineCore pid=3404327)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3404327)     super().__init__(
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3404327)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3404327)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327)     return func(*args, **kwargs)
+(EngineCore pid=3404327)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3404327)     self._init_executor()
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3404327)     self.driver_worker.init_device()
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3404327)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3404327)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3404327)     return func(*args, **kwargs)
+(EngineCore pid=3404327)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3404327)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3404327)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3404327)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3404327)     raise ValueError(
+(EngineCore pid=3404327) ValueError: Free memory on device cuda:0 (10.87/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:06:26.541408947 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:06:38 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:06:39 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:06:39 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:06:39 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:06:39 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:06:39 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:06:39 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:06:39 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:06:39 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:06:39 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3406533) INFO 07-10 19:06:46 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3406533) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3406533) INFO 07-10 19:06:52 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:36489 backend=nccl
+(EngineCore pid=3406533) INFO 07-10 19:06:52 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     super().__init__(
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     self._init_executor()
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108]     raise ValueError(
+(EngineCore pid=3406533) ERROR 07-10 19:06:53 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3406533) Process EngineCore:
+(EngineCore pid=3406533) Traceback (most recent call last):
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3406533)     self.run()
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3406533)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3406533)     raise e
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3406533)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3406533)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533)     return func(*args, **kwargs)
+(EngineCore pid=3406533)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3406533)     super().__init__(
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3406533)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3406533)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533)     return func(*args, **kwargs)
+(EngineCore pid=3406533)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3406533)     self._init_executor()
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3406533)     self.driver_worker.init_device()
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3406533)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3406533)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3406533)     return func(*args, **kwargs)
+(EngineCore pid=3406533)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3406533)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3406533)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3406533)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3406533)     raise ValueError(
+(EngineCore pid=3406533) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:06:53.418814671 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Retrying vLLM evaluator startup with lower gpu_memory_utilization=0.40
+Loading model: Qwen/Qwen3.5-4B on cuda with vLLM...
+INFO 07-10 19:06:55 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:07:01 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:07:01 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:07:01 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:07:01 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:07:01 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:07:01 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:07:01 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:07:01 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:07:01 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3408310) INFO 07-10 19:07:09 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3408310) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3408310) INFO 07-10 19:07:13 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:37951 backend=nccl
+(EngineCore pid=3408310) INFO 07-10 19:07:14 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     super().__init__(
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     self._init_executor()
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108]     raise ValueError(
+(EngineCore pid=3408310) ERROR 07-10 19:07:14 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3408310) Process EngineCore:
+(EngineCore pid=3408310) Traceback (most recent call last):
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3408310)     self.run()
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3408310)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3408310)     raise e
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3408310)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3408310)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310)     return func(*args, **kwargs)
+(EngineCore pid=3408310)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3408310)     super().__init__(
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3408310)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3408310)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310)     return func(*args, **kwargs)
+(EngineCore pid=3408310)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3408310)     self._init_executor()
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3408310)     self.driver_worker.init_device()
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3408310)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3408310)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3408310)     return func(*args, **kwargs)
+(EngineCore pid=3408310)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3408310)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3408310)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3408310)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3408310)     raise ValueError(
+(EngineCore pid=3408310) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:07:15.964855047 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:07:26 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:07:27 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:07:27 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:07:27 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:07:27 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:07:27 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:07:27 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:07:27 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:07:27 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:07:27 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3410189) INFO 07-10 19:07:35 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3410189) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3410189) INFO 07-10 19:07:41 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:45573 backend=nccl
+(EngineCore pid=3410189) INFO 07-10 19:07:41 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     super().__init__(
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     self._init_executor()
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108]     raise ValueError(
+(EngineCore pid=3410189) ERROR 07-10 19:07:42 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3410189) Process EngineCore:
+(EngineCore pid=3410189) Traceback (most recent call last):
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3410189)     self.run()
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3410189)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3410189)     raise e
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3410189)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3410189)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189)     return func(*args, **kwargs)
+(EngineCore pid=3410189)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3410189)     super().__init__(
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3410189)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3410189)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189)     return func(*args, **kwargs)
+(EngineCore pid=3410189)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3410189)     self._init_executor()
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3410189)     self.driver_worker.init_device()
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3410189)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3410189)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3410189)     return func(*args, **kwargs)
+(EngineCore pid=3410189)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3410189)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3410189)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3410189)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3410189)     raise ValueError(
+(EngineCore pid=3410189) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:07:42.567720975 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+  ✗ Evaluation failed: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+  Evaluator runtime kept warm; generation backend is hosted (bedrock)
+  Refining based on evaluation error...
+  Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 1 attempt(s) with zero evaluated examples from helper-mask scoring
+  Beam evaluation_error: 2 candidate(s), selected contract_ok=True verify_ok=True local=False edit_ratio=1.15
+
+============================================================
+Attempt 2/40
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 1 attempt(s) with zero evaluated examples from helper-mask scoring
+Strategy: // CSD_RATIONALE_BEGIN
+// SMILES-acrylate CSD (no-delimiter surface).
+// The task output contract is a bare SMILES string with no visible delimiters.
+// The parser controls the entire generation from an empty constrained prefix.
+// Strategy:
+//   1. Append task guidance steering the model toward acrylate SMILES.
+//   2. Do NOT open a "<<" span — the evaluator expects a raw SMILES string,
+//      not a delimited one. Use ConstrainedGeneration directly.
+//   3. ConstrainedGeneration loops ConstrainedStep until parser completeness,
+//      EOS, or budget exhaustion.
+//   4. The returned generated sequence is the bare SMILES content.
+// This avoids the delimiter-injection failure that caused syntax 0%.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   We never set insideConstrainedOut := true, so the implication
+//   insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+//   is vacuously true throughout. currentConstrainedOut stays [].
+// progress:
+//   ConstrainedGeneration costs at most maxSteps steps and appends at most
+//   maxSteps tokens to generated, so |generated| <= |generatedPrefix| + maxSteps.
+//   cost := maxSteps satisfies cost <= maxSteps. When maxSteps > 0, at least
+//   one step is consumed (cost > 0), satisfying the progress postcondition.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := false;
+currentConstrainedOut := [];
+cost := 0;
+
+helpers.AppendTaskGuidance(lm, "Output a single valid SMILES string for a molecule in the acrylates class. Acrylates contain the ester of acrylic acid: C=CC(=O)O fragment. Output only the SMILES string, nothing else.");
+
+if maxSteps > 0 {
+  var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(
+    lm, parser, prompt, maxSteps, eosToken
+  );
+  generated := generatedPrefix + constrainedGenerated;
+  cost := maxSteps;
+}
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/synth_smiles_qwen35_4b_acrylates_retry_0708/synth_smiles_qwen35_4b_acrylates_retry_0708_20260710_190524_a7c599/python/synth_smiles_qwen35_4b_acrylates_retry_0708_20260710_190823_2d517f
+
+[3/4] Evaluating compiled strategy (runtime smoke test removed).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: None
+Loading model: Qwen/Qwen3.5-4B on cuda with vLLM...
+INFO 07-10 19:08:23 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:08:24 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:08:24 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:08:24 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:08:24 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:08:24 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:08:24 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:08:24 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:08:24 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:08:24 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3414362) INFO 07-10 19:08:32 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3414362) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3414362) INFO 07-10 19:08:38 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:52883 backend=nccl
+(EngineCore pid=3414362) INFO 07-10 19:08:38 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     super().__init__(
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     self._init_executor()
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108]     raise ValueError(
+(EngineCore pid=3414362) ERROR 07-10 19:08:38 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3414362) Process EngineCore:
+(EngineCore pid=3414362) Traceback (most recent call last):
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3414362)     self.run()
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3414362)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3414362)     raise e
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3414362)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3414362)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362)     return func(*args, **kwargs)
+(EngineCore pid=3414362)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3414362)     super().__init__(
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3414362)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3414362)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362)     return func(*args, **kwargs)
+(EngineCore pid=3414362)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3414362)     self._init_executor()
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3414362)     self.driver_worker.init_device()
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3414362)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3414362)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3414362)     return func(*args, **kwargs)
+(EngineCore pid=3414362)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3414362)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3414362)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3414362)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3414362)     raise ValueError(
+(EngineCore pid=3414362) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:08:39.979483890 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:08:50 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:08:51 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:08:51 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:08:51 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:08:51 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:08:51 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:08:51 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:08:51 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:08:51 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:08:51 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3416304) INFO 07-10 19:08:59 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3416304) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3416304) INFO 07-10 19:09:05 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:44973 backend=nccl
+(EngineCore pid=3416304) INFO 07-10 19:09:05 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     super().__init__(
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     self._init_executor()
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108]     raise ValueError(
+(EngineCore pid=3416304) ERROR 07-10 19:09:06 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3416304) Process EngineCore:
+(EngineCore pid=3416304) Traceback (most recent call last):
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3416304)     self.run()
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3416304)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3416304)     raise e
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3416304)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3416304)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304)     return func(*args, **kwargs)
+(EngineCore pid=3416304)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3416304)     super().__init__(
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3416304)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3416304)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304)     return func(*args, **kwargs)
+(EngineCore pid=3416304)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3416304)     self._init_executor()
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3416304)     self.driver_worker.init_device()
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3416304)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3416304)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3416304)     return func(*args, **kwargs)
+(EngineCore pid=3416304)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3416304)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3416304)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3416304)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3416304)     raise ValueError(
+(EngineCore pid=3416304) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:09:06.498111836 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+Retrying vLLM evaluator startup with lower gpu_memory_utilization=0.40
+Loading model: Qwen/Qwen3.5-4B on cuda with vLLM...
+INFO 07-10 19:09:08 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:09:09 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:09:09 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:09:09 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:09:09 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:09:09 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:09:09 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:09:09 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:09:09 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:09:09 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3417404) INFO 07-10 19:09:17 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3417404) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3417404) INFO 07-10 19:09:23 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:56181 backend=nccl
+(EngineCore pid=3417404) INFO 07-10 19:09:23 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     super().__init__(
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     self._init_executor()
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108]     raise ValueError(
+(EngineCore pid=3417404) ERROR 07-10 19:09:23 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3417404) Process EngineCore:
+(EngineCore pid=3417404) Traceback (most recent call last):
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3417404)     self.run()
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3417404)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3417404)     raise e
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3417404)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3417404)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404)     return func(*args, **kwargs)
+(EngineCore pid=3417404)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3417404)     super().__init__(
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3417404)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3417404)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404)     return func(*args, **kwargs)
+(EngineCore pid=3417404)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3417404)     self._init_executor()
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3417404)     self.driver_worker.init_device()
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3417404)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3417404)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3417404)     return func(*args, **kwargs)
+(EngineCore pid=3417404)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3417404)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3417404)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3417404)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3417404)     raise ValueError(
+(EngineCore pid=3417404) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:09:24.310544234 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:09:35 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.4, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:09:36 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:09:36 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:09:36 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:09:36 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:09:36 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:09:36 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:09:36 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:09:36 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:09:36 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3419253) INFO 07-10 19:09:44 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3419253) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3419253) INFO 07-10 19:09:49 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:48887 backend=nccl
+(EngineCore pid=3419253) INFO 07-10 19:09:49 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     super().__init__(
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     self._init_executor()
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108]     raise ValueError(
+(EngineCore pid=3419253) ERROR 07-10 19:09:50 [core.py:1108] ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3419253) Process EngineCore:
+(EngineCore pid=3419253) Traceback (most recent call last):
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3419253)     self.run()
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3419253)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3419253)     raise e
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3419253)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3419253)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253)     return func(*args, **kwargs)
+(EngineCore pid=3419253)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3419253)     super().__init__(
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3419253)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3419253)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253)     return func(*args, **kwargs)
+(EngineCore pid=3419253)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3419253)     self._init_executor()
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3419253)     self.driver_worker.init_device()
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3419253)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3419253)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3419253)     return func(*args, **kwargs)
+(EngineCore pid=3419253)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3419253)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3419253)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3419253)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3419253)     raise ValueError(
+(EngineCore pid=3419253) ValueError: Free memory on device cuda:0 (10.46/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:09:51.882855644 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+  ✗ Evaluation failed: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+  Evaluator runtime kept warm; generation backend is hosted (bedrock)
+  Refining based on evaluation error...
+  Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 2 attempt(s) with zero evaluated examples from helper-mask scoring
+  Beam evaluation_error: 2 candidate(s), selected contract_ok=True verify_ok=True local=False edit_ratio=1.16
+
+============================================================
+Attempt 3/40
+============================================================
+Helper policy: helper mask warm-up (0/3 evaluated attempts for bandit); excluded 2 attempt(s) with zero evaluated examples from helper-mask scoring
+Strategy: // CSD_RATIONALE_BEGIN
+// SMILES-acrylate CSD (no-delimiter surface, fixed).
+// The task output contract is a bare SMILES string with no visible delimiters.
+// The previous attempt used ConstrainedGeneration but scored 0 examples evaluated,
+// suggesting the generated output was either empty or the cost/generated assignment
+// was wrong (generated := generatedPrefix + constrainedGenerated may double-count).
+//
+// Fix:
+//   1. Append stronger task guidance.
+//   2. Use ConstrainedGeneration which returns only the newly generated tokens.
+//      Set generated := generatedPrefix + constrainedGenerated correctly.
+//   3. Keep insideConstrainedOut := false and currentConstrainedOut := [] throughout
+//      since we are not using visible delimiters.
+//   4. Set cost := |constrainedGenerated| (or maxSteps as upper bound) to satisfy
+//      cost <= maxSteps and cost > 0 when maxSteps > 0.
+//
+// The key insight: ConstrainedGeneration returns only the NEW tokens, so we must
+// append them to generatedPrefix. cost must be set accurately.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity:
+//   insideConstrainedOut is always false, so the implication
+//   insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+//   is vacuously true. currentConstrainedOut stays [].
+//
+// progress:
+//   ConstrainedGeneration costs at most maxSteps steps and returns at most
+//   maxSteps tokens in constrainedGenerated, so
+//   |generated| = |generatedPrefix| + |constrainedGenerated| <= |generatedPrefix| + maxSteps.
+//   cost := maxSteps satisfies cost <= maxSteps.
+//   When maxSteps > 0, ConstrainedGeneration consumes at least 1 step (cost > 0),
+//   and generated != generatedPrefix (at least one token appended unless EOS on first step,
+//   but cost > 0 satisfies the progress postcondition regardless).
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := false;
+currentConstrainedOut := [];
+cost := 0;
+
+helpers.AppendTaskGuidance(lm, "Generate a single valid SMILES string for a new acrylate molecule. Acrylates are esters derived from acrylic acid and contain the substructure C=CC(=O)O. Examples: C=CC(=O)OCC, C=CC(=O)OCCO, C=CC(=O)OC. Output only the SMILES string with no explanation, no delimiters, no Markdown.");
+
+if maxSteps > 0 {
+  var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(
+    lm, parser, prompt, maxSteps, eosToken
+  );
+  generated := generatedPrefix + constrainedGenerated;
+  cost := maxSteps;
+}
+
+[1/4] Verifying with Dafny...
+  ✓ Verification passed
+
+[2/4] Compiling to Python...
+  ✓ Compiled to outputs/generated/synth_smiles_qwen35_4b_acrylates_retry_0708/synth_smiles_qwen35_4b_acrylates_retry_0708_20260710_190524_a7c599/python/synth_smiles_qwen35_4b_acrylates_retry_0708_20260710_191033_5ad508
+
+[3/4] Evaluating compiled strategy (runtime smoke test removed).
+
+[4/4] Evaluating on dataset sample...
+  [synthesis] eval seed for this iteration: None
+Loading model: Qwen/Qwen3.5-4B on cuda with vLLM...
+INFO 07-10 19:10:34 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:10:34 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:10:34 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:10:34 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:10:34 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:10:34 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:10:34 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:10:34 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:10:34 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:10:34 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3424054) INFO 07-10 19:10:42 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3424054) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3424054) INFO 07-10 19:10:46 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:55175 backend=nccl
+(EngineCore pid=3424054) INFO 07-10 19:10:46 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108] EngineCore failed to start.
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108] Traceback (most recent call last):
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     super().__init__(
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     self._init_executor()
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     self.driver_worker.init_device()
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     self.worker.init_device()  # type: ignore
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     return func(*args, **kwargs)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108]     raise ValueError(
+(EngineCore pid=3424054) ERROR 07-10 19:10:47 [core.py:1108] ValueError: Free memory on device cuda:0 (10.05/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+(EngineCore pid=3424054) Process EngineCore:
+(EngineCore pid=3424054) Traceback (most recent call last):
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=3424054)     self.run()
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/multiprocessing/process.py", line 108, in run
+(EngineCore pid=3424054)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1112, in run_engine_core
+(EngineCore pid=3424054)     raise e
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 1082, in run_engine_core
+(EngineCore pid=3424054)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=3424054)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054)     return func(*args, **kwargs)
+(EngineCore pid=3424054)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 848, in __init__
+(EngineCore pid=3424054)     super().__init__(
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/engine/core.py", line 114, in __init__
+(EngineCore pid=3424054)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=3424054)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054)     return func(*args, **kwargs)
+(EngineCore pid=3424054)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/abstract.py", line 103, in __init__
+(EngineCore pid=3424054)     self._init_executor()
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/executor/uniproc_executor.py", line 47, in _init_executor
+(EngineCore pid=3424054)     self.driver_worker.init_device()
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/worker_base.py", line 312, in init_device
+(EngineCore pid=3424054)     self.worker.init_device()  # type: ignore
+(EngineCore pid=3424054)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=3424054)     return func(*args, **kwargs)
+(EngineCore pid=3424054)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/gpu_worker.py", line 283, in init_device
+(EngineCore pid=3424054)     self.requested_memory = request_memory(init_snapshot, self.cache_config)
+(EngineCore pid=3424054)                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=3424054)   File "/apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/v1/worker/utils.py", line 413, in request_memory
+(EngineCore pid=3424054)     raise ValueError(
+(EngineCore pid=3424054) ValueError: Free memory on device cuda:0 (10.05/39.49 GiB) on startup is less than desired GPU memory utilization (0.45, 17.77 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+[rank0]:[W710 19:10:47.759787409 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+[vllm] Engine init failed: RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+[vllm] Cleaning GPU state and retrying in 10s...
+INFO 07-10 19:10:59 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen3.5-4B', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.45, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen3.5-4B'}
+INFO 07-10 19:10:59 [model.py:549] Resolved architecture: Qwen3_5ForConditionalGeneration
+INFO 07-10 19:10:59 [model.py:1678] Using max model len 16384
+WARNING 07-10 19:10:59 [config.py:441] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+INFO 07-10 19:10:59 [config.py:461] Warning: Prefix caching in Mamba cache 'align' mode is currently enabled. Its support for Mamba layers is experimental. Please report any issues you may observe.
+INFO 07-10 19:10:59 [config.py:281] Setting attention block size to 528 tokens to ensure that attention page size is >= mamba page size.
+INFO 07-10 19:10:59 [config.py:312] Padding mamba page size by 0.76% to ensure that mamba page size and attention page size are exactly equal.
+WARNING 07-10 19:10:59 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-10 19:10:59 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-10 19:10:59 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3426510) INFO 07-10 19:11:07 [core.py:105] Initializing a V1 LLM engine (v0.19.1) with config: model='Qwen/Qwen3.5-4B', speculative_config=None, tokenizer='Qwen/Qwen3.5-4B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3.5-4B, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=3426510) `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.
+(EngineCore pid=3426510) INFO 07-10 19:11:11 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:55341 backend=nccl
+(EngineCore pid=3426510) INFO 07-10 19:11:11 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=3426510) The `use_fast` parameter is deprecated and will be removed in a future version. Use `backend="torchvision"` instead of `use_fast=True`, or `backend="pil"` instead of `use_fast=False`.
+(EngineCore pid=3426510) INFO 07-10 19:11:24 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen3.5-4B...
+(EngineCore pid=3426510) INFO 07-10 19:11:24 [cuda.py:390] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention
+(EngineCore pid=3426510) INFO 07-10 19:11:24 [mm_encoder_attention.py:230] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.
+(EngineCore pid=3426510) INFO 07-10 19:11:24 [gdn_linear_attn.py:147] Using Triton/FLA GDN prefill kernel
+(EngineCore pid=3426510) INFO 07-10 19:11:25 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=3426510) INFO 07-10 19:11:25 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=3426510) Loading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]
+(EngineCore pid=3426510) Loading safetensors checkpoint shards:  50% Completed | 1/2 [00:01<00:01,  1.59s/it]
+(EngineCore pid=3426510) Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.75s/it]
+(EngineCore pid=3426510) Loading safetensors checkpoint shards: 100% Completed | 2/2 [00:03<00:00,  1.72s/it]
+(EngineCore pid=3426510) 
+(EngineCore pid=3426510) INFO 07-10 19:11:29 [default_loader.py:384] Loading weights took 3.79 seconds
+(EngineCore pid=3426510) INFO 07-10 19:11:29 [gpu_model_runner.py:4820] Model loading took 8.61 GiB memory and 4.762632 seconds
+(EngineCore pid=3426510) INFO 07-10 19:11:30 [gpu_model_runner.py:5753] Encoder cache will be initialized with a budget of 16384 tokens, and profiled with 1 image items of the maximum feature size.
+(EngineCore pid=3426510) /apps/conda/aadivyar/envs/csd/lib/python3.11/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (16) < num_heads (32). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].
+(EngineCore pid=3426510)   return fn(*contiguous_args, **contiguous_kwargs)
+(EngineCore pid=3426510) INFO 07-10 19:11:37 [gpu_worker.py:436] Available KV cache memory: 7.35 GiB
+(EngineCore pid=3426510) INFO 07-10 19:11:37 [kv_cache_utils.py:1319] GPU KV cache size: 59,664 tokens
+(EngineCore pid=3426510) INFO 07-10 19:11:37 [kv_cache_utils.py:1324] Maximum concurrency for 16,384 tokens per request: 11.97x
+(EngineCore pid=3426510) INFO 07-10 19:11:38 [core.py:283] init engine (profile, create kv cache, warmup model) took 8.24 seconds
+(EngineCore pid=3426510) INFO 07-10 19:11:38 [vllm.py:790] Asynchronous scheduling is enabled.
+(EngineCore pid=3426510) WARNING 07-10 19:11:38 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=3426510) WARNING 07-10 19:11:38 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=3426510) INFO 07-10 19:11:38 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=3426510) INFO 07-10 19:11:38 [compilation.py:292] Enabled custom fusions: norm_quant, act_quant
+  [EVAL] Processing example 1/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...
+[STEP_BREAKDOWN] wall=0.70s  lm_callbacks=1.25s  parser_callbacks=0.02s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=1.25s
+  GenerateLogits.total              0.55s  ( 44.1%)  calls=1     avg= 553.20ms
+  GenerateLogits.engine_generate    0.50s  ( 39.9%)  calls=1     avg= 501.00ms
+  MaskValidNextAndEos               0.14s  ( 11.2%)  calls=1     avg= 140.69ms
+  GenerateLogits.finalize_from_dict    0.05s  (  4.2%)  calls=1     avg=  52.11ms
+  ChooseNextToken                   0.01s  (  0.6%)  calls=1     avg=   7.83ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=1     avg=   0.03ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=1     avg=   0.00ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=1     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.02s
+  accept_mask.total                     0.00s  ( 26.9%)  calls=1     avg=   4.11ms
+  accept_mask.dfa_lookup                0.00s  ( 24.6%)  calls=1     avg=   3.75ms
+  accept_mask.lookup_next_tokens        0.00s  ( 24.1%)  calls=1     avg=   3.68ms
+  IsCompletePrefix.dafny                0.00s  ( 11.5%)  calls=2     avg=   0.88ms
+  is_complete.inc_parser                0.00s  ( 11.1%)  calls=1     avg=   1.70ms
+  accept_mask.inc_parser_accepts        0.00s  (  1.5%)  calls=1     avg=   0.22ms
+  accept_mask.compute_dfa_states        0.00s  (  0.2%)  calls=1     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=1     avg=   0.02ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.02s
+  accept_mask.total                     0.00s  ( 26.9%)  calls=1     avg=   4.11ms
+  accept_mask.dfa_lookup                0.00s  ( 24.6%)  calls=1     avg=   3.75ms
+  accept_mask.lookup_next_tokens        0.00s  ( 24.1%)  calls=1     avg=   3.68ms
+  IsCompletePrefix.dafny                0.00s  ( 11.5%)  calls=2     avg=   0.88ms
+  is_complete.inc_parser                0.00s  ( 11.1%)  calls=1     avg=   1.70ms
+  accept_mask.inc_parser_accepts        0.00s  (  1.5%)  calls=1     avg=   0.22ms
+  accept_mask.compute_dfa_states        0.00s  (  0.2%)  calls=1     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=1     avg=   0.02ms
+  [EVAL]   Generated 1 tokens in 2.51s
+  [EVAL] Processing example 2/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...
+[STEP_BREAKDOWN] wall=0.09s  lm_callbacks=1.43s  parser_callbacks=0.02s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=1.43s
+  GenerateLogits.total              0.64s  ( 44.8%)  calls=2     avg= 319.66ms
+  GenerateLogits.engine_generate    0.59s  ( 41.0%)  calls=2     avg= 293.02ms
+  MaskValidNextAndEos               0.14s  (  9.9%)  calls=2     avg=  71.02ms
+  GenerateLogits.finalize_from_dict    0.05s  (  3.7%)  calls=2     avg=  26.54ms
+  ChooseNextToken                   0.01s  (  0.6%)  calls=2     avg=   3.95ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=2     avg=   0.06ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=2     avg=   0.01ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=2     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.02s
+  accept_mask.total                     0.00s  ( 27.3%)  calls=2     avg=   2.49ms
+  accept_mask.dfa_lookup                0.00s  ( 23.2%)  calls=2     avg=   2.11ms
+  accept_mask.lookup_next_tokens        0.00s  ( 22.5%)  calls=2     avg=   2.05ms
+  IsCompletePrefix.dafny                0.00s  ( 12.1%)  calls=4     avg=   0.55ms
+  is_complete.inc_parser                0.00s  ( 11.6%)  calls=2     avg=   1.05ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.7%)  calls=2     avg=   0.25ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=2     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=2     avg=   0.01ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.02s
+  accept_mask.total                     0.00s  ( 27.3%)  calls=2     avg=   2.49ms
+  accept_mask.dfa_lookup                0.00s  ( 23.2%)  calls=2     avg=   2.11ms
+  accept_mask.lookup_next_tokens        0.00s  ( 22.5%)  calls=2     avg=   2.05ms
+  IsCompletePrefix.dafny                0.00s  ( 12.1%)  calls=4     avg=   0.55ms
+  is_complete.inc_parser                0.00s  ( 11.6%)  calls=2     avg=   1.05ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.7%)  calls=2     avg=   0.25ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=2     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=2     avg=   0.01ms
+  [EVAL]   Generated 1 tokens in 1.96s
+  [EVAL] Processing example 3/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...
+[STEP_BREAKDOWN] wall=0.10s  lm_callbacks=1.60s  parser_callbacks=0.04s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=1.60s
+  GenerateLogits.total              0.72s  ( 45.3%)  calls=3     avg= 241.63ms
+  GenerateLogits.engine_generate    0.67s  ( 41.8%)  calls=3     avg= 223.15ms
+  MaskValidNextAndEos               0.14s  (  9.0%)  calls=3     avg=  48.02ms
+  GenerateLogits.finalize_from_dict    0.06s  (  3.4%)  calls=3     avg=  18.37ms
+  ChooseNextToken                   0.01s  (  0.5%)  calls=3     avg=   2.68ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=3     avg=   0.05ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=3     avg=   0.01ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=3     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.04s
+  IsCompletePrefix.dafny                0.01s  ( 29.9%)  calls=6     avg=   2.04ms
+  is_complete.inc_parser                0.01s  ( 29.5%)  calls=3     avg=   4.03ms
+  accept_mask.total                     0.01s  ( 14.9%)  calls=3     avg=   2.04ms
+  accept_mask.dfa_lookup                0.00s  ( 11.9%)  calls=3     avg=   1.63ms
+  accept_mask.lookup_next_tokens        0.00s  ( 11.4%)  calls=3     avg=   1.56ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.1%)  calls=3     avg=   0.28ms
+  accept_mask.compute_dfa_states        0.00s  (  0.2%)  calls=3     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=3     avg=   0.02ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.04s
+  IsCompletePrefix.dafny                0.01s  ( 29.9%)  calls=6     avg=   2.04ms
+  is_complete.inc_parser                0.01s  ( 29.5%)  calls=3     avg=   4.03ms
+  accept_mask.total                     0.01s  ( 14.9%)  calls=3     avg=   2.04ms
+  accept_mask.dfa_lookup                0.00s  ( 11.9%)  calls=3     avg=   1.63ms
+  accept_mask.lookup_next_tokens        0.00s  ( 11.4%)  calls=3     avg=   1.56ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.1%)  calls=3     avg=   0.28ms
+  accept_mask.compute_dfa_states        0.00s  (  0.2%)  calls=3     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=3     avg=   0.02ms
+  [EVAL]   Generated 1 tokens in 2.49s
+  [EVAL] Processing example 4/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...
+[STEP_BREAKDOWN] wall=0.09s  lm_callbacks=1.78s  parser_callbacks=0.05s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=1.78s
+  GenerateLogits.total              0.81s  ( 45.7%)  calls=4     avg= 203.67ms
+  GenerateLogits.engine_generate    0.76s  ( 42.5%)  calls=4     avg= 189.35ms
+  MaskValidNextAndEos               0.15s  (  8.2%)  calls=4     avg=  36.52ms
+  GenerateLogits.finalize_from_dict    0.06s  (  3.2%)  calls=4     avg=  14.22ms
+  ChooseNextToken                   0.01s  (  0.5%)  calls=4     avg=   2.04ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=4     avg=   0.05ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=4     avg=   0.01ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=4     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.05s
+  IsCompletePrefix.dafny                0.01s  ( 28.8%)  calls=8     avg=   1.64ms
+  is_complete.inc_parser                0.01s  ( 28.3%)  calls=4     avg=   3.21ms
+  accept_mask.total                     0.01s  ( 15.9%)  calls=4     avg=   1.81ms
+  accept_mask.dfa_lookup                0.01s  ( 12.2%)  calls=4     avg=   1.39ms
+  accept_mask.lookup_next_tokens        0.01s  ( 11.6%)  calls=4     avg=   1.32ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.7%)  calls=4     avg=   0.30ms
+  accept_mask.compute_dfa_states        0.00s  (  0.3%)  calls=4     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=4     avg=   0.02ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.05s
+  IsCompletePrefix.dafny                0.01s  ( 28.8%)  calls=8     avg=   1.64ms
+  is_complete.inc_parser                0.01s  ( 28.3%)  calls=4     avg=   3.21ms
+  accept_mask.total                     0.01s  ( 15.9%)  calls=4     avg=   1.81ms
+  accept_mask.dfa_lookup                0.01s  ( 12.2%)  calls=4     avg=   1.39ms
+  accept_mask.lookup_next_tokens        0.01s  ( 11.6%)  calls=4     avg=   1.32ms
+  accept_mask.inc_parser_accepts        0.00s  (  2.7%)  calls=4     avg=   0.30ms
+  accept_mask.compute_dfa_states        0.00s  (  0.3%)  calls=4     avg=   0.03ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=4     avg=   0.02ms
+  [EVAL]   Generated 1 tokens in 1.81s
+  [EVAL] Processing example 5/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...
+[STEP_BREAKDOWN] wall=0.10s  lm_callbacks=1.98s  parser_callbacks=0.05s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=1.98s
+  GenerateLogits.total              0.91s  ( 46.0%)  calls=5     avg= 182.20ms
+  GenerateLogits.engine_generate    0.85s  ( 43.0%)  calls=5     avg= 170.24ms
+  MaskValidNextAndEos               0.15s  (  7.5%)  calls=5     avg=  29.67ms
+  GenerateLogits.finalize_from_dict    0.06s  (  3.0%)  calls=5     avg=  11.86ms
+  ChooseNextToken                   0.01s  (  0.4%)  calls=5     avg=   1.67ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=5     avg=   0.05ms
+  GenerateLogits.prefix_text        0.00s  (  0.0%)  calls=5     avg=   0.01ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=5     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.05s
+  IsCompletePrefix.dafny                0.01s  ( 28.1%)  calls=10    avg=   1.42ms
+  is_complete.inc_parser                0.01s  ( 27.4%)  calls=5     avg=   2.77ms
+  accept_mask.total                     0.01s  ( 16.8%)  calls=5     avg=   1.70ms
+  accept_mask.dfa_lookup                0.01s  ( 12.4%)  calls=5     avg=   1.25ms
+  accept_mask.lookup_next_tokens        0.01s  ( 11.6%)  calls=5     avg=   1.18ms
+  accept_mask.inc_parser_accepts        0.00s  (  3.2%)  calls=5     avg=   0.33ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=5     avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=5     avg=   0.02ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.05s
+  IsCompletePrefix.dafny                0.01s  ( 28.1%)  calls=10    avg=   1.42ms
+  is_complete.inc_parser                0.01s  ( 27.4%)  calls=5     avg=   2.77ms
+  accept_mask.total                     0.01s  ( 16.8%)  calls=5     avg=   1.70ms
+  accept_mask.dfa_lookup                0.01s  ( 12.4%)  calls=5     avg=   1.25ms
+  accept_mask.lookup_next_tokens        0.01s  ( 11.6%)  calls=5     avg=   1.18ms
+  accept_mask.inc_parser_accepts        0.00s  (  3.2%)  calls=5     avg=   0.33ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=5     avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=5     avg=   0.02ms
+  [EVAL]   Generated 1 tokens in 1.83s
+  [EVAL] Processing example 6/50...
+  [EVAL]   Running CSD strategy (max_steps=400)...

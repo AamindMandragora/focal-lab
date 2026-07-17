@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.7,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 696.3686,
+    "mean_generation_seconds_per_example": 69.636856,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 714.7937,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 230,
+    "eval_end_index": 240
+  },
+  "answers": [
+    {
+      "question": "What are the names and areas of countries with the top 5 largest area?",
+      "generated_answer": "SELECT name, surfacearea FROM country ORDER BY surfacearea DESC LIMIT 5",
+      "generation_seconds": 19.76548
+    },
+    {
+      "question": "What are names of countries with the top 3 largest population?",
+      "generated_answer": "SELECT name FROM country ORDER BY population DESC LIMIT 3",
+      "generation_seconds": 17.435139
+    },
+    {
+      "question": "how many countries are in Asia?",
+      "generated_answer": "SELECT SUM(population) as total_population FROM city WHERE countrycode IN (SELECT code FROM country WHERE continent = 'Asia')",
+      "generation_seconds": 80.796179
+    },
+    {
+      "question": "Count the number of countries for which Spanish is the predominantly spoken language.",
+      "generated_answer": "Select count(*) from countrylanguage where countrycode in (select code from country where capital is null and (select count(*) from countrylanguage where countrylanguage.countrycode = country.code and isofficial = 1) > (select count(*) from countrylanguage where countrylanguage.countrycode = country.code and isofficial = 0) and language = 'Spanish')",
+      "generation_seconds": 537.42933
+    },
+    {
+      "question": "How many conductors are there?",
+      "generated_answer": "SELECT COUNT(*) FROM conductor",
+      "generation_seconds": 1.354557
+    },
+    {
+      "question": "What are the names of conductors whose nationalities are not \"USA\"?",
+      "generated_answer": "Select name from conductor where nationality != 'USA'",
+      "generation_seconds": 7.4517
+    },
+    {
+      "question": "What are the record companies of orchestras in descending order of years in which they were founded?",
+      "generated_answer": "SELECT record_company FROM orchestra ORDER BY year_of_founded DESC",
+      "generation_seconds": 11.125749
+    },
+    {
+      "question": "Return the average attendance across all shows.",
+      "generated_answer": "SELECT AVG(s.attendance) FROM show s",
+      "generation_seconds": 12.103567
+    },
+    {
+      "question": "Count the number of different nationalities of conductors.",
+      "generated_answer": "SELECT COUNT(DISTINCT nationality) FROM conductor",
+      "generation_seconds": 1.929338
+    },
+    {
+      "question": "List the name of the conductor with the most years of work.",
+      "generated_answer": "SELECT name FROM conductor ORDER BY age DESC LIMIT 1",
+      "generation_seconds": 6.977519
+    }
+  ]
+}

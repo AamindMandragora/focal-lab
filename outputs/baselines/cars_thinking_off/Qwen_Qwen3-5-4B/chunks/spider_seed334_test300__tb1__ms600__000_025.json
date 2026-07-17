@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.6,
+  "syntax_rate": 0.88,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 4090.1187,
+    "mean_generation_seconds_per_example": 163.604747,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 4121.2557,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 0,
+    "eval_end_index": 25
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 1.987917
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 11.97684
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "select avg(age), min(age), max(age) from singer where country = 'France'",
+      "generation_seconds": 94.107396
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "",
+      "generation_seconds": 568.351244
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT song_name FROM singer WHERE age > (SELECT AVG(age) FROM singer)",
+      "generation_seconds": 75.39299
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT song_name FROM singer JOIN singer_in_concert concert ON singer.singer_id = singer_in_concert.singer_id GROUP BY singer_id HAVING AVG(singer.age) > (SELECT AVG(age) FROM singer)",
+      "generation_seconds": 108.303491
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 46.338178
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT name, capacity FROM stadium WHERE MAX(a) = (SELECT AVG(lowest) FROM concert GROUP BY concert_id)",
+      "generation_seconds": 21.613237
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT year as year_count FROM concert GROUP BY year",
+      "generation_seconds": 21.812663
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT name FROM stadium WHERE stadium_id NOT IN (SELECT DISTINCT stadium_id FROM concert WHERE year = 2014)",
+      "generation_seconds": 91.983435
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "",
+      "generation_seconds": 864.858524
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT name FROM singer JOIN concert ON singer_in_concert.singer_id = singer.singer_id AND singer_in_concert.concert_id = concert.concert_id JOIN singer_in_concert ON singer.singer_id = singer_in_concert.singer_id WHERE concert.year = 2014 AND singer.is_male = 1",
+      "generation_seconds": 100.761225
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT name, country FROM singer WHERE song_name LIKE '%Hey%'",
+      "generation_seconds": 140.847838
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "",
+      "generation_seconds": 406.74759
+    },
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "select max(w) from pets p join has_pet hp on p.petid = hp.petid join student s on hp.stuid = s.stuid where p.pettype = 'dog' and s.age = (select min(age) from student where sex = p.sex)",
+      "generation_seconds": 124.504544
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "select max(weight), pettype from pets group by pettype",
+      "generation_seconds": 145.312069
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT COUNT(*) FROM (SELECT * FROM pets WHERE pettype = 'dog' AND stuid IN (SELECT stuid FROM student WHERE sex = 'F')) AS dog_females",
+      "generation_seconds": 255.646064
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT pettype) FROM pets",
+      "generation_seconds": 39.157218
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT fname FROM student WHERE stuid IN (SELECT stuid FROM has_pet WHERE petid IN (SELECT petid FROM pets WHERE pettype LIKE 'cat%' OR pettype LIKE 'dog%'))",
+      "generation_seconds": 78.0571
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT stuid FROM student WHERE stuid NOT IN (SELECT stuid FROM has_pet WHERE petid = (SELECT petid FROM pets WHERE pettype = 'cat'))",
+      "generation_seconds": 56.995072
+    },
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT fname, age FROM student JOIN has_pet ON student.stuid = has_pet.stuid",
+      "generation_seconds": 19.419306
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT petid FROM pets p JOIN has_pet h ON p.petid = h.petid WHERE h.stuid = (SELECT stuid FROM student WHERE lname = 'Smith')",
+      "generation_seconds": 593.757856
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT h.petid FROM has_pet h",
+      "generation_seconds": 55.026435
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT lname FROM student WHERE stuid = (SELECT stuid FROM has_pet JOIN pets ON has_pet.petid = pets.petid WHERE pets.pettype = 'cat' AND pets.pet_age = 3)",
+      "generation_seconds": 68.773009
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT AVG(age) FROM student WHERE stuid NOT IN (SELECT stuid FROM has_pet)",
+      "generation_seconds": 98.387424
+    }
+  ]
+}

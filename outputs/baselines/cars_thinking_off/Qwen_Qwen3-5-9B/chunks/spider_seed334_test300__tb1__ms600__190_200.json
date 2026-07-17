@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.6,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 432.7241,
+    "mean_generation_seconds_per_example": 43.272412,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 451.8678,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 190,
+    "eval_end_index": 200
+  },
+  "answers": [
+    {
+      "question": "Return the money rank of the player with the greatest earnings.",
+      "generated_answer": "SELECT money_rank FROM poker_player ORDER BY earnings DESC LIMIT 1",
+      "generation_seconds": 17.956664
+    },
+    {
+      "question": "What are the names of poker players whose earnings is higher than 300000?",
+      "generated_answer": "SELECT people.name FROM poker_player JOIN people ON poker_player.people_id = people.people_id WHERE poker_player.earnings > 300000",
+      "generation_seconds": 29.573288
+    },
+    {
+      "question": "What is the average earnings of poker players with height higher than 200?",
+      "generated_answer": "SELECT AVG(p.earnings) FROM poker_player p JOIN people pe ON p.people_id = pe.people_id WHERE pe.height > 200",
+      "generation_seconds": 128.791065
+    },
+    {
+      "question": "Give average earnings of poker players who are taller than 200.",
+      "generated_answer": "SELECT AVG(p.money_rank) FROM poker_player p JOIN people pl ON p.people_id = pl.people_id WHERE pl.height > 200",
+      "generation_seconds": 151.604282
+    },
+    {
+      "question": "Return the names of poker players sorted by their earnings descending.",
+      "generated_answer": "SELECT people.name FROM poker_player JOIN people ON poker_player.people_id = people.people_id ORDER BY poker_player.earnings DESC",
+      "generation_seconds": 15.826843
+    },
+    {
+      "question": "Give the nationality that is most common across all people.",
+      "generated_answer": "SELECT  NATIONALITY FROM  PEOPLE GROUP BY  NATIONALITY ORDER BY  COUNT(*) DESC LIMIT  1",
+      "generation_seconds": 31.213025
+    },
+    {
+      "question": "Return the nationalities for which there are two or more people.",
+      "generated_answer": "SELECT people_id FROM poker_player GROUP BY people_id HAVING COUNT(*) >= 2",
+      "generation_seconds": 8.762843
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "SELECT name, birth_date FROM people ORDER BY name",
+      "generation_seconds": 15.003242
+    },
+    {
+      "question": "What are the names of people who are not from Russia?",
+      "generated_answer": "SELECT name FROM people WHERE nationality <> 'Russia'",
+      "generation_seconds": 10.941639
+    },
+    {
+      "question": "Count the number of different nationalities.",
+      "generated_answer": "SELECT COUNT(DISTINCT nationality) FROM people",
+      "generation_seconds": 23.051233
+    }
+  ]
+}

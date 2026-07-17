@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 0.625,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 51.3041,
+    "mean_generation_seconds_per_example": 6.413011,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 1518,
+    "mean_output_tokens_per_example": 189.75,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 89.9689,
+    "evaluator_max_sample_time_seconds": 11.9419
+  },
+  "answers": [
+    {
+      "question": "{name} qualified for a spot on the {sport} team, so she went shopping for some athletic gear. She bought a {item1} for {p1}, a pair of {item2} for {p2} more than the {item1} cost, and a pair of {item3",
+      "generated_answer": "Let's think step by step. Initially, {name} bought a {item1} for {p1}, a pair of {item2} for {p1} more than the {item1} cost, and a pair of {item3} that were originally {p3}, which were on sale for {frac(p3)}. The cost for {item1} and two pairs of {item3} before the sale is <<p1 + 2 * (p3)}}. With a coupon for {d} off the package of {p4} athletic {item4} that she also bought, the total cost is <<(p1 + 2 * p3) - d + p4 * p1 + 2 * p3 * (1 - p3) + d*p4>>. The final answer is <<(p1 + 2 * p3) - d + p4 * p1 + 2 * p3 * (1 - p3) + d*p4>>.",
+      "num_tokens": 209,
+      "generation_seconds": 6.455238,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} hires a {vehicle} from {start_time} PM to {end_time} PM. He gets {free_hours} hours free. The first paid hour is {cur}${first_hour_cost} and each hour after that is {multiplier} the cost. How m",
+      "generated_answer": "Let's think step by step. The total cost is calculated as <<(end_time - start_time) * charging_rate>>. The charging rate starts with ${cur}${first_hour_cost}, which increases by <<multiplier-1>> for each hour beyond the first, thus the formula is <<first_hour_cost * (charging_hours = end_time - start_time) + (charging_rate - first_hour_cost) * (charging_hours - 1) * charging_multiplier>>. The total cost is deducted by ${free_hours} hours for free, resulting in <<(end_time - start_time) * charging_rate - free_hours * (end_time - start_time) - first_hour_cost * (charging_hours - 1) - free_hours * (charging_hours - 1) * charging_multiplier>>. The final answer is <<(end_time - start_time) * charging_rate - free_hours * (end_time - start_time) - first_hour_cost * (charging_hours - 1) - free_hours * (charging_hours - 1) * charging_multiplier>>.",
+      "num_tokens": 215,
+      "generation_seconds": 6.551524,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1} slew {n1} {creature} with his mighty {weapon1}, while {name2}, using a {weapon2}, slew {frac1} as many {creature} as {name1}. Using a {weapon3}, {name3} slew {mult1} as many {creature} as {nam",
+      "generated_answer": "Let's think step by step. Initially, {name1} slew {n1} {creature} with his mighty {weapon1}. After {name1} slew {n1} {creature}s, {name2} slew {frac1} as many {creature} as {name1}. So, {name2} slew <<n1 * frac1>>. After {name2} slew {n1 * frac1} {creature}s, {name2} used a {weapon2} to slew {mult1} as many {creature} as {name2}. So, {name3} slew <<n1 * frac1 * mult1>>. After {name3} slew <<n1 * frac1 * mult1>> {creature}s, {name3} used a {weapon3} to slew {frac2} as many {creature} as {name4}. So, {name4} slew <<[(n1 * frac1 * mult1 * frac2)] / {max(1, mult1)}>>. After {name4} slew <<[(n1 * frac1 * mult1 * frac2)] / {max(1, mult1)}>> {creature}s, those remaining {creature} belongs to {name4}. The final answer is <<[(n1 * frac1 * mult1 * frac2)] / {max(1, mult1)}>>.",
+      "num_tokens": 289,
+      "generation_seconds": 8.379547,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "When the water is cold {name} swims a {unit} in {t1} minutes. When the water is warm {name} swims a {unit} in {n} minutes more than {mult} as long. How much longer does {name} take to swim {d} {unit}s",
+      "generated_answer": "Let's think step by step. When the water is cold, {name} swims a {unit} in {t1} minutes. This is <<t1>> minutes. Hot days, when the temperature is higher, may wear {name} down and increase their swimming time slightly. On a hot day, when the temperature is higher, {name} swims a {unit} in {t1 + (mult * t1)} minutes. This is <<t1 + (mult * t1)>> minutes. To find out how much longer the hot pool is, we need to subtract the cold pool swimming time from the hot pool swimming time: `hot_time - cold_time`. Simplifying this computation: `<<t1 + (mult * t1) - t1 >>>> = << (mult * t1) >>`. Hot days take `{timespan}` longer to swim a {unit} than the cold days because `cold_time < hot_time`. The final answer is <<)(mult * t1)>>.",
+      "num_tokens": 207,
+      "generation_seconds": 11.941892,
+      "is_correct": false,
+      "is_syntax_valid": false
+    },
+    {
+      "question": "{n} people apply for a job at {company}. Of the people that apply, only {p1}% receive interviews. Of those who receive interviews, {p2}% receive a job offer. Of those who receive a job offer, {frac} o",
+      "generated_answer": "Let's think step by step. First, {n} people apply for the job. {p1}% of the people get interviews, so the number who get interviews is <<n * (p1 / 100)>>. Of those interviewed, {p2}% get job offers, which means <<(n * (p1 / 100)) * (p2 / 100)>> get offers. Of those who get offers, {frac} accept the job offer, so <<(n * (p1 / 100) * (p2 / 100)) * (frac / 100)>> accept the job. The answer is <<(n * (p1 / 100) * (p2 / 100) * (frac / 100))>>.",
+      "num_tokens": 176,
+      "generation_seconds": 4.816393,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "There are {n1} students playing {sport1} and {mult} that number playing {sport2}. There are {n2} boys and {n3} girls playing {sport3}. If each student only participates in one group, how many students",
+      "generated_answer": "Let's think step by step. Initially, {n1} students are playing {sport1}. Of these, {mult} students are also playing {sport2}. The total players playing the sports in {sport1} are << n1 + mult * n1 >>. After {n2} boys join {sport3}, <<n2>> total boys are playing. << n2 - 1>> girls are playing {sport3}. So, <<n1 + mult * n1 + n2 - (n2 - 1)>> is the total number of students. The final answer is <<n1 + mult * n1 + n2 - (n2 - 1)>>.",
+      "num_tokens": 142,
+      "generation_seconds": 4.462576,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1} operates the cash register exactly {mult} as fast as her less-experienced colleague {name2}. Daily, {name2} processes {n} customers. What is the total weekly production for the two if they wor",
+      "generated_answer": "Let's think step by step. \n\nFirstly, name1 operates the cash register exactly mult times as fast as her less-experienced colleague name2. Daily, name2 processes n customers. \n\nThen, name1 processed m customers daily. Then, name1 processed <<mult * n>> customers in a week. Lastly, name1 has processed <<mult * n + m>> customers in a week. The final answer is <<mult * n + m>>.",
+      "num_tokens": 94,
+      "generation_seconds": 2.59742,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "A new {disease} infects {n0} people. Every day, each infected person infects {r} others. How many people are infected after {d} days?",
+      "generated_answer": "Let's think step by step. Let's start with the initial number of infected people: <<n0>>. Each day, each infected person infects <<n0 * r>> people. After one day, the number of infected people is <<n0 * r + n0* r* r>>. For every subsequent day, the infection spreads, and we again add <<n0 * r + n0 * r * r + n0 * r * r * r* r>>. After <<d-1>> days, the total number of infected people is <<(((n0 * r) + (n0 * r* r)) * ((r ** (d-1)) + ((r ** d))))>>.\n\nThe final answer is <<(((n0 * r) + (n0 * r* r)) * ((r ** (d-1)) + ((r ** d))))>>.",
+      "num_tokens": 186,
+      "generation_seconds": 6.099497,
+      "is_correct": false,
+      "is_syntax_valid": false
+    }
+  ]
+}

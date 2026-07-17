@@ -54,6 +54,20 @@ def test_pipeline_keeps_evaluator_runtime_warm_for_hosted_author_models():
     assert evaluator.unload_calls == 0
 
 
+def test_pipeline_keeps_evaluator_runtime_warm_for_claude_code():
+    evaluator = _UnloadCountingEvaluator()
+    pipeline = SynthesisPipeline(
+        evaluator=evaluator,
+        generator=_BackendGenerator("claude"),
+        verifier=object(),
+        compiler=object(),
+    )
+
+    pipeline._unload_evaluator_runtime_before_refinement()
+
+    assert evaluator.unload_calls == 0
+
+
 def test_pipeline_unloads_evaluator_runtime_for_local_author_models():
     evaluator = _UnloadCountingEvaluator()
     pipeline = SynthesisPipeline(
@@ -92,6 +106,21 @@ def test_run_synthesis_help_advertises_ucb_budget_and_beam_defaults():
     assert "Default: 15." in help_text
     assert re.search(r"default:\s+2", help_text)
     assert "utility" not in help_text
+    assert "claude" in help_text
+    assert "claude-bedrock" in help_text
+    assert "anthropic" in help_text
+    assert "direct Anthropic API" in help_text
+    assert "--claude-config-dir" in help_text
+    assert "--claude-expected-account" in help_text
+
+
+def test_run_synthesis_resolves_author_model_before_printing_banner():
+    repo_root = Path(__file__).resolve().parents[1]
+    source = (repo_root / "synthesis" / "run_synthesis.py").read_text()
+
+    assert source.index("if args.generation_model is None:") < source.index(
+        'f"  AUTHOR MODEL : {args.generation_model!r} "'
+    )
 
 
 def test_launchers_pin_ucb_budget_and_beam_flags():
@@ -188,6 +217,10 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         anthropic_thinking="adaptive",
         anthropic_effort="xhigh",
         anthropic_thinking_display="summarized",
+        claude_executable="/test/bin/claude",
+        claude_config_dir="/test/claude-config",
+        claude_expected_account="aadivya@fermi.ai",
+        claude_timeout_seconds="321",
         vllm_gpu_memory_utilization="0.80",
         vllm_tensor_parallel_size=1,
         dafny_path="/tmp/dafny",
@@ -230,6 +263,66 @@ def test_full_test_runner_rejects_bedrock_generation_profiles(tmp_path):
 
     with pytest.raises(ValueError, match="Unknown generation profile"):
         runner.resolve_gen_profile("anthropic.claude-3-5-sonnet-20241022-v2:0")
+
+
+def test_sonnet_profile_migrates_to_claude_with_explicit_old_routes(tmp_path):
+    runner = _matrix_runner(tmp_path)
+
+    with pytest.warns(FutureWarning, match="sonnet4.6"):
+        assert runner.resolve_gen_profile("sonnet4.6") == (
+            "claude",
+            "claude-sonnet-4-6",
+        )
+    assert runner.resolve_gen_profile("anthropic-sonnet4.6") == (
+        "anthropic",
+        "claude-sonnet-4-6",
+    )
+    with pytest.raises(ValueError, match="Bedrock"):
+        runner.resolve_gen_profile("claude-bedrock-sonnet4.6")
+
+
+def test_sonnet_profile_forwards_only_claude_code_controls(tmp_path):
+    runner = _matrix_runner(tmp_path)
+    runner.ensure_csd_target_baselines = lambda *args: None
+    runner.best_csd_baseline_targets = lambda *args: (
+        0.42,
+        "crane",
+        "/tmp/crane.json",
+        "42.0%",
+        0.9,
+        "itergen",
+        "/tmp/itergen.json",
+        "90.0%",
+    )
+    calls = []
+    runner.run_cmd = lambda cmd, **kwargs: calls.append(cmd) or True
+
+    with pytest.warns(FutureWarning):
+        assert runner.run_metadecode_case(
+            "gsm_symbolic",
+            "Qwen/Qwen2.5-Coder-7B-Instruct",
+            "1",
+            "40",
+            "sonnet4.6",
+            "900",
+        )
+
+    command = calls[0]
+    assert _flag_value(command, "--generation-backend") == "claude"
+    assert _flag_value(command, "--generation-model") == "claude-sonnet-4-6"
+    assert _flag_value(command, "--claude-executable") == "/test/bin/claude"
+    assert _flag_value(command, "--claude-config-dir") == "/test/claude-config"
+    assert _flag_value(command, "--claude-expected-account") == "aadivya@fermi.ai"
+    assert _flag_value(command, "--claude-timeout-seconds") == "321"
+    assert "--anthropic-thinking" not in command
+
+
+def test_claude_access_marker_is_classified_as_author_quota():
+    import run_all_tests as matrix
+
+    assert matrix.QUOTA_RE.search(
+        "[claude-author-access] Claude Code subscription limit reached"
+    )
 
 
 def test_full_test_runner_resolves_direct_gemini_profile(tmp_path):

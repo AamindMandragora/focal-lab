@@ -1,0 +1,87 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t0",
+        "--source-id",
+        "h37_gsm2b_t0"
+      ],
+      "constrained_temperature": 0.0,
+      "dry_run": true,
+      "env": {
+        "CSD_CANDIDATE_OUTPUT_NAME": "h37_gsm2b_repeat_probe_20260629_t0",
+        "CSD_CANDIDATE_SOURCE_ID": "h37_gsm2b_t0",
+        "CSD_CONSTRAINED_TEMPERATURE": "0.0",
+        "CUDA_VISIBLE_DEVICES": "TO_FILL_WHEN_SAFE"
+      },
+      "execute": false,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t0",
+      "source_id": "h37_gsm2b_t0"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t1",
+        "--source-id",
+        "h37_gsm2b_t1"
+      ],
+      "constrained_temperature": 0.25,
+      "dry_run": true,
+      "env": {
+        "CSD_CANDIDATE_OUTPUT_NAME": "h37_gsm2b_repeat_probe_20260629_t1",
+        "CSD_CANDIDATE_SOURCE_ID": "h37_gsm2b_t1",
+        "CSD_CONSTRAINED_TEMPERATURE": "0.25",
+        "CUDA_VISIBLE_DEVICES": "TO_FILL_WHEN_SAFE"
+      },
+      "execute": false,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t1",
+      "source_id": "h37_gsm2b_t1"
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "synthesis.evaluate.parameterized_direct_eval",
+        "--repo-root",
+        "/home/aadivyar/csd-generation",
+        "--strategy-file",
+        "/home/aadivyar/csd-generation/saved-results/2026-06-29-h29-gsm2b-six-variant-consensus-probe-body.dfy",
+        "--output-name",
+        "h37_gsm2b_repeat_probe_20260629_t2",
+        "--source-id",
+        "h37_gsm2b_t2"
+      ],
+      "constrained_temperature": 0.5,
+      "dry_run": true,
+      "env": {
+        "CSD_CANDIDATE_OUTPUT_NAME": "h37_gsm2b_repeat_probe_20260629_t2",
+        "CSD_CANDIDATE_SOURCE_ID": "h37_gsm2b_t2",
+        "CSD_CONSTRAINED_TEMPERATURE": "0.5",
+        "CUDA_VISIBLE_DEVICES": "TO_FILL_WHEN_SAFE"
+      },
+      "execute": false,
+      "output_name": "h37_gsm2b_repeat_probe_20260629_t2",
+      "source_id": "h37_gsm2b_t2"
+    }
+  ],
+  "dry_run": true,
+  "execute": false,
+  "no_billed_credentials": true,
+  "no_model_calls": true,
+  "purpose": "H38 GSM-2B repeat probe materialized dry-run commands; do not execute until a safe GPU slot is chosen"
+}

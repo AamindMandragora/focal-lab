@@ -277,7 +277,8 @@ module VerifiedDecoderAgent {
     // The host may inspect only prompt-visible examples and compute similarity with
     // generic tooling; it never reads gold labels, scorer state, held-out data, or
     // evaluator results. Higher means more similar to the shown examples.
-    function {:extern} {:axiom} SpanResemblanceToPromptExamples(text: string): real
+    function {:extern} {:axiom} SpanResemblanceToPromptExamples(text: string): (score: real)
+      ensures 0.0 <= score <= 1.0
 
     // Locate the FIRST identifier-like token in `unitTokens` whose rendered text
     // is out-of-schema for the current example. The membership signal is identical
@@ -379,6 +380,7 @@ module VerifiedDecoderAgent {
 
     method PrefixResemblesPromptExamples(lm: LM, prefix: Prefix) returns (score: real)
       ensures score == lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix))
+      ensures 0.0 <= score <= 1.0
       ensures cost == old(cost)
     {
       score := lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix));
@@ -1301,14 +1303,51 @@ module VerifiedDecoderAgent {
       else p[0] + PrefixToString(p[1..])
     }
 
-    static function ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string): (content: string)
-      ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
+    static method FindSubstring(input: string, needle: string) returns (index: int)
+      ensures -1 <= index <= |input|
+      ensures index >= 0 ==> index + |needle| <= |input|
+      ensures index >= 0 ==> input[index..index + |needle|] == needle
     {
-      ExtractContentExtern(input, startDelim, endDelim)
+      index := 0;
+      while index + |needle| <= |input| && input[index..index + |needle|] != needle
+        invariant 0 <= index <= |input|
+        decreases |input| - index
+      {
+        index := index + 1;
+      }
+      if index + |needle| > |input| {
+        index := -1;
+      }
     }
 
-    static function {:extern} {:axiom} ExtractContentExtern(input: string, startDelim: string, endDelim: string): (content: string)
+    static method ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string) returns (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
+    {
+      var start := FindSubstring(input, startDelim);
+      if start < 0 {
+        content := "";
+      } else {
+        var contentStart := start + |startDelim|;
+        var suffix := input[contentStart..];
+        var finish := FindSubstring(suffix, endDelim);
+        if finish < 0 {
+          content := "";
+        } else {
+          content := suffix[..finish];
+          if content != "" {
+            var pre := input[..start];
+            var post := suffix[finish + |endDelim|..];
+            assert input == input[..start] + input[start..];
+            assert input[start..] == input[start..contentStart] + input[contentStart..];
+            assert input[start..contentStart] == startDelim;
+            assert suffix == suffix[..finish] + suffix[finish..];
+            assert suffix[finish..] == suffix[finish..finish + |endDelim|] + suffix[finish + |endDelim|..];
+            assert suffix[finish..finish + |endDelim|] == endDelim;
+            assert input == pre + startDelim + content + endDelim + post;
+          }
+        }
+      }
+    }
     method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -2049,6 +2088,10 @@ module VerifiedDecoderAgent {
       ensures candidatePrefix == constrainedPrefix + candidateTokens
       ensures |candidateTokens| <= numTokens
       ensures stepsUsed <= numTokens
+      ensures stepsUsed == |candidateTokens| + (if hitEos then 1 else 0)
+      ensures hitComplete == parser.IsCompletePrefix(candidatePrefix)
+      ensures hitEos ==> !hitComplete
+      ensures forall i :: 0 <= i < lm.Logits.Length ==> lm.Logits[i] == old(lm.Logits[i])
       ensures cost == old(cost) + stepsUsed
     {
       var snap := SaveLogitsSnapshot(lm);
@@ -2065,8 +2108,8 @@ module VerifiedDecoderAgent {
         invariant candidateTokens == cur[|constrainedPrefix|..]
         invariant |candidateTokens| + |constrainedPrefix| == |cur|
         invariant |candidateTokens| <= stepsUsed <= numTokens
-        invariant hitEos ==> |candidateTokens| + 1 <= stepsUsed
-        invariant !hitEos ==> |candidateTokens| == stepsUsed
+        invariant stepsUsed == |candidateTokens| + (if hitEos then 1 else 0)
+        invariant hitEos ==> !parser.IsCompletePrefix(cur)
         invariant cost == old(cost) + stepsUsed
         decreases numTokens - stepsUsed, if hitEos || parser.IsCompletePrefix(cur) then 0 else 1
       {
@@ -2161,8 +2204,8 @@ module VerifiedDecoderAgent {
     // sets `cost := helpers.cost` discharges the strategy-level length, cost and
     // progress postconditions by construction (loop runs >=1 iteration when
     // maxSteps>0, and cost==steps). `done` is true when the step hit EOS or closed
-    // the span (the caller may stop). Outside a span: one UnconstrainedStep; "<<"
-    // opens a constrained span. Inside a span: close if the parser reports a
+    // the span (the caller may stop). Outside a span: one UnconstrainedStep; a
+    // rendered output suffix of "<<" opens a constrained span. Inside a span: close if the parser reports a
     // complete prefix, else one AdaptiveConstrainedStep and append it. Composes
     // only already-verified CSDHelpers primitives; adds no new decode behavior.
     // Body is exactly one iteration of GenerateWithManagedSpan's loop.
@@ -2210,7 +2253,7 @@ module VerifiedDecoderAgent {
           return;
         }
         generatedOut := generated + [next];
-        if next == "<<" {
+        if RenderedEndsWith(generatedOut, "<<") {
           insideOut := true;
           currentOut := [];
         }
@@ -2307,7 +2350,7 @@ module VerifiedDecoderAgent {
             break;
           }
           generated := generated + [next];
-          if next == "<<" {
+          if RenderedEndsWith(generated, "<<") {
             insideConstrainedOut := true;
             currentConstrainedOut := [];
           }
@@ -2409,7 +2452,7 @@ module VerifiedDecoderAgent {
               break;
             }
             generated := generated + [next];
-            if next == "<<" {
+            if RenderedEndsWith(generated, "<<") {
               insideConstrainedOut := true;
               currentConstrainedOut := [];
             }

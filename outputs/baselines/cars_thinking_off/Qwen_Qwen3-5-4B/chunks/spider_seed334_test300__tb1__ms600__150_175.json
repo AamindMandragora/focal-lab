@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.24,
+  "syntax_rate": 0.76,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 2932.4573,
+    "mean_generation_seconds_per_example": 117.298293,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 2953.7087,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 150,
+    "eval_end_index": 175
+  },
+  "answers": [
+    {
+      "question": "How many different results are there for the battles?",
+      "generated_answer": "SELECT COUNT(DISTINCT result) FROM battle",
+      "generation_seconds": 17.206491
+    },
+    {
+      "question": "List the name and date the battle that has lost the ship named 'Lettice' and the ship named 'HMS Atalanta'",
+      "generated_answer": "SELECT b.name AS battle_name, b.date, 'Lettice' AS ship1_name, 'HMS Atalanta' AS ship2_name FROM battle b, ship s1, ship s2 WHERE b.db_id = battle_death.db_id AND ('Lettice' = s1.name AND 'HMS Atalanta' = s2.name AND b.db_id = s1.lost_in_battle AND b.db_id = s2.lost_in_battle)",
+      "generation_seconds": 150.078958
+    },
+    {
+      "question": "What is the first and second line for all addresses?",
+      "generated_answer": "SELECT line_1, line_2 FROM addresses",
+      "generation_seconds": 2.064515
+    },
+    {
+      "question": "How is the math course described?",
+      "generated_answer": "SELECT course_name, course_description FROM courses WHERE course_name LIKE '%math%'",
+      "generation_seconds": 18.000392
+    },
+    {
+      "question": "What is the zip code of the address in the city Port Chelsea?",
+      "generated_answer": "SELECT line_2, address_id FROM addresses WHERE city='Port Chelsea'",
+      "generation_seconds": 117.346384
+    },
+    {
+      "question": "Which department offers the most number of degrees? List department name and id.",
+      "generated_answer": "",
+      "generation_seconds": 268.290766
+    },
+    {
+      "question": "What is the name and id of the department with the most number of degrees ?",
+      "generated_answer": "SELECT department_name,department_id FROM departments WHERE department_id IN (SELECT degree_program_id FROM degree_programs GROUP BY degree_program_id ORDER BY COUNT(duplicate) DESC LIMIT 1)",
+      "generation_seconds": 67.698285
+    },
+    {
+      "question": "How many different degrees are offered?",
+      "generated_answer": "SELECT DISTINCT COUNT(*) AS total_degrees, * FROM (SELECT * FROM degree_programs GROUP BY dept_name LIMIT 1) AS deg",
+      "generation_seconds": 24.335222
+    },
+    {
+      "question": "What are the names and id of courses having at most 2 sections?",
+      "generated_answer": "SELECT 'SELECT distinct c.course_name' as column1, c.course_name as column2, c.course_id as column3 FROM courses c WHERE c.course_id IN (SELECT student_course_id FROM student_enrolment_courses GROUP BY student_course_id HAVING COUNT(*) <= 2)",
+      "generation_seconds": 214.221531
+    },
+    {
+      "question": "List the section_name in reversed lexicographical order.",
+      "generated_answer": "SELECT DISTINCT s.section_name FROM sections s",
+      "generation_seconds": 4.023682
+    },
+    {
+      "question": "Who are enrolled in 2 degree programs in one semester? List the first name, middle name and last name and the id.",
+      "generated_answer": "",
+      "generation_seconds": 299.085651
+    },
+    {
+      "question": "What is the first, middle, and last name, along with the id and number of enrollments, for the student who enrolled the most in any program?",
+      "generated_answer": "",
+      "generation_seconds": 417.831801
+    },
+    {
+      "question": "What's the name of the course with most number of enrollments?",
+      "generated_answer": "SELECT course_name FROM courses c WHERE c.course_id IN (SELECT course_id FROM student_enrolment_courses GROUP BY course_id ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 10.985365
+    },
+    {
+      "question": "What is the date and id of the transcript with at least 2 courses listed?",
+      "generated_answer": "",
+      "generation_seconds": 254.197896
+    },
+    {
+      "question": "What is the phone number of the man with the first name Timmothy and the last name Ward?",
+      "generated_answer": "SELECT cell_mobile_number FROM students WHERE first_name = 'Timmothy' AND last_name = 'Ward'",
+      "generation_seconds": 44.073314
+    },
+    {
+      "question": "What is the first, middle, and last name of the earliest school graduate?",
+      "generated_answer": "select first_name, middle_name, last_name from students where date_left is not null and date_registered > (select min(date_left) from students where date_left is not null)",
+      "generation_seconds": 109.148405
+    },
+    {
+      "question": "Whose permanent address is different from his or her current address? List his or her first name.",
+      "generated_answer": "",
+      "generation_seconds": 151.407743
+    },
+    {
+      "question": "What is the first name of the student whose permanent address is different from his or her current one?",
+      "generated_answer": "SELECT s.first_name FROM students s WHERE s.permanent_address_id != s.current_address_id",
+      "generation_seconds": 73.799703
+    },
+    {
+      "question": "On average, when were the transcripts printed?",
+      "generated_answer": "SELECT AVG(transcript_contents.student_course_id) FROM student_enrolment_courses",
+      "generation_seconds": 32.832012
+    },
+    {
+      "question": "What is the average transcript date?",
+      "generated_answer": "select avg(transcript_date) from transcripts",
+      "generation_seconds": 3.868188
+    },
+    {
+      "question": "What is the earliest date of a transcript release, and what details can you tell me?",
+      "generated_answer": "",
+      "generation_seconds": 319.109841
+    },
+    {
+      "question": "How many transcripts are released?",
+      "generated_answer": "SELECT COUNT(*) FROM transcripts",
+      "generation_seconds": 1.670085
+    },
+    {
+      "question": "What is the date and id of the transcript with the least number of results?",
+      "generated_answer": "SELECT MIN(transcript.datetranscript_id) FROM transcripts as transcript LEFT OUTER JOIN transcript_contents ON transcript_contents.transcript_id = transcript.transcript_id",
+      "generation_seconds": 256.100092
+    },
+    {
+      "question": "What is the description for the section named h?",
+      "generated_answer": "SELECT section_description FROM sections WHERE section_name LIKE 'h%'",
+      "generation_seconds": 51.28594
+    },
+    {
+      "question": "What are the first names of the students who live in Haiti permanently or have the cell phone number 09700166582 ?",
+      "generated_answer": "SELECT DISTINCT first_name FROM students WHERE address_id IS NULL AND country = 'Haiti' OR cell_mobile_number = '09700166582'",
+      "generation_seconds": 23.795062
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.4,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 467.1933,
+    "mean_generation_seconds_per_example": 46.719331,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 486.0598,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 140,
+    "eval_end_index": 150
+  },
+  "answers": [
+    {
+      "question": "Find the number of matches happened in each year.",
+      "generated_answer": "SELECT year, COUNT(*) as match_count FROM matches GROUP BY year",
+      "generation_seconds": 28.66916
+    },
+    {
+      "question": "What are the names and ranks of the three youngest winners across all matches?",
+      "generated_answer": "SELECT winner_name, winner_rank FROM matches INNER JOIN players ON matches.winner_id = players.player_id ORDER BY winner_age ASC LIMIT 3",
+      "generation_seconds": 119.748163
+    },
+    {
+      "question": "Find the first name, country code and birth date of the winner who has the highest rank points in all matches.",
+      "generated_answer": "SELECT p.first_name, p.country_code, p.birth_date FROM players p JOIN matches m ON p.player_id = m.winner_id WHERE p.player_id = ( SELECT winner_id FROM matches ORDER BY winner_rank_points DESC LIMIT 1 )",
+      "generation_seconds": 20.148737
+    },
+    {
+      "question": "Find the number of players for each hand type.",
+      "generated_answer": "SELECT hand, COUNT(*) AS player_count FROM players GROUP BY hand",
+      "generation_seconds": 93.355714
+    },
+    {
+      "question": "How many players are there for each hand type?",
+      "generated_answer": "SELECT hand, COUNT(*) AS player_count FROM players GROUP BY hand",
+      "generation_seconds": 50.952354
+    },
+    {
+      "question": "How many ships ended up being 'Captured'?",
+      "generated_answer": "SELECT COUNT(*) FROM ship WHERE disposition_of_ship = 'Captured'",
+      "generation_seconds": 54.692828
+    },
+    {
+      "question": "What is the average number of injuries caused each time?",
+      "generated_answer": "SELECT AVG(death.injured) FROM death",
+      "generation_seconds": 41.028931
+    },
+    {
+      "question": "What are the different ids and names of the battles that lost any 'Brig' type shipes?",
+      "generated_answer": "SELECT DISTINCT id, name FROM battle WHERE id IN (SELECT lost_in_battle FROM ship WHERE ship_type = 'Brig')",
+      "generation_seconds": 9.227689
+    },
+    {
+      "question": "What are the ids and names of the battles that led to more than 10 people killed in total.",
+      "generated_answer": "SELECT b.id, b.name FROM battle b JOIN death d ON b.id = (SELECT lost_in_battle FROM ship WHERE ship.id = d.caused_by_ship_id) GROUP BY b.id, b.name HAVING COUNT(*) > 10",
+      "generation_seconds": 23.966356
+    },
+    {
+      "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+      "generated_answer": "SELECT name FROM battle WHERE bulgarian_commander = 'Kaloyan' AND latin_commander = 'Baldwin I'",
+      "generation_seconds": 25.403383
+    }
+  ]
+}

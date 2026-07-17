@@ -1,0 +1,2117 @@
+{
+  "selected": [
+    {
+      "actual": "((3*sides-4*target)/(4*sides))*100",
+      "chosen_cluster": {
+        "agreement_score": 1.5,
+        "best_score": 0.9600000000000002,
+        "candidate_count": 2,
+        "cluster_key": "((3*sides-4*target)/(4*sides))*100",
+        "cluster_positive": true,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "((3*sides-4*target)/(4*sides))*100",
+      "expected": "int((sides-target)/sides * 100) - 25",
+      "family": "H24",
+      "idx": 1,
+      "is_correct": false,
+      "label": "A",
+      "positive": true,
+      "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+      "report": "H24",
+      "score": 0.9600000000000002,
+      "source": "H24:A",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "total+n*2-n*1",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.868888888888889,
+        "candidate_count": 1,
+        "cluster_key": "total+n*2-n*1",
+        "cluster_positive": true,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "total+n*2-n*1",
+      "expected": "total + n2 - n1",
+      "family": "H24",
+      "idx": 10,
+      "is_correct": false,
+      "label": "B",
+      "positive": true,
+      "raw": "$\\text{total} + n2 - n1$",
+      "report": "H24",
+      "score": 0.868888888888889,
+      "source": "H24:B",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n1 + n2 + n3 + n4 * (count / 2) + n5 * (count / 2)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8800000000000001,
+        "candidate_count": 1,
+        "cluster_key": "n1+n2+n3+n4*(count/2)+n5*(count/2)",
+        "cluster_positive": false,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "n1+n2+n3+n4*(count/2)+n5*(count/2)",
+      "correct": false,
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "family": "H10",
+      "idx": 11,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8800000000000001,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n-spent",
+      "chosen_cluster": {
+        "agreement_score": 2.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 3,
+        "cluster_key": "n-spent",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:B",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "n-spent",
+      "expected": "size//n * (total-spent) // (cal)",
+      "family": "H24",
+      "idx": 12,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$n - spent$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "total-(frac+daily*period*7)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9860000000000002,
+        "candidate_count": 1,
+        "cluster_key": "total-(frac+daily*period*7)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "total-(frac+daily*period*7)",
+      "expected": "total - (total * frac + daily * period * 7)",
+      "family": "H24",
+      "idx": 13,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "`total - (frac + daily * period * 7)`",
+      "report": "H24",
+      "score": 0.9860000000000002,
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "initial_amount - quantity * unit_price",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0,
+        "candidate_count": 1,
+        "cluster_key": "initial_amount-quantity*unit_price",
+        "cluster_positive": true,
+        "families": [
+          "H1"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H1"
+        ]
+      },
+      "cluster_key": "initial_amount-quantity*unit_price",
+      "correct": true,
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "family": "H1",
+      "idx": 14,
+      "is_correct": true,
+      "positive": true,
+      "report": "H1",
+      "score": 1.0,
+      "source": "H1",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(cur)(total)*(1-(fraction))-(cur)(current)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9284615384615387,
+        "candidate_count": 1,
+        "cluster_key": "(cur)(total)*(1-(fraction))-(cur)(current)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "(cur)(total)*(1-(fraction))-(cur)(current)",
+      "expected": "total - (total * fraction + current)",
+      "family": "H24",
+      "idx": 15,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "`{cur}{total} * (1 - {fraction}) - {cur}{current}`",
+      "report": "H24",
+      "score": 0.9284615384615387,
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "chosen_cluster": {
+        "agreement_score": 4.0,
+        "best_score": 0.9363636363636365,
+        "candidate_count": 3,
+        "cluster_key": "n1*p1+n2*p2+n3*p3",
+        "cluster_positive": true,
+        "families": [
+          "H1",
+          "H10",
+          "H2"
+        ],
+        "family_count": 3,
+        "sources": [
+          "H1",
+          "H10",
+          "H2"
+        ]
+      },
+      "cluster_key": "n1*p1+n2*p2+n3*p3",
+      "correct": true,
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "family": "H1",
+      "idx": 16,
+      "is_correct": true,
+      "positive": true,
+      "report": "H1",
+      "score": 0.9363636363636365,
+      "source": "H1",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n/(x*(1+mult))",
+      "chosen_cluster": {
+        "agreement_score": 4.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 3,
+        "cluster_key": "n/(x*(1+mult))",
+        "cluster_positive": true,
+        "families": [
+          "H10",
+          "H2",
+          "H24"
+        ],
+        "family_count": 3,
+        "sources": [
+          "H10",
+          "H2",
+          "H24:A"
+        ]
+      },
+      "cluster_key": "n/(x*(1+mult))",
+      "expected": "n // (x + x*mult)",
+      "family": "H24",
+      "idx": 17,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$n / (x(1 + mult))$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((n*t)/(h*60))*100",
+      "chosen_cluster": {
+        "agreement_score": 1.5,
+        "best_score": 0.9860000000000002,
+        "candidate_count": 2,
+        "cluster_key": "((n*t)/(h*60))*100",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "((n*t)/(h*60))*100",
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "family": "H24",
+      "idx": 18,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$",
+      "report": "H24",
+      "score": 0.9860000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(total)-(n*1)-(mult)",
+      "chosen_cluster": {
+        "agreement_score": 2.0,
+        "best_score": 0.917777777777778,
+        "candidate_count": 3,
+        "cluster_key": "(total)-(n*1)-(mult)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:B",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "(total)-(n*1)-(mult)",
+      "expected": "total - n1 - mult * n1",
+      "family": "H24",
+      "idx": 19,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{total} - {n1} - {mult}",
+      "report": "H24",
+      "score": 0.917777777777778,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(g)-(n_*1)-3*(n_*2)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8784615384615386,
+        "candidate_count": 1,
+        "cluster_key": "(g)-(n_*1)-3*(n_*2)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "(g)-(n_*1)-3*(n_*2)",
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "family": "H24",
+      "idx": 2,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{g} - {n_1} - 3{n_2}",
+      "report": "H24",
+      "score": 0.8784615384615386,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9500000000000002,
+        "candidate_count": 1,
+        "cluster_key": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "family": "H24",
+      "idx": 20,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "`{cur}{price} * {usage} * 7 * (2 + {percent}/100)`",
+      "report": "H24",
+      "score": 0.9500000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(1+(mult))",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 1,
+        "cluster_key": "(n)*(1+(mult))",
+        "cluster_positive": true,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "(n)*(1+(mult))",
+      "expected": "n * (mult + 1)",
+      "family": "H24",
+      "idx": 21,
+      "is_correct": false,
+      "label": "B",
+      "positive": true,
+      "raw": "{n} * (1 + {mult})",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:B",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(length)*(unit_length)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 1,
+        "cluster_key": "(length)*(unit_length)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:C"
+        ]
+      },
+      "cluster_key": "(length)*(unit_length)",
+      "expected": "int((length / space - owned) * cost)",
+      "family": "H24",
+      "idx": 22,
+      "is_correct": false,
+      "label": "C",
+      "positive": false,
+      "raw": "{length} * {unit_length}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:C",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * total + n2 / t",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9500000000000002,
+        "candidate_count": 1,
+        "cluster_key": "n1*total+n2/t",
+        "cluster_positive": false,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "n1*total+n2/t",
+      "correct": false,
+      "expected": "total // n1 + (total // n2) * t",
+      "family": "H10",
+      "idx": 23,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.9500000000000002,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n_*(first)*a*(1+p/100)*f*r",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8646666666666669,
+        "candidate_count": 1,
+        "cluster_key": "n_*(first)*a*(1+p/100)*f*r",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "n_*(first)*a*(1+p/100)*f*r",
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "family": "H24",
+      "idx": 24,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "$n_{first} \\times a \\times (1 + p/100) \\times f \\times r$",
+      "report": "H24",
+      "score": 0.8646666666666669,
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - m * p1 - k * p2",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.937777777777778,
+        "candidate_count": 1,
+        "cluster_key": "n-m*p1-k*p2",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "n-m*p1-k*p2",
+      "correct": false,
+      "expected": "n * int(bill) - (m * p1 + k * p2)",
+      "family": "H2",
+      "idx": 25,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.937777777777778,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.7844444444444445,
+        "candidate_count": 1,
+        "cluster_key": "n1*(frac1+mult1)/1+mult1*n1-n1*frac1-mult1*n1+n1*frac1+mult1*n1-n1*frac1-mult1*n1+n1*frac1",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "n1*(frac1+mult1)/1+mult1*n1-n1*frac1-mult1*n1+n1*frac1+mult1*n1-n1*frac1-mult1*n1+n1*frac1",
+      "correct": false,
+      "expected": "int(n1 * frac1 + n2 * mult1)",
+      "family": "H2",
+      "idx": 26,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.7844444444444445,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n * (mult1 + mult2) * days",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9188888888888891,
+        "candidate_count": 1,
+        "cluster_key": "n*(mult1+mult2)*days",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "n*(mult1+mult2)*days",
+      "correct": false,
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "family": "H2",
+      "idx": 27,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.9188888888888891,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((n*1)+(n*2))/2-(spill)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8676923076923078,
+        "candidate_count": 1,
+        "cluster_key": "((n*1)+(n*2))/2-(spill)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B"
+        ]
+      },
+      "cluster_key": "((n*1)+(n*2))/2-(spill)",
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "family": "H24",
+      "idx": 28,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "({n1} + {n2})/2 - {spill}",
+      "report": "H24",
+      "score": 0.8676923076923078,
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n1 * (100 + p)) / 50+100+100+100+100+100+100+100+100+100+100+100+100",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8500000000000001,
+        "candidate_count": 1,
+        "cluster_key": "(n1*(100+p))/50+100+100+100+100+100+100+100+100+100+100+100+100",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "(n1*(100+p))/50+100+100+100+100+100+100+100+100+100+100+100+100",
+      "correct": false,
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "family": "H2",
+      "idx": 29,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.8500000000000001,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.875294117647059,
+        "candidate_count": 1,
+        "cluster_key": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+      "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+      "family": "H24",
+      "idx": 3,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+      "report": "H24",
+      "score": 0.875294117647059,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n*m/k",
+      "chosen_cluster": {
+        "agreement_score": 5.5,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 5,
+        "cluster_key": "n*m/k",
+        "cluster_positive": true,
+        "families": [
+          "H1",
+          "H10",
+          "H24",
+          "H4"
+        ],
+        "family_count": 4,
+        "sources": [
+          "H1",
+          "H10",
+          "H24:B",
+          "H24:C",
+          "H4"
+        ]
+      },
+      "cluster_key": "n*m/k",
+      "expected": "(n*m)//k",
+      "family": "H24",
+      "idx": 30,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "$n \\times m / k$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * l * p * t / 60",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.887777777777778,
+        "candidate_count": 1,
+        "cluster_key": "n1*l*p*t/60",
+        "cluster_positive": false,
+        "families": [
+          "H4"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H4"
+        ]
+      },
+      "cluster_key": "n1*l*p*t/60",
+      "correct": false,
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "family": "H4",
+      "idx": 31,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.887777777777778,
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(relative_age)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 1,
+        "cluster_key": "relative_age",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "relative_age",
+      "expected": "multiple * relative_age - orbit_period",
+      "family": "H24",
+      "idx": 32,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{relative_age}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + n2 + n3 + (p1 * (n1 + n2 + n3)) + (p2 * (n1 + n2 + n3)) + (p3 * (n1 + n2 + n3)) + (p1 * n1)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8200000000000001,
+        "candidate_count": 1,
+        "cluster_key": "n1+n2+n3+(p1*(n1+n2+n3))+(p2*(n1+n2+n3))+(p3*(n1+n2+n3))+(p1*n1)",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "n1+n2+n3+(p1*(n1+n2+n3))+(p2*(n1+n2+n3))+(p3*(n1+n2+n3))+(p1*n1)",
+      "correct": false,
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "family": "H2",
+      "idx": 33,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.8200000000000001,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.7855555555555556,
+        "candidate_count": 1,
+        "cluster_key": "(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)*(w1+w2+w3)",
+      "correct": false,
+      "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+      "family": "H2",
+      "idx": 34,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.7855555555555556,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - frac/10000000000000000000000000000000000000000000000000000000000",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8311111111111111,
+        "candidate_count": 1,
+        "cluster_key": "n-frac/10000000000000000000000000000000000000000000000000000000000",
+        "cluster_positive": false,
+        "families": [
+          "H4"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H4"
+        ]
+      },
+      "cluster_key": "n-frac/10000000000000000000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "n - int(n * frac)",
+      "family": "H4",
+      "idx": 35,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.8311111111111111,
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+      "chosen_cluster": {
+        "agreement_score": 2.0,
+        "best_score": 0.828888888888889,
+        "candidate_count": 3,
+        "cluster_key": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:B",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "family": "H24",
+      "idx": 36,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+      "report": "H24",
+      "score": 0.828888888888889,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + n2 / n1 + n1 + n2 / n2",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8600000000000001,
+        "candidate_count": 1,
+        "cluster_key": "n1+n2/n1+n1+n2/n2",
+        "cluster_positive": false,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "n1+n2/n1+n1+n2/n2",
+      "correct": false,
+      "expected": "int(n1 * frac) + n2",
+      "family": "H10",
+      "idx": 37,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8600000000000001,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(total)-2*(n)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 1,
+        "cluster_key": "(total)-2*(n)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "(total)-2*(n)",
+      "expected": "total - 2*n - m",
+      "family": "H24",
+      "idx": 38,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{total} - 2 * {n}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "total - n1 - n2 - n1 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.81,
+        "candidate_count": 1,
+        "cluster_key": "total-n1-n2-n1-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2",
+        "cluster_positive": false,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "total-n1-n2-n1-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2-n2",
+      "correct": false,
+      "expected": "total - (n1 + n2)",
+      "family": "H10",
+      "idx": 39,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.81,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "12 * x * k",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9440000000000002,
+        "candidate_count": 1,
+        "cluster_key": "12*x*k",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "12*x*k",
+      "correct": false,
+      "expected": "x * k * (12//n)",
+      "family": "H2",
+      "idx": 4,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.9440000000000002,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+      "chosen_cluster": {
+        "agreement_score": 2.0,
+        "best_score": 0.8513043478260871,
+        "candidate_count": 3,
+        "cluster_key": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:B",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "family": "H24",
+      "idx": 40,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+      "report": "H24",
+      "score": 0.8513043478260871,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8808333333333336,
+        "candidate_count": 1,
+        "cluster_key": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+      "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+      "family": "H24",
+      "idx": 41,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$p_1 + (p_2 + p_1) + \\frac{p_3}{\\text{frac}} + (p_4 - d)$",
+      "report": "H24",
+      "score": 0.8808333333333336,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+      "chosen_cluster": {
+        "agreement_score": 1.5,
+        "best_score": 0.8655555555555556,
+        "candidate_count": 2,
+        "cluster_key": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)^2+(multiplier)^3+(multiplier)^4)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)^2+(multiplier)^3+(multiplier)^4)",
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "family": "H24",
+      "idx": 42,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)",
+      "report": "H24",
+      "score": 0.8655555555555556,
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "frac2 * frac1 * mult1 * n1/100000000000000000000000000000000000000000000000000",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.7077777777777778,
+        "candidate_count": 1,
+        "cluster_key": "frac2*frac1*mult1*n1/100000000000000000000000000000000000000000000000000",
+        "cluster_positive": false,
+        "families": [
+          "H4"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H4"
+        ]
+      },
+      "cluster_key": "frac2*frac1*mult1*n1/100000000000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "int(n1 * frac1 * mult1 * frac2)",
+      "family": "H4",
+      "idx": 43,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.7077777777777778,
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "d * n",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0,
+        "candidate_count": 1,
+        "cluster_key": "d*n",
+        "cluster_positive": false,
+        "families": [
+          "H4"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H4"
+        ]
+      },
+      "cluster_key": "d*n",
+      "correct": false,
+      "expected": "d * (n + mult * t1) - d * t1",
+      "family": "H4",
+      "idx": 44,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 1.0,
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "frac - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/1",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.8444444444444446,
+        "candidate_count": 1,
+        "cluster_key": "frac-1/100-1/100-1/100-1/100-1/100-1/100-1/100-1/100-1/1",
+        "cluster_positive": false,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "frac-1/100-1/100-1/100-1/100-1/100-1/100-1/100-1/100-1/1",
+      "correct": false,
+      "expected": "int(n * (p1/100) * (p2/100) * frac)",
+      "family": "H10",
+      "idx": 45,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8444444444444446,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + mult + n2 + n3+1000000000000000000000000000000000000000000000000000",
+      "chosen_cluster": {
+        "agreement_score": 2.5,
+        "best_score": 0.7333333333333334,
+        "candidate_count": 2,
+        "cluster_key": "n1+mult+n2+n3+1000000000000000000000000000000000000000000000000000",
+        "cluster_positive": false,
+        "families": [
+          "H10",
+          "H2"
+        ],
+        "family_count": 2,
+        "sources": [
+          "H10",
+          "H2"
+        ]
+      },
+      "cluster_key": "n1+mult+n2+n3+1000000000000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "family": "H10",
+      "idx": 46,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.7333333333333334,
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "7*n*(1+mult)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 1.0000000000000002,
+        "candidate_count": 1,
+        "cluster_key": "7*n*(1+mult)",
+        "cluster_positive": true,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:A"
+        ]
+      },
+      "cluster_key": "7*n*(1+mult)",
+      "expected": "(n + n * mult) * 7",
+      "family": "H24",
+      "idx": 47,
+      "is_correct": false,
+      "label": "A",
+      "positive": true,
+      "raw": "7 * n * (1 + mult)",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "source": "H24:A",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(n*0)*(1+(r)*(d))",
+      "chosen_cluster": {
+        "agreement_score": 1.5,
+        "best_score": 0.9206060606060609,
+        "candidate_count": 2,
+        "cluster_key": "(n*0)*(1+(r)*(d))",
+        "cluster_positive": true,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:B",
+          "H24:C"
+        ]
+      },
+      "cluster_key": "(n*0)*(1+(r)*(d))",
+      "expected": "n0 * (r + 1)**d",
+      "family": "H24",
+      "idx": 48,
+      "is_correct": false,
+      "label": "B",
+      "positive": true,
+      "raw": "{n0} * (1 + {r} * {d})",
+      "report": "H24",
+      "score": 0.9206060606060609,
+      "source": "H24:B",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(n1 * d1 + n2 * d2) / 12",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9745454545454546,
+        "candidate_count": 1,
+        "cluster_key": "(n1*d1+n2*d2)/12",
+        "cluster_positive": true,
+        "families": [
+          "H10"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H10"
+        ]
+      },
+      "cluster_key": "(n1*d1+n2*d2)/12",
+      "correct": false,
+      "expected": "(n1*d1 + n2*d2) // 12",
+      "family": "H10",
+      "idx": 49,
+      "is_correct": false,
+      "positive": true,
+      "report": "H10",
+      "score": 0.9745454545454546,
+      "source": "H10",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n * frac_1 * frac_2/100/10000/1000000000000000000000000000000000000000000",
+      "chosen_cluster": {
+        "agreement_score": 2.5,
+        "best_score": 0.6991919191919191,
+        "candidate_count": 2,
+        "cluster_key": "n*frac_1*frac_2/100/10000/1000000000000000000000000000000000000000000",
+        "cluster_positive": false,
+        "families": [
+          "H2",
+          "H4"
+        ],
+        "family_count": 2,
+        "sources": [
+          "H2",
+          "H4"
+        ]
+      },
+      "cluster_key": "n*frac_1*frac_2/100/10000/1000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "int(n * frac_1 * frac_2)",
+      "family": "H2",
+      "idx": 5,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.6991919191919191,
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "t+2*(t-currency)",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9825000000000002,
+        "candidate_count": 1,
+        "cluster_key": "t+2*(t-currency)",
+        "cluster_positive": false,
+        "families": [
+          "H24"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H24:C"
+        ]
+      },
+      "cluster_key": "t+2*(t-currency)",
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "family": "H24",
+      "idx": 6,
+      "is_correct": false,
+      "label": "C",
+      "positive": false,
+      "raw": "$t + 2(t - \\text{currency})$",
+      "report": "H24",
+      "score": 0.9825000000000002,
+      "source": "H24:C",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+      "chosen_cluster": {
+        "agreement_score": 2.5,
+        "best_score": 0.9440000000000002,
+        "candidate_count": 2,
+        "cluster_key": "n-(n1*w1+n2*w2+n3*w3)",
+        "cluster_positive": true,
+        "families": [
+          "H10",
+          "H2"
+        ],
+        "family_count": 2,
+        "sources": [
+          "H10",
+          "H2"
+        ]
+      },
+      "cluster_key": "n-(n1*w1+n2*w2+n3*w3)",
+      "correct": false,
+      "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+      "family": "H10",
+      "idx": 7,
+      "is_correct": false,
+      "positive": true,
+      "report": "H10",
+      "score": 0.9440000000000002,
+      "source": "H10",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(k1 + k2) / (n1 + n2) * 100",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.9353846153846155,
+        "candidate_count": 1,
+        "cluster_key": "(k1+k2)/(n1+n2)*100",
+        "cluster_positive": true,
+        "families": [
+          "H4"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H4"
+        ]
+      },
+      "cluster_key": "(k1+k2)/(n1+n2)*100",
+      "correct": false,
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "family": "H4",
+      "idx": 8,
+      "is_correct": false,
+      "positive": true,
+      "report": "H4",
+      "score": 0.9353846153846155,
+      "source": "H4",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "chosen_cluster": {
+        "agreement_score": 1.0,
+        "best_score": 0.857777777777778,
+        "candidate_count": 1,
+        "cluster_key": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+        "cluster_positive": false,
+        "families": [
+          "H2"
+        ],
+        "family_count": 1,
+        "sources": [
+          "H2"
+        ]
+      },
+      "cluster_key": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "correct": false,
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "family": "H2",
+      "idx": 9,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.857777777777778,
+      "source": "H2",
+      "sympy_equiv": false
+    }
+  ],
+  "solvable": [
+    {
+      "chosen": {
+        "actual": "((3*sides-4*target)/(4*sides))*100",
+        "chosen_cluster": {
+          "agreement_score": 1.5,
+          "best_score": 0.9600000000000002,
+          "candidate_count": 2,
+          "cluster_key": "((3*sides-4*target)/(4*sides))*100",
+          "cluster_positive": true,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:A",
+            "H24:C"
+          ]
+        },
+        "cluster_key": "((3*sides-4*target)/(4*sides))*100",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "family": "H24",
+        "idx": 1,
+        "is_correct": false,
+        "label": "A",
+        "positive": true,
+        "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+        "report": "H24",
+        "score": 0.9600000000000002,
+        "source": "H24:A",
+        "sympy_equiv": true
+      },
+      "idx": 1,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+        "chosen_cluster": {
+          "agreement_score": 2.5,
+          "best_score": 0.9440000000000002,
+          "candidate_count": 2,
+          "cluster_key": "n-(n1*w1+n2*w2+n3*w3)",
+          "cluster_positive": true,
+          "families": [
+            "H10",
+            "H2"
+          ],
+          "family_count": 2,
+          "sources": [
+            "H10",
+            "H2"
+          ]
+        },
+        "cluster_key": "n-(n1*w1+n2*w2+n3*w3)",
+        "correct": false,
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "family": "H10",
+        "idx": 7,
+        "is_correct": false,
+        "positive": true,
+        "report": "H10",
+        "score": 0.9440000000000002,
+        "source": "H10",
+        "sympy_equiv": true
+      },
+      "idx": 7,
+      "positive_count": 2,
+      "positive_sources": [
+        "H10",
+        "H2"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(k1 + k2) / (n1 + n2) * 100",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.9353846153846155,
+          "candidate_count": 1,
+          "cluster_key": "(k1+k2)/(n1+n2)*100",
+          "cluster_positive": true,
+          "families": [
+            "H4"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H4"
+          ]
+        },
+        "cluster_key": "(k1+k2)/(n1+n2)*100",
+        "correct": false,
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "family": "H4",
+        "idx": 8,
+        "is_correct": false,
+        "positive": true,
+        "report": "H4",
+        "score": 0.9353846153846155,
+        "source": "H4",
+        "sympy_equiv": true
+      },
+      "idx": 8,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:C",
+        "H4"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "total+n*2-n*1",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.868888888888889,
+          "candidate_count": 1,
+          "cluster_key": "total+n*2-n*1",
+          "cluster_positive": true,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:B"
+          ]
+        },
+        "cluster_key": "total+n*2-n*1",
+        "expected": "total + n2 - n1",
+        "family": "H24",
+        "idx": 10,
+        "is_correct": false,
+        "label": "B",
+        "positive": true,
+        "raw": "$\\text{total} + n2 - n1$",
+        "report": "H24",
+        "score": 0.868888888888889,
+        "source": "H24:B",
+        "sympy_equiv": true
+      },
+      "idx": 10,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:B"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "total-(frac+daily*period*7)",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.9860000000000002,
+          "candidate_count": 1,
+          "cluster_key": "total-(frac+daily*period*7)",
+          "cluster_positive": false,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:B"
+          ]
+        },
+        "cluster_key": "total-(frac+daily*period*7)",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "family": "H24",
+        "idx": 13,
+        "is_correct": false,
+        "label": "B",
+        "positive": false,
+        "raw": "`total - (frac + daily * period * 7)`",
+        "report": "H24",
+        "score": 0.9860000000000002,
+        "source": "H24:B",
+        "sympy_equiv": false
+      },
+      "idx": 13,
+      "positive_count": 2,
+      "positive_sources": [
+        "H1",
+        "H10"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "initial_amount - quantity * unit_price",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 1.0,
+          "candidate_count": 1,
+          "cluster_key": "initial_amount-quantity*unit_price",
+          "cluster_positive": true,
+          "families": [
+            "H1"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H1"
+          ]
+        },
+        "cluster_key": "initial_amount-quantity*unit_price",
+        "correct": true,
+        "expected": "int(initial_amount - quantity * unit_price)",
+        "family": "H1",
+        "idx": 14,
+        "is_correct": true,
+        "positive": true,
+        "report": "H1",
+        "score": 1.0,
+        "source": "H1",
+        "sympy_equiv": true
+      },
+      "idx": 14,
+      "positive_count": 1,
+      "positive_sources": [
+        "H1"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "chosen_cluster": {
+          "agreement_score": 4.0,
+          "best_score": 0.9363636363636365,
+          "candidate_count": 3,
+          "cluster_key": "n1*p1+n2*p2+n3*p3",
+          "cluster_positive": true,
+          "families": [
+            "H1",
+            "H10",
+            "H2"
+          ],
+          "family_count": 3,
+          "sources": [
+            "H1",
+            "H10",
+            "H2"
+          ]
+        },
+        "cluster_key": "n1*p1+n2*p2+n3*p3",
+        "correct": true,
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "family": "H1",
+        "idx": 16,
+        "is_correct": true,
+        "positive": true,
+        "report": "H1",
+        "score": 0.9363636363636365,
+        "source": "H1",
+        "sympy_equiv": true
+      },
+      "idx": 16,
+      "positive_count": 6,
+      "positive_sources": [
+        "H1",
+        "H10",
+        "H2",
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "n/(x*(1+mult))",
+        "chosen_cluster": {
+          "agreement_score": 4.0,
+          "best_score": 1.0000000000000002,
+          "candidate_count": 3,
+          "cluster_key": "n/(x*(1+mult))",
+          "cluster_positive": true,
+          "families": [
+            "H10",
+            "H2",
+            "H24"
+          ],
+          "family_count": 3,
+          "sources": [
+            "H10",
+            "H2",
+            "H24:A"
+          ]
+        },
+        "cluster_key": "n/(x*(1+mult))",
+        "expected": "n // (x + x*mult)",
+        "family": "H24",
+        "idx": 17,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "$n / (x(1 + mult))$",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 17,
+      "positive_count": 2,
+      "positive_sources": [
+        "H10",
+        "H2"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(n)*(1+(mult))",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 1.0000000000000002,
+          "candidate_count": 1,
+          "cluster_key": "(n)*(1+(mult))",
+          "cluster_positive": true,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:B"
+          ]
+        },
+        "cluster_key": "(n)*(1+(mult))",
+        "expected": "n * (mult + 1)",
+        "family": "H24",
+        "idx": 21,
+        "is_correct": false,
+        "label": "B",
+        "positive": true,
+        "raw": "{n} * (1 + {mult})",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "source": "H24:B",
+        "sympy_equiv": true
+      },
+      "idx": 21,
+      "positive_count": 4,
+      "positive_sources": [
+        "H10",
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.7844444444444445,
+          "candidate_count": 1,
+          "cluster_key": "n1*(frac1+mult1)/1+mult1*n1-n1*frac1-mult1*n1+n1*frac1+mult1*n1-n1*frac1-mult1*n1+n1*frac1",
+          "cluster_positive": false,
+          "families": [
+            "H2"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H2"
+          ]
+        },
+        "cluster_key": "n1*(frac1+mult1)/1+mult1*n1-n1*frac1-mult1*n1+n1*frac1+mult1*n1-n1*frac1-mult1*n1+n1*frac1",
+        "correct": false,
+        "expected": "int(n1 * frac1 + n2 * mult1)",
+        "family": "H2",
+        "idx": 26,
+        "is_correct": false,
+        "positive": false,
+        "report": "H2",
+        "score": 0.7844444444444445,
+        "source": "H2",
+        "sympy_equiv": false
+      },
+      "idx": 26,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "n*m/k",
+        "chosen_cluster": {
+          "agreement_score": 5.5,
+          "best_score": 1.0000000000000002,
+          "candidate_count": 5,
+          "cluster_key": "n*m/k",
+          "cluster_positive": true,
+          "families": [
+            "H1",
+            "H10",
+            "H24",
+            "H4"
+          ],
+          "family_count": 4,
+          "sources": [
+            "H1",
+            "H10",
+            "H24:B",
+            "H24:C",
+            "H4"
+          ]
+        },
+        "cluster_key": "n*m/k",
+        "expected": "(n*m)//k",
+        "family": "H24",
+        "idx": 30,
+        "is_correct": false,
+        "label": "B",
+        "positive": false,
+        "raw": "$n \\times m / k$",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "source": "H24:B",
+        "sympy_equiv": false
+      },
+      "idx": 30,
+      "positive_count": 4,
+      "positive_sources": [
+        "H1",
+        "H10",
+        "H24:C",
+        "H4"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(relative_age)",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 1.0000000000000002,
+          "candidate_count": 1,
+          "cluster_key": "relative_age",
+          "cluster_positive": false,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:A"
+          ]
+        },
+        "cluster_key": "relative_age",
+        "expected": "multiple * relative_age - orbit_period",
+        "family": "H24",
+        "idx": 32,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "{relative_age}",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 32,
+      "positive_count": 1,
+      "positive_sources": [
+        "H2"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+        "chosen_cluster": {
+          "agreement_score": 2.0,
+          "best_score": 0.8513043478260871,
+          "candidate_count": 3,
+          "cluster_key": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+          "cluster_positive": false,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:A",
+            "H24:B",
+            "H24:C"
+          ]
+        },
+        "cluster_key": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "family": "H24",
+        "idx": 40,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+        "report": "H24",
+        "score": 0.8513043478260871,
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 40,
+      "positive_count": 1,
+      "positive_sources": [
+        "H10"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "frac2 * frac1 * mult1 * n1/100000000000000000000000000000000000000000000000000",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.7077777777777778,
+          "candidate_count": 1,
+          "cluster_key": "frac2*frac1*mult1*n1/100000000000000000000000000000000000000000000000000",
+          "cluster_positive": false,
+          "families": [
+            "H4"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H4"
+          ]
+        },
+        "cluster_key": "frac2*frac1*mult1*n1/100000000000000000000000000000000000000000000000000",
+        "correct": false,
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "family": "H4",
+        "idx": 43,
+        "is_correct": false,
+        "positive": false,
+        "report": "H4",
+        "score": 0.7077777777777778,
+        "source": "H4",
+        "sympy_equiv": false
+      },
+      "idx": 43,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "7*n*(1+mult)",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 1.0000000000000002,
+          "candidate_count": 1,
+          "cluster_key": "7*n*(1+mult)",
+          "cluster_positive": true,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:A"
+          ]
+        },
+        "cluster_key": "7*n*(1+mult)",
+        "expected": "(n + n * mult) * 7",
+        "family": "H24",
+        "idx": 47,
+        "is_correct": false,
+        "label": "A",
+        "positive": true,
+        "raw": "7 * n * (1 + mult)",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "source": "H24:A",
+        "sympy_equiv": true
+      },
+      "idx": 47,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(n*0)*(1+(r)*(d))",
+        "chosen_cluster": {
+          "agreement_score": 1.5,
+          "best_score": 0.9206060606060609,
+          "candidate_count": 2,
+          "cluster_key": "(n*0)*(1+(r)*(d))",
+          "cluster_positive": true,
+          "families": [
+            "H24"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H24:B",
+            "H24:C"
+          ]
+        },
+        "cluster_key": "(n*0)*(1+(r)*(d))",
+        "expected": "n0 * (r + 1)**d",
+        "family": "H24",
+        "idx": 48,
+        "is_correct": false,
+        "label": "B",
+        "positive": true,
+        "raw": "{n0} * (1 + {r} * {d})",
+        "report": "H24",
+        "score": 0.9206060606060609,
+        "source": "H24:B",
+        "sympy_equiv": true
+      },
+      "idx": 48,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "chosen": {
+        "actual": "(n1 * d1 + n2 * d2) / 12",
+        "chosen_cluster": {
+          "agreement_score": 1.0,
+          "best_score": 0.9745454545454546,
+          "candidate_count": 1,
+          "cluster_key": "(n1*d1+n2*d2)/12",
+          "cluster_positive": true,
+          "families": [
+            "H10"
+          ],
+          "family_count": 1,
+          "sources": [
+            "H10"
+          ]
+        },
+        "cluster_key": "(n1*d1+n2*d2)/12",
+        "correct": false,
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "family": "H10",
+        "idx": 49,
+        "is_correct": false,
+        "positive": true,
+        "report": "H10",
+        "score": 0.9745454545454546,
+        "source": "H10",
+        "sympy_equiv": true
+      },
+      "idx": 49,
+      "positive_count": 1,
+      "positive_sources": [
+        "H10"
+      ]
+    }
+  ],
+  "summary": {
+    "candidate_count": 292,
+    "groups": 49,
+    "meets_crane_bar": false,
+    "needed_for_crane_bar": 12,
+    "picked_positive_when_available": 10,
+    "picked_positive_when_available_rate": 0.5882352941176471,
+    "selected_evaluator_correct": 2,
+    "selected_evaluator_correct_indices": [
+      14,
+      16
+    ],
+    "selected_positive": 10,
+    "selected_positive_indices": [
+      1,
+      10,
+      14,
+      16,
+      21,
+      47,
+      48,
+      49,
+      7,
+      8
+    ],
+    "selected_positive_rate_over_49": 0.20408163265306123,
+    "selector": "source_family_count_then_h21_score",
+    "solvable_groups": 17,
+    "union_positive_groups": 17
+  }
+}

@@ -1,0 +1,14 @@
+research_question=replicate seed 202 for Opus 4.7 thinking ablation
+dataset=gsm_symbolic
+eval_model=Qwen/Qwen2.5-Coder-7B-Instruct
+generation_model=claude-opus-4-7
+sample_size=25
+max_iterations=5
+eval_seed=202
+eval_max_steps=600
+eval_step_token_budget=1
+eval_max_seconds_per_example=90
+min_accuracy=0.40
+min_syntax_rate=0.94
+helper_selection_policy=bandit
+conditions=anthropic-thinking off vs adaptive/high

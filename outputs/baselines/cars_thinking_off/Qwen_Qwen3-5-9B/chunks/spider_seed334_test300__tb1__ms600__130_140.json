@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.1,
+  "syntax_rate": 0.8,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1029.4245,
+    "mean_generation_seconds_per_example": 102.942454,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1047.5912,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 130,
+    "eval_end_index": 140
+  },
+  "answers": [
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "SELECT first_name, country_code FROM players WHERE birth_date IS NOT NULL AND (birth_date - 0) IN (SELECT MIN(birth_date) FROM players WHERE birth_date NOT IN ('', '0000-00-00', '1900-01-01'))",
+      "generation_seconds": 28.933723
+    },
+    {
+      "question": "Find the first name and country code of the player who did the most number of tours.",
+      "generated_answer": "SELECT first_name, country_code FROM players WHERE player_id IN (SELECT player_id FROM (SELECT player_id, COUNT(DISTINCT tours) AS tour_count FROM rankings GROUP BY player_id ORDER BY tour_count DESC LIMIT 1))",
+      "generation_seconds": 22.917408
+    },
+    {
+      "question": "Find the name and rank points of the winner who won the most times.",
+      "generated_answer": "",
+      "generation_seconds": 314.282359
+    },
+    {
+      "question": "What is the name of the winner who has won the most matches, and how many rank points does this player have?",
+      "generated_answer": "",
+      "generation_seconds": 332.734568
+    },
+    {
+      "question": "find the names of loser and winner who played in the match with greatest number of minutes.",
+      "generated_answer": "Select m.winner_name, m.loser_name from matches m Left Join players p1 On m.winner_id = p1.player_id Left Join players p2 On m.loser_id = p2.player_id Where m.minutes = ( Select Max(minutes) From matches )",
+      "generation_seconds": 10.559562
+    },
+    {
+      "question": "find the number of players for each country.",
+      "generated_answer": "SELECT country_code, COUNT(*) AS player_count FROM players GROUP BY country_code",
+      "generation_seconds": 117.565021
+    },
+    {
+      "question": "How many players are from each country?",
+      "generated_answer": "SELECT count(*) as player_count, country_code FROM players GROUP BY country_code",
+      "generation_seconds": 19.596683
+    },
+    {
+      "question": "find the code of the country where has the greatest number of players.",
+      "generated_answer": "SELECT MAX(country_code) FROM players",
+      "generation_seconds": 47.711545
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "select country_code from (select country_code, count(*) as cnt from players group by country_code) t where cnt = (select max(cnt) from (select country_code, count(*) as cnt from players group by country_code) t2)",
+      "generation_seconds": 47.455394
+    },
+    {
+      "question": "How many total tours were there for each ranking date?",
+      "generated_answer": "SELECT ranking_date, tours FROM rankings GROUP BY ranking_date",
+      "generation_seconds": 87.668276
+    }
+  ]
+}

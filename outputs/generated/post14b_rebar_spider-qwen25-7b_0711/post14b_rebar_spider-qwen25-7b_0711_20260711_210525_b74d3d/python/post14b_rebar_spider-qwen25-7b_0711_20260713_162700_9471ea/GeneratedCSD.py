@@ -1,0 +1,337 @@
+import sys
+from typing import Callable, Any, TypeVar, NamedTuple
+from math import floor
+from itertools import count
+
+import module_ as module_
+import _dafny as _dafny
+import System_ as System_
+import VerifiedDecoderAgent as VerifiedDecoderAgent
+
+# Module: GeneratedCSD
+
+class default__:
+    def  __init__(self):
+        pass
+
+    @staticmethod
+    def MyCSDStrategy(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        out0_: _dafny.Seq
+        out1_: bool
+        out2_: _dafny.Seq
+        out3_: int
+        out0_, out1_, out2_, out3_ = default__.AuthorBody(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken)
+        generated = out0_
+        insideConstrainedOut = out1_
+        currentConstrainedOut = out2_
+        cost = out3_
+        if ((maxSteps) > (0)) and ((cost) <= (0)):
+            cost = 1
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+
+    @staticmethod
+    def AuthorBody(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        d_0_helpers_: VerifiedDecoderAgent.CSDHelpers
+        nw0_ = VerifiedDecoderAgent.CSDHelpers()
+        nw0_.ctor__()
+        d_0_helpers_ = nw0_
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        if (maxSteps) == (0):
+            return generated, insideConstrainedOut, currentConstrainedOut, cost
+        (d_0_helpers_).AppendTaskGuidance(lm, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "Output a valid SQL query. Begin your response with << immediately, then write the complete SQL query, then >>. Do not output anything after >>.")))
+        d_1_steps_: int
+        d_1_steps_ = 0
+        if (not(insideConstrainedOut)) and ((d_1_steps_) < (maxSteps)):
+            (d_0_helpers_).SafeBoostTokenLogits(lm, _dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))]), _dafny.BigRational('2e1'))
+            d_2_next_: _dafny.Seq
+            out0_: _dafny.Seq
+            out0_ = (d_0_helpers_).UnconstrainedStep(lm, prompt, generated)
+            d_2_next_ = out0_
+            d_1_steps_ = (d_1_steps_) + (1)
+            if (d_2_next_) == (eosToken):
+                cost = d_1_steps_
+                return generated, insideConstrainedOut, currentConstrainedOut, cost
+            generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_2_next_]))
+            if (d_2_next_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                d_3_og_: _dafny.Seq
+                d_4_oi_: bool
+                d_5_oc_: _dafny.Seq
+                out1_: _dafny.Seq
+                out2_: bool
+                out3_: _dafny.Seq
+                out1_, out2_, out3_ = (d_0_helpers_).EnterObservedConstrainedSpan(lm, generated)
+                d_3_og_ = out1_
+                d_4_oi_ = out2_
+                d_5_oc_ = out3_
+                generated = d_3_og_
+                insideConstrainedOut = d_4_oi_
+                currentConstrainedOut = d_5_oc_
+            elif True:
+                d_6_attempt_: int
+                d_6_attempt_ = 0
+                while (((d_6_attempt_) < (3)) and ((d_1_steps_) < (maxSteps))) and (not(insideConstrainedOut)):
+                    (d_0_helpers_).SafeBoostTokenLogits(lm, _dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))]), _dafny.BigRational('2e1'))
+                    d_7_next2_: _dafny.Seq
+                    out4_: _dafny.Seq
+                    out4_ = (d_0_helpers_).UnconstrainedStep(lm, prompt, generated)
+                    d_7_next2_ = out4_
+                    d_1_steps_ = (d_1_steps_) + (1)
+                    if (d_7_next2_) == (eosToken):
+                        cost = d_1_steps_
+                        return generated, insideConstrainedOut, currentConstrainedOut, cost
+                    generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_7_next2_]))
+                    if (d_7_next2_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                        d_8_og2_: _dafny.Seq
+                        d_9_oi2_: bool
+                        d_10_oc2_: _dafny.Seq
+                        out5_: _dafny.Seq
+                        out6_: bool
+                        out7_: _dafny.Seq
+                        out5_, out6_, out7_ = (d_0_helpers_).EnterObservedConstrainedSpan(lm, generated)
+                        d_8_og2_ = out5_
+                        d_9_oi2_ = out6_
+                        d_10_oc2_ = out7_
+                        generated = d_8_og2_
+                        insideConstrainedOut = d_9_oi2_
+                        currentConstrainedOut = d_10_oc2_
+                    d_6_attempt_ = (d_6_attempt_) + (1)
+                if (not(insideConstrainedOut)) and ((d_1_steps_) < (maxSteps)):
+                    d_11_og3_: _dafny.Seq
+                    d_12_oi3_: bool
+                    d_13_oc3_: _dafny.Seq
+                    out8_: _dafny.Seq
+                    out9_: bool
+                    out10_: _dafny.Seq
+                    out8_, out9_, out10_ = (d_0_helpers_).OpenConstrainedSpan(lm, generated)
+                    d_11_og3_ = out8_
+                    d_12_oi3_ = out9_
+                    d_13_oc3_ = out10_
+                    generated = d_11_og3_
+                    insideConstrainedOut = d_12_oi3_
+                    currentConstrainedOut = d_13_oc3_
+                    d_1_steps_ = (d_1_steps_) + (1)
+        d_14_minTokensBeforeClose_: int
+        d_14_minTokensBeforeClose_ = 10
+        d_15_constrainedTokensGenerated_: int
+        d_15_constrainedTokensGenerated_ = len(currentConstrainedOut)
+        d_16_lastToken_: _dafny.Seq
+        d_16_lastToken_ = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        d_17_consecutiveRepeats_: int
+        d_17_consecutiveRepeats_ = 0
+        with _dafny.label("0"):
+            while (d_1_steps_) < (maxSteps):
+                with _dafny.c_label("0"):
+                    if not(insideConstrainedOut):
+                        raise _dafny.Break("0")
+                    if (d_17_consecutiveRepeats_) >= (5):
+                        d_18_rg_: _dafny.Seq
+                        d_19_rc_: _dafny.Seq
+                        out11_: _dafny.Seq
+                        out12_: _dafny.Seq
+                        out11_, out12_ = (d_0_helpers_).RollbackConstrainedToComplete(parser, generated, currentConstrainedOut)
+                        d_18_rg_ = out11_
+                        d_19_rc_ = out12_
+                        generated = d_18_rg_
+                        currentConstrainedOut = d_19_rc_
+                        d_17_consecutiveRepeats_ = 0
+                        if ((parser).IsCompletePrefix(currentConstrainedOut)) and ((d_1_steps_) < (maxSteps)):
+                            d_20_cg_: _dafny.Seq
+                            d_21_ci_: bool
+                            d_22_cc_: _dafny.Seq
+                            out13_: _dafny.Seq
+                            out14_: bool
+                            out15_: _dafny.Seq
+                            out13_, out14_, out15_ = (d_0_helpers_).CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut)
+                            d_20_cg_ = out13_
+                            d_21_ci_ = out14_
+                            d_22_cc_ = out15_
+                            generated = d_20_cg_
+                            insideConstrainedOut = d_21_ci_
+                            currentConstrainedOut = d_22_cc_
+                            d_1_steps_ = (d_1_steps_) + (1)
+                        elif (d_1_steps_) < (maxSteps):
+                            d_23_closeBudget_: int
+                            d_23_closeBudget_ = (maxSteps) - (d_1_steps_)
+                            d_24_cg2_: _dafny.Seq
+                            d_25_ci2_: bool
+                            d_26_cc2_: _dafny.Seq
+                            out16_: _dafny.Seq
+                            out17_: bool
+                            out18_: _dafny.Seq
+                            out16_, out17_, out18_ = (d_0_helpers_).CloseSpanWithinBudget(lm, parser, prompt, generated, currentConstrainedOut, eosToken, d_23_closeBudget_)
+                            d_24_cg2_ = out16_
+                            d_25_ci2_ = out17_
+                            d_26_cc2_ = out18_
+                            generated = d_24_cg2_
+                            insideConstrainedOut = d_25_ci2_
+                            currentConstrainedOut = d_26_cc2_
+                            d_1_steps_ = maxSteps
+                        raise _dafny.Break("0")
+                    d_27_isDeadEnd_: bool
+                    out19_: bool
+                    out19_ = (d_0_helpers_).DeadEndDetection(parser, currentConstrainedOut, 1)
+                    d_27_isDeadEnd_ = out19_
+                    if d_27_isDeadEnd_:
+                        d_28_rg_: _dafny.Seq
+                        d_29_rc_: _dafny.Seq
+                        out20_: _dafny.Seq
+                        out21_: _dafny.Seq
+                        out20_, out21_ = (d_0_helpers_).RollbackConstrainedToComplete(parser, generated, currentConstrainedOut)
+                        d_28_rg_ = out20_
+                        d_29_rc_ = out21_
+                        generated = d_28_rg_
+                        currentConstrainedOut = d_29_rc_
+                        d_17_consecutiveRepeats_ = 0
+                        if ((parser).IsCompletePrefix(currentConstrainedOut)) and ((d_1_steps_) < (maxSteps)):
+                            d_30_cg_: _dafny.Seq
+                            d_31_ci_: bool
+                            d_32_cc_: _dafny.Seq
+                            out22_: _dafny.Seq
+                            out23_: bool
+                            out24_: _dafny.Seq
+                            out22_, out23_, out24_ = (d_0_helpers_).CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut)
+                            d_30_cg_ = out22_
+                            d_31_ci_ = out23_
+                            d_32_cc_ = out24_
+                            generated = d_30_cg_
+                            insideConstrainedOut = d_31_ci_
+                            currentConstrainedOut = d_32_cc_
+                            d_1_steps_ = (d_1_steps_) + (1)
+                        elif (d_1_steps_) < (maxSteps):
+                            d_33_closeBudget_: int
+                            d_33_closeBudget_ = (maxSteps) - (d_1_steps_)
+                            d_34_cg2_: _dafny.Seq
+                            d_35_ci2_: bool
+                            d_36_cc2_: _dafny.Seq
+                            out25_: _dafny.Seq
+                            out26_: bool
+                            out27_: _dafny.Seq
+                            out25_, out26_, out27_ = (d_0_helpers_).CloseSpanWithinBudget(lm, parser, prompt, generated, currentConstrainedOut, eosToken, d_33_closeBudget_)
+                            d_34_cg2_ = out25_
+                            d_35_ci2_ = out26_
+                            d_36_cc2_ = out27_
+                            generated = d_34_cg2_
+                            insideConstrainedOut = d_35_ci2_
+                            currentConstrainedOut = d_36_cc2_
+                            d_1_steps_ = maxSteps
+                        raise _dafny.Break("0")
+                    if ((parser).IsCompletePrefix(currentConstrainedOut)) and ((d_15_constrainedTokensGenerated_) >= (d_14_minTokensBeforeClose_)):
+                        d_37_cg_: _dafny.Seq
+                        d_38_ci_: bool
+                        d_39_cc_: _dafny.Seq
+                        d_40_closed_: bool
+                        out28_: _dafny.Seq
+                        out29_: bool
+                        out30_: _dafny.Seq
+                        out31_: bool
+                        out28_, out29_, out30_, out31_ = (d_0_helpers_).CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut)
+                        d_37_cg_ = out28_
+                        d_38_ci_ = out29_
+                        d_39_cc_ = out30_
+                        d_40_closed_ = out31_
+                        d_1_steps_ = (d_1_steps_) + (1)
+                        if d_40_closed_:
+                            generated = d_37_cg_
+                            insideConstrainedOut = d_38_ci_
+                            currentConstrainedOut = d_39_cc_
+                            raise _dafny.Break("0")
+                        if (d_1_steps_) >= (maxSteps):
+                            raise _dafny.Break("0")
+                    d_41_constrainedPrompt_: _dafny.Seq
+                    d_41_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrainedOut)):]))
+                    d_42_next_: _dafny.Seq
+                    out32_: _dafny.Seq
+                    out32_ = (d_0_helpers_).AdaptiveConstrainedStep(lm, parser, d_41_constrainedPrompt_, currentConstrainedOut, validTokenGroups, _dafny.BigRational('4e0'), 20, eosToken)
+                    d_42_next_ = out32_
+                    d_1_steps_ = (d_1_steps_) + (1)
+                    if (d_42_next_) == (eosToken):
+                        if ((parser).IsCompletePrefix(currentConstrainedOut)) and ((d_1_steps_) < (maxSteps)):
+                            d_43_cg_: _dafny.Seq
+                            d_44_ci_: bool
+                            d_45_cc_: _dafny.Seq
+                            out33_: _dafny.Seq
+                            out34_: bool
+                            out35_: _dafny.Seq
+                            out33_, out34_, out35_ = (d_0_helpers_).CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut)
+                            d_43_cg_ = out33_
+                            d_44_ci_ = out34_
+                            d_45_cc_ = out35_
+                            generated = d_43_cg_
+                            insideConstrainedOut = d_44_ci_
+                            currentConstrainedOut = d_45_cc_
+                            d_1_steps_ = (d_1_steps_) + (1)
+                        elif (d_1_steps_) < (maxSteps):
+                            d_46_closeBudget_: int
+                            d_46_closeBudget_ = (maxSteps) - (d_1_steps_)
+                            d_47_cg2_: _dafny.Seq
+                            d_48_ci2_: bool
+                            d_49_cc2_: _dafny.Seq
+                            out36_: _dafny.Seq
+                            out37_: bool
+                            out38_: _dafny.Seq
+                            out36_, out37_, out38_ = (d_0_helpers_).CloseSpanWithinBudget(lm, parser, prompt, generated, currentConstrainedOut, eosToken, d_46_closeBudget_)
+                            d_47_cg2_ = out36_
+                            d_48_ci2_ = out37_
+                            d_49_cc2_ = out38_
+                            generated = d_47_cg2_
+                            insideConstrainedOut = d_48_ci2_
+                            currentConstrainedOut = d_49_cc2_
+                            d_1_steps_ = maxSteps
+                        raise _dafny.Break("0")
+                    elif True:
+                        if (d_42_next_) == (d_16_lastToken_):
+                            d_17_consecutiveRepeats_ = (d_17_consecutiveRepeats_) + (1)
+                        elif True:
+                            d_16_lastToken_ = d_42_next_
+                            d_17_consecutiveRepeats_ = 0
+                        d_50_ag_: _dafny.Seq
+                        d_51_ai_: bool
+                        d_52_ac_: _dafny.Seq
+                        out39_: _dafny.Seq
+                        out40_: bool
+                        out41_: _dafny.Seq
+                        out39_, out40_, out41_ = (d_0_helpers_).AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, d_42_next_)
+                        d_50_ag_ = out39_
+                        d_51_ai_ = out40_
+                        d_52_ac_ = out41_
+                        generated = d_50_ag_
+                        insideConstrainedOut = d_51_ai_
+                        currentConstrainedOut = d_52_ac_
+                        d_15_constrainedTokensGenerated_ = (d_15_constrainedTokensGenerated_) + (1)
+                    pass
+            pass
+        if (insideConstrainedOut) and ((d_1_steps_) < (maxSteps)):
+            d_53_closeBudget_: int
+            d_53_closeBudget_ = (maxSteps) - (d_1_steps_)
+            d_54_cg_: _dafny.Seq
+            d_55_ci_: bool
+            d_56_cc_: _dafny.Seq
+            out42_: _dafny.Seq
+            out43_: bool
+            out44_: _dafny.Seq
+            out42_, out43_, out44_ = (d_0_helpers_).CloseSpanWithinBudget(lm, parser, prompt, generated, currentConstrainedOut, eosToken, d_53_closeBudget_)
+            d_54_cg_ = out42_
+            d_55_ci_ = out43_
+            d_56_cc_ = out44_
+            generated = d_54_cg_
+            insideConstrainedOut = d_55_ci_
+            currentConstrainedOut = d_56_cc_
+            d_1_steps_ = maxSteps
+        cost = d_1_steps_
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+

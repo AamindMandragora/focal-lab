@@ -11,9 +11,14 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
+from synthesis.generate.provider_names import (
+    GENERATION_BACKENDS,
+    normalize_generation_backend,
+)
 try:
     from synthesis.project_defaults import default_dafny_path
 except ImportError:
@@ -26,9 +31,38 @@ except ImportError:
     pass
 
 
+def _load_initial_attempt_history(path: Path):
+    """Restore evaluated attempts needed by refinement and helper selection."""
+    from synthesis.evaluate.evaluator import EvaluationResult
+    from synthesis.evaluate.feedback_loop import SynthesisAttempt
+
+    records = json.loads(path.read_text(encoding="utf-8"))
+    attempts = []
+    for record in records:
+        eval_result = EvaluationResult(
+            success=True,
+            accuracy=float(record["accuracy"]),
+            contains_delimiters=bool(record["contains_delimiters"]),
+            syntax_rate=float(record["syntax_rate"]),
+            num_examples=int(record["num_examples"]),
+            num_correct=int(record["num_correct"]),
+            total_time_seconds=float(record.get("total_time_seconds", 0.0)),
+        )
+        attempts.append(
+            SynthesisAttempt(
+                attempt_number=int(record["attempt_number"]),
+                strategy_code=str(record["strategy_code"]),
+                full_dafny_code="",
+                timestamp=str(record.get("timestamp", "restored")),
+                eval_result=eval_result,
+            )
+        )
+    return attempts
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies (default generation: OpenAI; Bedrock optional for Claude; eval often vLLM)",
+        description="Synthesize constrained decoding strategies (default generation: OpenAI; Claude Code Max and hosted APIs are optional; eval often vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -63,18 +97,20 @@ Examples:
         type=str,
         default=None,
         help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
-        "Bedrock model id when using bedrock; HF id for huggingface/vllm). "
-        "OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4; Bedrock from BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL.",
+        "Claude Code uses the fixed claude-sonnet-4-6 model; Claude Bedrock uses an AWS model id; "
+        "HF ids apply to huggingface/vllm. OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4.",
     )
 
     parser.add_argument(
         "--generation-backend",
         type=str,
-        choices=["huggingface", "vllm", "openai", "bedrock", "anthropic", "gemini", "vertex"],
+        choices=GENERATION_BACKENDS,
         default="openai",
         help=(
-            "Backend for strategy generation (default: openai). 'anthropic' uses "
-            "ANTHROPIC_API_KEY for Claude models like claude-opus-4-7; 'gemini' "
+            "Backend for strategy generation (default: openai). 'claude' uses an "
+            "isolated Claude Code Max login; 'claude-bedrock' uses AWS Bedrock; "
+            "'anthropic' uses the direct Anthropic API. Deprecated aliases: "
+            "'claude-code' and 'bedrock'. 'gemini' "
             "uses GEMINI_API_KEY or GOOGLE_API_KEY for Google AI Studio models; "
             "'vertex' uses Vertex AI REST with VERTEX_AI_ACCESS_TOKEN or ADC."
         ),
@@ -104,6 +140,62 @@ Examples:
         type=str,
         default=None,
         help="Optional API key for generation. Defaults to the selected backend's environment variable."
+    )
+
+    parser.add_argument(
+        "--claude-executable",
+        default=os.environ.get("CSD_CLAUDE_EXECUTABLE", "claude"),
+        help="Claude Code executable used by --generation-backend claude.",
+    )
+    parser.add_argument(
+        "--claude-config-dir",
+        default=os.environ.get("CSD_CLAUDE_CONFIG_DIR"),
+        help="Dedicated Claude Code Max config directory; required for the claude backend.",
+    )
+    parser.add_argument(
+        "--claude-expected-account",
+        default=os.environ.get("CSD_CLAUDE_EXPECTED_ACCOUNT"),
+        help="Exact Claude Max account email required before any author call.",
+    )
+    parser.add_argument(
+        "--claude-timeout-seconds",
+        type=float,
+        default=float(os.environ.get("CSD_CLAUDE_TIMEOUT_SECONDS", "1800")),
+        help="Legacy default for Claude idle timeout when --claude-idle-timeout-seconds is omitted.",
+    )
+    parser.add_argument(
+        "--claude-idle-timeout-seconds",
+        type=float,
+        default=None,
+        help="Stop Claude only after this many seconds with no stream event.",
+    )
+    parser.add_argument(
+        "--claude-emergency-timeout-seconds",
+        type=float,
+        default=float(os.environ.get("CSD_CLAUDE_EMERGENCY_TIMEOUT_SECONDS", "7200")),
+        help="Emergency wall-clock limit for one Claude CLI process.",
+    )
+    parser.add_argument(
+        "--claude-max-retries",
+        type=int,
+        default=int(os.environ.get("CSD_CLAUDE_MAX_RETRIES", "2")),
+        help="Retries of the identical author request after a temporary failure.",
+    )
+    parser.add_argument(
+        "--claude-retry-delay-seconds",
+        type=float,
+        default=float(os.environ.get("CSD_CLAUDE_RETRY_DELAY_SECONDS", "30")),
+        help="Delay before retrying the identical Claude request.",
+    )
+    parser.add_argument(
+        "--claude-telemetry-dir",
+        default=os.environ.get("CSD_CLAUDE_TELEMETRY_DIR"),
+        help="Owner-only directory for full Claude stream-json telemetry.",
+    )
+    parser.add_argument(
+        "--claude-author-lock-file",
+        default=os.environ.get("CSD_CLAUDE_AUTHOR_LOCK_FILE"),
+        help="Account-wide lock that permits one Claude author request at a time.",
     )
 
     parser.add_argument(
@@ -186,6 +278,13 @@ Examples:
         type=int,
         default=0,
         help="Attempt number offset for recovery runs seeded from an earlier synthesis attempt.",
+    )
+
+    parser.add_argument(
+        "--initial-attempt-history-file",
+        type=Path,
+        default=None,
+        help="JSON evaluated-attempt history to restore for an approved recovery run.",
     )
 
     parser.add_argument(
@@ -281,6 +380,28 @@ Examples:
     )
 
     parser.add_argument(
+        "--eval-early-stop-on-answer",
+        action="store_true",
+        default=False,
+        help=(
+            "Stop generation as soon as the output contains a finished "
+            "final-answer span ('final answer' followed by a complete << >> "
+            "span), mirroring CRANE's answer stopping. Default: off."
+        ),
+    )
+
+    parser.add_argument(
+        "--token-cap-feedback",
+        action="store_true",
+        default=False,
+        help=(
+            "Append a causal token-budget-exhaustion hint to author feedback "
+            "when >=50%% of evaluated outputs ran to the maxSteps cap. "
+            "Default: off."
+        ),
+    )
+
+    parser.add_argument(
         "--eval-sample-size",
         type=int,
         default=10,
@@ -346,8 +467,10 @@ Examples:
         "--gsm-split-name",
         type=str,
         choices=["train", "eval"],
-        default="train",
-        help="Which split from --gsm-split-file to use during synthesis evaluation (default: train)"
+        default=None,
+        help="Which split from --gsm-split-file to use during synthesis evaluation. "
+             "Required when --gsm-split-file is given (no default side — silent "
+             "defaults caused the 2026-07-17 bar/eval split mixup)."
     )
 
     parser.add_argument(
@@ -360,9 +483,27 @@ Examples:
     parser.add_argument(
         "--spider-split-name",
         type=str,
-        choices=["train", "test", "eval"],
-        default="train",
-        help="Which split from --spider-split-file to use during synthesis evaluation (default: train)"
+        choices=["train", "test"],
+        default=None,
+        help="Which split from --spider-split-file to use during synthesis evaluation. "
+             "Required when --spider-split-file is given. Spider's held-out side is "
+             "'test' (the 'eval' alias was removed 2026-07-17)."
+    )
+
+    # Split-provenance guard (incident 2026-07-17): synthesis evaluates the
+    # TRAIN side by default, but baseline bars are usually measured on the
+    # EVAL/TEST side. When a split file and a nonzero --min-accuracy are both
+    # in use, you must declare which side the bar came from; a mismatch
+    # refuses to launch. See synthesis/split_provenance.py.
+    parser.add_argument(
+        "--bar-split-name",
+        type=str,
+        choices=["train", "test", "eval"],  # per-dataset validity enforced by the guard
+        default=None,
+        help="Which split side the --min-accuracy bar was measured on. Required "
+             "whenever a split file and a nonzero accuracy bar are both used; "
+             "must match the evaluated split (no override — cross-split bars "
+             "produced wrong verdicts on 2026-07-17)."
     )
 
     parser.add_argument(
@@ -540,6 +681,65 @@ Examples:
     )
 
     args = parser.parse_args()
+    args.generation_backend = normalize_generation_backend(args.generation_backend)
+
+    # Refuse to launch when the accuracy bar's split side doesn't match the
+    # split being evaluated (or is undeclared). Fail here, before any model
+    # loads, so a misconfigured run costs seconds, not GPU-hours.
+    from synthesis.split_provenance import BarSplitProvenanceError, check_bar_split_provenance
+
+    if args.dataset == "gsm_symbolic":
+        active_split_file, active_split_name = args.gsm_split_file, args.gsm_split_name
+    elif args.dataset == "spider":
+        active_split_file, active_split_name = args.spider_split_file, args.spider_split_name
+    else:
+        active_split_file, active_split_name = None, None
+    if active_split_file is not None and active_split_name is None:
+        parser.error(
+            f"an explicit split name is required when a split file is given "
+            f"(--{'gsm' if args.dataset == 'gsm_symbolic' else 'spider'}-split-name). "
+            "There is no default side — silent defaults caused the 2026-07-17 "
+            "bar/eval split mixup."
+        )
+    # Fill inert defaults for the dataset(s) not using a split file, since
+    # downstream code expects strings. The active dataset's name is never
+    # defaulted here — the check above already required it.
+    if args.gsm_split_name is None:
+        args.gsm_split_name = "train"
+    if args.spider_split_name is None:
+        args.spider_split_name = "train"
+    if active_split_name is None:
+        active_split_name = "train"
+    try:
+        check_bar_split_provenance(
+            dataset=args.dataset,
+            split_file=active_split_file,
+            split_name=active_split_name,
+            min_accuracy=args.min_accuracy,
+            bar_split_name=args.bar_split_name,
+        )
+    except BarSplitProvenanceError as exc:
+        parser.error(str(exc))
+
+    if args.generation_model is None:
+        if args.generation_backend == "claude":
+            args.generation_model = "claude-sonnet-4-6"
+        elif args.generation_backend == "claude-bedrock":
+            resolved = os.environ.get("BEDROCK_GENERATION_MODEL") or os.environ.get(
+                "AWS_BEDROCK_GENERATION_MODEL"
+            )
+            if not resolved:
+                parser.error(
+                    "Bedrock synthesis requires --generation-model or "
+                    "BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL in the environment."
+                )
+            args.generation_model = resolved
+        elif args.generation_backend == "openai":
+            args.generation_model = os.environ.get("OPENAI_GENERATION_MODEL") or "gpt-5.4"
+        else:
+            from synthesis.generate.generator import StrategyGenerator as _StrategyGenerator
+
+            args.generation_model = _StrategyGenerator.DEFAULT_MODEL
 
     # Defense against the "small author model" foot-gun.
     # The author model (--generation-model) writes the Dafny strategy code and
@@ -608,24 +808,6 @@ Examples:
                 "$CRANE_GSM_SYMBOLIC_DIR."
             )
 
-    if args.generation_model is None:
-        if args.generation_backend == "bedrock":
-            resolved = os.environ.get("BEDROCK_GENERATION_MODEL") or os.environ.get(
-                "AWS_BEDROCK_GENERATION_MODEL"
-            )
-            if not resolved:
-                parser.error(
-                    "Bedrock synthesis requires --generation-model or "
-                    "BEDROCK_GENERATION_MODEL / AWS_BEDROCK_GENERATION_MODEL in the environment."
-                )
-            args.generation_model = resolved
-        elif args.generation_backend == "openai":
-            args.generation_model = os.environ.get("OPENAI_GENERATION_MODEL") or "gpt-5.4"
-        else:
-            from synthesis.generate.generator import StrategyGenerator as _StrategyGenerator
-
-            args.generation_model = _StrategyGenerator.DEFAULT_MODEL
-
     if args.generation_backend == "vllm" or args.eval_backend == "vllm":
         os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
@@ -656,7 +838,7 @@ Examples:
     args.baseline_output_dir.mkdir(parents=True, exist_ok=True)
 
     # Import here to avoid loading heavy dependencies if just showing help
-    from synthesis.generate.generator import StrategyGenerator
+    from synthesis.generate.generator import ClaudeTransientError, StrategyGenerator
     from synthesis.verify.verifier import DafnyVerifier
     from synthesis.verify.compiler import DafnyCompiler
     from synthesis.evaluate.evaluator import Evaluator
@@ -686,6 +868,16 @@ Examples:
         anthropic_thinking_budget_tokens=args.anthropic_thinking_budget_tokens,
         anthropic_effort=args.anthropic_effort,
         anthropic_thinking_display=args.anthropic_thinking_display,
+        claude_executable=args.claude_executable,
+        claude_config_dir=args.claude_config_dir,
+        claude_expected_account=args.claude_expected_account,
+        claude_timeout_seconds=args.claude_timeout_seconds,
+        claude_idle_timeout_seconds=args.claude_idle_timeout_seconds,
+        claude_emergency_timeout_seconds=args.claude_emergency_timeout_seconds,
+        claude_max_retries=args.claude_max_retries,
+        claude_retry_delay_seconds=args.claude_retry_delay_seconds,
+        claude_telemetry_dir=args.claude_telemetry_dir,
+        claude_author_lock_file=args.claude_author_lock_file,
     )
 
     verifier = DafnyVerifier(
@@ -729,6 +921,7 @@ Examples:
         spider_split_name=args.spider_split_name,
         smiles_classes=args.smiles_classes,
         grammars_dir=args.grammars_dir,
+        early_stop_on_answer=args.eval_early_stop_on_answer,
     )
 
     pipeline = SynthesisPipeline(
@@ -742,9 +935,11 @@ Examples:
         # Evaluation thresholds
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
+        bar_split_name=args.bar_split_name,
         # Restart-from-scratch mechanism
         restart_after_stuck_iters=args.restart_after_stuck_iters,
         restart_cooldown_iters=args.restart_cooldown_iters,
+        token_cap_feedback=args.token_cap_feedback,
         require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
@@ -769,6 +964,13 @@ Examples:
     if args.initial_strategy_file:
         initial_strategy_code = args.initial_strategy_file.read_text()
         print(f"Loaded initial strategy seed from: {args.initial_strategy_file}")
+    initial_attempts = []
+    if args.initial_attempt_history_file:
+        initial_attempts = _load_initial_attempt_history(args.initial_attempt_history_file)
+        print(
+            f"Loaded {len(initial_attempts)} prior evaluated attempt(s) from: "
+            f"{args.initial_attempt_history_file}"
+        )
 
     # Run synthesis
     try:
@@ -777,6 +979,7 @@ Examples:
             output_name=args.output_name,
             initial_strategy_code=initial_strategy_code,
             initial_attempt_offset=args.initial_attempt_offset,
+            initial_attempts=initial_attempts,
         )
 
         print("\n" + "=" * 60)
@@ -803,6 +1006,10 @@ Examples:
     except KeyboardInterrupt:
         print("\n\nSynthesis interrupted by user")
         sys.exit(130)
+
+    except ClaudeTransientError as e:
+        print(f"\nTemporary Claude provider failure: {e}")
+        sys.exit(76)
 
     except Exception as e:
         print(f"\nUnexpected error: {e}")

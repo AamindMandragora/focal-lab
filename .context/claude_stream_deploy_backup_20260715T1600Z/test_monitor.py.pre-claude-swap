@@ -1,0 +1,365 @@
+import json
+from pathlib import Path
+from types import SimpleNamespace
+
+import scripts.runtime.incident_repair.monitor as monitor
+from scripts.runtime.incident_repair.monitor import (
+    Incident,
+    RepairResult,
+    build_repair_prompt,
+    changed_files,
+    codex_environment,
+    detect_incidents,
+    is_allowed_change,
+    is_protected_path,
+    read_new_text,
+    repair_can_relaunch,
+    result_matches_changes,
+    should_escalate_incident,
+)
+
+
+def test_detects_catastrophic_errors_but_ignores_handled_rate_limits():
+    text = """
+HTTP 429: daily quota exceeded; retrying in 3600 seconds
+Task: Unknown task
+ValueError: Free memory on device cuda:0 is less than desired
+"""
+
+    incidents = detect_incidents(Path("paid_synth_worker.log"), text)
+
+    assert [incident.rule for incident in incidents] == [
+        "unknown_task",
+        "gpu_memory_startup",
+    ]
+
+
+def test_detects_real_queue_release_and_claude_timeout_lines():
+    incidents = detect_incidents(
+        Path("worker.log"),
+        "[warm-recovery] release cell=gsm-qwen35-2b gpu=1 status=76\n"
+        "[claude] timeout request_sha256=abc retry=0 duration_seconds=900\n",
+    )
+
+    assert [incident.rule for incident in incidents] == ["claude_timeout"]
+
+
+def test_one_timeout_is_counted_once_even_with_related_failure_lines():
+    incidents = detect_incidents(
+        Path("worker.log"),
+        "[claude] failure exit_status=timeout category=idle-timeout duration_seconds=900\n"
+        "[claude] timeout request_sha256=abc retry=0 duration_seconds=900\n"
+        "Temporary Claude provider failure: Claude Code stream idle-timeout\n",
+    )
+
+    assert [incident.rule for incident in incidents] == ["claude_timeout"]
+
+
+def test_claude_timeout_escalates_only_after_three_events_in_ten_minutes():
+    state = {}
+    incident = Incident("claude_timeout", "worker.log", "timeout", "one")
+
+    assert not should_escalate_incident(incident, state, now=100.0)
+    assert not should_escalate_incident(
+        Incident("claude_timeout", "worker.log", "timeout", "two"), state, now=200.0
+    )
+    assert should_escalate_incident(
+        Incident("claude_timeout", "worker.log", "timeout", "three"), state, now=300.0
+    )
+    assert not should_escalate_incident(
+        Incident("claude_timeout", "worker.log", "timeout", "late"), state, now=1_000.0
+    )
+
+
+def test_new_log_bootstraps_at_end_then_reads_only_appended_text(tmp_path):
+    log = tmp_path / "worker.log"
+    log.write_text("historical Unknown task\n")
+
+    first_text, cursor = read_new_text(log, None, bootstrap_at_end=True)
+    assert first_text == ""
+
+    with log.open("a") as handle:
+        handle.write("new catastrophic line\n")
+
+    new_text, next_cursor = read_new_text(log, cursor, bootstrap_at_end=True)
+    assert new_text == "new catastrophic line\n"
+    assert next_cursor["offset"] > cursor["offset"]
+
+
+def test_relaunch_requires_codex_success_external_tests_and_unchanged_protected_files():
+    repaired = RepairResult(
+        status="repaired",
+        summary="fixed",
+        files_changed=["synthesis/evaluate/feedback_loop.py"],
+        tests=["pytest"],
+        safe_to_relaunch=True,
+    )
+
+    assert repair_can_relaunch(repaired, codex_exit=0, verifier_exit=0, protected_changed=False)
+    assert not repair_can_relaunch(repaired, codex_exit=1, verifier_exit=0, protected_changed=False)
+    assert not repair_can_relaunch(repaired, codex_exit=0, verifier_exit=1, protected_changed=False)
+    assert not repair_can_relaunch(repaired, codex_exit=0, verifier_exit=0, protected_changed=True)
+
+
+def test_repair_prompt_contains_required_autonomy_boundaries(tmp_path):
+    incident = Incident(
+        rule="unknown_task",
+        source="paid_synth_worker.log",
+        line="Task: Unknown task",
+        fingerprint="abc123",
+    )
+    evidence = tmp_path / "incident.json"
+    evidence.write_text(json.dumps({"rule": incident.rule}))
+
+    prompt = build_repair_prompt(incident, evidence)
+
+    assert "reproduce the defect with a failing test" in prompt
+    assert "Do not launch synthesis" in prompt
+    assert "Do not call Bedrock" in prompt
+    assert "grammars" in prompt
+    assert "graders" in prompt
+    assert "dataset splits" in prompt
+    assert "warm/cold policy" in prompt
+    assert str(evidence) in prompt
+
+
+def test_protected_and_allowed_paths_are_checked_from_the_real_relative_path():
+    assert is_protected_path(Path("grammars/gsm.lark"))
+    assert is_protected_path(Path("synthesis/evaluate/graders/gsm.py"))
+    assert is_protected_path(Path("environment/benchmark_splits/gsm.json"))
+    assert is_protected_path(Path("results_matrix.md"))
+    assert not is_protected_path(Path("synthesis/evaluate/feedback_loop.py"))
+
+    assert is_allowed_change(Path("synthesis/evaluate/feedback_loop.py"))
+    assert is_allowed_change(Path("tests/test_feedback_loop.py"))
+    assert not is_allowed_change(Path("README.md"))
+    assert not is_allowed_change(Path("grammars/gsm.lark"))
+    assert not is_allowed_change(Path("synthesis/verify/library/strategy.dfy"))
+    assert not is_allowed_change(Path("synthesis/evaluate/data/split.json"))
+
+
+def test_changed_files_reports_edits_additions_and_deletions(tmp_path):
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    before.mkdir()
+    after.mkdir()
+    (before / "edited.py").write_text("old")
+    (after / "edited.py").write_text("new")
+    (before / "deleted.py").write_text("gone")
+    (after / "added.py").write_text("new")
+
+    changes = changed_files(before, after)
+
+    assert changes == {
+        Path("added.py"): "added",
+        Path("deleted.py"): "deleted",
+        Path("edited.py"): "modified",
+    }
+
+
+def test_codex_environment_removes_cloud_and_api_credentials():
+    clean = codex_environment(
+        {
+            "PATH": "/bin",
+            "AWS_BEARER_TOKEN_BEDROCK": "secret",
+            "AWS_REGION": "us-east-1",
+            "OPENAI_API_KEY": "secret",
+            "SAFE_VALUE": "keep",
+        }
+    )
+
+    assert clean == {"PATH": "/bin", "SAFE_VALUE": "keep"}
+
+
+def test_snapshot_never_copies_nested_credentials(tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "synthesis" / "nested").mkdir(parents=True)
+    (repo / "synthesis" / "safe.py").write_text("SAFE = True\n")
+    (repo / "synthesis" / "nested" / ".env").write_text("TOKEN=secret\n")
+    (repo / "synthesis" / "nested" / "secrets.json").write_text("{}")
+    snapshot = tmp_path / "snapshot"
+
+    monitor._copy_snapshot(repo, snapshot)
+
+    assert (snapshot / "synthesis" / "safe.py").is_file()
+    assert not (snapshot / "synthesis" / "nested" / ".env").exists()
+    assert not (snapshot / "synthesis" / "nested" / "secrets.json").exists()
+
+
+def test_codex_result_must_name_the_actual_changes_and_tests():
+    result = RepairResult(
+        status="repaired",
+        summary="fixed",
+        files_changed=["synthesis/task_context.py"],
+        tests=["pytest -q tests/test_task_context.py"],
+        safe_to_relaunch=True,
+    )
+    changes = {Path("synthesis/task_context.py"): "modified"}
+
+    assert result_matches_changes(result, changes)
+    assert not result_matches_changes(
+        RepairResult(**{**result.__dict__, "files_changed": []}), changes
+    )
+    assert not result_matches_changes(
+        RepairResult(**{**result.__dict__, "tests": []}), changes
+    )
+
+
+def test_incident_service_is_separate_and_visible_in_combined_paid_logs():
+    unit = (
+        Path(__file__).parents[3]
+        / "deploy"
+        / "focal"
+        / "systemd"
+        / "csd-codex-incident-monitor.service"
+    ).read_text()
+
+    assert "incident_repair/monitor.py" in unit
+    assert "Restart=always" in unit
+    assert "--codex-model gpt-5.5" in unit
+    assert "paid_synth_codex_incident_monitor.log" in unit
+    assert "--recovery-service csd-claude-recovery-queue.service" in unit
+    assert "--recovery-service csd-gsm14b-claude-durable.service" not in unit
+    assert "AWS_BEARER_TOKEN_BEDROCK" not in unit
+
+
+def test_result_schema_is_flat_for_focal_codex_cli():
+    schema = json.loads(
+        (
+            Path(__file__).parents[3]
+            / "scripts"
+            / "runtime"
+            / "incident_repair"
+            / "result.schema.json"
+        ).read_text()
+    )
+
+    assert "allOf" not in schema
+    assert "if" not in json.dumps(schema)
+    assert set(schema["required"]) == {
+        "status",
+        "summary",
+        "files_changed",
+        "tests",
+        "safe_to_relaunch",
+    }
+
+
+def test_fake_unknown_task_is_repaired_verified_deployed_and_relaunched(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    source = repo / "synthesis" / "task_context.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("TASK = 'Unknown task'\n")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
+    manifest = repo / "manifest.json"
+    manifest.write_text("[]")
+    evidence = tmp_path / "incident.json"
+    evidence.write_text("{}")
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+    commands = []
+
+    def fake_capture(_repo, _incident, incident_dir):
+        incident_dir.mkdir(parents=True)
+        return evidence
+
+    monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
+    monkeypatch.setattr(monitor, "_stop_recovery", lambda *_: commands.append("stopped"))
+    monkeypatch.setattr(monitor, "_verify", lambda *_: 0)
+    monkeypatch.setattr(
+        monitor,
+        "_run",
+        lambda command, **_: commands.append(command) or 0,
+    )
+
+    def fake_codex(command, *, cwd, env, input, text):
+        assert "AWS_BEARER_TOKEN_BEDROCK" not in env
+        assert command[command.index("--sandbox") + 1] == "workspace-write"
+        assert "Do not launch synthesis" in input
+        (cwd / "synthesis" / "task_context.py").write_text("TASK = 'gsm_symbolic'\n")
+        result_path = Path(command[command.index("--output-last-message") + 1])
+        result_path.write_text(
+            json.dumps(
+                {
+                    "status": "repaired",
+                    "summary": "restored task context",
+                    "files_changed": ["synthesis/task_context.py"],
+                    "tests": ["pytest -q tests/test_task.py"],
+                    "safe_to_relaunch": True,
+                }
+            )
+        )
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(monitor.subprocess, "run", fake_codex)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "must-not-reach-codex")
+    args = SimpleNamespace(
+        repo=repo,
+        manifest=manifest,
+        state_dir=tmp_path / "state",
+        codex=Path("/fake/codex"),
+        codex_model="gpt-5.5",
+        python=Path("/fake/python"),
+        result_schema=schema,
+    )
+    incident = Incident("unknown_task", "worker.log", "Task: Unknown task", "abc123")
+
+    assert monitor.repair_incident(args, incident)
+    assert source.read_text() == "TASK = 'gsm_symbolic'\n"
+    assert commands[0] == "stopped"
+    assert commands[-1] == ["systemctl", "--user", "start", "csd-warm-recovery.service"]
+
+
+def test_failed_relaunch_rolls_back_the_deployed_repair(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    source = repo / "synthesis" / "task_context.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("ORIGINAL = True\n")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
+    manifest = repo / "manifest.json"
+    manifest.write_text("[]")
+    evidence = tmp_path / "incident.json"
+    evidence.write_text("{}")
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+
+    def fake_capture(_repo, _incident, incident_dir):
+        incident_dir.mkdir(parents=True)
+        return evidence
+
+    def fake_codex(command, *, cwd, env, input, text):
+        (cwd / "synthesis" / "task_context.py").write_text("REPAIRED = True\n")
+        Path(command[command.index("--output-last-message") + 1]).write_text(
+            json.dumps(
+                {
+                    "status": "repaired",
+                    "summary": "fixed",
+                    "files_changed": ["synthesis/task_context.py"],
+                    "tests": ["pytest -q tests/test_task.py"],
+                    "safe_to_relaunch": True,
+                }
+            )
+        )
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
+    monkeypatch.setattr(monitor, "_stop_recovery", lambda *_: None)
+    monkeypatch.setattr(monitor, "_verify", lambda *_: 0)
+    monkeypatch.setattr(monitor.subprocess, "run", fake_codex)
+    monkeypatch.setattr(monitor, "_run", lambda *_args, **_kwargs: 1)
+    args = SimpleNamespace(
+        repo=repo,
+        manifest=manifest,
+        state_dir=tmp_path / "state",
+        codex=Path("/fake/codex"),
+        codex_model="gpt-5.5",
+        python=Path("/fake/python"),
+        result_schema=schema,
+    )
+
+    assert not monitor.repair_incident(
+        args, Incident("unknown_task", "worker.log", "Unknown task", "rollback")
+    )
+    assert source.read_text() == "ORIGINAL = True\n"

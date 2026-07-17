@@ -1,0 +1,15 @@
+WAIT_A Wed Jun 10 11:12:10 AM UTC 2026
+A_PROC_GONE Wed Jun 10 11:12:10 AM UTC 2026
+A_JSON_OK
+START_B Wed Jun 10 11:12:10 AM UTC 2026
+EXIT_B=0
+=== ACCURACY FIELDS (unique-valid rate straight from each JSON) ===
+OFF: accuracy(uniq-valid)=0.01 syntax=1.0 N=100
+ON: accuracy(uniq-valid)=0.01 syntax=1.0 N=100
+=== RESCORE (unique-valid / validity / diversity) ===
+
+=== outputs/ab_rolling  (class=chain_extenders) ===
+strategy         uniqValRate  validity diversity   uniq/N  OLDacc
+ce7b_OFF               0.010     1.000       n/a    1/100    0.01
+ce7b_ON                0.010     1.000       n/a    1/100    0.01
+DONE_AB Wed Jun 10 11:14:11 AM UTC 2026

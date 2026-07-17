@@ -1,0 +1,1923 @@
+2026-05-20 00:07:29.625936: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-05-20 00:07:29.644376: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1779235649.668045   83336 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1779235649.675066   83336 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1779235649.691726   83336 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235649.691746   83336 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235649.691747   83336 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235649.691749   83336 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-05-20 00:07:29.696402: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Skipping import of cpp extensions due to incompatible torch version. Please upgrade to torch >= 2.11.0 (found 2.10.0+cu129).
+Loading GSM-Symbolic dataset (config=main, split=train (limit=25))...
+Loaded GSM-Symbolic fallback split 'test' from local HF cache.
+Loaded 25 examples
+Loading model: Qwen/Qwen2.5-Coder-1.5B-Instruct on cuda with vLLM...
+INFO 05-20 00:07:35 [utils.py:233] non-default args: {'tokenizer': 'Qwen/Qwen2.5-Coder-1.5B-Instruct', 'trust_remote_code': True, 'max_model_len': 16384, 'enable_prefix_caching': True, 'gpu_memory_utilization': 0.5, 'max_logprobs': -1, 'disable_log_stats': True, 'enforce_eager': True, 'model': 'Qwen/Qwen2.5-Coder-1.5B-Instruct'}
+INFO 05-20 00:07:36 [model.py:549] Resolved architecture: Qwen2ForCausalLM
+INFO 05-20 00:07:36 [model.py:1678] Using max model len 16384
+INFO 05-20 00:07:36 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=8192.
+INFO 05-20 00:07:36 [vllm.py:790] Asynchronous scheduling is enabled.
+WARNING 05-20 00:07:36 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 05-20 00:07:36 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 05-20 00:07:36 [vllm.py:1025] Cudagraph is disabled under eager mode
+INFO 05-20 00:07:36 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant
+2026-05-20 00:07:43.378204: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1779235663.402096   84342 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1779235663.410052   84342 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1779235663.426809   84342 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235663.426830   84342 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235663.426832   84342 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1779235663.426833   84342 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+Skipping import of cpp extensions due to incompatible torch version. Please upgrade to torch >= 2.11.0 (found 2.10.0+cu129).
+(EngineCore pid=84342) INFO 05-20 00:07:48 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen2.5-Coder-1.5B-Instruct', speculative_config=None, tokenizer='Qwen/Qwen2.5-Coder-1.5B-Instruct', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen2.5-Coder-1.5B-Instruct, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [8192], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}
+(EngineCore pid=84342) INFO 05-20 00:07:49 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.22.224.216:34433 backend=nccl
+(EngineCore pid=84342) INFO 05-20 00:07:49 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A
+(EngineCore pid=84342) INFO 05-20 00:07:49 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen2.5-Coder-1.5B-Instruct...
+(EngineCore pid=84342) INFO 05-20 00:07:50 [cuda.py:334] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=84342) INFO 05-20 00:07:50 [flash_attn.py:596] Using FlashAttention version 2
+(EngineCore pid=84342) INFO 05-20 00:07:51 [weight_utils.py:625] No model.safetensors.index.json found in remote.
+(EngineCore pid=84342) Loading safetensors checkpoint shards:   0% Completed | 0/1 [00:00<?, ?it/s]
+(EngineCore pid=84342) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.11it/s]
+(EngineCore pid=84342) Loading safetensors checkpoint shards: 100% Completed | 1/1 [00:00<00:00,  1.11it/s]
+(EngineCore pid=84342) 
+(EngineCore pid=84342) INFO 05-20 00:07:52 [default_loader.py:384] Loading weights took 1.01 seconds
+(EngineCore pid=84342) INFO 05-20 00:07:52 [gpu_model_runner.py:4820] Model loading took 2.89 GiB memory and 1.740625 seconds
+(EngineCore pid=84342) INFO 05-20 00:07:55 [gpu_worker.py:436] Available KV cache memory: 16.14 GiB
+(EngineCore pid=84342) INFO 05-20 00:07:55 [kv_cache_utils.py:1319] GPU KV cache size: 604,496 tokens
+(EngineCore pid=84342) INFO 05-20 00:07:55 [kv_cache_utils.py:1324] Maximum concurrency for 16,384 tokens per request: 36.90x
+(EngineCore pid=84342) INFO 05-20 00:07:55 [core.py:283] init engine (profile, create kv cache, warmup model) took 2.81 seconds
+(EngineCore pid=84342) INFO 05-20 00:07:56 [vllm.py:790] Asynchronous scheduling is enabled.
+(EngineCore pid=84342) WARNING 05-20 00:07:56 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=84342) WARNING 05-20 00:07:56 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=84342) INFO 05-20 00:07:56 [vllm.py:1025] Cudagraph is disabled under eager mode
+(EngineCore pid=84342) INFO 05-20 00:07:56 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant
+  [EVAL] Processing example 1/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #10, prefix length: 79, cache_hits=0
+[TIMING] after 10 GenerateLogits calls total=1.96s
+  GenerateLogits.total              0.91s  ( 46.3%)  calls=9     avg= 100.57ms
+  GenerateLogits.engine_generate    0.87s  ( 44.5%)  calls=10    avg=  87.14ms
+  MaskValidNextAndEos               0.11s  (  5.5%)  calls=9     avg=  11.96ms
+  GenerateLogits.finalize_from_dict    0.06s  (  3.1%)  calls=10    avg=   6.04ms
+  ChooseNextToken                   0.01s  (  0.5%)  calls=9     avg=   0.99ms
+  GenerateLogits.prefix_text        0.00s  (  0.1%)  calls=10    avg=   0.23ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=10    avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=10    avg=   0.00ms
+[PARSER_TIMING] after 10 GenerateLogits calls total=0.04s
+  accept_mask.total                     0.01s  ( 34.3%)  calls=9     avg=   1.54ms
+  accept_mask.dfa_lookup                0.01s  ( 26.5%)  calls=4     avg=   2.68ms
+  accept_mask.lookup_next_tokens        0.01s  ( 25.7%)  calls=4     avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.00s  (  7.6%)  calls=4     avg=   0.76ms
+  IsCompletePrefix.dafny                0.00s  (  5.3%)  calls=12    avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.5%)  calls=4     avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=4     avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=5     avg=   0.00ms
+    [PROGRESS] GenerateLogits call #20, prefix length: 89, cache_hits=0
+[TIMING] after 20 GenerateLogits calls total=2.52s
+  GenerateLogits.total              1.17s  ( 46.5%)  calls=19    avg=  61.62ms
+  GenerateLogits.engine_generate    1.11s  ( 44.2%)  calls=20    avg=  55.69ms
+  MaskValidNextAndEos               0.14s  (  5.6%)  calls=19    avg=   7.43ms
+  GenerateLogits.finalize_from_dict    0.07s  (  2.9%)  calls=20    avg=   3.65ms
+  ChooseNextToken                   0.01s  (  0.5%)  calls=19    avg=   0.67ms
+  GenerateLogits.prefix_text        0.01s  (  0.2%)  calls=20    avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=20    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=20    avg=   0.00ms
+[PARSER_TIMING] after 20 GenerateLogits calls total=0.09s
+  accept_mask.total                     0.03s  ( 36.7%)  calls=19    avg=   1.82ms
+  accept_mask.dfa_lookup                0.02s  ( 22.0%)  calls=14    avg=   1.48ms
+  accept_mask.lookup_next_tokens        0.02s  ( 20.8%)  calls=14    avg=   1.40ms
+  accept_mask.inc_parser_accepts        0.01s  ( 14.5%)  calls=14    avg=   0.98ms
+  IsCompletePrefix.dafny                0.00s  (  5.2%)  calls=22    avg=   0.22ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=14    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=14    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=5     avg=   0.00ms
+[STEP_BREAKDOWN] wall=3.06s  lm_callbacks=2.70s  parser_callbacks=0.11s  dafny_internal=0.25s  (8.3% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=2.70s
+  GenerateLogits.total              1.27s  ( 47.0%)  calls=23    avg=  55.03ms
+  GenerateLogits.engine_generate    1.18s  ( 43.8%)  calls=23    avg=  51.34ms
+  MaskValidNextAndEos               0.15s  (  5.6%)  calls=23    avg=   6.57ms
+  GenerateLogits.finalize_from_dict    0.08s  (  2.8%)  calls=23    avg=   3.31ms
+  ChooseNextToken                   0.01s  (  0.5%)  calls=23    avg=   0.61ms
+  GenerateLogits.prefix_text        0.01s  (  0.3%)  calls=23    avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=23    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=23    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.11s
+  accept_mask.total                     0.04s  ( 36.6%)  calls=23    avg=   1.75ms
+  accept_mask.dfa_lookup                0.02s  ( 21.8%)  calls=18    avg=   1.33ms
+  accept_mask.lookup_next_tokens        0.02s  ( 20.6%)  calls=18    avg=   1.25ms
+  accept_mask.inc_parser_accepts        0.02s  ( 14.6%)  calls=18    avg=   0.89ms
+  IsCompletePrefix.dafny                0.01s  (  5.4%)  calls=25    avg=   0.24ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=18    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=18    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=5     avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.11s
+  accept_mask.total                     0.04s  ( 36.6%)  calls=23    avg=   1.75ms
+  accept_mask.dfa_lookup                0.02s  ( 21.8%)  calls=18    avg=   1.33ms
+  accept_mask.lookup_next_tokens        0.02s  ( 20.6%)  calls=18    avg=   1.25ms
+  accept_mask.inc_parser_accepts        0.02s  ( 14.6%)  calls=18    avg=   0.89ms
+  IsCompletePrefix.dafny                0.01s  (  5.4%)  calls=25    avg=   0.24ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=18    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=18    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=5     avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 4.46s
+  [EVAL] Processing example 2/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #30, prefix length: 49, cache_hits=0
+[TIMING] after 30 GenerateLogits calls total=3.03s
+  GenerateLogits.total              1.41s  ( 46.5%)  calls=29    avg=  48.61ms
+  GenerateLogits.engine_generate    1.35s  ( 44.4%)  calls=30    avg=  44.84ms
+  MaskValidNextAndEos               0.16s  (  5.4%)  calls=29    avg=   5.65ms
+  GenerateLogits.finalize_from_dict    0.09s  (  2.8%)  calls=30    avg=   2.85ms
+  ChooseNextToken                   0.02s  (  0.6%)  calls=29    avg=   0.58ms
+  GenerateLogits.prefix_text        0.01s  (  0.3%)  calls=30    avg=   0.26ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=30    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=30    avg=   0.00ms
+[PARSER_TIMING] after 30 GenerateLogits calls total=0.12s
+  accept_mask.total                     0.04s  ( 36.6%)  calls=29    avg=   1.54ms
+  accept_mask.dfa_lookup                0.03s  ( 22.2%)  calls=22    avg=   1.23ms
+  accept_mask.lookup_next_tokens        0.03s  ( 20.9%)  calls=22    avg=   1.16ms
+  accept_mask.inc_parser_accepts        0.02s  ( 14.2%)  calls=22    avg=   0.79ms
+  IsCompletePrefix.dafny                0.01s  (  5.2%)  calls=33    avg=   0.19ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=22    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=22    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=7     avg=   0.00ms
+    [PROGRESS] GenerateLogits call #40, prefix length: 86, cache_hits=0
+[TIMING] after 40 GenerateLogits calls total=3.56s
+  GenerateLogits.total              1.66s  ( 46.7%)  calls=39    avg=  42.67ms
+  GenerateLogits.engine_generate    1.58s  ( 44.3%)  calls=40    avg=  39.48ms
+  MaskValidNextAndEos               0.19s  (  5.3%)  calls=39    avg=   4.84ms
+  GenerateLogits.finalize_from_dict    0.10s  (  2.8%)  calls=40    avg=   2.47ms
+  ChooseNextToken                   0.02s  (  0.6%)  calls=39    avg=   0.53ms
+  GenerateLogits.prefix_text        0.01s  (  0.3%)  calls=40    avg=   0.26ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=40    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=40    avg=   0.00ms
+[PARSER_TIMING] after 40 GenerateLogits calls total=0.15s
+  accept_mask.total                     0.06s  ( 36.7%)  calls=39    avg=   1.45ms
+  accept_mask.dfa_lookup                0.03s  ( 22.2%)  calls=29    avg=   1.18ms
+  accept_mask.lookup_next_tokens        0.03s  ( 20.9%)  calls=29    avg=   1.11ms
+  accept_mask.inc_parser_accepts        0.02s  ( 14.2%)  calls=29    avg=   0.76ms
+  IsCompletePrefix.dafny                0.01s  (  5.0%)  calls=44    avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.8%)  calls=29    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=29    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=10    avg=   0.00ms
+[STEP_BREAKDOWN] wall=1.97s  lm_callbacks=3.94s  parser_callbacks=0.23s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=3.94s
+  GenerateLogits.total              1.85s  ( 46.9%)  calls=46    avg=  40.11ms
+  GenerateLogits.engine_generate    1.72s  ( 43.8%)  calls=46    avg=  37.45ms
+  MaskValidNextAndEos               0.22s  (  5.7%)  calls=46    avg=   4.87ms
+  GenerateLogits.finalize_from_dict    0.11s  (  2.7%)  calls=46    avg=   2.31ms
+  ChooseNextToken                   0.02s  (  0.6%)  calls=46    avg=   0.51ms
+  GenerateLogits.prefix_text        0.01s  (  0.3%)  calls=46    avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=46    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=46    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.23s
+  accept_mask.total                     0.08s  ( 36.2%)  calls=46    avg=   1.81ms
+  accept_mask.dfa_lookup                0.06s  ( 23.9%)  calls=36    avg=   1.53ms
+  accept_mask.lookup_next_tokens        0.05s  ( 22.8%)  calls=36    avg=   1.46ms
+  accept_mask.inc_parser_accepts        0.03s  ( 12.1%)  calls=36    avg=   0.77ms
+  IsCompletePrefix.dafny                0.01s  (  4.2%)  calls=50    avg=   0.19ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=36    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=36    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=10    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.23s
+  accept_mask.total                     0.08s  ( 36.2%)  calls=46    avg=   1.81ms
+  accept_mask.dfa_lookup                0.06s  ( 23.9%)  calls=36    avg=   1.53ms
+  accept_mask.lookup_next_tokens        0.05s  ( 22.8%)  calls=36    avg=   1.46ms
+  accept_mask.inc_parser_accepts        0.03s  ( 12.1%)  calls=36    avg=   0.77ms
+  IsCompletePrefix.dafny                0.01s  (  4.2%)  calls=50    avg=   0.19ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=36    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=36    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=10    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.50s
+  [EVAL] Processing example 3/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #50, prefix length: 28, cache_hits=0
+[TIMING] after 50 GenerateLogits calls total=4.15s
+  GenerateLogits.total              1.93s  ( 46.5%)  calls=49    avg=  39.34ms
+  GenerateLogits.engine_generate    1.83s  ( 44.0%)  calls=50    avg=  36.51ms
+  MaskValidNextAndEos               0.24s  (  5.9%)  calls=49    avg=   4.99ms
+  GenerateLogits.finalize_from_dict    0.11s  (  2.7%)  calls=50    avg=   2.22ms
+  ChooseNextToken                   0.02s  (  0.6%)  calls=49    avg=   0.50ms
+  GenerateLogits.prefix_text        0.01s  (  0.3%)  calls=50    avg=   0.26ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=50    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=50    avg=   0.00ms
+[PARSER_TIMING] after 50 GenerateLogits calls total=0.28s
+  accept_mask.total                     0.10s  ( 35.8%)  calls=49    avg=   2.02ms
+  accept_mask.dfa_lookup                0.07s  ( 25.1%)  calls=39    avg=   1.78ms
+  accept_mask.lookup_next_tokens        0.07s  ( 24.1%)  calls=39    avg=   1.71ms
+  accept_mask.inc_parser_accepts        0.03s  ( 10.5%)  calls=39    avg=   0.75ms
+  IsCompletePrefix.dafny                0.01s  (  3.6%)  calls=54    avg=   0.19ms
+  accept_mask.compute_dfa_states        0.00s  (  0.6%)  calls=39    avg=   0.04ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=39    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=10    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #60, prefix length: 83, cache_hits=0
+[TIMING] after 60 GenerateLogits calls total=4.73s
+  GenerateLogits.total              2.21s  ( 46.6%)  calls=59    avg=  37.43ms
+  GenerateLogits.engine_generate    2.09s  ( 44.1%)  calls=60    avg=  34.77ms
+  MaskValidNextAndEos               0.27s  (  5.6%)  calls=59    avg=   4.53ms
+  GenerateLogits.finalize_from_dict    0.13s  (  2.7%)  calls=60    avg=   2.11ms
+  ChooseNextToken                   0.03s  (  0.6%)  calls=59    avg=   0.47ms
+  GenerateLogits.prefix_text        0.02s  (  0.4%)  calls=60    avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=60    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=60    avg=   0.00ms
+[PARSER_TIMING] after 60 GenerateLogits calls total=0.30s
+  accept_mask.total                     0.11s  ( 35.9%)  calls=59    avg=   1.82ms
+  accept_mask.dfa_lookup                0.07s  ( 25.0%)  calls=44    avg=   1.70ms
+  accept_mask.lookup_next_tokens        0.07s  ( 23.9%)  calls=44    avg=   1.63ms
+  accept_mask.inc_parser_accepts        0.03s  ( 10.8%)  calls=44    avg=   0.73ms
+  IsCompletePrefix.dafny                0.01s  (  3.7%)  calls=66    avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=44    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=44    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=15    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=5.27s  parser_callbacks=0.35s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=5.27s
+  GenerateLogits.total              2.47s  ( 46.9%)  calls=69    avg=  35.82ms
+  GenerateLogits.engine_generate    2.31s  ( 43.8%)  calls=69    avg=  33.42ms
+  MaskValidNextAndEos               0.30s  (  5.7%)  calls=69    avg=   4.33ms
+  GenerateLogits.finalize_from_dict    0.14s  (  2.6%)  calls=69    avg=   2.02ms
+  ChooseNextToken                   0.03s  (  0.6%)  calls=69    avg=   0.45ms
+  GenerateLogits.prefix_text        0.02s  (  0.4%)  calls=69    avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=69    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=69    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.35s
+  accept_mask.total                     0.13s  ( 36.1%)  calls=69    avg=   1.83ms
+  accept_mask.dfa_lookup                0.08s  ( 24.3%)  calls=54    avg=   1.57ms
+  accept_mask.lookup_next_tokens        0.08s  ( 23.2%)  calls=54    avg=   1.50ms
+  accept_mask.inc_parser_accepts        0.04s  ( 11.6%)  calls=54    avg=   0.75ms
+  IsCompletePrefix.dafny                0.01s  (  3.9%)  calls=75    avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=54    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=54    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=15    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.35s
+  accept_mask.total                     0.13s  ( 36.1%)  calls=69    avg=   1.83ms
+  accept_mask.dfa_lookup                0.08s  ( 24.3%)  calls=54    avg=   1.57ms
+  accept_mask.lookup_next_tokens        0.08s  ( 23.2%)  calls=54    avg=   1.50ms
+  accept_mask.inc_parser_accepts        0.04s  ( 11.6%)  calls=54    avg=   0.75ms
+  IsCompletePrefix.dafny                0.01s  (  3.9%)  calls=75    avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=54    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=54    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=15    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.60s
+  [EVAL] Processing example 4/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #70, prefix length: 25, cache_hits=0
+[TIMING] after 70 GenerateLogits calls total=5.30s
+  GenerateLogits.total              2.47s  ( 46.6%)  calls=69    avg=  35.82ms
+  GenerateLogits.engine_generate    2.34s  ( 44.1%)  calls=70    avg=  33.40ms
+  MaskValidNextAndEos               0.30s  (  5.6%)  calls=69    avg=   4.33ms
+  GenerateLogits.finalize_from_dict    0.14s  (  2.7%)  calls=70    avg=   2.02ms
+  ChooseNextToken                   0.03s  (  0.6%)  calls=69    avg=   0.45ms
+  GenerateLogits.prefix_text        0.02s  (  0.4%)  calls=70    avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=70    avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=70    avg=   0.00ms
+[PARSER_TIMING] after 70 GenerateLogits calls total=0.35s
+  accept_mask.total                     0.13s  ( 36.1%)  calls=69    avg=   1.83ms
+  accept_mask.dfa_lookup                0.08s  ( 24.3%)  calls=54    avg=   1.57ms
+  accept_mask.lookup_next_tokens        0.08s  ( 23.2%)  calls=54    avg=   1.50ms
+  accept_mask.inc_parser_accepts        0.04s  ( 11.6%)  calls=54    avg=   0.75ms
+  IsCompletePrefix.dafny                0.01s  (  3.9%)  calls=76    avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.7%)  calls=54    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.2%)  calls=54    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=15    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #80, prefix length: 80, cache_hits=0
+[TIMING] after 80 GenerateLogits calls total=5.98s
+  GenerateLogits.total              2.76s  ( 46.1%)  calls=79    avg=  34.92ms
+  GenerateLogits.engine_generate    2.60s  ( 43.5%)  calls=80    avg=  32.51ms
+  MaskValidNextAndEos               0.41s  (  6.8%)  calls=79    avg=   5.18ms
+  GenerateLogits.finalize_from_dict    0.15s  (  2.6%)  calls=80    avg=   1.92ms
+  ChooseNextToken                   0.03s  (  0.6%)  calls=79    avg=   0.43ms
+  GenerateLogits.prefix_text        0.02s  (  0.4%)  calls=80    avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=80    avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=80    avg=   0.00ms
+[PARSER_TIMING] after 80 GenerateLogits calls total=0.64s
+  accept_mask.total                     0.22s  ( 34.9%)  calls=79    avg=   2.82ms
+  accept_mask.dfa_lookup                0.18s  ( 28.1%)  calls=59    avg=   3.04ms
+  accept_mask.lookup_next_tokens        0.17s  ( 27.4%)  calls=59    avg=   2.96ms
+  accept_mask.inc_parser_accepts        0.04s  (  6.7%)  calls=59    avg=   0.73ms
+  IsCompletePrefix.dafny                0.01s  (  2.3%)  calls=88    avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=59    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=59    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=20    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #90, prefix length: 90, cache_hits=0
+[TIMING] after 90 GenerateLogits calls total=6.55s
+  GenerateLogits.total              3.01s  ( 45.9%)  calls=89    avg=  33.77ms
+  GenerateLogits.engine_generate    2.84s  ( 43.3%)  calls=90    avg=  31.55ms
+  MaskValidNextAndEos               0.48s  (  7.3%)  calls=89    avg=   5.36ms
+  GenerateLogits.finalize_from_dict    0.16s  (  2.5%)  calls=90    avg=   1.81ms
+  ChooseNextToken                   0.04s  (  0.6%)  calls=89    avg=   0.42ms
+  GenerateLogits.prefix_text        0.03s  (  0.4%)  calls=90    avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=90    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=90    avg=   0.00ms
+[PARSER_TIMING] after 90 GenerateLogits calls total=0.80s
+  accept_mask.total                     0.28s  ( 34.8%)  calls=89    avg=   3.14ms
+  accept_mask.dfa_lookup                0.23s  ( 28.5%)  calls=69    avg=   3.31ms
+  accept_mask.lookup_next_tokens        0.22s  ( 27.9%)  calls=69    avg=   3.23ms
+  accept_mask.inc_parser_accepts        0.05s  (  6.2%)  calls=69    avg=   0.72ms
+  IsCompletePrefix.dafny                0.02s  (  2.1%)  calls=98    avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=69    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=69    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=20    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.20s  lm_callbacks=6.71s  parser_callbacks=0.81s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=6.71s
+  GenerateLogits.total              3.09s  ( 46.1%)  calls=92    avg=  33.61ms
+  GenerateLogits.engine_generate    2.89s  ( 43.1%)  calls=92    avg=  31.43ms
+  MaskValidNextAndEos               0.49s  (  7.3%)  calls=92    avg=   5.29ms
+  GenerateLogits.finalize_from_dict    0.17s  (  2.5%)  calls=92    avg=   1.80ms
+  ChooseNextToken                   0.04s  (  0.6%)  calls=92    avg=   0.41ms
+  GenerateLogits.prefix_text        0.03s  (  0.4%)  calls=92    avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=92    avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=92    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.81s
+  accept_mask.total                     0.28s  ( 34.9%)  calls=92    avg=   3.09ms
+  accept_mask.dfa_lookup                0.23s  ( 28.3%)  calls=72    avg=   3.21ms
+  accept_mask.lookup_next_tokens        0.23s  ( 27.7%)  calls=72    avg=   3.13ms
+  accept_mask.inc_parser_accepts        0.05s  (  6.4%)  calls=72    avg=   0.73ms
+  IsCompletePrefix.dafny                0.02s  (  2.2%)  calls=100   avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=72    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=72    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=20    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.81s
+  accept_mask.total                     0.28s  ( 34.9%)  calls=92    avg=   3.09ms
+  accept_mask.dfa_lookup                0.23s  ( 28.3%)  calls=72    avg=   3.21ms
+  accept_mask.lookup_next_tokens        0.23s  ( 27.7%)  calls=72    avg=   3.13ms
+  accept_mask.inc_parser_accepts        0.05s  (  6.4%)  calls=72    avg=   0.73ms
+  IsCompletePrefix.dafny                0.02s  (  2.2%)  calls=100   avg=   0.18ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=72    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=72    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=20    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.36s
+  [EVAL] Processing example 5/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #100, prefix length: 50, cache_hits=0
+[TIMING] after 100 GenerateLogits calls total=7.15s
+  GenerateLogits.total              3.29s  ( 46.1%)  calls=99    avg=  33.27ms
+  GenerateLogits.engine_generate    3.10s  ( 43.4%)  calls=100   avg=  31.04ms
+  MaskValidNextAndEos               0.50s  (  7.0%)  calls=99    avg=   5.07ms
+  GenerateLogits.finalize_from_dict    0.18s  (  2.5%)  calls=100   avg=   1.78ms
+  ChooseNextToken                   0.04s  (  0.6%)  calls=99    avg=   0.41ms
+  GenerateLogits.prefix_text        0.03s  (  0.4%)  calls=100   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.0%)  calls=100   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=100   avg=   0.00ms
+[PARSER_TIMING] after 100 GenerateLogits calls total=0.83s
+  accept_mask.total                     0.29s  ( 34.9%)  calls=99    avg=   2.93ms
+  accept_mask.dfa_lookup                0.23s  ( 28.2%)  calls=76    avg=   3.09ms
+  accept_mask.lookup_next_tokens        0.23s  ( 27.6%)  calls=76    avg=   3.02ms
+  accept_mask.inc_parser_accepts        0.05s  (  6.5%)  calls=76    avg=   0.72ms
+  IsCompletePrefix.dafny                0.02s  (  2.2%)  calls=109   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=76    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=76    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=23    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #110, prefix length: 87, cache_hits=0
+[TIMING] after 110 GenerateLogits calls total=7.74s
+  GenerateLogits.total              3.57s  ( 46.2%)  calls=109   avg=  32.78ms
+  GenerateLogits.engine_generate    3.36s  ( 43.4%)  calls=110   avg=  30.57ms
+  MaskValidNextAndEos               0.53s  (  6.9%)  calls=109   avg=   4.88ms
+  GenerateLogits.finalize_from_dict    0.19s  (  2.5%)  calls=110   avg=   1.75ms
+  ChooseNextToken                   0.04s  (  0.6%)  calls=109   avg=   0.40ms
+  GenerateLogits.prefix_text        0.03s  (  0.4%)  calls=110   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=110   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=110   avg=   0.00ms
+[PARSER_TIMING] after 110 GenerateLogits calls total=0.87s
+  accept_mask.total                     0.31s  ( 35.0%)  calls=109   avg=   2.80ms
+  accept_mask.dfa_lookup                0.24s  ( 28.0%)  calls=84    avg=   2.90ms
+  accept_mask.lookup_next_tokens        0.24s  ( 27.2%)  calls=84    avg=   2.83ms
+  accept_mask.inc_parser_accepts        0.06s  (  6.9%)  calls=84    avg=   0.72ms
+  IsCompletePrefix.dafny                0.02s  (  2.3%)  calls=120   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=84    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=84    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=25    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=8.04s  parser_callbacks=0.90s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=8.04s
+  GenerateLogits.total              3.72s  ( 46.3%)  calls=115   avg=  32.39ms
+  GenerateLogits.engine_generate    3.48s  ( 43.3%)  calls=115   avg=  30.27ms
+  MaskValidNextAndEos               0.55s  (  6.8%)  calls=115   avg=   4.77ms
+  GenerateLogits.finalize_from_dict    0.20s  (  2.5%)  calls=115   avg=   1.73ms
+  ChooseNextToken                   0.05s  (  0.6%)  calls=115   avg=   0.40ms
+  GenerateLogits.prefix_text        0.04s  (  0.4%)  calls=115   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=115   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=115   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.90s
+  accept_mask.total                     0.32s  ( 35.1%)  calls=115   avg=   2.74ms
+  accept_mask.dfa_lookup                0.25s  ( 27.7%)  calls=90    avg=   2.77ms
+  accept_mask.lookup_next_tokens        0.24s  ( 27.0%)  calls=90    avg=   2.69ms
+  accept_mask.inc_parser_accepts        0.06s  (  7.2%)  calls=90    avg=   0.72ms
+  IsCompletePrefix.dafny                0.02s  (  2.4%)  calls=125   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.5%)  calls=90    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=90    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=25    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=0.90s
+  accept_mask.total                     0.32s  ( 35.1%)  calls=115   avg=   2.74ms
+  accept_mask.dfa_lookup                0.25s  ( 27.7%)  calls=90    avg=   2.77ms
+  accept_mask.lookup_next_tokens        0.24s  ( 27.0%)  calls=90    avg=   2.69ms
+  accept_mask.inc_parser_accepts        0.06s  (  7.2%)  calls=90    avg=   0.72ms
+  IsCompletePrefix.dafny                0.02s  (  2.4%)  calls=125   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.5%)  calls=90    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=90    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=25    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.59s
+  [EVAL] Processing example 6/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #120, prefix length: 47, cache_hits=0
+[TIMING] after 120 GenerateLogits calls total=8.29s
+  GenerateLogits.total              3.82s  ( 46.1%)  calls=119   avg=  32.11ms
+  GenerateLogits.engine_generate    3.60s  ( 43.5%)  calls=120   avg=  30.01ms
+  MaskValidNextAndEos               0.57s  (  6.9%)  calls=119   avg=   4.80ms
+  GenerateLogits.finalize_from_dict    0.21s  (  2.5%)  calls=120   avg=   1.71ms
+  ChooseNextToken                   0.05s  (  0.6%)  calls=119   avg=   0.39ms
+  GenerateLogits.prefix_text        0.04s  (  0.4%)  calls=120   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=120   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=120   avg=   0.00ms
+[PARSER_TIMING] after 120 GenerateLogits calls total=0.95s
+  accept_mask.total                     0.33s  ( 35.0%)  calls=119   avg=   2.81ms
+  accept_mask.dfa_lookup                0.27s  ( 27.9%)  calls=94    avg=   2.83ms
+  accept_mask.lookup_next_tokens        0.26s  ( 27.2%)  calls=94    avg=   2.76ms
+  accept_mask.inc_parser_accepts        0.07s  (  7.0%)  calls=94    avg=   0.71ms
+  IsCompletePrefix.dafny                0.02s  (  2.4%)  calls=131   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.4%)  calls=94    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=94    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=25    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #130, prefix length: 84, cache_hits=0
+[TIMING] after 130 GenerateLogits calls total=8.90s
+  GenerateLogits.total              4.12s  ( 46.3%)  calls=129   avg=  31.91ms
+  GenerateLogits.engine_generate    3.87s  ( 43.5%)  calls=130   avg=  29.76ms
+  MaskValidNextAndEos               0.59s  (  6.7%)  calls=129   avg=   4.61ms
+  GenerateLogits.finalize_from_dict    0.22s  (  2.5%)  calls=130   avg=   1.70ms
+  ChooseNextToken                   0.05s  (  0.6%)  calls=129   avg=   0.39ms
+  GenerateLogits.prefix_text        0.04s  (  0.5%)  calls=130   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=130   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=130   avg=   0.00ms
+[PARSER_TIMING] after 130 GenerateLogits calls total=0.98s
+  accept_mask.total                     0.34s  ( 35.1%)  calls=129   avg=   2.66ms
+  accept_mask.dfa_lookup                0.27s  ( 27.8%)  calls=99    avg=   2.74ms
+  accept_mask.lookup_next_tokens        0.26s  ( 27.0%)  calls=99    avg=   2.67ms
+  accept_mask.inc_parser_accepts        0.07s  (  7.2%)  calls=99    avg=   0.71ms
+  IsCompletePrefix.dafny                0.02s  (  2.4%)  calls=142   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.00s  (  0.5%)  calls=99    avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=99    avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=30    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.08s  lm_callbacks=9.37s  parser_callbacks=1.05s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=9.37s
+  GenerateLogits.total              4.34s  ( 46.4%)  calls=138   avg=  31.48ms
+  GenerateLogits.engine_generate    4.06s  ( 43.3%)  calls=138   avg=  29.41ms
+  MaskValidNextAndEos               0.63s  (  6.7%)  calls=138   avg=   4.57ms
+  GenerateLogits.finalize_from_dict    0.23s  (  2.5%)  calls=138   avg=   1.68ms
+  ChooseNextToken                   0.05s  (  0.6%)  calls=138   avg=   0.39ms
+  GenerateLogits.prefix_text        0.04s  (  0.5%)  calls=138   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.00s  (  0.1%)  calls=138   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=138   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.05s
+  accept_mask.total                     0.37s  ( 35.1%)  calls=138   avg=   2.66ms
+  accept_mask.dfa_lookup                0.29s  ( 27.6%)  calls=108   avg=   2.67ms
+  accept_mask.lookup_next_tokens        0.28s  ( 26.8%)  calls=108   avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.08s  (  7.5%)  calls=108   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=150   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=108   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=108   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=30    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.05s
+  accept_mask.total                     0.37s  ( 35.1%)  calls=138   avg=   2.66ms
+  accept_mask.dfa_lookup                0.29s  ( 27.6%)  calls=108   avg=   2.67ms
+  accept_mask.lookup_next_tokens        0.28s  ( 26.8%)  calls=108   avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.08s  (  7.5%)  calls=108   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=150   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=108   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=108   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=30    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.66s
+  [EVAL] Processing example 7/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #140, prefix length: 26, cache_hits=0
+[TIMING] after 140 GenerateLogits calls total=9.46s
+  GenerateLogits.total              4.38s  ( 46.3%)  calls=139   avg=  31.49ms
+  GenerateLogits.engine_generate    4.11s  ( 43.5%)  calls=140   avg=  29.38ms
+  MaskValidNextAndEos               0.63s  (  6.7%)  calls=139   avg=   4.56ms
+  GenerateLogits.finalize_from_dict    0.23s  (  2.5%)  calls=140   avg=   1.68ms
+  ChooseNextToken                   0.05s  (  0.6%)  calls=139   avg=   0.39ms
+  GenerateLogits.prefix_text        0.04s  (  0.5%)  calls=140   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=140   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=140   avg=   0.00ms
+[PARSER_TIMING] after 140 GenerateLogits calls total=1.05s
+  accept_mask.total                     0.37s  ( 35.2%)  calls=139   avg=   2.65ms
+  accept_mask.dfa_lookup                0.29s  ( 27.5%)  calls=109   avg=   2.65ms
+  accept_mask.lookup_next_tokens        0.28s  ( 26.8%)  calls=109   avg=   2.58ms
+  accept_mask.inc_parser_accepts        0.08s  (  7.5%)  calls=109   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=152   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=109   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=109   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=30    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #150, prefix length: 81, cache_hits=0
+[TIMING] after 150 GenerateLogits calls total=10.05s
+  GenerateLogits.total              4.66s  ( 46.4%)  calls=149   avg=  31.27ms
+  GenerateLogits.engine_generate    4.37s  ( 43.5%)  calls=150   avg=  29.16ms
+  MaskValidNextAndEos               0.66s  (  6.5%)  calls=149   avg=   4.42ms
+  GenerateLogits.finalize_from_dict    0.25s  (  2.5%)  calls=150   avg=   1.66ms
+  ChooseNextToken                   0.06s  (  0.6%)  calls=149   avg=   0.39ms
+  GenerateLogits.prefix_text        0.05s  (  0.5%)  calls=150   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=150   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=150   avg=   0.00ms
+[PARSER_TIMING] after 150 GenerateLogits calls total=1.08s
+  accept_mask.total                     0.38s  ( 35.2%)  calls=149   avg=   2.54ms
+  accept_mask.dfa_lookup                0.30s  ( 27.5%)  calls=114   avg=   2.59ms
+  accept_mask.lookup_next_tokens        0.29s  ( 26.6%)  calls=114   avg=   2.52ms
+  accept_mask.inc_parser_accepts        0.08s  (  7.6%)  calls=114   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=164   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=114   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=114   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=35    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #160, prefix length: 91, cache_hits=0
+[TIMING] after 160 GenerateLogits calls total=10.58s
+  GenerateLogits.total              4.90s  ( 46.3%)  calls=159   avg=  30.80ms
+  GenerateLogits.engine_generate    4.60s  ( 43.4%)  calls=160   avg=  28.73ms
+  MaskValidNextAndEos               0.71s  (  6.7%)  calls=159   avg=   4.45ms
+  GenerateLogits.finalize_from_dict    0.26s  (  2.5%)  calls=160   avg=   1.64ms
+  ChooseNextToken                   0.06s  (  0.6%)  calls=159   avg=   0.38ms
+  GenerateLogits.prefix_text        0.05s  (  0.5%)  calls=160   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=160   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=160   avg=   0.00ms
+[PARSER_TIMING] after 160 GenerateLogits calls total=1.18s
+  accept_mask.total                     0.42s  ( 35.2%)  calls=159   avg=   2.62ms
+  accept_mask.dfa_lookup                0.33s  ( 27.5%)  calls=124   avg=   2.63ms
+  accept_mask.lookup_next_tokens        0.32s  ( 26.7%)  calls=124   avg=   2.55ms
+  accept_mask.inc_parser_accepts        0.09s  (  7.6%)  calls=124   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=174   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=124   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=124   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=35    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=10.67s  parser_callbacks=1.22s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=10.67s
+  GenerateLogits.total              4.94s  ( 46.4%)  calls=161   avg=  30.71ms
+  GenerateLogits.engine_generate    4.62s  ( 43.3%)  calls=161   avg=  28.69ms
+  MaskValidNextAndEos               0.72s  (  6.8%)  calls=161   avg=   4.49ms
+  GenerateLogits.finalize_from_dict    0.26s  (  2.5%)  calls=161   avg=   1.63ms
+  ChooseNextToken                   0.06s  (  0.6%)  calls=161   avg=   0.38ms
+  GenerateLogits.prefix_text        0.05s  (  0.5%)  calls=161   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=161   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=161   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.22s
+  accept_mask.total                     0.43s  ( 35.2%)  calls=161   avg=   2.66ms
+  accept_mask.dfa_lookup                0.34s  ( 27.6%)  calls=126   avg=   2.66ms
+  accept_mask.lookup_next_tokens        0.33s  ( 26.8%)  calls=126   avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.09s  (  7.5%)  calls=126   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.4%)  calls=175   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=126   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=126   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=35    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.22s
+  accept_mask.total                     0.43s  ( 35.2%)  calls=161   avg=   2.66ms
+  accept_mask.dfa_lookup                0.34s  ( 27.6%)  calls=126   avg=   2.66ms
+  accept_mask.lookup_next_tokens        0.33s  ( 26.8%)  calls=126   avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.09s  (  7.5%)  calls=126   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.4%)  calls=175   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=126   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=126   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=35    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.20s
+  [EVAL] Processing example 8/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #170, prefix length: 78, cache_hits=0
+[TIMING] after 170 GenerateLogits calls total=11.16s
+  GenerateLogits.total              5.17s  ( 46.3%)  calls=169   avg=  30.59ms
+  GenerateLogits.engine_generate    4.86s  ( 43.5%)  calls=170   avg=  28.58ms
+  MaskValidNextAndEos               0.74s  (  6.6%)  calls=169   avg=   4.37ms
+  GenerateLogits.finalize_from_dict    0.28s  (  2.5%)  calls=170   avg=   1.62ms
+  ChooseNextToken                   0.06s  (  0.6%)  calls=169   avg=   0.38ms
+  GenerateLogits.prefix_text        0.05s  (  0.5%)  calls=170   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=170   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=170   avg=   0.00ms
+[PARSER_TIMING] after 170 GenerateLogits calls total=1.23s
+  accept_mask.total                     0.43s  ( 35.2%)  calls=169   avg=   2.56ms
+  accept_mask.dfa_lookup                0.34s  ( 27.5%)  calls=130   avg=   2.61ms
+  accept_mask.lookup_next_tokens        0.33s  ( 26.7%)  calls=130   avg=   2.53ms
+  accept_mask.inc_parser_accepts        0.09s  (  7.5%)  calls=130   avg=   0.71ms
+  IsCompletePrefix.dafny                0.03s  (  2.4%)  calls=186   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=130   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=130   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=39    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #180, prefix length: 88, cache_hits=0
+[TIMING] after 180 GenerateLogits calls total=11.72s
+  GenerateLogits.total              5.43s  ( 46.3%)  calls=179   avg=  30.33ms
+  GenerateLogits.engine_generate    5.10s  ( 43.5%)  calls=180   avg=  28.32ms
+  MaskValidNextAndEos               0.77s  (  6.6%)  calls=179   avg=   4.32ms
+  GenerateLogits.finalize_from_dict    0.29s  (  2.5%)  calls=180   avg=   1.60ms
+  ChooseNextToken                   0.07s  (  0.6%)  calls=179   avg=   0.38ms
+  GenerateLogits.prefix_text        0.05s  (  0.5%)  calls=180   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=180   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=180   avg=   0.00ms
+[PARSER_TIMING] after 180 GenerateLogits calls total=1.29s
+  accept_mask.total                     0.46s  ( 35.2%)  calls=179   avg=   2.54ms
+  accept_mask.dfa_lookup                0.35s  ( 27.4%)  calls=139   avg=   2.54ms
+  accept_mask.lookup_next_tokens        0.34s  ( 26.6%)  calls=139   avg=   2.47ms
+  accept_mask.inc_parser_accepts        0.10s  (  7.7%)  calls=139   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=196   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=139   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=139   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=40    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.05s  lm_callbacks=11.98s  parser_callbacks=1.33s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=11.98s
+  GenerateLogits.total              5.56s  ( 46.4%)  calls=184   avg=  30.23ms
+  GenerateLogits.engine_generate    5.20s  ( 43.4%)  calls=184   avg=  28.25ms
+  MaskValidNextAndEos               0.79s  (  6.6%)  calls=184   avg=   4.30ms
+  GenerateLogits.finalize_from_dict    0.29s  (  2.4%)  calls=184   avg=   1.59ms
+  ChooseNextToken                   0.07s  (  0.6%)  calls=184   avg=   0.37ms
+  GenerateLogits.prefix_text        0.06s  (  0.5%)  calls=184   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=184   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=184   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.33s
+  accept_mask.total                     0.47s  ( 35.3%)  calls=184   avg=   2.54ms
+  accept_mask.dfa_lookup                0.36s  ( 27.3%)  calls=144   avg=   2.52ms
+  accept_mask.lookup_next_tokens        0.35s  ( 26.5%)  calls=144   avg=   2.44ms
+  accept_mask.inc_parser_accepts        0.10s  (  7.8%)  calls=144   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=200   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=144   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=144   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=40    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.33s
+  accept_mask.total                     0.47s  ( 35.3%)  calls=184   avg=   2.54ms
+  accept_mask.dfa_lookup                0.36s  ( 27.3%)  calls=144   avg=   2.52ms
+  accept_mask.lookup_next_tokens        0.35s  ( 26.5%)  calls=144   avg=   2.44ms
+  accept_mask.inc_parser_accepts        0.10s  (  7.8%)  calls=144   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=200   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=144   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=144   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=40    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.59s
+  [EVAL] Processing example 9/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #190, prefix length: 48, cache_hits=0
+[TIMING] after 190 GenerateLogits calls total=12.31s
+  GenerateLogits.total              5.71s  ( 46.3%)  calls=189   avg=  30.19ms
+  GenerateLogits.engine_generate    5.36s  ( 43.6%)  calls=190   avg=  28.22ms
+  MaskValidNextAndEos               0.81s  (  6.5%)  calls=189   avg=   4.26ms
+  GenerateLogits.finalize_from_dict    0.30s  (  2.5%)  calls=190   avg=   1.60ms
+  ChooseNextToken                   0.07s  (  0.6%)  calls=189   avg=   0.37ms
+  GenerateLogits.prefix_text        0.06s  (  0.5%)  calls=190   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=190   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=190   avg=   0.00ms
+[PARSER_TIMING] after 190 GenerateLogits calls total=1.35s
+  accept_mask.total                     0.48s  ( 35.3%)  calls=189   avg=   2.52ms
+  accept_mask.dfa_lookup                0.37s  ( 27.3%)  calls=148   avg=   2.48ms
+  accept_mask.lookup_next_tokens        0.36s  ( 26.4%)  calls=148   avg=   2.41ms
+  accept_mask.inc_parser_accepts        0.11s  (  7.9%)  calls=148   avg=   0.72ms
+  IsCompletePrefix.dafny                0.03s  (  2.5%)  calls=207   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=148   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=148   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=41    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #200, prefix length: 85, cache_hits=0
+[TIMING] after 200 GenerateLogits calls total=12.94s
+  GenerateLogits.total              6.01s  ( 46.4%)  calls=199   avg=  30.20ms
+  GenerateLogits.engine_generate    5.64s  ( 43.6%)  calls=200   avg=  28.21ms
+  MaskValidNextAndEos               0.83s  (  6.4%)  calls=199   avg=   4.17ms
+  GenerateLogits.finalize_from_dict    0.32s  (  2.5%)  calls=200   avg=   1.59ms
+  ChooseNextToken                   0.07s  (  0.6%)  calls=199   avg=   0.37ms
+  GenerateLogits.prefix_text        0.06s  (  0.5%)  calls=200   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=200   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=200   avg=   0.00ms
+[PARSER_TIMING] after 200 GenerateLogits calls total=1.38s
+  accept_mask.total                     0.49s  ( 35.3%)  calls=199   avg=   2.45ms
+  accept_mask.dfa_lookup                0.37s  ( 27.1%)  calls=154   avg=   2.43ms
+  accept_mask.lookup_next_tokens        0.36s  ( 26.3%)  calls=154   avg=   2.35ms
+  accept_mask.inc_parser_accepts        0.11s  (  8.0%)  calls=154   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.6%)  calls=218   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=154   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=154   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=45    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.13s  lm_callbacks=13.39s  parser_callbacks=1.42s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=13.39s
+  GenerateLogits.total              6.24s  ( 46.6%)  calls=207   avg=  30.12ms
+  GenerateLogits.engine_generate    5.83s  ( 43.5%)  calls=207   avg=  28.15ms
+  MaskValidNextAndEos               0.85s  (  6.4%)  calls=207   avg=   4.13ms
+  GenerateLogits.finalize_from_dict    0.33s  (  2.4%)  calls=207   avg=   1.58ms
+  ChooseNextToken                   0.08s  (  0.6%)  calls=207   avg=   0.37ms
+  GenerateLogits.prefix_text        0.06s  (  0.5%)  calls=207   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=207   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=207   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.42s
+  accept_mask.total                     0.50s  ( 35.4%)  calls=207   avg=   2.42ms
+  accept_mask.dfa_lookup                0.38s  ( 27.0%)  calls=162   avg=   2.36ms
+  accept_mask.lookup_next_tokens        0.37s  ( 26.1%)  calls=162   avg=   2.28ms
+  accept_mask.inc_parser_accepts        0.12s  (  8.3%)  calls=162   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=225   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=162   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=162   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=45    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.42s
+  accept_mask.total                     0.50s  ( 35.4%)  calls=207   avg=   2.42ms
+  accept_mask.dfa_lookup                0.38s  ( 27.0%)  calls=162   avg=   2.36ms
+  accept_mask.lookup_next_tokens        0.37s  ( 26.1%)  calls=162   avg=   2.28ms
+  accept_mask.inc_parser_accepts        0.12s  (  8.3%)  calls=162   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=225   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=162   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=162   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=45    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.70s
+  [EVAL] Processing example 10/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #210, prefix length: 27, cache_hits=0
+[TIMING] after 210 GenerateLogits calls total=13.55s
+  GenerateLogits.total              6.30s  ( 46.5%)  calls=209   avg=  30.14ms
+  GenerateLogits.engine_generate    5.91s  ( 43.6%)  calls=210   avg=  28.15ms
+  MaskValidNextAndEos               0.86s  (  6.3%)  calls=209   avg=   4.11ms
+  GenerateLogits.finalize_from_dict    0.33s  (  2.4%)  calls=210   avg=   1.58ms
+  ChooseNextToken                   0.08s  (  0.6%)  calls=209   avg=   0.37ms
+  GenerateLogits.prefix_text        0.06s  (  0.5%)  calls=210   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=210   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=210   avg=   0.00ms
+[PARSER_TIMING] after 210 GenerateLogits calls total=1.42s
+  accept_mask.total                     0.50s  ( 35.4%)  calls=209   avg=   2.41ms
+  accept_mask.dfa_lookup                0.38s  ( 27.0%)  calls=164   avg=   2.34ms
+  accept_mask.lookup_next_tokens        0.37s  ( 26.1%)  calls=164   avg=   2.26ms
+  accept_mask.inc_parser_accepts        0.12s  (  8.3%)  calls=164   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=228   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=164   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=164   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=45    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #220, prefix length: 82, cache_hits=0
+[TIMING] after 220 GenerateLogits calls total=14.16s
+  GenerateLogits.total              6.58s  ( 46.5%)  calls=219   avg=  30.06ms
+  GenerateLogits.engine_generate    6.18s  ( 43.6%)  calls=220   avg=  28.07ms
+  MaskValidNextAndEos               0.90s  (  6.3%)  calls=219   avg=   4.10ms
+  GenerateLogits.finalize_from_dict    0.35s  (  2.5%)  calls=220   avg=   1.58ms
+  ChooseNextToken                   0.08s  (  0.6%)  calls=219   avg=   0.37ms
+  GenerateLogits.prefix_text        0.07s  (  0.5%)  calls=220   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=220   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=220   avg=   0.00ms
+[PARSER_TIMING] after 220 GenerateLogits calls total=1.49s
+  accept_mask.total                     0.53s  ( 35.3%)  calls=219   avg=   2.41ms
+  accept_mask.dfa_lookup                0.40s  ( 27.1%)  calls=169   avg=   2.40ms
+  accept_mask.lookup_next_tokens        0.39s  ( 26.2%)  calls=169   avg=   2.32ms
+  accept_mask.inc_parser_accepts        0.12s  (  8.1%)  calls=169   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.6%)  calls=240   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.5%)  calls=169   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=169   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=50    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #230, prefix length: 92, cache_hits=0
+[TIMING] after 230 GenerateLogits calls total=14.72s
+  GenerateLogits.total              6.85s  ( 46.5%)  calls=229   avg=  29.90ms
+  GenerateLogits.engine_generate    6.42s  ( 43.6%)  calls=230   avg=  27.92ms
+  MaskValidNextAndEos               0.93s  (  6.3%)  calls=229   avg=   4.06ms
+  GenerateLogits.finalize_from_dict    0.36s  (  2.5%)  calls=230   avg=   1.57ms
+  ChooseNextToken                   0.08s  (  0.6%)  calls=229   avg=   0.36ms
+  GenerateLogits.prefix_text        0.07s  (  0.5%)  calls=230   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=230   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=230   avg=   0.00ms
+[PARSER_TIMING] after 230 GenerateLogits calls total=1.55s
+  accept_mask.total                     0.55s  ( 35.4%)  calls=229   avg=   2.39ms
+  accept_mask.dfa_lookup                0.42s  ( 26.9%)  calls=179   avg=   2.33ms
+  accept_mask.lookup_next_tokens        0.40s  ( 26.0%)  calls=179   avg=   2.25ms
+  accept_mask.inc_parser_accepts        0.13s  (  8.4%)  calls=179   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=250   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=179   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=179   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=50    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.12s  lm_callbacks=14.75s  parser_callbacks=1.55s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=14.75s
+  GenerateLogits.total              6.87s  ( 46.6%)  calls=230   avg=  29.89ms
+  GenerateLogits.engine_generate    6.42s  ( 43.5%)  calls=230   avg=  27.92ms
+  MaskValidNextAndEos               0.93s  (  6.3%)  calls=230   avg=   4.06ms
+  GenerateLogits.finalize_from_dict    0.36s  (  2.4%)  calls=230   avg=   1.57ms
+  ChooseNextToken                   0.08s  (  0.6%)  calls=230   avg=   0.36ms
+  GenerateLogits.prefix_text        0.07s  (  0.5%)  calls=230   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=230   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=230   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.55s
+  accept_mask.total                     0.55s  ( 35.4%)  calls=230   avg=   2.39ms
+  accept_mask.dfa_lookup                0.42s  ( 26.9%)  calls=180   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.40s  ( 26.0%)  calls=180   avg=   2.24ms
+  accept_mask.inc_parser_accepts        0.13s  (  8.4%)  calls=180   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=250   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=180   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=180   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=50    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.55s
+  accept_mask.total                     0.55s  ( 35.4%)  calls=230   avg=   2.39ms
+  accept_mask.dfa_lookup                0.42s  ( 26.9%)  calls=180   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.40s  ( 26.0%)  calls=180   avg=   2.24ms
+  accept_mask.inc_parser_accepts        0.13s  (  8.4%)  calls=180   avg=   0.72ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=250   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=180   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=180   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=50    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.29s
+  [EVAL] Processing example 11/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #240, prefix length: 79, cache_hits=0
+[TIMING] after 240 GenerateLogits calls total=15.42s
+  GenerateLogits.total              7.18s  ( 46.6%)  calls=239   avg=  30.04ms
+  GenerateLogits.engine_generate    6.74s  ( 43.7%)  calls=240   avg=  28.07ms
+  MaskValidNextAndEos               0.96s  (  6.2%)  calls=239   avg=   4.00ms
+  GenerateLogits.finalize_from_dict    0.38s  (  2.5%)  calls=240   avg=   1.58ms
+  ChooseNextToken                   0.09s  (  0.6%)  calls=239   avg=   0.36ms
+  GenerateLogits.prefix_text        0.07s  (  0.5%)  calls=240   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=240   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=240   avg=   0.00ms
+[PARSER_TIMING] after 240 GenerateLogits calls total=1.58s
+  accept_mask.total                     0.56s  ( 35.4%)  calls=239   avg=   2.34ms
+  accept_mask.dfa_lookup                0.42s  ( 26.8%)  calls=184   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.41s  ( 25.9%)  calls=184   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.13s  (  8.5%)  calls=184   avg=   0.73ms
+  IsCompletePrefix.dafny                0.04s  (  2.7%)  calls=262   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=184   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=184   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=55    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #250, prefix length: 89, cache_hits=0
+[TIMING] after 250 GenerateLogits calls total=16.01s
+  GenerateLogits.total              7.46s  ( 46.6%)  calls=249   avg=  29.95ms
+  GenerateLogits.engine_generate    6.99s  ( 43.7%)  calls=250   avg=  27.98ms
+  MaskValidNextAndEos               0.99s  (  6.2%)  calls=249   avg=   3.97ms
+  GenerateLogits.finalize_from_dict    0.39s  (  2.5%)  calls=250   avg=   1.58ms
+  ChooseNextToken                   0.09s  (  0.6%)  calls=249   avg=   0.36ms
+  GenerateLogits.prefix_text        0.08s  (  0.5%)  calls=250   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=250   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=250   avg=   0.00ms
+[PARSER_TIMING] after 250 GenerateLogits calls total=1.63s
+  accept_mask.total                     0.58s  ( 35.5%)  calls=249   avg=   2.32ms
+  accept_mask.dfa_lookup                0.43s  ( 26.6%)  calls=194   avg=   2.24ms
+  accept_mask.lookup_next_tokens        0.42s  ( 25.7%)  calls=194   avg=   2.16ms
+  accept_mask.inc_parser_accepts        0.14s  (  8.7%)  calls=194   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=272   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=194   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=194   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=55    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.25s  lm_callbacks=16.22s  parser_callbacks=1.65s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=16.22s
+  GenerateLogits.total              7.57s  ( 46.7%)  calls=253   avg=  29.92ms
+  GenerateLogits.engine_generate    7.07s  ( 43.6%)  calls=253   avg=  27.94ms
+  MaskValidNextAndEos               1.00s  (  6.2%)  calls=253   avg=   3.96ms
+  GenerateLogits.finalize_from_dict    0.40s  (  2.5%)  calls=253   avg=   1.58ms
+  ChooseNextToken                   0.09s  (  0.6%)  calls=253   avg=   0.35ms
+  GenerateLogits.prefix_text        0.08s  (  0.5%)  calls=253   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=253   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=253   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.65s
+  accept_mask.total                     0.59s  ( 35.5%)  calls=253   avg=   2.32ms
+  accept_mask.dfa_lookup                0.44s  ( 26.6%)  calls=198   avg=   2.21ms
+  accept_mask.lookup_next_tokens        0.42s  ( 25.6%)  calls=198   avg=   2.14ms
+  accept_mask.inc_parser_accepts        0.15s  (  8.8%)  calls=198   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=275   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=198   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=198   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=55    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.65s
+  accept_mask.total                     0.59s  ( 35.5%)  calls=253   avg=   2.32ms
+  accept_mask.dfa_lookup                0.44s  ( 26.6%)  calls=198   avg=   2.21ms
+  accept_mask.lookup_next_tokens        0.42s  ( 25.6%)  calls=198   avg=   2.14ms
+  accept_mask.inc_parser_accepts        0.15s  (  8.8%)  calls=198   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=275   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=198   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=198   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=55    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.77s
+  [EVAL] Processing example 12/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #260, prefix length: 49, cache_hits=0
+[TIMING] after 260 GenerateLogits calls total=16.56s
+  GenerateLogits.total              7.72s  ( 46.6%)  calls=259   avg=  29.81ms
+  GenerateLogits.engine_generate    7.24s  ( 43.7%)  calls=260   avg=  27.84ms
+  MaskValidNextAndEos               1.02s  (  6.1%)  calls=259   avg=   3.92ms
+  GenerateLogits.finalize_from_dict    0.41s  (  2.5%)  calls=260   avg=   1.57ms
+  ChooseNextToken                   0.09s  (  0.6%)  calls=259   avg=   0.35ms
+  GenerateLogits.prefix_text        0.08s  (  0.5%)  calls=260   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=260   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=260   avg=   0.00ms
+[PARSER_TIMING] after 260 GenerateLogits calls total=1.67s
+  accept_mask.total                     0.59s  ( 35.5%)  calls=259   avg=   2.28ms
+  accept_mask.dfa_lookup                0.44s  ( 26.5%)  calls=202   avg=   2.19ms
+  accept_mask.lookup_next_tokens        0.43s  ( 25.6%)  calls=202   avg=   2.11ms
+  accept_mask.inc_parser_accepts        0.15s  (  8.8%)  calls=202   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=283   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=202   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=202   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=57    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #270, prefix length: 86, cache_hits=0
+[TIMING] after 270 GenerateLogits calls total=17.13s
+  GenerateLogits.total              7.99s  ( 46.7%)  calls=269   avg=  29.71ms
+  GenerateLogits.engine_generate    7.49s  ( 43.7%)  calls=270   avg=  27.75ms
+  MaskValidNextAndEos               1.04s  (  6.1%)  calls=269   avg=   3.86ms
+  GenerateLogits.finalize_from_dict    0.42s  (  2.5%)  calls=270   avg=   1.56ms
+  ChooseNextToken                   0.10s  (  0.6%)  calls=269   avg=   0.35ms
+  GenerateLogits.prefix_text        0.08s  (  0.5%)  calls=270   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=270   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=270   avg=   0.00ms
+[PARSER_TIMING] after 270 GenerateLogits calls total=1.70s
+  accept_mask.total                     0.60s  ( 35.5%)  calls=269   avg=   2.25ms
+  accept_mask.dfa_lookup                0.45s  ( 26.5%)  calls=209   avg=   2.15ms
+  accept_mask.lookup_next_tokens        0.43s  ( 25.5%)  calls=209   avg=   2.07ms
+  accept_mask.inc_parser_accepts        0.15s  (  8.9%)  calls=209   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.9%)  calls=294   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=209   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=209   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=60    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=17.52s  parser_callbacks=1.74s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=17.52s
+  GenerateLogits.total              8.19s  ( 46.7%)  calls=276   avg=  29.66ms
+  GenerateLogits.engine_generate    7.65s  ( 43.6%)  calls=276   avg=  27.70ms
+  MaskValidNextAndEos               1.06s  (  6.1%)  calls=276   avg=   3.86ms
+  GenerateLogits.finalize_from_dict    0.43s  (  2.5%)  calls=276   avg=   1.56ms
+  ChooseNextToken                   0.10s  (  0.6%)  calls=276   avg=   0.35ms
+  GenerateLogits.prefix_text        0.08s  (  0.5%)  calls=276   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=276   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=276   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.74s
+  accept_mask.total                     0.62s  ( 35.6%)  calls=276   avg=   2.25ms
+  accept_mask.dfa_lookup                0.46s  ( 26.4%)  calls=216   avg=   2.13ms
+  accept_mask.lookup_next_tokens        0.44s  ( 25.4%)  calls=216   avg=   2.05ms
+  accept_mask.inc_parser_accepts        0.16s  (  9.0%)  calls=216   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.9%)  calls=300   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=216   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=216   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=60    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.74s
+  accept_mask.total                     0.62s  ( 35.6%)  calls=276   avg=   2.25ms
+  accept_mask.dfa_lookup                0.46s  ( 26.4%)  calls=216   avg=   2.13ms
+  accept_mask.lookup_next_tokens        0.44s  ( 25.4%)  calls=216   avg=   2.05ms
+  accept_mask.inc_parser_accepts        0.16s  (  9.0%)  calls=216   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.9%)  calls=300   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=216   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=216   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=60    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.29s
+  [EVAL] Processing example 13/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #280, prefix length: 28, cache_hits=0
+[TIMING] after 280 GenerateLogits calls total=17.76s
+  GenerateLogits.total              8.28s  ( 46.6%)  calls=279   avg=  29.68ms
+  GenerateLogits.engine_generate    7.76s  ( 43.7%)  calls=280   avg=  27.72ms
+  MaskValidNextAndEos               1.09s  (  6.1%)  calls=279   avg=   3.89ms
+  GenerateLogits.finalize_from_dict    0.44s  (  2.5%)  calls=280   avg=   1.57ms
+  ChooseNextToken                   0.10s  (  0.6%)  calls=279   avg=   0.35ms
+  GenerateLogits.prefix_text        0.09s  (  0.5%)  calls=280   avg=   0.31ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=280   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=280   avg=   0.00ms
+[PARSER_TIMING] after 280 GenerateLogits calls total=1.80s
+  accept_mask.total                     0.64s  ( 35.5%)  calls=279   avg=   2.29ms
+  accept_mask.dfa_lookup                0.48s  ( 26.5%)  calls=219   avg=   2.17ms
+  accept_mask.lookup_next_tokens        0.46s  ( 25.5%)  calls=219   avg=   2.09ms
+  accept_mask.inc_parser_accepts        0.16s  (  8.9%)  calls=219   avg=   0.73ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=304   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=219   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=219   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=60    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #290, prefix length: 83, cache_hits=0
+[TIMING] after 290 GenerateLogits calls total=18.39s
+  GenerateLogits.total              8.57s  ( 46.6%)  calls=289   avg=  29.65ms
+  GenerateLogits.engine_generate    8.01s  ( 43.6%)  calls=290   avg=  27.63ms
+  MaskValidNextAndEos               1.13s  (  6.1%)  calls=289   avg=   3.91ms
+  GenerateLogits.finalize_from_dict    0.47s  (  2.5%)  calls=290   avg=   1.61ms
+  ChooseNextToken                   0.11s  (  0.6%)  calls=289   avg=   0.37ms
+  GenerateLogits.prefix_text        0.09s  (  0.5%)  calls=290   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=290   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=290   avg=   0.00ms
+[PARSER_TIMING] after 290 GenerateLogits calls total=1.83s
+  accept_mask.total                     0.65s  ( 35.5%)  calls=289   avg=   2.25ms
+  accept_mask.dfa_lookup                0.49s  ( 26.5%)  calls=224   avg=   2.17ms
+  accept_mask.lookup_next_tokens        0.47s  ( 25.6%)  calls=224   avg=   2.09ms
+  accept_mask.inc_parser_accepts        0.16s  (  8.8%)  calls=224   avg=   0.72ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=316   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=224   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=224   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=65    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.23s  lm_callbacks=18.98s  parser_callbacks=1.89s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=18.98s
+  GenerateLogits.total              8.85s  ( 46.6%)  calls=299   avg=  29.60ms
+  GenerateLogits.engine_generate    8.24s  ( 43.4%)  calls=299   avg=  27.55ms
+  MaskValidNextAndEos               1.18s  (  6.2%)  calls=299   avg=   3.94ms
+  GenerateLogits.finalize_from_dict    0.49s  (  2.6%)  calls=299   avg=   1.65ms
+  ChooseNextToken                   0.12s  (  0.6%)  calls=299   avg=   0.39ms
+  GenerateLogits.prefix_text        0.09s  (  0.5%)  calls=299   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=299   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=299   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.89s
+  accept_mask.total                     0.67s  ( 35.5%)  calls=299   avg=   2.25ms
+  accept_mask.dfa_lookup                0.50s  ( 26.5%)  calls=234   avg=   2.14ms
+  accept_mask.lookup_next_tokens        0.48s  ( 25.5%)  calls=234   avg=   2.06ms
+  accept_mask.inc_parser_accepts        0.17s  (  8.9%)  calls=234   avg=   0.72ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=325   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=234   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=234   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=65    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=1.89s
+  accept_mask.total                     0.67s  ( 35.5%)  calls=299   avg=   2.25ms
+  accept_mask.dfa_lookup                0.50s  ( 26.5%)  calls=234   avg=   2.14ms
+  accept_mask.lookup_next_tokens        0.48s  ( 25.5%)  calls=234   avg=   2.06ms
+  accept_mask.inc_parser_accepts        0.17s  (  8.9%)  calls=234   avg=   0.72ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=325   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=234   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=234   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=65    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.77s
+  [EVAL] Processing example 14/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #300, prefix length: 25, cache_hits=0
+[TIMING] after 300 GenerateLogits calls total=19.01s
+  GenerateLogits.total              8.85s  ( 46.5%)  calls=299   avg=  29.60ms
+  GenerateLogits.engine_generate    8.27s  ( 43.5%)  calls=300   avg=  27.56ms
+  MaskValidNextAndEos               1.18s  (  6.2%)  calls=299   avg=   3.94ms
+  GenerateLogits.finalize_from_dict    0.50s  (  2.6%)  calls=300   avg=   1.65ms
+  ChooseNextToken                   0.12s  (  0.6%)  calls=299   avg=   0.39ms
+  GenerateLogits.prefix_text        0.09s  (  0.5%)  calls=300   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=300   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=300   avg=   0.00ms
+[PARSER_TIMING] after 300 GenerateLogits calls total=1.89s
+  accept_mask.total                     0.67s  ( 35.5%)  calls=299   avg=   2.25ms
+  accept_mask.dfa_lookup                0.50s  ( 26.5%)  calls=234   avg=   2.14ms
+  accept_mask.lookup_next_tokens        0.48s  ( 25.5%)  calls=234   avg=   2.06ms
+  accept_mask.inc_parser_accepts        0.17s  (  8.9%)  calls=234   avg=   0.72ms
+  IsCompletePrefix.dafny                0.05s  (  2.8%)  calls=326   avg=   0.17ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=234   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=234   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=65    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #310, prefix length: 80, cache_hits=0
+[TIMING] after 310 GenerateLogits calls total=19.66s
+  GenerateLogits.total              9.15s  ( 46.5%)  calls=309   avg=  29.60ms
+  GenerateLogits.engine_generate    8.53s  ( 43.4%)  calls=310   avg=  27.51ms
+  MaskValidNextAndEos               1.23s  (  6.3%)  calls=309   avg=   3.98ms
+  GenerateLogits.finalize_from_dict    0.52s  (  2.7%)  calls=310   avg=   1.69ms
+  ChooseNextToken                   0.13s  (  0.6%)  calls=309   avg=   0.41ms
+  GenerateLogits.prefix_text        0.09s  (  0.5%)  calls=310   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=310   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=310   avg=   0.00ms
+[PARSER_TIMING] after 310 GenerateLogits calls total=1.95s
+  accept_mask.total                     0.69s  ( 35.5%)  calls=309   avg=   2.24ms
+  accept_mask.dfa_lookup                0.52s  ( 26.5%)  calls=239   avg=   2.16ms
+  accept_mask.lookup_next_tokens        0.50s  ( 25.6%)  calls=239   avg=   2.08ms
+  accept_mask.inc_parser_accepts        0.17s  (  8.8%)  calls=239   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.8%)  calls=338   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=239   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=239   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=70    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #320, prefix length: 90, cache_hits=0
+[TIMING] after 320 GenerateLogits calls total=20.27s
+  GenerateLogits.total              9.40s  ( 46.4%)  calls=319   avg=  29.46ms
+  GenerateLogits.engine_generate    8.75s  ( 43.2%)  calls=320   avg=  27.35ms
+  MaskValidNextAndEos               1.33s  (  6.6%)  calls=319   avg=   4.18ms
+  GenerateLogits.finalize_from_dict    0.54s  (  2.7%)  calls=320   avg=   1.70ms
+  ChooseNextToken                   0.14s  (  0.7%)  calls=319   avg=   0.43ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=320   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=320   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=320   avg=   0.00ms
+[PARSER_TIMING] after 320 GenerateLogits calls total=2.17s
+  accept_mask.total                     0.77s  ( 35.4%)  calls=319   avg=   2.41ms
+  accept_mask.dfa_lookup                0.59s  ( 27.0%)  calls=249   avg=   2.36ms
+  accept_mask.lookup_next_tokens        0.57s  ( 26.1%)  calls=249   avg=   2.28ms
+  accept_mask.inc_parser_accepts        0.18s  (  8.3%)  calls=249   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=348   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=249   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=249   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=70    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.16s  lm_callbacks=20.41s  parser_callbacks=2.21s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=20.41s
+  GenerateLogits.total              9.47s  ( 46.4%)  calls=322   avg=  29.41ms
+  GenerateLogits.engine_generate    8.80s  ( 43.1%)  calls=322   avg=  27.33ms
+  MaskValidNextAndEos               1.35s  (  6.6%)  calls=322   avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.55s  (  2.7%)  calls=322   avg=   1.70ms
+  ChooseNextToken                   0.14s  (  0.7%)  calls=322   avg=   0.43ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=322   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=322   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=322   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.21s
+  accept_mask.total                     0.78s  ( 35.4%)  calls=322   avg=   2.43ms
+  accept_mask.dfa_lookup                0.60s  ( 27.0%)  calls=252   avg=   2.36ms
+  accept_mask.lookup_next_tokens        0.58s  ( 26.1%)  calls=252   avg=   2.28ms
+  accept_mask.inc_parser_accepts        0.18s  (  8.2%)  calls=252   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=350   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=252   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=252   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=70    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.21s
+  accept_mask.total                     0.78s  ( 35.4%)  calls=322   avg=   2.43ms
+  accept_mask.dfa_lookup                0.60s  ( 27.0%)  calls=252   avg=   2.36ms
+  accept_mask.lookup_next_tokens        0.58s  ( 26.1%)  calls=252   avg=   2.28ms
+  accept_mask.inc_parser_accepts        0.18s  (  8.2%)  calls=252   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=350   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=252   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=252   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=70    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.71s
+  [EVAL] Processing example 15/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #330, prefix length: 50, cache_hits=0
+[TIMING] after 330 GenerateLogits calls total=20.89s
+  GenerateLogits.total              9.68s  ( 46.3%)  calls=329   avg=  29.43ms
+  GenerateLogits.engine_generate    9.01s  ( 43.1%)  calls=330   avg=  27.30ms
+  MaskValidNextAndEos               1.38s  (  6.6%)  calls=329   avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.57s  (  2.7%)  calls=330   avg=   1.74ms
+  ChooseNextToken                   0.14s  (  0.7%)  calls=329   avg=   0.43ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=330   avg=   0.30ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=330   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=330   avg=   0.00ms
+[PARSER_TIMING] after 330 GenerateLogits calls total=2.23s
+  accept_mask.total                     0.79s  ( 35.4%)  calls=329   avg=   2.40ms
+  accept_mask.dfa_lookup                0.60s  ( 27.0%)  calls=256   avg=   2.35ms
+  accept_mask.lookup_next_tokens        0.58s  ( 26.0%)  calls=256   avg=   2.27ms
+  accept_mask.inc_parser_accepts        0.18s  (  8.3%)  calls=256   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=359   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=256   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=256   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=73    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #340, prefix length: 87, cache_hits=0
+[TIMING] after 340 GenerateLogits calls total=21.46s
+  GenerateLogits.total              9.94s  ( 46.3%)  calls=339   avg=  29.33ms
+  GenerateLogits.engine_generate    9.24s  ( 43.1%)  calls=340   avg=  27.19ms
+  MaskValidNextAndEos               1.42s  (  6.6%)  calls=339   avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.60s  (  2.8%)  calls=340   avg=   1.76ms
+  ChooseNextToken                   0.15s  (  0.7%)  calls=339   avg=   0.44ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=340   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=340   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=340   avg=   0.00ms
+[PARSER_TIMING] after 340 GenerateLogits calls total=2.28s
+  accept_mask.total                     0.81s  ( 35.4%)  calls=339   avg=   2.38ms
+  accept_mask.dfa_lookup                0.61s  ( 26.9%)  calls=264   avg=   2.32ms
+  accept_mask.lookup_next_tokens        0.59s  ( 26.0%)  calls=264   avg=   2.24ms
+  accept_mask.inc_parser_accepts        0.19s  (  8.3%)  calls=264   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=370   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=264   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=264   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=75    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=21.78s  parser_callbacks=2.31s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=21.78s
+  GenerateLogits.total             10.10s  ( 46.4%)  calls=345   avg=  29.28ms
+  GenerateLogits.engine_generate    9.36s  ( 43.0%)  calls=345   avg=  27.14ms
+  MaskValidNextAndEos               1.44s  (  6.6%)  calls=345   avg=   4.18ms
+  GenerateLogits.finalize_from_dict    0.61s  (  2.8%)  calls=345   avg=   1.77ms
+  ChooseNextToken                   0.15s  (  0.7%)  calls=345   avg=   0.44ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=345   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=345   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=345   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.31s
+  accept_mask.total                     0.82s  ( 35.4%)  calls=345   avg=   2.37ms
+  accept_mask.dfa_lookup                0.62s  ( 26.9%)  calls=270   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.60s  ( 25.9%)  calls=270   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.19s  (  8.4%)  calls=270   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=375   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=270   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=270   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=75    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.31s
+  accept_mask.total                     0.82s  ( 35.4%)  calls=345   avg=   2.37ms
+  accept_mask.dfa_lookup                0.62s  ( 26.9%)  calls=270   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.60s  ( 25.9%)  calls=270   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.19s  (  8.4%)  calls=270   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=375   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=270   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=270   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=75    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.36s
+  [EVAL] Processing example 16/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #350, prefix length: 47, cache_hits=0
+[TIMING] after 350 GenerateLogits calls total=22.07s
+  GenerateLogits.total             10.21s  ( 46.3%)  calls=349   avg=  29.27ms
+  GenerateLogits.engine_generate    9.49s  ( 43.0%)  calls=350   avg=  27.13ms
+  MaskValidNextAndEos               1.46s  (  6.6%)  calls=349   avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.62s  (  2.8%)  calls=350   avg=   1.78ms
+  ChooseNextToken                   0.16s  (  0.7%)  calls=349   avg=   0.45ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=350   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=350   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=350   avg=   0.00ms
+[PARSER_TIMING] after 350 GenerateLogits calls total=2.35s
+  accept_mask.total                     0.83s  ( 35.4%)  calls=349   avg=   2.38ms
+  accept_mask.dfa_lookup                0.63s  ( 26.9%)  calls=274   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.61s  ( 26.0%)  calls=274   avg=   2.23ms
+  accept_mask.inc_parser_accepts        0.20s  (  8.4%)  calls=274   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=381   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=274   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=274   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=75    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #360, prefix length: 84, cache_hits=0
+[TIMING] after 360 GenerateLogits calls total=22.68s
+  GenerateLogits.total             10.50s  ( 46.3%)  calls=359   avg=  29.26ms
+  GenerateLogits.engine_generate    9.75s  ( 43.0%)  calls=360   avg=  27.08ms
+  MaskValidNextAndEos               1.50s  (  6.6%)  calls=359   avg=   4.19ms
+  GenerateLogits.finalize_from_dict    0.64s  (  2.8%)  calls=360   avg=   1.79ms
+  ChooseNextToken                   0.16s  (  0.7%)  calls=359   avg=   0.46ms
+  GenerateLogits.prefix_text        0.10s  (  0.5%)  calls=360   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=360   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=360   avg=   0.00ms
+[PARSER_TIMING] after 360 GenerateLogits calls total=2.39s
+  accept_mask.total                     0.85s  ( 35.4%)  calls=359   avg=   2.35ms
+  accept_mask.dfa_lookup                0.64s  ( 26.9%)  calls=279   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.62s  ( 26.0%)  calls=279   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.20s  (  8.4%)  calls=279   avg=   0.72ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=392   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=279   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=279   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=80    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.12s  lm_callbacks=23.16s  parser_callbacks=2.47s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=23.16s
+  GenerateLogits.total             10.73s  ( 46.3%)  calls=368   avg=  29.15ms
+  GenerateLogits.engine_generate    9.93s  ( 42.9%)  calls=368   avg=  26.99ms
+  MaskValidNextAndEos               1.56s  (  6.7%)  calls=368   avg=   4.23ms
+  GenerateLogits.finalize_from_dict    0.66s  (  2.8%)  calls=368   avg=   1.78ms
+  ChooseNextToken                   0.17s  (  0.7%)  calls=368   avg=   0.47ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=368   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=368   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=368   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.47s
+  accept_mask.total                     0.88s  ( 35.4%)  calls=368   avg=   2.38ms
+  accept_mask.dfa_lookup                0.67s  ( 26.9%)  calls=288   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.64s  ( 26.0%)  calls=288   avg=   2.23ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=288   avg=   0.71ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=400   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=288   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=288   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=80    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.47s
+  accept_mask.total                     0.88s  ( 35.4%)  calls=368   avg=   2.38ms
+  accept_mask.dfa_lookup                0.67s  ( 26.9%)  calls=288   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.64s  ( 26.0%)  calls=288   avg=   2.23ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=288   avg=   0.71ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=400   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=288   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=288   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=80    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.68s
+  [EVAL] Processing example 17/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #370, prefix length: 26, cache_hits=0
+[TIMING] after 370 GenerateLogits calls total=23.25s
+  GenerateLogits.total             10.76s  ( 46.3%)  calls=369   avg=  29.15ms
+  GenerateLogits.engine_generate    9.98s  ( 42.9%)  calls=370   avg=  26.97ms
+  MaskValidNextAndEos               1.56s  (  6.7%)  calls=369   avg=   4.23ms
+  GenerateLogits.finalize_from_dict    0.66s  (  2.9%)  calls=370   avg=   1.79ms
+  ChooseNextToken                   0.17s  (  0.7%)  calls=369   avg=   0.47ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=370   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=370   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=370   avg=   0.00ms
+[PARSER_TIMING] after 370 GenerateLogits calls total=2.48s
+  accept_mask.total                     0.88s  ( 35.4%)  calls=369   avg=   2.38ms
+  accept_mask.dfa_lookup                0.67s  ( 26.9%)  calls=289   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.64s  ( 26.0%)  calls=289   avg=   2.23ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=289   avg=   0.71ms
+  IsCompletePrefix.dafny                0.06s  (  2.6%)  calls=402   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=289   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=289   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=80    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #380, prefix length: 81, cache_hits=0
+[TIMING] after 380 GenerateLogits calls total=23.85s
+  GenerateLogits.total             11.03s  ( 46.3%)  calls=379   avg=  29.11ms
+  GenerateLogits.engine_generate   10.22s  ( 42.9%)  calls=380   avg=  26.91ms
+  MaskValidNextAndEos               1.60s  (  6.7%)  calls=379   avg=   4.22ms
+  GenerateLogits.finalize_from_dict    0.69s  (  2.9%)  calls=380   avg=   1.82ms
+  ChooseNextToken                   0.18s  (  0.8%)  calls=379   avg=   0.47ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=380   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=380   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=380   avg=   0.00ms
+[PARSER_TIMING] after 380 GenerateLogits calls total=2.52s
+  accept_mask.total                     0.89s  ( 35.4%)  calls=379   avg=   2.35ms
+  accept_mask.dfa_lookup                0.68s  ( 27.0%)  calls=294   avg=   2.31ms
+  accept_mask.lookup_next_tokens        0.66s  ( 26.0%)  calls=294   avg=   2.23ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=294   avg=   0.71ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=414   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=294   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=294   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=85    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #390, prefix length: 91, cache_hits=0
+[TIMING] after 390 GenerateLogits calls total=24.43s
+  GenerateLogits.total             11.29s  ( 46.2%)  calls=389   avg=  29.03ms
+  GenerateLogits.engine_generate   10.45s  ( 42.8%)  calls=390   avg=  26.79ms
+  MaskValidNextAndEos               1.65s  (  6.7%)  calls=389   avg=   4.24ms
+  GenerateLogits.finalize_from_dict    0.72s  (  3.0%)  calls=390   avg=   1.85ms
+  ChooseNextToken                   0.19s  (  0.8%)  calls=389   avg=   0.48ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=390   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=390   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=390   avg=   0.00ms
+[PARSER_TIMING] after 390 GenerateLogits calls total=2.59s
+  accept_mask.total                     0.92s  ( 35.4%)  calls=389   avg=   2.35ms
+  accept_mask.dfa_lookup                0.70s  ( 27.0%)  calls=304   avg=   2.30ms
+  accept_mask.lookup_next_tokens        0.67s  ( 26.1%)  calls=304   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=304   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=424   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=304   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=304   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=85    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.07s  lm_callbacks=24.51s  parser_callbacks=2.60s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=24.51s
+  GenerateLogits.total             11.34s  ( 46.3%)  calls=391   avg=  29.01ms
+  GenerateLogits.engine_generate   10.47s  ( 42.7%)  calls=391   avg=  26.78ms
+  MaskValidNextAndEos               1.66s  (  6.8%)  calls=391   avg=   4.24ms
+  GenerateLogits.finalize_from_dict    0.73s  (  3.0%)  calls=391   avg=   1.86ms
+  ChooseNextToken                   0.19s  (  0.8%)  calls=391   avg=   0.48ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=391   avg=   0.29ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=391   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=391   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.60s
+  accept_mask.total                     0.92s  ( 35.4%)  calls=391   avg=   2.35ms
+  accept_mask.dfa_lookup                0.70s  ( 27.0%)  calls=306   avg=   2.29ms
+  accept_mask.lookup_next_tokens        0.68s  ( 26.1%)  calls=306   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=306   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=425   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=306   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=306   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=85    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.60s
+  accept_mask.total                     0.92s  ( 35.4%)  calls=391   avg=   2.35ms
+  accept_mask.dfa_lookup                0.70s  ( 27.0%)  calls=306   avg=   2.29ms
+  accept_mask.lookup_next_tokens        0.68s  ( 26.1%)  calls=306   avg=   2.22ms
+  accept_mask.inc_parser_accepts        0.21s  (  8.3%)  calls=306   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=425   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=306   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=306   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=85    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.65s
+  [EVAL] Processing example 18/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #400, prefix length: 78, cache_hits=0
+[TIMING] after 400 GenerateLogits calls total=25.06s
+  GenerateLogits.total             11.58s  ( 46.2%)  calls=399   avg=  29.03ms
+  GenerateLogits.engine_generate   10.72s  ( 42.8%)  calls=400   avg=  26.81ms
+  MaskValidNextAndEos               1.68s  (  6.7%)  calls=399   avg=   4.22ms
+  GenerateLogits.finalize_from_dict    0.75s  (  3.0%)  calls=400   avg=   1.87ms
+  ChooseNextToken                   0.20s  (  0.8%)  calls=399   avg=   0.49ms
+  GenerateLogits.prefix_text        0.11s  (  0.5%)  calls=400   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=400   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=400   avg=   0.00ms
+[PARSER_TIMING] after 400 GenerateLogits calls total=2.62s
+  accept_mask.total                     0.93s  ( 35.4%)  calls=399   avg=   2.32ms
+  accept_mask.dfa_lookup                0.71s  ( 27.0%)  calls=310   avg=   2.28ms
+  accept_mask.lookup_next_tokens        0.68s  ( 26.0%)  calls=310   avg=   2.20ms
+  accept_mask.inc_parser_accepts        0.22s  (  8.3%)  calls=310   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=436   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.01s  (  0.6%)  calls=310   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=310   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=89    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #410, prefix length: 88, cache_hits=0
+[TIMING] after 410 GenerateLogits calls total=25.65s
+  GenerateLogits.total             11.86s  ( 46.2%)  calls=409   avg=  29.00ms
+  GenerateLogits.engine_generate   10.96s  ( 42.7%)  calls=410   avg=  26.74ms
+  MaskValidNextAndEos               1.72s  (  6.7%)  calls=409   avg=   4.20ms
+  GenerateLogits.finalize_from_dict    0.78s  (  3.0%)  calls=410   avg=   1.89ms
+  ChooseNextToken                   0.20s  (  0.8%)  calls=409   avg=   0.49ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=410   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=410   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=410   avg=   0.00ms
+[PARSER_TIMING] after 410 GenerateLogits calls total=2.66s
+  accept_mask.total                     0.94s  ( 35.4%)  calls=409   avg=   2.31ms
+  accept_mask.dfa_lookup                0.72s  ( 26.9%)  calls=319   avg=   2.24ms
+  accept_mask.lookup_next_tokens        0.69s  ( 26.0%)  calls=319   avg=   2.17ms
+  accept_mask.inc_parser_accepts        0.22s  (  8.4%)  calls=319   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=446   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.6%)  calls=319   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=319   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=90    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.14s  lm_callbacks=25.92s  parser_callbacks=2.74s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=25.92s
+  GenerateLogits.total             11.99s  ( 46.3%)  calls=414   avg=  28.96ms
+  GenerateLogits.engine_generate   11.05s  ( 42.6%)  calls=414   avg=  26.70ms
+  MaskValidNextAndEos               1.76s  (  6.8%)  calls=414   avg=   4.24ms
+  GenerateLogits.finalize_from_dict    0.78s  (  3.0%)  calls=414   avg=   1.89ms
+  ChooseNextToken                   0.20s  (  0.8%)  calls=414   avg=   0.49ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=414   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=414   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=414   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.74s
+  accept_mask.total                     0.97s  ( 35.4%)  calls=414   avg=   2.34ms
+  accept_mask.dfa_lookup                0.74s  ( 27.0%)  calls=324   avg=   2.28ms
+  accept_mask.lookup_next_tokens        0.72s  ( 26.1%)  calls=324   avg=   2.21ms
+  accept_mask.inc_parser_accepts        0.23s  (  8.2%)  calls=324   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=450   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.6%)  calls=324   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=324   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=90    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=2.74s
+  accept_mask.total                     0.97s  ( 35.4%)  calls=414   avg=   2.34ms
+  accept_mask.dfa_lookup                0.74s  ( 27.0%)  calls=324   avg=   2.28ms
+  accept_mask.lookup_next_tokens        0.72s  ( 26.1%)  calls=324   avg=   2.21ms
+  accept_mask.inc_parser_accepts        0.23s  (  8.2%)  calls=324   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=450   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.6%)  calls=324   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=324   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=90    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.34s
+  [EVAL] Processing example 19/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #420, prefix length: 48, cache_hits=0
+[TIMING] after 420 GenerateLogits calls total=26.27s
+  GenerateLogits.total             12.14s  ( 46.2%)  calls=419   avg=  28.96ms
+  GenerateLogits.engine_generate   11.21s  ( 42.7%)  calls=420   avg=  26.69ms
+  MaskValidNextAndEos               1.78s  (  6.8%)  calls=419   avg=   4.25ms
+  GenerateLogits.finalize_from_dict    0.80s  (  3.0%)  calls=420   avg=   1.90ms
+  ChooseNextToken                   0.21s  (  0.8%)  calls=419   avg=   0.50ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=420   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.01s  (  0.1%)  calls=420   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=420   avg=   0.00ms
+[PARSER_TIMING] after 420 GenerateLogits calls total=2.77s
+  accept_mask.total                     0.98s  ( 35.4%)  calls=419   avg=   2.34ms
+  accept_mask.dfa_lookup                0.75s  ( 27.0%)  calls=328   avg=   2.28ms
+  accept_mask.lookup_next_tokens        0.72s  ( 26.1%)  calls=328   avg=   2.20ms
+  accept_mask.inc_parser_accepts        0.23s  (  8.2%)  calls=328   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.6%)  calls=457   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.6%)  calls=328   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=328   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=91    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #430, prefix length: 85, cache_hits=0
+[TIMING] after 430 GenerateLogits calls total=26.92s
+  GenerateLogits.total             12.41s  ( 46.1%)  calls=429   avg=  28.93ms
+  GenerateLogits.engine_generate   11.46s  ( 42.6%)  calls=430   avg=  26.66ms
+  MaskValidNextAndEos               1.87s  (  7.0%)  calls=429   avg=   4.37ms
+  GenerateLogits.finalize_from_dict    0.82s  (  3.0%)  calls=430   avg=   1.90ms
+  ChooseNextToken                   0.21s  (  0.8%)  calls=429   avg=   0.50ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=430   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=430   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=430   avg=   0.00ms
+[PARSER_TIMING] after 430 GenerateLogits calls total=2.99s
+  accept_mask.total                     1.05s  ( 35.3%)  calls=429   avg=   2.46ms
+  accept_mask.dfa_lookup                0.82s  ( 27.4%)  calls=334   avg=   2.45ms
+  accept_mask.lookup_next_tokens        0.79s  ( 26.5%)  calls=334   avg=   2.37ms
+  accept_mask.inc_parser_accepts        0.23s  (  7.8%)  calls=334   avg=   0.70ms
+  IsCompletePrefix.dafny                0.07s  (  2.5%)  calls=468   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=334   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=334   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=95    avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.12s  lm_callbacks=27.35s  parser_callbacks=3.03s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=27.35s
+  GenerateLogits.total             12.62s  ( 46.2%)  calls=437   avg=  28.89ms
+  GenerateLogits.engine_generate   11.63s  ( 42.5%)  calls=437   avg=  26.61ms
+  MaskValidNextAndEos               1.91s  (  7.0%)  calls=437   avg=   4.37ms
+  GenerateLogits.finalize_from_dict    0.84s  (  3.1%)  calls=437   avg=   1.91ms
+  ChooseNextToken                   0.22s  (  0.8%)  calls=437   avg=   0.50ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=437   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=437   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=437   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.03s
+  accept_mask.total                     1.07s  ( 35.3%)  calls=437   avg=   2.45ms
+  accept_mask.dfa_lookup                0.83s  ( 27.3%)  calls=342   avg=   2.41ms
+  accept_mask.lookup_next_tokens        0.80s  ( 26.4%)  calls=342   avg=   2.34ms
+  accept_mask.inc_parser_accepts        0.24s  (  7.9%)  calls=342   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.5%)  calls=475   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=342   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=342   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=95    avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.03s
+  accept_mask.total                     1.07s  ( 35.3%)  calls=437   avg=   2.45ms
+  accept_mask.dfa_lookup                0.83s  ( 27.3%)  calls=342   avg=   2.41ms
+  accept_mask.lookup_next_tokens        0.80s  ( 26.4%)  calls=342   avg=   2.34ms
+  accept_mask.inc_parser_accepts        0.24s  (  7.9%)  calls=342   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.5%)  calls=475   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=342   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=342   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=95    avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.71s
+  [EVAL] Processing example 20/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #440, prefix length: 27, cache_hits=0
+[TIMING] after 440 GenerateLogits calls total=27.50s
+  GenerateLogits.total             12.68s  ( 46.1%)  calls=439   avg=  28.88ms
+  GenerateLogits.engine_generate   11.70s  ( 42.5%)  calls=440   avg=  26.59ms
+  MaskValidNextAndEos               1.92s  (  7.0%)  calls=439   avg=   4.37ms
+  GenerateLogits.finalize_from_dict    0.84s  (  3.1%)  calls=440   avg=   1.91ms
+  ChooseNextToken                   0.22s  (  0.8%)  calls=439   avg=   0.50ms
+  GenerateLogits.prefix_text        0.12s  (  0.5%)  calls=440   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=440   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=440   avg=   0.00ms
+[PARSER_TIMING] after 440 GenerateLogits calls total=3.05s
+  accept_mask.total                     1.08s  ( 35.3%)  calls=439   avg=   2.45ms
+  accept_mask.dfa_lookup                0.83s  ( 27.3%)  calls=344   avg=   2.42ms
+  accept_mask.lookup_next_tokens        0.80s  ( 26.4%)  calls=344   avg=   2.34ms
+  accept_mask.inc_parser_accepts        0.24s  (  7.9%)  calls=344   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.5%)  calls=478   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=344   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=344   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=95    avg=   0.00ms
+    [PROGRESS] GenerateLogits call #450, prefix length: 82, cache_hits=0
+[TIMING] after 450 GenerateLogits calls total=28.21s
+  GenerateLogits.total             13.01s  ( 46.1%)  calls=449   avg=  28.97ms
+  GenerateLogits.engine_generate   12.01s  ( 42.6%)  calls=450   avg=  26.68ms
+  MaskValidNextAndEos               1.95s  (  6.9%)  calls=449   avg=   4.35ms
+  GenerateLogits.finalize_from_dict    0.87s  (  3.1%)  calls=450   avg=   1.93ms
+  ChooseNextToken                   0.23s  (  0.8%)  calls=449   avg=   0.50ms
+  GenerateLogits.prefix_text        0.13s  (  0.4%)  calls=450   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=450   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=450   avg=   0.00ms
+[PARSER_TIMING] after 450 GenerateLogits calls total=3.08s
+  accept_mask.total                     1.09s  ( 35.3%)  calls=449   avg=   2.42ms
+  accept_mask.dfa_lookup                0.84s  ( 27.3%)  calls=349   avg=   2.40ms
+  accept_mask.lookup_next_tokens        0.81s  ( 26.4%)  calls=349   avg=   2.32ms
+  accept_mask.inc_parser_accepts        0.24s  (  7.9%)  calls=349   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.5%)  calls=490   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.6%)  calls=349   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=349   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=100   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #460, prefix length: 92, cache_hits=0
+[TIMING] after 460 GenerateLogits calls total=28.88s
+  GenerateLogits.total             13.29s  ( 46.0%)  calls=459   avg=  28.94ms
+  GenerateLogits.engine_generate   12.26s  ( 42.4%)  calls=460   avg=  26.65ms
+  MaskValidNextAndEos               2.07s  (  7.2%)  calls=459   avg=   4.51ms
+  GenerateLogits.finalize_from_dict    0.89s  (  3.1%)  calls=460   avg=   1.94ms
+  ChooseNextToken                   0.23s  (  0.8%)  calls=459   avg=   0.51ms
+  GenerateLogits.prefix_text        0.13s  (  0.4%)  calls=460   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=460   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=460   avg=   0.00ms
+[PARSER_TIMING] after 460 GenerateLogits calls total=3.35s
+  accept_mask.total                     1.18s  ( 35.2%)  calls=459   avg=   2.57ms
+  accept_mask.dfa_lookup                0.92s  ( 27.6%)  calls=359   avg=   2.57ms
+  accept_mask.lookup_next_tokens        0.90s  ( 26.7%)  calls=359   avg=   2.49ms
+  accept_mask.inc_parser_accepts        0.25s  (  7.5%)  calls=359   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.3%)  calls=500   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=359   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=359   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=100   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.22s  lm_callbacks=28.93s  parser_callbacks=3.35s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=28.93s
+  GenerateLogits.total             13.32s  ( 46.0%)  calls=460   avg=  28.96ms
+  GenerateLogits.engine_generate   12.26s  ( 42.4%)  calls=460   avg=  26.65ms
+  MaskValidNextAndEos               2.07s  (  7.2%)  calls=460   avg=   4.51ms
+  GenerateLogits.finalize_from_dict    0.89s  (  3.1%)  calls=460   avg=   1.94ms
+  ChooseNextToken                   0.23s  (  0.8%)  calls=460   avg=   0.51ms
+  GenerateLogits.prefix_text        0.13s  (  0.4%)  calls=460   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=460   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=460   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.35s
+  accept_mask.total                     1.18s  ( 35.2%)  calls=460   avg=   2.57ms
+  accept_mask.dfa_lookup                0.92s  ( 27.6%)  calls=360   avg=   2.57ms
+  accept_mask.lookup_next_tokens        0.90s  ( 26.7%)  calls=360   avg=   2.49ms
+  accept_mask.inc_parser_accepts        0.25s  (  7.5%)  calls=360   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.3%)  calls=500   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=360   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=360   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=100   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.35s
+  accept_mask.total                     1.18s  ( 35.2%)  calls=460   avg=   2.57ms
+  accept_mask.dfa_lookup                0.92s  ( 27.6%)  calls=360   avg=   2.57ms
+  accept_mask.lookup_next_tokens        0.90s  ( 26.7%)  calls=360   avg=   2.49ms
+  accept_mask.inc_parser_accepts        0.25s  (  7.5%)  calls=360   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.3%)  calls=500   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=360   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=360   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=100   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.79s
+  [EVAL] Processing example 21/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #470, prefix length: 79, cache_hits=0
+[TIMING] after 470 GenerateLogits calls total=29.57s
+  GenerateLogits.total             13.61s  ( 46.0%)  calls=469   avg=  29.03ms
+  GenerateLogits.engine_generate   12.55s  ( 42.5%)  calls=470   avg=  26.70ms
+  MaskValidNextAndEos               2.10s  (  7.1%)  calls=469   avg=   4.47ms
+  GenerateLogits.finalize_from_dict    0.92s  (  3.1%)  calls=470   avg=   1.95ms
+  ChooseNextToken                   0.24s  (  0.8%)  calls=469   avg=   0.51ms
+  GenerateLogits.prefix_text        0.13s  (  0.4%)  calls=470   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=470   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=470   avg=   0.00ms
+[PARSER_TIMING] after 470 GenerateLogits calls total=3.37s
+  accept_mask.total                     1.19s  ( 35.2%)  calls=469   avg=   2.53ms
+  accept_mask.dfa_lookup                0.93s  ( 27.6%)  calls=364   avg=   2.55ms
+  accept_mask.lookup_next_tokens        0.90s  ( 26.7%)  calls=364   avg=   2.47ms
+  accept_mask.inc_parser_accepts        0.25s  (  7.5%)  calls=364   avg=   0.70ms
+  IsCompletePrefix.dafny                0.08s  (  2.4%)  calls=512   avg=   0.15ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=364   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=364   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=105   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #480, prefix length: 89, cache_hits=0
+[TIMING] after 480 GenerateLogits calls total=30.17s
+  GenerateLogits.total             13.88s  ( 46.0%)  calls=479   avg=  28.97ms
+  GenerateLogits.engine_generate   12.78s  ( 42.4%)  calls=480   avg=  26.63ms
+  MaskValidNextAndEos               2.17s  (  7.2%)  calls=479   avg=   4.53ms
+  GenerateLogits.finalize_from_dict    0.94s  (  3.1%)  calls=480   avg=   1.96ms
+  ChooseNextToken                   0.25s  (  0.8%)  calls=479   avg=   0.51ms
+  GenerateLogits.prefix_text        0.13s  (  0.4%)  calls=480   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=480   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=480   avg=   0.00ms
+[PARSER_TIMING] after 480 GenerateLogits calls total=3.53s
+  accept_mask.total                     1.24s  ( 35.1%)  calls=479   avg=   2.59ms
+  accept_mask.dfa_lookup                0.97s  ( 27.6%)  calls=374   avg=   2.61ms
+  accept_mask.lookup_next_tokens        0.95s  ( 26.8%)  calls=374   avg=   2.53ms
+  accept_mask.inc_parser_accepts        0.26s  (  7.4%)  calls=374   avg=   0.69ms
+  IsCompletePrefix.dafny                0.08s  (  2.4%)  calls=522   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=374   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=374   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=105   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.29s  lm_callbacks=30.39s  parser_callbacks=3.62s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=30.39s
+  GenerateLogits.total             13.98s  ( 46.0%)  calls=483   avg=  28.94ms
+  GenerateLogits.engine_generate   12.85s  ( 42.3%)  calls=483   avg=  26.61ms
+  MaskValidNextAndEos               2.21s  (  7.3%)  calls=483   avg=   4.58ms
+  GenerateLogits.finalize_from_dict    0.95s  (  3.1%)  calls=483   avg=   1.96ms
+  ChooseNextToken                   0.25s  (  0.8%)  calls=483   avg=   0.52ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=483   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=483   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=483   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.62s
+  accept_mask.total                     1.27s  ( 35.1%)  calls=483   avg=   2.64ms
+  accept_mask.dfa_lookup                1.00s  ( 27.7%)  calls=378   avg=   2.66ms
+  accept_mask.lookup_next_tokens        0.98s  ( 26.9%)  calls=378   avg=   2.58ms
+  accept_mask.inc_parser_accepts        0.26s  (  7.3%)  calls=378   avg=   0.70ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=525   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=378   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=378   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=105   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.62s
+  accept_mask.total                     1.27s  ( 35.1%)  calls=483   avg=   2.64ms
+  accept_mask.dfa_lookup                1.00s  ( 27.7%)  calls=378   avg=   2.66ms
+  accept_mask.lookup_next_tokens        0.98s  ( 26.9%)  calls=378   avg=   2.58ms
+  accept_mask.inc_parser_accepts        0.26s  (  7.3%)  calls=378   avg=   0.70ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=525   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=378   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=378   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=105   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.60s
+  [EVAL] Processing example 22/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #490, prefix length: 49, cache_hits=0
+[TIMING] after 490 GenerateLogits calls total=30.79s
+  GenerateLogits.total             14.14s  ( 45.9%)  calls=489   avg=  28.92ms
+  GenerateLogits.engine_generate   13.03s  ( 42.3%)  calls=490   avg=  26.58ms
+  MaskValidNextAndEos               2.25s  (  7.3%)  calls=489   avg=   4.60ms
+  GenerateLogits.finalize_from_dict    0.96s  (  3.1%)  calls=490   avg=   1.97ms
+  ChooseNextToken                   0.25s  (  0.8%)  calls=489   avg=   0.52ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=490   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=490   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=490   avg=   0.00ms
+[PARSER_TIMING] after 490 GenerateLogits calls total=3.70s
+  accept_mask.total                     1.30s  ( 35.1%)  calls=489   avg=   2.65ms
+  accept_mask.dfa_lookup                1.03s  ( 27.8%)  calls=382   avg=   2.69ms
+  accept_mask.lookup_next_tokens        1.00s  ( 27.0%)  calls=382   avg=   2.61ms
+  accept_mask.inc_parser_accepts        0.27s  (  7.2%)  calls=382   avg=   0.70ms
+  IsCompletePrefix.dafny                0.09s  (  2.3%)  calls=533   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=382   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=382   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=107   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #500, prefix length: 86, cache_hits=0
+[TIMING] after 500 GenerateLogits calls total=31.39s
+  GenerateLogits.total             14.42s  ( 45.9%)  calls=499   avg=  28.89ms
+  GenerateLogits.engine_generate   13.28s  ( 42.3%)  calls=500   avg=  26.56ms
+  MaskValidNextAndEos               2.29s  (  7.3%)  calls=499   avg=   4.59ms
+  GenerateLogits.finalize_from_dict    0.99s  (  3.1%)  calls=500   avg=   1.97ms
+  ChooseNextToken                   0.26s  (  0.8%)  calls=499   avg=   0.52ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=500   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=500   avg=   0.04ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=500   avg=   0.00ms
+[PARSER_TIMING] after 500 GenerateLogits calls total=3.74s
+  accept_mask.total                     1.32s  ( 35.1%)  calls=499   avg=   2.64ms
+  accept_mask.dfa_lookup                1.04s  ( 27.8%)  calls=389   avg=   2.67ms
+  accept_mask.lookup_next_tokens        1.01s  ( 27.0%)  calls=389   avg=   2.59ms
+  accept_mask.inc_parser_accepts        0.27s  (  7.2%)  calls=389   avg=   0.70ms
+  IsCompletePrefix.dafny                0.09s  (  2.3%)  calls=544   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=389   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=389   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=110   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.08s  lm_callbacks=31.76s  parser_callbacks=3.77s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=31.76s
+  GenerateLogits.total             14.60s  ( 46.0%)  calls=506   avg=  28.86ms
+  GenerateLogits.engine_generate   13.42s  ( 42.2%)  calls=506   avg=  26.52ms
+  MaskValidNextAndEos               2.31s  (  7.3%)  calls=506   avg=   4.57ms
+  GenerateLogits.finalize_from_dict    1.00s  (  3.2%)  calls=506   avg=   1.98ms
+  ChooseNextToken                   0.27s  (  0.8%)  calls=506   avg=   0.52ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=506   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=506   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=506   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.77s
+  accept_mask.total                     1.33s  ( 35.1%)  calls=506   avg=   2.62ms
+  accept_mask.dfa_lookup                1.05s  ( 27.7%)  calls=396   avg=   2.64ms
+  accept_mask.lookup_next_tokens        1.01s  ( 26.9%)  calls=396   avg=   2.56ms
+  accept_mask.inc_parser_accepts        0.27s  (  7.3%)  calls=396   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=550   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=396   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=396   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=110   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.77s
+  accept_mask.total                     1.33s  ( 35.1%)  calls=506   avg=   2.62ms
+  accept_mask.dfa_lookup                1.05s  ( 27.7%)  calls=396   avg=   2.64ms
+  accept_mask.lookup_next_tokens        1.01s  ( 26.9%)  calls=396   avg=   2.56ms
+  accept_mask.inc_parser_accepts        0.27s  (  7.3%)  calls=396   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=550   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=396   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=396   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=110   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.66s
+  [EVAL] Processing example 23/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #510, prefix length: 28, cache_hits=0
+[TIMING] after 510 GenerateLogits calls total=31.97s
+  GenerateLogits.total             14.69s  ( 45.9%)  calls=509   avg=  28.85ms
+  GenerateLogits.engine_generate   13.52s  ( 42.3%)  calls=510   avg=  26.51ms
+  MaskValidNextAndEos               2.33s  (  7.3%)  calls=509   avg=   4.57ms
+  GenerateLogits.finalize_from_dict    1.01s  (  3.2%)  calls=510   avg=   1.98ms
+  ChooseNextToken                   0.27s  (  0.8%)  calls=509   avg=   0.53ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=510   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=510   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=510   avg=   0.00ms
+[PARSER_TIMING] after 510 GenerateLogits calls total=3.78s
+  accept_mask.total                     1.33s  ( 35.1%)  calls=509   avg=   2.61ms
+  accept_mask.dfa_lookup                1.05s  ( 27.7%)  calls=399   avg=   2.63ms
+  accept_mask.lookup_next_tokens        1.02s  ( 26.9%)  calls=399   avg=   2.55ms
+  accept_mask.inc_parser_accepts        0.28s  (  7.3%)  calls=399   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=554   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=399   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=399   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=110   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #520, prefix length: 83, cache_hits=0
+[TIMING] after 520 GenerateLogits calls total=32.60s
+  GenerateLogits.total             14.98s  ( 46.0%)  calls=519   avg=  28.87ms
+  GenerateLogits.engine_generate   13.79s  ( 42.3%)  calls=520   avg=  26.52ms
+  MaskValidNextAndEos               2.36s  (  7.2%)  calls=519   avg=   4.54ms
+  GenerateLogits.finalize_from_dict    1.03s  (  3.2%)  calls=520   avg=   1.99ms
+  ChooseNextToken                   0.27s  (  0.8%)  calls=519   avg=   0.53ms
+  GenerateLogits.prefix_text        0.14s  (  0.4%)  calls=520   avg=   0.28ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=520   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=520   avg=   0.00ms
+[PARSER_TIMING] after 520 GenerateLogits calls total=3.80s
+  accept_mask.total                     1.34s  ( 35.1%)  calls=519   avg=   2.58ms
+  accept_mask.dfa_lookup                1.05s  ( 27.7%)  calls=404   avg=   2.61ms
+  accept_mask.lookup_next_tokens        1.02s  ( 26.9%)  calls=404   avg=   2.53ms
+  accept_mask.inc_parser_accepts        0.28s  (  7.3%)  calls=404   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=566   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=404   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=404   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=115   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.15s  lm_callbacks=33.22s  parser_callbacks=3.87s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=33.22s
+  GenerateLogits.total             15.28s  ( 46.0%)  calls=529   avg=  28.88ms
+  GenerateLogits.engine_generate   14.03s  ( 42.2%)  calls=529   avg=  26.52ms
+  MaskValidNextAndEos               2.41s  (  7.2%)  calls=529   avg=   4.55ms
+  GenerateLogits.finalize_from_dict    1.06s  (  3.2%)  calls=529   avg=   2.00ms
+  ChooseNextToken                   0.28s  (  0.9%)  calls=529   avg=   0.54ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=529   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=529   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=529   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.87s
+  accept_mask.total                     1.36s  ( 35.2%)  calls=529   avg=   2.57ms
+  accept_mask.dfa_lookup                1.07s  ( 27.6%)  calls=414   avg=   2.58ms
+  accept_mask.lookup_next_tokens        1.04s  ( 26.8%)  calls=414   avg=   2.51ms
+  accept_mask.inc_parser_accepts        0.29s  (  7.4%)  calls=414   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=575   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=414   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=414   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=115   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.87s
+  accept_mask.total                     1.36s  ( 35.2%)  calls=529   avg=   2.57ms
+  accept_mask.dfa_lookup                1.07s  ( 27.6%)  calls=414   avg=   2.58ms
+  accept_mask.lookup_next_tokens        1.04s  ( 26.8%)  calls=414   avg=   2.51ms
+  accept_mask.inc_parser_accepts        0.29s  (  7.4%)  calls=414   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=575   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=414   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=414   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=115   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.72s
+  [EVAL] Processing example 24/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #530, prefix length: 25, cache_hits=0
+[TIMING] after 530 GenerateLogits calls total=33.25s
+  GenerateLogits.total             15.28s  ( 45.9%)  calls=529   avg=  28.88ms
+  GenerateLogits.engine_generate   14.05s  ( 42.3%)  calls=530   avg=  26.52ms
+  MaskValidNextAndEos               2.41s  (  7.2%)  calls=529   avg=   4.55ms
+  GenerateLogits.finalize_from_dict    1.06s  (  3.2%)  calls=530   avg=   2.01ms
+  ChooseNextToken                   0.28s  (  0.9%)  calls=529   avg=   0.54ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=530   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=530   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=530   avg=   0.00ms
+[PARSER_TIMING] after 530 GenerateLogits calls total=3.87s
+  accept_mask.total                     1.36s  ( 35.2%)  calls=529   avg=   2.57ms
+  accept_mask.dfa_lookup                1.07s  ( 27.6%)  calls=414   avg=   2.58ms
+  accept_mask.lookup_next_tokens        1.04s  ( 26.8%)  calls=414   avg=   2.51ms
+  accept_mask.inc_parser_accepts        0.29s  (  7.4%)  calls=414   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=576   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=414   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=414   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=115   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #540, prefix length: 80, cache_hits=0
+[TIMING] after 540 GenerateLogits calls total=33.89s
+  GenerateLogits.total             15.57s  ( 46.0%)  calls=539   avg=  28.90ms
+  GenerateLogits.engine_generate   14.32s  ( 42.2%)  calls=540   avg=  26.51ms
+  MaskValidNextAndEos               2.45s  (  7.2%)  calls=539   avg=   4.54ms
+  GenerateLogits.finalize_from_dict    1.09s  (  3.2%)  calls=540   avg=   2.02ms
+  ChooseNextToken                   0.29s  (  0.9%)  calls=539   avg=   0.54ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=540   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=540   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=540   avg=   0.00ms
+[PARSER_TIMING] after 540 GenerateLogits calls total=3.90s
+  accept_mask.total                     1.37s  ( 35.2%)  calls=539   avg=   2.54ms
+  accept_mask.dfa_lookup                1.08s  ( 27.6%)  calls=419   avg=   2.57ms
+  accept_mask.lookup_next_tokens        1.04s  ( 26.8%)  calls=419   avg=   2.49ms
+  accept_mask.inc_parser_accepts        0.29s  (  7.4%)  calls=419   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=588   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=419   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=419   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=120   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #550, prefix length: 90, cache_hits=0
+[TIMING] after 550 GenerateLogits calls total=34.46s
+  GenerateLogits.total             15.84s  ( 46.0%)  calls=549   avg=  28.85ms
+  GenerateLogits.engine_generate   14.55s  ( 42.2%)  calls=550   avg=  26.45ms
+  MaskValidNextAndEos               2.48s  (  7.2%)  calls=549   avg=   4.53ms
+  GenerateLogits.finalize_from_dict    1.12s  (  3.2%)  calls=550   avg=   2.03ms
+  ChooseNextToken                   0.30s  (  0.9%)  calls=549   avg=   0.55ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=550   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=550   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=550   avg=   0.00ms
+[PARSER_TIMING] after 550 GenerateLogits calls total=3.94s
+  accept_mask.total                     1.39s  ( 35.2%)  calls=549   avg=   2.52ms
+  accept_mask.dfa_lookup                1.09s  ( 27.6%)  calls=429   avg=   2.53ms
+  accept_mask.lookup_next_tokens        1.05s  ( 26.7%)  calls=429   avg=   2.45ms
+  accept_mask.inc_parser_accepts        0.29s  (  7.5%)  calls=429   avg=   0.69ms
+  IsCompletePrefix.dafny                0.09s  (  2.4%)  calls=598   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=429   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=429   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=120   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.11s  lm_callbacks=34.62s  parser_callbacks=3.96s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=34.62s
+  GenerateLogits.total             15.92s  ( 46.0%)  calls=552   avg=  28.84ms
+  GenerateLogits.engine_generate   14.60s  ( 42.2%)  calls=552   avg=  26.45ms
+  MaskValidNextAndEos               2.50s  (  7.2%)  calls=552   avg=   4.53ms
+  GenerateLogits.finalize_from_dict    1.12s  (  3.2%)  calls=552   avg=   2.03ms
+  ChooseNextToken                   0.30s  (  0.9%)  calls=552   avg=   0.55ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=552   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=552   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=552   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.96s
+  accept_mask.total                     1.39s  ( 35.2%)  calls=552   avg=   2.53ms
+  accept_mask.dfa_lookup                1.09s  ( 27.6%)  calls=432   avg=   2.53ms
+  accept_mask.lookup_next_tokens        1.06s  ( 26.7%)  calls=432   avg=   2.45ms
+  accept_mask.inc_parser_accepts        0.30s  (  7.5%)  calls=432   avg=   0.69ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=600   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=432   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=432   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=120   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=3.96s
+  accept_mask.total                     1.39s  ( 35.2%)  calls=552   avg=   2.53ms
+  accept_mask.dfa_lookup                1.09s  ( 27.6%)  calls=432   avg=   2.53ms
+  accept_mask.lookup_next_tokens        1.06s  ( 26.7%)  calls=432   avg=   2.45ms
+  accept_mask.inc_parser_accepts        0.30s  (  7.5%)  calls=432   avg=   0.69ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=600   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=432   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=432   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=120   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 3.38s
+  [EVAL] Processing example 25/25...
+  [EVAL]   Running CSD strategy (max_steps=900)...
+    [PROGRESS] GenerateLogits call #560, prefix length: 50, cache_hits=0
+[TIMING] after 560 GenerateLogits calls total=35.11s
+  GenerateLogits.total             16.13s  ( 45.9%)  calls=559   avg=  28.86ms
+  GenerateLogits.engine_generate   14.82s  ( 42.2%)  calls=560   avg=  26.46ms
+  MaskValidNextAndEos               2.54s  (  7.2%)  calls=559   avg=   4.55ms
+  GenerateLogits.finalize_from_dict    1.14s  (  3.2%)  calls=560   avg=   2.04ms
+  ChooseNextToken                   0.31s  (  0.9%)  calls=559   avg=   0.55ms
+  GenerateLogits.prefix_text        0.15s  (  0.4%)  calls=560   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=560   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=560   avg=   0.00ms
+[PARSER_TIMING] after 560 GenerateLogits calls total=4.03s
+  accept_mask.total                     1.42s  ( 35.2%)  calls=559   avg=   2.53ms
+  accept_mask.dfa_lookup                1.11s  ( 27.6%)  calls=436   avg=   2.55ms
+  accept_mask.lookup_next_tokens        1.08s  ( 26.8%)  calls=436   avg=   2.47ms
+  accept_mask.inc_parser_accepts        0.30s  (  7.4%)  calls=436   avg=   0.68ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=609   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=436   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=436   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=123   avg=   0.00ms
+    [PROGRESS] GenerateLogits call #570, prefix length: 87, cache_hits=0
+[TIMING] after 570 GenerateLogits calls total=35.70s
+  GenerateLogits.total             16.40s  ( 45.9%)  calls=569   avg=  28.83ms
+  GenerateLogits.engine_generate   15.06s  ( 42.2%)  calls=570   avg=  26.42ms
+  MaskValidNextAndEos               2.58s  (  7.2%)  calls=569   avg=   4.54ms
+  GenerateLogits.finalize_from_dict    1.16s  (  3.3%)  calls=570   avg=   2.04ms
+  ChooseNextToken                   0.31s  (  0.9%)  calls=569   avg=   0.55ms
+  GenerateLogits.prefix_text        0.16s  (  0.4%)  calls=570   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=570   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=570   avg=   0.00ms
+[PARSER_TIMING] after 570 GenerateLogits calls total=4.08s
+  accept_mask.total                     1.44s  ( 35.2%)  calls=569   avg=   2.52ms
+  accept_mask.dfa_lookup                1.13s  ( 27.6%)  calls=444   avg=   2.54ms
+  accept_mask.lookup_next_tokens        1.09s  ( 26.8%)  calls=444   avg=   2.46ms
+  accept_mask.inc_parser_accepts        0.30s  (  7.4%)  calls=444   avg=   0.68ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=620   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=444   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=444   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=125   avg=   0.00ms
+[STEP_BREAKDOWN] wall=2.15s  lm_callbacks=36.03s  parser_callbacks=4.19s  dafny_internal=0.00s  (0.0% in dafny/uninstrumented)
+[TIMING] end_of_example (cumulative) total=36.03s
+  GenerateLogits.total             16.55s  ( 45.9%)  calls=575   avg=  28.79ms
+  GenerateLogits.engine_generate   15.18s  ( 42.1%)  calls=575   avg=  26.39ms
+  MaskValidNextAndEos               2.63s  (  7.3%)  calls=575   avg=   4.58ms
+  GenerateLogits.finalize_from_dict    1.17s  (  3.3%)  calls=575   avg=   2.04ms
+  ChooseNextToken                   0.32s  (  0.9%)  calls=575   avg=   0.55ms
+  GenerateLogits.prefix_text        0.16s  (  0.4%)  calls=575   avg=   0.27ms
+  GenerateLogits.sampling_params_construct    0.02s  (  0.1%)  calls=575   avg=   0.03ms
+  GenerateLogits.extract_logprobs    0.00s  (  0.0%)  calls=575   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=4.19s
+  accept_mask.total                     1.47s  ( 35.2%)  calls=575   avg=   2.56ms
+  accept_mask.dfa_lookup                1.16s  ( 27.7%)  calls=450   avg=   2.57ms
+  accept_mask.lookup_next_tokens        1.12s  ( 26.8%)  calls=450   avg=   2.50ms
+  accept_mask.inc_parser_accepts        0.31s  (  7.4%)  calls=450   avg=   0.68ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=625   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=450   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=450   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=125   avg=   0.00ms
+[PARSER_TIMING] end_of_example (cumulative) total=4.19s
+  accept_mask.total                     1.47s  ( 35.2%)  calls=575   avg=   2.56ms
+  accept_mask.dfa_lookup                1.16s  ( 27.7%)  calls=450   avg=   2.57ms
+  accept_mask.lookup_next_tokens        1.12s  ( 26.8%)  calls=450   avg=   2.50ms
+  accept_mask.inc_parser_accepts        0.31s  (  7.4%)  calls=450   avg=   0.68ms
+  IsCompletePrefix.dafny                0.10s  (  2.4%)  calls=625   avg=   0.16ms
+  accept_mask.compute_dfa_states        0.02s  (  0.5%)  calls=450   avg=   0.05ms
+  accept_mask.to_cpu                    0.00s  (  0.1%)  calls=450   avg=   0.01ms
+  accept_mask.cache_hit                 0.00s  (  0.0%)  calls=125   avg=   0.00ms
+  [EVAL]   Generated 92 tokens in 2.69s
+(EngineCore pid=84342) INFO 05-20 00:09:15 [core.py:1210] Shutdown initiated (timeout=0)
+(EngineCore pid=84342) INFO 05-20 00:09:15 [core.py:1233] Shutdown complete
+[rank0]:[W520 00:09:16.947671142 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+accuracy: 0.0000
+syntax_rate: 0.0000
+num_correct: 0 / 25
+contains_delimiters: True
+per_example_syntax_pass: 0 / 25
+wrote_json: /home/aadivyar/csd-generation/outputs/abtest_appendtaskguidance/B_empty/result.json

@@ -1,0 +1,48 @@
+{
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "candidate_kind": "final_actual",
+      "candidate_source": "h57_toy_source",
+      "equivalence_key": "chosen answer",
+      "expression": "chosen answer",
+      "group_id": 1,
+      "output_name": "h57_toy_output",
+      "quality_score": 0.8,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "g": "int",
+          "n_1": "int",
+          "n_2": "int"
+        }
+      },
+      "source_family": "h57_toy_output",
+      "source_id": "h57_toy_source"
+    },
+    {
+      "candidate_kind": "candidate_line",
+      "candidate_source": "h57_toy_source:candidate_line:A",
+      "equivalence_key": "{g} - {n_1} - 3{n_2}",
+      "expression": "{g} - {n_1} - 3{n_2}",
+      "group_id": 1,
+      "output_name": "h57_toy_output",
+      "quality_score": 0.75,
+      "sample_index": 1,
+      "scorer_metadata": {
+        "split_row_index": 1,
+        "variable_types": {
+          "g": "int",
+          "n_1": "int",
+          "n_2": "int"
+        }
+      },
+      "source_family": "h57_toy_output:candidate_lines",
+      "source_id": "h57_toy_source"
+    }
+  ],
+  "output_name": "h57_toy_output",
+  "selection_uses_gold": false,
+  "source_id": "h57_toy_source"
+}

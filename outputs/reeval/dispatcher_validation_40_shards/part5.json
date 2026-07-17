@@ -1,0 +1,65 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 6,
+    "total_generation_seconds": 2.9553,
+    "mean_generation_seconds_per_example": 0.492546,
+    "examples_with_generation_timing": 6,
+    "total_output_tokens": 64,
+    "mean_output_tokens_per_example": 10.6667,
+    "examples_with_token_counts": 6,
+    "evaluator_total_time_seconds": 35.4206,
+    "evaluator_max_sample_time_seconds": 1.2567
+  },
+  "answers": [
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT T1.countryname ,  T1.countryid FROM countries>>",
+      "num_tokens": 14,
+      "generation_seconds": 1.256748,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(*) FROM cars>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.126462,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT AVG(weight) AS avg_weight, year AS year FROM cars>>",
+      "num_tokens": 14,
+      "generation_seconds": 0.348053,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT DISTINCT T1.continent FROM continents>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.239082,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(horsepower) ,  make FROM cars>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.775728,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(horsepower) FROM cars>>",
+      "num_tokens": 9,
+      "generation_seconds": 0.209203,
+      "is_correct": false,
+      "is_syntax_valid": true
+    }
+  ]
+}

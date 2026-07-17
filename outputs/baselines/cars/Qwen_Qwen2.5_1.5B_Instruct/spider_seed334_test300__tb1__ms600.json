@@ -1,0 +1,1513 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 0.9733333333333334,
+  "metrics": {
+    "num_examples": 300,
+    "total_generation_seconds": 4831.6473,
+    "mean_generation_seconds_per_example": 16.105491,
+    "examples_with_generation_timing": 300,
+    "run_wall_time_seconds": 4848.1091
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) FROM singer",
+      "generation_seconds": 1.809803
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer.singer_id) FROM singer",
+      "generation_seconds": 0.944346
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT AVG(age) AS average_age, MIN(age) AS min_age, MAX(age) AS max_age FROM singer WHERE country = 'France'",
+      "generation_seconds": 9.063898
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) AS num_singers, country FROM singer",
+      "generation_seconds": 26.998948
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT DISTINCT T1.song_name FROM singer AS T1 JOIN concert_singer AS T2 ON T1.singer_id = T2.singer_id WHERE T1.age > ( SELECT AVG(age) FROM singer )",
+      "generation_seconds": 12.022442
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT T1.song_name FROM singer AS T1 JOIN concert_singer AS T2 ON T1.singer_id = T2.singer_id WHERE T1.age > (SELECT AVG(T3.age) FROM singer AS T3 WHERE T3.singer_id IN (T1.singer_id))",
+      "generation_seconds": 12.637123
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 0.819751
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT stadium.name AS stadium_name, stadium.capacity AS capacity FROM stadium WHERE stadium.id = ( SELECT stadium_id FROM concert WHERE AVG(average) = ( SELECT MAX(average) FROM concert ) GROUP BY stadium_id )",
+      "generation_seconds": 17.284187
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT YEAR FROM concert GROUP BY YEAR ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 2.89485
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT DISTINCT T1.name FROM stadium AS T1 JOIN concert AS T2 ON T1.stadium_id = T2.stadium_id WHERE T2.year != 2014",
+      "generation_seconds": 6.858782
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "SELECT c.concert_name, c.theme, COUNT(s.singer_id) AS num_singers FROM concert c JOIN singer_in_concert sic ON c.concert_id = sic.concert_id GROUP BY c.concert_name, c.theme",
+      "generation_seconds": 54.055576
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT T1.name FROM singer AS T1 JOIN concert_singer AS T2 ON T1.singer_id = T2.singer_id WHERE T2.year = 2014",
+      "generation_seconds": 7.769889
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT singer.name, singer.country FROM singer WHERE singer.song_name LIKE '%Hey%'",
+      "generation_seconds": 9.313396
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "",
+      "generation_seconds": 112.316403
+    },
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "SELECT MIN(pets.weight) FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid WHERE has_pet.stuid = (SELECT student.stuid FROM student ORDER BY student.age LIMIT 1)",
+      "generation_seconds": 2.16702
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT MAX(pets.weight), pets.pettype FROM pets INNER JOIN has_pet ON pets.petid = has_pet.petid GROUP BY pets.pettype",
+      "generation_seconds": 2.524339
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT COUNT(petid) FROM pets WHERE pettype = 'dog' AND stuid IN (SELECT stuid FROM has_pet WHERE sex = 'F')",
+      "generation_seconds": 37.58275
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT pettype) FROM pets",
+      "generation_seconds": 0.403812
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT DISTINCT T2.fname FROM students AS T1 JOIN has_pet AS T3 ON T1.stuid = T3.stuid JOIN pets AS T4 ON T3.petid = T4.petid WHERE T4.pettype IN ('cat', 'dog')",
+      "generation_seconds": 3.475496
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT DISTINCT student_stuid FROM has_pet WHERE petid NOT IN (SELECT petid FROM pets WHERE pettype = 'cat')",
+      "generation_seconds": 4.828502
+    },
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT T2.fname, T2.age FROM student AS T1 JOIN has_pet AS T3 ON T1.stuid = T3.stuid JOIN pets AS T4 ON T3.petid = T4.petid",
+      "generation_seconds": 3.245303
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT has_pet.petid FROM student WHERE lname = 'Smith' AND has_pet.stuid = student.stuid",
+      "generation_seconds": 5.269574
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT student.stuid, COUNT(has_pet.petid) AS num_pets FROM student INNER JOIN has_pet ON student.stuid = has_pet.stuid GROUP BY student.stuid",
+      "generation_seconds": 48.938572
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT student.lname FROM student INNER JOIN has_pet ON student.stuid = has_pet.stuid WHERE has_pet.petid IN (SELECT petid FROM pets WHERE pettype = 'cat' AND pet_age = 3)",
+      "generation_seconds": 14.483609
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "Select avg(student.age) from student where student.stuid not in (select stuid from has_pet)",
+      "generation_seconds": 4.936973
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SELECT continent, COUNT(id) AS num_countries FROM countries INNER JOIN continents ON countries.continent = continents.contid GROUP BY continent",
+      "generation_seconds": 122.285757
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT COUNT(DISTINCT countryid) FROM countries",
+      "generation_seconds": 0.816623
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT COUNT(DISTINCT continent) FROM continents",
+      "generation_seconds": 1.530635
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM cars_data ORDER BY horsepower LIMIT 1",
+      "generation_seconds": 0.421935
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM cars_data WHERE weight < (SELECT AVG(weight) FROM cars_data)",
+      "generation_seconds": 1.32074
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names WHERE year > 1980",
+      "generation_seconds": 1.921215
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "",
+      "generation_seconds": 116.247747
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT T2.countryname FROM car_makers AS T1 JOIN countries AS T2 ON T1.country = T2.continent GROUP BY T2.countryname ORDER BY COUNT(T1.id) DESC LIMIT 1",
+      "generation_seconds": 7.456847
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT DISTINCT maker, model FROM car_makers JOIN model_list ON car_makers.id = model_list.maker JOIN car_names ON car_makers.id = car_names.maker",
+      "generation_seconds": 4.086385
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT countries.countryname AS Country_Name, car_makers.id AS Car_Maker_ID FROM countries JOIN continents ON countries.continent = continents.contid JOIN car_makers ON car_makers.country = countries.countryid",
+      "generation_seconds": 52.948571
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT COUNT(id) FROM cars_data WHERE horsepower > 150",
+      "generation_seconds": 3.242566
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT AVG(weight) AS avg_weight, YEAR as year FROM cars_data GROUP BY YEAR",
+      "generation_seconds": 3.363044
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT T2.country FROM continents AS T1 JOIN countries AS T2 ON T1.contid = T2.continent WHERE T1.continent = 'Europe' GROUP BY T2.country HAVING COUNT(T2.country) >= 3",
+      "generation_seconds": 4.25695
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(horsepower), maker FROM car_names JOIN model_list ON car_names.makeid = model_list.make WHERE cylinders = 3",
+      "generation_seconds": 3.574692
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(horsepower) FROM cars_data WHERE year < 1980",
+      "generation_seconds": 6.400246
+    },
+    {
+      "question": "What is the average edispl of the cars of model volvo?",
+      "generated_answer": "SELECT AVG(cars_data.edispl) FROM cars_data JOIN car_names ON cars_data.id = car_names.id JOIN model_list ON car_names.make = model_list.model JOIN car_makers ON model_list.maker = car_makers.id JOIN countries ON car_makers.country = countries.countryid JOIN continents ON countries.continent = continents.contid WHERE car_makers.fullname = 'Volvo'",
+      "generation_seconds": 4.501106
+    },
+    {
+      "question": "What is the average edispl for all volvos?",
+      "generated_answer": "SELECT AVG(cars_data.edispl) FROM cars_data INNER JOIN car_names ON cars_data.makeid = car_names.makeid INNER JOIN model_list ON car_names.model = model_list.model INNER JOIN car_makers ON model_list.maker = car_makers.id INNER JOIN countries ON car_makers.country = countries.countryid INNER JOIN continents ON countries.continent = continents.contid WHERE car_makers.fullname = 'Volvo'",
+      "generation_seconds": 5.811767
+    },
+    {
+      "question": "What is the maximum accelerate for different number of cylinders?",
+      "generated_answer": "SELECT MAX(cars_data.accelerate), COUNT(DISTINCT cars_data.cylinders) AS num_cylinders FROM cars_data",
+      "generation_seconds": 41.011898
+    },
+    {
+      "question": "In 1980, how many cars were made?",
+      "generated_answer": "SELECT COUNT(id) FROM cars_data WHERE year = 1980",
+      "generation_seconds": 2.299539
+    },
+    {
+      "question": "What are the names and ids of all makers with more than 3 models?",
+      "generated_answer": "SELECT car_makers.fullname AS MakerName, car_makers.id AS MakerID FROM car_makers INNER JOIN model_list ON car_makers.id = model_list.maker WHERE model_list.count > 3",
+      "generation_seconds": 30.146973
+    },
+    {
+      "question": "What are the different models created by either the car maker General Motors or weighed more than 3500?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names WHERE maker IN ('General Motors') OR weight > 3500",
+      "generation_seconds": 2.736486
+    },
+    {
+      "question": "What is the horsepower of the car with the largest accelerate?",
+      "generated_answer": "SELECT MAX(horsepower) FROM cars_data WHERE accelerate = (SELECT MAX(accelerate) FROM cars_data)",
+      "generation_seconds": 3.62678
+    },
+    {
+      "question": "What is the horsepower of the car with the greatest accelerate?",
+      "generated_answer": "SELECT MAX(horsepower) FROM cars_data WHERE accelerate = (SELECT MAX(accelerate) FROM cars_data)",
+      "generation_seconds": 5.401142
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "SELECT MIN(cylinders) FROM cars_data WHERE model IN (SELECT model FROM model_list JOIN car_makers ON model_list.maker = car_makers.id JOIN cars_data ON car_makers.id = cars_data.make AND model_list.model = cars_data.model WHERE car_makers.fullname = 'Volvo') AND accelerate = (SELECT MIN(accelerate) FROM cars_data WHERE model IN (SELECT model FROM model_list JOIN car_makers ON model_list.maker = car_makers.id JOIN cars_data ON car_makers.id = cars_data.make AND model_list.model = cars_data.model WHERE car_makers.fullname = 'Volvo'))",
+      "generation_seconds": 7.478875
+    },
+    {
+      "question": "How many countries has more than 2 car makers ?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.country) AS num_countries FROM continents AS T1 INNER JOIN countries AS T2 ON T1.contid = T2.continent WHERE T2.countryid IN (SELECT T3.country FROM car_makers AS T3 INNER JOIN model_list AS T4 ON T3.id = T4.maker INNER JOIN cars_data AS T5 ON T4.model = T5.model GROUP BY T3.country HAVING COUNT(T5.id) > 2)",
+      "generation_seconds": 40.916049
+    },
+    {
+      "question": "How many cars has over 6 cylinders?",
+      "generated_answer": "SELECT COUNT(DISTINCT c.id) FROM cars_data AS c JOIN car_makers AS cm ON c.makeid = cm.id WHERE cm.cylinders > 6",
+      "generation_seconds": 5.450581
+    },
+    {
+      "question": "For all of the 4 cylinder cars, which model has the most horsepower?",
+      "generated_answer": "SELECT model FROM cars_data WHERE cylinders = 4 ORDER BY horsepower DESC LIMIT 1",
+      "generation_seconds": 3.399139
+    },
+    {
+      "question": "What is the maximum mpg of the cars that had 8 cylinders or that were produced before 1980 ?",
+      "generated_answer": "SELECT MAX(cars_data.mpg) FROM cars_data INNER JOIN car_makers ON cars_data.makeid = car_makers.id INNER JOIN model_list ON car_makers.id = model_list.maker WHERE cars_data.cylinders = 8 OR cars_data.year < 1980",
+      "generation_seconds": 5.300074
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SELECT DISTINCT m FROM model_list AS m JOIN car_names AS cn ON m.model = cn.model WHERE cn.make NOT IN ('Ford') AND cn.model < '3500'",
+      "generation_seconds": 2.83596
+    },
+    {
+      "question": "What country is Jetblue Airways affiliated with?",
+      "generated_answer": "SELECT T1.country FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline WHERE T2.airline = 'JetBlue Airways'",
+      "generation_seconds": 1.477035
+    },
+    {
+      "question": "Give the airport code and airport name corresonding to the city Anthony.",
+      "generated_answer": "SELECT airports.airportcode, airports.airportname FROM airports WHERE cities.city = 'Anthony'",
+      "generation_seconds": 4.951664
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "SELECT airline FROM airlines WHERE abbreviation = 'UAL'",
+      "generation_seconds": 2.265082
+    },
+    {
+      "question": "Which city and country is the Alton airport at?",
+      "generated_answer": "SELECT city, country FROM airports WHERE airportcode = 'ALTN'",
+      "generation_seconds": 0.519948
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "SELECT airportname FROM airports WHERE airportcode = 'AKO'",
+      "generation_seconds": 0.486159
+    },
+    {
+      "question": "What are airport names at City 'Aberdeen'?",
+      "generated_answer": "SELECT airportname FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 0.635247
+    },
+    {
+      "question": "What are the names of airports in Aberdeen?",
+      "generated_answer": "SELECT DISTINCT T1.airportname FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.sourceairport WHERE T2.sourceairport LIKE '%Aberdeen%'",
+      "generation_seconds": 1.879819
+    },
+    {
+      "question": "How many flights depart from 'APG'?",
+      "generated_answer": "SELECT COUNT(f.flightno) FROM flights f JOIN airports a ON f.sourceairport = a.airportcode WHERE a.city = 'APG'",
+      "generation_seconds": 5.859936
+    },
+    {
+      "question": "Count the number of flights departing from 'APG'.",
+      "generated_answer": "SELECT COUNT(flightno) FROM flights WHERE sourceairport = 'APG'",
+      "generation_seconds": 0.979331
+    },
+    {
+      "question": "How many flights have destination ATO?",
+      "generated_answer": "SELECT COUNT(*) FROM flights WHERE destairport = 'ATO'",
+      "generation_seconds": 0.436994
+    },
+    {
+      "question": "Return the number of flights departing from Aberdeen.",
+      "generated_answer": "SELECT COUNT(flightno) AS num_flights FROM flights WHERE sourceairport = 'Aberdeen'",
+      "generation_seconds": 8.319076
+    },
+    {
+      "question": "How many flights depart from City 'Aberdeen' and have destination City 'Ashley'?",
+      "generated_answer": "SELECT COUNT(f.flightno) FROM flights AS f INNER JOIN airports AS src ON f.sourceairport = src.airportcode INNER JOIN airports AS dst ON f.destairport = dst.airportcode WHERE src.city = 'Aberdeen' AND dst.city = 'Ashley'",
+      "generation_seconds": 30.255296
+    },
+    {
+      "question": "Count the number of United Airlines flights arriving in ASY Airport.",
+      "generated_answer": "SELECT COUNT(f.flightno) FROM flights f JOIN airlines a ON f.airline = a.airline WHERE a.airline = 'United Airlines' AND f.destairport = 'ASY'",
+      "generation_seconds": 9.250026
+    },
+    {
+      "question": "Return the number of United Airlines flights leaving from AHD Airport.",
+      "generated_answer": "SELECT COUNT(f.flightno) FROM flights f JOIN airlines a ON f.airline = a.airline WHERE a.airline LIKE 'United%' AND f.sourceairport = 'AHD'",
+      "generation_seconds": 7.434109
+    },
+    {
+      "question": "How many United Airlines flights go to City 'Aberdeen'?",
+      "generated_answer": "SELECT COUNT(f.flightno) FROM flights AS f INNER JOIN airlines AS a ON f.airline = a.uid WHERE a.airline = 'United Airlines' AND f.destairport = 'Aberdeen'",
+      "generation_seconds": 37.227725
+    },
+    {
+      "question": "Which city has most number of arriving flights?",
+      "generated_answer": "SELECT destinationairport FROM flights GROUP BY destinationairport ORDER BY COUNT(destinationairport) DESC LIMIT 1",
+      "generation_seconds": 55.338503
+    },
+    {
+      "question": "Which city has the most frequent destination airport?",
+      "generated_answer": "SELECT destairport FROM flights GROUP BY destairport ORDER BY COUNT(destairport) DESC LIMIT 1",
+      "generation_seconds": 34.005978
+    },
+    {
+      "question": "What is the code of airport that has the highest number of flights?",
+      "generated_answer": "SELECT DESTAIRPORT FROM FLIGHTS WHERE COUNT(DESTAIRPORT) = (SELECT MAX(COUNT(DESTAIRPORT)) FROM FLIGHTS)",
+      "generation_seconds": 5.674076
+    },
+    {
+      "question": "Give the code of the airport with the least flights.",
+      "generated_answer": "SELECT destinationairport FROM flights WHERE COUNT(sourceairport) = MIN(COUNT(sourceairport))",
+      "generation_seconds": 0.644355
+    },
+    {
+      "question": "What airline serves the most flights?",
+      "generated_answer": "SELECT airline FROM flights GROUP BY airline ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 33.279156
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "SELECT T1.abbr, T1.country FROM airlines AS T1 JOIN ( SELECT airline, COUNT(flightno) as num_flights FROM flights GROUP BY airline ORDER BY num_flights ASC LIMIT 1 ) AS T2 ON T1.uid = T2.airline",
+      "generation_seconds": 9.393199
+    },
+    {
+      "question": "What are airlines that have some flight departing from airport 'AHD'?",
+      "generated_answer": "SELECT DISTINCT T1.AIRLINE FROM FLIGHTS AS T1 JOIN AIRLINES AS T2 ON T1.AIRLINE = T2.UID WHERE T1.SOURCEAIRPORT = 'AHD'",
+      "generation_seconds": 3.781786
+    },
+    {
+      "question": "Which airlines have a flight with source airport AHD?",
+      "generated_answer": "SELECT DISTINCT T1.airline FROM flights AS T1 JOIN airports AS T2 ON T1.sourceairport = T2.airportcode WHERE T2.city = 'AHD'",
+      "generation_seconds": 2.263102
+    },
+    {
+      "question": "Find all airlines that have flights from airport 'CVO' but not from 'APG'.",
+      "generated_answer": "SELECT DISTINCT u FROM airlines AS u JOIN flights AS f ON u.uid = f.airline WHERE f.sourceairport = 'CVO' AND f.sourceairport != 'APG'",
+      "generation_seconds": 3.804873
+    },
+    {
+      "question": "Which airlines have at least 10 flights?",
+      "generated_answer": "SELECT airline FROM airlines WHERE airline IN (SELECT DISTINCT airline FROM flights) GROUP BY airline HAVING COUNT(flightno) >= 10",
+      "generation_seconds": 3.389206
+    },
+    {
+      "question": "Find all airlines that have fewer than 200 flights.",
+      "generated_answer": "SELECT T1.airline FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline GROUP BY T1.airline HAVING COUNT(T2.flightno) < 200",
+      "generation_seconds": 3.762884
+    },
+    {
+      "question": "Which airlines have less than 200 flights?",
+      "generated_answer": "SELECT airline FROM airlines WHERE airline IN ( SELECT T1.airline FROM flights AS T1 JOIN airports AS T2 ON T1.sourceairport = T2.airportcode OR T1.destairport = T2.airportcode GROUP BY T1.airline HAVING COUNT(T1.flightno) < 200 )",
+      "generation_seconds": 4.817084
+    },
+    {
+      "question": "Find the cities that have more than one employee under age 30.",
+      "generated_answer": "SELECT DISTINCT T1.city FROM hiring AS T1 JOIN employee AS T2 ON T1.employee_id = T2.employee_id WHERE T2.age < 30 GROUP BY T1.city HAVING COUNT(DISTINCT T1.employee_id) > 1",
+      "generation_seconds": 9.04672
+    },
+    {
+      "question": "What are the manager name and district of the shop that sells the largest number of products?",
+      "generated_answer": "SELECT h.manager_name, s.district FROM shop s JOIN hiring h ON s.shop_id = h.shop_id WHERE s.number_products = ( SELECT MAX(number_products) FROM shop )",
+      "generation_seconds": 40.201834
+    },
+    {
+      "question": "find the name of employee who was awarded the most times in the evaluation.",
+      "generated_answer": "SELECT name FROM employee WHERE employee_id IN (SELECT employee_id FROM evaluation GROUP BY employee_id ORDER BY COUNT(employee_id) DESC LIMIT 1)",
+      "generation_seconds": 8.842033
+    },
+    {
+      "question": "What are the names of the employees who never received any evaluation?",
+      "generated_answer": "SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)",
+      "generation_seconds": 0.703299
+    },
+    {
+      "question": "Which shops run with no employees? Find the shop names",
+      "generated_answer": "SELECT s.name FROM shop s WHERE s.shop_id NOT IN ( SELECT h.shop_id FROM hiring h INNER JOIN evaluation ev ON h.employee_id = ev.employee_id )",
+      "generation_seconds": 3.585097
+    },
+    {
+      "question": "Find the number of employees hired in each shop; show the shop name as well.",
+      "generated_answer": "SELECT shop.name AS shop_name, COUNT(employee.employee_id) AS num_employees FROM shop INNER JOIN hiring ON shop.shop_id = hiring.shop_id INNER JOIN employee ON hiring.employee_id = employee.employee_id GROUP BY shop.name",
+      "generation_seconds": 24.422636
+    },
+    {
+      "question": "Which district has both stores with less than 3000 products and stores with more than 10000 products?",
+      "generated_answer": "SELECT DISTINCT t2.district FROM shop AS t1 INNER JOIN hiring AS t3 ON t1.shop_id = t3.shop_id INNER JOIN evaluation AS t4 ON t3.employee_id = t4.employee_id WHERE t1.number_products < 3000 AND t1.number_products > 10000",
+      "generation_seconds": 10.941315
+    },
+    {
+      "question": "Count the number of distinct store locations.",
+      "generated_answer": "SELECT COUNT(DISTINCT location) FROM shop",
+      "generation_seconds": 0.338644
+    },
+    {
+      "question": "List document IDs, document names, and document descriptions for all documents.",
+      "generated_answer": "SELECT document_id, document_name, document_description FROM documents",
+      "generation_seconds": 0.80932
+    },
+    {
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "generated_answer": "SELECT DISTINCT T1.template_id, COUNT(T2.paragraph_id) AS paragraph_count FROM templates AS T1 INNER JOIN documents AS T2 ON T1.template_id = T2.template_id GROUP BY T1.template_id",
+      "generation_seconds": 83.186401
+    },
+    {
+      "question": "What is the id and type code for the template used by the most documents?",
+      "generated_answer": "SELECT template_type_code, MAX(version_number) AS version_number FROM templates WHERE template_type_code IN (SELECT template_type_code FROM documents GROUP BY template_type_code HAVING COUNT(template_id) = (SELECT MAX(T1.count) FROM (SELECT COUNT(DISTINCT template_id) AS count FROM documents GROUP BY template_type_code) AS T1)) GROUP BY template_type_code",
+      "generation_seconds": 24.318255
+    },
+    {
+      "question": "How many templates do we have?",
+      "generated_answer": "SELECT COUNT(DISTINCT template_id) FROM templates",
+      "generation_seconds": 2.705117
+    },
+    {
+      "question": "What are the ids, version numbers, and type codes for each template?",
+      "generated_answer": "SELECT template_id, version_number, template_type_code FROM templates",
+      "generation_seconds": 0.448629
+    },
+    {
+      "question": "What are the ids of templates with template type code PP or PPT?",
+      "generated_answer": "SELECT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 0.764197
+    },
+    {
+      "question": "Count the number of templates of the type CV.",
+      "generated_answer": "SELECT COUNT(template_id) FROM templates WHERE template_type_code = 'CV'",
+      "generation_seconds": 0.856056
+    },
+    {
+      "question": "Return the version numbers and template type codes of templates with a version number greater than 5.",
+      "generated_answer": "SELECT version_number, template_type_code FROM templates WHERE version_number > 5",
+      "generation_seconds": 1.066194
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "Select template_type_code from ref_template_types where template_type_code = (select template_type_code from templates group by template_type_code order by count(template_id) desc limit 1)",
+      "generation_seconds": 59.639282
+    },
+    {
+      "question": "Return the type code of the template type that the most templates belong to.",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types WHERE template_type_code IN (SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(template_id) DESC LIMIT 1)",
+      "generation_seconds": 12.239708
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types WHERE template_type_code IN ( SELECT template_type_code FROM templates GROUP BY template_type_code HAVING COUNT(template_id) < 3 )",
+      "generation_seconds": 3.044999
+    },
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "SELECT MIN(version_number), template_type_code FROM templates",
+      "generation_seconds": 2.026545
+    },
+    {
+      "question": "Return the lowest version number, along with its corresponding template type code.",
+      "generated_answer": "SELECT min(version_number), template_type_code FROM templates",
+      "generation_seconds": 2.518625
+    },
+    {
+      "question": "What are the different template type codes, and how many documents use each type?",
+      "generated_answer": "SELECT template_type_code, COUNT(document_id) AS document_count FROM templates INNER JOIN documents ON templates.template_id = documents.template_id GROUP BY template_type_code",
+      "generation_seconds": 26.963029
+    },
+    {
+      "question": "What is the template type descriptions for template type code \"AD\".",
+      "generated_answer": "SELECT template_type_description FROM ref_template_types WHERE template_type_code = 'AD'",
+      "generation_seconds": 0.566161
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "SELECT COUNT(paragraph_id) FROM paragraphs",
+      "generation_seconds": 1.411915
+    },
+    {
+      "question": "Show paragraph details for paragraph with text 'Korea ' .",
+      "generated_answer": "SELECT paragraph_text, other_details FROM paragraphs WHERE paragraph_text LIKE '%Korea%'",
+      "generation_seconds": 1.559052
+    },
+    {
+      "question": "What are the ids and texts of paragraphs in the document titled 'Welcome to NY'?",
+      "generated_answer": "SELECT document_id, paragraph_text FROM documents WHERE document_name = 'Welcome to NY'",
+      "generation_seconds": 1.927173
+    },
+    {
+      "question": "Show all document ids and the number of paragraphs in each document. Order by document id.",
+      "generated_answer": "SELECT document_id, COUNT(paragraph_id) AS paragraph_count FROM documents INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY document_id ORDER BY document_id",
+      "generation_seconds": 6.059071
+    },
+    {
+      "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
+      "generated_answer": "SELECT T1.document_id, COUNT(T2.paragraph_id) AS paragraph_count FROM documents AS T1 INNER JOIN paragraphs AS T2 ON T1.document_id = T2.document_id GROUP BY T1.document_id ORDER BY T1.document_id",
+      "generation_seconds": 24.670491
+    },
+    {
+      "question": "What are the ids and names of each document, as well as the number of paragraphs in each?",
+      "generated_answer": "SELECT document_id, template_type_code, COUNT(paragraph_id) AS num_paragraphs FROM documents INNER JOIN templates ON documents.template_id = templates.template_id GROUP BY document_id, template_type_code",
+      "generation_seconds": 72.377951
+    },
+    {
+      "question": "List all document ids with at least two paragraphs.",
+      "generated_answer": "SELECT document_id FROM documents WHERE document_id IN (SELECT document_id FROM paragraphs GROUP BY document_id HAVING COUNT(paragraph_id) >= 2)",
+      "generation_seconds": 3.582639
+    },
+    {
+      "question": "What are the ids of documents that have 2 or more paragraphs?",
+      "generated_answer": "SELECT document_id FROM documents WHERE document_id IN (SELECT template_id FROM templates WHERE template_id IN (SELECT template_id FROM paragraphs GROUP BY document_id HAVING COUNT(paragraph_id) >= 2))",
+      "generation_seconds": 5.410788
+    },
+    {
+      "question": "What is the document id and name with greatest number of paragraphs?",
+      "generated_answer": "SELECT documents.document_id, documents.document_name FROM documents INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id WHERE paragraphs.paragraph_id IN (SELECT MAX(paragraph_id) FROM paragraphs GROUP BY document_id)",
+      "generation_seconds": 39.590584
+    },
+    {
+      "question": "Give the ids of documents that have between one and two paragraphs.",
+      "generated_answer": "SELECT document_id FROM documents WHERE paragraph_id IS NULL OR (paragraph_id IS NOT NULL AND COUNT(paragraph_id) BETWEEN 1 AND 2)",
+      "generation_seconds": 3.473308
+    },
+    {
+      "question": "What is the hometown of the youngest teacher?",
+      "generated_answer": "SELECT hometown FROM teacher WHERE age = ( SELECT MIN(age) FROM teacher )",
+      "generation_seconds": 1.396029
+    },
+    {
+      "question": "For each hometown, how many teachers are there?",
+      "generated_answer": "SELECT hometown, COUNT(*) FROM teacher GROUP BY hometown",
+      "generation_seconds": 16.257435
+    },
+    {
+      "question": "What is the most commmon hometowns for teachers?",
+      "generated_answer": "SELECT hometown FROM teacher GROUP BY hometown ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 2.010382
+    },
+    {
+      "question": "What is the name of each teacher and what course they teach?",
+      "generated_answer": "SELECT teacher.name AS teacher_name, course.course AS taught_course FROM teacher JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id JOIN course ON course_arrange.course_id = course.course_id",
+      "generation_seconds": 8.195087
+    },
+    {
+      "question": "What are the names of the people who teach math courses?",
+      "generated_answer": "SELECT T1.name FROM teacher AS T1 JOIN course_teach AS T2 ON T1.teacher_id = T2.teacher_id WHERE T2.course LIKE '%math%'",
+      "generation_seconds": 2.949417
+    },
+    {
+      "question": "Show names of teachers and the number of courses they teach.",
+      "generated_answer": "SELECT teacher.name, COUNT(course_arrange.grade) AS num_courses FROM teacher INNER JOIN course_arrange ON teacher.teacher_id = course_arrange.teacher_id GROUP BY teacher.name",
+      "generation_seconds": 26.111182
+    },
+    {
+      "question": "How many visitors below age 30 are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT v.id) FROM visitor AS v INNER JOIN visit AS vi ON v.id = vi.visitor_id WHERE vi.num_of_ticket > 1 AND v.age < 30",
+      "generation_seconds": 77.006635
+    },
+    {
+      "question": "Find the names of the visitors whose membership level is higher than 4, and order the results by the level from high to low.",
+      "generated_answer": "SELECT v.name FROM visitor v JOIN visit vi ON v.id = vi.visitor_id WHERE v.level_of_membership > 4 ORDER BY v.level_of_membership DESC",
+      "generation_seconds": 2.806478
+    },
+    {
+      "question": "What are the opening year and staff number of the museum named Plaza Museum?",
+      "generated_answer": "SELECT open_year, num_of_staff FROM museum WHERE name = 'Plaza Museum'",
+      "generation_seconds": 0.945664
+    },
+    {
+      "question": "find the id, name and age for visitors who visited some museums more than once.",
+      "generated_answer": "SELECT v.id, v.name, v.age FROM visitor v INNER JOIN visit vi ON v.id = vi.visitor_id GROUP BY v.id HAVING COUNT(DISTINCT vi.museum_id) > 1",
+      "generation_seconds": 8.457725
+    },
+    {
+      "question": "What are the id, name and membership level of visitors who have spent the largest amount of money in total in all museum tickets?",
+      "generated_answer": "SELECT v.id, v.name, v.level_of_membership FROM visitor v JOIN visit vi ON v.id = vi.visitor_id WHERE vi.total_spent = (SELECT MAX(total_spent) FROM visit)",
+      "generation_seconds": 16.888136
+    },
+    {
+      "question": "What is the name of the museum that had no visitor yet?",
+      "generated_answer": "SELECT T1.name FROM museum AS T1 JOIN visit AS T2 ON T1.museum_id = T2.museum_id WHERE T2.visitor_id IS NULL",
+      "generation_seconds": 1.247539
+    },
+    {
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "generated_answer": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "generation_seconds": 14.715278
+    },
+    {
+      "question": "Find the number of visitors who did not visit any museum opened after 2010.",
+      "generated_answer": "SELECT COUNT(DISTINCT v.id) AS no_visitors FROM visitor v WHERE v.id NOT IN (SELECT DISTINCT vv.visitor_id FROM visit vv INNER JOIN museum mm ON vv.museum_id = mm.museum_id WHERE mm.open_year > 2010)",
+      "generation_seconds": 17.703436
+    },
+    {
+      "question": "Find the name of tourney that has more than 10 matches.",
+      "generated_answer": "SELECT DISTINCT T2.tourney_name FROM matches AS T1 JOIN tournaments AS T2 ON T1.tourney_id = T2.tournament_id WHERE COUNT(T1.match_num) > 10",
+      "generation_seconds": 5.731511
+    },
+    {
+      "question": "What are the first names and country codes for players who won both the WTA Championships and the Australian Open?",
+      "generated_answer": "SELECT DISTINCT p.first_name, p.country_code FROM players AS p JOIN matches AS m ON p.player_id = m.winner_id WHERE m.tourney_name LIKE '%WTA Championships%' AND m.tourney_name LIKE '%Australian Open%'",
+      "generation_seconds": 10.682731
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "SELECT T2.first_name, T2.country_code FROM players AS T1 JOIN countries AS T3 ON T1.country_code = T3.code WHERE T1.age = (SELECT MAX(age) FROM players)",
+      "generation_seconds": 5.942128
+    },
+    {
+      "question": "Find the first name and country code of the player who did the most number of tours.",
+      "generated_answer": "SELECT T1.first_name, T1.country_code FROM players AS T1 JOIN rankings AS T2 ON T1.player_id = T2.player_id WHERE T2.tour_count = ( SELECT MAX(tour_count) FROM ( SELECT COUNT(*) as tour_count, player_id FROM rankings GROUP BY player_id ) AS subquery )",
+      "generation_seconds": 7.903425
+    },
+    {
+      "question": "Find the name and rank points of the winner who won the most times.",
+      "generated_answer": "SELECT T2.winner_name, T2.winner_rank_points FROM matches AS T1 JOIN winners AS T3 ON T1.winner_id = T3.winner_id JOIN players AS T4 ON T3.winner_id = T4.player_id WHERE T1.match_num IN ( SELECT T5.match_num FROM matches AS T5 JOIN winners AS T6 ON T5.winner_id = T6.winner_id GROUP BY T5.match_num ORDER BY COUNT(T5.winner_id) DESC LIMIT 1 )",
+      "generation_seconds": 95.031253
+    },
+    {
+      "question": "What is the name of the winner who has won the most matches, and how many rank points does this player have?",
+      "generated_answer": "",
+      "generation_seconds": 117.993573
+    },
+    {
+      "question": "find the names of loser and winner who played in the match with greatest number of minutes.",
+      "generated_answer": "SELECT T2.winner_name AS WinnerName, T2.loser_name AS LoserName FROM matches AS T1 JOIN players AS T2 ON T1.winner_id = T2.player_id OR T1.loser_id = T2.player_id WHERE T1.minutes = ( SELECT MAX(minutes) FROM matches )",
+      "generation_seconds": 19.031568
+    },
+    {
+      "question": "find the number of players for each country.",
+      "generated_answer": "SELECT COUNT(DISTINCT winner_id), country FROM players WHERE winner_id IS NOT NULL GROUP BY country",
+      "generation_seconds": 22.168692
+    },
+    {
+      "question": "How many players are from each country?",
+      "generated_answer": "SELECT country_code, COUNT(winner_id) AS num_players FROM players GROUP BY country_code",
+      "generation_seconds": 6.835468
+    },
+    {
+      "question": "find the code of the country where has the greatest number of players.",
+      "generated_answer": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(player_id) DESC LIMIT 1",
+      "generation_seconds": 4.510483
+    },
+    {
+      "question": "What is the code of the country with the most players?",
+      "generated_answer": "SELECT country_code FROM players GROUP BY country_code ORDER BY COUNT(player_id) DESC LIMIT 1",
+      "generation_seconds": 7.405276
+    },
+    {
+      "question": "How many total tours were there for each ranking date?",
+      "generated_answer": "",
+      "generation_seconds": 133.740849
+    },
+    {
+      "question": "Find the number of matches happened in each year.",
+      "generated_answer": "SELECT COUNT(DISTINCT YEAR) AS num_matches FROM matches",
+      "generation_seconds": 16.012138
+    },
+    {
+      "question": "What are the names and ranks of the three youngest winners across all matches?",
+      "generated_answer": "SELECT winner_name, winner_rank FROM players WHERE winner_id IN (SELECT winner_id FROM matches GROUP BY winner_id ORDER BY winner_age LIMIT 3)",
+      "generation_seconds": 14.15337
+    },
+    {
+      "question": "Find the first name, country code and birth date of the winner who has the highest rank points in all matches.",
+      "generated_answer": "SELECT T2.first_name, T2.country_code, T2.birth_date FROM winners AS T1 JOIN players AS T2 ON T1.winner_id = T2.player_id WHERE T1.rank_points = ( SELECT MAX(rank_points) FROM rankings )",
+      "generation_seconds": 43.899374
+    },
+    {
+      "question": "Find the number of players for each hand type.",
+      "generated_answer": "SELECT hand, COUNT(DISTINCT winner_id) AS num_winners, COUNT(DISTINCT loser_id) AS num_loser FROM players WHERE hand IS NOT NULL GROUP BY hand",
+      "generation_seconds": 20.510435
+    },
+    {
+      "question": "How many players are there for each hand type?",
+      "generated_answer": "SELECT hand, COUNT(DISTINCT winner_id) AS num_winners, COUNT(DISTINCT loser_id) AS num_loser FROM players GROUP BY hand",
+      "generation_seconds": 10.572974
+    },
+    {
+      "question": "How many ships ended up being 'Captured'?",
+      "generated_answer": "SELECT COUNT(DISTINCT l.battle_id) FROM battle AS b JOIN ship AS s ON b.id = s.lost_in_battle WHERE s.disposition_of_ship LIKE '%Captured%'",
+      "generation_seconds": 4.654222
+    },
+    {
+      "question": "What is the average number of injuries caused each time?",
+      "generated_answer": "SELECT AVG(injured) AS avg_injuries_per_death FROM death",
+      "generation_seconds": 9.101921
+    },
+    {
+      "question": "What are the different ids and names of the battles that lost any 'Brig' type shipes?",
+      "generated_answer": "SELECT DISTINCT b.id, b.name FROM battle b JOIN lost_in_battle lb ON b.id = lb.battle_id WHERE lb.ship_type = 'Brig'",
+      "generation_seconds": 5.473388
+    },
+    {
+      "question": "What are the ids and names of the battles that led to more than 10 people killed in total.",
+      "generated_answer": "SELECT battle.id, battle.name FROM battle JOIN loss ON battle.id = loss.battle_id WHERE loss.killed > 10",
+      "generation_seconds": 8.833476
+    },
+    {
+      "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+      "generated_answer": "SELECT DISTINCT name FROM battle WHERE bulgarian_commander = 'Kaloyan' AND latin_commander = 'Baldwin I'",
+      "generation_seconds": 2.898672
+    },
+    {
+      "question": "How many different results are there for the battles?",
+      "generated_answer": "SELECT COUNT(DISTINCT result) FROM battle",
+      "generation_seconds": 0.349714
+    },
+    {
+      "question": "List the name and date the battle that has lost the ship named 'Lettice' and the ship named 'HMS Atalanta'",
+      "generated_answer": "SELECT b.name AS battle_name, b.date FROM battle b JOIN ship s ON b.id = s.battle_id JOIN death d ON s.id = d.caused_by_ship_id WHERE s.name = 'Lettice' AND s.name = 'HMS Atalanta'",
+      "generation_seconds": 4.408506
+    },
+    {
+      "question": "What is the first and second line for all addresses?",
+      "generated_answer": "SELECT line_1, line_2 FROM addresses",
+      "generation_seconds": 7.319068
+    },
+    {
+      "question": "How is the math course described?",
+      "generated_answer": "SELECT course_description FROM courses WHERE course_name = 'Math'",
+      "generation_seconds": 0.765449
+    },
+    {
+      "question": "What is the zip code of the address in the city Port Chelsea?",
+      "generated_answer": "SELECT T1.zip_postcode FROM addresses AS T1 JOIN student_transcripts_tracking AS T2 ON T1.address_id = T2.permanent_address_id WHERE T2.city = 'Port Chelsea'",
+      "generation_seconds": 2.227839
+    },
+    {
+      "question": "Which department offers the most number of degrees? List department name and id.",
+      "generated_answer": "SELECT d.department_name, d.department_id FROM departments AS d JOIN degree_programs AS dp ON d.department_id = dp.department_id GROUP BY d.department_id ORDER BY COUNT(dp.degree_program_id) DESC LIMIT 1",
+      "generation_seconds": 7.663186
+    },
+    {
+      "question": "What is the name and id of the department with the most number of degrees ?",
+      "generated_answer": "SELECT d.department_name, d.department_id FROM departments d JOIN degree_programs dp ON d.department_id = dp.department_id GROUP BY d.department_id ORDER BY COUNT(dp.degree_program_id) DESC LIMIT 1",
+      "generation_seconds": 15.602853
+    },
+    {
+      "question": "How many different degrees are offered?",
+      "generated_answer": "SELECT COUNT(DISTINCT department_id) FROM departments",
+      "generation_seconds": 0.891174
+    },
+    {
+      "question": "What are the names and id of courses having at most 2 sections?",
+      "generated_answer": "SELECT c.course_name, c.course_description FROM courses AS c JOIN sections AS s ON c.course_id = s.course_id GROUP BY c.course_id HAVING COUNT(s.section_id) <= 2",
+      "generation_seconds": 3.542244
+    },
+    {
+      "question": "List the section_name in reversed lexicographical order.",
+      "generated_answer": "SELECT section_name FROM sections ORDER BY section_name DESC",
+      "generation_seconds": 2.913722
+    },
+    {
+      "question": "Who are enrolled in 2 degree programs in one semester? List the first name, middle name and last name and the id.",
+      "generated_answer": "SELECT DISTINCT s.first_name, s.middle_name, s.last_name, se.degree_program_id FROM students s JOIN student_enrolment se ON s.student_id = se.student_id WHERE se.semester_id IN (SELECT semester_id FROM semesters GROUP BY semester_id HAVING COUNT(DISTINCT degree_program_id) >= 2)",
+      "generation_seconds": 31.711714
+    },
+    {
+      "question": "What is the first, middle, and last name, along with the id and number of enrollments, for the student who enrolled the most in any program?",
+      "generated_answer": "",
+      "generation_seconds": 190.24187
+    },
+    {
+      "question": "What's the name of the course with most number of enrollments?",
+      "generated_answer": "SELECT T1.course_name FROM courses AS T1 JOIN student_enrolment AS T2 ON T1.course_id = T2.course_id GROUP BY T1.course_name ORDER BY COUNT(T2.student_id) DESC LIMIT 1",
+      "generation_seconds": 13.370631
+    },
+    {
+      "question": "What is the date and id of the transcript with at least 2 courses listed?",
+      "generated_answer": "SELECT T1.transcript_date, T1.transcript_id FROM transcripts AS T1 INNER JOIN student_enrolment_courses AS T2 ON T1.transcript_id = T2.transcript_id WHERE T2.student_course_id IN (SELECT T3.student_course_id FROM student_enrolment_courses AS T3 GROUP BY T3.student_course_id HAVING COUNT(T3.student_course_id) >= 2)",
+      "generation_seconds": 4.421597
+    },
+    {
+      "question": "What is the phone number of the man with the first name Timmothy and the last name Ward?",
+      "generated_answer": "SELECT T1.cell_mobile_number FROM students AS T1 JOIN permanent_addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T1.first_name = 'Timmothy' AND T1.last_name = 'Ward'",
+      "generation_seconds": 3.614305
+    },
+    {
+      "question": "What is the first, middle, and last name of the earliest school graduate?",
+      "generated_answer": "SELECT MIN(st.first_name), MIN(st.middle_name), MIN(st.last_name) FROM students st",
+      "generation_seconds": 30.25865
+    },
+    {
+      "question": "Whose permanent address is different from his or her current address? List his or her first name.",
+      "generated_answer": "SELECT FIRST_NAME FROM students WHERE PERMANENT_ADDRESS_ID <> CURRENT_ADDRESS_ID",
+      "generation_seconds": 0.720881
+    },
+    {
+      "question": "What is the first name of the student whose permanent address is different from his or her current one?",
+      "generated_answer": "SELECT T1.first_name FROM students AS T1 INNER JOIN addresses AS T2 ON T1.permanent_address_id = T2.address_id WHERE T1.permanent_address_id <> T1.current_address_id",
+      "generation_seconds": 2.992526
+    },
+    {
+      "question": "On average, when were the transcripts printed?",
+      "generated_answer": "SELECT AVG(transcript_date) FROM transcripts",
+      "generation_seconds": 3.110045
+    },
+    {
+      "question": "What is the average transcript date?",
+      "generated_answer": "SELECT AVG(transcript_date) FROM transcripts",
+      "generation_seconds": 0.696696
+    },
+    {
+      "question": "What is the earliest date of a transcript release, and what details can you tell me?",
+      "generated_answer": "SELECT MIN(transcript_date) AS earliest_transcript_release, 'transcript_date' AS detail_type FROM transcripts",
+      "generation_seconds": 53.084332
+    },
+    {
+      "question": "How many transcripts are released?",
+      "generated_answer": "SELECT COUNT(transcript_id) FROM transcripts",
+      "generation_seconds": 0.332529
+    },
+    {
+      "question": "What is the date and id of the transcript with the least number of results?",
+      "generated_answer": "SELECT T2.transcript_date, T2.transcript_id FROM student_enrolment AS T1 INNER JOIN student_enrolment_courses AS T3 ON T1.student_id = T3.student_id INNER JOIN transcript_contents AS T4 ON T4.student_course_id = T3.student_course_id INNER JOIN transcripts AS T2 ON T2.transcript_id = T4.transcript_id GROUP BY T2.transcript_id ORDER BY COUNT(T3.student_id) ASC LIMIT 1",
+      "generation_seconds": 15.977469
+    },
+    {
+      "question": "What is the description for the section named h?",
+      "generated_answer": "SELECT section_description FROM sections WHERE section_name = 'H'",
+      "generation_seconds": 1.841848
+    },
+    {
+      "question": "What are the first names of the students who live in Haiti permanently or have the cell phone number 09700166582 ?",
+      "generated_answer": "SELECT DISTINCT T2.first_name FROM addresses AS T1 INNER JOIN students AS T2 ON T1.address_id = T2.permanent_address_id WHERE T1.country = 'Haiti' OR T2.cell_mobile_number LIKE '%09700166582%'",
+      "generation_seconds": 10.54749
+    },
+    {
+      "question": "What are the names of all cartoons directed by Ben Jones?",
+      "generated_answer": "SELECT title FROM cartoon WHERE directed_by = 'Ben Jones'",
+      "generation_seconds": 1.984414
+    },
+    {
+      "question": "list all cartoon titles and their directors ordered by their air date",
+      "generated_answer": "SELECT title, directed_by FROM cartoon ORDER BY original_air_date ASC",
+      "generation_seconds": 1.453039
+    },
+    {
+      "question": "What are the Package Options of the TV Channels whose series names are Sky Radio?",
+      "generated_answer": "SELECT DISTINCT channel FROM tv_channel WHERE series_name = 'Sky Radio'",
+      "generation_seconds": 2.092662
+    },
+    {
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "generated_answer": "SELECT T2.language, COUNT(T1.id) as num_channels FROM tv_channel AS T1 JOIN tv_series AS T3 ON T1.id = T3.channel WHERE T1.country = 'Country' GROUP BY T2.language ORDER BY num_channels LIMIT 1",
+      "generation_seconds": 44.273764
+    },
+    {
+      "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+      "generated_answer": "SELECT COUNT(DISTINCT T2.language) AS lang_count, T2.language FROM tv_channel AS T1 INNER JOIN tv_series AS T2 ON T1.id = T2.channel WHERE T2.language IS NOT NULL GROUP BY T2.language ORDER BY lang_count ASC LIMIT 1",
+      "generation_seconds": 92.874425
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "SELECT COUNT(T2.language) AS num_channels, T2.language FROM tv_channel AS T1 JOIN tv_series AS T3 ON T1.id = T3.channel WHERE T1.country = 'China' GROUP BY T2.language",
+      "generation_seconds": 19.615496
+    },
+    {
+      "question": "List the title of all  Cartoons showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "SELECT t2.title FROM tv_channel AS t1 INNER JOIN cartoon AS t2 ON t1.id = t2.channel WHERE t1.series_name = 'Sky Radio'",
+      "generation_seconds": 5.778135
+    },
+    {
+      "question": "What is the maximum and minimum share for the TV series?",
+      "generated_answer": "SELECT MIN(share) AS min_share, MAX(share) AS max_share FROM tv_series",
+      "generation_seconds": 3.906183
+    },
+    {
+      "question": "What is the air date of TV series with Episode \"A Love of a Lifetime\"?",
+      "generated_answer": "SELECT episode FROM tvseries WHERE episode = 'A Love of a Lifetime'",
+      "generation_seconds": 2.903767
+    },
+    {
+      "question": "List the Episode of all  TV series showed on TV Channel with series name \"Sky Radio\".",
+      "generated_answer": "SELECT ep FROM tvseries WHERE channel IN (SELECT id FROM tvchannel WHERE series_name = 'Sky Radio')",
+      "generation_seconds": 0.96031
+    },
+    {
+      "question": "Find the number of cartoons directed by each of the listed directors.",
+      "generated_answer": "SELECT director, COUNT(*) as num_cartoons FROM cartoon GROUP BY director",
+      "generation_seconds": 43.701253
+    },
+    {
+      "question": "which countries' tv channels are playing some cartoon written by Todd Casey?",
+      "generated_answer": "SELECT T2.country FROM cartoon AS T1 JOIN tv_channel AS T2 ON T1.channel = T2.id WHERE T1.directed_by = 'Todd Casey'",
+      "generation_seconds": 9.016676
+    },
+    {
+      "question": "What are the countries that are not playing cartoons written by Todd Casey?",
+      "generated_answer": "SELECT DISTINCT COUNTRY FROM TV_CHANNEL WHERE CHANNEL NOT IN (SELECT CHANNEL FROM CARTOON WHERE WRITTEN_BY = 'Todd Casey')",
+      "generation_seconds": 28.944317
+    },
+    {
+      "question": "Count the number of poker players.",
+      "generated_answer": "SELECT COUNT(poker_player_id) FROM poker_player",
+      "generation_seconds": 3.518024
+    },
+    {
+      "question": "What are the earnings of poker players, ordered descending by value?",
+      "generated_answer": "SELECT SUM(earnings) AS total_earnings FROM poker_player",
+      "generation_seconds": 2.636357
+    },
+    {
+      "question": "Return the money rank of the player with the greatest earnings.",
+      "generated_answer": "SELECT MAX(money_rank) AS highest_earnings_ranks FROM poker_player",
+      "generation_seconds": 4.903679
+    },
+    {
+      "question": "What are the names of poker players whose earnings is higher than 300000?",
+      "generated_answer": "SELECT name FROM poker_player WHERE earnings > 300000",
+      "generation_seconds": 0.819644
+    },
+    {
+      "question": "What is the average earnings of poker players with height higher than 200?",
+      "generated_answer": "Select avg(earnings) from poker_player where height > 200",
+      "generation_seconds": 2.728793
+    },
+    {
+      "question": "Give average earnings of poker players who are taller than 200.",
+      "generated_answer": "Select AVG(earnings) from poker_player p join people on p.people_id = people.people_id where height > 200",
+      "generation_seconds": 2.727622
+    },
+    {
+      "question": "Return the names of poker players sorted by their earnings descending.",
+      "generated_answer": "SELECT name FROM poker_player ORDER BY earnings DESC",
+      "generation_seconds": 3.343214
+    },
+    {
+      "question": "Give the nationality that is most common across all people.",
+      "generated_answer": "SELECT nationality FROM people GROUP BY nationality ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 2.479428
+    },
+    {
+      "question": "Return the nationalities for which there are two or more people.",
+      "generated_answer": "SELECT nationality FROM people GROUP BY nationality HAVING COUNT(people_id) >= 2",
+      "generation_seconds": 2.889612
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "SELECT name, birth_date FROM people ORDER BY name ASC",
+      "generation_seconds": 1.468139
+    },
+    {
+      "question": "What are the names of people who are not from Russia?",
+      "generated_answer": "SELECT name FROM people WHERE nationality != 'Russia'",
+      "generation_seconds": 0.542273
+    },
+    {
+      "question": "Count the number of different nationalities.",
+      "generated_answer": "SELECT COUNT(DISTINCT nationality) FROM people",
+      "generation_seconds": 0.738321
+    },
+    {
+      "question": "How many states are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT state) FROM area_code_state",
+      "generation_seconds": 0.439477
+    },
+    {
+      "question": "What is last date created of votes from the state 'CA'?",
+      "generated_answer": "SELECT MAX(votes.created) FROM votes INNER JOIN area_code_state ON votes.state = area_code_state.state WHERE area_code_state.state = 'CA'",
+      "generation_seconds": 4.967297
+    },
+    {
+      "question": "How many contestants did not get voted?",
+      "generated_answer": "SELECT COUNT(contestant_number) AS num_contestants FROM contestants WHERE contestant_number NOT IN (SELECT DISTINCT contestant_number FROM votes)",
+      "generation_seconds": 4.988685
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "SELECT DISTINCT v1.area_code AS area_code FROM votes v1 JOIN contestants c1 ON v1.contestant_number = c1.contestant_number WHERE c1.contestant_name = 'Tabatha Gehling' AND v1.state = 'area_code_state.state' UNION SELECT DISTINCT v2.area_code AS area_code FROM votes v2 JOIN contestants c2 ON v2.contestant_number = c2.contestant_number WHERE c2.contestant_name = 'Kelly Clauss' AND v2.state = 'area_code_state.state'",
+      "generation_seconds": 22.742905
+    },
+    {
+      "question": "Give the names of the nations that were founded after 1950.",
+      "generated_answer": "SELECT country FROM country WHERE year > 1950",
+      "generation_seconds": 3.101556
+    },
+    {
+      "question": "How many countries have governments that are republics?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.id) AS num_governments_republic FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.governmentform = 'republic'",
+      "generation_seconds": 3.75899
+    },
+    {
+      "question": "How much surface area do the countires in the Carribean cover together?",
+      "generated_answer": "SELECT SUM(surfacearea) FROM country WHERE continent = 'Caribbean'",
+      "generation_seconds": 0.587674
+    },
+    {
+      "question": "What region is Kabul in?",
+      "generated_answer": "SELECT continent FROM country WHERE name = 'Kabul'",
+      "generation_seconds": 1.940074
+    },
+    {
+      "question": "What are the region and population of Angola?",
+      "generated_answer": "SELECT region, population FROM country WHERE name = 'Angola'",
+      "generation_seconds": 0.548663
+    },
+    {
+      "question": "How long is the people's average life expectancy in Central Africa?",
+      "generated_answer": "SELECT AVG(lifeexpectancy) FROM country WHERE continent = 'Central Africa'",
+      "generation_seconds": 1.566133
+    },
+    {
+      "question": "Give the name of the country in Asia with the lowest life expectancy.",
+      "generated_answer": "SELECT T1.name FROM country AS T1 JOIN continent AS T2 ON T1.continent = T2.code WHERE T2.name LIKE 'Asia' ORDER BY T1.lifeexpectancy LIMIT 1",
+      "generation_seconds": 2.569047
+    },
+    {
+      "question": "What is the total population and maximum GNP in Asia?",
+      "generated_answer": "SELECT SUM(population) AS total_population, MAX(gnp) AS max_gnp FROM city WHERE countrycode IN (SELECT code FROM country WHERE continent = 'Asia')",
+      "generation_seconds": 5.222437
+    },
+    {
+      "question": "How many people live in Asia, and what is the largest GNP among them?",
+      "generated_answer": "SELECT SUM(population) AS total_population, MAX(gnp) AS max_gnp FROM city WHERE countrycode IN (SELECT code FROM country WHERE continent = 'Asia')",
+      "generation_seconds": 7.99694
+    },
+    {
+      "question": "Give the mean GNP and total population of nations which are considered US territory.",
+      "generated_answer": "SELECT AVG(countrylanguage.countrycode), SUM(city.population) FROM country INNER JOIN city ON country.code = city.countrycode WHERE country.name LIKE 'United States' AND country.code IN (SELECT code2 FROM countrylanguage WHERE language = 'English')",
+      "generation_seconds": 19.91108
+    },
+    {
+      "question": "How many different forms of governments are there in Africa?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.governmentform) FROM country AS T1 INNER JOIN continent AS T2 ON T1.continent = T2.name WHERE T2.name LIKE 'Africa'",
+      "generation_seconds": 20.492694
+    },
+    {
+      "question": "How many official languages are spoken in Afghanistan?",
+      "generated_answer": "SELECT COUNT(DISTINCT T1.language) AS official_languages FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.name = 'Afghanistan' AND T1.isofficial = 1",
+      "generation_seconds": 4.163602
+    },
+    {
+      "question": "What is name of the country that speaks the largest number of languages?",
+      "generated_answer": "SELECT T1.name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T1.name ORDER BY COUNT(T2.language) DESC LIMIT 1",
+      "generation_seconds": 2.219351
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "SELECT continent FROM country WHERE countrycode = ( SELECT countrycode FROM countrylanguage GROUP BY countrycode ORDER BY COUNT(language) DESC LIMIT 1 )",
+      "generation_seconds": 28.877039
+    },
+    {
+      "question": "Which language is the most popular on the Asian continent?",
+      "generated_answer": "SELECT COUNT(T2.language), T2.language FROM countrylanguage AS T1 JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.continent = 'Asia' GROUP BY T2.language ORDER BY COUNT(T2.language) DESC LIMIT 1",
+      "generation_seconds": 8.589492
+    },
+    {
+      "question": "Find the name, population and expected life length of asian country with the largest area?",
+      "generated_answer": "SELECT T2.name, T2.population, T3.lifeexpectancy FROM country AS T1 INNER JOIN city AS T2 ON T1.code = T2.countrycode INNER JOIN countrylanguage AS T4 ON T1.code = T4.countrycode WHERE T4.language = 'Chinese' AND T1.continent = 'Asia' ORDER BY T1.surfacearea DESC LIMIT 1",
+      "generation_seconds": 152.41723
+    },
+    {
+      "question": "What is the official language spoken in the country whose head of state is Beatrix?",
+      "generated_answer": "SELECT T2.language FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T1.isofficial = 'yes' AND T1.headofstate = 'Beatrix'",
+      "generation_seconds": 3.147048
+    },
+    {
+      "question": "Return the country codes for countries that do not speak English.",
+      "generated_answer": "SELECT DISTINCT T1.countrycode FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language != 'English'",
+      "generation_seconds": 5.326319
+    },
+    {
+      "question": "What are the codes of the countries that do not speak English and whose government forms are not Republic?",
+      "generated_answer": "SELECT T2.code FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T1.language != 'English' AND T2.governmentform != 'Republic'",
+      "generation_seconds": 4.199715
+    },
+    {
+      "question": "Return the codes of countries that do not speak English and do not have Republics for governments.",
+      "generated_answer": "SELECT DISTINCT T1.code FROM country AS T1 JOIN countrylanguage AS T2 ON T1.code = T2.countrycode WHERE T2.language != 'English' AND T1.governmentform != 'Republic'",
+      "generation_seconds": 4.13636
+    },
+    {
+      "question": "Which unique cities are in Asian countries where Chinese is the official language ?",
+      "generated_answer": "SELECT DISTINCT T1.id, T1.name FROM city AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T2.continent = 'Asia' AND T2.localname LIKE '%Chinese%' AND T2.governmentform IN ('Republic', 'Monarchy') AND T2.headofstate IS NOT NULL AND T2.capital IS NOT NULL AND T2.code2 IN ('CN', 'HK', 'MO')",
+      "generation_seconds": 6.449448
+    },
+    {
+      "question": "What are the names of countries that speak more than 2 languages, as well as how many languages they speak?",
+      "generated_answer": "SELECT c.name, COUNT(cl.language) AS num_languages FROM country c JOIN countrylanguage cl ON c.code = cl.countrycode GROUP BY c.code HAVING num_languages > 2",
+      "generation_seconds": 55.812223
+    },
+    {
+      "question": "Find the number of cities in each district whose population is greater than the average population of cities?",
+      "generated_answer": "",
+      "generation_seconds": 121.701879
+    },
+    {
+      "question": "How many cities in each district have a population that is above the average population across all cities?",
+      "generated_answer": "",
+      "generation_seconds": 127.048436
+    },
+    {
+      "question": "Find the government form name and total population for each government form whose average life expectancy is longer than 72.",
+      "generated_answer": "SELECT T3.name AS government_form_name, SUM(T4.population) / COUNT(T4.population) AS avg_life_expectancy FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode INNER JOIN state AS T3 ON T1.code = T3.code INNER JOIN city AS T4 ON T3.id = T4.statecode WHERE T2.isofficial = 0 GROUP BY T3.name HAVING AVG(T4.lifeexpectancy) > 72",
+      "generation_seconds": 137.130708
+    },
+    {
+      "question": "What are the different continents and the total popuation and average life expectancy corresponding to each, for continents that have an average life expectancy less than 72?",
+      "generated_answer": "SELECT DISTINCT c.continent, SUM(c.population) AS total_population, AVG(w.lifeexpectancy) AS avg_life_expectancy FROM world_1 w JOIN country c ON w.countrycode = c.code WHERE c.lifeexpectancy < 72 GROUP BY c.continent",
+      "generation_seconds": 52.88434
+    },
+    {
+      "question": "What are the names and areas of countries with the top 5 largest area?",
+      "generated_answer": "SELECT country.name, country.surfacearea FROM country ORDER BY country.surfacearea DESC LIMIT 5",
+      "generation_seconds": 5.349055
+    },
+    {
+      "question": "What are names of countries with the top 3 largest population?",
+      "generated_answer": "SELECT T2.name FROM country AS T1 INNER JOIN sqlite_sequence AS T3 ON T1.code = T3.name WHERE T3.name IN (SELECT MAX(T2.population) FROM country AS T1 INNER JOIN countrylanguage AS T2 ON T1.code = T2.countrycode GROUP BY T2.countrycode LIMIT 3)",
+      "generation_seconds": 3.392036
+    },
+    {
+      "question": "how many countries are in Asia?",
+      "generated_answer": "SELECT COUNT(DISTINCT countrycode) FROM country WHERE continent = 'Asia' AND region IN ('Europe', 'Africa', 'North America', 'South America', 'Oceania')",
+      "generation_seconds": 5.983771
+    },
+    {
+      "question": "Count the number of countries for which Spanish is the predominantly spoken language.",
+      "generated_answer": "SELECT COUNT(T2.countrycode) AS num_countries FROM countrylanguage AS T1 INNER JOIN country AS T2 ON T1.countrycode = T2.code WHERE T1.language = 'Spanish' AND T1.isofficial = 1",
+      "generation_seconds": 25.634672
+    },
+    {
+      "question": "How many conductors are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT conductor_id) FROM conductor",
+      "generation_seconds": 0.480982
+    },
+    {
+      "question": "What are the names of conductors whose nationalities are not \"USA\"?",
+      "generated_answer": "SELECT name FROM conductor WHERE nationality != 'USA'",
+      "generation_seconds": 1.27593
+    },
+    {
+      "question": "What are the record companies of orchestras in descending order of years in which they were founded?",
+      "generated_answer": "SELECT orchestra, record_company FROM orchestra ORDER BY year_of_founded DESC",
+      "generation_seconds": 47.491424
+    },
+    {
+      "question": "Return the average attendance across all shows.",
+      "generated_answer": "SELECT AVG(attendance) FROM show",
+      "generation_seconds": 0.996481
+    },
+    {
+      "question": "Count the number of different nationalities of conductors.",
+      "generated_answer": "SELECT COUNT(DISTINCT conductor.nationality) FROM conductor",
+      "generation_seconds": 14.324651
+    },
+    {
+      "question": "List the name of the conductor with the most years of work.",
+      "generated_answer": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.name ORDER BY COUNT(T2.year_of_work) DESC LIMIT 1",
+      "generation_seconds": 11.889884
+    },
+    {
+      "question": "Show the names of conductors and the orchestras they have conducted.",
+      "generated_answer": "SELECT conductor.name AS conductor_name, orchestra_orchestra_id FROM conductor JOIN orchestra ON conductor.conductor_id = orchestra.conductor_id",
+      "generation_seconds": 13.556831
+    },
+    {
+      "question": "What are the names of conductors as well as the corresonding orchestras that they have conducted?",
+      "generated_answer": "SELECT conductor.name AS conductor_name, orchestra_orchestra_id FROM conductor INNER JOIN orchestra ON conductor.conductor_id = orchestra.conductor_id",
+      "generation_seconds": 8.409172
+    },
+    {
+      "question": "Show the names of conductors that have conducted more than one orchestras.",
+      "generated_answer": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.name HAVING COUNT(T2.orchestra_id) > 1",
+      "generation_seconds": 3.821659
+    },
+    {
+      "question": "Show the name of the conductor that has conducted the most number of orchestras.",
+      "generated_answer": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id GROUP BY T1.name ORDER BY COUNT(T2.orchestra_id) DESC LIMIT 1",
+      "generation_seconds": 12.534295
+    },
+    {
+      "question": "Please show the name of the conductor that has conducted orchestras founded after 2008.",
+      "generated_answer": "SELECT T1.name FROM conductor AS T1 JOIN orchestra AS T2 ON T1.conductor_id = T2.conductor_id WHERE T2.year_of_founded > 2008",
+      "generation_seconds": 3.068345
+    },
+    {
+      "question": "How many orchestras does each record company manage?",
+      "generated_answer": "SELECT COUNT(DISTINCT o.orchestra_id), r.record_company FROM orchestra AS o JOIN conductor AS c ON o.conductor_id = c.conductor_id JOIN record_company AS r ON o.record_company = r.record_company",
+      "generation_seconds": 32.444953
+    },
+    {
+      "question": "Please show the record formats of orchestras in ascending order of count.",
+      "generated_answer": "SELECT orchestra, COUNT(orchestra_id) AS count FROM orchestra INNER JOIN conductor ON orchestra.conductor_id = conductor.conductor_id GROUP BY orchestra ORDER BY count ASC",
+      "generation_seconds": 7.304354
+    },
+    {
+      "question": "What is the record company used by the greatest number of orchestras?",
+      "generated_answer": "SELECT record_company, COUNT(orchestra_id) AS num_orchestras FROM orchestra GROUP BY record_company ORDER BY num_orchestras DESC LIMIT 1",
+      "generation_seconds": 38.661721
+    },
+    {
+      "question": "What are the orchestras that do not have any performances?",
+      "generated_answer": "SELECT orchestra FROM orchestra WHERE orchestra_id NOT IN (SELECT orchestra_id FROM performance)",
+      "generation_seconds": 2.490055
+    },
+    {
+      "question": "What are the record companies that are used by both orchestras founded before 2003 and those founded after 2003?",
+      "generated_answer": "SELECT DISTINCT o1.record_company AS record_company FROM orchestra AS o1 INNER JOIN orchestra AS o2 ON o1.orchestra_id = o2.orchestra_id WHERE o1.year_of_founded < 2003 INTERSECT SELECT DISTINCT o1.record_company FROM orchestra AS o1 INNER JOIN orchestra AS o2 ON o1.orchestra_id = o2.orchestra_id WHERE o1.year_of_founded > 2003",
+      "generation_seconds": 13.451012
+    },
+    {
+      "question": "Find the number of orchestras whose record format is \"CD\" or \"DVD\".",
+      "generated_answer": "SELECT COUNT(DISTINCT orchestra) FROM orchestra WHERE record_company IN ('CD', 'DVD')",
+      "generation_seconds": 9.216989
+    },
+    {
+      "question": "Show the years in which orchestras that have given more than one performance are founded.",
+      "generated_answer": "SELECT DISTINCT ORCHESTRA.year_of_founded FROM orchestra JOIN performance ON orchestra.orchestra_id = performance.orchestra_id GROUP BY ORCHESTRA.year_of_founded HAVING COUNT(performance.performance_id) > 1",
+      "generation_seconds": 25.421492
+    },
+    {
+      "question": "What are years of founding for orchestras that have had more than a single performance?",
+      "generated_answer": "SELECT DISTINCT T2.year_of_founded FROM orchestra AS T1 JOIN performance AS T3 ON T1.orchestra_id = T3.orchestra_id GROUP BY T2.year_of_founded HAVING COUNT(T3.performance_id) > 1",
+      "generation_seconds": 3.532692
+    },
+    {
+      "question": "What are the names and grades for each high schooler?",
+      "generated_answer": "SELECT name, grade FROM highschooler",
+      "generation_seconds": 0.325906
+    },
+    {
+      "question": "What grade is Kyle in?",
+      "generated_answer": "SELECT grade FROM highschooler WHERE name = 'Kyle'",
+      "generation_seconds": 0.930481
+    },
+    {
+      "question": "Return the grade for the high schooler named Kyle.",
+      "generated_answer": "SELECT grade FROM highschooler WHERE name = 'Kyle'",
+      "generation_seconds": 0.562228
+    },
+    {
+      "question": "What are the names of all high schoolers in grade 10?",
+      "generated_answer": "SELECT name FROM highschooler WHERE grade = 10",
+      "generation_seconds": 0.436449
+    },
+    {
+      "question": "Which grade has the most high schoolers?",
+      "generated_answer": "SELECT grade FROM highschooler GROUP BY grade ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.29997
+    },
+    {
+      "question": "What are the names of high schoolers who have 3 or more friends?",
+      "generated_answer": "SELECT h.name FROM highschooler h JOIN friend f ON h.id = f.student_id WHERE f.friend_id IN (SELECT f2.friend_id FROM friend f2 GROUP BY f2.friend_id HAVING COUNT(f2.student_id) >= 3)",
+      "generation_seconds": 8.881779
+    },
+    {
+      "question": "Show the names of all of the high schooler Kyle's friends.",
+      "generated_answer": "SELECT t2.name FROM friend AS t1 INNER JOIN highschooler AS t2 ON t1.student_id = t2.id WHERE t1.friend_id = 'Kyle'",
+      "generation_seconds": 3.317681
+    },
+    {
+      "question": "Show ids of all students who do not have any friends.",
+      "generated_answer": "SELECT DISTINCT student_id FROM friend WHERE friend_id NOT IN (SELECT student_id FROM friend)",
+      "generation_seconds": 1.392989
+    },
+    {
+      "question": "How many likes correspond to each student id?",
+      "generated_answer": "SELECT student_id, COUNT(liked_id) AS number_of_likes FROM likes GROUP BY student_id",
+      "generation_seconds": 17.058711
+    },
+    {
+      "question": "Show the names of high schoolers who have likes, and numbers of likes for each.",
+      "generated_answer": "",
+      "generation_seconds": 126.495288
+    },
+    {
+      "question": "What are the names of high schoolers who have likes, and how many likes does each have?",
+      "generated_answer": "SELECT highschooler.name, COUNT(likes.student_id) AS num_likes FROM highschooler INNER JOIN friend ON highschooler.id = friend.student_id INNER JOIN likes ON highschooler.id = likes.liked_id GROUP BY highschooler.name",
+      "generation_seconds": 61.88893
+    },
+    {
+      "question": "What is the name of the high schooler who has the greatest number of likes?",
+      "generated_answer": "SELECT highschooler.name FROM highschooler INNER JOIN likes ON highschooler.id = likes.student_id GROUP BY highschooler.name ORDER BY COUNT(likes.liked_id) DESC LIMIT 1",
+      "generation_seconds": 13.244649
+    },
+    {
+      "question": "What are the names of students who have 2 or more likes?",
+      "generated_answer": "SELECT T2.name FROM friends AS T1 INNER JOIN highschoolers AS T2 ON T1.student_id = T2.id GROUP BY T2.id HAVING COUNT(T1.friend_id) >= 2",
+      "generation_seconds": 5.775142
+    },
+    {
+      "question": "Find the average grade of all students who have some friends.",
+      "generated_answer": "SELECT AVG(grade) FROM highschooler",
+      "generation_seconds": 2.042022
+    },
+    {
+      "question": "What is the average grade of students who have friends?",
+      "generated_answer": "SELECT AVG(grade) FROM highschooler WHERE id IN (SELECT friend_id FROM friend WHERE student_id IN (SELECT student_id FROM likes))",
+      "generation_seconds": 3.777597
+    },
+    {
+      "question": "What is the lowest grade of students who do not have any friends?",
+      "generated_answer": "SELECT min(grade) FROM highschooler WHERE id NOT IN (SELECT DISTINCT friend_id FROM friend)",
+      "generation_seconds": 2.56704
+    },
+    {
+      "question": "What is the average age of the dogs who have gone through any treatments?",
+      "generated_answer": "SELECT AVG(dogs.age) AS average_age FROM dogs INNER JOIN treatments ON dogs.dog_id = treatments.dog_id WHERE treatments.date_of_treatment IS NOT NULL",
+      "generation_seconds": 10.815368
+    },
+    {
+      "question": "Which professionals live in the state of Indiana or have done treatment on more than 2 treatments? List his or her id, last name and cell phone.",
+      "generated_answer": "SELECT DISTINCT p.professional_id, p.last_name, p.cell_number FROM professionals AS p INNER JOIN treatments AS t ON p.professional_id = t.professional_id WHERE p.state = 'Indiana' OR COUNT(t.treatment_id) > 2",
+      "generation_seconds": 19.160269
+    },
+    {
+      "question": "Which dogs have not cost their owner more than 1000 for treatment ? List the dog names .",
+      "generated_answer": "SELECT T3.name FROM dogs AS T1 JOIN treatments AS T2 ON T1.dog_id = T2.dog_id JOIN professionals AS T3 ON T2.professional_id = T3.professional_id WHERE T2.cost_of_treatment <= 1000",
+      "generation_seconds": 14.571283
+    },
+    {
+      "question": "Give me the description of the treatment type whose total cost is the lowest.",
+      "generated_answer": "SELECT treatment_type_description FROM treatments INNER JOIN treatment_types ON treatments.treatment_type_code = treatment_types.treatment_type_code WHERE treatments.cost_of_treatment = ( SELECT MIN(cost_of_treatment) FROM treatments )",
+      "generation_seconds": 3.20983
+    },
+    {
+      "question": "Which professionals have operated a treatment that costs less than the average? Give me theor first names and last names.",
+      "generated_answer": "SELECT DISTINCT p.first_name, p.last_name FROM professionals p JOIN treatments t ON p.professional_id = t.professional_id WHERE t.cost_of_treatment < (SELECT AVG(cost_of_treatment) FROM treatments)",
+      "generation_seconds": 11.051431
+    },
+    {
+      "question": "What are the cost and treatment type description of each treatment?",
+      "generated_answer": "SELECT t.treatment_id, t.cost_of_treatment, tt.treatment_type_description FROM treatments AS t JOIN treatment_types AS tt ON t.treatment_type_code = tt.treatment_type_code",
+      "generation_seconds": 16.412318
+    },
+    {
+      "question": "Which dogs are of the rarest breed? Show their names and treatment dates.",
+      "generated_answer": "SELECT D.name, T.date_of_treatment FROM dogs AS D JOIN treatments AS T ON D.dog_id = T.dog_id WHERE D.breed_code IN (SELECT b.breed_code FROM breeds AS b GROUP BY b.breed_code ORDER BY COUNT(DISTINCT T.treatment_type_code) DESC LIMIT 1)",
+      "generation_seconds": 119.896835
+    },
+    {
+      "question": "Find the first names of owners living in Virginia and the names of dogs they own.",
+      "generated_answer": "SELECT T1.first_name, T2.name FROM owners AS T1 JOIN dogs AS T2 ON T1.owner_id = T2.owner_id WHERE T1.state = 'Virginia'",
+      "generation_seconds": 9.284569
+    },
+    {
+      "question": "List the last name of the owner owning the youngest dog.",
+      "generated_answer": "SELECT T1.last_name FROM owners AS T1 JOIN dogs AS T2 ON T1.owner_id = T2.owner_id WHERE T2.age = (SELECT MIN(age) FROM dogs)",
+      "generation_seconds": 7.821937
+    },
+    {
+      "question": "Count the number of dogs that went through a treatment.",
+      "generated_answer": "SELECT COUNT(treatment_id) AS num_treatments FROM treatments",
+      "generation_seconds": 30.868029
+    },
+    {
+      "question": "Find the role, street, city and state of the professionals living in a city that contains the substring 'West'.",
+      "generated_answer": "SELECT professionals.first_name, professionals.street, professionals.city, professionals.state FROM professionals WHERE professionals.city LIKE '%West%'",
+      "generation_seconds": 11.297047
+    },
+    {
+      "question": "Return the first name, last name and email of the owners living in a state whose name contains the substring 'North'.",
+      "generated_answer": "SELECT first_name, last_name, email_address FROM owners WHERE state LIKE '%North%'",
+      "generation_seconds": 5.436729
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "SELECT COUNT(DISTINCT dog_id) FROM dogs WHERE age < (SELECT AVG(age) FROM dogs)",
+      "generation_seconds": 8.410757
+    },
+    {
+      "question": "How many owners temporarily do not have any dogs?",
+      "generated_answer": "SELECT COUNT(DISTINCT owner_id) AS num_temporary_owners FROM owners WHERE owner_id NOT IN (SELECT owner_id FROM dogs)",
+      "generation_seconds": 8.809044
+    },
+    {
+      "question": "Find the number of professionals who have not treated any dogs.",
+      "generated_answer": "SELECT COUNT(DISTINCT professional_id) FROM professionals WHERE professional_id NOT IN (SELECT DISTINCT professional_id FROM treatments)",
+      "generation_seconds": 20.258095
+    },
+    {
+      "question": "List the dog name, age and weight of the dogs who have been abandoned? 1 stands for yes, and 0 stands for no.",
+      "generated_answer": "SELECT dogs.name, dogs.age, dogs.weight FROM dogs JOIN owners ON dogs.owner_id = owners.owner_id WHERE dogs.abandoned_yn = '1'",
+      "generation_seconds": 13.396648
+    },
+    {
+      "question": "What are the dog name, age and weight of the dogs that were abandoned? Note that 1 stands for yes, and 0 stands for no in the tables.",
+      "generated_answer": "SELECT dogs.name, dogs.age, dogs.weight FROM dogs JOIN owners ON dogs.owner_id = owners.owner_id WHERE dogs.abandoned_yn = '1'",
+      "generation_seconds": 2.850136
+    },
+    {
+      "question": "What is the average age of all the dogs?",
+      "generated_answer": "SELECT AVG(dogs.age) FROM dogs",
+      "generation_seconds": 1.418443
+    },
+    {
+      "question": "What are the email, cell phone and home phone of each professional?",
+      "generated_answer": "SELECT email_address, home_phone, cell_number FROM professionals",
+      "generation_seconds": 0.520471
+    },
+    {
+      "question": "How many singers are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT singer_id) FROM singer",
+      "generation_seconds": 1.82729
+    },
+    {
+      "question": "What is the count of singers?",
+      "generated_answer": "SELECT COUNT(singer_id) FROM singer",
+      "generation_seconds": 1.209566
+    },
+    {
+      "question": "List the name of singers in ascending order of net worth.",
+      "generated_answer": "SELECT name FROM singer ORDER BY net_worth_millions ASC",
+      "generation_seconds": 0.550649
+    },
+    {
+      "question": "What are the birth year and citizenship of singers?",
+      "generated_answer": "SELECT birth_year, citizenship FROM singer",
+      "generation_seconds": 0.266776
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "generation_seconds": 0.376621
+    },
+    {
+      "question": "What are the names of the singers who are not French citizens?",
+      "generated_answer": "SELECT name FROM singer WHERE citizenship != 'France'",
+      "generation_seconds": 0.498337
+    },
+    {
+      "question": "Show the name of singers whose birth year is either 1948 or 1949?",
+      "generated_answer": "SELECT name FROM singer WHERE birth_year IN (1948, 1949)",
+      "generation_seconds": 0.817726
+    },
+    {
+      "question": "Show different citizenships and the maximum net worth of singers of each citizenship.",
+      "generated_answer": "SELECT citizenship, MAX(net_worth_millions) AS max_net_worth FROM singer WHERE citizen != '' GROUP BY citizenship",
+      "generation_seconds": 11.195994
+    },
+    {
+      "question": "what are the different names of the singers that have sales more than 300000?",
+      "generated_answer": "SELECT DISTINCT T1.name FROM singer AS T1 JOIN song AS T2 ON T1.singer_id = T2.singer_id WHERE T2.sales > 300000",
+      "generation_seconds": 7.390094
+    },
+    {
+      "question": "For each singer name, what is the total sales for their songs?",
+      "generated_answer": "SELECT s.name, SUM(s.song_id) AS total_sales FROM singer s JOIN song ON s.singer_id = song.singer_id GROUP BY s.name",
+      "generation_seconds": 23.844647
+    },
+    {
+      "question": "What are the citizenships that are shared by singers with a birth year before 1945 and after 1955?",
+      "generated_answer": "SELECT DISTINCT citizen FROM singer WHERE birth_year < 1945 INTERSECT SELECT DISTINCT citizen FROM singer WHERE birth_year > 1955",
+      "generation_seconds": 1.602167
+    },
+    {
+      "question": "What is the feature type name of feature AirCon?",
+      "generated_answer": "SELECT feature_type_name FROM ref_feature_types WHERE feature_type_code = 'AirCon'",
+      "generation_seconds": 1.364437
+    }
+  ]
+}

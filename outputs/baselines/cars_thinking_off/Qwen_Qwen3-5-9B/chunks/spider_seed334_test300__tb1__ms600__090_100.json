@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 0.9,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1157.249,
+    "mean_generation_seconds_per_example": 115.724897,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1181.0061,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 90,
+    "eval_end_index": 100
+  },
+  "answers": [
+    {
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "generated_answer": "Select templates.template_id, count(*) as usage_count from templates join documents on templates.template_id = documents.template_id group by templates.template_id",
+      "generation_seconds": 223.973977
+    },
+    {
+      "question": "What is the id and type code for the template used by the most documents?",
+      "generated_answer": "Select t.template_id, rt.template_type_code from templates t, ref_template_types rt where t.template_type_code = rt.template_type_code group by t.template_id, rt.template_type_code order by count(*) desc limit 1",
+      "generation_seconds": 153.063264
+    },
+    {
+      "question": "How many templates do we have?",
+      "generated_answer": "SELECT COUNT(*) FROM templates",
+      "generation_seconds": 4.596865
+    },
+    {
+      "question": "What are the ids, version numbers, and type codes for each template?",
+      "generated_answer": "SELECT template_id, version_number, template_type_code FROM templates",
+      "generation_seconds": 117.504774
+    },
+    {
+      "question": "What are the ids of templates with template type code PP or PPT?",
+      "generated_answer": "SELECT template_id FROM templates JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code WHERE ref_template_types.template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 11.17558
+    },
+    {
+      "question": "Count the number of templates of the type CV.",
+      "generated_answer": "SELECT COUNT(*) FROM templates WHERE template_type_code = 'CV'",
+      "generation_seconds": 121.07833
+    },
+    {
+      "question": "Return the version numbers and template type codes of templates with a version number greater than 5.",
+      "generated_answer": "",
+      "generation_seconds": 230.97163
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "Select template_type_code from ref_template_types join templates on ref_template_types.template_type_code = templates.template_type_code group by template_type_code order by count(*) desc limit 1",
+      "generation_seconds": 115.116935
+    },
+    {
+      "question": "Return the type code of the template type that the most templates belong to.",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types ORDER BY COUNT(templates.template_id) DESC LIMIT 1",
+      "generation_seconds": 29.174778
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "SELECT template_type_code FROM ref_template_types WHERE NOT EXISTS ( SELECT 1 FROM templates WHERE templates.template_type_code = ref_template_types.template_type_code AND templates.version_number IS NULL ) AND ( SELECT COUNT(*) FROM templates WHERE templates.template_type_code = ref_template_types.template_type_code ) < 3",
+      "generation_seconds": 150.59284
+    }
+  ]
+}

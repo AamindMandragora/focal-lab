@@ -35,6 +35,7 @@ def run_crane_csd(
     valid_token_groups: Optional[List[List[str]]] = None,
     max_seconds: Optional[float] = None,
     completion_mode: bool = False,
+    early_stop_on_answer: bool = False,
 ) -> Tuple[str, int, float, List[Tuple[str, bool]], List[dict]]:
     """
     Run generation using the Dafny-verified CSD strategy.
@@ -57,6 +58,10 @@ def run_crane_csd(
             prompt_text string with no chat template applied. Required for base
             (non-instruction-tuned) completion models, which must see the prompt
             as a raw continuation rather than ChatML-wrapped.
+        early_stop_on_answer: When True, stop generation as soon as the output
+            contains a finished final-answer span ('final answer' followed by a
+            complete <<...>> span), mirroring CRANE's answer stopping. The
+            output-so-far is returned and scored through the normal path.
 
     Returns:
         Tuple of (output_text, token_count, time_seconds, constrained_segments)
@@ -105,6 +110,8 @@ def run_crane_csd(
         runtime_deadline = time.monotonic() + max_seconds
     if hasattr(lm, "SetRuntimeDeadline"):
         lm.SetRuntimeDeadline(runtime_deadline)
+    if early_stop_on_answer and hasattr(lm, "SetAnswerEarlyStop"):
+        lm.SetAnswerEarlyStop(True)
 
     eos_token_str = lm.tokenizer.eos_token or "<|endoftext|>"
     eos_token_dafny = _dafny.Seq(eos_token_str)
@@ -132,10 +139,14 @@ def run_crane_csd(
         ]
     )
 
+    from synthesis.evaluate.benchmarks.common.model_utils import AnswerCompleteStop
+
     import inspect
     _sig = inspect.signature(GeneratedCSD.default__.MyCSDStrategy)
     _param_names = list(_sig.parameters.keys())
     _n_params = len(_param_names)
+    answer_early_stopped = False
+    result = None
     try:
         if "validTokenGroups" in _param_names:
             result = GeneratedCSD.default__.MyCSDStrategy(
@@ -161,6 +172,11 @@ def run_crane_csd(
                 start_inside_constrained, current_constrained,
                 max_steps, eos_token_dafny,
             )
+    except AnswerCompleteStop:
+        # Generation-complete signal, not a failure: the final answer span is
+        # finished. The per-step hook stashed the tokens generated so far;
+        # return them through the normal scoring path below.
+        answer_early_stopped = True
     finally:
         if hasattr(lm, "ClearRuntimeDeadline"):
             lm.ClearRuntimeDeadline()
@@ -168,15 +184,23 @@ def run_crane_csd(
     final_inside_constrained = False
     final_current_constrained = _dafny.SeqWithoutIsStrInference([])
 
-    if isinstance(result, tuple) and len(result) == 4:
-        csd_output, final_inside_constrained, final_current_constrained, total_cost = result
-    elif isinstance(result, tuple):
-        csd_output, total_cost = result
+    if answer_early_stopped:
+        result_tokens = list(getattr(lm, "_early_stop_tokens", None) or [])
+        total_cost = len(result_tokens)
     else:
-        csd_output = result
-        total_cost = 0
+        if isinstance(result, tuple) and len(result) == 4:
+            csd_output, final_inside_constrained, final_current_constrained, total_cost = result
+        elif isinstance(result, tuple):
+            csd_output, total_cost = result
+        else:
+            csd_output = result
+            total_cost = 0
+        result_tokens = [dafny_seq_to_str(t) for t in csd_output]
 
-    result_tokens = [dafny_seq_to_str(t) for t in csd_output]
+    if early_stop_on_answer and hasattr(lm, "SetAnswerEarlyStop"):
+        # Clear AFTER harvesting the stash so the flag cannot leak into the
+        # next example's generation.
+        lm.SetAnswerEarlyStop(False)
     _enforce_max_steps(result_tokens, max_steps)
     output_text = "".join(result_tokens)
     execution_time = time.time() - start_time

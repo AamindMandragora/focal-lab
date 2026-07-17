@@ -1,0 +1,233 @@
+{
+  "artifact": "H91 final H86 failure audit",
+  "best_accuracy_attempt": {
+    "accuracy": 0.37,
+    "attempt": 20,
+    "compilation_success": true,
+    "has_evaluation": true,
+    "index": 20,
+    "num_examples": 100,
+    "syntax_rate": 0.41,
+    "verification_success": true
+  },
+  "best_accuracy_sample_summary": {
+    "answer_sources": {
+      "none": 48,
+      "smiles_eval": 52
+    },
+    "counts": {
+      "has_extracted_answer": 52,
+      "is_correct": 41,
+      "is_syntax_valid": 41,
+      "smiles_eval.accuracy_applicable": 41,
+      "smiles_eval.class_membership": 52,
+      "smiles_eval.grammar_valid": 52,
+      "smiles_eval.rdkit_valid": 41,
+      "smiles_eval.syntax_valid": 41,
+      "smiles_eval.unique_valid_candidate": 41,
+      "smiles_eval.valid_class_membership": 41,
+      "used_constrained_chunk": 52
+    },
+    "failure_locations": {
+      "correct": 41,
+      "no_valid_visible_span": 11,
+      "output_record_error": 48
+    },
+    "max_actual_length": 558,
+    "mean_actual_length": 490.1730769230769,
+    "mean_valid_visible_spans": 0.41,
+    "mean_visible_spans": 0.52,
+    "num_samples": 100,
+    "provenance_tags": {
+      "explicit_span_entry": 1,
+      "free_lm_generation": 52,
+      "no_constrained_activity": 48,
+      "safe_logit_step": 52
+    },
+    "rates": {
+      "has_extracted_answer": 0.52,
+      "is_correct": 0.41,
+      "is_syntax_valid": 0.41,
+      "smiles_eval.accuracy_applicable": 0.41,
+      "smiles_eval.class_membership": 0.52,
+      "smiles_eval.grammar_valid": 0.52,
+      "smiles_eval.rdkit_valid": 0.41,
+      "smiles_eval.syntax_valid": 0.41,
+      "smiles_eval.unique_valid_candidate": 0.41,
+      "smiles_eval.valid_class_membership": 0.41,
+      "used_constrained_chunk": 0.52
+    },
+    "top_helpers": {
+      "AppendConstrainedToken": 51,
+      "AppendTaskGuidance": 52,
+      "ChooseNextTokenUnconstrained": 63,
+      "CloseConstrainedSpan": 51,
+      "GenerateLogits": 19605,
+      "MaskValidNextAndEos": 19542,
+      "OpenConstrainedSpan": 1,
+      "SafeTemperatureConstrainedStep": 103,
+      "ScaleAllLogits": 103,
+      "UnconstrainedStep": 63
+    },
+    "unique_actual_count": 48,
+    "unique_correct_actual_count": 37
+  },
+  "cost_counters": {
+    "billed_api_calls": 0,
+    "gpu_calls": 0,
+    "model_calls": 0,
+    "score_artifact_edits": 0
+  },
+  "failure_patterns": {
+    "common_errors": [],
+    "compilation_failures": 0,
+    "runtime_failures": 0,
+    "search_contract_failures": 0,
+    "verification_failures": 11
+  },
+  "final_metric_attempt": {
+    "accuracy": 0.1,
+    "attempt": 40,
+    "compilation_success": true,
+    "has_evaluation": true,
+    "index": 40,
+    "num_examples": 100,
+    "syntax_rate": 0.25,
+    "verification_success": true
+  },
+  "final_sample_summary": {
+    "answer_sources": {
+      "smiles_eval": 100
+    },
+    "counts": {
+      "has_extracted_answer": 100,
+      "hit_max_steps": 36,
+      "is_correct": 25,
+      "is_syntax_valid": 25,
+      "smiles_eval.accuracy_applicable": 25,
+      "smiles_eval.class_membership": 100,
+      "smiles_eval.grammar_valid": 100,
+      "smiles_eval.rdkit_valid": 25,
+      "smiles_eval.syntax_valid": 25,
+      "smiles_eval.unique_valid_candidate": 25,
+      "smiles_eval.valid_class_membership": 25,
+      "used_constrained_chunk": 100
+    },
+    "failure_locations": {
+      "correct": 25,
+      "no_valid_visible_span": 39,
+      "token_budget_exhausted": 36
+    },
+    "max_actual_length": 647,
+    "mean_actual_length": 372.58,
+    "mean_valid_visible_spans": 0.25,
+    "mean_visible_spans": 1,
+    "num_samples": 100,
+    "provenance_tags": {
+      "free_lm_generation": 100
+    },
+    "rates": {
+      "has_extracted_answer": 1.0,
+      "hit_max_steps": 0.36,
+      "is_correct": 0.25,
+      "is_syntax_valid": 0.25,
+      "smiles_eval.accuracy_applicable": 0.25,
+      "smiles_eval.class_membership": 1.0,
+      "smiles_eval.grammar_valid": 1.0,
+      "smiles_eval.rdkit_valid": 0.25,
+      "smiles_eval.syntax_valid": 0.25,
+      "smiles_eval.unique_valid_candidate": 0.25,
+      "smiles_eval.valid_class_membership": 0.25,
+      "used_constrained_chunk": 1.0
+    },
+    "top_helpers": {
+      "AppendTaskGuidance": 100,
+      "ChooseNextTokenUnconstrained": 100,
+      "CloseConstrainedSpan": 100,
+      "GenerateLogits": 27029,
+      "MaskValidNextAndEos": 26929,
+      "UnconstrainedStep": 100
+    },
+    "unique_actual_count": 75,
+    "unique_correct_actual_count": 10
+  },
+  "h86_report_timestamp": "2026-06-30T20:51:58.660597",
+  "highest_syntax_attempt": {
+    "accuracy": 0.0,
+    "attempt": 1,
+    "compilation_success": true,
+    "has_evaluation": true,
+    "index": 1,
+    "num_examples": 100,
+    "syntax_rate": 1.0,
+    "verification_success": true
+  },
+  "highest_syntax_sample_summary": {
+    "answer_sources": {
+      "smiles_eval": 100
+    },
+    "counts": {
+      "has_extracted_answer": 100,
+      "is_syntax_valid": 100,
+      "smiles_eval.accuracy_applicable": 100,
+      "smiles_eval.grammar_valid": 100,
+      "smiles_eval.rdkit_valid": 100,
+      "smiles_eval.syntax_valid": 100,
+      "used_constrained_chunk": 100
+    },
+    "failure_locations": {
+      "syntax_valid_semantic_mismatch": 100
+    },
+    "max_actual_length": 1,
+    "mean_actual_length": 1,
+    "mean_valid_visible_spans": 1,
+    "mean_visible_spans": 1,
+    "num_samples": 100,
+    "provenance_tags": {
+      "explicit_span_entry": 100,
+      "safe_logit_step": 100
+    },
+    "rates": {
+      "has_extracted_answer": 1.0,
+      "is_syntax_valid": 1.0,
+      "smiles_eval.accuracy_applicable": 1.0,
+      "smiles_eval.grammar_valid": 1.0,
+      "smiles_eval.rdkit_valid": 1.0,
+      "smiles_eval.syntax_valid": 1.0,
+      "used_constrained_chunk": 1.0
+    },
+    "top_helpers": {
+      "AppendConstrainedToken": 100,
+      "AppendTaskGuidance": 100,
+      "CloseConstrainedSpan": 100,
+      "GenerateLogits": 100,
+      "IntersectTokenSets": 100,
+      "MaskValidNextAndEos": 100,
+      "OpenConstrainedSpan": 100,
+      "PenalizeTokenLogits": 100,
+      "SafePenalizeTokenLogits": 100,
+      "SafeRepetitionPenaltyStep": 100,
+      "ValidTokenCount": 100
+    },
+    "unique_actual_count": 3,
+    "unique_correct_actual_count": 0
+  },
+  "inputs": {
+    "log": "/tmp/csd_h86_logs/h86_smiles_qwen35_9b_isocyanates_train100_20260630.log",
+    "report": "outputs/generated/smiles_qwen35_9b_isocyanates_uv_qwen35_0627/smiles_qwen35_9b_isocyanates_uv_qwen35_0627_20260630_083748_22e3d6/results/failure_report.json"
+  },
+  "log_pattern_counts": {
+    "context_overflow": 52,
+    "duplicate_or_exemplar": 225,
+    "entered_constrained_mode_too_early": 38,
+    "long_invalid_concatenated_smiles": 10,
+    "managed_span_helper": 2,
+    "prefix_appears_helper": 0,
+    "tiny_span_dominant": 43
+  },
+  "recommendation": {
+    "next_lever": "new_or_repaired_general_class_membership_and_candidate_selection_helper",
+    "reason": "The high-syntax attempt produced many syntactically valid molecules, but only a minority were unique valid in-class candidates. This points beyond span mechanics alone."
+  },
+  "total_attempts": 40
+}

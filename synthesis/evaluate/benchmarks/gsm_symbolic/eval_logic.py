@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -84,13 +85,21 @@ def _gsm_question_text(example: dict[str, Any]) -> str:
     )
 
 
-def format_prompt(evaluator: Any, example: dict[str, Any]) -> list[dict]:
+def format_prompt(evaluator: Any, example: dict[str, Any]) -> list[dict] | str:
     # Multi-turn chat delivery (system + 8 user/assistant pairs + question),
     # matching CRANE. Lifted GSM-1.5B unconstrained 22.0% -> 30.0% over the
     # flattened single-user-message form. generation.py passes a list straight
     # through as chat_messages; the CSD path templates from the same messages.
-    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_messages
+    #
+    # CSD_GSM_FLAT_PROMPT=1 is a DIAGNOSTIC-ONLY escape back to the pre-June
+    # flattened single-user-message delivery; never set for recorded results.
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import (
+        reasoning_with_symbolic_expr_messages,
+        reasoning_with_symbolic_expr_prompt,
+    )
 
+    if os.environ.get("CSD_GSM_FLAT_PROMPT") == "1":
+        return reasoning_with_symbolic_expr_prompt(_gsm_question_text(example))
     return reasoning_with_symbolic_expr_messages(_gsm_question_text(example))
 
 
@@ -141,6 +150,7 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
             env["_dafny"],
             start="csd_start",
             tokenizer=env["tokenizer"],
+            default_mask_mode="grammar_strict",
         )
         evaluator._dynamic_parser_factory_cache[cache_key] = parser_factory
 

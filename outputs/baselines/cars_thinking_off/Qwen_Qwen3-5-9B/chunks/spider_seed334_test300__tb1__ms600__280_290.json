@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 339.8959,
+    "mean_generation_seconds_per_example": 33.989592,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 358.9338,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 280,
+    "eval_end_index": 290
+  },
+  "answers": [
+    {
+      "question": "Return the first name, last name and email of the owners living in a state whose name contains the substring 'North'.",
+      "generated_answer": "SELECT first_name, last_name, email_address FROM owners WHERE state LIKE '%North%'",
+      "generation_seconds": 43.847895
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "SELECT COUNT(*) FROM dogs WHERE age < (SELECT AVG(age) FROM dogs)",
+      "generation_seconds": 15.668795
+    },
+    {
+      "question": "How many owners temporarily do not have any dogs?",
+      "generated_answer": "SELECT COUNT(*) FROM owners o WHERE o.owner_id NOT IN (SELECT DISTINCT owner_id FROM dogs WHERE date_departed IS NULL OR date_departed = '')",
+      "generation_seconds": 91.52782
+    },
+    {
+      "question": "Find the number of professionals who have not treated any dogs.",
+      "generated_answer": "SELECT COUNT(*) FROM professionals p LEFT JOIN treatments t ON p.professional_id = t.professional_id WHERE t.treatment_id IS NULL",
+      "generation_seconds": 97.01121
+    },
+    {
+      "question": "List the dog name, age and weight of the dogs who have been abandoned? 1 stands for yes, and 0 stands for no.",
+      "generated_answer": "SELECT d.name, d.age, d.weight FROM dogs d WHERE d.abandoned_yn = 1",
+      "generation_seconds": 11.7554
+    },
+    {
+      "question": "What are the dog name, age and weight of the dogs that were abandoned? Note that 1 stands for yes, and 0 stands for no in the tables.",
+      "generated_answer": "SELECT name, age, weight FROM dogs WHERE abandoned_yn = 1",
+      "generation_seconds": 16.189568
+    },
+    {
+      "question": "What is the average age of all the dogs?",
+      "generated_answer": "SELECT AVG(age) AS average_age FROM dogs",
+      "generation_seconds": 3.329862
+    },
+    {
+      "question": "What are the email, cell phone and home phone of each professional?",
+      "generated_answer": "SELECT e.email_address, e.cell_number, e.home_phone FROM professionals e",
+      "generation_seconds": 57.883565
+    },
+    {
+      "question": "How many singers are there?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 1.334339
+    },
+    {
+      "question": "What is the count of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 1.347471
+    }
+  ]
+}

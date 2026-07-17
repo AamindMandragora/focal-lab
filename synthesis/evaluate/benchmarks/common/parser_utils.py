@@ -8,6 +8,7 @@ O(vocab) brute-force Lark parsing.
 from __future__ import annotations
 
 import os
+import re as _re
 import sys
 import time
 from collections import defaultdict
@@ -92,6 +93,32 @@ def _load_grammar_text(grammar_source: str) -> str:
     return grammar_source
 
 
+_CSD_CLOSER_LITERAL_RE = _re.compile(
+    r'^csd_start\s*:.*"((?:[^"\\]|\\.)+)"\s*$', _re.MULTILINE
+)
+
+
+def _grammar_closer_literal(grammar_text: str) -> str | None:
+    """Return the inline literal closer of the grammar's csd_start rule, if any.
+
+    Completeness semantics depend on whether the model can emit the span closer
+    itself during constrained decoding:
+    - gsm.lark: `csd_start: any_expr ">>"` — the closer is an inline literal the
+      decode mask allows after a complete expression (June runs proved the model
+      emits it), so "complete" should REQUIRE the closer: the span stays open
+      until the model finishes the whole expression. Judging bare content instead
+      closes the span after the first variable and the expression spills outside
+      the delimiters (the July GSM collapse).
+    - sql.lark: `csd_start: sql_stmt EOQ` — EOQ is a terminal reference
+      (/[;\\n]+/), not an inline literal; the closer cannot reliably be emitted
+      under the mask (the 0/0 wedge the 2026-06-22 change fixed), so completeness
+      is judged on the CONTENT rule and the strategy force-appends the closer.
+    - smiles_*.lark: no csd_start rule at all — content semantics.
+    """
+    match = _CSD_CLOSER_LITERAL_RE.search(grammar_text)
+    return match.group(1) if match else None
+
+
 def _get_parser_components(grammar_text: str, start: str):
     _ensure_syncode_import_path()
     from lark import Lark
@@ -122,7 +149,25 @@ def _get_parser_components(grammar_text: str, start: str):
     return cached_components
 
 
-def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
+def resolve_mask_mode(default_mask_mode: str = "grammar_mask") -> str:
+    """Mask-store mode: CSD_SYNCODE_MASK_MODE overrides; else the caller's default.
+
+    CRANE builds its store with 'grammar_strict' (CRANE/src/models/
+    base_model.py:23, CRANE/src/itergen/lebron.py:152). GSM call sites pass
+    default_mask_mode='grammar_strict' to match it (user decision 2026-07-17;
+    A/B on the 49-example seed123 train set: strict 34.69% acc / 93.88% syn
+    vs mask 32.65% / 97.96%). Spider is also strict (user decision 2026-07-17):
+    IterGen builds its store strict too (itergen/main.py:93), so strict is the
+    fair footing even though our A/B measured it costing Spider 8pp acc
+    (60.33% -> 52.33%; strict blocks fused dot tokens '.s'/'._' Qwen needs for
+    table.column identifiers — IterGen pays the same constraint). SMILES keeps
+    'grammar_mask' (own setup_dafny_environment, deliberately untouched).
+    """
+    return os.environ.get("CSD_SYNCODE_MASK_MODE", default_mask_mode)
+
+
+def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer,
+                               default_mask_mode: str = "grammar_mask"):
     if tokenizer is None:
         return None
 
@@ -130,7 +175,8 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
     from syncode.dfa_mask_store import DFAMaskStore
     import syncode.common as common
 
-    mask_key = (grammar_text, _tokenizer_cache_fingerprint(tokenizer))
+    mode = resolve_mask_mode(default_mask_mode)
+    mask_key = (grammar_text, _tokenizer_cache_fingerprint(tokenizer), mode)
     dfa_mask_store = _DFA_MASK_STORE_CACHE.get(mask_key)
     if dfa_mask_store is None:
         dfa_mask_store = DFAMaskStore.load_dfa_mask_store(
@@ -138,7 +184,7 @@ def _get_cached_dfa_mask_store(grammar_text: str, grammar, tokenizer):
             tokenizer=tokenizer,
             use_cache=True,
             logger=common.EmptyLogger(),
-            mode='grammar_mask',
+            mode=mode,
         )
         _DFA_MASK_STORE_CACHE[mask_key] = dfa_mask_store
     return dfa_mask_store
@@ -150,6 +196,7 @@ def create_lark_dafny_parser(
     _dafny,
     start: str = "start",
     tokenizer=None,
+    default_mask_mode: str = "grammar_mask",
 ):
     """
     Create a Dafny-compatible parser using syncode's DFA mask store.
@@ -160,6 +207,8 @@ def create_lark_dafny_parser(
         _dafny: The Dafny runtime module
         start: Start rule name in the grammar
         tokenizer: HuggingFace tokenizer (required for DFA mask store)
+        default_mask_mode: mask-store mode when CSD_SYNCODE_MASK_MODE is
+            unset ('grammar_mask' or 'grammar_strict'); see resolve_mask_mode
 
     Returns:
         A SyncodeDafnyParser class that can be instantiated with a token list
@@ -171,7 +220,8 @@ def create_lark_dafny_parser(
 
     grammar_text = _load_grammar_text(grammar_source)
     grammar, base_parser, lark_parser, complete_lark_parser = _get_parser_components(grammar_text, start)
-    dfa_mask_store = _get_cached_dfa_mask_store(grammar_text, grammar, tokenizer)
+    dfa_mask_store = _get_cached_dfa_mask_store(grammar_text, grammar, tokenizer,
+                                                default_mask_mode=default_mask_mode)
 
     class SyncodeDafnyParser(VerifiedDecoderAgent.Parser):
         """Parser using syncode's DFA mask store for fast token validity checks."""
@@ -217,6 +267,12 @@ def create_lark_dafny_parser(
             # Lark parser for the rare IsValidPrefix fallback (keeps the CSD start
             # rule, e.g. csd_start, which requires the closing delimiter).
             self._lark = lark_parser
+            # Inline literal closer of csd_start (">>" for gsm, None for sql /
+            # smiles). Non-None means the model can emit the closer itself, so
+            # _is_complete requires it; see _grammar_closer_literal.
+            self._closer_literal = (
+                _grammar_closer_literal(grammar_text) if start == "csd_start" else None
+            )
             # Separate parser for IsCompletePrefix completeness checks: its start rule
             # is the CONTENT rule "start" (any_expr / sql_stmt / smiles) WITHOUT the
             # grammar-masked closer, so span content can be recognized as complete and
@@ -332,6 +388,27 @@ def create_lark_dafny_parser(
             cached = self._complete_cache.get(text)
             if cached is not None:
                 return cached
+            # Closer-required semantics: when the grammar's csd_start closer is
+            # an inline literal the model can emit (gsm ">>"), a span is only
+            # complete once the model has emitted that closer — bare content
+            # like a lone variable must NOT close the span (2026-07-17 fix for
+            # the July GSM collapse; see _grammar_closer_literal).  Grammars
+            # whose closer is grammar-masked (sql EOQ) or absent (smiles) keep
+            # the content semantics below.  Env overrides are DIAGNOSTIC ONLY:
+            # CSD_COMPLETE_REQUIRES_CLOSER=1 forces closer-required everywhere,
+            # CSD_COMPLETE_CONTENT_ONLY=1 forces content semantics everywhere.
+            require_closer = (
+                self._closer_literal is not None
+                and os.environ.get("CSD_COMPLETE_CONTENT_ONLY") != "1"
+            )
+            if require_closer or os.environ.get("CSD_COMPLETE_REQUIRES_CLOSER") == "1":
+                try:
+                    self._lark.parse(text)
+                    result = True
+                except Exception:
+                    result = False
+                self._complete_cache[text] = result
+                return result
             try:
                 with _parser_timed("is_complete.inc_parser"):
                     parse_result = self._inc_parser.get_acceptable_next_terminals(text)

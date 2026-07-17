@@ -1,0 +1,141 @@
+{
+  "accuracy": 0.24,
+  "syntax_rate": 0.8,
+  "metrics": {
+    "num_examples": 25,
+    "total_generation_seconds": 4441.5112,
+    "mean_generation_seconds_per_example": 177.660448,
+    "examples_with_generation_timing": 25,
+    "run_wall_time_seconds": 4465.9902,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 200,
+    "eval_end_index": 225
+  },
+  "answers": [
+    {
+      "question": "How many states are there?",
+      "generated_answer": "SELECT COUNT(DISTINCT state) FROM votes",
+      "generation_seconds": 8.907027
+    },
+    {
+      "question": "What is last date created of votes from the state 'CA'?",
+      "generated_answer": "SELECT created FROM votes WHERE state = 'CA' ORDER BY created DESC LIMIT 1",
+      "generation_seconds": 72.898436
+    },
+    {
+      "question": "How many contestants did not get voted?",
+      "generated_answer": "SELECT COUNT(*) AS cnt FROM (SELECT DISTINCT candidate_number AS contestant_number FROM votes WHERE phone_number IS NOT NULL) AS voted WHERE contestant_number NOT IN (SELECT candidate_number FROM votes WHERE phone_number IS NOT NULL)",
+      "generation_seconds": 93.772829
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "",
+      "generation_seconds": 145.947401
+    },
+    {
+      "question": "Give the names of the nations that were founded after 1950.",
+      "generated_answer": "SELECT name FROM country WHERE indepyear > 1950",
+      "generation_seconds": 6.505573
+    },
+    {
+      "question": "How many countries have governments that are republics?",
+      "generated_answer": "SELECT COUNT(*) FROM country WHERE governmentform = 'Republic'",
+      "generation_seconds": 24.453009
+    },
+    {
+      "question": "How much surface area do the countires in the Carribean cover together?",
+      "generated_answer": "SELECT SUM(surfacearea) FROM country WHERE continent = 'Caribbean'",
+      "generation_seconds": 91.016726
+    },
+    {
+      "question": "What region is Kabul in?",
+      "generated_answer": "SELECT region FROM country WHERE code = (SELECT countrycode FROM countrylanguage JOIN city ON city.countrycode = countrylanguage.countrycode WHERE name = 'Kabul')",
+      "generation_seconds": 26.325371
+    },
+    {
+      "question": "What are the region and population of Angola?",
+      "generated_answer": "SELECT region, population FROM country WHERE code = 'ago'",
+      "generation_seconds": 29.590951
+    },
+    {
+      "question": "How long is the people's average life expectancy in Central Africa?",
+      "generated_answer": "",
+      "generation_seconds": 490.107964
+    },
+    {
+      "question": "Give the name of the country in Asia with the lowest life expectancy.",
+      "generated_answer": "SELECT name FROM country WHERE continent = 'Asia' AND lifeexpectancy = (SELECT MIN(lifeexpectancy) FROM country)",
+      "generation_seconds": 37.623284
+    },
+    {
+      "question": "What is the total population and maximum GNP in Asia?",
+      "generated_answer": "",
+      "generation_seconds": 840.051216
+    },
+    {
+      "question": "How many people live in Asia, and what is the largest GNP among them?",
+      "generated_answer": "",
+      "generation_seconds": 785.049875
+    },
+    {
+      "question": "Give the mean GNP and total population of nations which are considered US territory.",
+      "generated_answer": "SELECT AVG(c.gnp), SUM(c.population) FROM country c WHERE c.continent = 'North America' AND (c.headofstate = 'George Washington' OR c.governmentform = 'Republic of Mexico' OR c.code2 = 'us' OR c.code2 = 'mx')",
+      "generation_seconds": 203.760733
+    },
+    {
+      "question": "How many different forms of governments are there in Africa?",
+      "generated_answer": "SELECT COUNT(DISTINCT gov) FROM country WHERE continent = 'Africa'",
+      "generation_seconds": 414.305154
+    },
+    {
+      "question": "How many official languages are spoken in Afghanistan?",
+      "generated_answer": "SELECT COUNT(*) AS english FROM city WHERE country.name LIKE '%Afghanistan%'",
+      "generation_seconds": 319.567959
+    },
+    {
+      "question": "What is name of the country that speaks the largest number of languages?",
+      "generated_answer": "SELECT name FROM country WHERE code IN (SELECT countrycode FROM countrygrouping ORDER BY percentage DESC LIMIT 1)",
+      "generation_seconds": 52.073597
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "SELECT a.continent FROM country as a left join countrylanguage as b on a.code = b.countrycode group by a.continent order by count(distinct b.language) desc",
+      "generation_seconds": 54.980401
+    },
+    {
+      "question": "Which language is the most popular on the Asian continent?",
+      "generated_answer": "SELECT langue FROM countrylanguage WHERE percentage = (SELECT MAX(percentage) FROM countrylanguage WHERE countrycode = (SELECT code FROM country WHERE continent = 'A'))",
+      "generation_seconds": 195.668217
+    },
+    {
+      "question": "Find the name, population and expected life length of asian country with the largest area?",
+      "generated_answer": "SELECT name,population,lifeexpectancy FROM country WHERE continent='Asia' ORDER BY surfacearea DESC LIMIT 1",
+      "generation_seconds": 57.525677
+    },
+    {
+      "question": "What is the official language spoken in the country whose head of state is Beatrix?",
+      "generated_answer": "SELECT language FROM countrylanguage WHERE countrycode IN (SELECT code FROM country WHERE headofstate = 'Beatrix') AND isofficial = 1",
+      "generation_seconds": 45.806164
+    },
+    {
+      "question": "Return the country codes for countries that do not speak English.",
+      "generated_answer": "SELECT DISTINCT countrycode FROM countrylanguage WHERE isofficial = 'F' OR (isofficial = 'T' AND (language != 'English' OR isofficial = 'F' AND percentage > 0))",
+      "generation_seconds": 34.069296
+    },
+    {
+      "question": "What are the codes of the countries that do not speak English and whose government forms are not Republic?",
+      "generated_answer": "SELECT code FROM country WHERE code NOT IN (SELECT countrycode FROM countrylanguage WHERE language='English') AND governmentform != 'Republic'",
+      "generation_seconds": 98.157808
+    },
+    {
+      "question": "Return the codes of countries that do not speak English and do not have Republics for governments.",
+      "generated_answer": "SELECT code FROM country WHERE governmentform != 'Republic' AND NOT EXISTS (SELECT 1 FROM countrylanguage WHERE countrycode = country.code AND language = 'English' AND isofficial = 1)",
+      "generation_seconds": 27.465797
+    },
+    {
+      "question": "Which unique cities are in Asian countries where Chinese is the official language ?",
+      "generated_answer": "",
+      "generation_seconds": 285.880734
+    }
+  ]
+}

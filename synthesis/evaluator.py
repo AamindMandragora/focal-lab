@@ -990,6 +990,7 @@ class Evaluator:
                 env["_dafny"],
                 start="csd_start",
                 tokenizer=env["tokenizer"],
+                default_mask_mode="grammar_strict",
             )
             self._dynamic_parser_factory_cache[cache_key] = parser_factory
 

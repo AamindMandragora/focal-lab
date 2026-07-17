@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.7,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1436.9489,
+    "mean_generation_seconds_per_example": 143.694885,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1470.3802,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 0,
+    "eval_end_index": 10
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT COUNT(*) from singer",
+      "generation_seconds": 6.492915
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT COUNT(*) FROM singer",
+      "generation_seconds": 6.819472
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT average, MIN(age) as min_age, MAX(age) as max_age FROM singer WHERE country = 'France'",
+      "generation_seconds": 643.903711
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT country, COUNT(*) AS count FROM singer GROUP BY country",
+      "generation_seconds": 245.169227
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "Select s.name from Singer s, singer_in_concert sic, Concert c, Stadium stad where s.singer_id = sic.singer_id and sic.concert_id = c.concert_id and c.stadium_id = stad.stadium_id and s.age > (Select Avg(age) from singer)",
+      "generation_seconds": 123.201589
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT song_name FROM singer WHERE age > (SELECT AVG(age) FROM singer)",
+      "generation_seconds": 116.218646
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 22.674719
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT name, capacity FROM stadium WHERE average = (SELECT AVG(highest) FROM stadium)",
+      "generation_seconds": 59.567471
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT year FROM concert GROUP BY year ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 159.413254
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "select name from stadium where stadium_id not in (select stadium_id from concert where year = 2014)",
+      "generation_seconds": 53.487849
+    }
+  ]
+}

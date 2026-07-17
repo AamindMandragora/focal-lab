@@ -1,0 +1,592 @@
+{
+  "billing": "no model/GPU/API call; CPU-only replay over completed focal artifacts",
+  "changed_examples_first_40": [
+    {
+      "expected": "select avg ( age ) , min ( age ) , max ( age ) from singer where country = 'France'",
+      "index": 3,
+      "original": "SELECT AVG(age) AS average_age, MIN(age) AS min_age, MAX(age) AS max_age FROM singer WHERE country = 'France'",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT AVG(age) , MIN(age) , MAX(age) FROM singer WHERE country = 'France'",
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select country , count ( * ) from singer group by country",
+      "index": 4,
+      "original": "SELECT country, COUNT(*) AS singer_count FROM singer GROUP BY country",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT country, COUNT(*) FROM singer GROUP BY country",
+      "question": "How many singers are from each country?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select concert.concert_name , concert.theme , count ( * ) from singer_in_concert join concert on singer_in_concert.concert_id = concert.concert_id group by concert.concert_id",
+      "index": 11,
+      "original": "SELECT c.concert_name, c.theme, COUNT(sic.singer_id) AS number_of_singers FROM concert c JOIN singer_in_concert sic ON c.concert_id = sic.concert_id GROUP BY c.concert_id, c.concert_name, c.theme",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT c.concert_name, c.theme, COUNT(sic.singer_id) FROM concert c JOIN singer_in_concert sic ON c.concert_id = sic.concert_id GROUP BY c.concert_id, c.concert_name, c.theme",
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , student.stuid from student join has_pet on student.stuid = has_pet.stuid group by student.stuid",
+      "index": 23,
+      "original": "SELECT stuid, COUNT(*) AS pet_count FROM has_pet GROUP BY stuid",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT stuid, COUNT(*) FROM has_pet GROUP BY stuid",
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select continents.contid , continents.continent , count ( * ) from continents join countries on continents.contid = countries.continent group by continents.contid",
+      "index": 26,
+      "original": "SELECT contid, continent, COUNT(*) AS country_count FROM continents GROUP BY contid, continent",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT contid, continent, COUNT(*) FROM continents GROUP BY contid, continent",
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select continents.continent , count ( * ) from continents join countries on continents.contid = countries.continent join car_makers on countries.countryid = car_makers.country group by continents.continent",
+      "index": 32,
+      "original": "SELECT continents.continent, COUNT(car_makers.id) AS count FROM!",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT continents.continent, COUNT(car_makers.id) FROM!",
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select avg ( weight ) , year from cars_data group by year",
+      "index": 37,
+      "original": "SELECT year, AVG(weight) AS avg_weight, AVG(year) AS avg_year FROM cars_data GROUP BY year",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT year, AVG(weight) , AVG(year) FROM cars_data GROUP BY year",
+      "question": "What is the average weight and year for each year?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select cars_data.horsepower , car_names.make from car_names join cars_data on car_names.makeid = cars_data.id where cars_data.cylinders = 3 order by cars_data.horsepower desc limit 1",
+      "index": 39,
+      "original": "SELECT MAX(horsepower) AS max_horsepower, make",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT MAX(horsepower) , make",
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select airlines.airline from airlines join flights on airlines.uid = flights.airline group by airlines.airline order by count ( * ) desc limit 1",
+      "index": 74,
+      "original": "SELECT airline, COUNT(*) AS flight_count FROM flights GROUP BY airline ORDER BY flight_count DESC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT airline, COUNT(*) FROM flights GROUP BY airline ORDER BY flight_count DESC LIMIT 1",
+      "question": "What airline serves the most flights?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , shop.name from hiring join shop on hiring.shop_id = shop.shop_id group by shop.name",
+      "index": 87,
+      "original": "SELECT shop.name, COUNT(hiring.employee_id) AS number_of_employees FROM shop JOIN hiring ON shop.shop_id = hiring.shop_id GROUP BY shop.name",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT shop.name, COUNT(hiring.employee_id) FROM shop JOIN hiring ON shop.shop_id = hiring.shop_id GROUP BY shop.name",
+      "question": "Find the number of employees hired in each shop; show the shop name as well.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select template_id , count ( * ) from documents group by template_id",
+      "index": 91,
+      "original": "SELECT template_id, COUNT(*) AS usage_count FROM documents GROUP BY template_id",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT template_id, COUNT(*) FROM documents GROUP BY template_id",
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select min ( version_number ) , template_type_code from templates",
+      "index": 101,
+      "original": "SELECT MIN(version_number) AS smallest_version, template_type_code FROM templates JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code ORDER BY smallest_version ASC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT MIN(version_number) , template_type_code FROM templates JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code ORDER BY smallest_version ASC LIMIT 1",
+      "question": "What the smallest version number and its template type code?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select min ( version_number ) , template_type_code from templates",
+      "index": 102,
+      "original": "SELECT MIN(version_number) AS lowest_version, template_type_code FROM templates GROUP BY template_type_code ORDER BY lowest_version ASC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT MIN(version_number) , template_type_code FROM templates GROUP BY template_type_code ORDER BY lowest_version ASC LIMIT 1",
+      "question": "Return the lowest version number, along with its corresponding template type code.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select templates.template_type_code , count ( * ) from templates join documents on templates.template_id = documents.template_id group by templates.template_type_code",
+      "index": 103,
+      "original": "SELECT template_type_code, COUNT(*) AS document_count FROM documents JOIN templates ON documents.template_id = templates.template_id JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code GROUP BY template_type_code",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT template_type_code, COUNT(*) FROM documents JOIN templates ON documents.template_id = templates.template_id JOIN ref_template_types ON templates.template_type_code = ref_template_types.template_type_code GROUP BY template_type_code",
+      "question": "What are the different template type codes, and how many documents use each type?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select document_id , count ( * ) from paragraphs group by document_id order by document_id asc",
+      "index": 108,
+      "original": "SELECT documents.document_id, COUNT(paragraphs.paragraph_id) AS paragraph_count FROM documents INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY documents.document_id ORDER BY documents.document_id",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT documents.document_id, COUNT(paragraphs.paragraph_id) FROM documents INNER JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY documents.document_id ORDER BY documents.document_id",
+      "question": "Show all document ids and the number of paragraphs in each document. Order by document id.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select document_id , count ( * ) from paragraphs group by document_id order by document_id asc",
+      "index": 109,
+      "original": "SELECT document_id, COUNT(*) AS paragraph_count FROM paragraphs GROUP BY document_id ORDER BY document_id",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT document_id, COUNT(*) FROM paragraphs GROUP BY document_id ORDER BY document_id",
+      "question": "Return the different document ids along with the number of paragraphs corresponding to each, ordered by id.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select paragraphs.document_id , documents.document_name , count ( * ) from paragraphs join documents on paragraphs.document_id = documents.document_id group by paragraphs.document_id",
+      "index": 110,
+      "original": "SELECT document_id, document_name, COUNT(paragraph_id) AS paragraph_count FROM documents JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY document_id, document_name",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT document_id, document_name, COUNT(paragraph_id) FROM documents JOIN paragraphs ON documents.document_id = paragraphs.document_id GROUP BY document_id, document_name",
+      "question": "What are the ids and names of each document, as well as the number of paragraphs in each?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select hometown , count ( * ) from teacher group by hometown",
+      "index": 116,
+      "original": "SELECT hometown, COUNT(*) AS teacher_count FROM teacher GROUP BY hometown",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT hometown, COUNT(*) FROM teacher GROUP BY hometown",
+      "question": "For each hometown, how many teachers are there?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select teacher.name , count ( * ) from course_arrange join teacher on course_arrange.teacher_id = teacher.teacher_id group by teacher.name",
+      "index": 120,
+      "original": "SELECT name, COUNT(*) AS num_courses FROM course_arrange JOIN teacher ON course_arrange.teacher_id = teacher.teacher_id GROUP BY name",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT name, COUNT(*) FROM course_arrange JOIN teacher ON course_arrange.teacher_id = teacher.teacher_id GROUP BY name",
+      "question": "Show names of teachers and the number of courses they teach.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select avg ( num_of_ticket ) , max ( num_of_ticket ) from visit",
+      "index": 127,
+      "original": "SELECT AVG(num_of_ticket) AS avg_tickets, MAX(num_of_ticket) AS max_tickets FROM visit",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT AVG(num_of_ticket) , MAX(num_of_ticket) FROM visit",
+      "question": "What are the average and maximum number of tickets bought in all visits?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select players.country_code , players.first_name from players join rankings on players.player_id = rankings.player_id order by rankings.tours desc limit 1",
+      "index": 132,
+      "original": "SELECT first_name, country_code FROM players WHERE player_id IN (SELECT player_id FROM rankings GROUP BY player_id, tours HAVING COUNT(*) = (SELECT MAX(cnt) FROM (SELECT player_id, tours, COUNT(*) AS cnt FROM rankings GROUP BY player_id, tours) AS sub)) ORDER BY first_name, country_code LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT first_name, country_code FROM players WHERE player_id IN (SELECT player_id FROM rankings GROUP BY player_id, tours HAVING COUNT(*) = (SELECT MAX(cnt) FROM (SELECT player_id, tours, COUNT(*) FROM rankings GROUP BY player_id, tours) AS sub)) ORDER BY first_name, country_code LIMIT 1",
+      "question": "Find the first name and country code of the player who did the most number of tours.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select winner_name , winner_rank_points from matches group by winner_name order by count ( * ) desc limit 1",
+      "index": 134,
+      "original": "SELECT winner_name, SUM(winner_rank_points) AS total_rank_points FROM matches GROUP BY winner_name ORDER BY total_rank_points DESC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT winner_name, SUM(winner_rank_points) FROM matches GROUP BY winner_name ORDER BY total_rank_points DESC LIMIT 1",
+      "question": "What is the name of the winner who has won the most matches, and how many rank points does this player have?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , country_code from players group by country_code",
+      "index": 136,
+      "original": "SELECT country_code, COUNT(*) AS player_count FROM players GROUP BY country_code",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT country_code, COUNT(*) FROM players GROUP BY country_code",
+      "question": "find the number of players for each country.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , country_code from players group by country_code",
+      "index": 137,
+      "original": "SELECT country_code, COUNT(*) AS player_count FROM players GROUP BY country_code",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT country_code, COUNT(*) FROM players GROUP BY country_code",
+      "question": "How many players are from each country?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select sum ( tours ) , ranking_date from rankings group by ranking_date",
+      "index": 140,
+      "original": "SELECT ranking_date, COUNT(DISTINCT tours) AS total_tours FROM rankings GROUP BY ranking_date",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT ranking_date, COUNT(DISTINCT tours) FROM rankings GROUP BY ranking_date",
+      "question": "How many total tours were there for each ranking date?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , year from matches group by year",
+      "index": 141,
+      "original": "SELECT year, COUNT(*) AS match_count FROM matches GROUP BY year",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT year, COUNT(*) FROM matches GROUP BY year",
+      "question": "Find the number of matches happened in each year.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , hand from players group by hand",
+      "index": 144,
+      "original": "SELECT hand, COUNT(*) AS player_count FROM players GROUP BY hand",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT hand, COUNT(*) FROM players GROUP BY hand",
+      "question": "Find the number of players for each hand type.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , hand from players group by hand",
+      "index": 145,
+      "original": "SELECT hand, COUNT(*) AS player_count FROM players GROUP BY hand",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT hand, COUNT(*) FROM players GROUP BY hand",
+      "question": "How many players are there for each hand type?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select departments.department_name , degree_programs.department_id from degree_programs join departments on degree_programs.department_id = departments.department_id group by degree_programs.department_id order by count ( * ) desc limit 1",
+      "index": 156,
+      "original": "SELECT department_id, department_name, COUNT(degree_program_id) AS degree_count FROM departments JOIN degree_programs ON departments.department_id = degree_programs.department_id GROUP BY department_id, department_name ORDER BY degree_count DESC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT department_id, department_name, COUNT(degree_program_id) FROM departments JOIN degree_programs ON departments.department_id = degree_programs.department_id GROUP BY department_id, department_name ORDER BY degree_count DESC LIMIT 1",
+      "question": "Which department offers the most number of degrees? List department name and id.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select students.student_id , students.first_name , students.middle_name , students.last_name , count ( * ) , students.student_id from students join student_enrolment on students.student_id = student_enrolment.student_id group by students.student_id order by count ( * ) desc limit 1",
+      "index": 162,
+      "original": "SELECT first_name, middle_name, last_name, student_id, COUNT(*) AS enrollment_count FROM students JOIN student_enrolment ON students.student_id = student_enrolment.student_id GROUP BY first_name, middle_name, last_name, student_id ORDER BY enrollment_count DESC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT first_name, middle_name, last_name, student_id, COUNT(*) FROM students JOIN student_enrolment ON students.student_id = student_enrolment.student_id GROUP BY first_name, middle_name, last_name, student_id ORDER BY enrollment_count DESC LIMIT 1",
+      "question": "What is the first, middle, and last name, along with the id and number of enrollments, for the student who enrolled the most in any program?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select transcript_date , other_details from transcripts order by transcript_date asc limit 1",
+      "index": 171,
+      "original": "SELECT MIN(transcript_date) AS earliest_date, transcript_id, other_details FROM transcripts GROUP BY transcript_id, other_details ORDER BY earliest_date LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT MIN(transcript_date) , transcript_id, other_details FROM transcripts GROUP BY transcript_id, other_details ORDER BY earliest_date LIMIT 1",
+      "question": "What is the earliest date of a transcript release, and what details can you tell me?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select transcripts.transcript_date , transcript_contents.transcript_id from transcript_contents join transcripts on transcript_contents.transcript_id = transcripts.transcript_id group by transcript_contents.transcript_id order by count ( * ) asc limit 1",
+      "index": 173,
+      "original": "SELECT transcript_date, transcript_id FROM transcripts WHERE transcript_id IN (SELECT transcript_id FROM transcript_contents GROUP BY transcript_id HAVING COUNT(*) = (SELECT MIN(cnt) FROM (SELECT COUNT(*) AS cnt FROM transcript_contents GROUP BY transcript_id) AS subq))",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT transcript_date, transcript_id FROM transcripts WHERE transcript_id IN (SELECT transcript_id FROM transcript_contents GROUP BY transcript_id HAVING COUNT(*) = (SELECT MIN(cnt) FROM (SELECT COUNT(*) FROM transcript_contents GROUP BY transcript_id) AS subq))",
+      "question": "What is the date and id of the transcript with the least number of results?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select language , count ( * ) from tv_channel group by language order by count ( * ) asc limit 1",
+      "index": 179,
+      "original": "SELECT language, COUNT(*) AS channel_count FROM tv_channel GROUP BY language ORDER BY channel_count ASC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT language, COUNT(*) FROM tv_channel GROUP BY language ORDER BY channel_count ASC LIMIT 1",
+      "question": "List the language used least number of TV Channel. List language and number of TV Channel.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select language , count ( * ) from tv_channel group by language order by count ( * ) asc limit 1",
+      "index": 180,
+      "original": "SELECT language, COUNT(*) AS channel_count FROM tv_channel GROUP BY language ORDER BY channel_count ASC LIMIT 1",
+      "original_exec_correct": false,
+      "post_exec_correct": false,
+      "postprocessed": "SELECT language, COUNT(*) FROM tv_channel GROUP BY language ORDER BY channel_count ASC LIMIT 1",
+      "question": "What are the languages used by the least number of TV Channels and how many channels use it?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select language , count ( * ) from tv_channel group by language",
+      "index": 181,
+      "original": "SELECT language, COUNT(*) AS channel_count FROM tv_channel GROUP BY language",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT language, COUNT(*) FROM tv_channel GROUP BY language",
+      "question": "For each language, list the number of TV Channels that use it.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select max ( share ) , min ( share ) from tv_series",
+      "index": 183,
+      "original": "SELECT MIN(share) AS min_share, MAX(share) AS max_share FROM tv_series",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT MIN(share) , MAX(share) FROM tv_series",
+      "question": "What is the maximum and minimum share for the TV series?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select count ( * ) , directed_by from cartoon group by directed_by",
+      "index": 186,
+      "original": "SELECT directed_by, COUNT(*) AS num_cartoons FROM cartoon GROUP BY directed_by",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT directed_by, COUNT(*) FROM cartoon GROUP BY directed_by",
+      "question": "Find the number of cartoons directed by each of the listed directors.",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select sum ( population ) , max ( gnp ) from country where continent = 'Asia'",
+      "index": 212,
+      "original": "SELECT SUM(population) AS total_population, MAX(gnp) AS max_gnp FROM country WHERE continent = 'Asia'",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT SUM(population) , MAX(gnp) FROM country WHERE continent = 'Asia'",
+      "question": "What is the total population and maximum GNP in Asia?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select sum ( population ) , max ( gnp ) from country where continent = 'Asia'",
+      "index": 213,
+      "original": "SELECT SUM(population) AS total_population, MAX(gnp) AS max_gnp FROM country WHERE continent = 'Asia'",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT SUM(population) , MAX(gnp) FROM country WHERE continent = 'Asia'",
+      "question": "How many people live in Asia, and what is the largest GNP among them?",
+      "was_correct_report": false
+    },
+    {
+      "expected": "select avg ( gnp ) , sum ( population ) from country where governmentform = 'US Territory'",
+      "index": 214,
+      "original": "SELECT AVG(gnp) AS mean_gnp, SUM(population) AS total_population FROM country WHERE capital IN (SELECT id FROM city WHERE name = 'Washington' AND countrycode = 'USA') OR name = 'United States' OR name = 'United States of America' OR name = 'US' OR name = 'USA' OR name = 'U.S.' OR name = 'U.S.A.' OR name = 'The United States' OR name = 'The United States of America' OR name = 'The U.S.' OR name = 'The U.S.A.' OR name = 'The USA' OR name = 'The U.S.' OR name = 'The U.S.A.' OR name = 'The USA' OR name = 'United States of America' OR name = 'United States' OR name = 'USA' OR name = 'US' OR name = 'U.S.' OR name = 'U.S.A.'",
+      "original_exec_correct": false,
+      "post_exec_correct": true,
+      "postprocessed": "SELECT AVG(gnp) , SUM(population) FROM country WHERE capital IN (SELECT id FROM city WHERE name = 'Washington' AND countrycode = 'USA') OR name = 'United States' OR name = 'United States of America' OR name = 'US' OR name = 'USA' OR name = 'U.S.' OR name = 'U.S.A.' OR name = 'The United States' OR name = 'The United States of America' OR name = 'The U.S.' OR name = 'The U.S.A.' OR name = 'The USA' OR name = 'The U.S.' OR name = 'The U.S.A.' OR name = 'The USA' OR name = 'United States of America' OR name = 'United States' OR name = 'USA' OR name = 'US' OR name = 'U.S.' OR name = 'U.S.A.'",
+      "question": "Give the mean GNP and total population of nations which are considered US territory.",
+      "was_correct_report": false
+    }
+  ],
+  "changed_indices_first_80": [
+    3,
+    4,
+    11,
+    23,
+    26,
+    32,
+    37,
+    39,
+    74,
+    87,
+    91,
+    101,
+    102,
+    103,
+    108,
+    109,
+    110,
+    116,
+    120,
+    127,
+    132,
+    134,
+    136,
+    137,
+    140,
+    141,
+    144,
+    145,
+    156,
+    162,
+    171,
+    173,
+    179,
+    180,
+    181,
+    183,
+    186,
+    212,
+    213,
+    214,
+    226,
+    227,
+    228,
+    229,
+    230,
+    246,
+    247,
+    262,
+    263,
+    264,
+    276,
+    296,
+    298
+  ],
+  "changed_prediction_count": 53,
+  "created_utc": "2026-06-29T10:18:19.099340+00:00",
+  "credential_name_scan": {
+    "hits": [],
+    "terms": [
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "AWS_BEARER_TOKEN_BEDROCK",
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY",
+      "BEDROCK",
+      "sk-",
+      "SECRET_PLACEHOLDER"
+    ]
+  },
+  "flipped_to_correct": [
+    3,
+    4,
+    23,
+    26,
+    37,
+    91,
+    109,
+    116,
+    120,
+    127,
+    136,
+    137,
+    140,
+    141,
+    144,
+    145,
+    181,
+    183,
+    186,
+    212,
+    213,
+    214,
+    227,
+    228,
+    229,
+    246,
+    262,
+    296
+  ],
+  "flipped_to_correct_count": 28,
+  "flipped_to_wrong": [],
+  "flipped_to_wrong_count": 0,
+  "h": "H50",
+  "notes": [
+    "The postprocessor removes only simple AS aliases followed by comma or FROM and strips identifier quote characters; it does not read gold labels.",
+    "Question match count must be 300/300 for this replay to be trusted."
+  ],
+  "num_examples": 300,
+  "num_samples": 300,
+  "original_error_types": {
+    "Execution Error": 2,
+    "Other Error": 22,
+    "Valid": 276
+  },
+  "original_exec_accuracy": 0.6466666666666666,
+  "original_exec_correct_count": 194,
+  "original_execute_accuracy_scores": {
+    "all": {
+      "count": 300,
+      "exact": 0.0,
+      "exec": 0.6466666666666666
+    },
+    "easy": {
+      "count": 72,
+      "exact": 0.0,
+      "exec": 0.9027777777777778
+    },
+    "extra": {
+      "count": 48,
+      "exact": 0.0,
+      "exec": 0.4583333333333333
+    },
+    "hard": {
+      "count": 49,
+      "exact": 0.0,
+      "exec": 0.7142857142857143
+    },
+    "medium": {
+      "count": 129,
+      "exact": 0.0,
+      "exec": 0.5581395348837209
+    }
+  },
+  "original_report_accuracy": 0.6466666666666666,
+  "original_report_num_correct": 194,
+  "original_valid_count": 300,
+  "postprocessed_error_types": {
+    "Execution Error": 2,
+    "Other Error": 34,
+    "Valid": 264
+  },
+  "postprocessed_exec_accuracy": 0.74,
+  "postprocessed_exec_correct_count": 222,
+  "postprocessed_execute_accuracy_scores": {
+    "all": {
+      "count": 300,
+      "exact": 0.0,
+      "exec": 0.74
+    },
+    "easy": {
+      "count": 72,
+      "exact": 0.0,
+      "exec": 0.9027777777777778
+    },
+    "extra": {
+      "count": 48,
+      "exact": 0.0,
+      "exec": 0.5
+    },
+    "hard": {
+      "count": 49,
+      "exact": 0.0,
+      "exec": 0.7142857142857143
+    },
+    "medium": {
+      "count": 129,
+      "exact": 0.0,
+      "exec": 0.7596899224806202
+    }
+  },
+  "postprocessed_valid_count": 300,
+  "prediction_verdict": "confirmed_alias_postprocess_crosses_strict_bar",
+  "question_matches": 300,
+  "report_path": "outputs/generated/reeval_spider_9b_att20_HELDOUT_test300_0628/reeval_spider_9b_att20_HELDOUT_test300_0628_20260628_112936_0e9c30/results/success_report.json",
+  "split_path": "environment/benchmark_splits/spider_dev_proportional_300x300_seed334.json"
+}

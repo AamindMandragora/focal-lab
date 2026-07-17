@@ -1,0 +1,22 @@
+You are repairing one catastrophic operational failure in Dynamic CSD generation.
+
+Incident rule: gpu_memory_startup
+Source log: /home/aadivyar/csd-generation/logs/paid_synth_warmfix_gsm-qwen35-2b_0714_r2.log
+Trigger line: (EngineCore pid=321273) ERROR 07-15 14:29:57 [core.py:1108] ValueError: Free memory on device cuda:0 (6.38/39.49 GiB) on startup is less than desired GPU memory utilization (0.4, 15.8 GiB). Decrease GPU memory utilization or reduce GPU memory used by other processes.
+Evidence bundle: /home/aadivyar/csd-generation/.context/codex_incident_monitor/20260715T143021Z-11286398123d1a2865a9/incident.json
+
+Work only inside this isolated source snapshot. First reproduce the defect with a failing test,
+then make the smallest general fix and run the focused tests. Add useful diagnostic logging.
+
+Hard boundaries:
+- Do not launch synthesis or held-out evaluation.
+- Do not call Bedrock, AWS, OpenAI APIs, or any paid provider.
+- Do not read or write credentials.
+- Do not change grammars, graders, scorers, equivalence rules, dataset splits, datasets,
+  model choices, score bars, recipes, the warm/cold policy, results_matrix.md, or the recovery manifest.
+- Do not delete files.
+- Allowed edits are operational/framework Python, scripts, tests, and focal service files only.
+
+Return the required JSON result. Mark safe_to_relaunch true only after the new failing test and
+the relevant existing tests pass. If the incident cannot be safely repaired within these limits,
+return status not_repaired and safe_to_relaunch false.

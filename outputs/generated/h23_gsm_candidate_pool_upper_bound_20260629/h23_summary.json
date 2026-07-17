@@ -1,0 +1,1661 @@
+{
+  "summary": {
+    "report_sample_counts": {
+      "H1": 49,
+      "H2": 49,
+      "H4": 49,
+      "H10": 49
+    },
+    "report_syntax_candidate_counts": {
+      "H1": 30,
+      "H2": 48,
+      "H4": 44,
+      "H10": 46
+    },
+    "groups_with_candidates": 48,
+    "H1": {
+      "candidates": 30,
+      "correct": "unknown_per_sample; official aggregate is 2/49, offline equivalence from extracted spans is 4/49",
+      "positive": 4,
+      "sympy_equiv": 4,
+      "evaluator_correct_per_sample_available": false,
+      "official_accuracy_count_from_artifact": 2,
+      "offline_sympy_equiv_candidates": 4
+    },
+    "H2": {
+      "candidates": 48,
+      "correct": 2,
+      "positive": 4,
+      "sympy_equiv": 4,
+      "evaluator_correct_per_sample_available": true
+    },
+    "H4": {
+      "candidates": 44,
+      "correct": 0,
+      "positive": 2,
+      "sympy_equiv": 2,
+      "evaluator_correct_per_sample_available": true
+    },
+    "H10": {
+      "candidates": 46,
+      "correct": 3,
+      "positive": 8,
+      "sympy_equiv": 8,
+      "evaluator_correct_per_sample_available": true
+    },
+    "union_positive_groups": 11,
+    "union_positive_rate_over_49": 0.22448979591836735,
+    "needed_for_crane_bar": 12,
+    "meets_crane_bar": false
+  },
+  "groups": {
+    "1": [
+      {
+        "report": "H1",
+        "idx": 1,
+        "actual": "2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 1,
+        "actual": "(sides - target)/sides - (sides // 2) * (sides // 2) / (sides * sides) / sides * sides / sides * sides / sides * sides / sides * sides / sides * sides / sides * sides / sides * sides / sides * sides",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 1,
+        "actual": "target+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 1,
+        "actual": "sides - target / sides * 100 - (sides / 2) // 2 * (sides / 2) * 100 / sides * sides * 100 / sides * sides * 100 / sides * sides * 100",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "2": [
+      {
+        "report": "H1",
+        "idx": 2,
+        "actual": "n2 + n3 + 2*n2 + n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3 - n4 - n1 - n2 - n3",
+        "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 2,
+        "actual": "n - n1 - 3*n2*10000000000000000000000000000000000000000000000000000",
+        "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 2,
+        "actual": "n - n1 - 3 * n2",
+        "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "3": [
+      {
+        "report": "H1",
+        "idx": 3,
+        "actual": "k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n + k_2 * n + k_3 * n + n",
+        "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 3,
+        "actual": "n + k_2*n + 11/8*k_3*n*1/8*k_3*n*1/8*k_3*n*1/8*k_3*n*1/8*k_3*n*1/8*k_3*n*1/8*k_3",
+        "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 3,
+        "actual": "n * (13 * k_3 / 8) + n * k_2 + n + n * k_3 / 2 + n * k_3 / 8 + n * k_3 / 2 + n * k_3 / 8 + n",
+        "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 3,
+        "actual": "n + k_2*n + k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0*k_3*n + 0",
+        "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "4": [
+      {
+        "report": "H1",
+        "idx": 4,
+        "actual": "x * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k * 12 // n 12 * k",
+        "expected": "x * k * (12//n)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 4,
+        "actual": "12 * x * k",
+        "expected": "x * k * (12//n)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 4,
+        "actual": "k * x * n / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12",
+        "expected": "x * k * (12//n)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 4,
+        "actual": "x * k * 12 / n 12 * k * x / n 12 * k * x / n 12 * k * x / n 12 * k * x / n 12 * k * x / n 12 * k * x / n",
+        "expected": "x * k * (12//n)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "5": [
+      {
+        "report": "H1",
+        "idx": 5,
+        "actual": "2/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n*1/n",
+        "expected": "int(n * frac_1 * frac_2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 5,
+        "actual": "n * frac_1 * frac_2/100/10000/1000000000000000000000000000000000000000000",
+        "expected": "int(n * frac_1 * frac_2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 5,
+        "actual": "n * frac_1 * frac_2/100/10000/1000000000000000000000000000000000000000000",
+        "expected": "int(n * frac_1 * frac_2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 5,
+        "actual": "2",
+        "expected": "int(n * frac_1 * frac_2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "6": [
+      {
+        "report": "H1",
+        "idx": 6,
+        "actual": "(t - t) * (2 * (t - t) + t) * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t * (2 * (t - t) + t) + t",
+        "expected": "int((frac1 * t) + frac2*(total-t))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 6,
+        "actual": "(t * (1/2) * (1/2)) + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0",
+        "expected": "int((frac1 * t) + frac2*(total-t))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 6,
+        "actual": "t * frac1 + (total - t) * frac2 + (total - t) * frac2 + t * frac1 + (total - t) * frac2 + t * frac1 + (total - t) * frac2 + t * frac1 + (total - t)",
+        "expected": "int((frac1 * t) + frac2*(total-t))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 6,
+        "actual": "t * 1/1 * 1/1 + (total - t) * 1/1 * 1/2 + 1/1 + 1/2 + 1/1 + 1/2 + 1/1 + 1/2 + 1/1",
+        "expected": "int((frac1 * t) + frac2*(total-t))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "7": [
+      {
+        "report": "H1",
+        "idx": 7,
+        "actual": "-2 * w2 -3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2 - n3 * w3 - n1 * w1 - n2 * w2",
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 7,
+        "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H10",
+        "idx": 7,
+        "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "9": [
+      {
+        "report": "H1",
+        "idx": 9,
+        "actual": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2 - c1 - c2 - c3 - n1 - n2",
+        "expected": "int(n1*c1 + n2*c2 + c3)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 9,
+        "actual": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+        "expected": "int(n1*c1 + n2*c2 + c3)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 9,
+        "actual": "n1 * c1 * c1 + n2 * c2 * c2 + c3 * c1 + c2 * c2 + c3 * c1 + c3 * c2 + c3 * c3 + c1 * c2 + c2 * c3 + c3",
+        "expected": "int(n1*c1 + n2*c2 + c3)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 9,
+        "actual": "c1 * n1 + c2 * n2 + c3 * c1 + c2 * n2 + c3 * c2 + c3 * c3 + c1 * n1 + c2 * n2 + c3 * c2 + c3 * c3 + c3",
+        "expected": "int(n1*c1 + n2*c2 + c3)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "11": [
+      {
+        "report": "H1",
+        "idx": 11,
+        "actual": "2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+        "expected": "count*(n1+n2+n3+n4+n5)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 11,
+        "actual": "n1*count + n2*count + n3*count + n4*(count/2) + n5*(count/2) / 2 + n5*(count/2) / 2 + n5*(count/2) / 2 + n5*(count/2)",
+        "expected": "count*(n1+n2+n3+n4+n5)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 11,
+        "actual": "n1 + n2 + n3 + n4 + n5*1/1000000000000000000000000000000000000000000000",
+        "expected": "count*(n1+n2+n3+n4+n5)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 11,
+        "actual": "n1 + n2 + n3 + n4 * (count / 2) + n5 * (count / 2)",
+        "expected": "count*(n1+n2+n3+n4+n5)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "13": [
+      {
+        "report": "H1",
+        "idx": 13,
+        "actual": "total - (total * frac + daily * period * 7) - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7 - (total * frac + daily * period * 7) * 7 + (total * frac + daily * period * 7) * 7",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H2",
+        "idx": 13,
+        "actual": "total - frac * total + daily * period * 7+10000000000000000000000000000000000000000000000000",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 13,
+        "actual": "total * (1 - frac) - daily * period * 7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period*7/7*period*daily*period",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 13,
+        "actual": "total - (total * frac + daily * period * 7)",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "14": [
+      {
+        "report": "H1",
+        "idx": 14,
+        "actual": "initial_amount - quantity * unit_price",
+        "expected": "int(initial_amount - quantity * unit_price)",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H2",
+        "idx": 14,
+        "actual": "initial_amount * (1 - unit_price) * quantity + initial_amount - unit_price * quantity * quantity + initial_amount - unit_price * quantity * quantity + initial_amount - unit_price * quantity * quantity + initial_amount - unit_price * quantity * quantity + initial_amount - unit_price * quantity * quantity",
+        "expected": "int(initial_amount - quantity * unit_price)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 14,
+        "actual": "(initial_amount - quantity * unit_price) / 1000000000000000000000000000000000000000000000000000",
+        "expected": "int(initial_amount - quantity * unit_price)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "16": [
+      {
+        "report": "H1",
+        "idx": 16,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H2",
+        "idx": 16,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H4",
+        "idx": 16,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3+100000000000000000000000000000000000000000000",
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 16,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "18": [
+      {
+        "report": "H1",
+        "idx": 18,
+        "actual": "6000 * d * h / (n * t) * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 10",
+        "expected": "int(100 * (n/d) * t / (h * 60))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 18,
+        "actual": "(n * t * 100) / (h * 60) / 100 * 100 / 100 * 100 / 100 * 100 / 100 * 100 / 100",
+        "expected": "int(100 * (n/d) * t / (h * 60))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 18,
+        "actual": "(n * t) / (h * 60) % 100 / 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100",
+        "expected": "int(100 * (n/d) * t / (h * 60))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 18,
+        "actual": "(n * t / h * 60) * 100",
+        "expected": "int(100 * (n/d) * t / (h * 60))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "20": [
+      {
+        "report": "H1",
+        "idx": 20,
+        "actual": "1 + percent + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1",
+        "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 20,
+        "actual": "7 * (1 + percent) * price + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price + 7 * price * percent + extra_price * price",
+        "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 20,
+        "actual": "7 * usage * price",
+        "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 20,
+        "actual": "usage * 7 * price + extra_price + usage * 7 * price + extra_price + usage * 7 * price + extra_price + usage * 7 * price + extra_price + usage * 7 * price + extra_price + usage * 7 * price + extra_price + usage",
+        "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "22": [
+      {
+        "report": "H1",
+        "idx": 22,
+        "actual": "length * (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost * (cost / 1) + (length - space) * owned * cost",
+        "expected": "int((length / space - owned) * cost)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 22,
+        "actual": "length - owned * plant_width - (owned - 1) * space / plant_width * (length - owned * plant_width - (owned - 1) * space) / plant_width * (length - owned * plant_width - (owned - 1) * space) / plant_width",
+        "expected": "int((length / space - owned) * cost)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 22,
+        "actual": "length / (plant_width + space) * cost / 100000000000000000000000000000000000000000000000000",
+        "expected": "int((length / space - owned) * cost)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "24": [
+      {
+        "report": "H1",
+        "idx": 24,
+        "actual": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 24,
+        "actual": "n_first * a + n_first * a * p / 100 * f * r / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 100 / 1",
+        "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 24,
+        "actual": "n_first * a * (2 + p/100) * f * r/10000000000000000000000000000000000000000000",
+        "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 24,
+        "actual": "f * f * (n_first * a + p * n_first * a / 100) * r",
+        "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "25": [
+      {
+        "report": "H1",
+        "idx": 25,
+        "actual": "n - m * p1 - k * p2 + n1 * p1 + n2 * p2 + n3 * p2 + n4 * p2 + n5 * p2 + n6 * p2 + n7 * p2 + n8 * p2 + n9 * p2 + n10 * p2 + n11 * p2 + n12 * p2 + n13 * p2 + n14 * p2 + n15 * p2 + n16 * p2 + n17 * p2 + n18 * p2 + n19 * p2 + n20 * p2 + n21 * p2 + n22 * p2 + n23 * p2 + n24 * p2 + n25 * p2 + n26 * p2 + n27 * p2 + n28 * p2 + n29 * p2 + n30 * p2 + n31 * p2 + n32 * p2 + n33 * p2 + n34 * p2 + n35 * p2 + n36 * p2 + n37 * p2 + n38 * p2 + n39 * p2 + n40 * p2 + n41 * p2 + n42 * p2 + n43 * p2 + n44 * p2 + n45 * p2 + n46 * p2 + n47 * p2 + n48 * p2 + n49 * p2 + n50 * p2 + n51 * p2 + n52 * p2 + n53 * p2 + n54 * p2 + n55 * p2 + n56 * p2 + n57 * p2 + n58 * p2 + n59 * p2 + n60 * p2 + n61 * p2 + n62 * p2 + n63 * p2 + n64 * p2 + n65 * p2 + n66 * p2 + n67 * p2 + n68 * p2 + n69 * p2 + n70 * p2 + n71 * p2 + n72 * p2 + n73 * p2 + n74 * p2 + n75 * p2 + n76 * p2 + n77 * p2 + n78 * p2 + n79 * p2 + n80 * p2 + n81 * p2 + n82 * p2 + n83 * p2 + n84 * p2 + n85 * p2 + n86 * p2 + n87 * p2 + n88 * p2 + n89 * p2 + n90 * p2 + n91 * p2 + n92 * p2 + n93 * p2 + n94 * p2 + n95 * p2 + n96 * p2 + n97 * p2",
+        "expected": "n * int(bill) - (m * p1 + k * p2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 25,
+        "actual": "n - m * p1 - k * p2",
+        "expected": "n * int(bill) - (m * p1 + k * p2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 25,
+        "actual": "3 + 5 - 200000000000000000000000000000000000000000000000000000000",
+        "expected": "n * int(bill) - (m * p1 + k * p2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 25,
+        "actual": "n - m * p1 - k * p2/100000000000000000000000000000000000000000000000000",
+        "expected": "n * int(bill) - (m * p1 + k * p2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "27": [
+      {
+        "report": "H1",
+        "idx": 27,
+        "actual": "base * mult1 + mult2 * n * days + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n * days * mult2 + n * days * base * mult1 + n",
+        "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 27,
+        "actual": "n * (mult1 + mult2) * days",
+        "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 27,
+        "actual": "n * (mult2 + mult2 + mult2) * days - n * (mult2 + mult2 + mult2) * days - n * (mult2 + mult2 + mult2) * days - n * (mult2 + mult2 + mult2) * days - n",
+        "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 27,
+        "actual": "n * (mult1 + mult2) * days / 30* 30* 30* 30* 30* 30* 30* 30* 30* 30* 30* 30* 30",
+        "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "29": [
+      {
+        "report": "H1",
+        "idx": 29,
+        "actual": "n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1 * p / 100 - n1 - n1 * p / 100 - n1 - n1 * p / 100 + n1 + n1 * p / 100 + n1 + n1",
+        "expected": "2 * (n1 + (p/100 * n1))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 29,
+        "actual": "(n1 * (100 + p)) / 50+100+100+100+100+100+100+100+100+100+100+100+100",
+        "expected": "2 * (n1 + (p/100 * n1))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 29,
+        "actual": "100% (1 + p/100) + (1 + p/100) + (1 + p/100) + (1 + p/100) + (1 + p/100)",
+        "expected": "2 * (n1 + (p/100 * n1))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 29,
+        "actual": "2 * n1 + p * n1 / 50+100 * n1 / 50 * 2+100 * n1 / 50 * 2+100 * n1 / 50 * 2+100 * n1",
+        "expected": "2 * (n1 + (p/100 * n1))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "30": [
+      {
+        "report": "H1",
+        "idx": 30,
+        "actual": "n * m / k",
+        "expected": "(n*m)//k",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H2",
+        "idx": 30,
+        "actual": "n * m / k - int(n * m / k) / k + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1",
+        "expected": "(n*m)//k",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 30,
+        "actual": "n * m / k",
+        "expected": "(n*m)//k",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H10",
+        "idx": 30,
+        "actual": "n * m / k",
+        "expected": "(n*m)//k",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "31": [
+      {
+        "report": "H1",
+        "idx": 31,
+        "actual": "n1 * l * t / (p * 60) / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 6",
+        "expected": "((n1 - n2) * l * p * t) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 31,
+        "actual": "(n1 * l * p * t) / 60*100000000000000000000000000000000000000000000000",
+        "expected": "((n1 - n2) * l * p * t) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 31,
+        "actual": "n1 * l * p * t / 60",
+        "expected": "((n1 - n2) * l * p * t) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 31,
+        "actual": "(n1 * l * p * t) / 60*1000*60*60*60*60*60*60*60*60*60*60*60*60*60*60*6",
+        "expected": "((n1 - n2) * l * p * t) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "36": [
+      {
+        "report": "H1",
+        "idx": 36,
+        "actual": "n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d / 7 * 1/60 + n1 * n2 * t * d",
+        "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 36,
+        "actual": "1\n-\n2\n-\n3\n-\n4\n-\n5\n-\n6\n-\n7\n-\n8\n-\n9\n-\n10\n-\n11\n-\n12\n-\n13\n-\n14",
+        "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 36,
+        "actual": "(n1 + n2) * t * frac / 60*100*100*100*100*100*100*100*100*100*100*100*100",
+        "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 36,
+        "actual": "frac * n1 * n2 * d * t / 60000000000000000000000000000000000000000000000000",
+        "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "37": [
+      {
+        "report": "H1",
+        "idx": 37,
+        "actual": "1 + 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1+ 1* 1* 1* 1",
+        "expected": "int(n1 * frac) + n2",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 37,
+        "actual": "(n1 + n2) / (n1 * n2) * (n1 + n2) + (n1 + n2) / (n2 * n1) + (n1 + n2) / (n1 * n2) + (n1 + n2)",
+        "expected": "int(n1 * frac) + n2",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 37,
+        "actual": "1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1 + n2 - 1",
+        "expected": "int(n1 * frac) + n2",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 37,
+        "actual": "n1 + n2 / n1 + n1 + n2 / n2",
+        "expected": "int(n1 * frac) + n2",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "38": [
+      {
+        "report": "H1",
+        "idx": 38,
+        "actual": "n1 * n2 + n3 * n4 + n5 * n6 + n7 * n8 + n9 * n10 + n11 * n12 + n13 * n14 + n15 * n16 + n17 * n18 + n19 * n20 + n21 * n22 + n23 * n24 + n25 * n26 + n27 * n28 + n29 * n30 + n31 * n32 + n33 * n34 + n35 * n36 + n37 * n38 + n39 * n40 + n41 * n42 + n43 * n44 + n45 * n46 + n47 * n48 + n49 * n50 + n51 * n52 + n53 * n54 + n55 * n56 + n57 * n58 + n59 * n60 + n61 * n62 + n63 * n64 + n65 * n66 + n67 * n68 + n69 * n70 + n71 * n72 + n73 * n74 + n75 * n76 + n77 * n78 + n79 * n80 + n81 * n82 + n83 * n84 + n85 * n86 + n87 * n88 + n89 * n90 + n91 * n92 + n93 * n94 + n95 * n96 + n97 * n98 + n99 * n100 + n101 * n102 + n103 * n104 + n105 * n106 + n107 * n108 + n109 * n110 + n111 * n112 + n113 * n114 + n115 * n116 + n117 * n118 + n119 * n120 + n121 * n122 + n123 * n124 + n125 * n126 + n127 * n128 + n129 * n130 + n131 * n132 + n133 * n134 + n135 * n136 + n137 * n138 + n139 * n140 + n141 * n",
+        "expected": "total - 2*n - m",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 38,
+        "actual": "total - n * n",
+        "expected": "total - 2*n - m",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 38,
+        "actual": "total - 2 * n",
+        "expected": "total - 2*n - m",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 38,
+        "actual": "total - n * n - n * n",
+        "expected": "total - 2*n - m",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "39": [
+      {
+        "report": "H1",
+        "idx": 39,
+        "actual": "total - n1 - n2 + n1 + n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1 - n2 - n1",
+        "expected": "total - (n1 + n2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 39,
+        "actual": "total - n1 - n2*1000000000000000000000000000000000000000000000000000000",
+        "expected": "total - (n1 + n2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 39,
+        "actual": "total - n1 - n2+1000000000000000000000000000000000000000000000000000000",
+        "expected": "total - (n1 + n2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 39,
+        "actual": "total - n1 - n2 - n1 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2",
+        "expected": "total - (n1 + n2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "40": [
+      {
+        "report": "H1",
+        "idx": 40,
+        "actual": "n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p * (1 + r1/100) * (1 - r2/100) / p / n * n * p",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 40,
+        "actual": "n * (1 + r1/100) * (1 - r2/100) * (n * (1 + r1/100) * (1 - r2/100))",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 40,
+        "actual": "r1 - r2 - r1*r2/10000 + 10000/1000000 + 10000/1000000 + 10000/1000000",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 40,
+        "actual": "n * p * (1 + r1/100) * (1 - r2/100)",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "43": [
+      {
+        "report": "H1",
+        "idx": 43,
+        "actual": "n1 * n1 + n1 * frac1 + mult1 * frac1 * n1 + frac2 * mult1 * frac1 * n1 - n1 - mult1 * frac1 * n1 - frac2 * mult1 * frac1 * n1 - n1 * n1 * frac1 * frac2 - n1 * n1 * frac1 * frac2 * mult1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 - n1 * n1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1 * frac2 * mult1 * frac1",
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 43,
+        "actual": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 43,
+        "actual": "frac2 * frac1 * mult1 * n1/100000000000000000000000000000000000000000000000000",
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 43,
+        "actual": "frac2 * mult1 * frac1 * n1 111111111111111111111111111111111111111111111111111",
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "47": [
+      {
+        "report": "H1",
+        "idx": 47,
+        "actual": "n * 7 + n * 7 * mult + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n * 7 + n * 7 * mult - n",
+        "expected": "(n + n * mult) * 7",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 47,
+        "actual": "n * (mult + 1) * 7/7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7*7",
+        "expected": "(n + n * mult) * 7",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 47,
+        "actual": "n * (1 + mult) * 7/7000000000000000000000000000000000000000000000000000",
+        "expected": "(n + n * mult) * 7",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 47,
+        "actual": "n * 7 * (mult + 1) / 10000000000000000000000000000000000000000000000000",
+        "expected": "(n + n * mult) * 7",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "48": [
+      {
+        "report": "H1",
+        "idx": 48,
+        "actual": "r + r*r + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1 - 1",
+        "expected": "n0 * (r + 1)**d",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 48,
+        "actual": "n0 * (1 + r) - 1 / (1 + r) - 1 + n0 * (1 + r) - 1 / (1 + r) - 1 + n0 * (1 + r) - 1 + n0 * (1 + r)",
+        "expected": "n0 * (r + 1)**d",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 48,
+        "actual": "11111111111111111111111111111111111111111111111111111111111111",
+        "expected": "n0 * (r + 1)**d",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 48,
+        "actual": "n0 + d * n0 * r/10000000000000000000000000000000000000000000000000000",
+        "expected": "n0 * (r + 1)**d",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "49": [
+      {
+        "report": "H1",
+        "idx": 49,
+        "actual": "n1 * d1 + n2 * d2 + 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0 / 12 - 12 * 0",
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H2",
+        "idx": 49,
+        "actual": "(((n1 * d1) + (n2 * d2)) / 12) / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12 / 12",
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 49,
+        "actual": "(n1 * d1 + n2 * d2 + n2 * d3) // 12/12*12*12*12*12*12*12*12*12*12*12*12*12",
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 49,
+        "actual": "(n1 * d1 + n2 * d2) / 12",
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "8": [
+      {
+        "report": "H2",
+        "idx": 8,
+        "actual": "100 * ((n1 * k1) + (n2 * k2)) / (n1 + n2) + 0000000000000000000000000000000000",
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 8,
+        "actual": "(k1 + k2) / (n1 + n2) * 100",
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H10",
+        "idx": 8,
+        "actual": "(k1 + k2) / (n1 + n2) * 100/100*100/100*100/100*100/100*100/100*100/10",
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "10": [
+      {
+        "report": "H2",
+        "idx": 10,
+        "actual": "(total - n2) + n1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1",
+        "expected": "total + n2 - n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 10,
+        "actual": "n1 - n2 + total - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2 - n1 + n2",
+        "expected": "total + n2 - n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 10,
+        "actual": "n1 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0",
+        "expected": "total + n2 - n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "12": [
+      {
+        "report": "H2",
+        "idx": 12,
+        "actual": "(cal * n - spent) / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n / n",
+        "expected": "size//n * (total-spent) // (cal)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 12,
+        "actual": "(total - spent) / cal*1000000000000000000000000000000000000000000000000000000",
+        "expected": "size//n * (total-spent) // (cal)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 12,
+        "actual": "(total - spent) / (cal / n) / (cal / n) / (cal / n) / (cal / n) / (cal / n) / (cal / n) / (cal / n) / (cal / n) / (cal / n)",
+        "expected": "size//n * (total-spent) // (cal)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "17": [
+      {
+        "report": "H2",
+        "idx": 17,
+        "actual": "n / (x * (1 + mult))",
+        "expected": "n // (x + x*mult)",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H4",
+        "idx": 17,
+        "actual": "n / (x + mult) / 100000000000000000000000000000000000000000000000000000",
+        "expected": "n // (x + x*mult)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 17,
+        "actual": "n / (x * (1 + mult))",
+        "expected": "n // (x + x*mult)",
+        "correct": false,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "19": [
+      {
+        "report": "H2",
+        "idx": 19,
+        "actual": "n1 + mult*mult + total - n1 - mult*mult - mult*mult - n1 - mult*mult - mult*mult - n1 - mult*mult - mult*mult - n1 - mult*mult - mult*mult - n1 - mult*mult - mult",
+        "expected": "total - n1 - mult * n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 19,
+        "actual": "total - n1 - mult*10000000000000000000000000000000000000000000000000000000",
+        "expected": "total - n1 - mult * n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 19,
+        "actual": "total - n1 - mult+1-1",
+        "expected": "total - n1 - mult * n1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "21": [
+      {
+        "report": "H2",
+        "idx": 21,
+        "actual": "n * (1 + mult) / 1 + n * mult / 1 - n * mult / 1 + n + mult * n - n - n + mult * n - n - n + mult * n - n - n + mult * n - n - n + mult * n",
+        "expected": "n * (mult + 1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 21,
+        "actual": "n + mult+10000000000000000000000000000000000000000000000000000000000",
+        "expected": "n * (mult + 1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 21,
+        "actual": "n + mult * n",
+        "expected": "n * (mult + 1)",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      }
+    ],
+    "23": [
+      {
+        "report": "H2",
+        "idx": 23,
+        "actual": "total * (1/n1 + t/n2) / 1 + total * t / n2 - total / n1 + total * t / n2 - total / n1 + total * t / n2 - total / n1 + total * t / n2 - total / n1",
+        "expected": "total // n1 + (total // n2) * t",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 23,
+        "actual": "total * (1/n1 + 1/n2) / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1 / 1",
+        "expected": "total // n1 + (total // n2) * t",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 23,
+        "actual": "n1 * total + n2 / t",
+        "expected": "total // n1 + (total // n2) * t",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "26": [
+      {
+        "report": "H2",
+        "idx": 26,
+        "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+        "expected": "int(n1 * frac1 + n2 * mult1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 26,
+        "actual": "(n1 + n2) * (frac1 + mult1) / 1000000000000000000000000000000000000000000000",
+        "expected": "int(n1 * frac1 + n2 * mult1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 26,
+        "actual": "frac1 * n1 + mult1 * n2+100000000000000000000000000000000000000000000000000",
+        "expected": "int(n1 * frac1 + n2 * mult1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "28": [
+      {
+        "report": "H2",
+        "idx": 28,
+        "actual": "n1 * frac1 + n2 * frac2 - spill + 0/0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18",
+        "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 28,
+        "actual": "(n1 + n2 - spill) / 2 - spill/2 + n2/2 - spill/2 + n1/2 - spill/2 + n2/2 - spill/2 + n1/2 - spill/2 + n2/2 - spill/2",
+        "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 28,
+        "actual": "n1 + n2 - 2*spill / 2 - n1 - n2 + 2*spill / 2 - n1 - n2 + 2*spill / 2 - n1 - n2 + 2*spill / 2 - n1 - n2",
+        "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "32": [
+      {
+        "report": "H2",
+        "idx": 32,
+        "actual": "multiple * relative_age - orbit_period",
+        "expected": "multiple * relative_age - orbit_period",
+        "correct": true,
+        "sympy_equiv": true,
+        "positive": true
+      },
+      {
+        "report": "H4",
+        "idx": 32,
+        "actual": "multiple - orbit_period*1000000000000000000000000000000000000000000000000000000000",
+        "expected": "multiple * relative_age - orbit_period",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 32,
+        "actual": "15000000000000000000000000000000000000000000000000000000000000",
+        "expected": "multiple * relative_age - orbit_period",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "33": [
+      {
+        "report": "H2",
+        "idx": 33,
+        "actual": "n1 + n2 + n3 + (p1 * (n1 + n2 + n3)) + (p2 * (n1 + n2 + n3)) + (p3 * (n1 + n2 + n3)) + (p1 * n1)",
+        "expected": "n1*p1 + n2*p2 + n3*p3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 33,
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3 * (n1 * p1 + n2 * p2 + n3 * p3) / n1 * p1 + n2 * p2 + n3 * p3 / n1 * p1",
+        "expected": "n1*p1 + n2*p2 + n3*p3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 33,
+        "actual": "n1 + n2 + n3 - (p1 * n1 * p1 + p2 * n2 * p2 + p3 * n3 * p3) / p1 - (p2 * n2 * p2 + p3 * n3 * p3) / p2",
+        "expected": "n1*p1 + n2*p2 + n3*p3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "34": [
+      {
+        "report": "H2",
+        "idx": 34,
+        "actual": "(w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+        "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 34,
+        "actual": "000000000000000000000000000000000000000000000000000000000000000",
+        "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "35": [
+      {
+        "report": "H2",
+        "idx": 35,
+        "actual": "(frac - frac) * n/1000000000000000000000000000000000000000000000000000000",
+        "expected": "n - int(n * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 35,
+        "actual": "n - frac/10000000000000000000000000000000000000000000000000000000000",
+        "expected": "n - int(n * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 35,
+        "actual": "n * (frac - frac) / 100000000000000000000000000000000000000000000000000000",
+        "expected": "n - int(n * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "41": [
+      {
+        "report": "H2",
+        "idx": 41,
+        "actual": "p1 + 2*p1 + p3 * frac + p4 - d+100000000000000000000000000000000000000000000",
+        "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 41,
+        "actual": "2* p1 + p2 + p3 * frac + p4 - d 2* p1 + p2 + p3 * frac + p4 - d 2* p1 + p2 + p3 * frac + p4 - d 2* p1 + p2",
+        "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 41,
+        "actual": "p1 + (p2 + p1) + p3/frac + p4 - d/100/100/100/100/100/100/100/100/100/100/10",
+        "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "42": [
+      {
+        "report": "H2",
+        "idx": 42,
+        "actual": "(end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1 * multiplier + (end_time - start_time) - 1",
+        "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 42,
+        "actual": "end_time - start_time - 1 * multiplier + (end_time - start_time - 1) * multiplier + (end_time - start_time - 1) * multiplier + (end_time - start_time - 1) * multiplier + (end_time - start_time - 1) * multiplier",
+        "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "44": [
+      {
+        "report": "H2",
+        "idx": 44,
+        "actual": "(mult + n) - t1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1",
+        "expected": "d * (n + mult * t1) - d * t1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 44,
+        "actual": "d * n",
+        "expected": "d * (n + mult * t1) - d * t1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 44,
+        "actual": "(n + mult) * (d1) / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60 / 60",
+        "expected": "d * (n + mult * t1) - d * t1",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "45": [
+      {
+        "report": "H2",
+        "idx": 45,
+        "actual": "n * p1 * p2 * frac / 1000000000000000000000000000000000000000000000000000",
+        "expected": "int(n * (p1/100) * (p2/100) * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 45,
+        "actual": "20000000000000000000000000000000000000000000000000000000000000",
+        "expected": "int(n * (p1/100) * (p2/100) * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 45,
+        "actual": "frac - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/1",
+        "expected": "int(n * (p1/100) * (p2/100) * frac)",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ],
+    "46": [
+      {
+        "report": "H2",
+        "idx": 46,
+        "actual": "n1 + mult + n2 + n3+1000000000000000000000000000000000000000000000000000",
+        "expected": "n1 + n1 * mult + n2 + n3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H4",
+        "idx": 46,
+        "actual": "n1 + mult + n2 + n3",
+        "expected": "n1 + n1 * mult + n2 + n3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      },
+      {
+        "report": "H10",
+        "idx": 46,
+        "actual": "n1 + mult + n2 + n3+1000000000000000000000000000000000000000000000000000",
+        "expected": "n1 + n1 * mult + n2 + n3",
+        "correct": false,
+        "sympy_equiv": false,
+        "positive": false
+      }
+    ]
+  }
+}

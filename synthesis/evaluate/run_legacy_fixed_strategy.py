@@ -12,7 +12,7 @@ import tempfile
 import time
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 from synthesis.evaluate.completion_text import completion_for_scoring, strip_prompt_prefix
 
@@ -90,6 +90,30 @@ def _baseline_row_question(dataset: str, example: dict[str, Any], fallback: str)
     return str(example.get("question") or example.get("prompt") or fallback)
 
 
+def _log_generated_sample(
+    *,
+    strategy: str,
+    dataset: str,
+    sample_index: int,
+    sample_total: int,
+    completion: str,
+    stream: TextIO | None = None,
+) -> None:
+    """Write one completed model sample to the worker log immediately."""
+    marker = (
+        f"strategy={strategy} dataset={dataset} "
+        f"sample={sample_index}/{sample_total}"
+    )
+    trailing_newline = "" if completion.endswith("\n") else "\n"
+    print(
+        f"[generated-sample] BEGIN {marker}\n"
+        f"{completion}{trailing_newline}"
+        f"[generated-sample] END {marker}",
+        file=stream if stream is not None else sys.stdout,
+        flush=True,
+    )
+
+
 def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any], profile: str) -> str:
     """User-message text for legacy fixed strategies (not used by metadecode).
 
@@ -112,6 +136,69 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
             return cot(evaluator, example)
         return logic.format_prompt(evaluator, example)
     raise ValueError(f"Unknown legacy prompt profile: {profile}")
+
+
+def _cars_prompt_profile(dataset: str) -> str:
+    if dataset == "spider":
+        return "evaluator_default"
+    return "expression_only"
+
+
+_SPIDER_COMPLETION_MARKERS = (
+    r"\bHuman\s*:",
+    r"\bAssistant\s*:",
+    r"\bUser\s*:",
+    r"\bSystem\s*:",
+    r"\bdb_id\s*:",
+    r"\bdb_info\s*:",
+    r"\bquestion\s*:",
+    r"\bSQL\s*:",
+)
+
+
+def _spider_completion_has_clean_boundary(text: str) -> bool:
+    """True once later text would be discarded by Spider SQL cleanup."""
+    if not text:
+        return False
+    if "\n\n" in text:
+        return True
+    semicolon = text.find(";")
+    if semicolon > 0:
+        return True
+    repeated_select = re.search(r"\s+SelEct\s+", text)
+    if repeated_select and repeated_select.start() > 0:
+        return True
+    for marker in _SPIDER_COMPLETION_MARKERS:
+        match = re.search(marker, text, flags=re.IGNORECASE)
+        if match and match.start() > 0:
+            return True
+    return False
+
+
+def _spider_hf_stopping_criteria(tokenizer: Any, prompt_token_count: int) -> Any:
+    from transformers import StoppingCriteria, StoppingCriteriaList
+
+    class _StopAtCleanBoundary(StoppingCriteria):
+        def __call__(self, input_ids: Any, scores: Any, **kwargs: Any) -> bool:
+            new_ids = input_ids[0][prompt_token_count:]
+            if getattr(new_ids, "numel", lambda: 0)() == 0:
+                return False
+            suffix = tokenizer.decode(new_ids, skip_special_tokens=True)
+            return _spider_completion_has_clean_boundary(suffix)
+
+    return StoppingCriteriaList([_StopAtCleanBoundary()])
+
+
+def _gcd_stop_words(dataset: str) -> list[str] | None:
+    if dataset == "gsm_symbolic":
+        return [">>"]
+    if dataset == "spider":
+        return [";"]
+    return None
+
+
+def _crane_stop_words(dataset: str) -> list[str]:
+    return [">>"]
 
 
 def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, Any]]) -> str:
@@ -175,6 +262,8 @@ def _gsm_symbolic_completion_to_delimited(
 def _legacy_local_cuda_device(device_arg: str) -> str:
     """CUDA device string valid for the GPUs visible in this process."""
     if device_arg and device_arg not in {"auto", "cuda"}:
+        if device_arg in {"mps", "cpu"}:
+            return device_arg
         if device_arg.startswith("cuda"):
             return device_arg
         return f"cuda:{device_arg}"
@@ -237,6 +326,34 @@ def _compose_baseline_answer_row(question: str, generated: str, row: dict[str, A
     return entry
 
 
+def _slice_eval_examples(
+    examples: list[dict[str, Any]],
+    args: argparse.Namespace,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    start = int(getattr(args, "eval_start_index", 0) or 0)
+    raw_end = getattr(args, "eval_end_index", None)
+    total = len(examples)
+    end = total if raw_end is None else int(raw_end)
+
+    if start < 0:
+        raise ValueError("--eval-start-index must be >= 0")
+    if end < start:
+        raise ValueError("--eval-end-index must be >= --eval-start-index")
+    if end > total:
+        raise ValueError(
+            f"--eval-end-index {end} is past the loaded sample size {total}"
+        )
+
+    if start == 0 and end == total:
+        return examples, {}
+
+    return examples[start:end], {
+        "eval_sample_total_examples": total,
+        "eval_start_index": start,
+        "eval_end_index": end,
+    }
+
+
 def _aggregate_run_metrics(
     rows: list[dict[str, Any]],
     *,
@@ -262,6 +379,24 @@ def _aggregate_run_metrics(
     return metrics
 
 
+# Split provenance for every JSON this run writes (which split file/side the
+# numbers were measured on). Set once in main() from the parsed args — one CLI
+# process, one args namespace — so all 8 _build_minimal_json call sites embed
+# it without threading a parameter through each strategy path. Absence of this
+# field is what made the 2026-07-17 train-vs-eval mismatch need log forensics.
+_EVAL_SPLIT_PROVENANCE: dict[str, Any] | None = None
+
+
+def _set_eval_split_provenance(args: Any) -> None:
+    global _EVAL_SPLIT_PROVENANCE
+    _EVAL_SPLIT_PROVENANCE = {
+        "gsm_split_file": args.gsm_split_file,
+        "gsm_split_name": args.gsm_split_name,
+        "spider_split_file": args.spider_split_file,
+        "spider_split_name": args.spider_split_name,
+    }
+
+
 def _build_minimal_json(
     rows: list[dict[str, Any]],
     output_json: Path,
@@ -279,6 +414,8 @@ def _build_minimal_json(
             "metrics": metrics,
             "answers": [],
         }
+        if _EVAL_SPLIT_PROVENANCE is not None:
+            payload["eval_split"] = _EVAL_SPLIT_PROVENANCE
         output_json.parent.mkdir(parents=True, exist_ok=True)
         output_json.write_text(json.dumps(payload, indent=2) + "\n")
         return
@@ -323,9 +460,34 @@ def _build_minimal_json(
         "metrics": metrics,
         "answers": answers,
     }
+    if _EVAL_SPLIT_PROVENANCE is not None:
+        payload["eval_split"] = _EVAL_SPLIT_PROVENANCE
 
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def _cars_partial_json_path(output_json: Path) -> Path:
+    if output_json.suffix:
+        return output_json.with_name(f"{output_json.stem}.partial{output_json.suffix}")
+    return output_json.with_name(f"{output_json.name}.partial.json")
+
+
+def _write_cars_partial_json(
+    rows: list[dict[str, Any]],
+    output_json: Path,
+    *,
+    run_wall_time_seconds: float | None = None,
+    extra_metrics: dict[str, Any] | None = None,
+) -> Path:
+    partial_json = _cars_partial_json_path(output_json)
+    _build_minimal_json(
+        rows,
+        partial_json,
+        run_wall_time_seconds=run_wall_time_seconds,
+        extra_metrics=extra_metrics,
+    )
+    return partial_json
 
 
 def _load_latest_crane_results(crane_src_dir: Path, dataset: str) -> list[dict[str, Any]]:
@@ -388,7 +550,10 @@ def _annotate_legacy_rows_with_syntax(
         ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
-    examples = logic.load_dataset_sample(eval_runtime)
+    examples, _slice_metrics = _slice_eval_examples(
+        logic.load_dataset_sample(eval_runtime),
+        args,
+    )
     examples_by_question: dict[str, dict[str, Any]] = {}
     for example in examples:
         if dataset == "gsm_symbolic":
@@ -629,7 +794,10 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
 
-    examples = logic.load_dataset_sample(eval_runtime)
+    examples, slice_metrics = _slice_eval_examples(
+        logic.load_dataset_sample(eval_runtime),
+        args,
+    )
     cars_model = ConstrainedModel(model_id, None, torch_dtype=torch.bfloat16)
 
     rows: list[dict[str, Any]] = []
@@ -645,7 +813,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     if dataset == "spider":
         spider_cars_grammar = (repo_root / "synthesis" / "evaluate" / "grammars" / "sql.lark").read_text()
 
-    for example in examples:
+    for sample_index, example in enumerate(examples, start=1):
         if dataset == "gsm_symbolic":
             grammar_text = gsm_cars_grammar
         elif dataset == "spider":
@@ -660,7 +828,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _legacy_benchmark_prompt(
+            logic,
+            eval_runtime,
+            example,
+            _cars_prompt_profile(dataset),
+        )
         gen_started = time.perf_counter()
         steps = _cars_sampler_steps(
             cars_model,
@@ -673,6 +846,13 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         if dataset == "gsm_symbolic":
             output_text = _cars_normalize_gsm_symbolic_output(output_text)
         completion = completion_for_scoring(prompt, output_text)
+        _log_generated_sample(
+            strategy=args.strategy,
+            dataset=dataset,
+            sample_index=sample_index,
+            sample_total=len(examples),
+            completion=completion,
+        )
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"
@@ -702,6 +882,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
                 "generation_seconds": gen_seconds,
             }
         )
+        _write_cars_partial_json(
+            rows,
+            args.output_json,
+            run_wall_time_seconds=time.perf_counter() - run_started,
+            extra_metrics=slice_metrics,
+        )
 
     if not rows:
         raise RuntimeError("CARS produced no rows; refusing to write an empty baseline JSON")
@@ -710,7 +896,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         rows,
         args.output_json,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        extra_metrics=slice_metrics,
     )
+    try:
+        _cars_partial_json_path(args.output_json).unlink()
+    except FileNotFoundError:
+        pass
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -801,7 +992,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_suffix: dict[str, str] = {}
 
-    for example in examples:
+    for sample_index, example in enumerate(examples, start=1):
         grammar_text = _grammar_for_example(example)
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in syncode_cache:
@@ -827,10 +1018,17 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
         gcd_prompt = _gcd_prompt(prompt)
-        completions = sc.infer(gcd_prompt, stop_words=[">>"] if dataset == "gsm_symbolic" else None)
+        completions = sc.infer(gcd_prompt, stop_words=_gcd_stop_words(dataset))
         gen_seconds = time.perf_counter() - gen_started
         raw_output = _gcd_output(completions[0] if completions else "", example)
         completion = completion_for_scoring(gcd_prompt, raw_output)
+        _log_generated_sample(
+            strategy=args.strategy,
+            dataset=dataset,
+            sample_index=sample_index,
+            sample_total=len(examples),
+            completion=completion,
+        )
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"
@@ -1021,7 +1219,7 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_suffix: dict[str, str] = {}
 
-    for example in examples:
+    for sample_index, example in enumerate(examples, start=1):
         grammar_text = _grammar_for_example(example)
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in itergen_cache:
@@ -1067,6 +1265,13 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             )
         gen_seconds = time.perf_counter() - gen_started
         completion = completion_for_scoring(prompt, raw_completion)
+        _log_generated_sample(
+            strategy=args.strategy,
+            dataset=dataset,
+            sample_index=sample_index,
+            sample_total=len(examples),
+            completion=completion,
+        )
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"
@@ -1194,6 +1399,14 @@ def run_unconstrained_smiles_adapter(args: argparse.Namespace) -> int:
                 num_toks = int(new_ids.numel())
                 gen_text = tokenizer.decode(new_ids, skip_special_tokens=True)
 
+            _log_generated_sample(
+                strategy=args.strategy,
+                dataset="smiles",
+                sample_index=len(rows) + 1,
+                sample_total=len(selected_classes) * n_per_class,
+                completion=gen_text,
+            )
+
             smiles_eval = evaluate_smiles_output(
                 class_name=class_name,
                 output=gen_text,
@@ -1286,7 +1499,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     rows: list[dict[str, Any]] = []
     max_new = max(32, int(args.eval_max_steps))
 
-    for example in examples:
+    for sample_index, example in enumerate(examples, start=1):
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         num_toks: int | None = None
         if args.eval_backend == "vllm":
@@ -1309,11 +1522,22 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
                     **inputs,
                     max_new_tokens=max_new,
                     do_sample=False,
+                    stopping_criteria=_spider_hf_stopping_criteria(
+                        tokenizer, inputs["input_ids"].shape[1]
+                    ),
                 )
             gen_seconds = time.perf_counter() - gen_started
             new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
             num_toks = int(new_ids.numel())
             suffix = tokenizer.decode(new_ids, skip_special_tokens=True)
+
+        _log_generated_sample(
+            strategy=args.strategy,
+            dataset="spider",
+            sample_index=sample_index,
+            sample_total=len(examples),
+            completion=suffix,
+        )
 
         scored_output = suffix
         expected = logic.expected_answer(eval_runtime, example)
@@ -1437,7 +1661,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
     rows: list[dict[str, Any]] = []
     smiles_prompt_suffix: dict[str, str] = {}
 
-    for example in examples:
+    for sample_index, example in enumerate(examples, start=1):
         grammar_text = _grammar_for_example(example)
         cache_key = f"{dataset}:{hash(grammar_text)}"
         if cache_key not in syncode_cache:
@@ -1463,10 +1687,17 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         gen_started = time.perf_counter()
-        completions = sc.infer(prompt)
+        completions = sc.infer(prompt, stop_words=_crane_stop_words(dataset))
         gen_seconds = time.perf_counter() - gen_started
         raw_output = completions[0] if completions else ""
         completion = completion_for_scoring(prompt, raw_output)
+        _log_generated_sample(
+            strategy=args.strategy,
+            dataset=dataset,
+            sample_index=sample_index,
+            sample_total=len(examples),
+            completion=completion,
+        )
         scored_output = (
             eval_runtime._truncate_gsm_output(completion)
             if dataset == "gsm_symbolic"
@@ -1618,6 +1849,18 @@ def main() -> None:
     parser.add_argument("--dataset", required=True, choices=["gsm", "gsm_symbolic", "spider", "smiles"])
     parser.add_argument("--eval-model", required=True)
     parser.add_argument("--eval-sample-size", type=int, default=10)
+    parser.add_argument(
+        "--eval-start-index",
+        type=int,
+        default=0,
+        help="Start index within the loaded evaluation sample, inclusive",
+    )
+    parser.add_argument(
+        "--eval-end-index",
+        type=int,
+        default=None,
+        help="End index within the loaded evaluation sample, exclusive",
+    )
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--eval-backend", default="vllm")
     parser.add_argument("--device", default="auto")
@@ -1633,12 +1876,15 @@ def main() -> None:
     )
     parser.add_argument("--gsm-split-file", type=str, default=None,
                         help="Optional GSM train/eval split manifest JSON")
-    parser.add_argument("--gsm-split-name", type=str, choices=["train", "eval"], default="eval",
-                        help="Which split from --gsm-split-file to use (default: eval)")
+    # Split names are required when a split file is given (checked after
+    # parsing) — silent side defaults caused the 2026-07-17 split mixup.
+    # Spider's held-out side is 'test'; the 'eval' alias was removed.
+    parser.add_argument("--gsm-split-name", type=str, choices=["train", "eval"], default=None,
+                        help="Which split from --gsm-split-file to use (required with the file)")
     parser.add_argument("--spider-split-file", type=str, default=None,
                         help="Optional Spider train/test split manifest JSON")
-    parser.add_argument("--spider-split-name", type=str, choices=["train", "test", "eval"], default="eval",
-                        help="Which split from --spider-split-file to use (default: eval)")
+    parser.add_argument("--spider-split-name", type=str, choices=["train", "test"], default=None,
+                        help="Which split from --spider-split-file to use (required with the file)")
     parser.add_argument(
         "--smiles-classes",
         type=str,
@@ -1661,6 +1907,13 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+    if args.gsm_split_file and args.gsm_split_name is None:
+        parser.error("--gsm-split-name is required when --gsm-split-file is given "
+                     "(no default side — see synthesis/split_provenance.py)")
+    if args.spider_split_file and args.spider_split_name is None:
+        parser.error("--spider-split-name is required when --spider-split-file is given "
+                     "(no default side — see synthesis/split_provenance.py)")
+    _set_eval_split_provenance(args)
     from synthesis.evaluate.benchmarks.common.model_utils import resolve_vllm_tensor_parallel_size
 
     args.vllm_tensor_parallel_size = resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size)

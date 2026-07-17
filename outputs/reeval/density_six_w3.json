@@ -1,0 +1,81 @@
+{
+  "accuracy": 0.0,
+  "syntax_rate": 0.875,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 39.8567,
+    "mean_generation_seconds_per_example": 4.98209,
+    "examples_with_generation_timing": 8,
+    "total_output_tokens": 1215,
+    "mean_output_tokens_per_example": 151.875,
+    "examples_with_token_counts": 8,
+    "evaluator_total_time_seconds": 79.9302,
+    "evaluator_max_sample_time_seconds": 9.578
+  },
+  "answers": [
+    {
+      "question": "{name} has {n} {cur}{bill} bills. He buys {m} {item1}s for {cur}{p1} each. He also buys {k} packs of {item2}s for {cur}{p2} each. How much money does he have left?",
+      "generated_answer": "Let's think step by step. Initially, {name} had {n} {cur}{bill}{cur}{bill}. Buying {m} {item1}s costs <<m * p1>>. Buying {k} packs of {item2}s costs <<k * p2>>. The total cost is <<m * p1 + k * p2>>. The remaining money is <<n - m * p1 - k * p2>>. The final answer is <<n - m * p1 - k * p2>>.",
+      "num_tokens": 111,
+      "generation_seconds": 4.317225,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name1} has {n1} tubes of {color1} paint and {n2} tubes of {color2} paint. {name2} has {frac1} as many tubes of {color1} paint as {name1}, and {mult1} as many tubes of {color2} paint as {name1}. How m",
+      "generated_answer": "Let's think step by step. {name1} has <<n1 + n2>> tubes in total. {name2} has <<n1 / frac1 + n2 / frac1 * mult1>> tubes. The answer is <<n1 / frac1 + n2 / frac1 * mult1>>.",
+      "num_tokens": 66,
+      "generation_seconds": 2.170288,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "One {worker} can mine {base} {unit} of ore per day with {tool1}. He can mine {mult1} as much with a {tool2} and {mult2} more with a {tool3} than with a {tool2}. How many {unit} of ore can {n} {worker}",
+      "generated_answer": "Let's think step by step.\nOne worker can mine <<base/tools/tool1>> unit of ore per day. With a tool3, the worker can mine <<base/tools/tool3>> unit of ore per day that a tool2 can mine <<mult1 + base/tools/tool3 - mult1>> more unit of ore than a tool2. So, with a tool3, the worker can mine <<base/tools/tool3 + (mult1 + base/tools/tool3 - mult1) * (tool2 * days) - mult1 * (tool2 * days)>> unit of ore in a month with <<days>> days. The final answer is <<base/tools/tool3 + (mult1 + base/tools/tool3 - mult1) * (tool2 * days) - mult1 * (tool2 * days)>>.",
+      "num_tokens": 168,
+      "generation_seconds": 5.401927,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "I have {n1} liters of {fruit1} drink that are {frac1} water and I wish to add it to {n2} liters of {fruit2} drink that is {frac2} water. But as I pour it, I spill {spill} liters of the {fruit1} drink.",
+      "generated_answer": "Let's think step by step. Initially, there is <<n1 * frac1>> liters of water. Now if I want <<n2*frac2>> liters of water. After spilling, there is <<n1-(n1*frac1)*spill>> liters of water. The remaining total is <<n2*frac2 + n1-(n1*frac1)*spill>>. The final answer is <<n2*frac2 + n1-(n1*frac1)*spill>>.",
+      "num_tokens": 108,
+      "generation_seconds": 3.563127,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "In a set of {item}'s cards, there are {n1} {c1} cards, and {p}% more {c2} cards. {c3} cards are as many as the sum of {c1} and {c2} cards. How many cards of all mentioned colors are there?",
+      "generated_answer": "Let's think step by step. In total, there are <<n1 + (p/100 * n1)>>. There are {{n1} * p}% more {c2} cards. The total is <<n1 + (p/100 * n1) + (p/100 * n1) * (p/100) * n1>>. There are {c3} cards that is the sum of {c1} and {c2} cards. The total is <<n1 + (p/100 * n1) + (p/100 * n1) * (p/100) * n1 + n1 + (p/100 * n1) + (p/100 * n1) * (p/100) * n1 + (p/100 * n1) * 2 * n1>>. The answer is <<n1 + (p/100 * n1) + (p/100 * n1) * (p/100) * n1 + n1 + (p/100 * n1) + (p/100 * n1) * (p/100) * n1 + (p/100 * n1) * 2 * n1>>.",
+      "num_tokens": 295,
+      "generation_seconds": 9.577956,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} has {n} jars of {item} in her {location}. Each jar of {item} can decorate {m} {food}. {name} wants to bake enough {food} to use up all of her {item}. If each {container} holds {k} {food}, how m",
+      "generated_answer": "Let's think step by step. {name} has {n} jars of {item}. Each jar of {item} can decorate {m} {food}. Let's calculate how much {food} {name} has in total. {food_total} = <<n * m>>. {name} wants to bake enough {food} to use up all of her {item}. Now we need to find how many {container}s worth of {food} she should bake. Let's calculate that. {container_count} = <<food_total / k>>. The final answer is <<food_total / k>>.",
+      "num_tokens": 125,
+      "generation_seconds": 4.09618,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "{name} was a pen pal with {n1} people. He stopped being penpals with {n2} of them. They each send {l} letters a week that are {p} pages long. He responds in kind. He can write a page every {t} minutes",
+      "generated_answer": "Let's think step by step. Initially, {name} had {n1} pen pals. He stopped being pen pals with {n2} of them, so the remaining pen pals are <<n1 - n2>>. He sends {l} letters a week, each {p} pages long. The total number of pages sent per week is <<l * p>>. Since he responds in kind, the total number of pages he writes is <<2 * l * p>>. He can write one page every {t} minutes, so the number of pages he writes in a week is <<t * 60 * 2 * l * p>>. The time spent writing per week is <<t * 30 * l * p>> minutes. Since there are 60 minutes in an hour, the time spent writing in an hour is <<t * l * p>> hours. The final answer is <<t * l * p>>.",
+      "num_tokens": 197,
+      "generation_seconds": 6.159572,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "Comet {comet_name} orbits the sun every {orbit_period} years. {name}'s {relative} saw the Comet when he was {relative_age} years old. {name} saw the comet a second time when he was {multiple} the age ",
+      "generated_answer": "<reasoning>Let's break it down step by step:In one orbit, Comet sees the Sun again after {orbit_period} years.In each orbit, the comet is x times older than the person when seen for the first time.Let x be the number of ages the person is when they see comet for the second time.The person saw the comet the first time when they were (x-1)*x years old.Applying algebra, this is equivalent to (2x-1)\u2022x years.The age of the person at first seeing the comet is <<int((2 * m + n)}}>>.The final answer is <<int((2 * m + n) + n)}}>. </reasoning>",
+      "num_tokens": 145,
+      "generation_seconds": 4.570448,
+      "is_correct": false,
+      "is_syntax_valid": false
+    }
+  ]
+}

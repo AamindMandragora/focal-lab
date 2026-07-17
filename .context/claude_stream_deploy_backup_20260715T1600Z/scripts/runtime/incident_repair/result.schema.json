@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "files_changed", "tests", "safe_to_relaunch"],
+  "properties": {
+    "status": {"type": "string", "enum": ["repaired", "not_repaired"]},
+    "summary": {"type": "string"},
+    "files_changed": {"type": "array", "items": {"type": "string"}},
+    "tests": {"type": "array", "items": {"type": "string"}},
+    "safe_to_relaunch": {"type": "boolean"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "repaired"}}},
+      "then": {
+        "properties": {
+          "files_changed": {"minItems": 1},
+          "tests": {"minItems": 1},
+          "safe_to_relaunch": {"const": true}
+        }
+      }
+    }
+  ]
+}

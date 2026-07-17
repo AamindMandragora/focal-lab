@@ -1,0 +1,291 @@
+{
+  "billed_api_calls": 0,
+  "conclusion": {
+    "h67_confirmed": true,
+    "plain_text": "The old board is not enough for paper-ready SMILES claims under the live CARS convention. Live artifacts prove only one SMILES primary-UV win over live CARS: isocyanates-4B. The safest next SMILES launch target by live CARS primary metric is isocyanates-9B, but its live bar is high at 0.92. GPU-gated H52/H64 remain separate local opportunities when a no-other-user GPU opens."
+  },
+  "created_at_utc": "2026-06-29T19:48:31.964667+00:00",
+  "credential_key_name_hits": [
+    {
+      "key_name": "AWS_BEARER_TOKEN_BEDROCK",
+      "path": "saved-results/2026-06-29-paper-ready-gap-audit.md"
+    },
+    {
+      "key_name": "AWS_BEARER_TOKEN_BEDROCK",
+      "path": "saved-results/2026-06-29-campaign-handoff.md"
+    },
+    {
+      "key_name": "OPENAI_API_KEY",
+      "path": "saved-results/2026-06-29-campaign-handoff.md"
+    },
+    {
+      "key_name": "ANTHROPIC_API_KEY",
+      "path": "saved-results/2026-06-29-campaign-handoff.md"
+    }
+  ],
+  "gpu_calls": 0,
+  "hypothesis": "H67",
+  "inputs": {
+    "gap_audit": "saved-results/2026-06-29-paper-ready-gap-audit.md",
+    "handoff": "saved-results/2026-06-29-campaign-handoff.md",
+    "results_matrix": "results_matrix.md",
+    "smiles_cars_glob": "outputs/controlled_comparison/smiles_qwen35/*/*/cars.json",
+    "smiles_metadecode_glob": "outputs/controlled_comparison/smiles_qwen35_*/*/metadecode_uv.json"
+  },
+  "model_calls": 0,
+  "non_smiles_document_signals": {
+    "gsm_2b_h64_launch_ready": true,
+    "gsm_9b_h65_pending": true,
+    "results_matrix_mentions_h63": false,
+    "spider_2b_win_documented": true,
+    "spider_9b_h52_recorded": false
+  },
+  "remaining_smiles_ranked_by_live_cars_primary": [
+    {
+      "cars_primary_metric": 0.36,
+      "cell": "acrylates-2B",
+      "reason": "metaDecode primary metric 0.27 <= live CARS primary metric 0.36.",
+      "status": "primary_uv_loss"
+    },
+    {
+      "cars_primary_metric": 0.92,
+      "cell": "isocyanates-9B",
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode"
+    },
+    {
+      "cars_primary_metric": 0.94,
+      "cell": "chain_extenders-2B",
+      "reason": "metaDecode primary metric 0.14 <= live CARS primary metric 0.94.",
+      "status": "primary_uv_loss"
+    },
+    {
+      "cars_primary_metric": 0.94,
+      "cell": "chain_extenders-4B",
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode"
+    },
+    {
+      "cars_primary_metric": 0.98,
+      "cell": "isocyanates-2B",
+      "reason": "metaDecode primary metric 0.29 <= live CARS primary metric 0.98.",
+      "status": "primary_uv_loss"
+    },
+    {
+      "cars_primary_metric": 0.98,
+      "cell": "acrylates-9B",
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode"
+    },
+    {
+      "cars_primary_metric": 1.0,
+      "cell": "acrylates-4B",
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode"
+    },
+    {
+      "cars_primary_metric": 1.0,
+      "cell": "chain_extenders-9B",
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode"
+    }
+  ],
+  "selection_uses_gold": false,
+  "smiles_cells": [
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/2B/acrylates/cars.json",
+      "cars_primary_metric": 0.36,
+      "cars_sha16": "4d88fdd95d13e477",
+      "cell": "acrylates-2B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": 0.97,
+      "metadecode_exists": true,
+      "metadecode_num_examples": 100.0,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+      "metadecode_primary_metric": 0.27,
+      "metadecode_sha16": "91e03fc0cc816ed2",
+      "model": "2B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "metaDecode primary metric 0.27 <= live CARS primary metric 0.36.",
+      "status": "primary_uv_loss",
+      "task": "acrylates"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/2B/chain_extenders/cars.json",
+      "cars_primary_metric": 0.94,
+      "cars_sha16": "6764b013fab79b49",
+      "cell": "chain_extenders-2B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": 0.99,
+      "metadecode_exists": true,
+      "metadecode_num_examples": 100.0,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_2b/chain_extenders/metadecode_uv.json",
+      "metadecode_primary_metric": 0.14,
+      "metadecode_sha16": "73bcaa219c37ad37",
+      "model": "2B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "metaDecode primary metric 0.14 <= live CARS primary metric 0.94.",
+      "status": "primary_uv_loss",
+      "task": "chain_extenders"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/2B/isocyanates/cars.json",
+      "cars_primary_metric": 0.98,
+      "cars_sha16": "b4ff81a224928dde",
+      "cell": "isocyanates-2B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": 0.95,
+      "metadecode_exists": true,
+      "metadecode_num_examples": 100.0,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_2b/isocyanates/metadecode_uv.json",
+      "metadecode_primary_metric": 0.29,
+      "metadecode_sha16": "ba09c883f21820c0",
+      "model": "2B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "metaDecode primary metric 0.29 <= live CARS primary metric 0.98.",
+      "status": "primary_uv_loss",
+      "task": "isocyanates"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/4B/acrylates/cars.json",
+      "cars_primary_metric": 1.0,
+      "cars_sha16": "772532634bc049ee",
+      "cell": "acrylates-4B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": null,
+      "metadecode_exists": false,
+      "metadecode_num_examples": null,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_4b/acrylates/metadecode_uv.json",
+      "metadecode_primary_metric": null,
+      "metadecode_sha16": null,
+      "model": "4B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode",
+      "task": "acrylates"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/4B/chain_extenders/cars.json",
+      "cars_primary_metric": 0.94,
+      "cars_sha16": "d3ec44b132a9cc95",
+      "cell": "chain_extenders-4B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": null,
+      "metadecode_exists": false,
+      "metadecode_num_examples": null,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_4b/chain_extenders/metadecode_uv.json",
+      "metadecode_primary_metric": null,
+      "metadecode_sha16": null,
+      "model": "4B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode",
+      "task": "chain_extenders"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/4B/isocyanates/cars.json",
+      "cars_primary_metric": 0.16,
+      "cars_sha16": "47b28144eec14f0c",
+      "cell": "isocyanates-4B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": 0.61,
+      "metadecode_exists": true,
+      "metadecode_num_examples": 100.0,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_4b/isocyanates/metadecode_uv.json",
+      "metadecode_primary_metric": 0.58,
+      "metadecode_sha16": "42257a2d5da58f44",
+      "model": "4B",
+      "paper_ready_caveat": "Primary UV win only; auxiliary validity/syntax is reported separately and is not silently treated as matched.",
+      "proven_primary_uv_win": true,
+      "reason": "metaDecode primary metric 0.58 > live CARS primary metric 0.16.",
+      "status": "primary_uv_win",
+      "task": "isocyanates"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/9B/acrylates/cars.json",
+      "cars_primary_metric": 0.98,
+      "cars_sha16": "c172f23d805c015e",
+      "cell": "acrylates-9B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": null,
+      "metadecode_exists": false,
+      "metadecode_num_examples": null,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_9b/acrylates/metadecode_uv.json",
+      "metadecode_primary_metric": null,
+      "metadecode_sha16": null,
+      "model": "9B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode",
+      "task": "acrylates"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/9B/chain_extenders/cars.json",
+      "cars_primary_metric": 1.0,
+      "cars_sha16": "22cd890928d80fde",
+      "cell": "chain_extenders-9B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": null,
+      "metadecode_exists": false,
+      "metadecode_num_examples": null,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_9b/chain_extenders/metadecode_uv.json",
+      "metadecode_primary_metric": null,
+      "metadecode_sha16": null,
+      "model": "9B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode",
+      "task": "chain_extenders"
+    },
+    {
+      "cars_aux_metric": 1.0,
+      "cars_exists": true,
+      "cars_path": "outputs/controlled_comparison/smiles_qwen35/9B/isocyanates/cars.json",
+      "cars_primary_metric": 0.92,
+      "cars_sha16": "dcb976c55b93aa26",
+      "cell": "isocyanates-9B",
+      "framework": "SMILES",
+      "metadecode_aux_metric": null,
+      "metadecode_exists": false,
+      "metadecode_num_examples": null,
+      "metadecode_path": "outputs/controlled_comparison/smiles_qwen35_9b/isocyanates/metadecode_uv.json",
+      "metadecode_primary_metric": null,
+      "metadecode_sha16": null,
+      "model": "9B",
+      "paper_ready_caveat": null,
+      "proven_primary_uv_win": false,
+      "reason": "No held-out metaDecode UV artifact found.",
+      "status": "missing_metadecode",
+      "task": "isocyanates"
+    }
+  ],
+  "smiles_missing_metadecode_count": 5,
+  "smiles_primary_uv_loss_count": 3,
+  "smiles_primary_uv_win_count_live_cars": 1,
+  "smiles_primary_uv_wins_live_cars": [
+    "isocyanates-4B"
+  ]
+}

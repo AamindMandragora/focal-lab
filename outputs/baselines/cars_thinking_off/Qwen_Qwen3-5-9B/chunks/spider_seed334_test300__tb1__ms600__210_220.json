@@ -1,0 +1,66 @@
+{
+  "accuracy": 0.3,
+  "syntax_rate": 0.8,
+  "metrics": {
+    "num_examples": 10,
+    "total_generation_seconds": 1615.7608,
+    "mean_generation_seconds_per_example": 161.576084,
+    "examples_with_generation_timing": 10,
+    "run_wall_time_seconds": 1634.3277,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 210,
+    "eval_end_index": 220
+  },
+  "answers": [
+    {
+      "question": "Give the name of the country in Asia with the lowest life expectancy.",
+      "generated_answer": "SELECT name FROM country WHERE continent = 'Asia' ORDER BY lifeexpectancy ASC LIMIT 1",
+      "generation_seconds": 12.24815
+    },
+    {
+      "question": "What is the total population and maximum GNP in Asia?",
+      "generated_answer": "SELECT SUM(c.population) AS total_population, MAX(c.gnp) AS max_gnp FROM country c WHERE c.continent = 'Asia'",
+      "generation_seconds": 78.29934
+    },
+    {
+      "question": "How many people live in Asia, and what is the largest GNP among them?",
+      "generated_answer": "",
+      "generation_seconds": 360.343282
+    },
+    {
+      "question": "Give the mean GNP and total population of nations which are considered US territory.",
+      "generated_answer": "SELECT AVG(gnp) AS mean_gnp, SUM(population) AS total_population FROM country WHERE governmentform = 'US territorial' OR region = 'US'",
+      "generation_seconds": 233.89067
+    },
+    {
+      "question": "How many different forms of governments are there in Africa?",
+      "generated_answer": "SELECT DISTINCT governmentform FROM country WHERE continent = 'Africa'",
+      "generation_seconds": 57.796493
+    },
+    {
+      "question": "How many official languages are spoken in Afghanistan?",
+      "generated_answer": "",
+      "generation_seconds": 382.137968
+    },
+    {
+      "question": "What is name of the country that speaks the largest number of languages?",
+      "generated_answer": "SELECT T0.name FROM countrylanguage AS T0 LEFT JOIN country AS T1 ON T0.countrycode = T1.code GROUP BY T1.code HAVING SUM(T0.isofficial) = 11 ORDER BY SUM(T0.isofficial) DESC LIMIT 1",
+      "generation_seconds": 5.403567
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "SELECT continent FROM country WHERE code IN (SELECT DISTINCT countrycode FROM countrylanguage GROUP BY countrycode ORDER BY COUNT(*) DESC LIMIT 1)",
+      "generation_seconds": 105.615065
+    },
+    {
+      "question": "Which language is the most popular on the Asian continent?",
+      "generated_answer": "SELECT * FROM countrylanguage WHERE countrycode IN (SELECT code FROM country WHERE continent = 'Asia') ORDER BY percentage DESC LIMIT 1",
+      "generation_seconds": 292.77885
+    },
+    {
+      "question": "Find the name, population and expected life length of asian country with the largest area?",
+      "generated_answer": "SELECT name, population, lifeexpectancy FROM country WHERE continent = 'Asia' AND surfacearea = (SELECT MAX(surfacearea) FROM country WHERE continent = 'Asia')",
+      "generation_seconds": 87.247456
+    }
+  ]
+}

@@ -1,0 +1,2348 @@
+{
+  "selected": [
+    {
+      "actual": "((3*sides-4*target)/(4*sides))*100",
+      "expected": "int((sides-target)/sides * 100) - 25",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "((3*sides-4*target)/(4*sides))*100",
+        "parse": 1.0,
+        "rep": 0.7142857142857143,
+        "simplicity": 1.0
+      },
+      "idx": 1,
+      "is_correct": false,
+      "label": "A",
+      "positive": true,
+      "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+      "report": "H24",
+      "score": 0.9600000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(g)-(n_*1)-3*(n_*2)",
+      "expected": "int(n - (n_1 + n_2) - (2 * n_2))",
+      "features": {
+        "err": null,
+        "grounding": 0.5,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(g)-(n_*1)-3*(n_*2)",
+        "parse": 1.0,
+        "rep": 0.8461538461538461,
+        "simplicity": 1.0
+      },
+      "idx": 2,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{g} - {n_1} - 3{n_2}",
+      "report": "H24",
+      "score": 0.8784615384615386,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+      "expected": "n + (k_2 * n + k_3 * n) + (k_3 * n // 2) + (k_3 * n // 8)",
+      "features": {
+        "err": null,
+        "grounding": 0.5,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(n)*(1+(k_*2)+(k_*3)*(9/8))",
+        "parse": 1.0,
+        "rep": 0.8235294117647058,
+        "simplicity": 1.0
+      },
+      "idx": 3,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+      "report": "H24",
+      "score": 0.875294117647059,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "12 * x * k",
+      "correct": false,
+      "expected": "x * k * (12//n)",
+      "features": {
+        "actual_vars": [
+          "k",
+          "x"
+        ],
+        "char_len": 10,
+        "dup_token_ratio": 0.2,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 2,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "area",
+          "fruit",
+          "k",
+          "n",
+          "x"
+        ],
+        "rep_score": 0.6,
+        "simplicity": 1.0
+      },
+      "idx": 4,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.9440000000000002,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((1)/(n**2))",
+      "expected": "int(n * frac_1 * frac_2)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "((1)/(n**2))",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 5,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$\\frac{1}{n^2}$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "t+2*(t-currency)",
+      "expected": "int((frac1 * t) + frac2*(total-t))",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "t+2*(t-currency)",
+        "parse": 1.0,
+        "rep": 0.875,
+        "simplicity": 1.0
+      },
+      "idx": 6,
+      "is_correct": false,
+      "label": "C",
+      "positive": false,
+      "raw": "$t + 2(t - \\text{currency})$",
+      "report": "H24",
+      "score": 0.9825000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:C",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+      "correct": false,
+      "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+      "features": {
+        "actual_vars": [
+          "n",
+          "n1",
+          "n2",
+          "n3",
+          "w1",
+          "w2",
+          "w3"
+        ],
+        "char_len": 33,
+        "dup_token_ratio": 0.2,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "n",
+          "n1",
+          "n2",
+          "n3",
+          "unit",
+          "w1",
+          "w2",
+          "w3"
+        ],
+        "rep_score": 0.6,
+        "simplicity": 1.0
+      },
+      "idx": 7,
+      "is_correct": false,
+      "positive": true,
+      "report": "H10",
+      "score": 0.9440000000000002,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(k1 + k2) / (n1 + n2) * 100",
+      "correct": false,
+      "expected": "int(100 * (k1+k2) / (n1+n2))",
+      "features": {
+        "actual_vars": [
+          "k1",
+          "k2",
+          "n1",
+          "n2"
+        ],
+        "char_len": 27,
+        "dup_token_ratio": 0.23076923076923078,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 3,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "k1",
+          "k2",
+          "n1",
+          "n2",
+          "name1",
+          "name2"
+        ],
+        "rep_score": 0.5384615384615384,
+        "simplicity": 1.0
+      },
+      "idx": 8,
+      "is_correct": false,
+      "positive": true,
+      "report": "H4",
+      "score": 0.9353846153846155,
+      "score_source": "h21_saved",
+      "source": "H4",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1*1",
+      "correct": false,
+      "expected": "int(n1*c1 + n2*c2 + c3)",
+      "features": {
+        "actual_vars": [
+          "n1"
+        ],
+        "char_len": 62,
+        "dup_token_ratio": 0.9508196721311475,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "c1",
+          "c2",
+          "c3",
+          "cur",
+          "n1",
+          "n2",
+          "obj1",
+          "obj2"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.9888888888888889
+      },
+      "idx": 9,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.857777777777778,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "total-n*1+n*2",
+      "expected": "total + n2 - n1",
+      "features": {
+        "err": null,
+        "grounding": 0.5,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "total-n*1+n*2",
+        "parse": 1.0,
+        "rep": 0.7777777777777778,
+        "simplicity": 1.0
+      },
+      "idx": 10,
+      "is_correct": false,
+      "label": "A",
+      "positive": true,
+      "raw": "$\\text{total} - n1 + n2$",
+      "report": "H24",
+      "score": 0.868888888888889,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n1 + n2 + n3 + n4 * (count / 2) + n5 * (count / 2)",
+      "correct": false,
+      "expected": "count*(n1+n2+n3+n4+n5)",
+      "features": {
+        "actual_vars": [
+          "count",
+          "n1",
+          "n2",
+          "n3",
+          "n4",
+          "n5"
+        ],
+        "char_len": 50,
+        "dup_token_ratio": 0.42857142857142855,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "c1",
+          "c2",
+          "c3",
+          "c4",
+          "c5",
+          "children",
+          "count",
+          "n1",
+          "n2",
+          "n3",
+          "n4",
+          "n5"
+        ],
+        "rep_score": 0.1428571428571429,
+        "simplicity": 1.0
+      },
+      "idx": 11,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8800000000000001,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n-spent",
+      "expected": "size//n * (total-spent) // (cal)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "n-spent",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 12,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$n - spent$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "total-(frac+daily*period*7)",
+      "expected": "total - (total * frac + daily * period * 7)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "total-(frac+daily*period*7)",
+        "parse": 1.0,
+        "rep": 0.9,
+        "simplicity": 1.0
+      },
+      "idx": 13,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "`total - (frac + daily * period * 7)`",
+      "report": "H24",
+      "score": 0.9860000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "initial_amount - quantity * unit_price",
+      "correct": true,
+      "expected": "int(initial_amount - quantity * unit_price)",
+      "features": {
+        "actual_vars": [
+          "initial_amount",
+          "quantity",
+          "unit_price"
+        ],
+        "grounding": 1.0,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "cur",
+          "initial_amount",
+          "item",
+          "name",
+          "quantity",
+          "store_type",
+          "unit_price"
+        ],
+        "raw_id": 30,
+        "rep_score": 1.0,
+        "score_source": "h21_recomputed_proxy",
+        "simplicity": 1.0
+      },
+      "idx": 14,
+      "is_correct": true,
+      "positive": true,
+      "report": "H1",
+      "score": 1.0,
+      "score_source": "h21_recomputed_proxy",
+      "source": "H1",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(cur)(total)*(1-(fraction))-(cur)(current)",
+      "expected": "total - (total * fraction + current)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "(cur)(total)*(1-(fraction))-(cur)(current)",
+        "parse": 1.0,
+        "rep": 0.8461538461538461,
+        "simplicity": 1.0
+      },
+      "idx": 15,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "`{cur}{total} * (1 - {fraction}) - {cur}{current}`",
+      "report": "H24",
+      "score": 0.9284615384615387,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+      "correct": true,
+      "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "n2",
+          "n3",
+          "p1",
+          "p2",
+          "p3"
+        ],
+        "grounding": 1.0,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "item",
+          "item1",
+          "item2",
+          "item3",
+          "n1",
+          "n2",
+          "n3",
+          "name",
+          "p1",
+          "p2",
+          "p3",
+          "shop"
+        ],
+        "raw_id": 36,
+        "rep_score": 0.5454545454545454,
+        "score_source": "h21_recomputed_proxy",
+        "simplicity": 1.0
+      },
+      "idx": 16,
+      "is_correct": true,
+      "positive": true,
+      "report": "H1",
+      "score": 0.9363636363636365,
+      "score_source": "h21_recomputed_proxy",
+      "source": "H1",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "n/(x*(1+mult))",
+      "expected": "n // (x + x*mult)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "n/(x*(1+mult))",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 17,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$n / (x(1 + mult))$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((n*t)/(h*60))*100",
+      "expected": "int(100 * (n/d) * t / (h * 60))",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "((n*t)/(h*60))*100",
+        "parse": 1.0,
+        "rep": 0.9,
+        "simplicity": 1.0
+      },
+      "idx": 18,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$\\frac{n \\times t}{h \\times 60} \\times 100$",
+      "report": "H24",
+      "score": 0.9860000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(total)-(n*1)-(mult)",
+      "expected": "total - n1 - mult * n1",
+      "features": {
+        "err": null,
+        "grounding": 0.6666666666666666,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(total)-(n*1)-(mult)",
+        "parse": 1.0,
+        "rep": 0.8888888888888888,
+        "simplicity": 1.0
+      },
+      "idx": 19,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{total} - {n1} - {mult}",
+      "report": "H24",
+      "score": 0.917777777777778,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+      "expected": "(price + price * percent / 100) * 7 * usage + extra_price",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "(cur)(price)*(usage)*7*(2+(percent)/100)",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 20,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "`{cur}{price} * {usage} * 7 * (2 + {percent}/100)`",
+      "report": "H24",
+      "score": 0.9500000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(1+(mult))",
+      "expected": "n * (mult + 1)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(n)*(1+(mult))",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 21,
+      "is_correct": false,
+      "label": "B",
+      "positive": true,
+      "raw": "{n} * (1 + {mult})",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:B",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(length)*(unit_length)",
+      "expected": "int((length / space - owned) * cost)",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(length)*(unit_length)",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 22,
+      "is_correct": false,
+      "label": "C",
+      "positive": false,
+      "raw": "{length} * {unit_length}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:C",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * total + n2 / t",
+      "correct": false,
+      "expected": "total // n1 + (total // n2) * t",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "n2",
+          "t",
+          "total"
+        ],
+        "char_len": 19,
+        "dup_token_ratio": 0.0,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 0.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "food",
+          "n1",
+          "n2",
+          "t",
+          "total"
+        ],
+        "rep_score": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 23,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.9500000000000002,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n_*(first)*a*(2+p/100)*f*r",
+      "expected": "int(((n-1)*a + (n-1)*a + (n-1)*a*p/100) * f * r)",
+      "features": {
+        "err": null,
+        "grounding": 0.6666666666666666,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "n_*(first)*a*(2+p/100)*f*r",
+        "parse": 1.0,
+        "rep": 0.8666666666666667,
+        "simplicity": 1.0
+      },
+      "idx": 24,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$n_{first} \\times a \\times (2 + p/100) \\times f \\times r$",
+      "report": "H24",
+      "score": 0.8646666666666669,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - m * p1 - k * p2",
+      "correct": false,
+      "expected": "n * int(bill) - (m * p1 + k * p2)",
+      "features": {
+        "actual_vars": [
+          "k",
+          "m",
+          "n",
+          "p1",
+          "p2"
+        ],
+        "char_len": 19,
+        "dup_token_ratio": 0.2222222222222222,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "bill",
+          "cur",
+          "item1",
+          "item2",
+          "k",
+          "m",
+          "n",
+          "p1",
+          "p2"
+        ],
+        "rep_score": 0.5555555555555556,
+        "simplicity": 1.0
+      },
+      "idx": 25,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.937777777777778,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+      "correct": false,
+      "expected": "int(n1 * frac1 + n2 * mult1)",
+      "features": {
+        "actual_vars": [
+          "frac1",
+          "mult1",
+          "n1"
+        ],
+        "char_len": 128,
+        "dup_token_ratio": 0.7560975609756098,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "color1",
+          "color2",
+          "frac1",
+          "mult1",
+          "n1",
+          "n2",
+          "name1",
+          "name2"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.6222222222222222
+      },
+      "idx": 26,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.7844444444444445,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n * (mult1 + mult2) * days",
+      "correct": false,
+      "expected": "int(base * mult1 * (1 + mult2/100) * n * days)",
+      "features": {
+        "actual_vars": [
+          "days",
+          "mult1",
+          "mult2",
+          "n"
+        ],
+        "char_len": 26,
+        "dup_token_ratio": 0.1111111111111111,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 0.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "base",
+          "days",
+          "mult1",
+          "mult2",
+          "n",
+          "tool1",
+          "tool2",
+          "tool3",
+          "unit",
+          "worker"
+        ],
+        "rep_score": 0.7777777777777778,
+        "simplicity": 1.0
+      },
+      "idx": 27,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.9188888888888891,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((n*1)+(n*2))/2-(spill)",
+      "expected": "int(n2 * frac2 + (n1 - spill) * frac1)",
+      "features": {
+        "err": null,
+        "grounding": 0.5,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "((n*1)+(n*2))/2-(spill)",
+        "parse": 1.0,
+        "rep": 0.7692307692307692,
+        "simplicity": 1.0
+      },
+      "idx": 28,
+      "is_correct": false,
+      "label": "B",
+      "positive": false,
+      "raw": "({n1} + {n2})/2 - {spill}",
+      "report": "H24",
+      "score": 0.8676923076923078,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:B",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n1 * (100 + p)) / 50+100+100+100+100+100+100+100+100+100+100+100+100",
+      "correct": false,
+      "expected": "2 * (n1 + (p/100 * n1))",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "p"
+        ],
+        "char_len": 69,
+        "dup_token_ratio": 0.7428571428571429,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 3,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "c1",
+          "c2",
+          "c3",
+          "item",
+          "n1",
+          "p"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.95
+      },
+      "idx": 29,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.8500000000000001,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((n*m)/(k))",
+      "expected": "(n*m)//k",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "((n*m)/(k))",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 30,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$\\frac{n \\times m}{k}$",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 * l * p * t / 60",
+      "correct": false,
+      "expected": "((n1 - n2) * l * p * t) // 60",
+      "features": {
+        "actual_vars": [
+          "l",
+          "n1",
+          "p",
+          "t"
+        ],
+        "char_len": 19,
+        "dup_token_ratio": 0.2222222222222222,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 2,
+        "huge_score": 1.0,
+        "low_degree": 0.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "l",
+          "n1",
+          "n2",
+          "p",
+          "t"
+        ],
+        "rep_score": 0.5555555555555556,
+        "simplicity": 1.0
+      },
+      "idx": 31,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.887777777777778,
+      "score_source": "h21_saved",
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(relative_age)",
+      "expected": "multiple * relative_age - orbit_period",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(relative_age)",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 32,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{relative_age}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + n2 + n3 + (p1 * (n1 + n2 + n3)) + (p2 * (n1 + n2 + n3)) + (p3 * (n1 + n2 + n3)) + (p1 * n1)",
+      "correct": false,
+      "expected": "n1*p1 + n2*p2 + n3*p3",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "n2",
+          "n3",
+          "p1",
+          "p2",
+          "p3"
+        ],
+        "char_len": 96,
+        "dup_token_ratio": 0.7872340425531915,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "c1",
+          "c2",
+          "c3",
+          "cur",
+          "n1",
+          "n2",
+          "n3",
+          "p1",
+          "p2",
+          "p3",
+          "place"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.8
+      },
+      "idx": 33,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.8200000000000001,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3) * (w1 + w2 + w3)",
+      "correct": false,
+      "expected": "int((w1 + w2 + (n-2)*w3) * price)",
+      "features": {
+        "actual_vars": [
+          "w1",
+          "w2",
+          "w3"
+        ],
+        "char_len": 82,
+        "dup_token_ratio": 0.8205128205128205,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 0.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "cur",
+          "day",
+          "fish",
+          "n",
+          "price",
+          "unit",
+          "w1",
+          "w2",
+          "w3"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.8777777777777778
+      },
+      "idx": 34,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.7855555555555556,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n - frac/10000000000000000000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "n - int(n * frac)",
+      "features": {
+        "actual_vars": [
+          "frac",
+          "n"
+        ],
+        "char_len": 68,
+        "dup_token_ratio": 0.0,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 59,
+        "huge_score": 0.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "document",
+          "frac",
+          "n"
+        ],
+        "rep_score": 1.0,
+        "simplicity": 0.9555555555555556
+      },
+      "idx": 35,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.8311111111111111,
+      "score_source": "h21_saved",
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+      "expected": "((n1 + n2) * t * d + 2 * (n1 + n2) * t * d * frac) // 60",
+      "features": {
+        "err": null,
+        "grounding": 0.6666666666666666,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "((d)*(n*2)*(t)+(n*1)*(t)*(d))/60",
+        "parse": 1.0,
+        "rep": 0.6111111111111112,
+        "simplicity": 1.0
+      },
+      "idx": 36,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "({d} * {n2} * {t} + {n1} * {t} * {d}) / 60",
+      "report": "H24",
+      "score": 0.828888888888889,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + n2 / n1 + n1 + n2 / n2",
+      "correct": false,
+      "expected": "int(n1 * frac) + n2",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "n2"
+        ],
+        "char_len": 27,
+        "dup_token_ratio": 0.6363636363636364,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "frac",
+          "n1",
+          "n2"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 1.0
+      },
+      "idx": 37,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8600000000000001,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(total)-2*(n)",
+      "expected": "total - 2*n - m",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(total)-2*(n)",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 38,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{total} - 2 * {n}",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "total - n1 - n2 - n1 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2 - n2",
+      "correct": false,
+      "expected": "total - (n1 + n2)",
+      "features": {
+        "actual_vars": [
+          "n1",
+          "n2",
+          "total"
+        ],
+        "char_len": 105,
+        "dup_token_ratio": 0.9024390243902439,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "family",
+          "flavor1",
+          "flavor2",
+          "flavor3",
+          "item",
+          "n1",
+          "n2",
+          "total"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.75
+      },
+      "idx": 39,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.81,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+      "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+      "features": {
+        "err": null,
+        "grounding": 0.75,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+        "parse": 1.0,
+        "rep": 0.6521739130434783,
+        "simplicity": 1.0
+      },
+      "idx": 40,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+      "report": "H24",
+      "score": 0.8513043478260871,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+      "expected": "p1 + (p1 + p2) + (p3 * frac) + (p4 - d)",
+      "features": {
+        "err": null,
+        "grounding": 0.6666666666666666,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "p_*1+(p_*2+p_*1)+((p_*3)/(frac))+(p_*4-d)",
+        "parse": 1.0,
+        "rep": 0.625,
+        "simplicity": 1.0
+      },
+      "idx": 41,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "$p_1 + (p_2 + p_1) + \\frac{p_3}{\\text{frac}} + (p_4 - d)$",
+      "report": "H24",
+      "score": 0.8808333333333336,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+      "expected": "first_hour_cost + (end_time - start_time - free_hours - 1) * first_hour_cost * multiplier",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 0.0,
+        "newline": 1.0,
+        "norm": "(cur)*(first_hour_cost)*(1+(multiplier)+(multiplier)**2+(multiplier)**3+(multiplier)**4)",
+        "parse": 1.0,
+        "rep": 0.6190476190476191,
+        "simplicity": 0.8444444444444444
+      },
+      "idx": 42,
+      "is_correct": false,
+      "label": "A",
+      "positive": false,
+      "raw": "{cur} * {first_hour_cost} * (1 + {multiplier} + {multiplier}^2 + {multiplier}^3 + {multiplier}^4)",
+      "report": "H24",
+      "score": 0.8655555555555556,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+      "correct": false,
+      "expected": "int(n1 * frac1 * mult1 * frac2)",
+      "features": {
+        "actual_vars": [
+          "frac1",
+          "frac2",
+          "mult1",
+          "n1"
+        ],
+        "char_len": 78,
+        "dup_token_ratio": 0.2222222222222222,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 51,
+        "huge_score": 0.0,
+        "low_degree": 0.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "creature",
+          "frac1",
+          "frac2",
+          "mult1",
+          "n1",
+          "name1",
+          "name2",
+          "name3",
+          "name4",
+          "weapon1",
+          "weapon2",
+          "weapon3",
+          "weapon4",
+          "weapon5"
+        ],
+        "rep_score": 0.5555555555555556,
+        "simplicity": 0.9
+      },
+      "idx": 43,
+      "is_correct": false,
+      "positive": false,
+      "report": "H2",
+      "score": 0.7077777777777778,
+      "score_source": "h21_saved",
+      "source": "H2",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "d * n",
+      "correct": false,
+      "expected": "d * (n + mult * t1) - d * t1",
+      "features": {
+        "actual_vars": [
+          "d",
+          "n"
+        ],
+        "char_len": 5,
+        "dup_token_ratio": 0.0,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 0,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "d",
+          "mult",
+          "n",
+          "t1",
+          "unit"
+        ],
+        "rep_score": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 44,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 1.0,
+      "score_source": "h21_saved",
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "frac - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/100 - 1/1",
+      "correct": false,
+      "expected": "int(n * (p1/100) * (p2/100) * frac)",
+      "features": {
+        "actual_vars": [
+          "frac"
+        ],
+        "char_len": 74,
+        "dup_token_ratio": 0.8648648648648649,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 3,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "company",
+          "frac",
+          "n",
+          "p1",
+          "p2"
+        ],
+        "rep_score": 0.0,
+        "simplicity": 0.9222222222222223
+      },
+      "idx": 45,
+      "is_correct": false,
+      "positive": false,
+      "report": "H10",
+      "score": 0.8444444444444446,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "n1 + mult + n2 + n3",
+      "correct": false,
+      "expected": "n1 + n1 * mult + n2 + n3",
+      "features": {
+        "actual_vars": [
+          "mult",
+          "n1",
+          "n2",
+          "n3"
+        ],
+        "char_len": 19,
+        "dup_token_ratio": 0.2857142857142857,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 1,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "mult",
+          "n1",
+          "n2",
+          "n3",
+          "sport1",
+          "sport2",
+          "sport3"
+        ],
+        "rep_score": 0.4285714285714286,
+        "simplicity": 1.0
+      },
+      "idx": 46,
+      "is_correct": false,
+      "positive": false,
+      "report": "H4",
+      "score": 0.9200000000000002,
+      "score_source": "h21_saved",
+      "source": "H4",
+      "sympy_equiv": false
+    },
+    {
+      "actual": "7*n*(1+mult)",
+      "expected": "(n + n * mult) * 7",
+      "features": {
+        "err": null,
+        "grounding": 1.0,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "7*n*(1+mult)",
+        "parse": 1.0,
+        "rep": 1.0,
+        "simplicity": 1.0
+      },
+      "idx": 47,
+      "is_correct": false,
+      "label": "A",
+      "positive": true,
+      "raw": "7 * n * (1 + mult)",
+      "report": "H24",
+      "score": 1.0000000000000002,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:A",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(n*0)*(1+(r)*(d))",
+      "expected": "n0 * (r + 1)**d",
+      "features": {
+        "err": null,
+        "grounding": 0.6666666666666666,
+        "huge": 1.0,
+        "lowdeg": 1.0,
+        "newline": 1.0,
+        "norm": "(n*0)*(1+(r)*(d))",
+        "parse": 1.0,
+        "rep": 0.9090909090909091,
+        "simplicity": 1.0
+      },
+      "idx": 48,
+      "is_correct": false,
+      "label": "B",
+      "positive": true,
+      "raw": "{n0} * (1 + {r} * {d})",
+      "report": "H24",
+      "score": 0.9206060606060609,
+      "score_source": "h24_saved_h21_score",
+      "source": "H24:B",
+      "sympy_equiv": true
+    },
+    {
+      "actual": "(n1 * d1 + n2 * d2) / 12",
+      "correct": false,
+      "expected": "(n1*d1 + n2*d2) // 12",
+      "features": {
+        "actual_vars": [
+          "d1",
+          "d2",
+          "n1",
+          "n2"
+        ],
+        "char_len": 24,
+        "dup_token_ratio": 0.09090909090909091,
+        "err": null,
+        "grounding": 1.0,
+        "huge_digits": 2,
+        "huge_score": 1.0,
+        "low_degree": 1.0,
+        "newline_score": 1.0,
+        "parse_score": 1.0,
+        "question_vars": [
+          "d1",
+          "d2",
+          "d3",
+          "n1",
+          "n2"
+        ],
+        "rep_score": 0.8181818181818181,
+        "simplicity": 1.0
+      },
+      "idx": 49,
+      "is_correct": false,
+      "positive": true,
+      "report": "H10",
+      "score": 0.9745454545454546,
+      "score_source": "h21_saved",
+      "source": "H10",
+      "sympy_equiv": true
+    }
+  ],
+  "solvable": [
+    {
+      "best": {
+        "actual": "((3*sides-4*target)/(4*sides))*100",
+        "expected": "int((sides-target)/sides * 100) - 25",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "((3*sides-4*target)/(4*sides))*100",
+          "parse": 1.0,
+          "rep": 0.7142857142857143,
+          "simplicity": 1.0
+        },
+        "idx": 1,
+        "is_correct": false,
+        "label": "A",
+        "positive": true,
+        "raw": "$\\frac{3\\text{sides} - 4\\text{target}}{4\\text{sides}} \\times 100\\%$",
+        "report": "H24",
+        "score": 0.9600000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": true
+      },
+      "idx": 1,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "n - (n1 * w1 + n2 * w2 + n3 * w3)",
+        "correct": false,
+        "expected": "n - (n1*w1) - (n2*w2) - int(n3*w3)",
+        "features": {
+          "actual_vars": [
+            "n",
+            "n1",
+            "n2",
+            "n3",
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "char_len": 33,
+          "dup_token_ratio": 0.2,
+          "err": null,
+          "grounding": 1.0,
+          "huge_digits": 1,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "n",
+            "n1",
+            "n2",
+            "n3",
+            "unit",
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "rep_score": 0.6,
+          "simplicity": 1.0
+        },
+        "idx": 7,
+        "is_correct": false,
+        "positive": true,
+        "report": "H10",
+        "score": 0.9440000000000002,
+        "score_source": "h21_saved",
+        "source": "H10",
+        "sympy_equiv": true
+      },
+      "idx": 7,
+      "positive_count": 2,
+      "positive_sources": [
+        "H10",
+        "H2"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(k1 + k2) / (n1 + n2) * 100",
+        "correct": false,
+        "expected": "int(100 * (k1+k2) / (n1+n2))",
+        "features": {
+          "actual_vars": [
+            "k1",
+            "k2",
+            "n1",
+            "n2"
+          ],
+          "char_len": 27,
+          "dup_token_ratio": 0.23076923076923078,
+          "err": null,
+          "grounding": 1.0,
+          "huge_digits": 3,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "k1",
+            "k2",
+            "n1",
+            "n2",
+            "name1",
+            "name2"
+          ],
+          "rep_score": 0.5384615384615384,
+          "simplicity": 1.0
+        },
+        "idx": 8,
+        "is_correct": false,
+        "positive": true,
+        "report": "H4",
+        "score": 0.9353846153846155,
+        "score_source": "h21_saved",
+        "source": "H4",
+        "sympy_equiv": true
+      },
+      "idx": 8,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:C",
+        "H4"
+      ]
+    },
+    {
+      "best": {
+        "actual": "total-n*1+n*2",
+        "expected": "total + n2 - n1",
+        "features": {
+          "err": null,
+          "grounding": 0.5,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "total-n*1+n*2",
+          "parse": 1.0,
+          "rep": 0.7777777777777778,
+          "simplicity": 1.0
+        },
+        "idx": 10,
+        "is_correct": false,
+        "label": "A",
+        "positive": true,
+        "raw": "$\\text{total} - n1 + n2$",
+        "report": "H24",
+        "score": 0.868888888888889,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": true
+      },
+      "idx": 10,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:B"
+      ]
+    },
+    {
+      "best": {
+        "actual": "total-(frac+daily*period*7)",
+        "expected": "total - (total * frac + daily * period * 7)",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "total-(frac+daily*period*7)",
+          "parse": 1.0,
+          "rep": 0.9,
+          "simplicity": 1.0
+        },
+        "idx": 13,
+        "is_correct": false,
+        "label": "B",
+        "positive": false,
+        "raw": "`total - (frac + daily * period * 7)`",
+        "report": "H24",
+        "score": 0.9860000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:B",
+        "sympy_equiv": false
+      },
+      "idx": 13,
+      "positive_count": 2,
+      "positive_sources": [
+        "H1",
+        "H10"
+      ]
+    },
+    {
+      "best": {
+        "actual": "initial_amount - quantity * unit_price",
+        "correct": true,
+        "expected": "int(initial_amount - quantity * unit_price)",
+        "features": {
+          "actual_vars": [
+            "initial_amount",
+            "quantity",
+            "unit_price"
+          ],
+          "grounding": 1.0,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "cur",
+            "initial_amount",
+            "item",
+            "name",
+            "quantity",
+            "store_type",
+            "unit_price"
+          ],
+          "raw_id": 30,
+          "rep_score": 1.0,
+          "score_source": "h21_recomputed_proxy",
+          "simplicity": 1.0
+        },
+        "idx": 14,
+        "is_correct": true,
+        "positive": true,
+        "report": "H1",
+        "score": 1.0,
+        "score_source": "h21_recomputed_proxy",
+        "source": "H1",
+        "sympy_equiv": true
+      },
+      "idx": 14,
+      "positive_count": 1,
+      "positive_sources": [
+        "H1"
+      ]
+    },
+    {
+      "best": {
+        "actual": "n1 * p1 + n2 * p2 + n3 * p3",
+        "correct": true,
+        "expected": "n1 * p1 + n2 * p2 + n3 * p3",
+        "features": {
+          "actual_vars": [
+            "n1",
+            "n2",
+            "n3",
+            "p1",
+            "p2",
+            "p3"
+          ],
+          "grounding": 1.0,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "item",
+            "item1",
+            "item2",
+            "item3",
+            "n1",
+            "n2",
+            "n3",
+            "name",
+            "p1",
+            "p2",
+            "p3",
+            "shop"
+          ],
+          "raw_id": 36,
+          "rep_score": 0.5454545454545454,
+          "score_source": "h21_recomputed_proxy",
+          "simplicity": 1.0
+        },
+        "idx": 16,
+        "is_correct": true,
+        "positive": true,
+        "report": "H1",
+        "score": 0.9363636363636365,
+        "score_source": "h21_recomputed_proxy",
+        "source": "H1",
+        "sympy_equiv": true
+      },
+      "idx": 16,
+      "positive_count": 6,
+      "positive_sources": [
+        "H1",
+        "H10",
+        "H2",
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "n/(x*(1+mult))",
+        "expected": "n // (x + x*mult)",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "n/(x*(1+mult))",
+          "parse": 1.0,
+          "rep": 1.0,
+          "simplicity": 1.0
+        },
+        "idx": 17,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "$n / (x(1 + mult))$",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 17,
+      "positive_count": 2,
+      "positive_sources": [
+        "H10",
+        "H2"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(n)*(1+(mult))",
+        "expected": "n * (mult + 1)",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "(n)*(1+(mult))",
+          "parse": 1.0,
+          "rep": 1.0,
+          "simplicity": 1.0
+        },
+        "idx": 21,
+        "is_correct": false,
+        "label": "B",
+        "positive": true,
+        "raw": "{n} * (1 + {mult})",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:B",
+        "sympy_equiv": true
+      },
+      "idx": 21,
+      "positive_count": 4,
+      "positive_sources": [
+        "H10",
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "n1 * (frac1 + mult1) / 1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1 + mult1 * n1 - n1 * frac1 - mult1 * n1 + n1 * frac1",
+        "correct": false,
+        "expected": "int(n1 * frac1 + n2 * mult1)",
+        "features": {
+          "actual_vars": [
+            "frac1",
+            "mult1",
+            "n1"
+          ],
+          "char_len": 128,
+          "dup_token_ratio": 0.7560975609756098,
+          "err": null,
+          "grounding": 1.0,
+          "huge_digits": 1,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "color1",
+            "color2",
+            "frac1",
+            "mult1",
+            "n1",
+            "n2",
+            "name1",
+            "name2"
+          ],
+          "rep_score": 0.0,
+          "simplicity": 0.6222222222222222
+        },
+        "idx": 26,
+        "is_correct": false,
+        "positive": false,
+        "report": "H2",
+        "score": 0.7844444444444445,
+        "score_source": "h21_saved",
+        "source": "H2",
+        "sympy_equiv": false
+      },
+      "idx": 26,
+      "positive_count": 2,
+      "positive_sources": [
+        "H24:A",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "((n*m)/(k))",
+        "expected": "(n*m)//k",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "((n*m)/(k))",
+          "parse": 1.0,
+          "rep": 1.0,
+          "simplicity": 1.0
+        },
+        "idx": 30,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "$\\frac{n \\times m}{k}$",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 30,
+      "positive_count": 4,
+      "positive_sources": [
+        "H1",
+        "H10",
+        "H24:C",
+        "H4"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(relative_age)",
+        "expected": "multiple * relative_age - orbit_period",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "(relative_age)",
+          "parse": 1.0,
+          "rep": 1.0,
+          "simplicity": 1.0
+        },
+        "idx": 32,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "{relative_age}",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 32,
+      "positive_count": 1,
+      "positive_sources": [
+        "H2"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+        "expected": "int(n * p * (1 + r1/100) * (1 - r2/100))",
+        "features": {
+          "err": null,
+          "grounding": 0.75,
+          "huge": 1.0,
+          "lowdeg": 0.0,
+          "newline": 1.0,
+          "norm": "(n)*(cur)(p)*(1+(r*1)/100)*(1-(r*2)/100)",
+          "parse": 1.0,
+          "rep": 0.6521739130434783,
+          "simplicity": 1.0
+        },
+        "idx": 40,
+        "is_correct": false,
+        "label": "A",
+        "positive": false,
+        "raw": "{n} * {cur}{p} * (1 + {r1}/100) * (1 - {r2}/100)",
+        "report": "H24",
+        "score": 0.8513043478260871,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": false
+      },
+      "idx": 40,
+      "positive_count": 1,
+      "positive_sources": [
+        "H10"
+      ]
+    },
+    {
+      "best": {
+        "actual": "frac2 * mult1 * frac1 * n1/100000000000000000000000000000000000000000000000000",
+        "correct": false,
+        "expected": "int(n1 * frac1 * mult1 * frac2)",
+        "features": {
+          "actual_vars": [
+            "frac1",
+            "frac2",
+            "mult1",
+            "n1"
+          ],
+          "char_len": 78,
+          "dup_token_ratio": 0.2222222222222222,
+          "err": null,
+          "grounding": 1.0,
+          "huge_digits": 51,
+          "huge_score": 0.0,
+          "low_degree": 0.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "creature",
+            "frac1",
+            "frac2",
+            "mult1",
+            "n1",
+            "name1",
+            "name2",
+            "name3",
+            "name4",
+            "weapon1",
+            "weapon2",
+            "weapon3",
+            "weapon4",
+            "weapon5"
+          ],
+          "rep_score": 0.5555555555555556,
+          "simplicity": 0.9
+        },
+        "idx": 43,
+        "is_correct": false,
+        "positive": false,
+        "report": "H2",
+        "score": 0.7077777777777778,
+        "score_source": "h21_saved",
+        "source": "H2",
+        "sympy_equiv": false
+      },
+      "idx": 43,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "7*n*(1+mult)",
+        "expected": "(n + n * mult) * 7",
+        "features": {
+          "err": null,
+          "grounding": 1.0,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "7*n*(1+mult)",
+          "parse": 1.0,
+          "rep": 1.0,
+          "simplicity": 1.0
+        },
+        "idx": 47,
+        "is_correct": false,
+        "label": "A",
+        "positive": true,
+        "raw": "7 * n * (1 + mult)",
+        "report": "H24",
+        "score": 1.0000000000000002,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:A",
+        "sympy_equiv": true
+      },
+      "idx": 47,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(n*0)*(1+(r)*(d))",
+        "expected": "n0 * (r + 1)**d",
+        "features": {
+          "err": null,
+          "grounding": 0.6666666666666666,
+          "huge": 1.0,
+          "lowdeg": 1.0,
+          "newline": 1.0,
+          "norm": "(n*0)*(1+(r)*(d))",
+          "parse": 1.0,
+          "rep": 0.9090909090909091,
+          "simplicity": 1.0
+        },
+        "idx": 48,
+        "is_correct": false,
+        "label": "B",
+        "positive": true,
+        "raw": "{n0} * (1 + {r} * {d})",
+        "report": "H24",
+        "score": 0.9206060606060609,
+        "score_source": "h24_saved_h21_score",
+        "source": "H24:B",
+        "sympy_equiv": true
+      },
+      "idx": 48,
+      "positive_count": 3,
+      "positive_sources": [
+        "H24:A",
+        "H24:B",
+        "H24:C"
+      ]
+    },
+    {
+      "best": {
+        "actual": "(n1 * d1 + n2 * d2) / 12",
+        "correct": false,
+        "expected": "(n1*d1 + n2*d2) // 12",
+        "features": {
+          "actual_vars": [
+            "d1",
+            "d2",
+            "n1",
+            "n2"
+          ],
+          "char_len": 24,
+          "dup_token_ratio": 0.09090909090909091,
+          "err": null,
+          "grounding": 1.0,
+          "huge_digits": 2,
+          "huge_score": 1.0,
+          "low_degree": 1.0,
+          "newline_score": 1.0,
+          "parse_score": 1.0,
+          "question_vars": [
+            "d1",
+            "d2",
+            "d3",
+            "n1",
+            "n2"
+          ],
+          "rep_score": 0.8181818181818181,
+          "simplicity": 1.0
+        },
+        "idx": 49,
+        "is_correct": false,
+        "positive": true,
+        "report": "H10",
+        "score": 0.9745454545454546,
+        "score_source": "h21_saved",
+        "source": "H10",
+        "sympy_equiv": true
+      },
+      "idx": 49,
+      "positive_count": 1,
+      "positive_sources": [
+        "H10"
+      ]
+    }
+  ],
+  "summary": {
+    "candidate_count": 292,
+    "groups": 49,
+    "meets_crane_bar": false,
+    "needed_for_crane_bar": 12,
+    "picked_positive_when_available": 10,
+    "picked_positive_when_available_rate": 0.5882352941176471,
+    "score_sources": {
+      "h21_recomputed_proxy": 30,
+      "h21_saved": 138,
+      "h24_saved_h21_score": 124
+    },
+    "selected_evaluator_correct": 2,
+    "selected_evaluator_correct_indices": [
+      14,
+      16
+    ],
+    "selected_positive": 10,
+    "selected_positive_indices": [
+      1,
+      7,
+      8,
+      10,
+      14,
+      16,
+      21,
+      47,
+      48,
+      49
+    ],
+    "selected_positive_rate_over_49": 0.20408163265306123,
+    "solvable_groups": 17,
+    "source_counts": {
+      "H1": 30,
+      "H10": 46,
+      "H2": 48,
+      "H24:A": 43,
+      "H24:B": 41,
+      "H24:C": 40,
+      "H4": 44
+    },
+    "union_positive_groups": 17,
+    "union_positive_indices": [
+      1,
+      7,
+      8,
+      10,
+      13,
+      14,
+      16,
+      17,
+      21,
+      26,
+      30,
+      32,
+      40,
+      43,
+      47,
+      48,
+      49
+    ]
+  }
+}

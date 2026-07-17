@@ -36,5 +36,5 @@ python -m synthesis.run_synthesis \
     --anthropic-thinking-display summarized \
     --vllm-tensor-parallel-size 1 \
     --spider-split-file /home/aadivyar/csd-generation/environment/benchmark_splits/spider_dev_proportional_100x100_seed123.json \
-    --spider-split-name eval \
+    --spider-split-name test \
     2>&1 | tee /tmp/spider1p5b_nondisjoint_win_heldout_reeval_20260604.log

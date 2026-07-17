@@ -1,0 +1,617 @@
+{
+  "accuracy": 0.07,
+  "syntax_rate": 0.19,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 833.2906,
+    "mean_generation_seconds_per_example": 8.332906,
+    "examples_with_generation_timing": 100,
+    "total_output_tokens": 14273,
+    "mean_output_tokens_per_example": 142.73,
+    "examples_with_token_counts": 100,
+    "evaluator_total_time_seconds": 995.6485,
+    "evaluator_max_sample_time_seconds": 237.6413
+  },
+  "answers": [
+    {
+      "question": "{n} saw a {x}-foot {big_fish} with {k} {y}-inch remoras attached to it. What percentage of the {big_fish}'s body length is the combined length of the remoras?",
+      "generated_answer": "For every step of your reasoning, explain clearly what you are doing.\nUse integers for division when",
+      "num_tokens": 32,
+      "generation_seconds": 2.286753
+    },
+    {
+      "question": "A fog bank rolls in from the ocean to cover a city. It takes {t} minutes to cover every {d} miles of the city. If the city is {y} miles across from the oceanfront to the opposite inland edge, how many",
+      "generated_answer": "and",
+      "num_tokens": 130,
+      "generation_seconds": 4.120084
+    },
+    {
+      "question": "{name} is rolling a {sides} die. How much more likely is it (expressed as a percentage) that he rolls a number greater than {target} than that he rolls two even numbers in a row?",
+      "generated_answer": "100 * ((sides - target) / sides - 1 / sides * 1 / sides)",
+      "num_tokens": 206,
+      "generation_seconds": 6.676225
+    },
+    {
+      "question": "A {g} of {n} students has various hobbies. {n_1} like to {h_1}, {n_2} like to play {h_2}, and the rest like to either {h_3} or {h_4}. How many like to {h_3} if the number that like to {h_4} is twice t",
+      "generated_answer": "n - n_1 - 3 * n_2",
+      "num_tokens": 282,
+      "generation_seconds": 8.378582
+    },
+    {
+      "question": "{name} is popping popcorn for a snack. As the {p} of kernels heats up, the kernels start popping faster. {n} pop in the first {s} seconds of cooking, then {k_2} times that amount in the next {s} secon",
+      "generated_answer": "{k_3} * {n}",
+      "num_tokens": 189,
+      "generation_seconds": 10.368441
+    },
+    {
+      "question": "{name} makes {drink} using teaspoons of sugar and cups of water in the ratio of {m}:{n}. If she used a total of {x} teaspoons of sugar and cups of water, calculate the number of teaspoonfuls of sugar ",
+      "generated_answer": "",
+      "num_tokens": 0,
+      "generation_seconds": 3.395087
+    },
+    {
+      "question": "{name} has {x} {area} of {fruit} field. There are {k} {fruit} per {area}. {name} can harvest his {fruit} every {n} months. How many {fruit} can {name} harvest within a year?",
+      "generated_answer": "and",
+      "num_tokens": 56,
+      "generation_seconds": 1.782131
+    },
+    {
+      "question": "A farmer is buying feed for his {animals}. He buys a variety of {o1}, {o2}, {o3} and {o4}. Since {o4} are a rare treat, he only buys {n4} {w4}-{unit} boxes of them for the whole stable. He only wants ",
+      "generated_answer": "Operations allowed are: +, -, /, //, %, () and int().\nVariables are: n1, n2, n3, n4, w1, w2, w3, w4,",
+      "num_tokens": 240,
+      "generation_seconds": 7.788461
+    },
+    {
+      "question": "A juggler can juggle {n} balls. {frac_1} of the balls are {ball_type} balls, and {frac_2} of the {ball_type} balls are {color}. How many {color} {ball_type} balls are there?",
+      "generated_answer": "symbolic expression",
+      "num_tokens": 98,
+      "generation_seconds": 3.060186
+    },
+    {
+      "question": "When {name} watches her {family}, she gets out a variety of toys for him. The bag of building blocks has {x} blocks in it. The bin of stuffed animals has {y} stuffed animals inside. The tower of stack",
+      "generated_answer": "You may use the following operations: +, -, /, //, %, (), and int().\n\nCertainly, let's break down th",
+      "num_tokens": 316,
+      "generation_seconds": 10.386888
+    },
+    {
+      "question": "To make a call from a {dev}, you must pay {currency} {frac1} for each minute of your call. After {t} minutes, that price drops to {currency} {frac2} per minute. How much would a {total}-minute call co",
+      "generated_answer": "{frac1} * {t} + {frac2} * ({total} - {t})",
+      "num_tokens": 180,
+      "generation_seconds": 5.721047
+    },
+    {
+      "question": "{name} wants to make different sized ice cubes with {n} {unit}s of water. He can make giant cubes that use {w1} {unit}s per cube, medium cubes that use {w2} {unit}s, and small cubes that use {w3} of {",
+      "generated_answer": "The symbolic expressions can use numbers as well as the variables provided. The operations allowed a",
+      "num_tokens": 505,
+      "generation_seconds": 16.723428
+    },
+    {
+      "question": "{name} places {obj} on some {surface}s. Each {surface} can hold {x} {obj}s. If he has {n} {obj}s and {k} {surface}s, how many {obj}s won't he be able to place on the {surface}?",
+      "generated_answer": "n % (x * k)",
+      "num_tokens": 129,
+      "generation_seconds": 4.192734
+    },
+    {
+      "question": "{name} is an avid gardener. {time}, she received {x} new potted plants from her favorite plant nursery. She already has {r} potted plants on each of the {w} window ledges of her large country home. Fe",
+      "generated_answer": "x + r * w - n * w",
+      "num_tokens": 20,
+      "generation_seconds": 4.719642
+    },
+    {
+      "question": "{n1} and {n2} have {t} minutes to walk to the {loc1} together. It takes them {t1} minutes to get to the corner where the {loc2} is. It takes them another {t2} minutes to get to the {loc3}. How much lo",
+      "generated_answer": "{t} - ({t1} + {t2})",
+      "num_tokens": 171,
+      "generation_seconds": 5.312359
+    },
+    {
+      "question": "{name1}'s dog has {n1} puppies, {k1} of which have spots. {name2}'s dog has {n2} puppies, {k2} of which have spots. What percentage of all the puppies have spots?",
+      "generated_answer": "(k1 + k2) * 100 / (n1 + n2)",
+      "num_tokens": 214,
+      "generation_seconds": 6.837543
+    },
+    {
+      "question": "{name} is selling {food} and {fruit} pie for a fundraiser. On {d1}, he sold {n1} boxes of {food} and {m1} fewer boxes of {fruit} pie, than on {d2}. On {d2}, he sold {n2} more boxes of {food}s than on ",
+      "generated_answer": "After determining the symbolic expressions, make sure to calculate their value with Python and repla",
+      "num_tokens": 106,
+      "generation_seconds": 3.416613
+    },
+    {
+      "question": "{name} walks {n} {unit} every day on her favorite walking trail, which includes {m} {unit} of walking on the beach and {k} {unit} of walking on the sidewalk. On the sidewalk, {name} walks at {mult} th",
+      "generated_answer": "r*t * (1 + mult) / (r + mult*r)",
+      "num_tokens": 194,
+      "generation_seconds": 9.049196
+    },
+    {
+      "question": "{name} went to buy some school supplies. He bought {n1} {obj1} which cost {cur} {c1} each, {n2} {obj2} which cost {cur} {c2} each, and a rim of bond paper which cost {cur} {c3}. How much did {name} sp",
+      "generated_answer": "Variable names should not be used in computations, only in descriptive text and final answer.\nEach c",
+      "num_tokens": 38,
+      "generation_seconds": 1.156739
+    },
+    {
+      "question": "In a {n}-item quiz, {p1}% of the questions are {s1}, and the rest are equally divided as {s2} and {s3} questions. If {name} is sure to get {r1}% of the {s1} questions, and {frac} of the {s2} and {s3} ",
+      "generated_answer": "Follow the prescribed format.\nFinal answer expression must include numbers as well as the problem va",
+      "num_tokens": 138,
+      "generation_seconds": 4.222333
+    },
+    {
+      "question": "{name} picks {n1} {fruit} on {d1}. Then he picks {n2} {fruit} on {d2}. On {d3}, he picks {mult} the number of {fruit} he did on {d1}. How many {fruit} does {name} have?",
+      "generated_answer": "65",
+      "num_tokens": 160,
+      "generation_seconds": 5.685137
+    },
+    {
+      "question": "{name} watches TV after he finishes his homework every night. On {d1} and {d2}, he watched a {h1}-hour episode of his favorite show each night. On {d3}, he watched a few episodes of a {m1}-minute show",
+      "generated_answer": "60",
+      "num_tokens": 490,
+      "generation_seconds": 19.384356
+    },
+    {
+      "question": "{name} was preparing for a {event} at her house, where she intended to serve {food}. She noticed that she was out of plastic {obj}, so she bought a new package of {obj}. Later, her husband also bought",
+      "generated_answer": "Let's think step by step. \nFirst, let's define what we know:\n-<<x =!!!!!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 44,
+      "generation_seconds": 12.199611
+    },
+    {
+      "question": "{name} is knitting winter wear for her {count} grandchildren. They're {children}, so they're all the same size. She wants to make a {c1}, {c2}, {c3}, {c4}, and {c5} for each of them. It takes {n1} ske",
+      "generated_answer": "and",
+      "num_tokens": 83,
+      "generation_seconds": 2.65447
+    },
+    {
+      "question": "According to its nutritional info, a bag of {food} has {cal} calories per serving. If a {size} {unit} bag has {n} servings, how many {unit} can you eat if your daily calorie target is {total} and you ",
+      "generated_answer": "Embed the symbolic expressions into the final answer.\nEnsure your symbolic expressions are not simpl",
+      "num_tokens": 32,
+      "generation_seconds": 0.994138
+    },
+    {
+      "question": "In {teacher}'s class of {total} students, {p1}% of the class are {group1}. Out of the remaining class, {p2}% of the students are {group2} or part of {group3}. These 3 groups of students will need to l",
+      "generated_answer": "In the reasoning, wrap intermediate computations at the end of each line with << >>. The symbolic ex",
+      "num_tokens": 37,
+      "generation_seconds": 4.949839
+    },
+    {
+      "question": "{name1} eats {n1} {food} per {time_unit}, {name2} eats {n2} {food} per {time_unit}, and their {relation} eats {n3} {food} per {time_unit}. How many {food} does this family eat in one week?",
+      "generated_answer": "Describe your reasoning for each step inside the <reasoning> field in the response, so I can follow ",
+      "num_tokens": 57,
+      "generation_seconds": 1.868257
+    },
+    {
+      "question": "{name} gets {n} emails a day. {p}% of those emails don't require any response. He responds to the rest of them. How many emails does he respond to in a {d} day work week?",
+      "generated_answer": "100",
+      "num_tokens": 261,
+      "generation_seconds": 11.787923
+    },
+    {
+      "question": "A {facility} has a capacity of {total} {item}s with {frac} occupied. Due to the {event}, {daily} patients are admitted into the {facility} each day. Calculate the total number of unoccupied {item}s in",
+      "generated_answer": "symbolic expression",
+      "num_tokens": 35,
+      "generation_seconds": 1.115224
+    },
+    {
+      "question": "{name1} is {age1} years old. In {years} years his {relation_type} {name2} will be {mult} times as old as {name1} is now. How old is {name2} right now?",
+      "generated_answer": "No more than two intermediate steps are shown. \nShow only the working process. No final \"=\" statemen",
+      "num_tokens": 57,
+      "generation_seconds": 1.780534
+    },
+    {
+      "question": "{name} has {cur}{initial_amount} and wants to buy {quantity} {item}s from a bin at the {store_type} store. Each {item} costs {cur}{unit_price}. How much money does {name} have left after paying for th",
+      "generated_answer": "initial_amount - (quantity * unit_price)",
+      "num_tokens": 89,
+      "generation_seconds": 2.727522
+    },
+    {
+      "question": "{name1} and {name2} are currently {age_diff} years apart in age. If {name1}, who is younger than {name2}, is {age1} years old, what's the average of their ages?",
+      "generated_answer": "symbolic expression",
+      "num_tokens": 151,
+      "generation_seconds": 4.606347
+    },
+    {
+      "question": "{name} is looking for a {property_type} that will not go beyond her ${budget} budget. She saw a property that has a selling price of ${price}. On top of that, the buyer has to pay a brokerage fee whic",
+      "generated_answer": "Use simple operations like +, -, * o /.\nNumbers associated to variables should be always there or de",
+      "num_tokens": 64,
+      "generation_seconds": 2.142476
+    },
+    {
+      "question": "{name1} and {name2} are sisters from {city} who love collecting signatures from {celebrity_type}. During their {vacation_type} from school, the sisters spend every afternoon collecting signatures. Aft",
+      "generated_answer": "and",
+      "num_tokens": 17,
+      "generation_seconds": 0.627447
+    },
+    {
+      "question": "{title} {name} sold his {property} for ${price}. He paid the {fee1_name} fees that amount to {fee1_percent}% of the selling price and also paid a {fee2_name} fee that is {fee2_percent}% of the selling",
+      "generated_answer": "price - (price * fee1_percent / 100 + price * fee2_percent / 100 + loan)",
+      "num_tokens": 150,
+      "generation_seconds": 5.0571
+    },
+    {
+      "question": "{name} is raising money for a {event}. He has applied for help from the {organization}, which has decided to cover {fraction} of the cost of the {event}. How much money is {name} missing if he has {cu",
+      "generated_answer": "750",
+      "num_tokens": 224,
+      "generation_seconds": 7.492642
+    },
+    {
+      "question": "{name} went to the {shop} and bought various types of {item}. She bought {n1} dozen {item1} which cost ${p1} per dozen, {n2} dozen {item2} which cost ${p2} per dozen, and {n3} dozen {item3} for ${p3} ",
+      "generated_answer": "Ensure that all mathematical operations are explicitly shown, and variables are substituted appropri",
+      "num_tokens": 110,
+      "generation_seconds": 3.363965
+    },
+    {
+      "question": "A {item} has {n} {unit}. If {name1} can eat {x} {unit} a day while {name2} can eat {mult} as much, how many days will the {item} last?",
+      "generated_answer": "{n} / ((1 + {mult}) * {x})",
+      "num_tokens": 306,
+      "generation_seconds": 9.851789
+    },
+    {
+      "question": "A loaf of {item1} at the {shop} costs {currency}{price1}. {item2} cost {currency}{price2} each. How much more do {n1} loaves of {item1} cost than {n2} {item2}?",
+      "generated_answer": "n1 * price1 - n2 * price2",
+      "num_tokens": 177,
+      "generation_seconds": 10.234987
+    },
+    {
+      "question": "A {job} has to clean a {building} with {n} {room}s. They have {d} days to get it done. It takes them {t} minutes per {room}. If they work {h} hours each day, what percentage of their day, on average, ",
+      "generated_answer": "(n * t / (60 * h)) * 100",
+      "num_tokens": 294,
+      "generation_seconds": 9.38535
+    },
+    {
+      "question": "{name} went to the {location} for vacation. Her parents gave her {cur}{total} to buy whatever she wanted. At the {shop}, {item1} was on sale for \"Buy {n1} {unit}s at {cur}{p1} per {unit}, get {n2} {un",
+      "generated_answer": "Split complex symbolic expressions into simpler parts for clarity.\nAfter each simplification step, d",
+      "num_tokens": 148,
+      "generation_seconds": 5.478305
+    },
+    {
+      "question": "A {structure} is made out of {n1} {color1} {obj}s, {mult} as many {color2} {obj}s, and an unknown number of {color3} {obj}s. If there are {total} {obj}s in the {structure} in total, how many {color3} ",
+      "generated_answer": "The reasoning must be explicit.\nProvide the final symbolic expression wrapped in << >> that answers ",
+      "num_tokens": 87,
+      "generation_seconds": 2.745993
+    },
+    {
+      "question": "{name} goes to the store to buy some {item}. The normal brand of {item} he buys cost {cur}{price} per {unit}. He had to buy a more expensive brand that cost {percent}% more since his favorite brand wa",
+      "generated_answer": "Focus on solving the problem accurately and thoroughly, showing each stage of your reasoning clearly",
+      "num_tokens": 68,
+      "generation_seconds": 2.150776
+    },
+    {
+      "question": "{name} went to their {place} to pick some {fruit} and found {frac} as many {insect1} as {insect2} in the {location}. If there were {n} {insect2}, calculate the total number of insects in the {location",
+      "generated_answer": "20",
+      "num_tokens": 220,
+      "generation_seconds": 7.245774
+    },
+    {
+      "question": "There are {n} girls in the {place}. If there are {mult} the number of boys in the {place}, how many kids are in the {place}?",
+      "generated_answer": "{n} * (1 + {mult})",
+      "num_tokens": 158,
+      "generation_seconds": 5.22369
+    },
+    {
+      "question": "{name} has a flower bed that is {length} {unit_length} long. {name} wants to fill her flower bed with plants. {name}'s flowers grow {plant_width} {unit_length} wide so she needs to leave {space} {unit",
+      "generated_answer": "Ensure your output is in the form of \\<<s!!!",
+      "num_tokens": 14,
+      "generation_seconds": 3.452595
+    },
+    {
+      "question": "{school} is holding graduation in their {venue} this year which has space for {total} people. After accounting for {graduates} seats for graduates and {faculty} seats for faculty attending, how many t",
+      "generated_answer": "tickets_per_graduate",
+      "num_tokens": 111,
+      "generation_seconds": 3.515452
+    },
+    {
+      "question": "{name1} hid {n} dozen eggs in the yard for the Easter egg hunt. {name2} finds {x} eggs. {name3} finds {mult1} as many as {name2}. {name4} finds {y} less than {name3}, and {name5} finds {frac} as many ",
+      "generated_answer": "x + mult1 * x",
+      "num_tokens": 58,
+      "generation_seconds": 7.620941
+    },
+    {
+      "question": "{name} can peel {n1} {food}s a minute and saute {n2} {food}s in {t} minutes. How long will it take her to peel and saute {total} {food}s?",
+      "generated_answer": "You are allowed to use integers, all the variables defined in the question, these basic binary opera",
+      "num_tokens": 53,
+      "generation_seconds": 1.663132
+    },
+    {
+      "question": "{name} collects garbage from {n} different apartment complexes. The first {n_first} have {a} apartments each and the last one is {p}% bigger than the other {n_first} combined. {name} collects garbage ",
+      "generated_answer": "Please adhere strictly to the provided computation model.",
+      "num_tokens": 9,
+      "generation_seconds": 0.300485
+    },
+    {
+      "question": "The area of {name}'s rectangular {room_type} is {area} square feet. If the length of his room is {length} yards, what is the perimeter of the room in feet?",
+      "generated_answer": "15 eggs/day",
+      "num_tokens": 108,
+      "generation_seconds": 5.714568
+    },
+    {
+      "question": "{name} has a {product} stand at the {location}. He sells three kinds of {product}s: {item1}, {item2} and {item3}. He usually sells {item1} for {cur}{p1} per {unit}, {item2} for {cur}{p2} per {unit} an",
+      "generated_answer": "When used, the intermediate and final results must use only the variables declared in the problem st",
+      "num_tokens": 58,
+      "generation_seconds": 1.738287
+    },
+    {
+      "question": "{name} has {n} {cur}{bill} bills. He buys {m} {item1}s for {cur}{p1} each. He also buys {k} packs of {item2}s for {cur}{p2} each. How much money does he have left?",
+      "generated_answer": "Use that format to show your thinking process and arrive finally at an answer.\nYou are not allowed t",
+      "num_tokens": 35,
+      "generation_seconds": 1.122463
+    },
+    {
+      "question": "{name1} scored {n1} points in one game of {game}. {name2} scored {n2} points more than {frac} as many as {name1}. How many points did {name1} and {name2} have in total?",
+      "generated_answer": "The result must be a variable expression that incorporates all input parameters.\nAllowable operation",
+      "num_tokens": 45,
+      "generation_seconds": 1.473325
+    },
+    {
+      "question": "{name} sliced a whole {fruit} into {total} pieces. She ate {n1} slices, her {sibling1} ate {n2} more than her, and her {sibling2} ate {n3} more than her {sibling1}. How many slices of {fruit} did they",
+      "generated_answer": "n1 + (n1 + n2) + ((n1 + n2) + n3)",
+      "num_tokens": 172,
+      "generation_seconds": 42.019993
+    },
+    {
+      "question": "{name} is learning to write and decides to keep re-writing the {alphabets} until she knows it. She writes it in full {n1} time(s), writes {frac} of it once, then re-writes everything she has already w",
+      "generated_answer": "(n1 + frac) * 13",
+      "num_tokens": 374,
+      "generation_seconds": 11.871397
+    },
+    {
+      "question": "A {container} of {liquid} is {vol} {unit}s of {liquid}. {name} drinks {num} {container}s of {liquid}. If {liquid} has {cal} calories per {unit} how many calories did he consume?",
+      "generated_answer": "Represent mathematical variables as shown. Avoid creating new ones.\nStick to the operators (+, -, /,",
+      "num_tokens": 40,
+      "generation_seconds": 1.348233
+    },
+    {
+      "question": "{name1} has {n1} tubes of {color1} paint and {n2} tubes of {color2} paint. {name2} has {frac1} as many tubes of {color1} paint as {name1}, and {mult1} as many tubes of {color2} paint as {name1}. How m",
+      "generated_answer": "Use symbolic variables {variable} and mathematical operations +, -, /, //, %, (), and int() as descr",
+      "num_tokens": 37,
+      "generation_seconds": 1.166299
+    },
+    {
+      "question": "One {worker} can mine {base} {unit} of ore per day with {tool1}. He can mine {mult1} as much with a {tool2} and {mult2} more with a {tool3} than with a {tool2}. How many {unit} of ore can {n} {worker}",
+      "generated_answer": "Intermediate symbolic expressions should also be enclosed in << >> for clarity.\nThe final answer sho",
+      "num_tokens": 26,
+      "generation_seconds": 0.80281
+    },
+    {
+      "question": "I have {n1} liters of {fruit1} drink that are {frac1} water and I wish to add it to {n2} liters of {fruit2} drink that is {frac2} water. But as I pour it, I spill {spill} liters of the {fruit1} drink.",
+      "generated_answer": "expression",
+      "num_tokens": 60,
+      "generation_seconds": 1.930359
+    },
+    {
+      "question": "{name} works a {h}-hour shift each day, {d} days a week. He earns {cur}{r} per hour and gets a {cur}{b} bonus each week if the company performs well. How much money did {name} make in {month} if the c",
+      "generated_answer": "Be sure to include all parameters. Answer with a symbolic expression including variables. Only allow",
+      "num_tokens": 35,
+      "generation_seconds": 1.114133
+    },
+    {
+      "question": "{name} has a bag of {objects} with {n} inside. He tripped over {obstacle} while carrying it and dropped {frac} of them. He scrambled to search for them but only came up with {k}. When he went back hom",
+      "generated_answer": "{n} * (1 - {frac}) + {k} - {fake_num}",
+      "num_tokens": 219,
+      "generation_seconds": 6.872642
+    },
+    {
+      "question": "In a set of {item}'s cards, there are {n1} {c1} cards, and {p}% more {c2} cards. {c3} cards are as many as the sum of {c1} and {c2} cards. How many cards of all mentioned colors are there?",
+      "generated_answer": "100",
+      "num_tokens": 233,
+      "generation_seconds": 32.050373
+    },
+    {
+      "question": "A {person1} has {n} {item}s. His {relation} has {k} fewer {item}s than he has. How many {item}s do they have together?",
+      "generated_answer": "2n - k",
+      "num_tokens": 170,
+      "generation_seconds": 5.422504
+    },
+    {
+      "question": "{name} has {n} jars of {item} in her {location}. Each jar of {item} can decorate {m} {food}. {name} wants to bake enough {food} to use up all of her {item}. If each {container} holds {k} {food}, how m",
+      "generated_answer": "Intermediate variables can be defined, and must also be \\< and \\> delimited.\nOnly these operations a",
+      "num_tokens": 32,
+      "generation_seconds": 4.131352
+    },
+    {
+      "question": "{name} is trying to decide whether to do {task} herself or hire one {profession}. If she does it herself, she'll be able to do {n} fewer hours of {work_type} work, losing {cur}{rate}/hour in missed in",
+      "generated_answer": "Always wrap the final numerical output in two sets of delimiters. When no numerical values are prese",
+      "num_tokens": 73,
+      "generation_seconds": 3.253315
+    },
+    {
+      "question": "{name} has {n1} light {c1} spools of thread, {n2} dark {c1} spools of thread, {n3} light {c2} spools of thread, and {n4} dark {c2} spools of thread. What percent of the spools are {c1}?",
+      "generated_answer": "(100 * ( (n1 + n2) / (n1 + n2 + n3 + n4) ) )",
+      "num_tokens": 276,
+      "generation_seconds": 9.014047
+    },
+    {
+      "question": "{name}'s {vehicle} breaks down. The {vehicle} weighs {weight_vehicle} {unit} and he has {item} in it weighing {weight_item} {unit}. He also has his {num_passengers} young {passenger_type} who weigh {w",
+      "generated_answer": "force",
+      "num_tokens": 92,
+      "generation_seconds": 3.001372
+    },
+    {
+      "question": "It takes {name} {t1} minutes to finish a {game1} and {t2} minutes to finish a {game2}. Over the {period} she solved {n1} {game1}s and {n2} {game2}s. How much time did she spend playing these games?",
+      "generated_answer": "(t1 * n1) + (t2 * n2)",
+      "num_tokens": 167,
+      "generation_seconds": 5.376983
+    },
+    {
+      "question": "On {day3}, {name} wants to exercise for {mult} the amount of time he did on {day2} and {day1} combined. On {day1} he exercised for {t1} minutes. On {day2} he exercised for {t2} minutes. How many minut",
+      "generated_answer": "Reason step by step. Do not simply state the answer without an explanation.\nRestrictions:\n1. Only th",
+      "num_tokens": 62,
+      "generation_seconds": 1.924941
+    },
+    {
+      "question": "A {occupation} works for {w} weeks every month and for {d} days every week. If he gets paid {cur}{p} every day, how much does he earn if he works for a year?",
+      "generated_answer": "Limit the use of Python code in your answers.\nUse +, -, /, //, %, (), and the int() function for you",
+      "num_tokens": 89,
+      "generation_seconds": 4.417001
+    },
+    {
+      "question": "{name} is feeding his livestock {food}. Each {animal1} needs {n1} {unit}, and each {animal2} needs {n2} {unit} less than twice the amount each {animal1} needs. If there are {k1} {animal1}s and {k2} {a",
+      "generated_answer": "symbolic expression",
+      "num_tokens": 62,
+      "generation_seconds": 2.001593
+    },
+    {
+      "question": "{name} was a pen pal with {n1} people. He stopped being penpals with {n2} of them. They each send {l} letters a week that are {p} pages long. He responds in kind. He can write a page every {t} minutes",
+      "generated_answer": "2*x + 3",
+      "num_tokens": 50,
+      "generation_seconds": 1.630479
+    },
+    {
+      "question": "Comet {comet_name} orbits the sun every {orbit_period} years. {name}'s {relative} saw the Comet when he was {relative_age} years old. {name} saw the comet a second time when he was {multiple} the age ",
+      "generated_answer": "Variables and constants in the question (e.g., {comet_name}, {orbit_period}, {name}, {relative}, etc",
+      "num_tokens": 75,
+      "generation_seconds": 2.383034
+    },
+    {
+      "question": "There are {total} {grade}-graders at {school_name} School. {num_girls} of them are girls. On {day}, {absent_girls} {grade}-grade girls and {absent_boys} {grade}-grade bys were absent. How many {grade}",
+      "generated_answer": "(num_girls - absent_girls) - absent_boys",
+      "num_tokens": 276,
+      "generation_seconds": 10.110245
+    },
+    {
+      "question": "There are currently {n1} {c1} balls, {n2} {c2} balls, and {n3} {c3} balls in the {place}. {c1} balls cost {cur}{p1}, {c3} balls cost {cur}{p3}, and {c2} balls cost {cur}{p2}. How much will the {place}",
+      "generated_answer": "Complex inline computations must contain parentheses.\nRespect the constraints explicitly.\nVariable l",
+      "num_tokens": 28,
+      "generation_seconds": 0.929749
+    },
+    {
+      "question": "{name} caught {n} {fish}s last {day}, the first {fish} he caught weighs {w1} {unit}, the second {fish} he caught weighs {w2} {unit}, and the last {fish} he caught weighs {w3} {unit}. If a {unit} of {f",
+      "generated_answer": "({w1} + {w2} + {w3}) * {price}",
+      "num_tokens": 264,
+      "generation_seconds": 8.656393
+    },
+    {
+      "question": "{name} is required to submit a {n}-page {document}. She already finished writing {frac} of the {document}. How many pages does she have left to write?",
+      "generated_answer": "Variables and constants are understood. \nPresent a neat and unambiguous solution. Compact forms are ",
+      "num_tokens": 46,
+      "generation_seconds": 1.460283
+    },
+    {
+      "question": "There are {n1} periods in the day for a normal student but {name} has to take {n2} extra classes. Each class is {t} minutes long. He goes to class for {d} days a week. He then spends {frac} of his wee",
+      "generated_answer": "int((((n1 * d * t) + (n2 * t) + ((n1 * d * t) + (n2 * t)) * frac)) / 60))",
+      "num_tokens": 391,
+      "generation_seconds": 13.001101
+    },
+    {
+      "question": "{name} finished {frac} of a {n1} piece puzzle, and then started and finished another {n2} piece puzzle within an hour. How many puzzle pieces did {name} place during that hour?",
+      "generated_answer": "Only use readily available functions/methods/operators (within the context described). Do not use an",
+      "num_tokens": 40,
+      "generation_seconds": 9.063976
+    },
+    {
+      "question": "The vending maches sell {item1} for {price1} cents and {item2} for {price2} cents. {name} spent {total} and got {n1} bags of {item1} and had {p}% of his money left in change. How many {item2} did he b",
+      "generated_answer": "int(x)",
+      "num_tokens": 114,
+      "generation_seconds": 3.691769
+    },
+    {
+      "question": "The {event} team hid {total} {item}. The {family} twins each found {n} {item}. All the other {item} except {m} were found by their friends. How many {item} did the friends find?",
+      "generated_answer": "(total - (2 * n)) + m",
+      "num_tokens": 238,
+      "generation_seconds": 7.26984
+    },
+    {
+      "question": "At the beginning of the {event}, there were {m} {group1} and {w} {group2}. After {t}, {frac} of the total number of people left. How many {group2} are left if {m_left} {group1} stayed at the {event}?",
+      "generated_answer": "Respond only with symbolic expressions, using the variables and numbers from the problem statement. ",
+      "num_tokens": 33,
+      "generation_seconds": 1.008913
+    },
+    {
+      "question": "The {family} family is busy making {item}. So far, they've made {total} {item}. They have {n1} {flavor1} {item}, {n2} {flavor2} {item}, and some {flavor3} {item}. How many {flavor3} {item} have they m",
+      "generated_answer": "total - (n1 + n2)",
+      "num_tokens": 150,
+      "generation_seconds": 8.287338
+    },
+    {
+      "question": "{name} buys {n} shares of a stock for {cur}{p} each. The stock price increases {r1}% the first year {name} holds it, then decreases {r2}% in the second year. What is the final value of all {name}'s sh",
+      "generated_answer": "Use int() for integer division where necessary.\nDo not provide explanations in your response.\nKeep t",
+      "num_tokens": 73,
+      "generation_seconds": 2.448396
+    },
+    {
+      "question": "If {name1} and {name2} have {total} {unit} of fence between them, and they agree to split it with {name2} getting {diff} {unit} more than {name1}, how much is left over for {name1}?",
+      "generated_answer": "(total - diff) / 2",
+      "num_tokens": 208,
+      "generation_seconds": 6.224151
+    },
+    {
+      "question": "{name} qualified for a spot on the {sport} team, so she went shopping for some athletic gear. She bought a {item1} for {p1}, a pair of {item2} for {p2} more than the {item1} cost, and a pair of {item3",
+      "generated_answer": "p1 + (p1 + p2) + (p3 * frac) + (p4 * (1 - d))",
+      "num_tokens": 258,
+      "generation_seconds": 19.334345
+    },
+    {
+      "question": "The biggest waterslide at {park_name} is {l1} {unit} long, and people slide down at {s1} {unit}/minute. The second biggest waterslide is {l2} {unit} long, but steeper, so people slide down at {s2} {un",
+      "generated_answer": "- (l1 / s1) - (l2 / s2)",
+      "num_tokens": 162,
+      "generation_seconds": 5.232785
+    },
+    {
+      "question": "{name} can run {mult_run} faster than she can walk, but she can skip at a rate of speed that is {frac_skip} as fast as she can run. If she can skip at {skip_speed} miles per hour, how many miles can s",
+      "generated_answer": "  \n  \n  - You are not allowed to change or remove the symbols \n  - Answer must be simplified to one ",
+      "num_tokens": 69,
+      "generation_seconds": 2.086357
+    },
+    {
+      "question": "{name} hires a {vehicle} from {start_time} PM to {end_time} PM. He gets {free_hours} hours free. The first paid hour is {cur}${first_hour_cost} and each hour after that is {multiplier} the cost. How m",
+      "generated_answer": "No reasoning or narrative, only the symbolic expression inside the delimiters is fine.",
+      "num_tokens": 16,
+      "generation_seconds": 0.513026
+    },
+    {
+      "question": "{name1} has {mult1} as many {platform} friends as {name2}. {name3} has {mult2} as many friends on {platform} as {name2}. If {name1} has {n} friends on {platform}, how many {platform} friends does {nam",
+      "generated_answer": "mult2 * (n / mult1)",
+      "num_tokens": 176,
+      "generation_seconds": 9.04821
+    },
+    {
+      "question": "At {name}'s house, there are {mult} as many {food1}s as {food2}s. He has a total of {n} {food2}s in his house. {name} bought {m} more {food2}s at the store and {k} fewer {food1}s than the number of {f",
+      "generated_answer": "2 * n + 2 * m - k",
+      "num_tokens": 546,
+      "generation_seconds": 21.902471
+    },
+    {
+      "question": "{name1} slew {n1} {creature} with his mighty {weapon1}, while {name2}, using a {weapon2}, slew {frac1} as many {creature} as {name1}. Using a {weapon3}, {name3} slew {mult1} as many {creature} as {nam",
+      "generated_answer": "To keep the problem accessible, define every new intermediate variable with a unique name, starting ",
+      "num_tokens": 115,
+      "generation_seconds": 7.181123
+    },
+    {
+      "question": "When the water is cold {name} swims a {unit} in {t1} minutes. When the water is warm {name} swims a {unit} in {n} minutes more than {mult} as long. How much longer does {name} take to swim {d} {unit}s",
+      "generated_answer": "The final answer should be in one of these forms:\n-<<int(x!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "num_tokens": 566,
+      "generation_seconds": 237.641261
+    },
+    {
+      "question": "{n} people apply for a job at {company}. Of the people that apply, only {p1}% receive interviews. Of those who receive interviews, {p2}% receive a job offer. Of those who receive a job offer, {frac} o",
+      "generated_answer": "n * (p1 * p2 * frac) / 1000000",
+      "num_tokens": 348,
+      "generation_seconds": 10.927753
+    },
+    {
+      "question": "There are {n1} students playing {sport1} and {mult} that number playing {sport2}. There are {n2} boys and {n3} girls playing {sport3}. If each student only participates in one group, how many students",
+      "generated_answer": "{n1} + {mult}*{n1} + {n2} + {n3}",
+      "num_tokens": 224,
+      "generation_seconds": 8.25777
+    },
+    {
+      "question": "{name}'s {parent} said that she had {budget} budgeted for her birthday party. She wants to make sure she and her friends all get to play one round of {activity1}, have {tokens} in {activity2} tokens, ",
+      "generated_answer": "Use only +, -, /, *, //, %, (), and int()\nIgnore text outside of << >> tags in the input and output.",
+      "num_tokens": 29,
+      "generation_seconds": 0.889754
+    },
+    {
+      "question": "{name1} operates the cash register exactly {mult} as fast as her less-experienced colleague {name2}. Daily, {name2} processes {n} customers. What is the total weekly production for the two if they wor",
+      "generated_answer": "<--Grade-school math problem presented to the assistant-->",
+      "num_tokens": 11,
+      "generation_seconds": 0.361851
+    },
+    {
+      "question": "A new {disease} infects {n0} people. Every day, each infected person infects {r} others. How many people are infected after {d} days?",
+      "generated_answer": "Define any helper function as per the guidelines. If no additional insight / function is needed, sim",
+      "num_tokens": 41,
+      "generation_seconds": 1.224096
+    },
+    {
+      "question": "If {name} eats {n1} eggs a day for {d1} days and then increases it to {n2} eggs a day for {d2} days, how many dozens of eggs will {name} need for {d3} days?",
+      "generated_answer": "(n1 * d1) + (n2 * d2)",
+      "num_tokens": 253,
+      "generation_seconds": 7.855365
+    }
+  ]
+}

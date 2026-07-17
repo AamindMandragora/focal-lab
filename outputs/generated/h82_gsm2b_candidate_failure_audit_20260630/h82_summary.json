@@ -1,0 +1,200 @@
+{
+  "billed_api_calls": 0,
+  "created_utc": "2026-06-30T06:17:14.109447+00:00",
+  "credential_key_name_hits": [],
+  "direct": {
+    "h64": {
+      "accuracy": 0.04081632653061224,
+      "correct_from_sample_outputs": 2,
+      "first_route_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "first_span_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "nonempty_outputs": 49,
+      "num_examples": 49,
+      "outputs_with_route_or_candidate_text": 46,
+      "outputs_with_visible_spans": 49,
+      "sample_outputs_len": 49,
+      "syntax_rate": 0.9387755102040817
+    },
+    "h80": {
+      "accuracy": 0.02040816326530612,
+      "correct_from_sample_outputs": 1,
+      "first_route_indices": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "first_span_indices": [
+        1,
+        4,
+        8,
+        9,
+        11,
+        13,
+        15,
+        18,
+        19,
+        24
+      ],
+      "nonempty_outputs": 44,
+      "num_examples": 49,
+      "outputs_with_route_or_candidate_text": 42,
+      "outputs_with_visible_spans": 26,
+      "sample_outputs_len": 49,
+      "syntax_rate": 0.5102040816326531
+    }
+  },
+  "gpu_calls": 0,
+  "h64_candidate_quality": {
+    "candidate_count": 218,
+    "candidate_group_coverage": 46,
+    "candidate_kind_counts": {
+      "candidate_line": 172,
+      "final_actual": 46
+    },
+    "candidate_line_count": 172,
+    "candidate_line_parseable_ish_count": 1,
+    "candidate_line_parseable_ish_group_coverage": 1,
+    "direct_correct_count": 2,
+    "direct_correct_indices": [
+      15,
+      46
+    ],
+    "final_actual_count": 46,
+    "final_actual_group_coverage": 46,
+    "parseable_ish_candidate_count": 26,
+    "parseable_ish_group_coverage": 25,
+    "source_family_top": [
+      [
+        "h64_gsm2b_named_route:candidate_lines",
+        172
+      ],
+      [
+        "h64_gsm2b_named_route",
+        46
+      ]
+    ]
+  },
+  "hypothesis": "H82",
+  "inputs": {
+    "h64_direct": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T21:47:37.580235+00:00",
+      "path": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/direct_eval_success.json",
+      "sha256": "e6b2a33f4872ff2750d9198071515827ac6cd22a0270694488cc0d7bb79cb255",
+      "size": 1325863
+    },
+    "h64_log": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T21:47:42.492223+00:00",
+      "path": "/tmp/csd_h64_logs/h64_gsm2b_named_route_t0_20260629.log",
+      "sha256": "a338c38e3bc3c9685cc4bd7bca9d3f7cee7a6cebe20f65b25fb26ae60607c6cf",
+      "size": 546262
+    },
+    "h64_structured": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T21:47:42.488223+00:00",
+      "path": "outputs/generated/h64_gsm2b_named_route_structured_candidates_20260629_t0/results/structured_candidates.json",
+      "sha256": "0431489dd33c725d6ce13eba7719b43bba13021fff9c8ddc497fc4e06b82b730",
+      "size": 181644
+    },
+    "h80_direct": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T23:31:05.456517+00:00",
+      "path": "outputs/generated/h80_gsm2b_visible_span_candidates_20260629_t0/results/direct_eval_success.json",
+      "sha256": "50d4bbff037155b3a3d407ac8eb6b0e74e8c4c0060dd6e818cb3527f93150cc6",
+      "size": 2073840
+    },
+    "h80_log": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T23:31:11.032502+00:00",
+      "path": "/tmp/csd_h80_logs/h80_gsm2b_visible_span_candidates_t0_20260629.log",
+      "sha256": "a8604e07fd364beb4eb8e56100eac16df4f4417e1689643884318fb35998ee62",
+      "size": 1013799
+    },
+    "h80_structured": {
+      "exists": true,
+      "mtime_utc": "2026-06-29T23:31:11.032502+00:00",
+      "path": "outputs/generated/h80_gsm2b_visible_span_candidates_20260629_t0/results/structured_span_candidates.json",
+      "sha256": "8aec4cacd6b55d8b2b66ae1eb734cd2ccc0bfc24ab0a20dcd6e5a1a8b32c6e25",
+      "size": 665
+    }
+  },
+  "interpretation": {
+    "do_not_repeat": [
+      "H64 named-route prose candidate lines",
+      "H80 visible-span body"
+    ],
+    "evidence": [
+      "H64 extracted 218 candidate records across 46 groups, but only 1 candidate_line records look machine-parseable by a conservative text heuristic.",
+      "H64 final_actual candidates cover 46 groups but direct final-answer correctness is only 2/49.",
+      "H80 extracted 0 structured candidates across 0 groups."
+    ],
+    "main_failure_mode": "candidate_pool_quality_and_generation_not_label_syntax",
+    "next_recommended_mechanism": "change GSM-2B candidate generation so each candidate is emitted as a bare machine-readable arithmetic expression with variable names preserved, not prose or LaTeX; then score/select candidates after generation",
+    "prediction_confirmed": true
+  },
+  "model_calls": 0,
+  "score_artifacts_edited": false,
+  "structured": {
+    "h64": {
+      "candidate_count": 218,
+      "candidates_len": 218,
+      "group_count": null,
+      "groups_len": null,
+      "selection_uses_gold": false,
+      "top_level_keys": [
+        "candidate_count",
+        "candidates",
+        "output_name",
+        "postprocess",
+        "selection_uses_gold",
+        "source_id"
+      ]
+    },
+    "h80": {
+      "candidate_count": 0,
+      "candidates_len": 0,
+      "group_count": 0,
+      "groups_len": null,
+      "selection_uses_gold": false,
+      "top_level_keys": [
+        "candidate_count",
+        "candidates",
+        "group_count",
+        "output_name",
+        "postprocess",
+        "selection_uses_gold",
+        "source_id"
+      ]
+    }
+  }
+}

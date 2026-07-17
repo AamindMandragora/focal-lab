@@ -1,0 +1,36 @@
+{
+  "status": "approved",
+  "approval_marker": "User approval is explicit for the four fixed infrastructure-retry Bedrock synthesis jobs",
+  "approved_at": "2026-07-11T01:08:00+05:30",
+  "approval_source": "User replied continue directly to the exact four-cell additional $80-$240 approval request",
+  "request_reason": "Four fixed cells were stopped before any evaluated example because the 14B vLLM utilization was below model-weight memory and paired workers repeatedly generated paid refinements from zero-example failures.",
+  "account_id": "887730490125",
+  "account_classification": "recorded lab/UIUC account; bearer token cannot expose live STS identity or email",
+  "region": "us-east-1",
+  "cell_count": 4,
+  "approved_cells": [
+    "gsm14b",
+    "smiles-qwen35-4b-acrylates",
+    "smiles-qwen35-4b-chain_extenders",
+    "spider14b"
+  ],
+  "estimated_cost_min_usd": 80,
+  "estimated_cost_max_usd": 240,
+  "max_approved_cost_usd": 240,
+  "queue_sha256": "b7065d79a33dedbe7c6f5ea0a87d52cff32e4859132df7d40a8b982a00815f27",
+  "pool_sha256": "0753e66f2cea0015c251d86465b8783b62e3b589fd7d46574c0a49d3883336ab",
+  "run_synth_sha256": "9f4cd26baee6f6421139bff9107398da4e8896a703df9db01c194e1f3c7aa442",
+  "scientific_contract": {
+    "cold": true,
+    "max_iterations": 40,
+    "generation_model": "us.anthropic.claude-sonnet-4-6",
+    "generation_backend": "bedrock",
+    "anthropic_thinking": "enabled",
+    "anthropic_effort": "high",
+    "adaptive_helper_mask": true,
+    "helper_selection_policy": "bandit",
+    "refinement_beam_size": 2,
+    "warm_start": false,
+    "qwen25_14b_vllm_gpu_memory_utilization": 0.8
+  }
+}

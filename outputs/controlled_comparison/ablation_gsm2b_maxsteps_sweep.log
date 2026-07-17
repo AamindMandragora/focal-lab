@@ -1,0 +1,8 @@
+SWEEP_START gsm2b att7 held-out max-steps sweep gpu=3 Wed Jul  1 05:08:22 PM UTC 2026
+SWEEP_STEP max_steps=256 Wed Jul  1 05:08:22 PM UTC 2026
+REEVAL_START dataset=gsm_symbolic model=Qwen/Qwen3.5-2B gpu=3 sample=49 split=eval strat=/home/aadivyar/csd-generation/outputs/generated/synth_gsm_2b_seed123train_0627a/best_att7_strategy.dfy out=outputs/generated/ablation_gsm2b_att7_heldout_maxsteps256 Wed Jul  1 05:08:22 PM UTC 2026
+REEVAL_DONE exit=0 out=outputs/generated/ablation_gsm2b_att7_heldout_maxsteps256 Wed Jul  1 05:22:06 PM UTC 2026
+REEVAL_ablation_gsm2b_att7_heldout_maxsteps256_SENTINEL_DONE exit=0
+SWEEP_STEP_DONE max_steps=256 Wed Jul  1 05:22:06 PM UTC 2026
+SWEEP_STEP max_steps=512 Wed Jul  1 05:22:06 PM UTC 2026
+REEVAL_START dataset=gsm_symbolic model=Qwen/Qwen3.5-2B gpu=3 sample=49 split=eval strat=/home/aadivyar/csd-generation/outputs/generated/synth_gsm_2b_seed123train_0627a/best_att7_strategy.dfy out=outputs/generated/ablation_gsm2b_att7_heldout_maxsteps512 Wed Jul  1 05:22:06 PM UTC 2026

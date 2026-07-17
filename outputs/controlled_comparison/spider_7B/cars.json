@@ -1,0 +1,513 @@
+{
+  "accuracy": 0.06,
+  "syntax_rate": 0.07,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 1381.5028,
+    "mean_generation_seconds_per_example": 13.815028,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 1396.8492
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT count(*) FROM singer",
+      "generation_seconds": 0.851181
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT count(*) FROM singer",
+      "generation_seconds": 0.27645
+    },
+    {
+      "question": "Find the number of concerts happened in the stadium with the highest capacity .",
+      "generated_answer": "SELECT count(*) FROM concert WHERE stadium_id = (SELECT stadium_id FROM stadium ORDER BY capacity DESC LIMIT 1)",
+      "generation_seconds": 1.03525
+    },
+    {
+      "question": "How many pets have a greater weight than 10?",
+      "generated_answer": "SELECT count(*) FROM pets WHERE weight > 10",
+      "generation_seconds": 0.51785
+    },
+    {
+      "question": "Find the weight of the youngest dog.",
+      "generated_answer": "SELECT weight FROM pets WHERE pettype = 'dog' AND pet_age = (SELECT MIN(pet_age) FROM pets WHERE pettype = 'dog')",
+      "generation_seconds": 1.345446
+    },
+    {
+      "question": "Find number of pets owned by students who are older than 20.",
+      "generated_answer": "SELECT COUNT(*) FROM has_pet WHERE stuid IN (SELECT stuid FROM student WHERE age > 20)",
+      "generation_seconds": 1.013178
+    },
+    {
+      "question": "What type of pet is the youngest animal, and how much does it weigh?",
+      "generated_answer": "SELECT P.pettype, P.weight FROM pets P JOIN has_pet H ON P.petid = H.petid WHERE P.pet_age = (SELECT MIN(pet_age) FROM pets)",
+      "generation_seconds": 1.598441
+    },
+    {
+      "question": "What is the average and maximum age for each pet type?",
+      "generated_answer": "",
+      "generation_seconds": 15.233416
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "",
+      "generation_seconds": 15.18189
+    },
+    {
+      "question": "Find the make and production time of the cars that were produced in the earliest year?",
+      "generated_answer": "",
+      "generation_seconds": 15.278034
+    },
+    {
+      "question": "What are the different models for the cards produced after 1980?",
+      "generated_answer": "",
+      "generation_seconds": 15.298752
+    },
+    {
+      "question": "What is the number of makers of care in France?",
+      "generated_answer": "",
+      "generation_seconds": 15.314597
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "",
+      "generation_seconds": 15.325677
+    },
+    {
+      "question": "What is the average horsepower for all cars produced before 1980 ?",
+      "generated_answer": "",
+      "generation_seconds": 15.372144
+    },
+    {
+      "question": "Which distinctive models are produced by maker with the full name General Motors or weighing more than 3500?",
+      "generated_answer": "",
+      "generation_seconds": 15.46722
+    },
+    {
+      "question": "What are the different years in which there were cars produced that weighed less than 4000 and also cars that weighted more than 3000 ?",
+      "generated_answer": "",
+      "generation_seconds": 15.381144
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "",
+      "generation_seconds": 15.367555
+    },
+    {
+      "question": "What are the names of the countries with no car makers?",
+      "generated_answer": "",
+      "generation_seconds": 15.398374
+    },
+    {
+      "question": "Which country does Airline \"JetBlue Airways\" belong to?",
+      "generated_answer": "",
+      "generation_seconds": 14.967132
+    },
+    {
+      "question": "How many airports do we have?",
+      "generated_answer": "",
+      "generation_seconds": 11.907863
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "",
+      "generation_seconds": 11.854897
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "",
+      "generation_seconds": 11.931457
+    },
+    {
+      "question": "Give the number of Jetblue Airways flights.",
+      "generated_answer": "",
+      "generation_seconds": 11.856755
+    },
+    {
+      "question": "Count the number of United Airlines flights that arrive in Aberdeen.",
+      "generated_answer": "",
+      "generation_seconds": 11.885719
+    },
+    {
+      "question": "What is the code of airport that has fewest number of flights?",
+      "generated_answer": "",
+      "generation_seconds": 12.00777
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "",
+      "generation_seconds": 15.246188
+    },
+    {
+      "question": "Find the names of employees who never won any award in the evaluation.",
+      "generated_answer": "",
+      "generation_seconds": 15.323616
+    },
+    {
+      "question": "What is the name of the shop that is hiring the largest number of employees?",
+      "generated_answer": "",
+      "generation_seconds": 15.40097
+    },
+    {
+      "question": "How many documents do we have?",
+      "generated_answer": "",
+      "generation_seconds": 15.379673
+    },
+    {
+      "question": "What is the document name and template id for document with description with the letter 'w' in it?",
+      "generated_answer": "",
+      "generation_seconds": 15.263477
+    },
+    {
+      "question": "Return the document id, template id, and description for the document with the name Robbin CV.",
+      "generated_answer": "",
+      "generation_seconds": 15.3153
+    },
+    {
+      "question": "Return the ids of templates that have the code PP or PPT.",
+      "generated_answer": "",
+      "generation_seconds": 15.28112
+    },
+    {
+      "question": "What is the version number and template type code for the template with version number later than 5?",
+      "generated_answer": "",
+      "generation_seconds": 15.319344
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "",
+      "generation_seconds": 15.24762
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "",
+      "generation_seconds": 15.20086
+    },
+    {
+      "question": "What the smallest version number and its template type code?",
+      "generated_answer": "",
+      "generation_seconds": 15.293189
+    },
+    {
+      "question": "Return the different descriptions for templates that have been used in a document.",
+      "generated_answer": "",
+      "generation_seconds": 15.238763
+    },
+    {
+      "question": "What are the template ids with template type description \"Presentation\".",
+      "generated_answer": "",
+      "generation_seconds": 15.393135
+    },
+    {
+      "question": "How many paragraphs in total?",
+      "generated_answer": "",
+      "generation_seconds": 15.321998
+    },
+    {
+      "question": "Show all document ids, names and the number of paragraphs in each document.",
+      "generated_answer": "",
+      "generation_seconds": 15.334782
+    },
+    {
+      "question": "Return the id and name of the document with the most paragraphs.",
+      "generated_answer": "",
+      "generation_seconds": 15.405818
+    },
+    {
+      "question": "What are the age and hometown of teachers?",
+      "generated_answer": "",
+      "generation_seconds": 15.381001
+    },
+    {
+      "question": "Show different hometown of teachers and the number of teachers from each hometown.",
+      "generated_answer": "",
+      "generation_seconds": 15.240264
+    },
+    {
+      "question": "Show the name of the teacher for the math course.",
+      "generated_answer": "",
+      "generation_seconds": 15.293198
+    },
+    {
+      "question": "Show names of teachers and the number of courses they teach.",
+      "generated_answer": "",
+      "generation_seconds": 15.149322
+    },
+    {
+      "question": "Find the average number of staff working for the museums that were open before 2009.",
+      "generated_answer": "",
+      "generation_seconds": 15.140878
+    },
+    {
+      "question": "What is the name of the museum that had no visitor yet?",
+      "generated_answer": "",
+      "generation_seconds": 15.065099
+    },
+    {
+      "question": "List the first name and birth date of all players from the country with code USA.",
+      "generated_answer": "",
+      "generation_seconds": 15.446605
+    },
+    {
+      "question": "What are the names of tournaments that have more than 10 matches?",
+      "generated_answer": "",
+      "generation_seconds": 15.417506
+    },
+    {
+      "question": "List the number of all matches who played in years of 2013 or 2016.",
+      "generated_answer": "",
+      "generation_seconds": 15.528654
+    },
+    {
+      "question": "Find the first name and country code of the oldest player.",
+      "generated_answer": "",
+      "generation_seconds": 15.323181
+    },
+    {
+      "question": "List the first and last name of all players who are left / L hand in the order of birth date.",
+      "generated_answer": "",
+      "generation_seconds": 15.657366
+    },
+    {
+      "question": "What is the first name and country code of the player with the most tours?",
+      "generated_answer": "",
+      "generation_seconds": 15.520489
+    },
+    {
+      "question": "Find the codes of countries that have more than 50 players.",
+      "generated_answer": "",
+      "generation_seconds": 15.476286
+    },
+    {
+      "question": "Find the name and rank of the 3 youngest winners across all matches.",
+      "generated_answer": "",
+      "generation_seconds": 15.45813
+    },
+    {
+      "question": "What is the average number of injuries caused each time?",
+      "generated_answer": "",
+      "generation_seconds": 15.233113
+    },
+    {
+      "question": "What are the distinct battle names which are between bulgarian commander 'Kaloyan' and latin commander 'Baldwin I'?",
+      "generated_answer": "",
+      "generation_seconds": 15.315449
+    },
+    {
+      "question": "How many degrees does the engineering department offer?",
+      "generated_answer": "",
+      "generation_seconds": 17.26832
+    },
+    {
+      "question": "What are the names and ids of every course with less than 2 sections?",
+      "generated_answer": "",
+      "generation_seconds": 16.920138
+    },
+    {
+      "question": "Which student has enrolled for the most times in any program? List the id, first name, middle name, last name, the number of enrollments and student id.",
+      "generated_answer": "",
+      "generation_seconds": 16.958411
+    },
+    {
+      "question": "What are the last name of the students who live in North Carolina but have not registered in any degree programs?",
+      "generated_answer": "",
+      "generation_seconds": 16.846765
+    },
+    {
+      "question": "Show the date and id of the transcript with at least 2 course results.",
+      "generated_answer": "",
+      "generation_seconds": 16.833463
+    },
+    {
+      "question": "What is the id, line 1, and line 2 of the address with the most students?",
+      "generated_answer": "",
+      "generation_seconds": 16.89668
+    },
+    {
+      "question": "How many times at most can a course enrollment result show in different transcripts? Also show the course enrollment id.",
+      "generated_answer": "",
+      "generation_seconds": 17.655565
+    },
+    {
+      "question": "How many cartoons were written by \"Joseph Kuhr\"?",
+      "generated_answer": "",
+      "generation_seconds": 15.398774
+    },
+    {
+      "question": "How many TV Channel using language English?",
+      "generated_answer": "",
+      "generation_seconds": 15.363968
+    },
+    {
+      "question": "For each language, list the number of TV Channels that use it.",
+      "generated_answer": "",
+      "generation_seconds": 15.46664
+    },
+    {
+      "question": "Find the series name and country of the tv channel that is playing some cartoons directed by Ben Jones and Michael Chang?",
+      "generated_answer": "",
+      "generation_seconds": 15.398036
+    },
+    {
+      "question": "What are the names of poker players?",
+      "generated_answer": "",
+      "generation_seconds": 15.395946
+    },
+    {
+      "question": "List the names of poker players ordered by the final tables made in ascending order.",
+      "generated_answer": "",
+      "generation_seconds": 15.344161
+    },
+    {
+      "question": "What is the birth date of the poker player with the lowest earnings?",
+      "generated_answer": "",
+      "generation_seconds": 15.425482
+    },
+    {
+      "question": "What is the average earnings of poker players with height higher than 200?",
+      "generated_answer": "",
+      "generation_seconds": 15.293905
+    },
+    {
+      "question": "What are different nationalities of people and the corresponding number of people from each nation?",
+      "generated_answer": "",
+      "generation_seconds": 15.310036
+    },
+    {
+      "question": "How many people are there of each nationality?",
+      "generated_answer": "",
+      "generation_seconds": 15.374924
+    },
+    {
+      "question": "List the names and birth dates of people in ascending alphabetical order of name.",
+      "generated_answer": "",
+      "generation_seconds": 15.36952
+    },
+    {
+      "question": "What are the contestant numbers and names of the contestants who had at least two votes?",
+      "generated_answer": "",
+      "generation_seconds": 15.324446
+    },
+    {
+      "question": "List the area codes in which voters voted both for the contestant 'Tabatha Gehling' and the contestant 'Kelly Clauss'.",
+      "generated_answer": "",
+      "generation_seconds": 15.475454
+    },
+    {
+      "question": "Which continent is Anguilla in?",
+      "generated_answer": "",
+      "generation_seconds": 15.515506
+    },
+    {
+      "question": "What region does Angola belong to and what is its population?",
+      "generated_answer": "",
+      "generation_seconds": 15.457872
+    },
+    {
+      "question": "Which continent has the most diverse languages?",
+      "generated_answer": "",
+      "generation_seconds": 15.210434
+    },
+    {
+      "question": "What is the number of nations that use English and Dutch?",
+      "generated_answer": "",
+      "generation_seconds": 15.355552
+    },
+    {
+      "question": "What are the Asian countries which have a population larger than that of any country in Africa?",
+      "generated_answer": "",
+      "generation_seconds": 13.129468
+    },
+    {
+      "question": "Return the different names of cities that are in Asia and for which Chinese is the official language.",
+      "generated_answer": "",
+      "generation_seconds": 12.071768
+    },
+    {
+      "question": "Give the name, population, and head of state for the country that has the largest area.",
+      "generated_answer": "",
+      "generation_seconds": 12.002786
+    },
+    {
+      "question": "Count the number of countries in Asia.",
+      "generated_answer": "",
+      "generation_seconds": 11.949101
+    },
+    {
+      "question": "What is the total number of countries where Spanish is spoken by the largest percentage of people?",
+      "generated_answer": "",
+      "generation_seconds": 11.99113
+    },
+    {
+      "question": "How many orchestras does each record company manage?",
+      "generated_answer": "",
+      "generation_seconds": 12.061466
+    },
+    {
+      "question": "List the record company shared by the most number of orchestras.",
+      "generated_answer": "",
+      "generation_seconds": 12.062202
+    },
+    {
+      "question": "What is the record company used by the greatest number of orchestras?",
+      "generated_answer": "",
+      "generation_seconds": 12.097564
+    },
+    {
+      "question": "What are the record companies that are used by both orchestras founded before 2003 and those founded after 2003?",
+      "generated_answer": "",
+      "generation_seconds": 13.590621
+    },
+    {
+      "question": "Show the ids of high schoolers who have friends and are also liked by someone else.",
+      "generated_answer": "",
+      "generation_seconds": 11.954919
+    },
+    {
+      "question": "List each owner's first name, last name, and the size of his for her dog.",
+      "generated_answer": "",
+      "generation_seconds": 14.63906
+    },
+    {
+      "question": "What are each owner's first name, last name, and the size of their dog?",
+      "generated_answer": "",
+      "generation_seconds": 14.645191
+    },
+    {
+      "question": "List pairs of the owner's first name and the dogs's name.",
+      "generated_answer": "",
+      "generation_seconds": 14.673123
+    },
+    {
+      "question": "How many dogs have an age below the average?",
+      "generated_answer": "",
+      "generation_seconds": 14.070476
+    },
+    {
+      "question": "How much does each charge type costs? List both charge type and amount.",
+      "generated_answer": "",
+      "generation_seconds": 14.656314
+    },
+    {
+      "question": "List each charge type and its amount.",
+      "generated_answer": "",
+      "generation_seconds": 14.093354
+    },
+    {
+      "question": "List the email, cell phone and home phone of all the professionals.",
+      "generated_answer": "",
+      "generation_seconds": 14.69381
+    },
+    {
+      "question": "List the name of singers whose citizenship is not \"France\".",
+      "generated_answer": "",
+      "generation_seconds": 11.974958
+    },
+    {
+      "question": "For each citizenship, how many singers are from that country?",
+      "generated_answer": "",
+      "generation_seconds": 12.004909
+    }
+  ]
+}

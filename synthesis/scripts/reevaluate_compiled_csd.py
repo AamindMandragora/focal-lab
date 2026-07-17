@@ -9,6 +9,7 @@ from typing import Any
 
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
+from synthesis.split_provenance import split_provenance_metadata
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -39,10 +40,13 @@ def main() -> None:
         help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
     )
     p.add_argument("--vllm-max-model-len", type=int, default=16384)
+    # Split names are required when a split file is given (checked below) —
+    # silent side defaults caused the 2026-07-17 split mixup. Spider's
+    # held-out side is 'test'; the 'eval' alias was removed.
     p.add_argument("--gsm-split-file", type=str, default=None)
-    p.add_argument("--gsm-split-name", choices=["train", "eval"], default="eval")
+    p.add_argument("--gsm-split-name", choices=["train", "eval"], default=None)
     p.add_argument("--spider-split-file", type=str, default=None)
-    p.add_argument("--spider-split-name", choices=["train", "test", "eval"], default="eval")
+    p.add_argument("--spider-split-name", choices=["train", "test"], default=None)
     p.add_argument("--smiles-classes", type=str, default=None)
     p.add_argument("--max-seconds-per-example", type=float, default=None)
     p.add_argument(
@@ -53,6 +57,13 @@ def main() -> None:
     )
     p.add_argument("--output-json", type=Path, default=None)
     args = p.parse_args()
+
+    if args.gsm_split_file and args.gsm_split_name is None:
+        p.error("--gsm-split-name is required when --gsm-split-file is given "
+                "(no default side — see synthesis/split_provenance.py)")
+    if args.spider_split_file and args.spider_split_name is None:
+        p.error("--spider-split-name is required when --spider-split-file is given "
+                "(no default side — see synthesis/split_provenance.py)")
 
     if os.environ.get("VLLM_WORKER_MULTIPROC_METHOD") is None:
         os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
@@ -103,7 +114,11 @@ def main() -> None:
     syn = sum(1 for s in res.sample_outputs if s.get("is_syntax_valid"))
     print(f"per_example_syntax_pass: {syn} / {len(res.sample_outputs)}")
     if args.output_json is not None:
-        save_minimal_baseline_json(res, args.output_json)
+        # Embed which split file/side this re-eval ran on, so the JSON is
+        # self-describing (split-mismatch incident 2026-07-17).
+        save_minimal_baseline_json(
+            res, args.output_json, eval_split=split_provenance_metadata(ev)
+        )
         print(f"wrote_json: {args.output_json}")
 
 

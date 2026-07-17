@@ -1,0 +1,73 @@
+{
+  "accuracy": 0.5714285714285714,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 7,
+    "total_generation_seconds": 3.1816,
+    "mean_generation_seconds_per_example": 0.454517,
+    "examples_with_generation_timing": 7,
+    "total_output_tokens": 74,
+    "mean_output_tokens_per_example": 10.5714,
+    "examples_with_token_counts": 7,
+    "evaluator_total_time_seconds": 38.2757,
+    "evaluator_max_sample_time_seconds": 1.2584
+  },
+  "answers": [
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT stadium.name ,  stadium.capacity FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 1.258446,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT YEAR FROM concert>>",
+      "num_tokens": 5,
+      "generation_seconds": 0.119009,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT stadium.name FROM stadium>>",
+      "num_tokens": 6,
+      "generation_seconds": 0.117905,
+      "is_correct": true,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "SELECT concert.concert_name ,  concert.theme ,  COUNT(singer_in_concert.singer_id) FROM concert>>",
+      "num_tokens": 24,
+      "generation_seconds": 0.840938,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT T2.name FROM concert>>",
+      "num_tokens": 7,
+      "generation_seconds": 0.199188,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT T2.name ,  T2.country FROM singer>>",
+      "num_tokens": 12,
+      "generation_seconds": 0.38267,
+      "is_correct": false,
+      "is_syntax_valid": true
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "SELECT stadium.name ,  stadium.location FROM stadium>>",
+      "num_tokens": 10,
+      "generation_seconds": 0.263459,
+      "is_correct": true,
+      "is_syntax_valid": true
+    }
+  ]
+}

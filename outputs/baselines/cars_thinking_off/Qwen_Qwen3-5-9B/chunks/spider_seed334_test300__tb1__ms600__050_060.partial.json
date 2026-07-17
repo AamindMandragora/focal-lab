@@ -1,0 +1,56 @@
+{
+  "accuracy": 0.5,
+  "syntax_rate": 0.875,
+  "metrics": {
+    "num_examples": 8,
+    "total_generation_seconds": 1004.012,
+    "mean_generation_seconds_per_example": 125.501497,
+    "examples_with_generation_timing": 8,
+    "run_wall_time_seconds": 1038.9463,
+    "eval_sample_total_examples": 300,
+    "eval_start_index": 50,
+    "eval_end_index": 60
+  },
+  "answers": [
+    {
+      "question": "How many cars has over 6 cylinders?",
+      "generated_answer": "SELECT COUNT(*) FROM cars_data",
+      "generation_seconds": 91.321752
+    },
+    {
+      "question": "For all of the 4 cylinder cars, which model has the most horsepower?",
+      "generated_answer": "",
+      "generation_seconds": 521.544879
+    },
+    {
+      "question": "What is the maximum mpg of the cars that had 8 cylinders or that were produced before 1980 ?",
+      "generated_answer": "SELECT MAX(mpg) FROM cars_data WHERE cylinders = 8 OR year < 1980",
+      "generation_seconds": 5.7553
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SELECT distinct model FROM cars_data, car_names, model_list, car_makers WHERE cars_data.weight < 3500 AND car_makers.fullname != 'Ford Motor Company' AND cars_data.id = car_names.makeid AND car_names.model = model_list.model AND model_list.maker = car_makers.id",
+      "generation_seconds": 88.352816
+    },
+    {
+      "question": "What country is Jetblue Airways affiliated with?",
+      "generated_answer": "SELECT country FROM airlines WHERE airline = 'Jetblue Airways'",
+      "generation_seconds": 28.412067
+    },
+    {
+      "question": "Give the airport code and airport name corresonding to the city Anthony.",
+      "generated_answer": "SELECT code, name FROM airports WHERE city = 'Anthony'",
+      "generation_seconds": 71.900416
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "SELECT airline FROM flights WHERE sourceairport IN (SELECT airportcode FROM airports WHERE countryabbrev = 'US') AND abbreviation = 'UAL'",
+      "generation_seconds": 5.777059
+    },
+    {
+      "question": "Which city and country is the Alton airport at?",
+      "generated_answer": "SELECT city, country FROM airports WHERE airportname = 'Alton'",
+      "generation_seconds": 190.947688
+    }
+  ]
+}

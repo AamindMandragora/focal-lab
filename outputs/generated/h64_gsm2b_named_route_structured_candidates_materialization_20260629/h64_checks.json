@@ -1,0 +1,29 @@
+{
+  "hypothesis_id": "H64",
+  "checked_at_utc": "2026-06-29T19:20:00Z",
+  "checks": {
+    "ledger_row_written_before_materialization": true,
+    "launcher_dry_runs_by_default": true,
+    "requires_explicit_safe_gpu_id_for_launch": true,
+    "local_no_billing": true,
+    "uses_runner_paid_env_strip": true,
+    "uses_h31_worktree_structured_candidate_adapter": true,
+    "writes_structured_candidate_artifact_after_success": true,
+    "keeps_max_iterations_out_of_scope_for_direct_eval": true,
+    "uses_eval_max_seconds_per_example_600": true,
+    "initial_materialization_launched_no_model_gpu_or_api_call": true,
+    "bash_n_passed": true,
+    "manifest_json_valid": true,
+    "checks_json_valid": true,
+    "remote_bash_n_passed": true,
+    "remote_manifest_json_valid": true,
+    "remote_checks_json_valid": true,
+    "remote_dry_run_exit_zero": true,
+    "remote_dry_run_printed_no_launch": true,
+    "remote_dry_run_no_model_calls": true,
+    "remote_dry_run_no_billed_credentials": true,
+    "paid_credential_key_name_hits_after_fix": 0,
+    "secret_values_stored": false
+  },
+  "status": "materialized_remote_validation_passed_not_launched"
+}

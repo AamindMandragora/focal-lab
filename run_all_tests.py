@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -63,6 +64,7 @@ OOM_RE = re.compile(
 # the whole matrix run so the user is forced to notice and fix the credit issue
 # instead of letting every metadecode cell silently fail with empty output.
 QUOTA_RE = re.compile(
+    r"\[claude-author-access\]|"
     r"insufficient_quota|"
     r"RateLimitError|rate_limit_error|"
     r"credit balance is too low|"
@@ -182,6 +184,10 @@ class Config:
     baseline_output_dir: Path
     ablation_output_dir: Path
     baseline_cache_mode: str
+    claude_executable: str = "claude"
+    claude_config_dir: str = ""
+    claude_expected_account: str = ""
+    claude_timeout_seconds: str = "1800"
     gsm_split_file: str = ""
     spider_split_file: str = ""
     dry_run: bool = False
@@ -683,12 +689,18 @@ class Runner:
                 )
             return "anthropic", anthropic_opus47
         if profile == "sonnet4.6":
-            if self.env.get("CSD_SONNET46_BACKEND", "").strip().lower() == "bedrock":
-                raise ValueError(
-                    "Bedrock generation profiles are disabled for the experimental matrix."
-                )
+            warnings.warn(
+                "generation profile 'sonnet4.6' now uses Claude Code Max; "
+                "use 'anthropic-sonnet4.6' for the direct Anthropic API",
+                FutureWarning,
+                stacklevel=2,
+            )
+            return "claude", "claude-sonnet-4-6"
+        if profile == "claude-sonnet4.6":
+            return "claude", "claude-sonnet-4-6"
+        if profile == "anthropic-sonnet4.6":
             return "anthropic", anthropic_sonnet46
-        if profile == "bedrock-sonnet4.6":
+        if profile in {"claude-bedrock-sonnet4.6", "bedrock-sonnet4.6"}:
             raise ValueError(
                 "Bedrock generation profiles are disabled for the experimental matrix."
             )
@@ -1136,7 +1148,7 @@ class Runner:
             "--refinement-beam-size",
             self.config.refinement_beam_size,
         ]
-        if backend in ("anthropic", "bedrock"):
+        if backend in ("anthropic", "claude-bedrock"):
             cmd += [
                 "--anthropic-thinking",
                 self.config.anthropic_thinking,
@@ -1144,6 +1156,17 @@ class Runner:
                 self.config.anthropic_effort,
                 "--anthropic-thinking-display",
                 self.config.anthropic_thinking_display,
+            ]
+        if backend == "claude":
+            cmd += [
+                "--claude-executable",
+                self.config.claude_executable,
+                "--claude-config-dir",
+                self.config.claude_config_dir,
+                "--claude-expected-account",
+                self.config.claude_expected_account,
+                "--claude-timeout-seconds",
+                self.config.claude_timeout_seconds,
             ]
         self.add_vllm_parallel_flags(cmd)
         self.add_generation_split_flags(cmd, benchmark)
@@ -1739,6 +1762,26 @@ def make_parser() -> argparse.ArgumentParser:
         help="Forwarded for Anthropic thinking summaries (default: summarized).",
     )
     parser.add_argument(
+        "--claude-executable",
+        default=os.environ.get("CSD_CLAUDE_EXECUTABLE", "claude"),
+        help="Claude Code executable forwarded to Claude author profiles.",
+    )
+    parser.add_argument(
+        "--claude-config-dir",
+        default=os.environ.get("CSD_CLAUDE_CONFIG_DIR", ""),
+        help="Dedicated Claude Code Max config directory.",
+    )
+    parser.add_argument(
+        "--claude-expected-account",
+        default=os.environ.get("CSD_CLAUDE_EXPECTED_ACCOUNT", ""),
+        help="Exact Claude Max account email required before author calls.",
+    )
+    parser.add_argument(
+        "--claude-timeout-seconds",
+        default=os.environ.get("CSD_CLAUDE_TIMEOUT_SECONDS", "1800"),
+        help="Maximum seconds for one Claude Code author call (default: 1800).",
+    )
+    parser.add_argument(
         "--gsm-split-file",
         default=os.environ.get("CSD_GSM_SPLIT_FILE", str(DEFAULT_GSM_SPLIT_FILE)),
         help="Stratified GSM-Symbolic manifest (default: environment/benchmark_splits/gsm_symbolic_crane_proportional.json)",
@@ -1886,6 +1929,10 @@ def build_config(args: argparse.Namespace, conda_env_path: Path) -> Config:
         anthropic_thinking=str(args.anthropic_thinking),
         anthropic_effort=str(args.anthropic_effort),
         anthropic_thinking_display=str(args.anthropic_thinking_display),
+        claude_executable=str(args.claude_executable),
+        claude_config_dir=str(args.claude_config_dir),
+        claude_expected_account=str(args.claude_expected_account),
+        claude_timeout_seconds=str(args.claude_timeout_seconds),
         vllm_gpu_memory_utilization=str(args.vllm_gpu_memory_utilization),
         vllm_tensor_parallel_size=resolve_vllm_tensor_parallel_size(args.vllm_tensor_parallel_size),
         dafny_path=dafny_path,

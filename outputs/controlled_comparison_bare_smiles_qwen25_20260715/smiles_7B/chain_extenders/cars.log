@@ -1,0 +1,1008 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Tokenizer: Qwen/Qwen2.5-7B-Instruct
+Loading weights:   0%|          | 0/339 [00:00<?, ?it/s]Loading weights:   1%|          | 2/339 [00:00<00:46,  7.27it/s]Loading weights:   5%|▍         | 16/339 [00:00<00:06, 47.15it/s]Loading weights:   8%|▊         | 28/339 [00:00<00:05, 56.13it/s]Loading weights:  12%|█▏        | 40/339 [00:00<00:04, 68.09it/s]Loading weights:  15%|█▌        | 52/339 [00:00<00:03, 80.98it/s]Loading weights:  19%|█▉        | 64/339 [00:00<00:03, 83.48it/s]Loading weights:  22%|██▏       | 74/339 [00:01<00:03, 87.30it/s]Loading weights:  25%|██▍       | 84/339 [00:01<00:03, 83.68it/s]Loading weights:  27%|██▋       | 93/339 [00:01<00:03, 81.29it/s]Loading weights:  30%|███       | 102/339 [00:01<00:03, 78.36it/s]Loading weights:  34%|███▎      | 114/339 [00:01<00:02, 82.96it/s]Loading weights:  37%|███▋      | 125/339 [00:01<00:02, 89.89it/s]Loading weights:  40%|████      | 137/339 [00:01<00:02, 87.73it/s]Loading weights:  44%|████▎     | 148/339 [00:01<00:02, 92.39it/s]Loading weights:  47%|████▋     | 160/339 [00:02<00:01, 92.46it/s]Loading weights:  51%|█████     | 172/339 [00:02<00:01, 85.06it/s]Loading weights:  54%|█████▍    | 184/339 [00:02<00:01, 84.68it/s]Loading weights:  58%|█████▊    | 197/339 [00:02<00:01, 89.24it/s]Loading weights: 100%|██████████| 339/339 [00:02<00:00, 132.81it/s]
+WARNING:accelerate.big_modeling:Some parameters are on the meta device because they were offloaded to the cpu.
+Model: Qwen/Qwen2.5-7B-Instruct
+Model device: cuda:0
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+Sample 0
+Sample 0 success: [46, 3706, 9949, 7, 28, 46, 8, 45, 47932, 9949, 7, 28, 46, 8, 45, 3706, 46, 151645] / ['O', 'CC', 'NC', '(', '=', 'O', ')', 'N', 'CCCC', 'NC', '(', '=', 'O', ')', 'N', 'CC', 'O', '<|im_end|>'], raw_logprob: -3.162208080291748, cons_logprob: -1.9530848264694214, time: 28.33 (0.14)
+100%|██████████| 1/1 [00:28<00:00, 28.36s/it]100%|██████████| 1/1 [00:28<00:00, 28.36s/it]
+OCCNC(=O)NCCCCNC(=O)NCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 28.36 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=1/100
+OCCNC(=O)NCCCCNC(=O)NCCO
+[generated-sample] END strategy=cars dataset=smiles sample=1/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 3706, 8281, 151645] / ['O', 'CC', 'CO', 'CC', 'CO', '<|im_end|>'], raw_logprob: -3.111990213394165, cons_logprob: -2.1267037391662598, time: 8.98 (0.04)
+100%|██████████| 1/1 [00:08<00:00,  8.98s/it]100%|██████████| 1/1 [00:08<00:00,  8.98s/it]
+OCCCOCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 8.98 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=2/100
+OCCCOCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=2/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [3706, 19238, 8, 3706, 19238, 8, 151645] / ['CC', '(O', ')', 'CC', '(O', ')', '<|im_end|>'], raw_logprob: -3.6379964351654053, cons_logprob: -3.0203123092651367, time: 10.38 (0.06)
+100%|██████████| 1/1 [00:10<00:00, 10.38s/it]100%|██████████| 1/1 [00:10<00:00, 10.38s/it]
+CC(O)CC(O)<|im_end|>
+Total suceeses: 1/1
+Sample time: 10.38 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=3/100
+CC(O)CC(O)
+[generated-sample] END strategy=cars dataset=smiles sample=3/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 7, 28, 46, 8, 45, 3706, 7612, 7, 28, 46, 8, 9949, 151645] / ['OC', '(', '=', 'O', ')', 'N', 'CC', 'OC', '(', '=', 'O', ')', 'NC', '<|im_end|>'], raw_logprob: -4.988574028015137, cons_logprob: -4.067745208740234, time: 20.68 (0.09)
+100%|██████████| 1/1 [00:20<00:00, 20.68s/it]100%|██████████| 1/1 [00:20<00:00, 20.68s/it]
+OC(=O)NCCOC(=O)NC<|im_end|>
+Total suceeses: 1/1
+Sample time: 20.68 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=4/100
+OC(=O)NCCOC(=O)NC
+[generated-sample] END strategy=cars dataset=smiles sample=4/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 3706, 8281, 151645] / ['O', 'CC', 'CO', 'CC', 'CO', '<|im_end|>'], raw_logprob: -2.605311632156372, cons_logprob: -1.899321436882019, time: 8.95 (0.05)
+100%|██████████| 1/1 [00:08<00:00,  8.96s/it]100%|██████████| 1/1 [00:08<00:00,  8.96s/it]
+OCCCOCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 8.96 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=5/100
+OCCCOCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=5/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -3.381303310394287, cons_logprob: -2.694732666015625, time: 7.43 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.44s/it]100%|██████████| 1/1 [00:07<00:00,  7.44s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.44 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=6/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=6/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -2.5094704627990723, cons_logprob: -1.9878934621810913, time: 6.10 (0.02)
+100%|██████████| 1/1 [00:06<00:00,  6.10s/it]100%|██████████| 1/1 [00:06<00:00,  6.10s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.10 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=7/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=7/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.4631093740463257, cons_logprob: -0.6985825300216675, time: 7.42 (0.04)
+100%|██████████| 1/1 [00:07<00:00,  7.42s/it]100%|██████████| 1/1 [00:07<00:00,  7.42s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.42 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=8/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=8/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.7012437582015991, cons_logprob: -1.2333688735961914, time: 6.09 (0.03)
+100%|██████████| 1/1 [00:06<00:00,  6.10s/it]100%|██████████| 1/1 [00:06<00:00,  6.10s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.10 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=9/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=9/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -2.1107261180877686, cons_logprob: -1.7379951477050781, time: 7.43 (0.04)
+100%|██████████| 1/1 [00:07<00:00,  7.43s/it]100%|██████████| 1/1 [00:07<00:00,  7.43s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.43 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=10/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=10/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.5746030807495117, cons_logprob: -1.1431005001068115, time: 7.47 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.48s/it]100%|██████████| 1/1 [00:07<00:00,  7.48s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.48 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=11/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=11/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.7875888347625732, cons_logprob: -1.5888925790786743, time: 6.04 (0.02)
+100%|██████████| 1/1 [00:06<00:00,  6.04s/it]100%|██████████| 1/1 [00:06<00:00,  6.04s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.04 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=12/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=12/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.2769737243652344, cons_logprob: -0.6635775566101074, time: 7.42 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.43s/it]100%|██████████| 1/1 [00:07<00:00,  7.43s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.43 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=13/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=13/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.4175063371658325, cons_logprob: -1.2061045169830322, time: 6.05 (0.02)
+100%|██████████| 1/1 [00:06<00:00,  6.05s/it]100%|██████████| 1/1 [00:06<00:00,  6.05s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.05 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=14/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=14/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.3184542655944824, cons_logprob: -1.2061045169830322, time: 5.78 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.78s/it]100%|██████████| 1/1 [00:05<00:00,  5.78s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.78 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=15/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=15/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.1232314109802246, cons_logprob: -0.8776084780693054, time: 5.95 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.95s/it]100%|██████████| 1/1 [00:05<00:00,  5.95s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.95 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=16/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=16/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.5925809144973755, cons_logprob: -1.1988089084625244, time: 7.47 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.47s/it]100%|██████████| 1/1 [00:07<00:00,  7.47s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.47 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=17/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=17/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.1822223663330078, cons_logprob: -0.9804409742355347, time: 5.85 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.85s/it]100%|██████████| 1/1 [00:05<00:00,  5.85s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.85 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=18/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=18/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9502422213554382, cons_logprob: -0.47023525834083557, time: 7.61 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.61s/it]100%|██████████| 1/1 [00:07<00:00,  7.61s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.61 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=19/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=19/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.3342300653457642, cons_logprob: -0.778050422668457, time: 7.38 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.39s/it]100%|██████████| 1/1 [00:07<00:00,  7.39s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.39 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=20/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=20/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.4063334465026855, cons_logprob: -0.8932352066040039, time: 7.46 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.46s/it]100%|██████████| 1/1 [00:07<00:00,  7.46s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.46 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=21/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=21/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 34, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'C', '<|im_end|>'], raw_logprob: -2.3331878185272217, cons_logprob: -1.3030107021331787, time: 13.59 (0.05)
+100%|██████████| 1/1 [00:13<00:00, 13.59s/it]100%|██████████| 1/1 [00:13<00:00, 13.59s/it]
+OC(C)CCOC(C)C<|im_end|>
+Total suceeses: 1/1
+Sample time: 13.59 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=22/100
+OC(C)CCOC(C)C
+[generated-sample] END strategy=cars dataset=smiles sample=22/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6545001268386841, cons_logprob: -0.1958981454372406, time: 7.64 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.65s/it]100%|██████████| 1/1 [00:07<00:00,  7.65s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.65 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=23/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=23/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6598284244537354, cons_logprob: -0.19589883089065552, time: 7.47 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.49s/it]100%|██████████| 1/1 [00:07<00:00,  7.49s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.49 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=24/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=24/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.5325762033462524, cons_logprob: -1.4559707641601562, time: 6.02 (0.02)
+100%|██████████| 1/1 [00:06<00:00,  6.02s/it]100%|██████████| 1/1 [00:06<00:00,  6.02s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.02 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=25/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=25/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.8053338527679443, cons_logprob: -0.3078148365020752, time: 7.32 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.32s/it]100%|██████████| 1/1 [00:07<00:00,  7.32s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.32 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=26/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=26/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9207500219345093, cons_logprob: -0.35576391220092773, time: 7.59 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.60s/it]100%|██████████| 1/1 [00:07<00:00,  7.60s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.60 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=27/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=27/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.3297951221466064, cons_logprob: -1.206101894378662, time: 5.90 (0.03)
+100%|██████████| 1/1 [00:05<00:00,  5.90s/it]100%|██████████| 1/1 [00:05<00:00,  5.90s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.90 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=28/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=28/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0093889236450195, cons_logprob: -0.6212592124938965, time: 8.17 (0.03)
+100%|██████████| 1/1 [00:08<00:00,  8.17s/it]100%|██████████| 1/1 [00:08<00:00,  8.17s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 8.17 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=29/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=29/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.803841769695282, cons_logprob: -0.35576391220092773, time: 7.37 (0.04)
+100%|██████████| 1/1 [00:07<00:00,  7.37s/it]100%|██████████| 1/1 [00:07<00:00,  7.37s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.37 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=30/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=30/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.0803910493850708, cons_logprob: -0.8776061534881592, time: 5.90 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.91s/it]100%|██████████| 1/1 [00:05<00:00,  5.91s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.91 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=31/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=31/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.1184450387954712, cons_logprob: -0.9804385900497437, time: 6.20 (0.02)
+100%|██████████| 1/1 [00:06<00:00,  6.21s/it]100%|██████████| 1/1 [00:06<00:00,  6.21s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.21 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=32/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=32/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.823074460029602, cons_logprob: -0.4702366590499878, time: 7.40 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.40s/it]100%|██████████| 1/1 [00:07<00:00,  7.40s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.40 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=33/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=33/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.0399231910705566, cons_logprob: -0.8776084780693054, time: 6.20 (0.04)
+100%|██████████| 1/1 [00:06<00:00,  6.20s/it]100%|██████████| 1/1 [00:06<00:00,  6.20s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 6.20 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=34/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=34/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.0278265476226807, cons_logprob: -0.8776061534881592, time: 5.84 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.84s/it]100%|██████████| 1/1 [00:05<00:00,  5.84s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.84 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=35/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=35/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0207188129425049, cons_logprob: -0.6117247343063354, time: 7.34 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.35s/it]100%|██████████| 1/1 [00:07<00:00,  7.35s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.35 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=36/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=36/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0932657718658447, cons_logprob: -0.7655394673347473, time: 7.42 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.42s/it]100%|██████████| 1/1 [00:07<00:00,  7.42s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.42 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=37/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=37/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0930169820785522, cons_logprob: -0.7357305288314819, time: 7.77 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.77s/it]100%|██████████| 1/1 [00:07<00:00,  7.77s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.77 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=38/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=38/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.8059996962547302, cons_logprob: -0.35576391220092773, time: 7.41 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.41s/it]100%|██████████| 1/1 [00:07<00:00,  7.41s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.41 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=39/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=39/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.1605591773986816, cons_logprob: -1.0900466442108154, time: 5.77 (0.01)
+100%|██████████| 1/1 [00:05<00:00,  5.77s/it]100%|██████████| 1/1 [00:05<00:00,  5.77s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.77 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=40/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=40/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.038258671760559, cons_logprob: -0.8776061534881592, time: 5.78 (0.01)
+100%|██████████| 1/1 [00:05<00:00,  5.78s/it]100%|██████████| 1/1 [00:05<00:00,  5.78s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.78 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=41/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=41/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0184805393218994, cons_logprob: -0.5374709963798523, time: 7.27 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.27s/it]100%|██████████| 1/1 [00:07<00:00,  7.27s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.27 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=42/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=42/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9332824945449829, cons_logprob: -0.4702366590499878, time: 7.47 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.47s/it]100%|██████████| 1/1 [00:07<00:00,  7.47s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.47 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=43/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=43/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.0898075103759766, cons_logprob: -0.8776084780693054, time: 5.73 (0.01)
+100%|██████████| 1/1 [00:05<00:00,  5.73s/it]100%|██████████| 1/1 [00:05<00:00,  5.73s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.73 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=44/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=44/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9385668635368347, cons_logprob: -0.47023525834083557, time: 7.17 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.17s/it]100%|██████████| 1/1 [00:07<00:00,  7.17s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.17 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=45/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=45/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.3182988166809082, cons_logprob: -1.2061045169830322, time: 5.75 (0.02)
+100%|██████████| 1/1 [00:05<00:00,  5.75s/it]100%|██████████| 1/1 [00:05<00:00,  5.75s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.75 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=46/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=46/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.8047738671302795, cons_logprob: -0.3078137934207916, time: 7.19 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.19s/it]100%|██████████| 1/1 [00:07<00:00,  7.19s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.19 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=47/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=47/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [46, 3706, 8281, 151645] / ['O', 'CC', 'CO', '<|im_end|>'], raw_logprob: -1.450814962387085, cons_logprob: -1.328222393989563, time: 5.73 (0.01)
+100%|██████████| 1/1 [00:05<00:00,  5.73s/it]100%|██████████| 1/1 [00:05<00:00,  5.74s/it]
+OCCCO<|im_end|>
+Total suceeses: 1/1
+Sample time: 5.73 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=48/100
+OCCCO
+[generated-sample] END strategy=cars dataset=smiles sample=48/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.7286020517349243, cons_logprob: -0.3557627201080322, time: 7.23 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.24s/it]100%|██████████| 1/1 [00:07<00:00,  7.24s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.24 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=49/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=49/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.7479690909385681, cons_logprob: -0.26549527049064636, time: 7.20 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.20s/it]100%|██████████| 1/1 [00:07<00:00,  7.20s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.20 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=50/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=50/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6612894535064697, cons_logprob: -0.26549527049064636, time: 7.26 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.26s/it]100%|██████████| 1/1 [00:07<00:00,  7.26s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.26 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=51/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=51/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5703291893005371, cons_logprob: -0.26549527049064636, time: 7.22 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.22s/it]100%|██████████| 1/1 [00:07<00:00,  7.22s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.22 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=52/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=52/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5433553457260132, cons_logprob: -0.22834725677967072, time: 7.25 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.26s/it]100%|██████████| 1/1 [00:07<00:00,  7.26s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.26 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=53/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=53/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5691709518432617, cons_logprob: -0.22834649682044983, time: 7.30 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.30s/it]100%|██████████| 1/1 [00:07<00:00,  7.30s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.30 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=54/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=54/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.46248555183410645, cons_logprob: -0.14324164390563965, time: 7.26 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.26s/it]100%|██████████| 1/1 [00:07<00:00,  7.26s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.26 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=55/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=55/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.629259467124939, cons_logprob: -0.22834649682044983, time: 7.33 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.33s/it]100%|██████████| 1/1 [00:07<00:00,  7.33s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.33 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=56/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=56/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6620866060256958, cons_logprob: -0.1958981454372406, time: 7.25 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.25s/it]100%|██████████| 1/1 [00:07<00:00,  7.25s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.25 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=57/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=57/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5432696342468262, cons_logprob: 0.0, time: 7.20 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.20s/it]100%|██████████| 1/1 [00:07<00:00,  7.20s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.20 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=58/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=58/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5074909925460815, cons_logprob: -0.19589883089065552, time: 7.17 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.17s/it]100%|██████████| 1/1 [00:07<00:00,  7.17s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.17 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=59/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=59/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6572515964508057, cons_logprob: -0.22834649682044983, time: 7.16 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.16s/it]100%|██████████| 1/1 [00:07<00:00,  7.16s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.16 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=60/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=60/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.8278124332427979, cons_logprob: -0.1958981454372406, time: 7.21 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.21s/it]100%|██████████| 1/1 [00:07<00:00,  7.21s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.21 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=61/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=61/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.2198197841644287, cons_logprob: -0.8076229095458984, time: 7.18 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.18s/it]100%|██████████| 1/1 [00:07<00:00,  7.18s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.18 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=62/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=62/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.176762580871582, cons_logprob: -0.7658197283744812, time: 7.20 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.20s/it]100%|██████████| 1/1 [00:07<00:00,  7.20s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.20 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=63/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=63/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 34, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'C', '<|im_end|>'], raw_logprob: -1.210587739944458, cons_logprob: -0.5037119388580322, time: 12.93 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.93s/it]100%|██████████| 1/1 [00:12<00:00, 12.93s/it]
+OC(C)CCOC(C)C<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.93 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=64/100
+OC(C)CCOC(C)C
+[generated-sample] END strategy=cars dataset=smiles sample=64/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9183588624000549, cons_logprob: -0.5037130117416382, time: 7.15 (0.01)
+100%|██████████| 1/1 [00:07<00:00,  7.15s/it]100%|██████████| 1/1 [00:07<00:00,  7.15s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.15 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=65/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=65/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.9237881302833557, cons_logprob: -0.5234449505805969, time: 7.19 (0.03)
+100%|██████████| 1/1 [00:07<00:00,  7.19s/it]100%|██████████| 1/1 [00:07<00:00,  7.19s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.19 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=66/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=66/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0372384786605835, cons_logprob: -0.5374724864959717, time: 7.09 (0.02)
+100%|██████████| 1/1 [00:07<00:00,  7.10s/it]100%|██████████| 1/1 [00:07<00:00,  7.10s/it]
+OC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 7.10 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=67/100
+OC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=67/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.6321161985397339, cons_logprob: -0.9804409742355347, time: 12.76 (0.02)
+100%|██████████| 1/1 [00:12<00:00, 12.76s/it]100%|██████████| 1/1 [00:12<00:00, 12.76s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.76 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=68/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=68/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.005347728729248, cons_logprob: -0.35576391220092773, time: 12.78 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.79s/it]100%|██████████| 1/1 [00:12<00:00, 12.79s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.79 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=69/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=69/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -1.0921905040740967, cons_logprob: -0.3557627201080322, time: 13.07 (0.03)
+100%|██████████| 1/1 [00:13<00:00, 13.07s/it]100%|██████████| 1/1 [00:13<00:00, 13.07s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 13.07 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=70/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=70/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6693606972694397, cons_logprob: 0.0, time: 12.93 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.94s/it]100%|██████████| 1/1 [00:12<00:00, 12.94s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.94 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=71/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=71/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.7037206292152405, cons_logprob: 0.0, time: 13.01 (0.03)
+100%|██████████| 1/1 [00:13<00:00, 13.01s/it]100%|██████████| 1/1 [00:13<00:00, 13.01s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 13.01 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=72/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=72/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5869710445404053, cons_logprob: 0.0, time: 12.96 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.96s/it]100%|██████████| 1/1 [00:12<00:00, 12.96s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.96 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=73/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=73/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6588467955589294, cons_logprob: 0.0, time: 12.93 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.94s/it]100%|██████████| 1/1 [00:12<00:00, 12.94s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.94 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=74/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=74/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.7641308307647705, cons_logprob: -0.16768105328083038, time: 12.96 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.96s/it]100%|██████████| 1/1 [00:12<00:00, 12.96s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.96 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=75/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=75/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.7443540692329407, cons_logprob: -0.16768164932727814, time: 12.91 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.91s/it]100%|██████████| 1/1 [00:12<00:00, 12.91s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.91 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=76/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=76/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.670733630657196, cons_logprob: -0.16768164932727814, time: 12.88 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.88s/it]100%|██████████| 1/1 [00:12<00:00, 12.88s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.88 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=77/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=77/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6765114665031433, cons_logprob: -0.19589883089065552, time: 12.79 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.79s/it]100%|██████████| 1/1 [00:12<00:00, 12.79s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.79 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=78/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=78/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6615294218063354, cons_logprob: -0.19589883089065552, time: 12.82 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.83s/it]100%|██████████| 1/1 [00:12<00:00, 12.83s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.83 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=79/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=79/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5808608531951904, cons_logprob: -0.16768164932727814, time: 12.85 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.85s/it]100%|██████████| 1/1 [00:12<00:00, 12.85s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.85 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=80/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=80/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6164003610610962, cons_logprob: -0.19589883089065552, time: 12.82 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.82s/it]100%|██████████| 1/1 [00:12<00:00, 12.82s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.82 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=81/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=81/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.48904159665107727, cons_logprob: 0.0, time: 13.17 (0.02)
+100%|██████████| 1/1 [00:13<00:00, 13.17s/it]100%|██████████| 1/1 [00:13<00:00, 13.17s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 13.17 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=82/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=82/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5030112862586975, cons_logprob: 0.0, time: 12.82 (0.02)
+100%|██████████| 1/1 [00:12<00:00, 12.83s/it]100%|██████████| 1/1 [00:12<00:00, 12.83s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.83 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=83/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=83/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6763449907302856, cons_logprob: 0.0, time: 12.83 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.83s/it]100%|██████████| 1/1 [00:12<00:00, 12.83s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.83 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=84/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=84/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.8761026859283447, cons_logprob: -0.4702380895614624, time: 12.87 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.88s/it]100%|██████████| 1/1 [00:12<00:00, 12.88s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.88 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=85/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=85/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5378850698471069, cons_logprob: 0.0, time: 12.44 (0.02)
+100%|██████████| 1/1 [00:12<00:00, 12.44s/it]100%|██████████| 1/1 [00:12<00:00, 12.44s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.44 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=86/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=86/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5912865400314331, cons_logprob: 0.0, time: 12.49 (0.02)
+100%|██████████| 1/1 [00:12<00:00, 12.50s/it]100%|██████████| 1/1 [00:12<00:00, 12.50s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.50 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=87/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=87/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5866495966911316, cons_logprob: 0.0, time: 12.50 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.50s/it]100%|██████████| 1/1 [00:12<00:00, 12.50s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.50 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=88/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=88/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6586949229240417, cons_logprob: 0.0, time: 12.55 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.55s/it]100%|██████████| 1/1 [00:12<00:00, 12.55s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.55 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=89/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=89/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5731095671653748, cons_logprob: 0.0, time: 12.63 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.63s/it]100%|██████████| 1/1 [00:12<00:00, 12.63s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.63 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=90/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=90/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6143178343772888, cons_logprob: 0.0, time: 12.56 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.56s/it]100%|██████████| 1/1 [00:12<00:00, 12.56s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.56 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=91/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=91/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6199752688407898, cons_logprob: 0.0, time: 12.59 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.59s/it]100%|██████████| 1/1 [00:12<00:00, 12.59s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.59 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=92/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=92/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6466494798660278, cons_logprob: 0.0, time: 12.59 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.59s/it]100%|██████████| 1/1 [00:12<00:00, 12.59s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.59 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=93/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=93/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5981979370117188, cons_logprob: 0.0, time: 12.55 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.56s/it]100%|██████████| 1/1 [00:12<00:00, 12.56s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.56 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=94/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=94/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5952799916267395, cons_logprob: 0.0, time: 12.55 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.55s/it]100%|██████████| 1/1 [00:12<00:00, 12.55s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.55 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=95/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=95/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6707946062088013, cons_logprob: 0.0, time: 12.44 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.44s/it]100%|██████████| 1/1 [00:12<00:00, 12.44s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.44 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=96/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=96/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6547357439994812, cons_logprob: 0.0, time: 12.40 (0.02)
+100%|██████████| 1/1 [00:12<00:00, 12.40s/it]100%|██████████| 1/1 [00:12<00:00, 12.40s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.40 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=97/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=97/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.6044127941131592, cons_logprob: 0.0, time: 12.45 (0.04)
+100%|██████████| 1/1 [00:12<00:00, 12.45s/it]100%|██████████| 1/1 [00:12<00:00, 12.45s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.45 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=98/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=98/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.5085992813110352, cons_logprob: 0.0, time: 12.49 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.49s/it]100%|██████████| 1/1 [00:12<00:00, 12.49s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.49 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=99/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=99/100
+Creating new oracle trie
+  0%|          | 0/1 [00:00<?, ?it/s]Sample 0
+Sample 0 success: [7612, 3025, 8, 3706, 7612, 3025, 8, 46, 151645] / ['OC', '(C', ')', 'CC', 'OC', '(C', ')', 'O', '<|im_end|>'], raw_logprob: -0.596388578414917, cons_logprob: 0.0, time: 12.51 (0.03)
+100%|██████████| 1/1 [00:12<00:00, 12.51s/it]100%|██████████| 1/1 [00:12<00:00, 12.51s/it]
+OC(C)CCOC(C)O<|im_end|>
+Total suceeses: 1/1
+Sample time: 12.51 s
+[generated-sample] BEGIN strategy=cars dataset=smiles sample=100/100
+OC(C)CCOC(C)O
+[generated-sample] END strategy=cars dataset=smiles sample=100/100
+Saved baseline JSON: outputs/controlled_comparison_bare_smiles_qwen25_20260715/smiles_7B/chain_extenders/cars.json

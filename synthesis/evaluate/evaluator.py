@@ -88,6 +88,16 @@ _MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
 _MAX_GSM_SCORING_DIGIT_RUN = 64
 
 
+def _print_realtime_completion(
+    example_number: int, total_examples: int, completion: str
+) -> None:
+    """Write one generated completion to stdout with unambiguous boundaries."""
+    prefix = f"  [EVAL]   Sample {example_number}/{total_examples} completion"
+    print(f"{prefix} begin", flush=True)
+    print(completion, flush=True)
+    print(f"{prefix} end", flush=True)
+
+
 def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
     """Return whether a generated GSM expression is too large for safe scoring.
 
@@ -1618,6 +1628,7 @@ class Evaluator:
         spider_split_name: str = "train",
         smiles_classes: Optional[List[str]] = None,
         grammars_dir: str | Path | None = None,
+        early_stop_on_answer: bool = False,
     ):
         """
         Initialize the evaluator.
@@ -1668,6 +1679,10 @@ class Evaluator:
         self.sample_seed = sample_seed
         self.max_seconds_per_example = max_seconds_per_example
         self.step_token_budget = step_token_budget
+        # CRANE-style answer early stop (default OFF): stop generation once the
+        # output contains a finished final-answer span instead of running to
+        # the max_steps cap. See run_crane_csd(early_stop_on_answer=...).
+        self.early_stop_on_answer = early_stop_on_answer
         self.gsm_source_dir = gsm_source_dir
         self.gsm_split_file = Path(gsm_split_file) if gsm_split_file is not None else None
         self.gsm_split_name = gsm_split_name
@@ -1731,22 +1746,24 @@ class Evaluator:
             raise ValueError(f"{key} in {self.gsm_split_file} must be a list of integers")
         return indices
 
-    def _normalize_spider_split_name(self) -> str:
-        """Map legacy ``eval`` alias to Spider's ``test`` split field."""
-        if self.spider_split_name == "eval":
-            return "test"
-        return self.spider_split_name
-
     def _load_spider_split_indices(self) -> Optional[List[int]]:
         """Load explicit Spider example indices from a train/test split manifest."""
         if self.spider_split_file is None:
             return None
 
+        # Spider's two sides are named "train" and "test" — exactly the index
+        # keys the manifests store. The legacy "eval" alias (and its
+        # eval_indices fallback) was removed 2026-07-17: aliases are how the
+        # bar/eval split mixup stayed invisible.
+        if self.spider_split_name not in ("train", "test"):
+            raise ValueError(
+                f"spider_split_name must be 'train' or 'test', got "
+                f"'{self.spider_split_name}'. Spider's held-out side is named "
+                "'test' (the 'eval' alias was removed 2026-07-17)."
+            )
         manifest = self._read_split_manifest(self.spider_split_file)
-        split_name = self._normalize_spider_split_name()
+        split_name = self.spider_split_name
         key = f"{split_name}_indices"
-        if key not in manifest and split_name == "test":
-            key = "eval_indices"
         if key not in manifest:
             available = sorted(k for k in manifest.keys() if k.endswith("_indices"))
             raise ValueError(
@@ -2549,6 +2566,7 @@ class Evaluator:
                             step_token_budget=self.step_token_budget,
                             grammar_file=self._get_grammar_file(),
                             dynamic_parser=dynamic_parser,
+                            early_stop_on_answer=self.early_stop_on_answer,
                         )
                     example_time = time.time() - example_start
                     print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
@@ -2556,6 +2574,7 @@ class Evaluator:
                     from synthesis.evaluate.completion_text import completion_for_scoring
 
                     completion = completion_for_scoring(prompt, output_text)
+                    _print_realtime_completion(i + 1, len(dataset), completion)
                     scored_output = (
                         self._truncate_gsm_output(completion)
                         if self.dataset_name == "gsm_symbolic"

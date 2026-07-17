@@ -368,7 +368,6 @@ def make_spider_proportional_train_test_split(
             **difficulty_info,
         },
     )
-    manifest["eval_indices"] = list(manifest["test_indices"])
     return manifest
 
 
@@ -504,7 +503,6 @@ def write_spider_train_test_split(
     if include_preview:
         _attach_split_previews(split, rows)
 
-    split["eval_indices"] = list(split["test_indices"])
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(split, indent=2) + "\n")

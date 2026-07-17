@@ -1,0 +1,33 @@
+{
+  "account_record": "887730490125",
+  "command_args": [
+    "Qwen/Qwen3.5-2B",
+    "qwen35_2b",
+    "acrylates",
+    "${SAFE_GPU_ID}",
+    "0.20",
+    "0.36",
+    "0.50"
+  ],
+  "dry_run_default": true,
+  "future_generated_root": "outputs/generated/smiles_qwen35_2b_acrylates_uv_qwen35_0627",
+  "future_heldout_json": "outputs/controlled_comparison/smiles_qwen35_2b/acrylates/metadecode_uv.json",
+  "h73_checks": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/h73_h70_provenance_checks.json",
+  "hypothesis": "H70",
+  "launcher": "outputs/generated/h70_smiles_qwen35_2b_acrylates_livebar_materialization_20260629/launch_h70_smiles_qwen35_2b_acrylates_livebar.sh",
+  "live_cars_uv_bar": 0.36,
+  "materialization_only": true,
+  "paid_real_launch": true,
+  "prior_acrylates_2b_heldout_uv": 0.27,
+  "prior_acrylates_2b_train_uv": 0.28,
+  "provenance_hardening": "H73 added prelaunch heldout/latest snapshots and postlaunch heldout/train-report copies under provenance_<timestamp>.",
+  "real_launch_gates": [
+    "DRY_RUN=0",
+    "SAFE_GPU_ID explicit",
+    "CONFIRM_BEDROCK_ACCOUNT_887730490125=yes",
+    "H65 not alive unless explicitly overridden",
+    "GPU free memory gate",
+    "reject non-aadivyar GPU process"
+  ],
+  "single_scientific_variable": "min_acc raised to 0.36 live focal CARS UV bar"
+}

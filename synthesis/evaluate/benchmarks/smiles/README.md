@@ -19,7 +19,7 @@ This module evaluates synthesized CSD strategies on constrained molecular-string
 
 ## Constraint mode
 
-Strategies decide their own constraint behaviour. The prompt appends `<< >>` delimiter instructions — CRANE can reason before emitting `<<SMILES>>`, while GCD constrains from token 1. The evaluator prefers extracting from `<< >>` when present and falls back to `clean_smiles_output` on the raw text otherwise.
+Strategies decide their own constraint behavior. The prompt asks for one bare SMILES string after `Molecule:` and does not request visible `<< >>` delimiters. Grammar-guided SMILES generation starts inside a hidden constrained chunk, so the generated answer surface remains the SMILES string itself. The evaluator still prefers extracting from `<< >>` if an older strategy emits delimiters and falls back to `clean_smiles_output` on the raw text otherwise.
 
 ## Evaluation Behavior
 

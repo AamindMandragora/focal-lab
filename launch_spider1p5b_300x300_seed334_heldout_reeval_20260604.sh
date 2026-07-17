@@ -43,6 +43,6 @@ mkdir -p "$OUT"
     --anthropic-thinking-display summarized \
     --vllm-tensor-parallel-size 1 \
     --spider-split-file "$SPIDER_SPLIT" \
-    --spider-split-name eval \
+    --spider-split-name test \
     2>&1 | tee /tmp/spider1p5b_300x300_seed334_heldout_reeval_20260604.log
 echo "Spider-1.5B 300x300 held-out reeval done -> $OUT"

@@ -51,8 +51,17 @@ def build_metrics_from_eval_samples(
     return metrics
 
 
-def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
-    """Build the minimal baseline payload from an evaluation result."""
+def build_minimal_baseline_record(
+    result: EvaluationResult,
+    eval_split: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the minimal baseline payload from an evaluation result.
+
+    ``eval_split`` is the split-provenance block (which split file/side the
+    numbers were measured on — see synthesis/split_provenance.py). Callers
+    should pass it so saved JSONs are self-describing; comparisons across
+    split sides caused wrong win/loss verdicts on 2026-07-17.
+    """
     samples = result.sample_outputs or []
     answers: list[dict[str, Any]] = []
     for sample in samples:
@@ -98,6 +107,8 @@ def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
         "metrics": metrics,
         "answers": answers,
     }
+    if eval_split is not None:
+        record["eval_split"] = eval_split
     # Preserve the CARS-paper SMILES metrics (unique_valid_count, diversity_tanimoto,
     # validity_rdkit, samples_to_target_unique_valid) so saved JSONs carry the real
     # comparison axes instead of just the headline accuracy. Inert for other datasets.
@@ -147,9 +158,13 @@ def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, An
     }
 
 
-def save_minimal_baseline_json(result: EvaluationResult, json_path: Path) -> Path:
+def save_minimal_baseline_json(
+    result: EvaluationResult,
+    json_path: Path,
+    eval_split: dict[str, Any] | None = None,
+) -> Path:
     """Write a minimal baseline JSON file and return its path."""
     json_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = build_minimal_baseline_record(result)
+    payload = build_minimal_baseline_record(result, eval_split=eval_split)
     json_path.write_text(json.dumps(payload, indent=2) + "\n")
     return json_path

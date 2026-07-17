@@ -1,0 +1,98 @@
+import sys
+from typing import Callable, Any, TypeVar, NamedTuple
+from math import floor
+from itertools import count
+
+import module_ as module_
+import _dafny as _dafny
+import System_ as System_
+import VerifiedDecoderAgent as VerifiedDecoderAgent
+
+# Module: GeneratedCSD
+
+class default__:
+    def  __init__(self):
+        pass
+
+    @staticmethod
+    def MyCSDStrategy(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, stepTokenBudget, validTokenGroups, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        cost: int = int(0)
+        d_0_helpers_: VerifiedDecoderAgent.CSDHelpers
+        nw0_ = VerifiedDecoderAgent.CSDHelpers()
+        nw0_.ctor__()
+        d_0_helpers_ = nw0_
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        cost = 0
+        (d_0_helpers_).AppendTaskGuidance(lm, ((((((((_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "Output format (STRICT, symbolic answers):\n"))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "- Keep variable names EXACTLY as in the problem braces. Example: if the problem has {n_1}, write n_1; if {frac_2}, write frac_2; if {w1}, write w1. Do NOT keep the curly braces in your answer.\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "- Solve in 2-4 short steps. Each arithmetic computation goes inside << >> as <<expression=label>>, where expression is a Python expression over the original variable names and label is a short symbolic name you can reuse.\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "- For division: use // when the result is a whole count (e.g. 12//n, (m*x)//(m+n)). Use int(...) around any expression whose value might not naturally be an integer (e.g. int((sides-target)/sides * 100)).\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "- Do NOT plug in numbers. Do NOT use curly braces { } anywhere in your answer. Do NOT invent new variable names that were not in the problem.\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "- The LAST line must be exactly: #### <<FINAL_EXPRESSION>> using original variables. Stop immediately after that line.\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "\nWorked example 1. Variables: x, k, n. Reasoning: total fruit per harvest <<x*k=tot>>; harvests per year <<12//n=h>>; total in a year <<x*k*(12//n)=ans>>. #### <<x*k*(12//n)>>\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "\nWorked example 2. Variables: m, n, x. Sugar parts m, water parts n, total x. Total parts <<m+n=s>>; sugar amount <<(m*x)//(m+n)=ans>>. #### <<(m*x)//(m+n)>>\n")))) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "\nWorked example 3. Variables: sides, target. Probability difference times 100, may be fractional, so wrap in int. <<int((sides-target)/sides*100)=p>>; subtract 25 for the two-even-rolls case <<p-25=ans>>. #### <<int((sides-target)/sides*100) - 25>>"))))
+        d_1_steps_: int
+        d_1_steps_ = 0
+        with _dafny.label("0"):
+            while (d_1_steps_) < (maxSteps):
+                with _dafny.c_label("0"):
+                    if not(insideConstrainedOut):
+                        d_2_next_: _dafny.Seq
+                        out0_: _dafny.Seq
+                        out0_ = (d_0_helpers_).UnconstrainedStep(lm, prompt, generated)
+                        d_2_next_ = out0_
+                        d_1_steps_ = (d_1_steps_) + (1)
+                        if (d_2_next_) == (eosToken):
+                            raise _dafny.Break("0")
+                        elif True:
+                            generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_2_next_]))
+                            if (d_2_next_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                                insideConstrainedOut = True
+                                currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])
+                    elif (parser).IsCompletePrefix(currentConstrainedOut):
+                        d_3_closedGenerated_: _dafny.Seq
+                        d_4_closedInside_: bool
+                        d_5_closedCurrent_: _dafny.Seq
+                        out1_: _dafny.Seq
+                        out2_: bool
+                        out3_: _dafny.Seq
+                        out1_, out2_, out3_ = (d_0_helpers_).CloseConstrainedSpan(lm, parser, generated, currentConstrainedOut)
+                        d_3_closedGenerated_ = out1_
+                        d_4_closedInside_ = out2_
+                        d_5_closedCurrent_ = out3_
+                        generated = d_3_closedGenerated_
+                        insideConstrainedOut = d_4_closedInside_
+                        currentConstrainedOut = d_5_closedCurrent_
+                        d_1_steps_ = (d_1_steps_) + (1)
+                    elif True:
+                        d_6_constrainedPrompt_: _dafny.Seq
+                        d_6_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrainedOut)):]))
+                        d_7_next_: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+                        if (len(currentConstrainedOut)) < (1):
+                            out4_: _dafny.Seq
+                            out4_ = (d_0_helpers_).SafePenalizedConstrainedStep(lm, parser, d_6_constrainedPrompt_, currentConstrainedOut, _dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "{")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "}"))]), _dafny.BigRational('8e0'), eosToken)
+                            d_7_next_ = out4_
+                        elif True:
+                            out5_: _dafny.Seq
+                            out5_ = (d_0_helpers_).SafePenalizedConstrainedStep(lm, parser, d_6_constrainedPrompt_, currentConstrainedOut, _dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "{")), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "}"))]), _dafny.BigRational('6e0'), eosToken)
+                            d_7_next_ = out5_
+                        d_1_steps_ = (d_1_steps_) + (1)
+                        if (d_7_next_) == (eosToken):
+                            raise _dafny.Break("0")
+                        elif True:
+                            d_8_appendedGenerated_: _dafny.Seq
+                            d_9_appendedInside_: bool
+                            d_10_appendedCurrent_: _dafny.Seq
+                            out6_: _dafny.Seq
+                            out7_: bool
+                            out8_: _dafny.Seq
+                            out6_, out7_, out8_ = (d_0_helpers_).AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, d_7_next_)
+                            d_8_appendedGenerated_ = out6_
+                            d_9_appendedInside_ = out7_
+                            d_10_appendedCurrent_ = out8_
+                            generated = d_8_appendedGenerated_
+                            insideConstrainedOut = d_9_appendedInside_
+                            currentConstrainedOut = d_10_appendedCurrent_
+                    pass
+            pass
+        cost = d_1_steps_
+        return generated, insideConstrainedOut, currentConstrainedOut, cost
+

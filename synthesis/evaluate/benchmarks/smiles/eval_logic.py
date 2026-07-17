@@ -34,29 +34,29 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
-        + "\n\nWrap your answer molecule in << >> delimiters, e.g. <<CC(=O)OC=C>>.\n"
+        + "\n\nReturn one molecule as a single SMILES string. Do not use delimiters or add explanation.\n"
         "Molecule: "
     )
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Grammar-masked legacy adapters: single delimited SMILES span."""
+    """Grammar-masked legacy adapters: single bare SMILES string."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
-        + "\n\nReturn exactly one line containing `<<SMILES>>` "
-        "(example: <<CC(=O)OC=C>>).\n"
+        + "\n\nReturn exactly one line containing only the SMILES string "
+        "(example: CC(=O)OC=C).\n"
         "Molecule: "
     )
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """CRANE-style adaptive SMILES: reasoning allowed before the delimited molecule."""
+    """CRANE-style adaptive SMILES: final answer is still a bare SMILES string."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
         + "\n\nThink step by step about how to satisfy the structural constraints, "
-        "then wrap your final SMILES in << >> delimiters.\n"
+        "then output only the final SMILES string after `Molecule:` with no delimiters.\n"
         "Molecule: "
     )
 
@@ -123,7 +123,7 @@ def is_correct(
 
 
 def uses_hidden_chunks() -> bool:
-    return False
+    return True
 
 
 def example_syntax_pass(
@@ -142,7 +142,11 @@ def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
 def get_generation_runner():
     from synthesis.evaluate.benchmarks.smiles.generation import run_crane_csd
 
-    return run_crane_csd
+    def _hidden_chunk_runner(*args, **kwargs):
+        kwargs.setdefault("start_inside_constrained", True)
+        return run_crane_csd(*args, **kwargs)
+
+    return _hidden_chunk_runner
 
 
 def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):

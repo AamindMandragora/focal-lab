@@ -1,0 +1,513 @@
+{
+  "accuracy": 0.73,
+  "syntax_rate": 1.0,
+  "metrics": {
+    "num_examples": 100,
+    "total_generation_seconds": 146.1833,
+    "mean_generation_seconds_per_example": 1.461833,
+    "examples_with_generation_timing": 100,
+    "run_wall_time_seconds": 166.5417
+  },
+  "answers": [
+    {
+      "question": "How many singers do we have?",
+      "generated_answer": "SELECT count(*) FROM singer",
+      "generation_seconds": 1.396184
+    },
+    {
+      "question": "What is the total number of singers?",
+      "generated_answer": "SELECT count(*) as total_singers FROM singer",
+      "generation_seconds": 0.495424
+    },
+    {
+      "question": "What is the average, minimum, and maximum age of all singers from France?",
+      "generated_answer": "SELECT avg(age) ,  min(age) ,  max(age) FROM singer WHERE country = 'France'",
+      "generation_seconds": 1.133784
+    },
+    {
+      "question": "How many singers are from each country?",
+      "generated_answer": "SELECT country, COUNT(*) FROM singer GROUP BY country",
+      "generation_seconds": 0.538413
+    },
+    {
+      "question": "List all song names by singers above the average age.",
+      "generated_answer": "SELECT song_name FROM singer WHERE age > (SELECT AVG(age) FROM singer)",
+      "generation_seconds": 0.835461
+    },
+    {
+      "question": "What are all the song names by singers who are older than average?",
+      "generated_answer": "SELECT song_name FROM singer WHERE age > (SELECT AVG(age) FROM singer)",
+      "generation_seconds": 0.816268
+    },
+    {
+      "question": "Show location and name for all stadiums with a capacity between 5000 and 10000.",
+      "generated_answer": "SELECT location, name FROM stadium WHERE capacity BETWEEN 5000 AND 10000",
+      "generation_seconds": 1.049385
+    },
+    {
+      "question": "What is the name and capacity for the stadium with the highest average attendance?",
+      "generated_answer": "SELECT name, capacity FROM stadium WHERE average = (SELECT MAX(average) FROM stadium)",
+      "generation_seconds": 0.917767
+    },
+    {
+      "question": "What is the year that had the most concerts?",
+      "generated_answer": "SELECT YEAR FROM concert GROUP BY YEAR ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 0.767586
+    },
+    {
+      "question": "What are the names of all stadiums that did not have a concert in 2014?",
+      "generated_answer": "SELECT name FROM stadium WHERE stadium_id NOT IN (SELECT stadium_id FROM concert WHERE YEAR = 2014)",
+      "generation_seconds": 1.181078
+    },
+    {
+      "question": "What are the names , themes , and number of singers for every concert ?",
+      "generated_answer": "SELECT T1.concert_name ,  T1.theme ,  COUNT(*) FROM concert AS T1 JOIN singer_in_concert AS T2 ON T1.concert_id  =  T2.concert_id GROUP BY T1.concert_id",
+      "generation_seconds": 2.299466
+    },
+    {
+      "question": "List all singer names in concerts in year 2014.",
+      "generated_answer": "SELECT T3.name FROM concert AS T1 JOIN singer_in_concert AS T2 ON T1.concert_id  =  T2.concert_id JOIN singer AS T3 ON T2.singer_id  =  T3.singer_id WHERE T1.year  =  2014",
+      "generation_seconds": 2.943395
+    },
+    {
+      "question": "what is the name and nation of the singer who have a song having 'Hey' in its name?",
+      "generated_answer": "SELECT s.name, s.country FROM singer s JOIN singer_in_concert sic ON s.singer_id = sic.singer_id JOIN concert c ON sic.concert_id = c.concert_id WHERE s.song_name LIKE '%Hey%'",
+      "generation_seconds": 2.167128
+    },
+    {
+      "question": "What are the names and locations of the stadiums that had concerts that occurred in both 2014 and 2015?",
+      "generated_answer": "SELECT S2.stadium_id ,  S2.location FROM concert AS C1 JOIN stadium AS S2 ON C1.stadium_id  =  S2.stadium_id JOIN singer_in_concert AS SID1 ON C1.concert_id  =  SID1.concert_id WHERE C1.year  =  2014 INTERSECT SELECT S2.stadium_id ,  S2.location FROM concert AS C2 JOIN stadium AS S2 ON C2.stadium_id  =  S2.stadium_id JOIN singer_in_concert AS SID2 ON C2.concert_id  =  SID2.concert_id WHERE C2.year  =  2015",
+      "generation_seconds": 6.911434
+    },
+    {
+      "question": "How much does the youngest dog weigh?",
+      "generated_answer": "SELECT weight FROM pets WHERE pettype = 'dog' ORDER BY pet_age ASC LIMIT 1",
+      "generation_seconds": 0.963627
+    },
+    {
+      "question": "List the maximum weight and type for each type of pet.",
+      "generated_answer": "SELECT pettype, max(weight) FROM pets GROUP BY pettype",
+      "generation_seconds": 0.679185
+    },
+    {
+      "question": "How many dog pets are raised by female students?",
+      "generated_answer": "SELECT count(*) FROM student AS s JOIN has_pet AS hp ON s.stuid = hp.stuid JOIN pets AS p ON hp.petid = p.petid WHERE s.sex = 'F' AND p.pettype = 'dog'",
+      "generation_seconds": 2.324651
+    },
+    {
+      "question": "How many different types of pet are there?",
+      "generated_answer": "SELECT count(DISTINCT pettype) FROM pets",
+      "generation_seconds": 0.531958
+    },
+    {
+      "question": "What are the first names of every student who has a cat or dog as a pet?",
+      "generated_answer": "SELECT DISTINCT T1.fname FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid = T2.stuid JOIN pets AS T3 ON T2.petid = T3.petid WHERE T3.pettype IN ('cat', 'dog')",
+      "generation_seconds": 2.494357
+    },
+    {
+      "question": "What are the ids of the students who do not own cats as pets?",
+      "generated_answer": "SELECT stuid FROM student EXCEPT SELECT T1.stuid FROM has_pet AS T1 JOIN pets AS T2 ON T1.petid = T2.petid WHERE T2.pettype = 'cat'",
+      "generation_seconds": 2.041033
+    },
+    {
+      "question": "Find the first name and age of students who have a pet.",
+      "generated_answer": "SELECT s.fname, s.age FROM student s JOIN has_pet hp ON s.stuid = hp.stuid",
+      "generation_seconds": 1.035852
+    },
+    {
+      "question": "What is the id of the pet owned by the student whose last name is 'Smith'?",
+      "generated_answer": "SELECT DISTINCT B.petid FROM student AS A JOIN has_pet AS B ON A.stuid = B.stuid WHERE A.lname = 'Smith'",
+      "generation_seconds": 1.473014
+    },
+    {
+      "question": "For students who have pets , how many pets does each student have ? list their ids instead of names .",
+      "generated_answer": "SELECT has_pet.stuid, count(*) FROM has_pet GROUP BY has_pet.stuid",
+      "generation_seconds": 0.852995
+    },
+    {
+      "question": "What is the last name of the student who has a cat that is 3 years old?",
+      "generated_answer": "SELECT T1.lname FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid = T2.stuid JOIN pets AS T3 ON T2.petid = T3.petid WHERE T3.pettype = 'cat' AND T3.pet_age = 3",
+      "generation_seconds": 5.188182
+    },
+    {
+      "question": "Find the average age of students who do not have any pet .",
+      "generated_answer": "SELECT avg(age) FROM student WHERE stuid NOT IN (SELECT stuid FROM has_pet)",
+      "generation_seconds": 0.931667
+    },
+    {
+      "question": "How many countries does each continent have? List the continent id, continent name and the number of countries.",
+      "generated_answer": "SELECT T.contid ,  T2.continent ,  COUNT(*) FROM countries AS T JOIN continents AS T2 ON T.continent  =  T2.contid GROUP BY T.contid",
+      "generation_seconds": 1.853332
+    },
+    {
+      "question": "How many countries are listed?",
+      "generated_answer": "SELECT count(*) FROM countries",
+      "generation_seconds": 0.290999
+    },
+    {
+      "question": "How many countries exist?",
+      "generated_answer": "SELECT count(*) FROM countries",
+      "generation_seconds": 0.304863
+    },
+    {
+      "question": "Which model of the car has the minimum horsepower?",
+      "generated_answer": "SELECT model FROM model_list WHERE maker = (SELECT maker FROM car_names ORDER BY horsepower ASC LIMIT 1)",
+      "generation_seconds": 1.077117
+    },
+    {
+      "question": "What is the model for the car with a weight smaller than the average?",
+      "generated_answer": "SELECT model FROM car_names WHERE weight < (SELECT AVG(weight) FROM cars_data)",
+      "generation_seconds": 0.861721
+    },
+    {
+      "question": "Which distinct car models are the produced after 1980?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names WHERE year > 1980",
+      "generation_seconds": 0.714719
+    },
+    {
+      "question": "How many car makers are there in each continents? List the continent name and the count.",
+      "generated_answer": "SELECT T3.continent ,  count(*) FROM car_makers AS T1 JOIN countries AS T2 ON T1.country  =  T2.countryid JOIN continents AS T3 ON T2.continent  =  T3.contid GROUP BY T3.continent",
+      "generation_seconds": 2.485938
+    },
+    {
+      "question": "Which of the countries has the most car makers? List the country name.",
+      "generated_answer": "SELECT T2.countryname FROM car_makers AS T1 JOIN countries AS T2 ON T1.country = T2.countryid GROUP BY T2.countryname ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.997201
+    },
+    {
+      "question": "What are all the makers and models?",
+      "generated_answer": "SELECT maker, model FROM model_list",
+      "generation_seconds": 0.407266
+    },
+    {
+      "question": "What are the names and ids of all countries with at least one car maker?",
+      "generated_answer": "SELECT T2.countryname, T1.contid FROM continents AS T1 JOIN countries AS T2 ON T1.contid = T2.continent JOIN car_makers AS T3 ON T2.countryid = T3.country GROUP BY T1.contid HAVING COUNT(T3.id) >= 1",
+      "generation_seconds": 3.02653
+    },
+    {
+      "question": "What is the number of the cars with horsepower more than 150?",
+      "generated_answer": "SELECT count(*) FROM cars_data WHERE horsepower > 150",
+      "generation_seconds": 0.840704
+    },
+    {
+      "question": "What is the average weight and year for each year?",
+      "generated_answer": "SELECT year, AVG(weight) FROM cars_data GROUP BY year",
+      "generation_seconds": 0.621051
+    },
+    {
+      "question": "Which countries in europe have at least 3 car manufacturers?",
+      "generated_answer": "SELECT T2.countryname FROM continents AS T1 JOIN countries AS T2 ON T1.contid = T2.continent JOIN car_makers AS T3 ON T2.countryid = T3.country WHERE T1.continent = 'Europe' GROUP BY T2.countryname HAVING COUNT(T3.id) >= 3",
+      "generation_seconds": 3.130685
+    },
+    {
+      "question": "What is the maximum horsepower and the make of the car models with 3 cylinders?",
+      "generated_answer": "SELECT MAX(cars_data.horsepower), car_names.make FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid WHERE cars_data.cylinders = 3",
+      "generation_seconds": 1.738321
+    },
+    {
+      "question": "What is the average horsepower of the cars before 1980?",
+      "generated_answer": "SELECT AVG(horsepower) FROM cars_data WHERE year < 1980",
+      "generation_seconds": 0.853839
+    },
+    {
+      "question": "What is the average edispl of the cars of model volvo?",
+      "generated_answer": "SELECT AVG(cars_data.edispl) FROM cars_data JOIN car_names ON cars_data.id = car_names.makeid WHERE car_names.model = 'volvo'",
+      "generation_seconds": 1.589557
+    },
+    {
+      "question": "What is the average edispl for all volvos?",
+      "generated_answer": "SELECT AVG(edispl) FROM cars_data WHERE makeid IN (SELECT makeid FROM car_names WHERE model = 'Volvo')",
+      "generation_seconds": 2.092139
+    },
+    {
+      "question": "What is the maximum accelerate for different number of cylinders?",
+      "generated_answer": "SELECT cylinders, MAX(accelerate) as max_accelerate FROM cars_data GROUP BY cylinders",
+      "generation_seconds": 0.914962
+    },
+    {
+      "question": "In 1980, how many cars were made?",
+      "generated_answer": "SELECT count(*) FROM cars_data WHERE YEAR = 1980",
+      "generation_seconds": 0.716687
+    },
+    {
+      "question": "What are the names and ids of all makers with more than 3 models?",
+      "generated_answer": "SELECT maker, id FROM car_makers WHERE id IN (SELECT maker FROM model_list GROUP BY maker HAVING COUNT(model) > 3)",
+      "generation_seconds": 1.417291
+    },
+    {
+      "question": "What are the different models created by either the car maker General Motors or weighed more than 3500?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names WHERE maker IN (SELECT id FROM car_makers WHERE maker = 'General Motors') UNION SELECT DISTINCT model FROM cars_data WHERE weight > 3500",
+      "generation_seconds": 1.847562
+    },
+    {
+      "question": "What is the horsepower of the car with the largest accelerate?",
+      "generated_answer": "Select HP FROM cars_data ORDER BY accelerate DESC LIMIT 1",
+      "generation_seconds": 0.627518
+    },
+    {
+      "question": "What is the horsepower of the car with the greatest accelerate?",
+      "generated_answer": "SELECT horsepower FROM cars_data ORDER BY accelerate DESC LIMIT 1",
+      "generation_seconds": 0.627421
+    },
+    {
+      "question": "For a volvo model, how many cylinders does the version with least accelerate have?",
+      "generated_answer": "SELECT T3.cylinders FROM car_makers AS T1 JOIN model_list AS T2 ON T1.id = T2.maker JOIN cars_data AS T3 ON T2.model = T3.id WHERE T1.maker = 'volvo' ORDER BY T3.accelerate ASC LIMIT 1",
+      "generation_seconds": 2.991484
+    },
+    {
+      "question": "How many countries has more than 2 car makers ?",
+      "generated_answer": "SELECT count(*) FROM countries WHERE countryid IN ( SELECT country FROM car_makers GROUP BY country HAVING count(*) > 2 )",
+      "generation_seconds": 1.27335
+    },
+    {
+      "question": "How many cars has over 6 cylinders?",
+      "generated_answer": "SELECT count(*) FROM cars_data WHERE cylinders > 6",
+      "generation_seconds": 0.579421
+    },
+    {
+      "question": "For all of the 4 cylinder cars, which model has the most horsepower?",
+      "generated_answer": "SELECT T2.model FROM cars_data AS T1 JOIN model_list AS T2 ON T1.id = T2.makeid WHERE T1.cylinders = 4 ORDER BY T1.horsepower DESC LIMIT 1",
+      "generation_seconds": 2.195255
+    },
+    {
+      "question": "What is the maximum mpg of the cars that had 8 cylinders or that were produced before 1980 ?",
+      "generated_answer": "SELECT max(mpg) FROM cars_data WHERE cylinders  =  8 OR year  <  1980",
+      "generation_seconds": 1.266201
+    },
+    {
+      "question": "What are the different models wthat are lighter than 3500 but were not built by the Ford Motor Company?",
+      "generated_answer": "SELECT DISTINCT model FROM car_names INNER JOIN cars_data ON car_names.makeid = cars_data.id LEFT JOIN car_makers ON car_names.model = car_makers.maker WHERE cars_data.weight < 3500 AND car_makers.maker != 'Ford Motor Company'",
+      "generation_seconds": 2.507232
+    },
+    {
+      "question": "What country is Jetblue Airways affiliated with?",
+      "generated_answer": "SELECT T1.country FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline WHERE T1.airline = 'Jetblue Airways'",
+      "generation_seconds": 1.719322
+    },
+    {
+      "question": "Give the airport code and airport name corresonding to the city Anthony.",
+      "generated_answer": "SELECT airportcode, airportname FROM airports WHERE city = 'Anthony'",
+      "generation_seconds": 0.747843
+    },
+    {
+      "question": "Which airline has abbreviation 'UAL'?",
+      "generated_answer": "SELECT airline FROM airlines WHERE abbreviation = 'UAL'",
+      "generation_seconds": 0.690468
+    },
+    {
+      "question": "Which city and country is the Alton airport at?",
+      "generated_answer": "SELECT city, country FROM airports WHERE airportname = 'Alton'",
+      "generation_seconds": 0.73243
+    },
+    {
+      "question": "Return the name of the airport with code 'AKO'.",
+      "generated_answer": "SELECT airportname FROM airports WHERE airportcode = 'AKO'",
+      "generation_seconds": 0.7021
+    },
+    {
+      "question": "What are airport names at City 'Aberdeen'?",
+      "generated_answer": "SELECT airportname FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 0.709303
+    },
+    {
+      "question": "What are the names of airports in Aberdeen?",
+      "generated_answer": "SELECT airportname FROM airports WHERE city = 'Aberdeen'",
+      "generation_seconds": 0.678272
+    },
+    {
+      "question": "How many flights depart from 'APG'?",
+      "generated_answer": "SELECT count(*) FROM flights WHERE sourceairport = 'APG'",
+      "generation_seconds": 0.678465
+    },
+    {
+      "question": "Count the number of flights departing from 'APG'.",
+      "generated_answer": "SELECT count(*) FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode  =  T2.sourceairport WHERE T1.city  =  'APG'",
+      "generation_seconds": 1.730508
+    },
+    {
+      "question": "How many flights have destination ATO?",
+      "generated_answer": "SELECT count(*) FROM flights WHERE destairport =  'ATO'",
+      "generation_seconds": 0.774996
+    },
+    {
+      "question": "Return the number of flights departing from Aberdeen.",
+      "generated_answer": "SELECT count(*) FROM flights INNER JOIN airports ON flights.sourceairport = airports.airportcode WHERE airports.city = 'Aberdeen'",
+      "generation_seconds": 1.344002
+    },
+    {
+      "question": "How many flights depart from City 'Aberdeen' and have destination City 'Ashley'?",
+      "generated_answer": "SELECT count(*) FROM airports AS src JOIN airports AS dest ON flights.sourceairport = src.airportcode AND flights.destairport = dest.airportcode WHERE src.city = 'Aberdeen' AND dest.city = 'Ashley'",
+      "generation_seconds": 2.068856
+    },
+    {
+      "question": "Count the number of United Airlines flights arriving in ASY Airport.",
+      "generated_answer": "SELECT count(*) FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline JOIN airports AS T3 ON T2.destairport = T3.airportcode WHERE T1.airline = 'United Airlines' AND T3.city = 'ASY'",
+      "generation_seconds": 2.803222
+    },
+    {
+      "question": "Return the number of United Airlines flights leaving from AHD Airport.",
+      "generated_answer": "SELECT count(*) FROM flights WHERE sourceairport = (SELECT airportcode FROM airports WHERE airportname = 'AHD Airport') AND airline = (SELECT uid FROM airlines WHERE airline = 'United Airlines')",
+      "generation_seconds": 1.862057
+    },
+    {
+      "question": "How many United Airlines flights go to City 'Aberdeen'?",
+      "generated_answer": "SELECT count(*) FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline JOIN airports AS T3 ON T3.airportcode = T2.destairport WHERE T1.airline = 'United Airlines' AND T3.city = 'Aberdeen'",
+      "generation_seconds": 2.830915
+    },
+    {
+      "question": "Which city has most number of arriving flights?",
+      "generated_answer": "SELECT T2.city FROM flights AS T1 JOIN airports AS T2 ON T1.destairport = T2.airportcode GROUP BY T2.city ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.727321
+    },
+    {
+      "question": "Which city has the most frequent destination airport?",
+      "generated_answer": "SELECT T1.city FROM airports AS T1 JOIN flights AS T2 ON T1.airportcode = T2.destairport GROUP BY T1.city ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.869376
+    },
+    {
+      "question": "What is the code of airport that has the highest number of flights?",
+      "generated_answer": "SELECT sourceairport FROM flights GROUP BY sourceairport ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 0.879307
+    },
+    {
+      "question": "Give the code of the airport with the least flights.",
+      "generated_answer": "SELECT destairport FROM flights GROUP BY destairport ORDER BY count(*) ASC LIMIT 1",
+      "generation_seconds": 1.819345
+    },
+    {
+      "question": "What airline serves the most flights?",
+      "generated_answer": "SELECT T1.airline FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline GROUP BY T1.airline ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.819714
+    },
+    {
+      "question": "Find the abbreviation and country of the airline that has fewest number of flights?",
+      "generated_answer": "SELECT T1.abbreviation, T1.country FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline GROUP BY T2.airline ORDER BY count(*) ASC LIMIT 1",
+      "generation_seconds": 2.022682
+    },
+    {
+      "question": "What are airlines that have some flight departing from airport 'AHD'?",
+      "generated_answer": "SELECT T1.uid, T1.airline FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline WHERE T2.sourceairport = 'AHD'",
+      "generation_seconds": 1.88781
+    },
+    {
+      "question": "Which airlines have a flight with source airport AHD?",
+      "generated_answer": "SELECT DISTINCT T1.airline FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline WHERE T2.sourceairport = 'AHD'",
+      "generation_seconds": 1.68775
+    },
+    {
+      "question": "Find all airlines that have flights from airport 'CVO' but not from 'APG'.",
+      "generated_answer": "Select airline From airlines Where uid In ( Select airline From flights Where sourceairport = ( Select airportcode From airports Where airportname = 'CVO' ) ) And uid Not In ( Select airline From flights Where sourceairport = ( Select airportcode From airports Where airportname = 'APG' ) )",
+      "generation_seconds": 3.053851
+    },
+    {
+      "question": "Which airlines have at least 10 flights?",
+      "generated_answer": "SELECT airline FROM flights GROUP BY airline HAVING COUNT(*) >= 10",
+      "generation_seconds": 0.803265
+    },
+    {
+      "question": "Find all airlines that have fewer than 200 flights.",
+      "generated_answer": "SELECT T1.airline FROM airlines AS T1 JOIN flights AS T2 ON T1.uid = T2.airline GROUP BY T1.uid HAVING count(*) < 200",
+      "generation_seconds": 1.885109
+    },
+    {
+      "question": "Which airlines have less than 200 flights?",
+      "generated_answer": "SELECT airline FROM flights GROUP BY airline HAVING COUNT(flightno) < 200",
+      "generation_seconds": 0.904389
+    },
+    {
+      "question": "Find the cities that have more than one employee under age 30.",
+      "generated_answer": "SELECT city FROM employee WHERE age < 30 GROUP BY city HAVING COUNT(city) > 1",
+      "generation_seconds": 0.994056
+    },
+    {
+      "question": "What are the manager name and district of the shop that sells the largest number of products?",
+      "generated_answer": "SELECT T2.manager_name, T2.district FROM shop AS T1 INNER JOIN hiring AS T2 ON T1.shop_id = T2.shop_id ORDER BY T1.number_products DESC LIMIT 1",
+      "generation_seconds": 2.039804
+    },
+    {
+      "question": "find the name of employee who was awarded the most times in the evaluation.",
+      "generated_answer": "SELECT E.name FROM employee AS E JOIN evaluation AS EV ON E.employee_id = EV.employee_id GROUP BY E.employee_id ORDER BY COUNT(EV.year_awarded) DESC LIMIT 1",
+      "generation_seconds": 1.982423
+    },
+    {
+      "question": "What are the names of the employees who never received any evaluation?",
+      "generated_answer": "SELECT name FROM employee WHERE employee_id NOT IN (SELECT employee_id FROM evaluation)",
+      "generation_seconds": 1.496873
+    },
+    {
+      "question": "Which shops run with no employees? Find the shop names",
+      "generated_answer": "SELECT name FROM shop WHERE shop_id NOT IN (SELECT shop_id FROM hiring)",
+      "generation_seconds": 0.803227
+    },
+    {
+      "question": "Find the number of employees hired in each shop; show the shop name as well.",
+      "generated_answer": "SELECT count(*) ,  T2.name FROM hiring AS T1 JOIN shop AS T2 ON T1.shop_id  =  T2.shop_id GROUP BY T2.name",
+      "generation_seconds": 1.686258
+    },
+    {
+      "question": "Which district has both stores with less than 3000 products and stores with more than 10000 products?",
+      "generated_answer": "SELECT district FROM shop WHERE number_products < 3000 INTERSECT SELECT district FROM shop WHERE number_products > 10000",
+      "generation_seconds": 1.437379
+    },
+    {
+      "question": "Count the number of distinct store locations.",
+      "generated_answer": "SELECT count(DISTINCT location) FROM shop",
+      "generation_seconds": 0.646881
+    },
+    {
+      "question": "List document IDs, document names, and document descriptions for all documents.",
+      "generated_answer": "SELECT document_id, document_name, document_description FROM documents",
+      "generation_seconds": 0.589985
+    },
+    {
+      "question": "What are all different template ids used for documents, and how many times were each of them used?",
+      "generated_answer": "SELECT T1.template_id, COUNT(*) FROM templates AS T1 JOIN documents AS T2 ON T1.template_id = T2.template_id GROUP BY T1.template_id",
+      "generation_seconds": 1.60038
+    },
+    {
+      "question": "What is the id and type code for the template used by the most documents?",
+      "generated_answer": "SELECT t.template_id, t.template_type_code FROM templates t JOIN documents d ON t.template_id = d.template_id GROUP BY t.template_id, t.template_type_code ORDER BY COUNT(d.document_id) DESC LIMIT 1",
+      "generation_seconds": 2.870873
+    },
+    {
+      "question": "How many templates do we have?",
+      "generated_answer": "Select count(*) from templates",
+      "generation_seconds": 0.299158
+    },
+    {
+      "question": "What are the ids, version numbers, and type codes for each template?",
+      "generated_answer": "SELECT template_id, version_number, template_type_code FROM templates",
+      "generation_seconds": 0.632794
+    },
+    {
+      "question": "What are the ids of templates with template type code PP or PPT?",
+      "generated_answer": "SELECT template_id FROM templates WHERE template_type_code IN ('PP', 'PPT')",
+      "generation_seconds": 0.828242
+    },
+    {
+      "question": "Count the number of templates of the type CV.",
+      "generated_answer": "SELECT count(*) FROM templates WHERE template_type_code = 'CV'",
+      "generation_seconds": 0.607555
+    },
+    {
+      "question": "Return the version numbers and template type codes of templates with a version number greater than 5.",
+      "generated_answer": "SELECT version_number, template_type_code FROM templates WHERE version_number > 5",
+      "generation_seconds": 0.701008
+    },
+    {
+      "question": "Which template type code has most number of templates?",
+      "generated_answer": "SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY count(*) DESC LIMIT 1",
+      "generation_seconds": 0.967284
+    },
+    {
+      "question": "Return the type code of the template type that the most templates belong to.",
+      "generated_answer": "SELECT template_type_code FROM templates GROUP BY template_type_code ORDER BY COUNT(*) DESC LIMIT 1",
+      "generation_seconds": 1.87027
+    },
+    {
+      "question": "Show all template type codes with less than three templates.",
+      "generated_answer": "SELECT template_type_code FROM templates GROUP BY template_type_code HAVING COUNT(*) < 3",
+      "generation_seconds": 0.876516
+    }
+  ]
+}

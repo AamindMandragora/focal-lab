@@ -1,0 +1,588 @@
+{
+  "candidate_line_count": 1063,
+  "candidate_line_group_count": 48,
+  "correct_candidate_line_counts_by_source": {
+    "h24": 16,
+    "h29": 17,
+    "h37_gsm2b_t0": 17,
+    "h37_gsm2b_t1": 17,
+    "h37_gsm2b_t2": 17
+  },
+  "correct_candidate_line_examples_by_group": {
+    "10": [
+      {
+        "expression": "$\\text{total} - n1 + n2$",
+        "normalized_expression": "total - n1 + n2",
+        "source": "h24:candidate_line:A",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "$\\text{total} + n2 - n1$",
+        "normalized_expression": "total + n2 - n1",
+        "source": "h24:candidate_line:B",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "$\\text{total} - n1 + n2$",
+        "normalized_expression": "total - n1 + n2",
+        "source": "h24:candidate_line:C",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "total - n1 + n2",
+        "normalized_expression": "total - n1 + n2",
+        "source": "h24:candidate_line:A",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "total + n2 - n1",
+        "normalized_expression": "total + n2 - n1",
+        "source": "h24:candidate_line:B",
+        "source_family": "h24:candidate_lines"
+      }
+    ],
+    "16": [
+      {
+        "expression": "$n1 * p1 + n2 * p2 + n3 * p3$",
+        "normalized_expression": "n1 * p1 + n2 * p2 + n3 * p3",
+        "source": "h24:candidate_line:A",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "$n1 * p1 + n2 * p2 + n3 * p3$",
+        "normalized_expression": "n1 * p1 + n2 * p2 + n3 * p3",
+        "source": "h24:candidate_line:B",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "$n1 * p1 + n2 * p2 + n3 * p3$",
+        "normalized_expression": "n1 * p1 + n2 * p2 + n3 * p3",
+        "source": "h24:candidate_line:C",
+        "source_family": "h24:candidate_lines"
+      }
+    ],
+    "17": [
+      {
+        "expression": "{n} // ({x} * (1 + {mult}))",
+        "normalized_expression": "n // (x * (1 + mult))",
+        "source": "h29:candidate_line:1",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{n} // ({x} + {mult} * {x})",
+        "normalized_expression": "n // (x + mult * x)",
+        "source": "h29:candidate_line:2",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{n} // ({x} * (1 + {mult}))",
+        "normalized_expression": "n // (x * (1 + mult))",
+        "source": "h29:candidate_line:3",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{n} // ({x} * (1 + {mult}))",
+        "normalized_expression": "n // (x * (1 + mult))",
+        "source": "h29:candidate_line:4",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{n} // ({x} + {mult} * {x})",
+        "normalized_expression": "n // (x + mult * x)",
+        "source": "h29:candidate_line:5",
+        "source_family": "h29:candidate_lines"
+      }
+    ],
+    "21": [
+      {
+        "expression": "{n} + {mult} * {n}",
+        "normalized_expression": "n + mult * n",
+        "source": "h24:candidate_line:A",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "{n} * (1 + {mult})",
+        "normalized_expression": "n * (1 + mult)",
+        "source": "h24:candidate_line:B",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "{n} * {mult} + {n}",
+        "normalized_expression": "n * mult + n",
+        "source": "h24:candidate_line:C",
+        "source_family": "h24:candidate_lines"
+      }
+    ],
+    "30": [
+      {
+        "expression": "$n \\times m // k$",
+        "normalized_expression": "n * m // k",
+        "source": "h24:candidate_line:C",
+        "source_family": "h24:candidate_lines"
+      }
+    ],
+    "39": [
+      {
+        "expression": "{total} - {n1} - {n2}",
+        "normalized_expression": "total - n1 - n2",
+        "source": "h29:candidate_line:1",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{total} - {n1} - {n2}",
+        "normalized_expression": "total - n1 - n2",
+        "source": "h29:candidate_line:2",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{total} - {n1} - {n2}",
+        "normalized_expression": "total - n1 - n2",
+        "source": "h29:candidate_line:3",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{total} - {n1} - {n2}",
+        "normalized_expression": "total - n1 - n2",
+        "source": "h29:candidate_line:4",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "{total} - {n1} - {n2}",
+        "normalized_expression": "total - n1 - n2",
+        "source": "h29:candidate_line:5",
+        "source_family": "h29:candidate_lines"
+      }
+    ],
+    "47": [
+      {
+        "expression": "7 * n * (1 + mult)",
+        "normalized_expression": "7 * n * (1 + mult)",
+        "source": "h24:candidate_line:A",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "n * (1 + mult) * 7",
+        "normalized_expression": "n * (1 + mult) * 7",
+        "source": "h24:candidate_line:B",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "n * (1 + mult) * 7",
+        "normalized_expression": "n * (1 + mult) * 7",
+        "source": "h24:candidate_line:C",
+        "source_family": "h24:candidate_lines"
+      },
+      {
+        "expression": "$7 \\times (mult \\times n + n)$",
+        "normalized_expression": "7 * (mult * n + n)",
+        "source": "h29:candidate_line:3",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "$7 \\times (n + mult \\times n)$",
+        "normalized_expression": "7 * (n + mult * n)",
+        "source": "h29:candidate_line:4",
+        "source_family": "h29:candidate_lines"
+      }
+    ],
+    "49": [
+      {
+        "expression": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+        "normalized_expression": "((n1 * d1) + (n2 * d2)) // 12",
+        "source": "h29:candidate_line:1",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "({n1} * {d1} + {n2} * {d2}) // 12",
+        "normalized_expression": "(n1 * d1 + n2 * d2) // 12",
+        "source": "h29:candidate_line:3",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+        "normalized_expression": "((n1 * d1) + (n2 * d2)) // 12",
+        "source": "h29:candidate_line:6",
+        "source_family": "h29:candidate_lines"
+      },
+      {
+        "expression": "(({n1} * {d1}) + ({n2} * {d2})) // 12",
+        "normalized_expression": "((n1 * d1) + (n2 * d2)) // 12",
+        "source": "h37_gsm2b_t0:candidate_line:1",
+        "source_family": "h37_gsm2b_repeat_probe_20260629_t0:candidate_lines"
+      },
+      {
+        "expression": "({n1} * {d1} + {n2} * {d2}) // 12",
+        "normalized_expression": "(n1 * d1 + n2 * d2) // 12",
+        "source": "h37_gsm2b_t0:candidate_line:3",
+        "source_family": "h37_gsm2b_repeat_probe_20260629_t0:candidate_lines"
+      }
+    ]
+  },
+  "credential_scan_hits": [],
+  "description": "CPU-only scored replay of parsed GSM-2B candidate lines after recovering canonical seed123 train example metadata from the GSM split manifest.",
+  "diagnostic_id": "h48_gsm2b_scored_candidate_line_replay_20260629",
+  "final_answer_correct_union": [
+    10,
+    13,
+    16,
+    17,
+    21,
+    30,
+    32,
+    39,
+    47
+  ],
+  "final_answer_correct_union_count": 9,
+  "inputs": [
+    {
+      "label": "h2",
+      "num_examples": 49,
+      "path": "outputs/generated/h2_gsm2b_final_span_probe_20260629/h2_gsm2b_final_span_probe_20260629_20260628_215702_fdbc73/results/success_report.json"
+    },
+    {
+      "label": "h4",
+      "num_examples": 49,
+      "path": "outputs/generated/h4_gsm2b_semantic_plan_probe_20260629/h4_gsm2b_semantic_plan_probe_20260629_20260628_222132_140e8a/results/success_report.json"
+    },
+    {
+      "label": "h10",
+      "num_examples": 49,
+      "path": "outputs/generated/h10_gsm2b_equation_copy_probe_20260629/h10_gsm2b_equation_copy_probe_20260629_20260628_232012_96dd25/results/success_report.json"
+    },
+    {
+      "label": "h24",
+      "num_examples": 49,
+      "path": "outputs/generated/h24_gsm2b_multicandidate_selector_probe_20260629/results/direct_eval_success.json"
+    },
+    {
+      "label": "h29",
+      "num_examples": 49,
+      "path": "outputs/generated/h29_gsm2b_six_variant_consensus_probe_20260629/results/direct_eval_success.json"
+    },
+    {
+      "label": "h40",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t0/results/direct_eval_success.json"
+    },
+    {
+      "label": "h41",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t1/results/direct_eval_success.json"
+    },
+    {
+      "label": "h42",
+      "num_examples": 49,
+      "path": "outputs/generated/h37_gsm2b_repeat_probe_20260629_t2/results/direct_eval_success.json"
+    }
+  ],
+  "line_counts_by_source": {
+    "h24": 133,
+    "h29": 231,
+    "h37_gsm2b_t0": 231,
+    "h37_gsm2b_t1": 231,
+    "h37_gsm2b_t2": 237
+  },
+  "line_group_counts_by_source": {
+    "h24": 41,
+    "h29": 37,
+    "h37_gsm2b_t0": 37,
+    "h37_gsm2b_t1": 37,
+    "h37_gsm2b_t2": 38
+  },
+  "missing_inputs": [],
+  "notes": [
+    "Candidate selection is no-gold: H31 select_consensus saw only candidate expression/source metadata.",
+    "Gold answers and variable_types are used only by this post-selection measurement layer.",
+    "This is train49 diagnostic evidence, not a held-out benchmark claim."
+  ],
+  "num_examples": 49,
+  "num_reports": 8,
+  "prediction_result": {
+    "aligned_49_examples": true,
+    "candidate_line_union_gte_12": false,
+    "overall": false,
+    "selected_correct_gte_12": false
+  },
+  "scored_candidate_line_union": [
+    10,
+    16,
+    17,
+    21,
+    30,
+    39,
+    47,
+    49
+  ],
+  "scored_candidate_line_union_count": 8,
+  "selected_candidate_line_correct_count": 5,
+  "selected_candidate_line_correct_indices": [
+    10,
+    16,
+    17,
+    39,
+    49
+  ],
+  "selected_rows_head": [
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "expression": "4*(sides - target) / sides^2",
+      "group_id": 1,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        16,
+        4,
+        16,
+        0.75
+      ],
+      "candidate_count": 16,
+      "expression": "$g - n_1 - 3n_2$",
+      "group_id": 2,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        1,
+        1,
+        1,
+        0.75
+      ],
+      "candidate_count": 1,
+      "expression": "{n} * (1 + {k_2} + {k_3} * (9/8))",
+      "group_id": 3,
+      "source": "h24:candidate_line:A",
+      "source_family": "h24:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "expression": "{n * k * x}",
+      "group_id": 4,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        13,
+        5,
+        13,
+        0.75
+      ],
+      "candidate_count": 13,
+      "expression": "$\\frac{1}{n^2}$",
+      "group_id": 5,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        12,
+        4,
+        12,
+        0.75
+      ],
+      "candidate_count": 12,
+      "expression": "$\\frac{2\\text{total} - t}{\\text{currency}}$",
+      "group_id": 6,
+      "source": "h37_gsm2b_t2:candidate_line:5",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        20,
+        4,
+        20,
+        0.75
+      ],
+      "candidate_count": 20,
+      "expression": "{n} - {n1} * {w1} - {n2} * {w2} - {n3} * {w3}",
+      "group_id": 7,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        8,
+        4,
+        8,
+        0.75
+      ],
+      "candidate_count": 8,
+      "expression": "$((k1 + k2) * 100) / (n1 + n2)$",
+      "group_id": 8,
+      "source": "h37_gsm2b_t2:candidate_line:3",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        14,
+        5,
+        14,
+        0.75
+      ],
+      "candidate_count": 14,
+      "expression": "{n1} * {cur} * {c1} + {n2} * {cur} * {c2} + {cur} * {c3}",
+      "group_id": 9,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        2,
+        1,
+        2,
+        0.75
+      ],
+      "candidate_count": 2,
+      "expression": "$\\text{total} - n1 + n2$",
+      "group_id": 10,
+      "source": "h24:candidate_line:C",
+      "source_family": "h24:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        2,
+        2,
+        2,
+        0.75
+      ],
+      "candidate_count": 2,
+      "expression": "{count} * ({n1} + {n2} + {n3}) + {count} / <<2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2 * (n4 + n5) / 2 + n4 + n5 - 2>>",
+      "group_id": 11,
+      "source": "h37_gsm2b_t0:candidate_line:1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t0:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        24,
+        4,
+        24,
+        0.75
+      ],
+      "candidate_count": 24,
+      "expression": "`(total - spent) * n / cal`",
+      "group_id": 12,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        18,
+        5,
+        18,
+        0.75
+      ],
+      "candidate_count": 18,
+      "expression": "`total - frac - daily * period * 7`",
+      "group_id": 13,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        6,
+        1,
+        6,
+        0.75
+      ],
+      "candidate_count": 6,
+      "expression": "{cur}{initial_amount} - {cur}{unit_price} * {quantity}",
+      "group_id": 14,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        3,
+        1,
+        3,
+        0.75
+      ],
+      "candidate_count": 3,
+      "expression": "$n1 * p1 + n2 * p2 + n3 * p3$",
+      "group_id": 16,
+      "source": "h24:candidate_line:C",
+      "source_family": "h24:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        16,
+        4,
+        16,
+        0.75
+      ],
+      "candidate_count": 16,
+      "expression": "{n} // ({x} * (1 + {mult}))",
+      "group_id": 17,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        8,
+        4,
+        8,
+        0.75
+      ],
+      "candidate_count": 8,
+      "expression": "$\\frac{5 \\times n \\times t}{3 \\times h}$",
+      "group_id": 18,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        27,
+        5,
+        27,
+        0.75
+      ],
+      "candidate_count": 27,
+      "expression": "{total} - {n1} - {mult}",
+      "group_id": 19,
+      "source": "h37_gsm2b_t2:candidate_line:6",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        1,
+        1,
+        1,
+        0.75
+      ],
+      "candidate_count": 1,
+      "expression": "`{cur}{price} * {usage} * 7 * (2 + {percent}/100)`",
+      "group_id": 20,
+      "source": "h24:candidate_line:A",
+      "source_family": "h24:candidate_lines"
+    },
+    {
+      "agreement_score": [
+        4,
+        4,
+        4,
+        0.75
+      ],
+      "candidate_count": 4,
+      "expression": "<<n + mult * n",
+      "group_id": 21,
+      "source": "h37_gsm2b_t2:candidate_line:1",
+      "source_family": "h37_gsm2b_repeat_probe_20260629_t2:candidate_lines"
+    }
+  ],
+  "split_file": "environment/benchmark_splits/gsm_symbolic_crane_proportional_49x49_seed123.json"
+}

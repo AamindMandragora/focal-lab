@@ -1,0 +1,68 @@
+{
+  "runs": [
+    {
+      "label": "A_control_ms750_n50",
+      "max_steps": 750,
+      "requested_sample_size": 50,
+      "actually_evaluated": 50,
+      "success": true,
+      "error": null,
+      "early_stopped": false,
+      "early_stop_reason": null,
+      "total_wall_s": 175.81,
+      "per_sample_total_s": 112.45,
+      "per_sample_mean_s": 2.249,
+      "per_sample_p50_s": 1.552,
+      "per_sample_p90_s": 3.272,
+      "per_sample_max_s": 19.863,
+      "tokens_mean": 77.5,
+      "tokens_max": 699,
+      "tokens_hit_budget": 0,
+      "syntax_rate": 0.46,
+      "accuracy": 0.13,
+      "smiles_paper_trial": {
+        "validity_rdkit": 0.46,
+        "diversity_tanimoto": 0.7913004626330494,
+        "retro_score": null,
+        "membership": 0.12,
+        "samples_to_target_unique_valid": 1000,
+        "unique_valid_count": 3,
+        "sample_count": 50,
+        "retro_scored_count": 0,
+        "retro_available": false
+      }
+    },
+    {
+      "label": "C_treatment_ms400_n50",
+      "max_steps": 400,
+      "requested_sample_size": 50,
+      "actually_evaluated": 50,
+      "success": true,
+      "error": null,
+      "early_stopped": false,
+      "early_stop_reason": null,
+      "total_wall_s": 127.23,
+      "per_sample_total_s": 91.64,
+      "per_sample_mean_s": 1.833,
+      "per_sample_p50_s": 1.406,
+      "per_sample_p90_s": 3.903,
+      "per_sample_max_s": 8.23,
+      "tokens_mean": 62.5,
+      "tokens_max": 268,
+      "tokens_hit_budget": 0,
+      "syntax_rate": 0.6,
+      "accuracy": 0.033,
+      "smiles_paper_trial": {
+        "validity_rdkit": 0.64,
+        "diversity_tanimoto": null,
+        "retro_score": null,
+        "membership": 0.06,
+        "samples_to_target_unique_valid": 1000,
+        "unique_valid_count": 1,
+        "sample_count": 50,
+        "retro_scored_count": 0,
+        "retro_available": false
+      }
+    }
+  ]
+}
