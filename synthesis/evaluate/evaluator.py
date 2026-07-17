@@ -207,8 +207,10 @@ class EvaluationResult:
     def get_feedback_summary(self, require_delimiters: bool = True) -> str:
         """Generate a summary for feedback to the generator.
 
-        When ``require_delimiters`` is False (i.e. the run was launched with
-        --no-require-delimiters), the visible ``<<``/``>>`` span diagnostics are
+        When ``require_delimiters`` is False (i.e. the dataset does not require
+        delimiters, per REQUIRE_DELIMITERS_BY_DATASET in run_constants.py — GSM
+        requires them, Spider and SMILES do not), the visible ``<<``/``>>`` span
+        diagnostics are
         omitted: the "Contains << >>" header line, the whole "Structural
         Generation Metrics" block, and the span-centric lines of the diagnostic
         decomposition. Those statistics are meaningless when the model is not
@@ -231,8 +233,8 @@ class EvaluationResult:
             f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
         ]
         # The "Contains << >>" status only matters when delimiters are required;
-        # omit it under --no-require-delimiters (insert after Accuracy to keep
-        # the original line order).
+        # omit it when the dataset does not require them (insert after Accuracy
+        # to keep the original line order).
         if require_delimiters:
             lines.insert(
                 2, f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}"
@@ -662,8 +664,9 @@ class EvaluationResult:
             if "provenance_tags" not in sample:
                 self._annotate_sample_observability(sample)
             # The "Contains << >>" status only matters when delimiters are required;
-            # omit it under --no-require-delimiters so the author is not fed an
-            # irrelevant span signal on tasks (e.g. SQL) that use no << >> delimiters.
+            # omit it when the dataset does not require them so the author is not
+            # fed an irrelevant span signal on tasks (e.g. SQL) that use no << >>
+            # delimiters.
             delim_segment = (
                 f"Contains << >>: {'yes' if sample.get('contains_delimiters') else 'no'} | "
                 if require_delimiters
@@ -1179,7 +1182,7 @@ class EvaluationResult:
         When ``require_delimiters`` is False, the span-centric lines
         (no-complete-span counts, answer-extraction source, span usefulness) are
         omitted — they only describe visible ``<<``/``>>`` behavior, which is not
-        expected under --no-require-delimiters.
+        expected on datasets that do not require delimiters (Spider, SMILES).
         """
         if not self.sample_outputs:
             return []
@@ -1649,8 +1652,8 @@ class Evaluator:
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
             sample_seed: Optional RNG seed for reproducible dataset sampling
             max_seconds_per_example: Optional runtime budget per example in seconds
-            gsm_split_file: Optional JSON manifest with train_indices/eval_indices for GSM.
-            gsm_split_name: Which split from gsm_split_file to use ("train" or "eval").
+            gsm_split_file: Optional JSON manifest with train_indices/test_indices for GSM.
+            gsm_split_name: Which split from gsm_split_file to use ("train" or "test").
             spider_split_file: Optional JSON manifest with train_indices/test_indices for Spider.
             spider_split_name: Which split from spider_split_file to use ("train" or "test").
         """
@@ -1723,15 +1726,36 @@ class Evaluator:
             except Exception:
                 pass
 
+    def split_provenance(self, bar_split_name: str | None = None) -> dict:
+        """The split-provenance dict every output JSON embeds (one shape, one place)."""
+        from synthesis.split_provenance import build_split_provenance
+
+        return build_split_provenance(
+            gsm_split_file=self.gsm_split_file,
+            gsm_split_name=self.gsm_split_name if self.gsm_split_file is not None else None,
+            spider_split_file=self.spider_split_file,
+            spider_split_name=self.spider_split_name if self.spider_split_file is not None else None,
+            bar_split_name=bar_split_name,
+        )
+
     def _read_split_manifest(self, split_file: str | Path) -> dict:
         """Load a benchmark split manifest from a filesystem path."""
         return json.loads(Path(split_file).read_text())
 
     def _load_gsm_split_indices(self) -> Optional[List[int]]:
-        """Load explicit GSM example indices from a train/eval split manifest."""
+        """Load explicit GSM example indices from a train/test split manifest."""
         if self.gsm_split_file is None:
             return None
 
+        # GSM's two sides are named "train" and "test", same as Spider — the
+        # manifests' eval_indices key was renamed test_indices 2026-07-17 so
+        # one concept has one name everywhere.
+        if self.gsm_split_name not in ("train", "test"):
+            raise ValueError(
+                f"gsm_split_name must be 'train' or 'test', got "
+                f"'{self.gsm_split_name}'. GSM's held-out side is named "
+                "'test' (the 'eval' alias was removed 2026-07-17)."
+            )
         manifest = self._read_split_manifest(self.gsm_split_file)
         key = f"{self.gsm_split_name}_indices"
         if key not in manifest:

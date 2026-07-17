@@ -8,17 +8,28 @@ It provides an end-to-end loop that produces candidate CSD strategies, proves co
 ## Top-Level Modules
 
 - `run_synthesis.py`
-  - Main CLI entry point for iterative synthesis.
-  - Configures models, thresholds, evaluation settings, and output layout.
-  - **GSM-Symbolic:** the only supported data source is local CRANE-style JSONs. `--gsm-source-dir` auto-resolves to vendored `legacy/CRANE/src/gsm_symbolic` (or `$CRANE_GSM_SYMBOLIC_DIR`) when unset. HuggingFace loading has been removed; runs error out if no CRANE folder is resolvable.
-  - Generation backends: local HuggingFace/vLLM and **OpenAI** (default for CLI). The generator still has a Bedrock-compatible fallback for targeted experiments, but the public matrix treats Bedrock profiles as experimental and rejects them.
-  - Includes UCB/bandit helper-mask controls to constrain helper-call search space:
-    `--adaptive-helper-mask`, `--helper-selection-policy`,
-    `--helper-bandit-min-evals`, `--helper-bandit-top-k`,
-    `--helper-bandit-ucb-c`, `--helper-bandit-explore-untried`.
-  - Includes local-beam refinement controls:
-    `--refinement-beam-size`, `--local-neighborhood-refinement`,
-    `--max-local-edit-ratio`, `--beam-verify-candidates`.
+  - Main CLI entry point for iterative synthesis (~12 flags after the
+    2026-07-17 simplification: task/dataset/bars, author + eval model,
+    sample size and per-example limits, vLLM memory/context, SMILES knobs).
+  - Everything else — eval backend (vLLM), temperature (0.7), split file and
+    side (always the canonical train split), delimiter requirement per
+    dataset, helper-mask/bandit/beam settings, Claude transport — is a
+    constant in `run_constants.py` or a `CSD_*` environment variable.
+  - **GSM-Symbolic:** the only supported data source is local CRANE-style
+    JSONs (vendored `legacy/CRANE/src/gsm_symbolic`). HuggingFace loading has
+    been removed.
+  - Generation backends: `openai` (default), `claude` (Claude Code Max),
+    `claude-bedrock`, `anthropic`, plus local HuggingFace/vLLM for targeted
+    experiments (a large reasoning author is enforced for real synthesis).
+  - **BYOD (bring your own credentials):** API keys are never CLI flags —
+    `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, AWS credentials, etc. load from
+    the environment / `.env`. The old `--generation-api-key` /
+    `--generation-api-base-url` flags were removed.
+  - Held-out ("test" side) re-evaluations no longer go through
+    `run_synthesis`; use `synthesis/scripts/reevaluate_compiled_csd.py`.
+- `run_constants.py`
+  - The hard-coded run settings listed above, including
+    `SPLIT_FILE_BY_DATASET` (canonical split manifest per dataset).
 - `project_defaults.py`
   - Centralized defaults for local paths (Dafny binary, CRANE/Spider resources, etc.).
 

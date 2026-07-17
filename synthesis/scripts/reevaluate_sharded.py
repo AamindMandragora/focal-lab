@@ -36,7 +36,7 @@ LOG = "[sharded-eval]"
 # need those 300-example sets, use the proportional 300x300 manifest instead.
 _INDICES_KEYS = {
     "spider": {"train": "train_indices", "test": "test_indices"},
-    "gsm_symbolic": {"train": "train_indices", "eval": "eval_indices"},
+    "gsm_symbolic": {"train": "train_indices", "test": "test_indices"},
 }
 
 
@@ -121,7 +121,7 @@ def main() -> int:
     # Split names are required (no default) — silently defaulting to one side
     # is how the 2026-07-17 bar/eval split mixup happened.
     p.add_argument("--gsm-split-file")
-    p.add_argument("--gsm-split-name", choices=["train", "eval"], default=None)
+    p.add_argument("--gsm-split-name", choices=["train", "test"], default=None)
     p.add_argument("--spider-split-file")
     p.add_argument("--spider-split-name", choices=["train", "test"], default=None)
     p.add_argument("--workers-per-gpu", type=int, default=2)

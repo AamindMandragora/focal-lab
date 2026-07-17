@@ -389,12 +389,14 @@ _EVAL_SPLIT_PROVENANCE: dict[str, Any] | None = None
 
 def _set_eval_split_provenance(args: Any) -> None:
     global _EVAL_SPLIT_PROVENANCE
-    _EVAL_SPLIT_PROVENANCE = {
-        "gsm_split_file": args.gsm_split_file,
-        "gsm_split_name": args.gsm_split_name,
-        "spider_split_file": args.spider_split_file,
-        "spider_split_name": args.spider_split_name,
-    }
+    from synthesis.split_provenance import build_split_provenance
+
+    _EVAL_SPLIT_PROVENANCE = build_split_provenance(
+        gsm_split_file=args.gsm_split_file,
+        gsm_split_name=args.gsm_split_name,
+        spider_split_file=args.spider_split_file,
+        spider_split_name=args.spider_split_name,
+    )
 
 
 def _build_minimal_json(
@@ -1875,11 +1877,11 @@ def main() -> None:
         help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
     )
     parser.add_argument("--gsm-split-file", type=str, default=None,
-                        help="Optional GSM train/eval split manifest JSON")
+                        help="Optional GSM train/test split manifest JSON")
     # Split names are required when a split file is given (checked after
     # parsing) — silent side defaults caused the 2026-07-17 split mixup.
-    # Spider's held-out side is 'test'; the 'eval' alias was removed.
-    parser.add_argument("--gsm-split-name", type=str, choices=["train", "eval"], default=None,
+    # Both datasets' held-out side is 'test'; GSM's 'eval' alias was removed.
+    parser.add_argument("--gsm-split-name", type=str, choices=["train", "test"], default=None,
                         help="Which split from --gsm-split-file to use (required with the file)")
     parser.add_argument("--spider-split-file", type=str, default=None,
                         help="Optional Spider train/test split manifest JSON")

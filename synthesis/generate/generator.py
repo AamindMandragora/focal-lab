@@ -38,6 +38,7 @@ from .prompts import (
 )
 from .rationale import extract_rationale
 from .provider_names import normalize_generation_backend
+from ..run_constants import ANTHROPIC_EFFORT, ANTHROPIC_THINKING_DISPLAY
 
 
 LOGGER = logging.getLogger(__name__)
@@ -83,12 +84,7 @@ class StrategyGenerator:
         vllm_gpu_memory_utilization: float = 0.8,
         vllm_max_model_len: int = 4096,
         vllm_enforce_eager: bool = True,
-        api_base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
-        anthropic_thinking: str = "auto",
-        anthropic_thinking_budget_tokens: int = 4096,
-        anthropic_effort: str = "xhigh",
-        anthropic_thinking_display: str = "summarized",
+        reasoning_budget_tokens: int = 4096,
         claude_executable: Optional[str] = None,
         claude_config_dir: Optional[str] = None,
         claude_expected_account: Optional[str] = None,
@@ -119,12 +115,10 @@ class StrategyGenerator:
             vllm_gpu_memory_utilization: GPU memory fraction reserved by vLLM
             vllm_max_model_len: Max context length passed to vLLM
             vllm_enforce_eager: Disable cudagraph/compile in vLLM for stability
-            api_base_url: Optional base URL override (OpenAI: OPENAI_BASE_URL; Bedrock: BEDROCK_BASE_URL)
-            api_key: Optional API key (OpenAI: OPENAI_API_KEY; Bedrock: AWS_BEARER_TOKEN_BEDROCK)
-            anthropic_thinking: Anthropic thinking mode: auto, off, adaptive, or enabled.
-            anthropic_thinking_budget_tokens: Manual thinking budget for models that still accept it.
-            anthropic_effort: Anthropic adaptive-thinking effort level.
-            anthropic_thinking_display: Whether Anthropic should return summarized or omitted thinking.
+            reasoning_budget_tokens: Provider-agnostic extended-thinking budget
+                for hosted Claude authors (budget_tokens on Anthropic/Bedrock).
+                Thinking is always ON — API keys and base URLs come from the
+                environment (.env), never from parameters (BYOD).
         """
         self.backend = normalize_generation_backend(backend)
         self.model_name = model_name or (
@@ -145,12 +139,14 @@ class StrategyGenerator:
         self.vllm_gpu_memory_utilization = vllm_gpu_memory_utilization
         self.vllm_max_model_len = vllm_max_model_len
         self.vllm_enforce_eager = vllm_enforce_eager
-        self.api_base_url = api_base_url or self._default_api_base_url(self.backend)
-        self.api_key = api_key or self._default_api_key(self.backend)
-        self.anthropic_thinking = anthropic_thinking
-        self.anthropic_thinking_budget_tokens = anthropic_thinking_budget_tokens
-        self.anthropic_effort = anthropic_effort
-        self.anthropic_thinking_display = anthropic_thinking_display
+        self.api_base_url = self._default_api_base_url(self.backend)
+        self.api_key = self._default_api_key(self.backend)
+        # Extended thinking is always on for hosted Claude authors
+        # (hard-coded 2026-07-17; effort/display in synthesis/run_constants.py).
+        self.anthropic_thinking = "always-on"
+        self.reasoning_budget_tokens = int(reasoning_budget_tokens)
+        self.anthropic_effort = ANTHROPIC_EFFORT
+        self.anthropic_thinking_display = ANTHROPIC_THINKING_DISPLAY
         self.claude_executable = (
             claude_executable or os.environ.get("CSD_CLAUDE_EXECUTABLE") or "claude"
         )
@@ -1187,26 +1183,12 @@ class StrategyGenerator:
         return "claude-opus-4-7" in self.model_name
 
     def _anthropic_thinking_kwargs(self) -> dict[str, object]:
-        mode = self.anthropic_thinking
-        if mode == "auto":
-            mode = "adaptive" if self._is_opus47() else "off"
-        if mode == "off":
-            return {}
-        if mode not in {"adaptive", "enabled"}:
-            raise ValueError(
-                "anthropic_thinking must be one of: auto, off, adaptive, enabled"
-            )
-        if self.anthropic_thinking_display not in {"omitted", "summarized"}:
-            raise ValueError(
-                "anthropic_thinking_display must be 'omitted' or 'summarized'"
-            )
+        """Extended thinking is always on (hard-coded 2026-07-17).
 
-        if mode == "adaptive":
-            allowed_efforts = {"low", "medium", "high", "xhigh", "max"}
-            if self.anthropic_effort not in allowed_efforts:
-                raise ValueError(
-                    "anthropic_effort must be one of: low, medium, high, xhigh, max"
-                )
+        opus-4-7 only supports adaptive thinking (no manual budget); every
+        other Claude model gets a manual budget from --synthesizer-reasoning-budget.
+        """
+        if self._is_opus47():
             return {
                 "thinking": {
                     "type": "adaptive",
@@ -1215,21 +1197,16 @@ class StrategyGenerator:
                 "output_config": {"effort": self.anthropic_effort},
             }
 
-        if self._is_opus47():
+        if self.reasoning_budget_tokens < 1024:
+            raise ValueError("reasoning_budget_tokens must be at least 1024")
+        if self.reasoning_budget_tokens >= self.max_new_tokens:
             raise ValueError(
-                "claude-opus-4-7 does not support manual Anthropic thinking "
-                "with budget_tokens; use anthropic_thinking='adaptive'."
-            )
-        if self.anthropic_thinking_budget_tokens < 1024:
-            raise ValueError("anthropic_thinking_budget_tokens must be at least 1024")
-        if self.anthropic_thinking_budget_tokens >= self.max_new_tokens:
-            raise ValueError(
-                "anthropic_thinking_budget_tokens must be less than max_new_tokens"
+                "reasoning_budget_tokens must be less than max_new_tokens"
             )
         return {
             "thinking": {
                 "type": "enabled",
-                "budget_tokens": self.anthropic_thinking_budget_tokens,
+                "budget_tokens": self.reasoning_budget_tokens,
                 "display": self.anthropic_thinking_display,
             }
         }
@@ -1499,6 +1476,28 @@ class StrategyGenerator:
             *backups,
         ])
 
+    def _bedrock_thinking_fields(self) -> dict[str, object]:
+        """Extended thinking for the Bedrock Converse API (wired 2026-07-17).
+
+        Bedrock takes the raw Anthropic thinking block via
+        additionalModelRequestFields. Only type + budget_tokens — the
+        "display" key is an Anthropic-API-only extension. Before this,
+        --anthropic-thinking was a silent no-op on the bedrock path: every
+        bedrock-author run had effectively been running thinking-OFF.
+        """
+        if self.reasoning_budget_tokens < 1024:
+            raise ValueError("reasoning_budget_tokens must be at least 1024")
+        if self.reasoning_budget_tokens >= self.max_new_tokens:
+            raise ValueError(
+                "reasoning_budget_tokens must be less than max_new_tokens"
+            )
+        return {
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": self.reasoning_budget_tokens,
+            }
+        }
+
     def _generate_bedrock(self, system_prompt: str, user_prompt: str) -> str:
         client = getattr(self, "_client", None)
         if client is not None and hasattr(client, "converse"):
@@ -1507,6 +1506,7 @@ class StrategyGenerator:
                 system=[{"text": system_prompt}],
                 messages=[{"role": "user", "content": [{"text": user_prompt}]}],
                 inferenceConfig={"maxTokens": self.max_new_tokens},
+                additionalModelRequestFields=self._bedrock_thinking_fields(),
             )
             parts = data.get("output", {}).get("message", {}).get("content") or []
             return "".join(part.get("text", "") for part in parts).strip()
@@ -1520,6 +1520,7 @@ class StrategyGenerator:
             "inferenceConfig": {
                 "maxTokens": self.max_new_tokens,
             },
+            "additionalModelRequestFields": self._bedrock_thinking_fields(),
         }
         data = self._post_json(
             url,

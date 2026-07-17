@@ -5,19 +5,36 @@ CLI entry point for CSD synthesis pipeline with evaluation feedback loop.
 The pipeline runs: generate → verify → compile → evaluate → refine
 until evaluation thresholds are met or max iterations exhausted.
 
+Simplified 2026-07-17: everything with exactly one correct value moved to
+synthesis/run_constants.py. The remaining flags are run identity + the
+science (dataset, models, bars, iterations, sample size) plus the two vLLM
+sizing knobs that genuinely change per GPU-sharing situation.
+
 Usage:
     python -m synthesis.run_synthesis --task "..." --dataset gsm_symbolic \\
-        --min-accuracy 0.3 --min-syntax-rate 0.5
+        --min-accuracy 0.3 --min-syntax-rate 0.5 --bar-split-name train
 """
 
 import argparse
 import json
 import os
 import sys
+from datetime import date
 from pathlib import Path
 from synthesis.generate.provider_names import (
     GENERATION_BACKENDS,
     normalize_generation_backend,
+)
+from synthesis.run_constants import (
+    EVAL_BACKEND,
+    EVAL_EARLY_STOP_ON_ANSWER,
+    GSM_SOURCE_DIR,
+    OUTPUT_DIR,
+    REQUIRE_DELIMITERS_BY_DATASET,
+    SPLIT_FILE_BY_DATASET,
+    SYNTHESIS_SPLIT_NAME,
+    SYNTHESIZER_REASONING_BUDGET_DEFAULT,
+    TEMPERATURE,
 )
 try:
     from synthesis.project_defaults import default_dafny_path
@@ -60,24 +77,26 @@ def _load_initial_attempt_history(path: Path):
     return attempts
 
 
+def _derive_output_name(dataset: str, eval_model: str) -> str:
+    """Auto-derive the run label as <dataset>_<model>_<date>."""
+    model_short = eval_model.split("/")[-1].replace(".", "p").replace("-", "_").lower()
+    return f"{dataset}_{model_short}_{date.today().isoformat()}"
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Synthesize constrained decoding strategies (default generation: OpenAI; Claude Code Max and hosted APIs are optional; eval often vLLM)",
+        description="Synthesize constrained decoding strategies (author: hosted large reasoning model; eval: vLLM)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # GSM-Symbolic
+  # GSM-Symbolic (train side of the canonical split, bar measured on train)
   python -m synthesis.run_synthesis --task "Generate math reasoning strategy" \\
       --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-syntax-rate 0.5
-
-  # With more iterations and custom eval sample size
-  python -m synthesis.run_synthesis --task "..." --dataset gsm_symbolic \\
-      --min-accuracy 0.3 --min-syntax-rate 0.5 \\
-      --output-name my_strategy --max-iterations 10 --eval-sample-size 20
+      --min-accuracy 0.3 --min-syntax-rate 0.5 --bar-split-name train
 """
     )
 
+    # --- run identity + the science -------------------------------------
     parser.add_argument(
         "--task", "-t",
         type=str,
@@ -85,246 +104,6 @@ Examples:
         help="Task description for strategy generation"
     )
 
-    parser.add_argument(
-        "--max-iterations", "-n",
-        type=int,
-        default=40,
-        help="Maximum refinement iterations (default: 40)"
-    )
-
-    parser.add_argument(
-        "--generation-model",
-        type=str,
-        default=None,
-        help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
-        "Claude Code uses the fixed claude-sonnet-4-6 model; Claude Bedrock uses an AWS model id; "
-        "HF ids apply to huggingface/vllm. OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4.",
-    )
-
-    parser.add_argument(
-        "--generation-backend",
-        type=str,
-        choices=GENERATION_BACKENDS,
-        default="openai",
-        help=(
-            "Backend for strategy generation (default: openai). 'claude' uses an "
-            "isolated Claude Code Max login; 'claude-bedrock' uses AWS Bedrock; "
-            "'anthropic' uses the direct Anthropic API. Deprecated aliases: "
-            "'claude-code' and 'bedrock'. 'gemini' "
-            "uses GEMINI_API_KEY or GOOGLE_API_KEY for Google AI Studio models; "
-            "'vertex' uses Vertex AI REST with VERTEX_AI_ACCESS_TOKEN or ADC."
-        ),
-    )
-
-    parser.add_argument(
-        "--allow-small-author-model",
-        action="store_true",
-        default=False,
-        help=(
-            "Override the safety check that blocks small open models "
-            "(name contains e.g. '1.5B'/'7B'/'14B') from being used as the "
-            "--generation-model on a local backend. Rarely correct; see "
-            "CLAUDE.md 'Model Configuration Verification'."
-        ),
-    )
-
-    parser.add_argument(
-        "--generation-api-base-url",
-        type=str,
-        default=None,
-        help="Optional base URL for an API generation backend"
-    )
-
-    parser.add_argument(
-        "--generation-api-key",
-        type=str,
-        default=None,
-        help="Optional API key for generation. Defaults to the selected backend's environment variable."
-    )
-
-    parser.add_argument(
-        "--claude-executable",
-        default=os.environ.get("CSD_CLAUDE_EXECUTABLE", "claude"),
-        help="Claude Code executable used by --generation-backend claude.",
-    )
-    parser.add_argument(
-        "--claude-config-dir",
-        default=os.environ.get("CSD_CLAUDE_CONFIG_DIR"),
-        help="Dedicated Claude Code Max config directory; required for the claude backend.",
-    )
-    parser.add_argument(
-        "--claude-expected-account",
-        default=os.environ.get("CSD_CLAUDE_EXPECTED_ACCOUNT"),
-        help="Exact Claude Max account email required before any author call.",
-    )
-    parser.add_argument(
-        "--claude-timeout-seconds",
-        type=float,
-        default=float(os.environ.get("CSD_CLAUDE_TIMEOUT_SECONDS", "1800")),
-        help="Legacy default for Claude idle timeout when --claude-idle-timeout-seconds is omitted.",
-    )
-    parser.add_argument(
-        "--claude-idle-timeout-seconds",
-        type=float,
-        default=None,
-        help="Stop Claude only after this many seconds with no stream event.",
-    )
-    parser.add_argument(
-        "--claude-emergency-timeout-seconds",
-        type=float,
-        default=float(os.environ.get("CSD_CLAUDE_EMERGENCY_TIMEOUT_SECONDS", "7200")),
-        help="Emergency wall-clock limit for one Claude CLI process.",
-    )
-    parser.add_argument(
-        "--claude-max-retries",
-        type=int,
-        default=int(os.environ.get("CSD_CLAUDE_MAX_RETRIES", "2")),
-        help="Retries of the identical author request after a temporary failure.",
-    )
-    parser.add_argument(
-        "--claude-retry-delay-seconds",
-        type=float,
-        default=float(os.environ.get("CSD_CLAUDE_RETRY_DELAY_SECONDS", "30")),
-        help="Delay before retrying the identical Claude request.",
-    )
-    parser.add_argument(
-        "--claude-telemetry-dir",
-        default=os.environ.get("CSD_CLAUDE_TELEMETRY_DIR"),
-        help="Owner-only directory for full Claude stream-json telemetry.",
-    )
-    parser.add_argument(
-        "--claude-author-lock-file",
-        default=os.environ.get("CSD_CLAUDE_AUTHOR_LOCK_FILE"),
-        help="Account-wide lock that permits one Claude author request at a time.",
-    )
-
-    parser.add_argument(
-        "--anthropic-thinking",
-        choices=["auto", "off", "adaptive", "enabled"],
-        default="auto",
-        help=(
-            "Anthropic thinking mode for hosted Claude author models. "
-            "auto enables adaptive thinking for claude-opus-4-7; off omits the thinking payload; "
-            "enabled uses manual budget_tokens for older models that still support it."
-        ),
-    )
-
-    parser.add_argument(
-        "--anthropic-thinking-budget-tokens",
-        type=int,
-        default=4096,
-        help="Manual Anthropic thinking budget for --anthropic-thinking enabled (default: 4096).",
-    )
-
-    parser.add_argument(
-        "--anthropic-effort",
-        choices=["low", "medium", "high", "xhigh", "max"],
-        default="xhigh",
-        help="Anthropic adaptive-thinking effort level (default: xhigh; requires claude-opus-4-7).",
-    )
-
-    parser.add_argument(
-        "--anthropic-thinking-display",
-        choices=["omitted", "summarized"],
-        default="summarized",
-        help="Whether Anthropic returns thinking summaries or only signatures (default: summarized).",
-    )
-
-    parser.add_argument(
-        "--eval-model",
-        type=str,
-        default="Qwen/Qwen2.5-Coder-7B-Instruct",
-        help="Model for evaluation data generation/runtime (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
-    )
-
-    parser.add_argument(
-        "--eval-backend",
-        type=str,
-        choices=["huggingface", "vllm", "openai"],
-        default="vllm",
-        help="Backend for evaluation runtime (default: vllm; openai is unsupported for constrained runtime)."
-    )
-
-    parser.add_argument(
-        "--output-name", "-o",
-        type=str,
-        default="generated_csd",
-        help="Name for the output module (default: generated_csd)"
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=None,
-        help="Base output directory (default: outputs/generated/). Each run writes into a unique subfolder."
-    )
-
-    parser.add_argument(
-        "--baseline-output-dir",
-        type=Path,
-        default=None,
-        help="Directory for baseline benchmark summaries (default: outputs/baselines/)"
-    )
-
-    parser.add_argument(
-        "--initial-strategy-file",
-        type=Path,
-        default=None,
-        help="Optional strategy body to use as the first attempt instead of asking the generation model for a fresh initial strategy.",
-    )
-
-    parser.add_argument(
-        "--initial-attempt-offset",
-        type=int,
-        default=0,
-        help="Attempt number offset for recovery runs seeded from an earlier synthesis attempt.",
-    )
-
-    parser.add_argument(
-        "--initial-attempt-history-file",
-        type=Path,
-        default=None,
-        help="JSON evaluated-attempt history to restore for an approved recovery run.",
-    )
-
-    parser.add_argument(
-        "--dafny-path",
-        type=str,
-        default=default_dafny_path(),
-        help="Path to Dafny executable"
-    )
-
-    parser.add_argument(
-        "--temperature",
-        type=float,
-        default=0.7,
-        help="Sampling temperature for Qwen (default: 0.7)"
-    )
-
-    parser.add_argument(
-        "--synthesis-max-tokens",
-        "--max-tokens",
-        dest="synthesis_max_tokens",
-        type=int,
-        default=8192,
-        help="Maximum tokens for CSD synthesis generation per attempt (default: 8192)"
-    )
-
-    parser.add_argument(
-        "--no-save-reports",
-        action="store_true",
-        help="Don't save failure/success reports to disk"
-    )
-
-    parser.add_argument(
-        "--device",
-        type=str,
-        choices=["cuda", "mps", "cpu", "auto"],
-        default="auto",
-        help="Device for model inference (default: auto)"
-    )
-
-    # Evaluation arguments (required - evaluation is part of the synthesis loop)
     parser.add_argument(
         "--dataset", "-d",
         type=str,
@@ -347,58 +126,32 @@ Examples:
         help="Minimum syntax validity rate threshold (e.g. 0.5)"
     )
 
+    # Split-provenance guard (incident 2026-07-17): synthesis always evaluates
+    # the TRAIN side of the canonical split, so the accuracy bar must have been
+    # measured on train too; a mismatch refuses to launch.
     parser.add_argument(
-        "--restart-after-stuck-iters",
+        "--bar-split-name",
+        type=str,
+        choices=["train", "test"],
+        default=None,
+        help="Which split side the --min-accuracy bar was measured on. Required "
+             "whenever a nonzero accuracy bar is used on a split dataset; must "
+             "match the evaluated split (always 'train' during synthesis — "
+             "cross-split bars produced wrong verdicts on 2026-07-17)."
+    )
+
+    parser.add_argument(
+        "--max-iterations", "-n",
         type=int,
-        default=0,
-        help=(
-            "If the Pareto-best anchor has not advanced for this many "
-            "consecutive iterations, the next refinement uses RESTART mode "
-            "(drops anchor, asks for a structurally different family). "
-            "Set to 0 to disable restart entirely. Default: 0."
-        ),
+        default=40,
+        help="Maximum refinement iterations (default: 40)"
     )
 
     parser.add_argument(
-        "--restart-cooldown-iters",
-        type=int,
-        default=0,
-        help=(
-            "After a restart fires, the counter is set to -N so N normal "
-            "refinement iters run before another restart is eligible. "
-            "0 (default) means restart can fire on consecutive iters when "
-            "the anchor stays stuck — aggressive exploration. Set 2 for a "
-            "balanced explore/exploit rhythm."
-        ),
-    )
-
-    parser.add_argument(
-        "--require-delimiters",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Require evaluated outputs to contain at least one << >> span (default: true)"
-    )
-
-    parser.add_argument(
-        "--eval-early-stop-on-answer",
-        action="store_true",
-        default=False,
-        help=(
-            "Stop generation as soon as the output contains a finished "
-            "final-answer span ('final answer' followed by a complete << >> "
-            "span), mirroring CRANE's answer stopping. Default: off."
-        ),
-    )
-
-    parser.add_argument(
-        "--token-cap-feedback",
-        action="store_true",
-        default=False,
-        help=(
-            "Append a causal token-budget-exhaustion hint to author feedback "
-            "when >=50%% of evaluated outputs ran to the maxSteps cap. "
-            "Default: off."
-        ),
+        "--eval-model",
+        type=str,
+        default="Qwen/Qwen2.5-Coder-7B-Instruct",
+        help="Model for evaluation data generation/runtime (default: Qwen/Qwen2.5-Coder-7B-Instruct)"
     )
 
     parser.add_argument(
@@ -406,13 +159,6 @@ Examples:
         type=int,
         default=10,
         help="Number of examples to evaluate on per iteration (default: 10)"
-    )
-
-    parser.add_argument(
-        "--eval-seed",
-        type=int,
-        default=None,
-        help="Optional RNG seed for reproducible evaluation sampling"
     )
 
     parser.add_argument(
@@ -436,83 +182,104 @@ Examples:
         help="Runtime budget per evaluated example in seconds (default: 90)"
     )
 
+    # --- author model ----------------------------------------------------
     parser.add_argument(
-        "--eval-min-examples-before-threshold-stop",
+        "--generation-model",
+        type=str,
+        default=None,
+        help="Model identifier for CSD generation (OpenAI model id when using --generation-backend openai; "
+        "Claude Code uses the fixed claude-sonnet-4-6 model; Claude Bedrock uses an AWS model id. "
+        "OpenAI defaults from OPENAI_GENERATION_MODEL or gpt-5.4.",
+    )
+
+    parser.add_argument(
+        "--generation-backend",
+        type=str,
+        choices=GENERATION_BACKENDS,
+        default="openai",
+        help=(
+            "Backend for strategy generation (default: openai). 'claude' uses an "
+            "isolated Claude Code Max login (config/account from CSD_CLAUDE_* env); "
+            "'claude-bedrock' uses AWS Bedrock; 'anthropic' uses the direct "
+            "Anthropic API. API keys always come from the environment/.env (BYOD)."
+        ),
+    )
+
+    parser.add_argument(
+        "--synthesizer-reasoning-budget",
         type=int,
-        default=15,
-        help="Minimum number of evaluated examples before threshold-impossible "
-        "early stops (target accuracy / target syntax) can fire. Suppresses the "
-        "early stop until the synthesis feedback loop has at least this much "
-        "evaluation signal. The runtime-budget early stop is unaffected. "
-        "Default: 15."
+        default=SYNTHESIZER_REASONING_BUDGET_DEFAULT,
+        help=(
+            "Provider-agnostic extended-thinking budget in tokens for the "
+            "author model (budget_tokens on Anthropic/Bedrock). Thinking is "
+            f"always on. Default: {SYNTHESIZER_REASONING_BUDGET_DEFAULT}."
+        ),
     )
 
     parser.add_argument(
-        "--gsm-source-dir",
-        type=str,
-        default=None,
-        help="Load GSM-Symbolic examples from this folder of CRANE-style JSON files ({placeholder} questions). "
-        "When omitted for --dataset gsm_symbolic, defaults to vendored legacy/CRANE/src/gsm_symbolic if present "
-        "(not HuggingFace: HF rows only have numeric prose in question fields)."
+        "--synthesis-max-tokens",
+        "--max-tokens",
+        dest="synthesis_max_tokens",
+        type=int,
+        default=8192,
+        help="Maximum tokens for CSD synthesis generation per attempt (default: 8192)"
     )
 
+    # --- pure re-eval / approved recovery inputs -------------------------
     parser.add_argument(
-        "--gsm-split-file",
-        type=str,
-        default=None,
-        help="Optional GSM train/eval split manifest with train_indices and eval_indices"
-    )
-
-    parser.add_argument(
-        "--gsm-split-name",
-        type=str,
-        choices=["train", "eval"],
-        default=None,
-        help="Which split from --gsm-split-file to use during synthesis evaluation. "
-             "Required when --gsm-split-file is given (no default side — silent "
-             "defaults caused the 2026-07-17 bar/eval split mixup)."
-    )
-
-    parser.add_argument(
-        "--spider-split-file",
-        type=str,
-        default=None,
-        help="Optional Spider train/test split manifest with train_indices and test_indices"
-    )
-
-    parser.add_argument(
-        "--spider-split-name",
-        type=str,
-        choices=["train", "test"],
-        default=None,
-        help="Which split from --spider-split-file to use during synthesis evaluation. "
-             "Required when --spider-split-file is given. Spider's held-out side is "
-             "'test' (the 'eval' alias was removed 2026-07-17)."
-    )
-
-    # Split-provenance guard (incident 2026-07-17): synthesis evaluates the
-    # TRAIN side by default, but baseline bars are usually measured on the
-    # EVAL/TEST side. When a split file and a nonzero --min-accuracy are both
-    # in use, you must declare which side the bar came from; a mismatch
-    # refuses to launch. See synthesis/split_provenance.py.
-    parser.add_argument(
-        "--bar-split-name",
-        type=str,
-        choices=["train", "test", "eval"],  # per-dataset validity enforced by the guard
-        default=None,
-        help="Which split side the --min-accuracy bar was measured on. Required "
-             "whenever a split file and a nonzero accuracy bar are both used; "
-             "must match the evaluated split (no override — cross-split bars "
-             "produced wrong verdicts on 2026-07-17)."
-    )
-
-    parser.add_argument(
-        "--grammars-dir",
+        "--initial-strategy-file",
         type=Path,
         default=None,
-        help="Optional override for built-in grammar directory (default: synthesis/evaluate/grammars or CSD_GRAMMARS_DIR)"
+        help="Strategy body to use as the first attempt. Legitimate ONLY for "
+             "pure re-evaluation (--max-iterations 1); warm-starting synthesis "
+             "from a prior strategy is banned.",
     )
 
+    parser.add_argument(
+        "--initial-attempt-offset",
+        type=int,
+        default=0,
+        help="Attempt number offset for recovery runs seeded from an earlier synthesis attempt.",
+    )
+
+    parser.add_argument(
+        "--initial-attempt-history-file",
+        type=Path,
+        default=None,
+        help="JSON evaluated-attempt history to restore for an approved recovery run.",
+    )
+
+    # --- environment-shaped knobs ----------------------------------------
+    parser.add_argument(
+        "--dafny-path",
+        type=str,
+        default=default_dafny_path(),
+        help="Path to Dafny executable"
+    )
+
+    parser.add_argument(
+        "--device",
+        type=str,
+        choices=["cuda", "mps", "cpu", "auto"],
+        default="auto",
+        help="Device for model inference (default: auto)"
+    )
+
+    parser.add_argument(
+        "--vllm-gpu-memory-utilization",
+        type=float,
+        default=0.8,
+        help="GPU memory fraction reserved by vLLM (default: 0.8; lower when sharing a GPU)"
+    )
+
+    parser.add_argument(
+        "--vllm-max-model-len",
+        type=int,
+        default=16384,
+        help="Maximum model context length passed to vLLM (default: 16384; must fit prompts plus synthesis output)"
+    )
+
+    # --- SMILES-only -----------------------------------------------------
     parser.add_argument(
         "--smiles-samples-per-class",
         type=int,
@@ -534,192 +301,34 @@ Examples:
         help="Comma-separated SMILES classes to evaluate (default: all three CARS molecule classes)"
     )
 
-    parser.add_argument(
-        "--load-in-4bit",
-        action="store_true",
-        help="Load generation model in 4-bit quantization"
-    )
-
-    parser.add_argument(
-        "--load-in-8bit",
-        action="store_true",
-        help="Load generation model in 8-bit quantization"
-    )
-
-    parser.add_argument(
-        "--vllm-tensor-parallel-size",
-        type=int,
-        default=None,
-        help="Explicit tensor parallel size for vLLM (default: 1; capped by VAS_MAX_CUDA_DEVICES)"
-    )
-
-    parser.add_argument(
-        "--vllm-pipeline-parallel-size",
-        type=int,
-        default=1,
-        help="Explicit pipeline parallel size for vLLM (default: 1)"
-    )
-
-    parser.add_argument(
-        "--vllm-gpu-memory-utilization",
-        type=float,
-        default=0.8,
-        help="GPU memory fraction reserved by vLLM (default: 0.8)"
-    )
-
-    parser.add_argument(
-        "--vllm-max-model-len",
-        type=int,
-        default=16384,
-        help="Maximum model context length passed to vLLM (default: 16384; must fit prompts plus synthesis output)"
-    )
-
-    parser.add_argument(
-        "--vllm-enforce-eager",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Disable torch.compile and CUDA graphs in vLLM for stability (default: true)"
-    )
-
-    parser.add_argument(
-        "--adaptive-helper-mask",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Enable empirical helper-call masking/pruning in synthesis prompts (default: true)"
-    )
-
-    parser.add_argument(
-        "--helper-selection-policy",
-        type=str,
-        choices=["bandit"],
-        default="bandit",
-        help="Helper selection policy for adaptive masking; UCB/bandit only (default: bandit)"
-    )
-
-    parser.add_argument(
-        "--helper-mask-min-evals",
-        type=int,
-        default=4,
-        help="Minimum evaluated attempts before helper pruning activates (default: 4)"
-    )
-
-    parser.add_argument(
-        "--helper-mask-min-uses",
-        type=int,
-        default=2,
-        help="Minimum helper usage count before that helper can be pruned (default: 2)"
-    )
-
-    parser.add_argument(
-        "--helper-mask-margin",
-        type=float,
-        default=0.25,
-        help="Prune helpers whose mean score is below run mean by this margin (default: 0.25)"
-    )
-
-    parser.add_argument(
-        "--helper-mask-max-disabled",
-        type=int,
-        default=6,
-        help="Maximum helpers disabled by empirical pruning in a run (default: 6)"
-    )
-
-    parser.add_argument(
-        "--helper-bandit-min-evals",
-        type=int,
-        default=3,
-        help="Minimum evaluated attempts before bandit helper selection activates (default: 3)"
-    )
-
-    parser.add_argument(
-        "--helper-bandit-top-k",
-        type=int,
-        default=12,
-        help="Number of prunable helpers kept active under bandit selection (default: 12)"
-    )
-
-    parser.add_argument(
-        "--helper-bandit-ucb-c",
-        type=float,
-        default=0.35,
-        help="UCB exploration coefficient for bandit helper selection (default: 0.35)"
-    )
-
-    parser.add_argument(
-        "--helper-bandit-explore-untried",
-        type=int,
-        default=1,
-        help="Number of unseen helpers to force-explore per selection step (default: 1)"
-    )
-
-    parser.add_argument(
-        "--refinement-beam-size",
-        type=int,
-        default=2,
-        help="Number of refinement candidates sampled per failure (default: 2)"
-    )
-
-    parser.add_argument(
-        "--local-neighborhood-refinement",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Prefer local strategy edits when selecting among beam candidates (default: true)"
-    )
-
-    parser.add_argument(
-        "--max-local-edit-ratio",
-        type=float,
-        default=0.65,
-        help="Soft local-edit bound for beam selection as changed-lines ratio (default: 0.65)"
-    )
-
-    parser.add_argument(
-        "--beam-verify-candidates",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Verify beam candidates before selecting one (default: true)"
-    )
-
     args = parser.parse_args()
     args.generation_backend = normalize_generation_backend(args.generation_backend)
+
+    # One canonical split per dataset; synthesis always evaluates the train side.
+    split_file = SPLIT_FILE_BY_DATASET[args.dataset]
+    split_name = SYNTHESIS_SPLIT_NAME if split_file is not None else None
 
     # Refuse to launch when the accuracy bar's split side doesn't match the
     # split being evaluated (or is undeclared). Fail here, before any model
     # loads, so a misconfigured run costs seconds, not GPU-hours.
     from synthesis.split_provenance import BarSplitProvenanceError, check_bar_split_provenance
 
-    if args.dataset == "gsm_symbolic":
-        active_split_file, active_split_name = args.gsm_split_file, args.gsm_split_name
-    elif args.dataset == "spider":
-        active_split_file, active_split_name = args.spider_split_file, args.spider_split_name
-    else:
-        active_split_file, active_split_name = None, None
-    if active_split_file is not None and active_split_name is None:
-        parser.error(
-            f"an explicit split name is required when a split file is given "
-            f"(--{'gsm' if args.dataset == 'gsm_symbolic' else 'spider'}-split-name). "
-            "There is no default side — silent defaults caused the 2026-07-17 "
-            "bar/eval split mixup."
-        )
-    # Fill inert defaults for the dataset(s) not using a split file, since
-    # downstream code expects strings. The active dataset's name is never
-    # defaulted here — the check above already required it.
-    if args.gsm_split_name is None:
-        args.gsm_split_name = "train"
-    if args.spider_split_name is None:
-        args.spider_split_name = "train"
-    if active_split_name is None:
-        active_split_name = "train"
     try:
         check_bar_split_provenance(
             dataset=args.dataset,
-            split_file=active_split_file,
-            split_name=active_split_name,
+            split_file=str(split_file) if split_file is not None else None,
+            split_name=split_name,
             min_accuracy=args.min_accuracy,
             bar_split_name=args.bar_split_name,
         )
     except BarSplitProvenanceError as exc:
         parser.error(str(exc))
+
+    if split_file is not None and not Path(split_file).is_file():
+        raise RuntimeError(
+            f"Canonical split file for {args.dataset} not found: {split_file}. "
+            "See SPLIT_FILE_BY_DATASET in synthesis/run_constants.py."
+        )
 
     if args.generation_model is None:
         if args.generation_backend == "claude":
@@ -743,10 +352,12 @@ Examples:
 
     # Defense against the "small author model" foot-gun.
     # The author model (--generation-model) writes the Dafny strategy code and
-    # must be a large reasoning model (gpt-5.4 via --generation-backend openai).
-    # A small open model (1.5B/7B/14B Qwen) cannot hold enough context to author
-    # workable strategies, and synthesis silently produces 0% accuracy runs.
-    # Raise here so the misconfiguration is caught BEFORE any GPU work.
+    # must be a large reasoning model. A small open model (1.5B/7B/14B Qwen)
+    # cannot hold enough context to author workable strategies, and synthesis
+    # silently produces 0% accuracy runs. Raise here so the misconfiguration is
+    # caught BEFORE any GPU work. Pure re-evaluation (--max-iterations 1 with
+    # --initial-strategy-file) never calls the author, so the guard skips it.
+    is_pure_reeval = args.max_iterations == 1 and args.initial_strategy_file is not None
     import re as _re_guard
     _SMALL_AUTHOR_RE = _re_guard.compile(r"\b\d+(?:\.\d+)?\s*[Bb]\b")
     _LOCAL_BACKENDS = {"vllm", "huggingface"}
@@ -754,17 +365,24 @@ Examples:
         args.generation_backend in _LOCAL_BACKENDS
         and args.generation_model
         and _SMALL_AUTHOR_RE.search(args.generation_model)
-        and not args.allow_small_author_model
+        and not is_pure_reeval
     ):
         raise SystemExit(
             "\n[FATAL] Refusing to run: --generation-model="
             f"{args.generation_model!r} looks like a small open model and "
             f"--generation-backend={args.generation_backend!r} is local. The "
             "author model must be a large reasoning model (e.g. gpt-5.4 via "
-            "--generation-backend openai). Pass --allow-small-author-model to "
-            "override (rarely correct). See CLAUDE.md "
+            "--generation-backend openai). See CLAUDE.md "
             "'Model Configuration Verification'.\n"
         )
+    if is_pure_reeval:
+        print("[guard] pure re-eval mode (--max-iterations 1 + --initial-strategy-file): author never called")
+
+    # Auto-derived; CSD_OUTPUT_NAME overrides for recovery resumes that must
+    # keep writing under their original run name.
+    output_name = os.environ.get("CSD_OUTPUT_NAME") or _derive_output_name(
+        args.dataset, args.eval_model
+    )
 
     # Prominent startup banner: identify author + eval models so any future
     # "wrong author model" misconfig is obvious in stdout/logs.
@@ -776,66 +394,25 @@ Examples:
     )
     print(
         f"  EVAL   MODEL : {args.eval_model!r} "
-        f"via backend={args.eval_backend!r}"
+        f"via backend={EVAL_BACKEND!r}"
     )
+    print(f"  OUTPUT NAME  : {output_name}")
+    if split_file is not None:
+        print(f"  SPLIT        : {split_name} side of {Path(split_file).name}")
     print("=" * _banner_width)
 
-    # GSM-Symbolic: HF loading has been removed. The CRANE JSON folder is the
-    # only supported source. Resolve --gsm-source-dir from the vendored copy
-    # or project default, and error out if neither exists.
-    if args.dataset == "gsm_symbolic" and args.gsm_source_dir is None:
-        repo_root = Path(__file__).resolve().parent.parent
-        vendored = repo_root / "legacy" / "CRANE" / "src" / "gsm_symbolic"
-        if vendored.is_dir():
-            args.gsm_source_dir = str(vendored)
-        else:
-            try:
-                from synthesis.project_defaults import default_gsm_source_dir
-            except ImportError:
-                from project_defaults import default_gsm_source_dir
-            fb = default_gsm_source_dir()
-            if fb is not None and fb.is_dir():
-                args.gsm_source_dir = str(fb)
-        if args.gsm_source_dir:
-            print(
-                f"[gsm_symbolic] Using local JSON folder for symbolic {{var}} prompts: {args.gsm_source_dir}"
-            )
-        else:
-            raise RuntimeError(
-                "GSM-Symbolic requires a CRANE JSON folder. HuggingFace loading "
-                "has been removed. Set --gsm-source-dir explicitly, or place "
-                "JSONs at legacy/CRANE/src/gsm_symbolic / "
-                "$CRANE_GSM_SYMBOLIC_DIR."
-            )
-
-    if args.generation_backend == "vllm" or args.eval_backend == "vllm":
-        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
-
-    # Normalize output_dir if provided (handle potential backslashes from user input)
-    if args.output_dir:
-        args.output_dir = Path(str(args.output_dir).replace("\\", "/"))
-    else:
-        args.output_dir = Path(
-            os.environ.get(
-                "CSD_OUTPUT_DIR",
-                str(Path(__file__).resolve().parent.parent / "outputs" / "generated"),
-            )
-        )
-    if args.baseline_output_dir:
-        args.baseline_output_dir = Path(str(args.baseline_output_dir).replace("\\", "/"))
-    else:
-        args.baseline_output_dir = Path(
-            os.environ.get(
-                "CSD_BASELINE_OUTPUT_DIR",
-                str(Path(__file__).resolve().parent.parent / "outputs" / "baselines"),
-            )
+    # GSM-Symbolic examples come from the vendored CRANE JSON folder only
+    # (HF rows only have numeric prose in question fields).
+    if args.dataset == "gsm_symbolic" and not Path(GSM_SOURCE_DIR).is_dir():
+        raise RuntimeError(
+            f"GSM-Symbolic requires the vendored CRANE JSON folder at "
+            f"{GSM_SOURCE_DIR} (see GSM_SOURCE_DIR in synthesis/run_constants.py)."
         )
 
-    # Root output layout:
-    # - outputs/generated/: synthesis run artifacts (dafny/python/results)
-    # - outputs/baselines/: baseline benchmark summaries
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    args.baseline_output_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+
+    output_dir = Path(os.environ.get("CSD_OUTPUT_DIR", str(OUTPUT_DIR)))
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Import here to avoid loading heavy dependencies if just showing help
     from synthesis.generate.generator import ClaudeTransientError, StrategyGenerator
@@ -854,30 +431,10 @@ Examples:
         backend=args.generation_backend,
         device=device,
         max_new_tokens=args.synthesis_max_tokens,
-        temperature=args.temperature,
-        load_in_4bit=args.load_in_4bit,
-        load_in_8bit=args.load_in_8bit,
-        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
-        vllm_pipeline_parallel_size=args.vllm_pipeline_parallel_size,
+        temperature=TEMPERATURE,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=args.vllm_max_model_len,
-        vllm_enforce_eager=args.vllm_enforce_eager,
-        api_base_url=args.generation_api_base_url,
-        api_key=args.generation_api_key,
-        anthropic_thinking=args.anthropic_thinking,
-        anthropic_thinking_budget_tokens=args.anthropic_thinking_budget_tokens,
-        anthropic_effort=args.anthropic_effort,
-        anthropic_thinking_display=args.anthropic_thinking_display,
-        claude_executable=args.claude_executable,
-        claude_config_dir=args.claude_config_dir,
-        claude_expected_account=args.claude_expected_account,
-        claude_timeout_seconds=args.claude_timeout_seconds,
-        claude_idle_timeout_seconds=args.claude_idle_timeout_seconds,
-        claude_emergency_timeout_seconds=args.claude_emergency_timeout_seconds,
-        claude_max_retries=args.claude_max_retries,
-        claude_retry_delay_seconds=args.claude_retry_delay_seconds,
-        claude_telemetry_dir=args.claude_telemetry_dir,
-        claude_author_lock_file=args.claude_author_lock_file,
+        reasoning_budget_tokens=args.synthesizer_reasoning_budget,
     )
 
     verifier = DafnyVerifier(
@@ -886,7 +443,7 @@ Examples:
         extra_args=["--verification-time-limit", "120"],
     )
     # Compiler output dir is set per-run inside the pipeline (so runs don't overwrite each other).
-    compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=args.output_dir)
+    compiler = DafnyCompiler(dafny_path=args.dafny_path, output_dir=output_dir)
     # Runner is created by the pipeline with task-appropriate parser mode
 
     feedback_sample_size = (
@@ -900,28 +457,21 @@ Examples:
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
-        backend=args.eval_backend,
+        backend=EVAL_BACKEND,
         device=device or "cuda",
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        load_in_4bit=args.load_in_4bit,
-        load_in_8bit=args.load_in_8bit,
-        vllm_tensor_parallel_size=args.vllm_tensor_parallel_size,
-        vllm_pipeline_parallel_size=args.vllm_pipeline_parallel_size,
         vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=args.vllm_max_model_len,
-        vllm_enforce_eager=args.vllm_enforce_eager,
-        sample_seed=args.eval_seed,
         max_seconds_per_example=args.eval_max_seconds_per_example,
-        gsm_source_dir=args.gsm_source_dir,
-        gsm_split_file=args.gsm_split_file,
-        gsm_split_name=args.gsm_split_name,
-        spider_split_file=args.spider_split_file,
-        spider_split_name=args.spider_split_name,
+        gsm_source_dir=str(GSM_SOURCE_DIR) if args.dataset == "gsm_symbolic" else None,
+        gsm_split_file=str(split_file) if args.dataset == "gsm_symbolic" else None,
+        gsm_split_name=split_name if args.dataset == "gsm_symbolic" else "train",
+        spider_split_file=str(split_file) if args.dataset == "spider" else None,
+        spider_split_name=split_name if args.dataset == "spider" else "train",
         smiles_classes=args.smiles_classes,
-        grammars_dir=args.grammars_dir,
-        early_stop_on_answer=args.eval_early_stop_on_answer,
+        early_stop_on_answer=EVAL_EARLY_STOP_ON_ANSWER,
     )
 
     pipeline = SynthesisPipeline(
@@ -930,34 +480,16 @@ Examples:
         verifier=verifier,
         compiler=compiler,
         max_iterations=args.max_iterations,
-        output_dir=args.output_dir,
-        save_reports=not args.no_save_reports,
-        # Evaluation thresholds
+        output_dir=output_dir,
         min_accuracy=args.min_accuracy,
         min_syntax_rate=args.min_syntax_rate,
         bar_split_name=args.bar_split_name,
-        # Restart-from-scratch mechanism
-        restart_after_stuck_iters=args.restart_after_stuck_iters,
-        restart_cooldown_iters=args.restart_cooldown_iters,
-        token_cap_feedback=args.token_cap_feedback,
-        require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
+        require_delimiters=REQUIRE_DELIMITERS_BY_DATASET[args.dataset],
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
-        min_examples_before_threshold_stop=args.eval_min_examples_before_threshold_stop,
-        adaptive_helper_mask=args.adaptive_helper_mask,
-        helper_selection_policy=args.helper_selection_policy,
-        helper_mask_min_evals=args.helper_mask_min_evals,
-        helper_mask_min_uses=args.helper_mask_min_uses,
-        helper_mask_margin=args.helper_mask_margin,
-        helper_mask_max_disabled=args.helper_mask_max_disabled,
-        helper_bandit_min_evals=args.helper_bandit_min_evals,
-        helper_bandit_top_k=args.helper_bandit_top_k,
-        helper_bandit_ucb_c=args.helper_bandit_ucb_c,
-        helper_bandit_explore_untried=args.helper_bandit_explore_untried,
-        refinement_beam_size=args.refinement_beam_size,
-        local_neighborhood_refinement=args.local_neighborhood_refinement,
-        max_local_edit_ratio=args.max_local_edit_ratio,
-        beam_verify_candidates=args.beam_verify_candidates,
+        # Derived: threshold-impossible early stops may only fire once the
+        # whole per-iteration eval budget has been seen (was a 10-value flag).
+        min_examples_before_threshold_stop=feedback_sample_size,
     )
 
     initial_strategy_code = None
@@ -976,7 +508,7 @@ Examples:
     try:
         result = pipeline.synthesize(
             task_description=args.task,
-            output_name=args.output_name,
+            output_name=output_name,
             initial_strategy_code=initial_strategy_code,
             initial_attempt_offset=args.initial_attempt_offset,
             initial_attempts=initial_attempts,

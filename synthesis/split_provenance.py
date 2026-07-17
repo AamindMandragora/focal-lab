@@ -34,13 +34,14 @@ class BarSplitProvenanceError(ValueError):
     """Raised when an accuracy bar's split provenance is missing or mismatched."""
 
 
-# One dataset, one vocabulary, zero aliases. These match the index keys the
-# split files actually store: GSM manifests have train_indices/eval_indices,
-# Spider manifests have train_indices/test_indices. The old "eval" alias for
-# Spider (removed 2026-07-17) meant one concept had three names and four
-# translation sites, which is how the bar/eval split mixup stayed invisible.
+# One vocabulary for every dataset, zero aliases: train / test. These match
+# the index keys the split files store (train_indices / test_indices). GSM
+# manifests historically stored the held-out side as eval_indices; that key
+# was renamed to test_indices on 2026-07-17 so one concept has one name
+# everywhere. Spider's old "eval" alias was removed the same day — aliases
+# are how the bar/eval split mixup stayed invisible.
 SPLIT_NAMES_BY_DATASET = {
-    "gsm_symbolic": ("train", "eval"),
+    "gsm_symbolic": ("train", "test"),
     "spider": ("train", "test"),
 }
 
@@ -52,8 +53,8 @@ def validate_split_name(dataset: str, split_name: str | None, flag: str) -> None
         return
     if split_name not in valid:
         hint = (
-            " Spider's held-out side is named 'test' (the 'eval' alias was removed 2026-07-17)."
-            if dataset == "spider" and split_name == "eval"
+            " The held-out side is named 'test' (the 'eval' alias was removed 2026-07-17)."
+            if split_name == "eval"
             else ""
         )
         raise BarSplitProvenanceError(
@@ -88,7 +89,7 @@ def check_bar_split_provenance(
     bar_side = bar_split_name
 
     if bar_side is None:
-        valid = "|".join(SPLIT_NAMES_BY_DATASET.get(dataset, ("train", "eval")))
+        valid = "|".join(SPLIT_NAMES_BY_DATASET.get(dataset, ("train", "test")))
         raise BarSplitProvenanceError(
             f"--min-accuracy {min_accuracy} is used as an acceptance bar on the "
             f"'{eval_side}' side of {split_file}, but --bar-split-name was not "
@@ -106,23 +107,27 @@ def check_bar_split_provenance(
         )
 
 
-def split_provenance_metadata(
-    evaluator: Any,
+def build_split_provenance(
+    gsm_split_file: Any = None,
+    gsm_split_name: str | None = None,
+    spider_split_file: Any = None,
+    spider_split_name: str | None = None,
     bar_split_name: str | None = None,
 ) -> dict:
-    """Split provenance block for run_configuration / output JSONs.
+    """The ONE split-provenance dict shape embedded in every output JSON.
 
-    Reads the split attributes the evaluator already carries; safe to call
-    with any evaluator (missing attributes become None).
+    Every writer goes through this builder: synthesis reports and re-evals
+    call it via Evaluator.split_provenance(), the legacy runner calls it once
+    from its parsed args. One shape, one place.
     """
 
     def _str_or_none(value: Any) -> str | None:
         return str(value) if value is not None else None
 
     return {
-        "gsm_split_file": _str_or_none(getattr(evaluator, "gsm_split_file", None)),
-        "gsm_split_name": getattr(evaluator, "gsm_split_name", None),
-        "spider_split_file": _str_or_none(getattr(evaluator, "spider_split_file", None)),
-        "spider_split_name": getattr(evaluator, "spider_split_name", None),
+        "gsm_split_file": _str_or_none(gsm_split_file),
+        "gsm_split_name": gsm_split_name,
+        "spider_split_file": _str_or_none(spider_split_file),
+        "spider_split_name": spider_split_name,
         "bar_split_name": bar_split_name,
     }

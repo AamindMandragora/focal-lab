@@ -9,7 +9,6 @@ from typing import Any
 
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
-from synthesis.split_provenance import split_provenance_metadata
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -44,7 +43,7 @@ def main() -> None:
     # silent side defaults caused the 2026-07-17 split mixup. Spider's
     # held-out side is 'test'; the 'eval' alias was removed.
     p.add_argument("--gsm-split-file", type=str, default=None)
-    p.add_argument("--gsm-split-name", choices=["train", "eval"], default=None)
+    p.add_argument("--gsm-split-name", choices=["train", "test"], default=None)
     p.add_argument("--spider-split-file", type=str, default=None)
     p.add_argument("--spider-split-name", choices=["train", "test"], default=None)
     p.add_argument("--smiles-classes", type=str, default=None)
@@ -117,7 +116,7 @@ def main() -> None:
         # Embed which split file/side this re-eval ran on, so the JSON is
         # self-describing (split-mismatch incident 2026-07-17).
         save_minimal_baseline_json(
-            res, args.output_json, eval_split=split_provenance_metadata(ev)
+            res, args.output_json, eval_split=ev.split_provenance()
         )
         print(f"wrote_json: {args.output_json}")
 
