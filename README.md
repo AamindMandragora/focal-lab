@@ -111,7 +111,9 @@ dafny --version
 
 3. Run synthesis.
 
-Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation still defaults to local vLLM with Qwen unless you override `--eval-backend` / `--eval-model`.
+Strategy generation defaults to **OpenAI** (`OPENAI_API_KEY` in `.env`; model `gpt-5.4` or `OPENAI_GENERATION_MODEL`). Matrix runs must use direct hosted reasoning APIs: `opus4.7` uses the Anthropic backend, `gpt5.5` uses the OpenAI backend, and `gemini` uses the direct Gemini API. Do not route matrix model ablations through Bedrock. Use **`--generation-backend vllm`** or **`huggingface`** for fully local generation. Evaluation always runs on local vLLM; pick the model with `--eval-model` (the backend is fixed in `synthesis/run_constants.py`).
+
+**BYOD (bring your own credentials):** all provider API keys load from the environment / `.env` (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, AWS credentials for Bedrock). There are no key or base-URL CLI flags.
 
 ```bash
 CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
@@ -124,21 +126,10 @@ CUDA_VISIBLE_DEVICES=1,2 python -m synthesis.run_synthesis \
   --eval-sample-size 10
 ```
 
-Optional search-space controls for UCB/bandit helper-call pruning:
-
-- `--adaptive-helper-mask` / `--no-adaptive-helper-mask`
-- `--helper-selection-policy` (`bandit`)
-- `--helper-bandit-min-evals`
-- `--helper-bandit-top-k`
-- `--helper-bandit-ucb-c`
-- `--helper-bandit-explore-untried`
-
-Optional local-beam refinement controls:
-
-- `--refinement-beam-size` (defaults to 2)
-- `--local-neighborhood-refinement` / `--no-local-neighborhood-refinement`
-- `--max-local-edit-ratio`
-- `--beam-verify-candidates` / `--no-beam-verify-candidates`
+UCB/bandit helper-call pruning and local-beam refinement are no longer
+CLI-configurable: every recorded run used the same settings, so they are
+hard-coded in `synthesis/evaluate/feedback_loop.py` (2026-07-18 bucket-1
+audit; see `planning/ws2-ws3-landed-audit.md`).
 
 ## Dafny Files Used by Synthesis
 

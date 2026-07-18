@@ -18,7 +18,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Callable, Optional
 
-from ..split_provenance import split_provenance_metadata
 from ..verify.compiler import CompilationResult, DafnyCompiler
 from .evaluator import Evaluator, EvaluationResult
 from ..generate.generator import StrategyGenerator
@@ -692,7 +691,6 @@ class SynthesisPipeline:
         compiler: Optional[DafnyCompiler] = None,
         max_iterations: int = 5,
         output_dir: Optional[Path] = None,
-        save_reports: bool = True,
         # Evaluation thresholds
         min_accuracy: float = 0.0,
         min_syntax_rate: float = 0.0,
@@ -703,25 +701,7 @@ class SynthesisPipeline:
         eval_sample_size: int = 10,
         eval_max_seconds_per_example: Optional[float] = 90.0,
         min_examples_before_threshold_stop: Optional[int] = 15,
-        adaptive_helper_mask: bool = True,
-        helper_selection_policy: str = "bandit",
-        helper_mask_min_evals: int = 4,
-        helper_mask_min_uses: int = 2,
-        helper_mask_margin: float = 0.25,
-        helper_mask_max_disabled: int = 6,
-        helper_bandit_min_evals: int = 3,
-        helper_bandit_top_k: int = 12,
-        helper_bandit_ucb_c: float = 0.35,
-        helper_bandit_explore_untried: int = 1,
-        refinement_beam_size: int = 2,
-        local_neighborhood_refinement: bool = True,
-        max_local_edit_ratio: float = 0.65,
-        beam_verify_candidates: bool = True,
-        # Restart-from-scratch mechanism: escape local-search basins when
-        # anchor-based refinement gets stuck.
-        restart_after_stuck_iters: int = 0,
-        restart_cooldown_iters: int = 0,
-        token_cap_feedback: bool = False,
+        token_cap_feedback: bool = True,
     ):
         """
         Initialize the synthesis pipeline.
@@ -733,7 +713,6 @@ class SynthesisPipeline:
             compiler: Dafny compiler (creates default if None)
             max_iterations: Maximum refinement iterations
             output_dir: Directory for outputs and reports
-            save_reports: Whether to save failure reports to disk
             min_accuracy: Minimum accuracy threshold for evaluation
             min_syntax_rate: Minimum syntax validity rate threshold
             require_delimiters: Whether evaluated outputs must contain << >> spans
@@ -744,20 +723,6 @@ class SynthesisPipeline:
                 fire. Decouples the synthesis feedback budget from the
                 acceptance threshold so the synthesizer always sees a usable
                 amount of evaluation data. None means no minimum (legacy).
-            adaptive_helper_mask: Enable empirical helper pruning contract
-            helper_selection_policy: Helper selection policy (`bandit` only; UCB-style)
-            helper_mask_min_evals: Evaluated attempts before pruning can start
-            helper_mask_min_uses: Minimum helper usage count before pruning
-            helper_mask_margin: Margin below run-wide mean utility to prune a helper
-            helper_mask_max_disabled: Maximum helpers disabled in one run
-            helper_bandit_min_evals: Evaluated attempts before bandit selection starts
-            helper_bandit_top_k: Number of prunable helpers to keep active under bandit
-            helper_bandit_ucb_c: UCB exploration coefficient
-            helper_bandit_explore_untried: Number of unseen helpers to force-explore
-            refinement_beam_size: Number of refinement candidates to sample per step
-            local_neighborhood_refinement: Prefer local edits during refinement
-            max_local_edit_ratio: Soft bound on changed-line ratio for local edits
-            beam_verify_candidates: Verify beam candidates before selecting one
         """
         self.evaluator = evaluator
         self.generator = generator or StrategyGenerator()
@@ -765,16 +730,6 @@ class SynthesisPipeline:
         self.compiler = compiler or DafnyCompiler()
         self.max_iterations = max_iterations
         self.output_dir = output_dir or self.DEFAULT_OUTPUT_DIR
-        self.save_reports = save_reports
-
-        # Restart-from-scratch mechanism (replaces two-phase). When the
-        # Pareto-best anchor has not advanced for N consecutive iterations,
-        # the next refinement call switches into restart mode (drops anchor,
-        # asks for a structurally different family). Counter resets when the
-        # anchor advances. Optional cooldown after a restart prevents
-        # back-to-back restarts.
-        self.restart_after_stuck_iters = max(0, int(restart_after_stuck_iters))
-        self.restart_cooldown_iters = max(0, int(restart_cooldown_iters))
         self._anchor_attempt_number: int | None = None
         self._iters_since_anchor_changed: int = 0
 
@@ -785,32 +740,47 @@ class SynthesisPipeline:
         self.eval_sample_size = eval_sample_size
         self.eval_max_seconds_per_example = eval_max_seconds_per_example
         self.min_examples_before_threshold_stop = min_examples_before_threshold_stop
-        self.adaptive_helper_mask = adaptive_helper_mask
-        normalized_policy = helper_selection_policy.strip().lower()
-        if normalized_policy != "bandit":
-            raise ValueError(
-                "helper_selection_policy must be 'bandit' (UCB/bandit only)"
-            )
-        self.helper_selection_policy = normalized_policy
-        self.helper_mask_min_evals = max(1, helper_mask_min_evals)
-        self.helper_mask_min_uses = max(1, helper_mask_min_uses)
-        self.helper_mask_margin = helper_mask_margin
-        self.helper_mask_max_disabled = max(0, helper_mask_max_disabled)
-        self.helper_bandit_min_evals = max(1, helper_bandit_min_evals)
-        self.helper_bandit_top_k = max(1, helper_bandit_top_k)
-        self.helper_bandit_ucb_c = max(0.0, helper_bandit_ucb_c)
-        self.helper_bandit_explore_untried = max(0, helper_bandit_explore_untried)
-        self.refinement_beam_size = max(1, refinement_beam_size)
-        self.local_neighborhood_refinement = local_neighborhood_refinement
-        self.max_local_edit_ratio = max(0.0, max_local_edit_ratio)
-        self.beam_verify_candidates = beam_verify_candidates
-        # Flag-gated (default OFF): append _token_cap_exhaustion_hint to the
+        # Helper-mask/bandit selection and refinement-beam knobs were CLI/ctor
+        # flags historically; every recorded run used the same values, so they
+        # are hard-coded here rather than exposed as parameters (2026-07-18
+        # bucket-1 audit). See planning/ws2-ws3-landed-audit.md.
+        self.adaptive_helper_mask = True
+        self.helper_selection_policy = "bandit"
+        self.helper_mask_min_evals = 4
+        self.helper_mask_min_uses = 2
+        self.helper_mask_margin = 0.25
+        self.helper_mask_max_disabled = 6
+        self.helper_bandit_min_evals = 3
+        self.helper_bandit_top_k = 12
+        self.helper_bandit_ucb_c = 0.35
+        self.helper_bandit_explore_untried = 1
+        self.refinement_beam_size = 2
+        self.local_neighborhood_refinement = True
+        self.max_local_edit_ratio = 0.65
+        self.beam_verify_candidates = True
+        # Always on since 2026-07-17: append _token_cap_exhaustion_hint to the
         # author feedback when most outputs ran to the maxSteps cap.
         self.token_cap_feedback = token_cap_feedback
         self._helper_universe = self._extract_helper_universe_from_prompts()
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    def _git_commit_hash(self) -> str:
+        """Best-effort repo commit hash for run provenance; 'unknown' if unavailable."""
+        import subprocess
+
+        try:
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            return (
+                subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=repo_root, stderr=subprocess.DEVNULL
+                )
+                .decode()
+                .strip()
+            )
+        except Exception:
+            return "unknown"
 
     def _run_configuration_metadata(self, task_description: str, output_name: str) -> dict:
         """Return run-level provenance that is useful for experiment analysis."""
@@ -819,6 +789,7 @@ class SynthesisPipeline:
         return {
             "task_description": task_description,
             "output_name": output_name,
+            "git_commit": self._git_commit_hash(),
             "max_iterations": self.max_iterations,
             "thresholds": {
                 "min_accuracy": self.min_accuracy,
@@ -843,17 +814,14 @@ class SynthesisPipeline:
                 "eval_max_steps": getattr(evaluator, "max_steps", None),
                 "eval_step_token_budget": getattr(evaluator, "step_token_budget", None),
                 "eval_max_seconds_per_example": self.eval_max_seconds_per_example,
+                "eval_seed": getattr(evaluator, "sample_seed", None),
                 "min_examples_before_threshold_stop": self.min_examples_before_threshold_stop,
                 # Which split file/side this run evaluated on, plus the declared
                 # split of the accuracy bar — absence of this field is what made
                 # the 2026-07-17 train-vs-eval mismatch unrecoverable from reports.
-                "split_provenance": split_provenance_metadata(
-                    evaluator, self.bar_split_name
-                ),
+                "split_provenance": evaluator.split_provenance(self.bar_split_name),
             },
             "synthesis_controls": {
-                "restart_after_stuck_iters": self.restart_after_stuck_iters,
-                "restart_cooldown_iters": self.restart_cooldown_iters,
                 "adaptive_helper_mask": self.adaptive_helper_mask,
                 "helper_selection_policy": self.helper_selection_policy,
                 "helper_bandit_min_evals": self.helper_bandit_min_evals,
@@ -1249,40 +1217,6 @@ class SynthesisPipeline:
             self._iters_since_anchor_changed = 0
         else:
             self._iters_since_anchor_changed += 1
-
-    def _should_restart(self, attempts: list[SynthesisAttempt]) -> bool:
-        """Predicate: should the next refinement use restart mode?
-
-        True iff restart is enabled, at least one prior evaluated attempt
-        exists (so the families-tried block has content), and the counter has
-        reached the configured threshold.
-        """
-        if self.restart_after_stuck_iters <= 0:
-            return False
-        evaluated = [
-            a for a in attempts
-            if a.eval_result is not None
-            and (a.eval_result.num_examples or 0) > 0
-        ]
-        if not evaluated:
-            return False
-        return self._iters_since_anchor_changed >= self.restart_after_stuck_iters
-
-    def _apply_restart_cooldown(self) -> None:
-        """Reset counter after a restart fires.
-
-        With cooldown=0 we leave the counter alone — it keeps ticking on
-        subsequent stuck iters so restart fires every iter until the anchor
-        moves (true Option X / aggressive exploration). With cooldown=K we
-        set the counter to -K so K refinement iters must run before another
-        restart is eligible (Option Y / balanced rhythm).
-
-        Earlier version unconditionally set counter to -cooldown, which with
-        cooldown=0 forced counter to 0 — same effect as a 2-iter cooldown.
-        This guard makes cooldown=0 do what the flag advertises.
-        """
-        if self.restart_cooldown_iters > 0:
-            self._iters_since_anchor_changed = -self.restart_cooldown_iters
 
     def _compute_pareto_best(
         self, attempts: list[SynthesisAttempt]
@@ -2004,13 +1938,7 @@ class SynthesisPipeline:
                     print(f"  Helper policy: {next_helper_status}")
                 anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
                 self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
+                if anchor_n is not None:
                     print(
                         f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
                         f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
@@ -2022,48 +1950,36 @@ class SynthesisPipeline:
                 prev_acc = eval_result.accuracy or 0.0
                 prev_syn = eval_result.syntax_rate or 0.0
                 prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_error_restart",
+                refine_best_strategy = (
+                    best_strategy_code if best_strategy_code != strategy_code else None
+                )
+                refine_best_acc = (
+                    best_acc_val if refine_best_strategy is not None else None
+                )
+                refine_best_syn = (
+                    best_syn_val if refine_best_strategy is not None else None
+                )
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_error",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
                         previous_strategy=strategy_code,
+                        previous_accuracy=prev_acc,
+                        previous_syntax_rate=prev_syn,
+                        num_examples=prev_n,
+                        goal_accuracy=self.min_accuracy,
+                        goal_syntax_rate=self.min_syntax_rate,
+                        evaluation_feedback=evaluation_feedback,
+                        best_strategy=refine_best_strategy,
+                        best_accuracy=refine_best_acc,
+                        best_syntax_rate=refine_best_syn,
                         allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_error",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
-                            previous_strategy=strategy_code,
-                            previous_accuracy=prev_acc,
-                            previous_syntax_rate=prev_syn,
-                            num_examples=prev_n,
-                            goal_accuracy=self.min_accuracy,
-                            goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=evaluation_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
-                            allowed_helpers=next_allowed_helpers,
-                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
-                            mode_examples=mode_examples,
-                            attempt_outcome_ledger=attempt_outcome_ledger,
-                        ),
-                    )
+                        eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                        mode_examples=mode_examples,
+                        attempt_outcome_ledger=attempt_outcome_ledger,
+                    ),
+                )
                 continue
 
             # Check if evaluation meets thresholds
@@ -2156,13 +2072,7 @@ class SynthesisPipeline:
                     print(f"  Helper policy: {next_helper_status}")
                 anchor_n, anchor_acc, anchor_syn = self._compute_pareto_best(attempts)
                 self._update_anchor_state(anchor_n)
-                use_restart = self._should_restart(attempts)
-                if use_restart:
-                    print(
-                        f"  [synthesis] RESTART mode active for next refinement "
-                        f"({self._iters_since_anchor_changed} iters since anchor moved)"
-                    )
-                elif anchor_n is not None:
+                if anchor_n is not None:
                     print(
                         f"  [synthesis] anchor for next refinement: attempt {anchor_n} "
                         f"(acc={anchor_acc:.1%}, syn={anchor_syn:.1%})"
@@ -2174,48 +2084,36 @@ class SynthesisPipeline:
                 prev_acc = eval_result.accuracy or 0.0
                 prev_syn = eval_result.syntax_rate or 0.0
                 prev_n = eval_result.num_examples or 0
-                if use_restart:
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold_restart",
+                refine_best_strategy = (
+                    best_strategy_code if best_strategy_code != strategy_code else None
+                )
+                refine_best_acc = (
+                    best_acc_val if refine_best_strategy is not None else None
+                )
+                refine_best_syn = (
+                    best_syn_val if refine_best_strategy is not None else None
+                )
+                strategy_code = self._refine_with_beam(
+                    stage_label="evaluation_threshold",
+                    previous_strategy=strategy_code,
+                    allowed_helpers=next_allowed_helpers,
+                    refine_once=lambda: self.generator.refine_after_evaluation_failure(
                         previous_strategy=strategy_code,
+                        previous_accuracy=prev_acc,
+                        previous_syntax_rate=prev_syn,
+                        num_examples=prev_n,
+                        goal_accuracy=self.min_accuracy,
+                        goal_syntax_rate=self.min_syntax_rate,
+                        evaluation_feedback=threshold_feedback,
+                        best_strategy=refine_best_strategy,
+                        best_accuracy=refine_best_acc,
+                        best_syntax_rate=refine_best_syn,
                         allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.generate_initial(
-                            task_description,
-                            allowed_helpers=next_allowed_helpers,
-                        ),
-                    )
-                    self._apply_restart_cooldown()
-                else:
-                    refine_best_strategy = (
-                        best_strategy_code if best_strategy_code != strategy_code else None
-                    )
-                    refine_best_acc = (
-                        best_acc_val if refine_best_strategy is not None else None
-                    )
-                    refine_best_syn = (
-                        best_syn_val if refine_best_strategy is not None else None
-                    )
-                    strategy_code = self._refine_with_beam(
-                        stage_label="evaluation_threshold",
-                        previous_strategy=strategy_code,
-                        allowed_helpers=next_allowed_helpers,
-                        refine_once=lambda: self.generator.refine_after_evaluation_failure(
-                            previous_strategy=strategy_code,
-                            previous_accuracy=prev_acc,
-                            previous_syntax_rate=prev_syn,
-                            num_examples=prev_n,
-                            goal_accuracy=self.min_accuracy,
-                            goal_syntax_rate=self.min_syntax_rate,
-                            evaluation_feedback=threshold_feedback,
-                            best_strategy=refine_best_strategy,
-                            best_accuracy=refine_best_acc,
-                            best_syntax_rate=refine_best_syn,
-                            allowed_helpers=next_allowed_helpers,
-                            eval_max_seconds_per_example=self.eval_max_seconds_per_example,
-                            mode_examples=threshold_mode_examples,
-                            attempt_outcome_ledger=attempt_outcome_ledger,
-                        ),
-                    )
+                        eval_max_seconds_per_example=self.eval_max_seconds_per_example,
+                        mode_examples=threshold_mode_examples,
+                        attempt_outcome_ledger=attempt_outcome_ledger,
+                    ),
+                )
                 continue
 
             print(f"  ✓ Evaluation passed:")
@@ -2265,16 +2163,14 @@ class SynthesisPipeline:
         print(f"Total time: {total_time:.1f}ms")
         print(f"{'='*60}")
 
-        # Save failure report
-        report_path = None
-        if self.save_reports:
-            report_path = self._save_failure_report(
-                attempts,
-                task_description,
-                output_name,
-                run_dir,
-                run_results_dir,
-            )
+        # Save failure report (always — reports are how runs are audited)
+        report_path = self._save_failure_report(
+            attempts,
+            task_description,
+            output_name,
+            run_dir,
+            run_results_dir,
+        )
 
         # Best-accuracy fallback: if any attempt's accuracy beat min_accuracy
         # (even if syntax fell short of min_syntax_rate), save a side-channel

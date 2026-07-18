@@ -9,7 +9,7 @@ from typing import Any
 
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
-from synthesis.split_provenance import split_provenance_metadata
+from synthesis.run_constants import SPLIT_FILE_BY_DATASET
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -40,12 +40,20 @@ def main() -> None:
         help="vLLM tensor parallel size (default: 1; capped by VAS_MAX_CUDA_DEVICES)",
     )
     p.add_argument("--vllm-max-model-len", type=int, default=16384)
-    # Split names are required when a split file is given (checked below) —
-    # silent side defaults caused the 2026-07-17 split mixup. Spider's
-    # held-out side is 'test'; the 'eval' alias was removed.
-    p.add_argument("--gsm-split-file", type=str, default=None)
-    p.add_argument("--gsm-split-name", choices=["train", "eval"], default=None)
-    p.add_argument("--spider-split-file", type=str, default=None)
+    # Split FILE defaults to the one canonical split per dataset (see
+    # SPLIT_FILE_BY_DATASET in synthesis/run_constants.py), but stays an
+    # optional override: synthesis/scripts/sharded_eval_core.py invokes this
+    # script once per parallel worker, each pointed at its own temporary
+    # shard file (a slice of the canonical split) rather than the whole
+    # thing, so the flag can't be removed without breaking sharded re-eval.
+    # Split NAME (which side of that file) stays a required flag — this
+    # script is used to score both the train side (sanity re-checks) and the
+    # test/held-out side (final numbers), so silently defaulting to one side
+    # is how the 2026-07-17 bar/eval split mixup happened. Spider's held-out
+    # side is 'test'; the 'eval' alias was removed.
+    p.add_argument("--gsm-split-file", type=Path, default=None)
+    p.add_argument("--spider-split-file", type=Path, default=None)
+    p.add_argument("--gsm-split-name", choices=["train", "test"], default=None)
     p.add_argument("--spider-split-name", choices=["train", "test"], default=None)
     p.add_argument("--smiles-classes", type=str, default=None)
     p.add_argument("--max-seconds-per-example", type=float, default=None)
@@ -58,11 +66,14 @@ def main() -> None:
     p.add_argument("--output-json", type=Path, default=None)
     args = p.parse_args()
 
-    if args.gsm_split_file and args.gsm_split_name is None:
-        p.error("--gsm-split-name is required when --gsm-split-file is given "
+    gsm_split_file = args.gsm_split_file or SPLIT_FILE_BY_DATASET["gsm_symbolic"]
+    spider_split_file = args.spider_split_file or SPLIT_FILE_BY_DATASET["spider"]
+
+    if args.dataset == "gsm_symbolic" and args.gsm_split_name is None:
+        p.error("--gsm-split-name is required for --dataset gsm_symbolic "
                 "(no default side — see synthesis/split_provenance.py)")
-    if args.spider_split_file and args.spider_split_name is None:
-        p.error("--spider-split-name is required when --spider-split-file is given "
+    if args.dataset == "spider" and args.spider_split_name is None:
+        p.error("--spider-split-name is required for --dataset spider "
                 "(no default side — see synthesis/split_provenance.py)")
 
     if os.environ.get("VLLM_WORKER_MULTIPROC_METHOD") is None:
@@ -88,11 +99,11 @@ def main() -> None:
         vllm_enforce_eager=True,
         max_seconds_per_example=args.max_seconds_per_example,
     )
-    if args.gsm_split_file:
-        evaluator_kwargs["gsm_split_file"] = args.gsm_split_file
+    if args.dataset == "gsm_symbolic":
+        evaluator_kwargs["gsm_split_file"] = str(gsm_split_file)
         evaluator_kwargs["gsm_split_name"] = args.gsm_split_name
-    if args.spider_split_file:
-        evaluator_kwargs["spider_split_file"] = args.spider_split_file
+    if args.dataset == "spider":
+        evaluator_kwargs["spider_split_file"] = str(spider_split_file)
         evaluator_kwargs["spider_split_name"] = args.spider_split_name
     if args.smiles_classes:
         evaluator_kwargs["smiles_classes"] = args.smiles_classes
@@ -117,7 +128,7 @@ def main() -> None:
         # Embed which split file/side this re-eval ran on, so the JSON is
         # self-describing (split-mismatch incident 2026-07-17).
         save_minimal_baseline_json(
-            res, args.output_json, eval_split=split_provenance_metadata(ev)
+            res, args.output_json, eval_split=ev.split_provenance()
         )
         print(f"wrote_json: {args.output_json}")
 

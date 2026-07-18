@@ -60,8 +60,6 @@ def test_warm_resume_refinement_keeps_real_task_context(tmp_path):
         max_iterations=2,
         output_dir=tmp_path,
         save_reports=False,
-        adaptive_helper_mask=False,
-        refinement_beam_size=1,
     )
 
     with pytest.raises(SynthesisExhaustionError):

@@ -82,11 +82,6 @@ def test_pipeline_unloads_evaluator_runtime_for_local_author_models():
     assert evaluator.unload_calls == 1
 
 
-def test_pipeline_rejects_utility_helper_policy():
-    with pytest.raises(ValueError, match="bandit"):
-        _dummy_pipeline(helper_selection_policy="utility")
-
-
 def test_run_synthesis_help_advertises_ucb_budget_and_beam_defaults():
     repo_root = Path(__file__).resolve().parents[1]
     result = subprocess.run(
@@ -99,19 +94,33 @@ def test_run_synthesis_help_advertises_ucb_budget_and_beam_defaults():
 
     assert result.returncode == 0
     help_text = result.stdout
-    assert "UCB/bandit only" in help_text
-    assert "default: bandit" in help_text
+    # Surviving science flags keep their documented defaults.
     assert re.search(r"default:\s+600", help_text)
     assert re.search(r"default:\s+90", help_text)
-    assert "Default: 15." in help_text
-    assert re.search(r"default:\s+2", help_text)
-    assert "utility" not in help_text
     assert "claude" in help_text
     assert "claude-bedrock" in help_text
     assert "anthropic" in help_text
-    assert "direct Anthropic API" in help_text
-    assert "--claude-config-dir" in help_text
-    assert "--claude-expected-account" in help_text
+    assert "direct Anthropic API" in " ".join(help_text.split())
+    # New provider-agnostic thinking budget replaced the anthropic-* flags.
+    assert "--synthesizer-reasoning-budget" in help_text
+    assert "Default: 4096." in " ".join(help_text.split())
+    # 2026-07-17 simplification: these knobs are constants/env now, not flags.
+    for gone in (
+        "--claude-config-dir",
+        "--claude-expected-account",
+        "--helper-selection-policy",
+        "--restart-after-stuck-iters",
+        "--anthropic-thinking",
+        "--eval-min-examples-before-threshold-stop",
+        "--output-name",
+        "--temperature",
+        "--eval-backend",
+        "--allow-small-author-model",
+        "--require-delimiters",
+        "--gsm-split-file",
+        "--spider-split-file",
+    ):
+        assert gone not in help_text, gone
 
 
 def test_run_synthesis_resolves_author_model_before_printing_banner():
