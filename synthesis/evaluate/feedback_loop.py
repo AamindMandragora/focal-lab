@@ -25,6 +25,27 @@ from ..generate import prompts as generation_prompts
 from ..generate.rationale import extract_rationale
 from ..verify.verifier import DafnyVerifier, VerificationResult
 
+try:
+    from synthesis.prompt_rendering import render as _render_prompt
+    from synthesis.prompt_rendering.models.feedback_loop import (
+        ConstraintBypassedModel,
+        DelimiterMissDefaultModel,
+        DelimiterMissOpenNotClosedModel,
+        HintLinesModel,
+        SpanNotClosedModel,
+        TokenCapExhaustionModel,
+    )
+except ImportError:
+    from prompt_rendering import render as _render_prompt
+    from prompt_rendering.models.feedback_loop import (
+        ConstraintBypassedModel,
+        DelimiterMissDefaultModel,
+        DelimiterMissOpenNotClosedModel,
+        HintLinesModel,
+        SpanNotClosedModel,
+        TokenCapExhaustionModel,
+    )
+
 
 logger = logging.getLogger(__name__)
 
@@ -66,36 +87,10 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
         )
         if n > 0 and n_open_not_closed >= 0.2 * n:
             # Root cause 2: spans opened but never closed.
-            return (
-                f"\n  ⚠ Delimiter check FAILED: none of the evaluated outputs "
-                f"contained a complete << >> span, but spans are required. "
-                f"{n_open_not_closed}/{n} outputs show that a `<<` span was "
-                f"opened but the strategy never produced the closing `>>` — the "
-                f"step budget ran out before the span was exited. This means `<<` "
-                f"IS being emitted, but the strategy does not successfully reach "
-                f"and emit `>>` for any example.\n"
-                f"    What to reconsider: this is a decoding-mechanism issue with "
-                f"how the strategy behaves *inside* a span — specifically, how it "
-                f"makes forward progress through the span content and how it "
-                f"recognizes that a span is complete and should be closed. The "
-                f"strategy needs a reliable path from span-open to span-close "
-                f"within the step budget. (General direction only — the specific "
-                f"mechanism is yours to design.)\n"
-            )
+            model = DelimiterMissOpenNotClosedModel(n_open_not_closed=n_open_not_closed, n=n)
+            return _render_prompt(model, "feedback_loop/delimiter_miss_open_not_closed.j2")
 
-    return (
-        "\n  ⚠ Delimiter check FAILED: none of the evaluated outputs contained a "
-        "<< >> span, but spans are required.\n"
-        "    Likely cause: the strategy opens spans by WAITING for the model to "
-        "emit \"<<\" (e.g. a `next == \"<<\"` trigger, or an unconstrained chunk "
-        "that stops on \"<<\"). A weak eval model may never emit \"<<\" on its "
-        "own, so the trigger never fires, no span opens, and \">>\" is never "
-        "reached.\n"
-        "    Fix to consider: FORCE the opening delimiter at span entry (append "
-        "\"<<\" directly via a forced-delimiter / direct-control helper) instead "
-        "of depending on the model to produce it, then force \">>\" at span exit. "
-        "This is a decoding-mechanism change, not task guidance.\n"
-    )
+    return _render_prompt(DelimiterMissDefaultModel(), "feedback_loop/delimiter_miss_default.j2")
 
 
 def _token_cap_exhaustion_hint(sample_outputs, max_steps) -> str:
@@ -114,21 +109,8 @@ def _token_cap_exhaustion_hint(sample_outputs, max_steps) -> str:
     n_capped = sum(1 for s in sample_outputs if s.get("hit_max_steps"))
     if n_capped / n < 0.5:
         return ""
-    return (
-        f"\n  ⚠ Token-budget exhaustion: {n_capped}/{n} evaluated outputs ran all "
-        f"the way to the maxSteps cap ({max_steps} steps) and were CUT OFF "
-        f"mid-generation.\n"
-        f"    Why this hurts: a truncated output usually ends inside an "
-        f"unfinished sentence or span; the grader scores the LAST complete "
-        f"<< >> span standing at the cutoff, which is often an intermediate "
-        f"expression — not the final answer — so accuracy and syntax both "
-        f"suffer even when the reasoning was on track.\n"
-        f"    Direction to consider: make the strategy TERMINATE generation "
-        f"(emit EOS / stop stepping) once the final answer span is complete, "
-        f"and budget reasoning length so the answer span is reached well "
-        f"before the cap. This is a decoding-mechanism change, not task "
-        f"guidance.\n"
-    )
+    model = TokenCapExhaustionModel(n_capped=n_capped, n=n, max_steps=max_steps)
+    return _render_prompt(model, "feedback_loop/token_cap_exhaustion.j2")
 
 
 def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:
@@ -160,18 +142,8 @@ def _span_not_closed_hint(require_delimiters: bool, sample_outputs) -> str:
     n_affected = max(n_unterminated, n_maxsteps_nodelim)
     if n_affected == 0 or n_affected < 0.1 * n:
         return ""
-    return (
-        f"\n  ⚠ Span-closure check: {n_affected}/{n} evaluated outputs opened a "
-        "`<<` span but never emitted the closing `>>` before the generation step "
-        "budget ran out. When a span never closes, the eval records no usable "
-        "answer for that example, so accuracy and syntax collapse toward zero even "
-        "though the model did start a span.\n"
-        "    What to reconsider: this is a decoding-mechanism issue with how the "
-        "strategy behaves *inside* a span — how it makes forward progress and how "
-        "it decides the span is finished — not the task or the prompt. Aim for a "
-        "strategy that reliably reaches and emits `>>` within the step budget. "
-        "(General direction only — the specific mechanism is yours to design.)\n"
-    )
+    model = SpanNotClosedModel(n_affected=n_affected, n=n)
+    return _render_prompt(model, "feedback_loop/span_not_closed.j2")
 
 
 def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
@@ -211,23 +183,8 @@ def _constraint_bypassed_hint(require_delimiters: bool, contains_delimiters: boo
     n = len(sample_outputs)
     if n_bypassed < 0.2 * n or n_engaged >= 0.5 * n_rel:
         return ""
-    return (
-        f"\n  ⚠ Constraint-engagement check: {n_engaged}/{n_rel} of the outputs that "
-        f"show `<< >>` actually ran the strategy's constrained branch — the other "
-        f"{n_bypassed} produced the span content UNCONSTRAINED. The delimiters appear "
-        f"in the text, so the spans LOOK present, but the constraint did not shape what "
-        f"went inside them, leaving the span syntax at the raw model's mercy.\n"
-        f"    Likely cause: the strategy enters its constrained branch by WAITING for a "
-        f"specific span-open signal (e.g. a `next == \"<<\"` trigger) that rarely "
-        f"matches the model's actual output, so the constrained path is skipped even "
-        f"though `<<` still appears.\n"
-        f"    Fix to consider: FORCE span entry — append the opening `<<` directly via "
-        f"a forced-delimiter / direct-control helper and then drive the span content "
-        f"through the constrained branch, instead of depending on a reactive trigger to "
-        f"detect span entry. This is a decoding-mechanism change at span ENTRY, not "
-        f"task guidance. (General direction only — the specific mechanism is yours to "
-        f"design.)\n"
-    )
+    model = ConstraintBypassedModel(n_engaged=n_engaged, n_rel=n_rel, n_bypassed=n_bypassed)
+    return _render_prompt(model, "feedback_loop/constraint_bypassed.j2")
 
 
 def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> str:
@@ -288,7 +245,8 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         return "..." + trimmed[-max_chars:]
 
     lines = [
-        f"\n  Delimiter syntax-failure breakdown ({total_classified} examples):"
+        "",
+        f"  Delimiter syntax-failure breakdown ({total_classified} examples):",
     ]
 
     if unclosed:
@@ -322,7 +280,8 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
         "span entry/exit — not task guidance issues. Each category points to "
         "a different span-lifecycle step to strengthen."
     )
-    return "\n".join(lines) + "\n"
+    model = HintLinesModel(lines=lines)
+    return _render_prompt(model, "feedback_loop/hint_lines.j2")
 
 
 class FailureStage(Enum):
@@ -529,7 +488,16 @@ class SynthesisExhaustionError(Exception):
             lines.append("")
             lines.append(f"Full report saved to: {self.report_path}")
 
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # The original implementation joined its lines with "\n" and never added
+        # a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as CompilationResult.get_error_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
 
 @dataclass
@@ -885,7 +853,14 @@ class SynthesisPipeline:
             if primary.related_file and primary.related_line:
                 line += f" | related contract: {Path(primary.related_file).name}:{primary.related_line}"
             lines.append(line)
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # See get_failure_summary above: strip the one trailing newline the
+        # template's keep_trailing_newline behavior adds back, to match the
+        # original "\n".join(lines) idiom exactly.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _remove_marked_comment_block(text: str, begin_marker: str, end_marker: str) -> str:
@@ -1422,7 +1397,14 @@ class SynthesisPipeline:
             lines.append("Recent evaluated branches:")
             for attempt in recent:
                 lines.extend(attempt_line(attempt, include_delta=True))
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # See get_failure_summary above: strip the one trailing newline the
+        # template's keep_trailing_newline behavior adds back, to match the
+        # original "\n".join(lines) idiom exactly.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _strategy_change_ratio(before: str, after: str) -> float:

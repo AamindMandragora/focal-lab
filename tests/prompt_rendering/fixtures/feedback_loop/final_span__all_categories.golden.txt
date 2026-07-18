@@ -1,0 +1,9 @@
+
+  Delimiter syntax-failure breakdown (3 examples):
+    final_span_unclosed: 1 example(s) — the generation emitted `<<` at the end and then stopped (EOS or dead-end) before producing any span content or `>>`.
+      output tail: 'reasoning then <<'
+    no_span_emitted: 1 example(s) — no `<<` appeared anywhere in the output.
+      output tail: 'no span here at all'
+    final_span_invalid: 1 example(s) — a `<< >>` block was present but failed the syntax check (e.g. contained `{`, `}`, `**`, or was otherwise unparseable).
+      output tail: 'answer <<3 ** 2>>'
+    What to reconsider: these are decoding-mechanism failures at span entry/exit — not task guidance issues. Each category points to a different span-lifecycle step to strengthen.

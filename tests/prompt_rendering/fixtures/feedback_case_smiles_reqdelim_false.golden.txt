@@ -1,0 +1,57 @@
+Evaluation Results (1 examples):
+  Accuracy: 0.0% (0/1)
+  Syntax Rate: 100.0%
+  Total Time: 18.31s
+  Slowest Example Time: 18.31s
+
+SMILES Quality Metrics (paper-aligned, single trial):
+  RDKit Validity: 100.0%
+  Membership: 0.0%
+  Diversity (avg pairwise Tanimoto distance): n/a
+  RetroStar score: n/a
+  Samples to 100 unique valid (cap 1000): 1000
+  Unique valid molecules: 0/1
+
+Anti-Degeneracy Diagnostics:
+  Delimiter churn ratio: 0.000
+  Tiny-span rate: 100.0%
+  Max-steps hit rate: 100.0%
+  Applied penalty: 60.0%
+  Membership adjusted by penalty: 0.0%
+
+Primary Failure Modes:
+  - entered_constrained_mode_too_early: 1 example(s) (output entered `<<` almost immediately after the prompt continuation began)
+  - unterminated_constrained_segment: 1 example(s) (opened `<<` but did not close `>>`)
+
+Output Run Summary:
+  verification: passed
+  compilation: passed
+  generated-token outputs: 1/1 nonempty
+  All evaluated examples completed and returned generated output records.
+
+Diagnostic Error Decomposition:
+  Correctness by syntax bucket: syntax_valid_correct 0/1, syntax_valid_wrong 1/1, syntax_invalid_correct 0/1, syntax_invalid_wrong 0/1
+  Constrained intervention activity: examples_with_activity 1/1, examples_without_activity 0/1, visible_span_without_activity 0/1
+  Correctness conditioned on constrained activity: correct_with_activity 0/1, wrong_with_activity 1/1, correct_without_activity 0/1, wrong_without_activity 0/1
+
+Failure Clusters (17-axis fingerprint, Hamming ≤ 1):
+  Wrong samples: 1 grouped into 1 cluster(s).
+
+  [cluster_1] 1 sample(s):
+    syntax_valid: yes (100%)
+    contains_delimiters: no (100%)
+    visible_delimiters: no (100%)
+    used_constrained: yes (100%)
+    answer_source: none (100%)
+    has_extracted_answer: yes (100%)
+    hit_max_steps: yes (100%)
+    runtime_exceeded: no (100%)
+    error_present: no (100%)
+    zero_visible_spans: no (100%)
+    zero_valid_spans: no (100%)
+    partial_valid_spans: no (100%)
+    tiny_span_dominant: yes (100%)
+    long_span_dominant: no (100%)
+    token_budget_band: low (100%)
+    gen_time_band: mid (100%)
+    accuracy_applicable: yes (100%)

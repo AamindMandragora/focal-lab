@@ -1,0 +1,659 @@
+Your output must be a Dafny method body and is missing the required rationale block markers.
+
+Every method body must begin with a rationale block
+(`// CSD_RATIONALE_BEGIN` ... `// CSD_RATIONALE_END`) immediately followed by
+a proof sketch block (`// CSD_PROOF_SKETCH_BEGIN` ... `// CSD_PROOF_SKETCH_END`),
+then the body statements — nothing else. Your previous output was missing one
+or both of these markers, or had extra prose or formatting around them.
+
+Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
+
+## Available Tools
+
+### Runtime inputs
+```
+validTokenGroups: seq<seq<Token>>
+```
+`validTokenGroups` is caller-supplied contextual vocabulary. It may be empty,
+inner groups may be empty, groups may overlap, and groups may contain tokens
+outside `lm.Tokens`; safe helpers internally ignore non-vocabulary tokens.
+
+### Helper methods
+```
+helpers.AppendTaskGuidance(lm, guidance);
+var next := helpers.UnconstrainedStep(lm, prompt, generated);
+var generated, insideConstrainedOut, currentConstrainedOut := helpers.OpenConstrainedSpan(lm, generated);
+var generated, insideConstrainedOut, currentConstrainedOut := helpers.EnterObservedConstrainedSpan(lm, generated);
+var generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrained, next);
+var generated, insideConstrainedOut, currentConstrainedOut := helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrained);
+var generated, insideConstrainedOut, currentConstrainedOut, closed := helpers.CloseSpanIfComplete(lm, parser, generated, currentConstrained);
+var next := helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken);
+var next, success := helpers.DeadEndAvoidingStep(lm, parser, prompt, generated, eosToken, maxRetries);
+var next, wasConstrained := helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained, eosToken);
+helpers.SafeBoostTokenLogits(lm, tokens, amount);
+helpers.SafePenalizeTokenLogits(lm, tokens, amount);
+var next := helpers.SafeBoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToBoost, 4.0, eosToken);
+var next := helpers.SafePenalizedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToPenalize, 4.0, eosToken);
+var next := helpers.SafeRepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, 2.0, eosToken);
+var next := helpers.SafeTemperatureConstrainedStep(lm, parser, prompt, currentConstrained, 0.8, eosToken);
+var next, usedFallback := helpers.SafeSoftConstrainedStep(lm, parser, prompt, currentConstrained, 8.0, eosToken);
+var next := helpers.GroupBoostedConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, eosToken);
+helpers.BoostValidGroups(lm, parser, currentConstrained, groups, amount);
+var next := helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, 12, eosToken);
+var nextPen := helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, penaltyTokens, 4.0, 12, eosToken);
+var gap := helpers.GetLogitGap(lm);
+var topK := helpers.GetTopKTokens(lm, k);
+helpers.MaskTokensInPrefix(lm, generated);
+var snap := helpers.SaveLogitsSnapshot(lm);
+helpers.RestoreLogitsSnapshot(lm, snap);
+var candTok, candPre, hitComplete, hitEos, stepsUsed := helpers.SpeculativeConstrainedRollout(lm, parser, prompt, currentConstrained, numSpecSteps, eosToken);
+var generatedOut, stoppedOnOpenSpan, stoppedOnEos, stepsUsed := helpers.UnconstrainedChunk(lm, prompt, generated, maxChunkTokens, openSpanToken, eosToken);
+var currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbol(lm, parser, constrainedPrompt, currentConstrained, stepTokenBudget, eosToken);
+var generatedOut, currentOut, hitEos, stepsUsed := helpers.ConstrainedSymbolInGenerated(lm, parser, constrainedPrompt, generated, currentConstrained, stepTokenBudget, eosToken);
+var nextSoft, softOk := helpers.SoftConstrainedStep(lm, parser, prompt, currentConstrained, boostAmount, eosToken);
+var nextPenRaw := helpers.PenalizedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToPenalize, penaltyAmount, eosToken);
+var nextBoostRaw := helpers.BoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokensToBoost, boostAmount, eosToken);
+var nextRep := helpers.RepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, penaltyAmount, eosToken);
+var nextTemp := helpers.TemperatureConstrainedStep(lm, parser, prompt, currentConstrained, temperature, eosToken);
+var freeGenerated := helpers.UnconstrainedGeneration(lm, prompt, maxSteps);
+var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken);
+var craneGenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken);
+var topTok := helpers.GetHighestLogitToken(lm);
+var logitOne := helpers.GetTokenLogit(lm, token);
+helpers.ScaleAllLogits(lm, scalar);
+helpers.BoostTokenLogits(lm, tokensInVocab, amount);
+helpers.PenalizeTokenLogits(lm, tokensInVocab, amount);
+var subCount := CSDHelpers.CountSubstring(text, sub);
+var s := CSDHelpers.PrefixToString(prefix);
+var between := CSDHelpers.ExtractContentBetweenDelimiters(text, startDelim, endDelim);
+var seenInPrompt := helpers.PrefixAppearsInPrompt(lm, prefix);
+var promptResemblance: real := helpers.PrefixResemblesPromptExamples(lm, prefix);
+var anyInGroup := helpers.GroupHasValidMember(parser, prefix, group);
+```
+`OpenConstrainedSpan` appends a new `"<<"` token and costs 1 step. If `"<<"`
+was already emitted by `UnconstrainedStep` or `UnconstrainedChunk`, use
+`EnterObservedConstrainedSpan` to update span state without appending another
+delimiter or consuming additional token budget.
+
+### Parser queries
+```
+var narrow := helpers.DeadEndDetection(parser, currentConstrained, minValidCount);
+var count := helpers.ValidTokenCount(parser, currentConstrained);
+var valid := helpers.IsTokenValidNext(parser, currentConstrained, token);
+var candidates := helpers.TopValidCandidates(lm, parser, prompt, currentConstrained, maxCandidates, eosToken);
+var generatedOut, currentOut := helpers.RollbackConstrainedSuffix(parser, generated, currentConstrained);
+var generatedOut, currentOut := helpers.RollbackConstrainedToComplete(parser, generated, currentConstrained);
+var generatedOut, currentOut := helpers.RollbackAndContinue(lm, parser, prompt, generated, currentConstrained, eosToken, maxSteps, closeReserve, maxRetries);
+var flat := CSDHelpers.FlattenTokenGroups(validTokenGroups);
+var groupIdx := CSDHelpers.GroupContaining(validTokenGroups, token);
+var prevTok, foundPrev := helpers.LastTokenBefore(generated, ">>");
+var occ := CSDHelpers.CountTokenOccurrences(generated, tok);
+var occPrefix := CSDHelpers.OccurrencesInRange(generated, tok, hi);
+var since := CSDHelpers.TokensSinceLastOccurrence(generated, tok);
+var following := CSDHelpers.ExtractAfterKeyword(prefix, keyword);
+var intersection := CSDHelpers.IntersectTokenSets(a, b);
+var difference := CSDHelpers.SubtractTokenSets(a, b);
+```
+
+## Tool API Reference
+
+
+Use this as API documentation for what each helper accomplishes in a constrained
+decoding strategy. These descriptions define library behavior, not task-specific
+revision rules.
+
+`cost` is token-step budget use, not wall-clock time and not a count of helper
+calls. LM-generated tokens count even if the token is EOS or later rejected from
+visible output. A delimiter token appended by a helper counts as one token-step.
+Bookkeeping, parser queries, token-set transforms, and logit edits do not
+consume token budget by themselves.
+
+### Task prompt guidance
+
+- `helpers.AppendTaskGuidance(lm, guidance)`
+  Role: append a CSD-chosen guidance block to the evaluator's existing task
+  prompt before generation begins.
+  Mechanics: forwards `guidance` to the runtime LM wrapper. The evaluator keeps
+  its normal prompt, examples, schema, question, and output contract; the
+  guidance is appended as an extra block. Runtime semantics are append-only and
+  first-call-wins for the current CSD invocation; empty guidance is ignored.
+  Cost: +0.
+  Control profile: prompt policy only. Call it once at method start, after
+  output initialization and before the first LM generation helper.
+
+### Outside-span generation
+
+- `helpers.UnconstrainedStep(lm, prompt, generated)`
+  Role: one free LM token outside parser control.
+  Mechanics: calls the LM on `prompt + generated` and returns one token; the
+  strategy appends non-EOS tokens itself.
+  Cost: +1 token-step, including EOS.
+  Control profile: maximum free-LM continuation, no parser control.
+
+- `helpers.UnconstrainedChunk(lm, prompt, generated, maxChunkTokens, "<<", eosToken)`
+  Role: a short free-LM continuation that can stop when an opening delimiter is
+  naturally emitted.
+  Mechanics: returns `generatedOut` already extended by the non-EOS chunk. If
+  `stoppedOnOpenSpan` is true, `generatedOut` already ends with `"<<"`.
+  Cost: +`stepsUsed`; EOS counts in `stepsUsed` but is not appended.
+  Control profile: free-LM continuation with delimiter observation.
+
+- `helpers.UnconstrainedGeneration(lm, prompt, maxSteps)`
+  Role: bounded free-LM generation helper.
+  Mechanics: returns exactly `maxSteps` tokens sampled without parser control.
+  Cost: +`maxSteps`.
+  Control profile: full free generation with no EOS special case.
+
+- `helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken)`
+  Role: CRANE-style baseline generation with free text outside constrained spans
+  and parser-aware decoding inside observed spans.
+  Mechanics: emits free tokens until constrained-span state is reached, then
+  uses confidence-gated parser control inside that span.
+  Cost: at most +`maxSteps`.
+  Control profile: free outer continuation plus parser fallback inside spans.
+
+- `helpers.OpenConstrainedSpan(lm, generated)`
+  Role: explicit transition from free generation into constrained generation.
+  Mechanics: appends visible `"<<"`, sets `insideOut := true`, and resets
+  `currentOut := []`.
+  Cost: +1 token-step for the forced delimiter.
+  Control profile: direct delimiter/state control, no LM sampling.
+
+- `helpers.EnterObservedConstrainedSpan(lm, generated)`
+  Role: state transition after `"<<"` is already present in visible output.
+  Mechanics: leaves `generated` unchanged, sets `insideOut := true`, and resets
+  `currentOut := []`.
+  Cost: +0.
+  Control profile: bookkeeping only.
+
+### Inside-span generation and state updates
+
+- `helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken)`
+  Role: one parser-valid token choice inside a constrained span.
+  Mechanics: calls the LM, hard-masks to parser-valid next tokens plus EOS, and
+  returns one token without appending it.
+  Cost: +1 token-step, including EOS.
+  Control profile: strongest token-level parser control.
+
+- `helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained, eosToken)`
+  Role: one inside-span token choice for non-exact spans that uses hard parser
+  control only when the LM's current top token would not preserve parser
+  validity.
+  Mechanics: calls the LM, reads the highest-logit token, returns it directly
+  if it is EOS or keeps `currentConstrained + [token]` parser-valid; otherwise
+  hard-masks to parser-valid next tokens plus EOS and samples from that mask.
+  Returns `wasConstrained == true` only on the hard-mask fallback path.
+  Cost: +1 token-step, including EOS.
+  Control profile: LM-preferred continuation when already parser-compatible,
+  hard parser fallback otherwise; avoid using this helper for exact visible
+  spans that must remain fully hard-controlled.
+
+- `helpers.AppendConstrainedToken(lm, parser, generated, currentConstrained, next)`
+  Role: commit a previously selected parser-valid token into visible and
+  constrained state.
+  Mechanics: appends `next` to both `generated` and `currentConstrained`.
+  Cost: +0; the token was already counted by the generation helper.
+  Control profile: state synchronization only.
+
+- `helpers.ConstrainedSymbol(lm, parser, constrainedPrompt, currentConstrained, maxSymbolTokens, eosToken)`
+  Role: multi-token constrained progress from one LM chunk.
+  Mechanics: generates up to `maxSymbolTokens`, then accepts only the longest
+  parser-valid prefix of that chunk.
+  Cost: +`stepsUsed`; rejected suffix tokens and EOS still count.
+  Control profile: chunk-level LM continuation with parser-prefix acceptance.
+
+- `helpers.ConstrainedSymbolInGenerated(lm, parser, constrainedPrompt, generated, currentConstrained, maxSymbolTokens, eosToken)`
+  Role: multi-token constrained progress while updating full visible output.
+  Mechanics: computes the stable prefix, calls `ConstrainedSymbol`, then returns
+  `generatedOut := stablePrefix + currentOut`.
+  Cost: +`stepsUsed`, which may exceed visible output growth.
+  Control profile: chunk-level LM continuation plus generated/current state
+  reconstruction.
+
+- `helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken)`
+  Role: bounded parser-valid generation from an empty constrained prefix.
+  Mechanics: loops `ConstrainedStep` until parser completeness, EOS, or budget.
+  Cost: +`|generated|`, plus one additional step when terminated by EOS.
+  Control profile: full hard-parser generation.
+
+- `helpers.CloseConstrainedSpan(lm, parser, generated, currentConstrained)`
+  Role: exit a complete constrained span.
+  Mechanics: requires `parser.IsCompletePrefix(currentConstrained)`, appends
+  visible `">>"` unless already emitted by the constrained grammar, exits
+  constrained mode, and clears `currentOut`.
+  Cost: +1 token-step for the close action.
+  Control profile: direct delimiter/state control gated by parser completeness.
+
+- `helpers.CloseSpanIfComplete(lm, parser, generated, currentConstrained)`
+  Role: close the constrained span only if it already holds a complete parse.
+  Mechanics: checks `parser.IsCompletePrefix(currentConstrained)` internally; when
+  complete it delegates to `CloseConstrainedSpan` (appends `">>"` unless already
+  present, exits constrained mode, clears `currentOut`) and returns `closed == true`;
+  when not yet complete it leaves state unchanged and returns `closed == false`.
+  Cost: +1 token-step when it closes; +0 when it leaves the span open.
+  Control profile: completeness-gated close that needs no caller-side proof of completeness; safe to call speculatively each step (no-op until the span parses) and branch on `closed`.
+
+- `helpers.CloseSpanWithinBudget(lm, parser, prompt, generated, currentConstrained, eosToken, budget)`
+  Role: bring an open constrained span to a completable state and close it within a step budget.
+  Mechanics: generates forward inside the span (dead-end-aware), tracking the longest prefix that
+  parses as complete; reserves one step and emits `">>"` at that longest complete point. If no
+  completable state is reached within `budget`, the span is left open.
+  Requires: `lm.ValidTokensIdsLogits()`, `parser.IsValidPrefix(currentConstrained)`,
+  `|currentConstrained| <= |generated|`, `eosToken in lm.Tokens`, `">>" in lm.Tokens`.
+  Returns: `(generatedOut, insideOut, currentOut)` with `!insideOut ==> currentOut == []`,
+  `insideOut ==> parser.IsValidPrefix(currentOut)`, `|generatedOut| <= |generated| + budget`,
+  `cost <= old(cost) + budget`, and `cost >= old(cost)`.
+  Cost: ≤ `budget` token-steps.
+  Control profile: budget-bounded completeness-tracking close that needs no caller-side proof of completeness.
+
+- `helpers.ManagedStep(lm, parser, prompt, generated, insideConstrained, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: one self-contained free-or-constrained decode step with delimiter/state
+  management built in.
+  Mechanics: outside a span, takes one `UnconstrainedStep` and enters constrained
+  mode when the full rendered output ends in `"<<"`; inside a span, closes when `currentConstrained` is
+  complete, otherwise takes one `AdaptiveConstrainedStep` and appends it.
+  Returns `(generatedOut, insideOut, currentOut, done)` where `done` means EOS or
+  span close was reached.
+  Requires: same parser-valid/current-state shape as the lower-level span helpers,
+  `"<<", ">>", eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
+  Cost: exactly +1 token-step on every path.
+  Control profile: proof-friendly single-step state machine for strategies that
+  need to manage spans without hand-writing delimiter and parser-state branches.
+
+- `helpers.GenerateWithManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: bounded full decode loop with free preamble, constrained span handling,
+  completeness-gated close, and proof obligations discharged inside the helper.
+  Mechanics: loops up to `maxSteps`; outside a span it samples freely until EOS
+  or the full rendered output ends in `"<<"`; inside a span it closes when complete, otherwise advances with
+  `AdaptiveConstrainedStep`. The caller receives `(generated,
+  insideConstrainedOut, currentConstrainedOut)` and does not need to prove a
+  custom loop.
+  Requires: same parser-valid/current-state shape as `ManagedStep`, `"<<", ">>",
+  eosToken in lm.Tokens`, and bounded non-negative `boostAmount`.
+  Cost: at most +`maxSteps`.
+  Control profile: high-level span manager for cold strategies that are losing
+  budget or correctness in hand-written free/inside-span loops.
+
+- `helpers.GenerateWithPrefixAndManagedSpan(lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, prefixBudget, validTokenGroups, boostAmount, narrowThreshold, eosToken)`
+  Role: bounded full decode loop that hard-caps the unconstrained preamble before
+  forcing entry into a constrained span.
+  Mechanics: like `GenerateWithManagedSpan`, but while outside a span it allows
+  at most `prefixBudget` free steps. When `prefixBudget < maxSteps`, the next
+  loop iteration calls `OpenConstrainedSpan` so the remaining budget can be
+  spent on parser-controlled content and closing. When `prefixBudget == maxSteps`,
+  the free-token budget consumes the whole loop and
+  no forced opening occurs.
+  Requires: same requirements as `GenerateWithManagedSpan`, plus
+  `prefixBudget <= maxSteps`.
+  Cost: at most +`maxSteps`.
+  Control profile: output-budget guard for failures where the model stays in
+  free text too long or enters constrained mode too late.
+
+- `helpers.DeadEndAvoidingStep(lm, parser, prompt, generated, eosToken, maxRetries)`
+  Role: one constrained token step that refuses an immediately invalid or dead
+  parser prefix and resamples from the same logits up to `maxRetries` times.
+  Mechanics: generates logits once, masks grammar-invalid choices, and masks each
+  sampled dead-end token before trying again. Returns `(next, success)` so the
+  caller can roll back when no usable continuation is found.
+  Cost: exactly +1 token-step.
+  Control profile: bounded one-token lookahead for grammars whose runtime mask
+  can admit a token with no valid continuation.
+
+### Soft preferences and group-aware constrained decoding
+
+- `helpers.GroupBoostedConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, amount, eosToken)`
+  Role: one parser-valid token choice with caller-supplied group preferences.
+  Mechanics: calls the LM, boosts groups containing parser-valid members, then
+  hard-masks to parser-valid next tokens plus EOS.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with soft preference among legal choices.
+
+- `helpers.BoostValidGroups(lm, parser, prefix, groups, amount)`
+  Role: apply the same per-group soft boost used inside group-boosted steps, without sampling.
+  Mechanics: for each `groups[i]` such that `GroupHasValidMember` is true at `prefix`, calls `SafeBoostTokenLogits(lm, groups[i], amount)` (non-vocabulary tokens in the group are ignored).
+  Cost: +0 (no `GenerateLogits` / `ChooseNextToken` in this helper).
+  Control profile: logit shaping only; call after `GenerateLogits` if logits must reflect the current prefix.
+
+- `helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, amount, narrowThreshold, eosToken)`
+  Role: one parser-valid token choice with group preferences applied only at
+  narrower parser states.
+  Mechanics: same hard mask as `ConstrainedStep`; group boosts are applied only
+  when `parser.ValidNextTokenCount(currentConstrained) <= narrowThreshold`.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with conditional soft preference.
+
+- `helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, boostGroups, boostAmount, penaltyTokens, penaltyAmount, narrowThreshold, eosToken)`
+  Role: same adaptive group boosts as `AdaptiveConstrainedStep`, plus safe token
+  penalties before the hard mask.
+  Mechanics: `GenerateLogits`, conditional `BoostValidGroups`, `SafePenalizeTokenLogits`,
+  `MaskValidNextAndEos`, `ChooseNextToken`.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with conditional boosts and penalties.
+
+- `helpers.SafeBoostedConstrainedStep(lm, parser, prompt, currentConstrained, tokens, amount, eosToken)`
+  Role: one parser-valid token choice with a soft boost for a caller-supplied
+  token set.
+  Mechanics: calls the LM, ignores any `tokens` outside `lm.Tokens`, boosts the
+  remaining listed tokens, then hard-masks to parser-valid next tokens plus EOS.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with token-list soft preference.
+
+- `helpers.SafePenalizedConstrainedStep(lm, parser, prompt, currentConstrained, tokens, amount, eosToken)`
+  Role: one parser-valid token choice with a soft penalty for a caller-supplied
+  token set.
+  Mechanics: calls the LM, ignores any `tokens` outside `lm.Tokens`, penalizes
+  the remaining listed tokens, then hard-masks to parser-valid next tokens plus
+  EOS.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with token-list soft avoidance.
+
+- `helpers.SafeRepetitionPenaltyStep(lm, parser, prompt, currentConstrained, generated, amount, eosToken)`
+  Role: one parser-valid token choice that discourages reusing tokens already
+  present in the visible output.
+  Mechanics: calls the LM, filters `generated` through `lm.Tokens`, penalizes
+  those tokens, then hard-masks to parser-valid next tokens plus EOS.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with repetition avoidance.
+
+- `helpers.SafeTemperatureConstrainedStep(lm, parser, prompt, currentConstrained, temperature, eosToken)`
+  Role: one parser-valid token choice with local sampling sharpness adjusted.
+  Mechanics: calls the LM, clamps `temperature` to a safe range, scales logits,
+  then hard-masks to parser-valid next tokens plus EOS.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with sharper or flatter token sampling.
+
+- `helpers.SafeSoftConstrainedStep(lm, parser, prompt, currentConstrained, boostAmount, eosToken)`
+  Role: one inside-span token choice that first tries a soft grammar preference,
+  then falls back to hard parser control if the soft choice would not preserve
+  parser validity.
+  Mechanics: calls the LM, boosts parser-valid next tokens plus EOS, samples one
+  soft choice, and returns it if it preserves parser validity; otherwise it
+  hard-masks to parser-valid next tokens plus EOS and returns the fallback token.
+  Returns `usedFallback == true` only when the hard fallback path is used.
+  Cost: +1 token-step by helper contract, including EOS.
+  Control profile: soft grammar preference with hard parser fallback.
+
+- `helpers.SafeBoostTokenLogits(lm, tokens, amount)`
+  Role: raise soft preference for a caller-supplied token set in the current logits.
+  Mechanics: filters `tokens` through `lm.Tokens`, then adds to their existing
+  logits. It does not call the LM, sample, append output, or inspect the parser.
+  Cost: +0.
+  Control profile: soft logit preference only; relevant only to later choices
+  that read the modified logits rather than regenerating fresh logits first.
+
+- `helpers.SafePenalizeTokenLogits(lm, tokens, amount)`
+  Role: lower soft preference for a caller-supplied token set in the current logits.
+  Mechanics: filters `tokens` through `lm.Tokens`, then subtracts from their
+  existing logits. It does not call the LM, sample, append output, or inspect
+  the parser.
+  Cost: +0.
+  Control profile: soft logit preference only; relevant only to later choices
+  that read the modified logits rather than regenerating fresh logits first.
+
+- `helpers.GetLogitGap(lm)`
+  Role: measure spread between the top two **unmasked** vocabulary logits.
+  Mechanics: single scan over `lm.Logits` with `lm.IsMasked`; returns `0.0` if
+  fewer than two unmasked positions exist.
+  Cost: +0.
+
+- `helpers.GetTopKTokens(lm, k)`
+  Role: return the `k` vocabulary tokens with highest current logits (no LM call).
+  Mechanics: greedy index selection with lower-index tie-break; requires
+  `1 <= k <= |lm.Tokens|`.
+  Cost: +0.
+
+- `helpers.MaskTokensInPrefix(lm, prefix)`
+  Role: hard-mask every vocabulary token that appears anywhere in `prefix`.
+  Mechanics: walks `prefix` and calls `lm.MaskToken` for in-vocabulary entries.
+  Cost: +0.
+
+- `helpers.SpeculativeConstrainedRollout(lm, parser, prompt, constrainedPrefix, numTokens, eosToken)`
+  Role: run up to `numTokens` `ConstrainedStep` calls from `constrainedPrefix`, then restore the entry logits exactly
+  so the caller can inspect the candidate without
+  committing logits state (cost still includes the speculative forward steps).
+  Mechanics: internal `SaveLogitsSnapshot` / `RestoreLogitsSnapshot`;
+  `candidatePrefix == constrainedPrefix + candidateTokens`; `hitComplete` exactly reports
+  whether `candidatePrefix` is complete; `hitEos` means EOS consumed one step without
+  being appended to `candidateTokens` and cannot coincide with `hitComplete`.
+  Cost: +`stepsUsed` token-steps (`stepsUsed <= numTokens`).
+
+### Parser queries, repair, and context extraction
+
+- `helpers.ValidTokenCount(parser, currentConstrained)`
+  Role: inspect parser branching at the current constrained prefix.
+  Mechanics: returns the valid-next-token count; no LM call and no state change.
+  Cost: +0.
+  Control profile: parser information only.
+
+- `helpers.DeadEndDetection(parser, currentConstrained, minValidCount)`
+  Role: detect whether parser branching is below a caller-supplied threshold.
+  Mechanics: returns a thresholded boolean from the valid-next-token count; no
+  LM call and no state change.
+  Cost: +0.
+  Control profile: parser information only.
+
+- `helpers.IsTokenValidNext(parser, currentConstrained, token)`
+  Role: test one candidate token against the parser.
+  Mechanics: returns whether `token` is valid next; no state change.
+  Cost: +0.
+  Control profile: parser information only.
+
+- `helpers.TopValidCandidates(lm, parser, prompt, currentConstrained, maxCandidates, eosToken)`
+  Role: inspect the LM's ranking among legal next tokens.
+  Mechanics: calls the LM once and returns up to `maxCandidates` high-logit
+  parser-valid candidates, with EOS admissible. It does not append a candidate.
+  Cost: +1 token-step.
+  Control profile: LM-ranked parser-valid candidate information.
+
+- `helpers.RollbackConstrainedSuffix(parser, generated, currentConstrained)`
+  Role: repair active constrained state by shortening the constrained suffix.
+  Mechanics: computes the stable prefix from the current suffix length, rolls
+  back only `currentConstrained` until parser-valid, and reconstructs
+  `generatedOut`.
+  Cost: +0.
+  Control profile: parser repair by deletion.
+
+- `helpers.RollbackConstrainedToComplete(parser, generated, currentConstrained)`
+  Role: repair active constrained state by shortening the constrained suffix to
+  a complete parse.
+  Mechanics: computes the stable prefix from the current suffix length, rolls
+  back only `currentConstrained` until `IsCompletePrefix` (or empty), and
+  reconstructs `generatedOut`.
+  Cost: +0.
+  Control profile: parser repair by deletion.
+
+- `helpers.RollbackAndContinue(lm, parser, prompt, generated, currentConstrained, eosToken, maxSteps, closeReserve, maxRetries)`
+  Role: repair active constrained state by rolling the constrained suffix back to
+  a complete parse and then regenerating forward from that point.
+  Mechanics: computes the stable prefix from the current suffix length, rolls
+  `currentConstrained` back to its last `IsCompletePrefix` (or empty), then steps
+  the LM forward, avoiding dead-end tokens (up to `maxRetries` retries per step)
+  and tracking the longest complete prefix reached. Stops after at most
+  `maxSteps - closeReserve` steps. `currentOut` is `IsCompletePrefix` or empty;
+  `generatedOut` is the stable prefix followed by `currentOut`.
+  The constrained span is left open — no closing delimiter is emitted — and the
+  `closeReserve` steps withheld from the step budget remain available for closing
+  it afterward.
+  Requires `closeReserve <= maxSteps` and `|currentConstrained| <= |generated|`.
+  Cost: at most +`(maxSteps - closeReserve)`.
+  Control profile: parser repair by deletion plus dead-end-avoiding regeneration.
+
+- `helpers.RegenerateUnitOnGroundingFailure(lm, parser, prompt, currentConstrained, eosToken, budget, maxRetries, maxRollbackBudget)`
+  Role: generate a constrained span unit-by-unit, rewinding and resampling any
+  completed unit whose identifier-like tokens are not grounded in the prompt
+  context.
+  Mechanics: generates tokens via dead-end-avoiding steps. A unit boundary is
+  detected when `parser.CompletedSchemaSymbolCount` increases, meaning a table
+  or column symbol completed. `lm.FirstUngroundedIdentifierTokenIdx` locates the
+  actual unsupported identifier inside that unit. With retry budget remaining,
+  the helper rolls back to the last accepted checkpoint and persistently
+  penalizes the rejected identifier at its own token position before regenerating.
+  After `maxRetries` failures on one unit, it accepts the unit to preserve
+  termination. Returns `resultConstrained: Prefix`, always parser-valid.
+  Cost: at most +`budget` token-steps.
+  Control profile: unit-level rollback-and-resample with bounded retry and
+  one flat total budget; schema-symbol boundary detection; prompt-grounded
+  identifier acceptance test.
+
+- `helpers.PrefixAppearsInPrompt(lm, prefix)`
+  Role: no-gold duplicate/exemplar check for a generated prefix.
+  Mechanics: renders `prefix` and asks whether the normalized span already
+  appears in the current prompt context, including prompt examples and rolling
+  suffix text visible to the model. It uses exact normalized span matching, not
+  substring search.
+  Cost: +0.
+  Fair: reads only prompt-visible text; never reads gold labels, scorer state,
+  evaluator results, or class-specific win rules.
+
+- `helpers.PrefixResemblesPromptExamples(lm, prefix)`
+  Role: no-gold resemblance score for a generated prefix.
+  Mechanics: renders `prefix` and returns a real number in [0,1] measuring how
+  structurally similar it is to the example spans shown in the current prompt
+  (the same prompt-visible examples `PrefixAppearsInPrompt` inspects). Similarity
+  is computed with generic tooling. Returns 0.0 when the prompt shows no examples
+  or the prefix cannot be parsed. The strategy chooses its own threshold.
+  Cost: +0.
+  Fair: reads only prompt-visible examples; never reads gold labels, scorer
+  state, held-out data, evaluator results, or class-specific strategy advice.
+
+- `helpers.LastTokenBefore(generated, sep)` and
+  `CSDHelpers.ExtractAfterKeyword(prefix, keyword)`
+  Role: read lightweight context from existing generated tokens.
+  Mechanics: scan token sequences and return matching context tokens; no LM
+  call and no state change.
+  Cost: +0.
+  Control profile: context information only.
+
+- `CSDHelpers.CountTokenOccurrences(prefix, target)` (static)
+  Role: count how many times `target` appears as a token element of `prefix`.
+  Cost: +0.
+
+- `CSDHelpers.OccurrencesInRange(prefix, target, hi)` (static function)
+  Role: count how many times `target` appears before index `hi`.
+  Contract: requires `hi <= |prefix|`.
+  Cost: +0.
+
+- `CSDHelpers.TokensSinceLastOccurrence(prefix, target)` (static)
+  Role: distance in tokens from the end of `prefix` back to the last occurrence
+  of `target`; returns `|prefix|` if `target` never occurs.
+  Cost: +0.
+
+- `CSDHelpers.FlattenTokenGroups`, `CSDHelpers.GroupContaining`,
+  `CSDHelpers.IntersectTokenSets`, and `CSDHelpers.SubtractTokenSets`
+  Role: transform token sets or groups.
+  Mechanics: operate on sequences only; no LM call, parser query, output append,
+  or state transition.
+  Cost: +0.
+  Control profile: token-set bookkeeping only.
+
+- `helpers.GroupHasValidMember(parser, prefix, group)`
+  Role: test whether any token in `group` is parser-valid at `prefix`.
+  Mechanics: linear scan over `group`; no LM call or logit change.
+  Cost: +0.
+
+- `helpers.SoftConstrainedStep(lm, parser, prompt, constrainedPrefix, boostAmount, eosToken)`
+  Role: one step that boosts grammar-valid logits (and EOS) then samples without a hard mask.
+  Mechanics: `BoostValidNextAndEos`, `ChooseNextTokenUnconstrained`; `isValid` reports
+  EOS or parser-valid extension.
+  Cost: +1 token-step.
+
+- `helpers.PenalizedConstrainedStep`
+  Role: `ConstrainedStep` with an explicit penalize list that must already be in `lm.Tokens`.
+  Mechanics: same hard mask and postconditions as `ConstrainedStep` after the
+  penalty edit.
+  Cost: +1 token-step.
+
+- `helpers.BoostedConstrainedStep`
+  Role: `ConstrainedStep` with an explicit boost list that must already be in `lm.Tokens`.
+  Mechanics: same hard mask and postconditions as `ConstrainedStep` after the
+  boost edit.
+  Cost: +1 token-step.
+
+- `helpers.BoostTokenLogits`
+  Role: direct positive logit nudge for a vocabulary-known token list.
+  Mechanics: requires `forall t in list :: t in lm.Tokens`; clamped arithmetic; no LM call.
+  Cost: +0.
+
+- `helpers.PenalizeTokenLogits`
+  Role: direct logit nudge for a vocabulary-known token list.
+  Mechanics: requires `forall t in list :: t in lm.Tokens`; clamped arithmetic; no LM call.
+  Cost: +0.
+
+- `helpers.RepetitionPenaltyStep`
+  Role: constrained step with repetition penalty on a token bag before masking.
+  Mechanics: non-safe variant imposes the same membership proofs as the
+  underlying penalize helper.
+  Cost: +1 token-step.
+
+- `helpers.TemperatureConstrainedStep`
+  Role: constrained step with temperature scaling before masking.
+  Mechanics: non-safe variant imposes the same range proofs as the underlying
+  scale helper.
+  Cost: +1 token-step.
+
+- `helpers.GetHighestLogitToken(lm)`
+  Role: read the argmax from the current logit vector.
+  Mechanics: no forward pass; assumes logits already match the intended prefix.
+  Cost: +0.
+
+- `helpers.GetTokenLogit(lm, token)`
+  Role: read one coordinate from the current logit vector.
+  Mechanics: no forward pass; assumes logits already match the intended prefix.
+  Cost: +0.
+
+- `helpers.ScaleAllLogits(lm, scalar)`
+  Role: multiply every vocabulary logit by a positive scalar with bounds clamping.
+  Mechanics: no LM call; use before a sampling helper that reads the same logits.
+  Cost: +0.
+
+- `helpers.SaveLogitsSnapshot(lm)`
+  Role: copy logits for branching or speculation.
+  Mechanics: full-array read; use with a later restore when a speculative path
+  should not commit logit state.
+  Cost: +0 for snapshot ops alone.
+
+- `helpers.RestoreLogitsSnapshot(lm, snapshot)`
+  Role: restore copied logits after branching or speculation.
+  Mechanics: full-array write; restores prior logits without changing `cost` by itself.
+  Cost: +0 for snapshot ops alone.
+
+- `CSDHelpers.CountSubstring(s, sub)` (static function; same class as instance helpers)
+  Role: count non-overlapping occurrences of `sub` in string `s`.
+  Cost: +0.
+
+- `CSDHelpers.PrefixToString(prefix)` / `CSDHelpers.ExtractContentBetweenDelimiters(input, startDelim, endDelim)` (static)
+  Role: stringify a token prefix or extract delimited substring content per contract.
+  Cost: +0.
+
+## LM and `Parser` surface (for calls inside the strategy body)
+
+Strategy code may also invoke `lm` and `parser` members directly when proofs permit.
+Summaries align with `synthesis/verify/library/README.md`; the `.dfy` file states full contracts.
+
+- **`lm`:** `GenerateLogits`, `ChooseNextToken`, `ChooseNextTokenUnconstrained`, `GenerateUnconstrainedChunk`,
+  `MaskValidNextAndEos`, `BoostValidNextAndEos`, `MaskToken` / `MaskTokens` / `MaskTokensExcept`,
+  `IdToToken`, `TokenToId`, logit readers (`IdToLogit`, `TokenToLogit`, `TokensToLogits`,
+  `IdsToLogits`), `IsMasked`, `HasUnmaskedToken`.
+- **`parser`:** `IsValidPrefix`, `IsCompletePrefix`, `IsDeadPrefix`, `ValidNextTokenCount`, `ValidNextToken`,
+  `ValidNextTokens`, `ParseG`.
+
+### Verified rendered-text functions
+
+- `Contains(s, sub)` tests whether plain string `s` contains plain string `sub`.
+- `RenderPrefix(prefix)` concatenates token strings into the exact text they render.
+- `RenderedEndsWith(prefix, suffix)` tests the rendered text suffix without assuming
+  that a visible substring is one tokenizer token. After appending `next` to
+  `generated`, prefer `RenderedEndsWith(generated, "<<")` over `next == "<<"`:
+  it recognizes a space-prefixed token such as `" <<"` and a delimiter split across tokens.
+
+
+
+## Content to rewrite
+
+```dafny
+// prev strategy
+```
+
+The corrected body must include the required rationale and proof sketch
+blocks, in that order, with no prose or Markdown fence around them. This is a
+formatting fix — do not change the strategy's underlying decoding logic.
