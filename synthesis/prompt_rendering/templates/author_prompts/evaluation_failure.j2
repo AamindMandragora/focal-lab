@@ -1,0 +1,56 @@
+Your method body passed verification and compilation, then was evaluated on the task,
+but did not meet evaluation thresholds.
+
+Verification and compilation only check that the code is internally
+consistent; this stage ran the compiled strategy against real examples and
+scored what it actually produced. Two numbers are tracked: accuracy (how
+often the final answer was correct) and syntax rate (how often the output
+matched the task's required structure/contract). A shortfall in either can
+come from the decoding strategy's control flow, not only from the underlying
+model being wrong — read the feedback below before deciding what to change.
+
+## Task
+
+{{ task_description }}
+{{ allowed_helpers_block }}{{ tool_reference_block }}
+
+## Verified Dafny patterns (proof-style reference only)
+
+{{ verified_examples }}
+
+{{ search_memory_block }}## Previous attempt
+
+```dafny
+{{ previous_strategy }}
+```
+
+## Result summary
+
+Result: accuracy {{ previous_accuracy_str }}, syntax {{ previous_syntax_rate_str }} on {{ num_examples }} examples.
+Goal:   accuracy ≥ {{ goal_accuracy_str }}, syntax ≥ {{ goal_syntax_rate_str }}.
+{{ eval_budget_block }}Gap to goal accuracy: {{ accuracy_gap_pp_str }}pp.
+Gap to goal syntax:   {{ syntax_gap_pp_str }}pp.
+
+## Evaluation feedback
+
+```
+{{ evaluation_feedback }}
+```
+{{ attempt_outcome_ledger_block }}{{ mode_examples_block }}{{ best_so_far_block }}
+## How to revise
+
+Choose the change size that matches your diagnosis. Numeric tweaks, helper swaps, and structural rewrites are all on the table — pick whatever the failure pattern most directly calls for: a small gap near the goal usually calls for a targeted tweak, while a stuck or regressing run usually calls for revisiting the control-flow structure itself.
+
+The rules below apply whenever the task contract uses visible delimiter spans (marked regions such as `<<...>>` in the output) or requires exact content inside them:
+
+Never detect a visible delimiter with exact token equality such as `next == "<<"` or `next == ">>"`; append the token and use `RenderedEndsWith` on the full relevant prefix.
+If the task contract includes exact content or visible delimiter spans, treat syntax failures as structural: prefer parser-controlled token generation and immediate span closure over longer unconstrained chunks.
+When a visible span is left unterminated or malformed, repair the active constrained state so the span returns to a point the parser can close cleanly, and emit the closing delimiter as soon as it can — before the step budget runs out.
+If the output uses visible spans, avoid opening them until the content is settled; once open, keep them to the smallest exact unit the contract allows.
+Do not place reasoning text inside a visible span; reserve visible spans for the final exact content only.
+When a visible span contains exact content, use parser-guided token selection and keep the span content to a single finished expression rather than a loose sequence of partial fragments.
+If a visible span is exact, keep it under hard parser control until the parser
+can close it cleanly, without falling back to `ConfidenceGatedStep`.
+
+Return exactly the corrected Dafny method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.

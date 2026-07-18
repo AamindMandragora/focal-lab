@@ -1,0 +1,8 @@
+Structured verification analysis:
+1. Postcondition failure at F.dfy:12
+   Message: msg
+   Relevant contract excerpt:
+       ensures
+     > || generated != generatedPrefix ||
+       more
+   Remediation: this progress postcondition requires that on every return path at least one of these holds — maxSteps == 0, cost > 0, generated != generatedPrefix, or the constrained-span state changed. It fails on a path that returns having proved none, usually (a) a return before any step is taken, or (b) the final return where cost > 0 is not provable because the cost out-parameter is not tied to the work done. Make every path with maxSteps > 0 take at least one counted step, and set the cost out-parameter from the accumulated step count.

@@ -71,6 +71,35 @@ try:
 except ImportError:
     from failure_taxonomy import render_cluster_block
 
+try:
+    from synthesis.prompt_rendering import render as _render_prompt
+    from synthesis.prompt_rendering.models.feedback import (
+        AntiDegeneracyFields,
+        EarlyStopMetricsFields,
+        FailureModeEntry,
+        FeedbackSummaryModel,
+        SmilesTrialFields,
+    )
+    from synthesis.prompt_rendering.models.feedback_loop import HintLinesModel
+    from synthesis.prompt_rendering.models.evaluator import (
+        ModeExampleEntry,
+        ModeExamplesModel,
+    )
+except ImportError:
+    from prompt_rendering import render as _render_prompt
+    from prompt_rendering.models.feedback import (
+        AntiDegeneracyFields,
+        EarlyStopMetricsFields,
+        FailureModeEntry,
+        FeedbackSummaryModel,
+        SmilesTrialFields,
+    )
+    from prompt_rendering.models.feedback_loop import HintLinesModel
+    from prompt_rendering.models.evaluator import (
+        ModeExampleEntry,
+        ModeExamplesModel,
+    )
+
 from synthesis.evaluate.benchmarks.smiles.rolling_prompt import (
     apply_suffix as _apply_smiles_rolling_suffix,
     update_suffix as _update_smiles_rolling_suffix,
@@ -221,117 +250,66 @@ class EvaluationResult:
             if self.early_stopped and self.planned_num_examples
             else str(self.num_examples)
         )
-        lines = [
-            f"Evaluation Results ({eval_count_label} examples):",
-            (
-                "  Accuracy: "
-                f"{self.accuracy:.1%} "
-                f"({self.num_correct}/{self.accuracy_denominator or self.num_examples})"
-            ),
-            f"  Syntax Rate: {self.syntax_rate:.1%}",
-            f"  Total Time: {self.total_time_seconds:.2f}s",
-            f"  Slowest Example Time: {self.max_sample_time_seconds:.2f}s",
+
+        smiles_trial_raw = self.aux_metrics.get("smiles_paper_trial")
+        smiles_trial = None
+        if isinstance(smiles_trial_raw, dict):
+            smiles_trial = SmilesTrialFields(
+                validity_pct=f"{smiles_trial_raw.get('validity_rdkit', 0.0):.1%}",
+                membership_pct=f"{smiles_trial_raw.get('membership', 0.0):.1%}",
+                diversity_display=(
+                    str(smiles_trial_raw.get("diversity_tanimoto"))
+                    if smiles_trial_raw.get("diversity_tanimoto") is not None
+                    else "n/a"
+                ),
+                retro_score_display=(
+                    str(smiles_trial_raw.get("retro_score"))
+                    if smiles_trial_raw.get("retro_score") is not None
+                    else "n/a"
+                ),
+                samples_to_target_display=str(
+                    smiles_trial_raw.get("samples_to_target_unique_valid", "n/a")
+                ),
+                unique_valid_display=(
+                    f"{smiles_trial_raw.get('unique_valid_count', 0)}/"
+                    f"{smiles_trial_raw.get('sample_count', 0)}"
+                ),
+            )
+
+        anti_raw = self.aux_metrics.get("anti_degeneracy")
+        anti_degeneracy = None
+        if isinstance(anti_raw, dict):
+            anti_degeneracy = AntiDegeneracyFields(
+                churn_ratio_display=f"{anti_raw.get('delimiter_churn_ratio', 0.0):.3f}",
+                tiny_span_pct=f"{anti_raw.get('tiny_span_rate', 0.0):.1%}",
+                max_steps_hit_pct=f"{anti_raw.get('max_steps_hit_rate', 0.0):.1%}",
+                penalty_pct=f"{anti_raw.get('penalty', 0.0):.1%}",
+                adjusted_membership_pct=(
+                    f"{anti_raw.get('adjusted_membership_score', self.accuracy):.1%}"
+                ),
+            )
+
+        early_stop_raw = self.aux_metrics.get("early_stop")
+        early_stop_metrics = None
+        if isinstance(early_stop_raw, dict):
+            early_stop_metrics = EarlyStopMetricsFields(
+                reason=str(early_stop_raw.get("reason", "unknown")),
+                max_possible_pct=(
+                    f"{float(early_stop_raw.get('max_possible_accuracy', 0.0)):.1%}"
+                ),
+                target_pct=f"{float(early_stop_raw.get('target_accuracy', 0.0)):.1%}",
+                evaluated_display=(
+                    f"{early_stop_raw.get('evaluated_examples', 0)}/"
+                    f"{early_stop_raw.get('total_examples', self.num_examples)}"
+                ),
+            )
+
+        failure_modes = [
+            FailureModeEntry(mode=mode, count=count, detail=detail)
+            for mode, count, detail in self._summarize_failure_modes()
         ]
-        # The "Contains << >>" status only matters when delimiters are required;
-        # omit it when the dataset does not require them (insert after Accuracy
-        # to keep the original line order).
-        if require_delimiters:
-            lines.insert(
-                2, f"  Contains << >>: {'yes' if self.contains_delimiters else 'no'}"
-            )
-        if self.early_stopped:
-            lines.append("  Early Stop: yes")
-            if self.early_stop_reason:
-                lines.append(f"  Early Stop Reason: {self.early_stop_reason}")
-        if self.accuracy_definition != "correct_examples_over_all_examples":
-            lines.append(f"  Accuracy Definition: {self.accuracy_definition}")
-        if self.invalid_outputs_excluded_from_accuracy:
-            lines.append(
-                "  Invalid outputs excluded from accuracy denominator: "
-                f"{self.invalid_outputs_excluded_from_accuracy}"
-            )
-        if self.task_guidance:
-            lines.extend(["", "Prompt guidance used by this attempt:"])
-            for guidance in self.task_guidance:
-                lines.append(f"  - {guidance}")
-
-        smiles_trial = self.aux_metrics.get("smiles_paper_trial")
-        if isinstance(smiles_trial, dict):
-            lines.extend(
-                [
-                    "",
-                    "SMILES Quality Metrics (paper-aligned, single trial):",
-                    f"  RDKit Validity: {smiles_trial.get('validity_rdkit', 0.0):.1%}",
-                    f"  Membership: {smiles_trial.get('membership', 0.0):.1%}",
-                    (
-                        "  Diversity (avg pairwise Tanimoto distance): "
-                        f"{smiles_trial.get('diversity_tanimoto') if smiles_trial.get('diversity_tanimoto') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  RetroStar score: "
-                        f"{smiles_trial.get('retro_score') if smiles_trial.get('retro_score') is not None else 'n/a'}"
-                    ),
-                    (
-                        "  Samples to 100 unique valid (cap 1000): "
-                        f"{smiles_trial.get('samples_to_target_unique_valid', 'n/a')}"
-                    ),
-                    (
-                        "  Unique valid molecules: "
-                        f"{smiles_trial.get('unique_valid_count', 0)}/{smiles_trial.get('sample_count', 0)}"
-                    ),
-                ]
-            )
-
-        anti = self.aux_metrics.get("anti_degeneracy")
-        if isinstance(anti, dict):
-            lines.extend(
-                [
-                    "",
-                    "Anti-Degeneracy Diagnostics:",
-                    f"  Delimiter churn ratio: {anti.get('delimiter_churn_ratio', 0.0):.3f}",
-                    f"  Tiny-span rate: {anti.get('tiny_span_rate', 0.0):.1%}",
-                    f"  Max-steps hit rate: {anti.get('max_steps_hit_rate', 0.0):.1%}",
-                    f"  Applied penalty: {anti.get('penalty', 0.0):.1%}",
-                    (
-                        "  Membership adjusted by penalty: "
-                        f"{anti.get('adjusted_membership_score', self.accuracy):.1%}"
-                    ),
-                ]
-            )
-
-        early_stop = self.aux_metrics.get("early_stop")
-        if isinstance(early_stop, dict):
-            lines.extend(
-                [
-                    "",
-                    "Early Stop:",
-                    f"  Reason: {early_stop.get('reason', 'unknown')}",
-                    (
-                        "  Max possible accuracy: "
-                        f"{float(early_stop.get('max_possible_accuracy', 0.0)):.1%}"
-                    ),
-                    (
-                        "  Target accuracy: "
-                        f"{float(early_stop.get('target_accuracy', 0.0)):.1%}"
-                    ),
-                    (
-                        "  Evaluated examples: "
-                        f"{early_stop.get('evaluated_examples', 0)}/"
-                        f"{early_stop.get('total_examples', self.num_examples)}"
-                    ),
-                ]
-            )
-
-        failure_modes = self._summarize_failure_modes()
-        if failure_modes:
-            lines.append("\nPrimary Failure Modes:")
-            for mode, count, detail in failure_modes:
-                lines.append(f"  - {mode}: {count} example(s) {detail}")
 
         output_run_summary = self._summarize_output_run()
-        if output_run_summary:
-            lines.append("\nOutput Run Summary:")
-            lines.extend(f"  {metric}" for metric in output_run_summary)
 
         # Anonymized failure summary (April 25): we used to dump up to 3 specific
         # failed examples (question + expected + actual) into the feedback to
@@ -341,34 +319,26 @@ class EvaluationResult:
         # statistics — failure_mode counts (already populated above), runtime
         # budget exceedances, and any unexpected exception types — without any
         # question text, expected SQL, or actual SQL strings.
+        aggregate_failure_stats_lines: List[str] = []
         if self.sample_outputs:
             n_total = len(self.sample_outputs)
             n_runtime_exceeded = sum(
                 1 for s in self.sample_outputs if s.get("runtime_budget_exceeded")
             )
-            extras = []
             if n_runtime_exceeded:
-                extras.append(
+                aggregate_failure_stats_lines.append(
                     f"  {n_runtime_exceeded}/{n_total} examples timed out "
                     f"(exceeded the per-example time limit) and were scored as failures "
                     f"(accuracy 0, syntax 0 for each timed-out example)."
                 )
-            if extras:
-                lines.append("\nAggregate Failure Stats:")
-                lines.extend(extras)
 
         diagnostic_metrics = self._summarize_diagnostic_metrics(require_delimiters)
-        if diagnostic_metrics:
-            lines.append("\nDiagnostic Error Decomposition:")
-            lines.extend(f"  {metric}" for metric in diagnostic_metrics)
 
         # The structural block is entirely visible-`<<`-span statistics, which
         # are meaningless when delimiters are not required — omit the whole block.
+        structural_metrics: List[str] = []
         if require_delimiters:
             structural_metrics = self._summarize_structural_metrics()
-            if structural_metrics:
-                lines.append("\nStructural Generation Metrics:")
-                lines.extend(f"  {metric}" for metric in structural_metrics)
 
         # Change 1: replace the 5 flat aggregate blocks (Diagnostic Error
         # Decomposition, Output Provenance, Correct-vs-Wrong Contrast,
@@ -388,10 +358,46 @@ class EvaluationResult:
             persistent_ledger=getattr(self, "_failure_ledger", None),
             attempt_index=getattr(self, "_attempt_index", None),
         )
-        if cluster_block:
-            lines.append(cluster_block)
 
-        return "\n".join(lines)
+        model = FeedbackSummaryModel(
+            eval_count_label=eval_count_label,
+            accuracy_pct=f"{self.accuracy:.1%}",
+            num_correct=self.num_correct,
+            accuracy_denominator_display=self.accuracy_denominator or self.num_examples,
+            show_contains_delimiters=require_delimiters,
+            contains_delimiters_yesno="yes" if self.contains_delimiters else "no",
+            syntax_pct=f"{self.syntax_rate:.1%}",
+            total_time_str=f"{self.total_time_seconds:.2f}",
+            max_sample_time_str=f"{self.max_sample_time_seconds:.2f}",
+            early_stopped=self.early_stopped,
+            early_stop_reason=self.early_stop_reason,
+            accuracy_definition_display=(
+                self.accuracy_definition
+                if self.accuracy_definition != "correct_examples_over_all_examples"
+                else None
+            ),
+            invalid_outputs_excluded_from_accuracy=self.invalid_outputs_excluded_from_accuracy,
+            task_guidance=list(self.task_guidance),
+            smiles_trial=smiles_trial,
+            anti_degeneracy=anti_degeneracy,
+            early_stop_metrics=early_stop_metrics,
+            failure_modes=failure_modes,
+            output_run_summary=list(output_run_summary),
+            aggregate_failure_stats_lines=aggregate_failure_stats_lines,
+            diagnostic_metrics=list(diagnostic_metrics),
+            show_structural_metrics=bool(structural_metrics),
+            structural_metrics=list(structural_metrics),
+            cluster_block=cluster_block,
+        )
+
+        rendered = _render_prompt(model, "feedback/feedback_summary.j2")
+        # The original implementation joined its lines with "\n" and never
+        # added a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off.
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _format_trace_event(event: Dict[str, Any]) -> str:
@@ -605,50 +611,6 @@ class EvaluationResult:
         wrong = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
         return [summarize("Correct examples", correct), summarize("Wrong examples", wrong)]
 
-    def _summarize_representative_snapshots(self, max_snapshots: int = 4) -> List[str]:
-        """Show small redacted factual records for distinct observed failure locations."""
-        if not self.sample_outputs:
-            return []
-        selected: List[tuple[str, Dict[str, Any]]] = []
-        seen_locations: set[str] = set()
-        priority = [
-            "syntax_valid_semantic_mismatch",
-            "visible_span_syntax",
-            "answer_extraction_or_completion",
-            "span_absent",
-            "no_valid_visible_span",
-            "time_budget_exceeded",
-            "wrong_after_constrained_activity",
-            "wrong_without_constrained_activity",
-        ]
-        wrong_samples = [sample for sample in self.sample_outputs if not sample.get("is_correct")]
-        for location in priority:
-            for sample in wrong_samples:
-                if sample.get("failure_location") == location and location not in seen_locations:
-                    selected.append((location, sample))
-                    seen_locations.add(location)
-                    break
-            if len(selected) >= max_snapshots:
-                break
-        if not selected:
-            return []
-
-        lines = []
-        for location, sample in selected:
-            tags = ",".join((sample.get("provenance_tags") or [])[:4]) or "none"
-            lines.append(
-                "  - "
-                f"location={location}; "
-                f"syntax={'valid' if sample.get('is_syntax_valid') else 'invalid'}; "
-                f"answer_source={sample.get('answer_source', 'none')}; "
-                f"provenance={sample.get('answer_provenance', 'unknown')}; "
-                f"expected={self._redact_artifact_preview(sample.get('expected'))}; "
-                f"actual={self._redact_artifact_preview(sample.get('actual'))}; "
-                f"valid_spans={sample.get('num_valid_visible_spans', 0)}/{sample.get('num_visible_spans', 0)}; "
-                f"control_tags={tags}"
-            )
-        return lines
-
     def get_behavioral_context_summary(
         self, max_examples: int = 1, max_trace_events: int = 12, require_delimiters: bool = True
     ) -> str:
@@ -690,7 +652,120 @@ class EvaluationResult:
                 for event in tail:
                     lines.append(f"    - {self._format_trace_event(event)}")
 
-        return "\n".join(lines)
+        model = HintLinesModel(lines=lines)
+        rendered = _render_prompt(model, "feedback_loop/hint_lines.j2")
+        # The original implementation joined its lines with "\n" and never added
+        # a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as get_feedback_summary / get_failure_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
+
+    def _classify_sample_failure_modes(self, sample: Dict[str, Any]) -> List[Tuple[str, str]]:
+        """Classify a single sample's observable failure modes.
+
+        Returns an ordered list of (mode_key, detail_string) tuples for every
+        failure-mode bucket this sample matches, in cascade order (first-seen
+        detail order). Shared by `_summarize_failure_modes` (aggregate counts)
+        and `_pick_representative_samples_by_mode` (example picking) so the
+        two never disagree on how a sample is classified.
+
+        NOTE: the delimiter rules below deliberately use `<<`/`>>` counts and the
+        parser's span accounting (num_visible_spans / num_valid_visible_spans),
+        NOT the old "is this substring present anywhere" checks. This is an
+        intentional feedback-quality fix, not accidental drift from the
+        byte-identical prompt refactor: the old rules only fired in the
+        all-or-nothing extreme and mislabeled mixed outputs (one span dangling,
+        an extra close, or 1-of-N spans invalid) as "other". Covered by
+        tests/prompt_rendering/test_feedback_content_fixes.py. These labels feed
+        only the author feedback text, never any scored metric.
+        """
+        error = sample.get("error")
+        full_output = sample.get("full_output") or ""
+        actual = sample.get("actual") or ""
+        contains_delimiters = sample.get("contains_delimiters", False)
+        uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
+        visible_delimiters = sample.get("visible_delimiters", contains_delimiters)
+        used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
+        syntax_rate = float(sample.get("syntax_rate", 0.0))
+        matched = False
+        modes: List[Tuple[str, str]] = []
+
+        if sample.get("runtime_budget_exceeded"):
+            modes.append(("too_slow", "(generation exceeded the per-example runtime budget)"))
+            matched = True
+            if error:
+                return modes
+
+        if error:
+            modes.append(("runtime_or_generation_error", f"(first error: {str(error)[:120]})"))
+            return modes
+
+        n_open = full_output.count("<<")
+        n_close = full_output.count(">>")
+        if not uses_hidden_chunks and n_open > n_close:
+            if n_close == 0:
+                detail = "(opened `<<` but did not close `>>`)"
+            else:
+                detail = f"(opened {n_open} `<<` but closed only {n_close} `>>`)"
+            modes.append(("unterminated_constrained_segment", detail))
+            matched = True
+
+        if uses_hidden_chunks:
+            if not used_constrained_chunk:
+                modes.append(("missing_constrained_chunk", "(no internal parser-governed chunk was used)"))
+                matched = True
+        elif not contains_delimiters and "<<" not in full_output:
+            modes.append(("missing_constrained_segment", "(no `<< >>` segment detected)"))
+            matched = True
+
+        if not uses_hidden_chunks and n_close > n_open:
+            if n_open == 0:
+                detail = "(generated `>>` without a matching opening `<<`)"
+            else:
+                detail = f"(closed {n_close} `>>` but only {n_open} `<<` were opened)"
+            modes.append(("premature_or_unmatched_closure", detail))
+            matched = True
+
+        num_visible_spans = int(sample.get("num_visible_spans", 0))
+        num_valid_visible_spans = int(sample.get("num_valid_visible_spans", 0))
+        if (
+            not uses_hidden_chunks
+            and num_visible_spans > 0
+            and num_valid_visible_spans < num_visible_spans
+        ):
+            detail = (
+                f"({num_visible_spans - num_valid_visible_spans}/{num_visible_spans} "
+                "closed spans failed syntax checks)"
+            )
+            modes.append(("malformed_constrained_content", detail))
+            matched = True
+
+        if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
+            modes.append((
+                "entered_constrained_mode_too_early",
+                "(output entered `<<` almost immediately after the prompt continuation began)",
+            ))
+            matched = True
+
+        if self._has_repetition_loop(full_output):
+            modes.append(("repetition_loop", "(local token pattern repeated in output)"))
+            matched = True
+
+        if not actual:
+            modes.append(("answer_extraction_failed", "(no extractable final answer)"))
+            matched = True
+
+        if not matched and not sample.get("is_correct", False):
+            modes.append((
+                "other_observed_failure",
+                "(uncategorized wrong answer; see representative rollout examples "
+                "for observed output)",
+            ))
+
+        return modes
 
     def _summarize_failure_modes(self) -> List[Tuple[str, int, str]]:
         """Classify the most common observable evaluation failure patterns."""
@@ -698,96 +773,10 @@ class EvaluationResult:
         details: Dict[str, str] = {}
 
         for sample in self.sample_outputs:
-            error = sample.get("error")
-            full_output = sample.get("full_output") or ""
-            actual = sample.get("actual") or ""
-            contains_delimiters = sample.get("contains_delimiters", False)
-            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
-            visible_delimiters = sample.get("visible_delimiters", contains_delimiters)
-            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
-            syntax_rate = float(sample.get("syntax_rate", 0.0))
-            matched = False
-
-            if sample.get("runtime_budget_exceeded"):
-                key = "too_slow"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(generation exceeded the per-example runtime budget)"
-                matched = True
-                if error:
-                    continue
-
-            if error:
-                key = "runtime_or_generation_error"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = f"(first error: {str(error)[:120]})"
-                continue
-
-            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
-                key = "unterminated_constrained_segment"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(opened `<<` but did not close `>>`)"
-                matched = True
-
-            if uses_hidden_chunks:
-                if not used_constrained_chunk:
-                    key = "missing_constrained_chunk"
-                    counters[key] = counters.get(key, 0) + 1
-                    if key not in details:
-                        details[key] = "(no internal parser-governed chunk was used)"
-                    matched = True
-            elif not contains_delimiters and "<<" not in full_output:
-                key = "missing_constrained_segment"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(no `<< >>` segment detected)"
-                matched = True
-
-            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
-                key = "premature_or_unmatched_closure"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(generated `>>` without a matching opening `<<`)"
-                matched = True
-
-            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
-                key = "malformed_constrained_content"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(delimiters present, but constrained content failed syntax checks)"
-                matched = True
-
-            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
-                key = "entered_constrained_mode_too_early"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(output entered `<<` almost immediately after the prompt continuation began)"
-                matched = True
-
-            if self._has_repetition_loop(full_output):
-                key = "repetition_loop"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(local token pattern repeated in output)"
-                matched = True
-
-            if not actual:
-                key = "answer_extraction_failed"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = "(no extractable final answer)"
-                matched = True
-
-            if not matched and not sample.get("is_correct", False):
-                key = "other_observed_failure"
-                counters[key] = counters.get(key, 0) + 1
-                if key not in details:
-                    details[key] = (
-                        "(uncategorized wrong answer; see representative rollout examples "
-                        "for observed output)"
-                    )
+            for mode, detail in self._classify_sample_failure_modes(sample):
+                counters[mode] = counters.get(mode, 0) + 1
+                if mode not in details:
+                    details[mode] = detail
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))
         return [(mode, count, details.get(mode, "")) for mode, count in ranked]
@@ -809,42 +798,8 @@ class EvaluationResult:
             counters[mode] = counters.get(mode, 0) + 1
 
         for sample in self.sample_outputs:
-            error = sample.get("error")
-            full_output = sample.get("full_output") or ""
-            actual = sample.get("actual") or ""
-            contains_delimiters = sample.get("contains_delimiters", False)
-            uses_hidden_chunks = sample.get("uses_hidden_chunks", False)
-            used_constrained_chunk = sample.get("used_constrained_chunk", contains_delimiters)
-            syntax_rate = float(sample.get("syntax_rate", 0.0))
-            matched = False
-
-            if sample.get("runtime_budget_exceeded"):
-                _add("too_slow", sample)
-                matched = True
-                if error:
-                    continue
-            if error:
-                _add("runtime_or_generation_error", sample)
-                continue
-            if not uses_hidden_chunks and "<<" in full_output and ">>" not in full_output:
-                _add("unterminated_constrained_segment", sample); matched = True
-            if uses_hidden_chunks:
-                if not used_constrained_chunk:
-                    _add("missing_constrained_chunk", sample); matched = True
-            elif not contains_delimiters and "<<" not in full_output:
-                _add("missing_constrained_segment", sample); matched = True
-            if not uses_hidden_chunks and ">>" in full_output and "<<" not in full_output:
-                _add("premature_or_unmatched_closure", sample); matched = True
-            if not uses_hidden_chunks and "<<" in full_output and ">>" in full_output and syntax_rate == 0.0:
-                _add("malformed_constrained_content", sample); matched = True
-            if not uses_hidden_chunks and self._looks_like_early_constrained_entry(full_output):
-                _add("entered_constrained_mode_too_early", sample); matched = True
-            if self._has_repetition_loop(full_output):
-                _add("repetition_loop", sample); matched = True
-            if not actual:
-                _add("answer_extraction_failed", sample); matched = True
-            if not matched and not sample.get("is_correct", False):
-                _add("other_observed_failure", sample)
+            for mode, _detail in self._classify_sample_failure_modes(sample):
+                _add(mode, sample)
 
         ranked = sorted(counters.items(), key=lambda item: (-item[1], item[0]))[:4]
         picks: List[Tuple[str, Dict[str, Any]]] = []
@@ -876,7 +831,7 @@ class EvaluationResult:
         picks = self._pick_representative_samples_by_mode()
         if not picks:
             return ""
-        blocks: List[str] = []
+        blocks: List[ModeExampleEntry] = []
         for mode, sample in picks:
             prompt = sample.get("question_full") or sample.get("question") or ""
             qwen_output = sample.get("full_output") or ""
@@ -885,61 +840,24 @@ class EvaluationResult:
             expected_val = sample.get("expected")
             expected_str = "" if expected_val is None else str(expected_val)
             blocks.append(
-                f"--- Example of {mode} ---\n"
-                f"PROMPT:\n{prompt}\n\n"
-                f"QWEN OUTPUT:\n{qwen_output}\n\n"
-                f"STRATEGY EXTRACTED: {actual_str}\n"
-                f"CORRECT ANSWER: {expected_str}"
+                ModeExampleEntry(
+                    mode=mode,
+                    prompt=prompt,
+                    qwen_output=qwen_output,
+                    actual_str=actual_str,
+                    expected_str=expected_str,
+                )
             )
-        return "\n\n".join(blocks)
-
-    def get_primary_failure_summary(self) -> Optional[str]:
-        """Return a compact 'where to focus next' block for the top of refinement
-        prompts. Surfaces the single dominant failure mode + dominant failure
-        location + most-used control tags so the model has one ranked target
-        instead of having to integrate 7 diagnostic sub-sections itself.
-
-        Returns None when there is no usable signal (no samples, fully succeeded).
-        Change 2 of the feedback-shape interventions.
-        """
-        if not self.sample_outputs:
-            return None
-        n = self.num_examples or len(self.sample_outputs)
-        if n == 0:
-            return None
-        failure_modes = self._summarize_failure_modes()
-        if not failure_modes:
-            return None
-        prov = self.get_provenance_counts()
-        loc_counter = prov.get("failure_location")
-        tag_counter = prov.get("control_tags")
-        top_loc = loc_counter.most_common(1)[0] if loc_counter else None
-        top_tags = tag_counter.most_common(3) if tag_counter else []
-
-        lines = ["## Primary failure to fix"]
-        mode_name, mode_count, mode_detail = failure_modes[0]
-        lines.append(
-            f"- Dominant failure mode: {mode_name} "
-            f"({mode_count}/{n} examples) {mode_detail}".rstrip()
-        )
-        if len(failure_modes) > 1:
-            m2_name, m2_count, m2_detail = failure_modes[1]
-            if m2_count >= max(2, n // 5):
-                lines.append(
-                    f"- Secondary failure mode: {m2_name} "
-                    f"({m2_count}/{n} examples) {m2_detail}".rstrip()
-                )
-        if top_loc:
-            loc_name, loc_count = top_loc
-            if loc_name and loc_name != "correct":
-                lines.append(
-                    f"- Dominant failure location: {loc_name} "
-                    f"({loc_count}/{n} examples)"
-                )
-        if top_tags:
-            tag_str = ", ".join(f"{name} ({c}/{n})" for name, c in top_tags)
-            lines.append(f"- Most-used control path tags in previous attempt: {tag_str}")
-        return "\n".join(lines)
+        model = ModeExamplesModel(blocks=blocks)
+        rendered = _render_prompt(model, "evaluator/mode_examples.j2")
+        # The original implementation joined its blocks with "\n\n" and never
+        # added a trailing newline; keep_trailing_newline on the shared Jinja
+        # environment means the template's own final line terminator survives
+        # rendering, so strip exactly that one trailing newline back off (same
+        # idiom as get_feedback_summary / get_failure_summary).
+        if rendered.endswith("\n"):
+            rendered = rendered[:-1]
+        return rendered
 
     @staticmethod
     def _mean(values: List[float]) -> Optional[float]:
@@ -1009,10 +927,28 @@ class EvaluationResult:
     }
     _SOFT_CONSTRAINED_HELPERS = {"SoftConstrainedStep", "SafeSoftConstrainedStep"}
     _SYMBOL_HELPERS = {"ConstrainedSymbol", "ConstrainedSymbolInGenerated"}
+    # Non-"Safe" logit-step variants (traced constrained-step helpers, previously omitted).
+    _LOGIT_STEP_HELPERS = {
+        "BoostedConstrainedStep",
+        "PenalizedConstrainedStep",
+        "RepetitionPenaltyStep",
+        "TemperatureConstrainedStep",
+        "AdaptiveConstrainedStepWithPenalties",
+    }
+    # Rollout/generation constrained helpers (traced constrained-step helpers, previously omitted).
+    _ROLLOUT_GENERATION_HELPERS = {
+        "SpeculativeConstrainedRollout",
+        "RolloutConstrainedWithPenalties",
+        "ConstrainedGeneration",
+        "CraneGeneration",
+    }
     _REPAIR_HELPERS = {
         "RollbackConstrainedSpan",
         "RollbackConstrainedSuffix",
         "RollbackToValidPrefix",
+        # Traced constrained-step helpers, previously omitted.
+        "RollbackAndContinue",
+        "RegenerateUnitOnCheckFailure",
     }
     _CONSTRAINED_HELPERS = {
         "OpenConstrainedSpan",
@@ -1026,6 +962,8 @@ class EvaluationResult:
         *_SOFT_CONSTRAINED_HELPERS,
         *_SYMBOL_HELPERS,
         *_REPAIR_HELPERS,
+        *_LOGIT_STEP_HELPERS,
+        *_ROLLOUT_GENERATION_HELPERS,
     }
 
     _UNCONSTRAINED_HELPERS = {"UnconstrainedStep", "UnconstrainedChunk"}

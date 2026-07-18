@@ -1,0 +1,59 @@
+Your previous method body failed Dafny verification.
+
+Dafny's verifier checks your method body against its contract statically,
+before anything runs: every precondition must be provably true at each call
+site, every loop invariant must hold on entry and be re-established by every
+branch of the loop body, and every postcondition must follow from the state
+on exit. A verification failure means the verifier could not prove one of
+these obligations as written — it does not necessarily mean the strategy's
+logic is wrong, only that the proof wasn't there yet.
+
+## Task
+
+{{ task_description }}
+{{ allowed_helpers_block }}{{ tool_reference_block }}
+
+## Verified Examples
+
+These are verified reference CSD patterns available for reuse during verification repair.
+Use them as examples of valid helper usage, state tracking, loop structure, and proof style —
+in particular, how they phrase loop invariants and keep helper preconditions
+provable at each call site.
+
+{{ verified_examples }}
+
+{{ search_memory_block }}
+## Previous attempt
+
+```dafny
+{{ previous_strategy }}
+```
+{{ strategy_context_block }}
+
+## Verification error
+
+```
+{{ error_message }}
+```
+{{ structured_feedback_block }}{{ error_history_block }}{{ behavioral_context_block }}
+## How to revise
+
+Revise the method body so it verifies. Read the error message for which
+obligation failed (precondition, invariant, or postcondition) and at which
+line, then adjust either the tracked state or the loop invariants so that
+obligation becomes provable — this is often a smaller, more targeted fix than
+rewriting the whole strategy.
+
+Common Dafny pitfalls to check:
+- Methods cannot be called directly inside expression contexts.
+  Call the method first, bind its result to a local variable, then use that
+  variable in the condition.
+- A loop invariant must be re-established by every branch of the loop body,
+  including early-exit branches — an invariant that holds on entry but is
+  broken by one rarely-taken branch will still fail verification.
+- A helper's precondition must be provable from the state you are tracking at
+  the exact point you call it, not just true "in general" across the strategy.
+
+Return exactly the corrected full Dafny method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
+Use only the contracts and tools provided above.

@@ -1,0 +1,6 @@
+Structured verification analysis:
+1. Postcondition failure at F.dfy:12
+   Message: msg
+   Relevant contract excerpt:
+     > |generated| <= |generatedPrefix| + maxSteps
+   Remediation: this length postcondition (|generated| <= |generatedPrefix| + maxSteps) bounds output growth to one token per counted step. Maintain a loop invariant |generated| <= |generatedPrefix| + steps and append only inside a counted step; appending outside the step count breaks the bound.

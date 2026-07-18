@@ -23,7 +23,7 @@ Adding any such guidance invalidates the study by biasing the synthesis model's 
 - Postconditions (e.g. `Ensures: forall t in ValidNextTokens(prefix + [next]) ==> t in lm.Tokens`)
 - Return value description (e.g. "returns true if fewer than minValidCount valid continuations exist")
 
-This applies to ALL prompts: `INITIAL_GENERATION_PROMPT`, `EVALUATION_FAILURE_REFINEMENT_PROMPT`, `VERIFICATION_ERROR_REFINEMENT_PROMPT`, and any other synthesis prompts.
+This applies to ALL prompts: the initial-generation, evaluation-failure, verification-error, runtime-error, compilation-error, and format-repair author prompts rendered from `synthesis/prompt_rendering/templates/author_prompts/*.j2`, and any other synthesis prompts.
 
 ## Goal: Improve Over CRANE Baseline
 

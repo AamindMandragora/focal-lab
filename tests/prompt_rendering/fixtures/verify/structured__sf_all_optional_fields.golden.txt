@@ -1,0 +1,13 @@
+Structured verification analysis:
+1. Postcondition failure at F.dfy:12
+   Message: postcondition might not hold
+   Related call: ConstrainedStep(...)
+   Failing code: return;
+   Related contract: VerifiedAgentSynthesis.dfy:88 (This is the postcondition that might not hold)
+   Local code excerpt:
+     line a
+     line b
+   Relevant contract excerpt:
+     > cost <= maxSteps
+       decreases maxSteps
+   Remediation: this cost postcondition (cost <= maxSteps) is discharged by the per-step helpers, which each add 1 to the helpers.cost field. Set the cost out-parameter to helpers.cost rather than a separately-tracked local total — a hand-tracked counter is not provably equal to the field unless every increment path matches.

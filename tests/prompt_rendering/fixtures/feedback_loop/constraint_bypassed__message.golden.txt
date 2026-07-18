@@ -1,0 +1,4 @@
+
+  ⚠ Constraint-engagement check: 1/5 of the outputs that show `<< >>` actually ran the strategy's constrained branch — the other 4 produced the span content UNCONSTRAINED. The delimiters appear in the text, so the spans LOOK present, but the constraint did not shape what went inside them, leaving the span syntax at the raw model's mercy.
+    Likely cause: the strategy enters its constrained branch by WAITING for a specific span-open signal (e.g. a `next == "<<"` trigger) that rarely matches the model's actual output, so the constrained path is skipped even though `<<` still appears.
+    Fix to consider: FORCE span entry — append the opening `<<` directly via a forced-delimiter / direct-control helper and then drive the span content through the constrained branch, instead of depending on a reactive trigger to detect span entry. This is a decoding-mechanism change at span ENTRY, not task guidance. (General direction only — the specific mechanism is yours to design.)

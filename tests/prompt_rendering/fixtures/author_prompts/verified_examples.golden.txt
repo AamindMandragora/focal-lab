@@ -1,0 +1,1193 @@
+The verified examples below are pattern demonstrations, not task-specific recommendations.
+Use them as a palette of mechanisms: span entry, constrained progression,
+closing/termination, repair, chunking, and preference shaping. Adapt or combine
+only the parts whose control behavior matches the current task contract and
+measured failures.
+
+When the output contract uses visible delimiter spans, keep each span as short
+as possible, open it only when the exact content is known, and close it
+immediately after the final token of that exact content.
+Keep all intermediate reasoning outside visible spans; a visible span should
+contain only the final exact expression or answer content, not setup or prose.
+If the task allows it, use only one visible span for the final answer rather
+than emitting multiple visible spans throughout the solution.
+For visible spans that contain exact content, prefer parser-valid token steps
+over free-form chunks, and avoid repetition penalties that can amplify valid
+symbol loops.
+For exact visible spans, use hard parser-controlled helpers such as
+`ConstrainedStep`; do not use `ConfidenceGatedStep` inside exact spans.
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Guided-adaptive CSD. The strategy uses an append-only prompt-guidance
+// block to steer the model, then adapts the decoder: it uses group boosting
+// while the active prefix is narrow, and switches to penalty-aware constrained
+// decoding once the prefix has grown past the initial region. The keyword
+// groups, penalty tokens, and narrow threshold are caller-provided parameters.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: AppendTaskGuidance leaves generated state unchanged.
+//   Outside the span, the implication is vacuous unless "<<" is observed, which
+//   resets currentConstrainedOut to the valid empty prefix. CloseConstrainedSpan
+//   exits constrained mode. GroupBoostedConstrainedStep and
+//   AdaptiveConstrainedStepWithPenalties return EOS or parser-valid tokens, and
+//   AppendConstrainedToken preserves parser validity.
+// progress: AppendTaskGuidance costs 0. Every later branch consumes one step
+//   and appends at most one visible token, so the output-length bound remains
+//   linear in steps. The adaptive branch only changes which parser-valid helper
+//   is used.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var guidance: string := "Generate exactly one task-appropriate output. No explanation or Markdown. Follow the task's declared output contract exactly.";
+helpers.AppendTaskGuidance(lm, guidance);
+
+// Caller-provided parameters (in practice these would be passed via the task description or synthesis context)
+var keywordGroups: seq<seq<Token>> := validTokenGroups; // Default to caller-supplied groups
+var penaltyTokens: seq<Token> := []; // Caller-provided tokens to penalize (e.g., early terminators)
+var narrowThreshold: nat := 10;
+var steps: nat := 0;
+var phase: nat := 0; // 0 = initial narrow phase, 1 = post-penalty phase
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant phase == 0 || phase == 1
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+        phase := 0;
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+    var next := eosToken;
+    if phase == 0 && validCount <= narrowThreshold {{
+      var groups := keywordGroups + validTokenGroups;
+      next := helpers.GroupBoostedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, groups, 6.0, eosToken
+      );
+      if validCount > narrowThreshold {{
+        phase := 1;
+      }}
+    }} else if phase == 1 && |penaltyTokens| > 0 {{
+      next := helpers.AdaptiveConstrainedStepWithPenalties(
+        lm, parser, constrainedPrompt, currentConstrainedOut,
+        validTokenGroups, 4.0, penaltyTokens, 5.0, 8, eosToken
+      );
+    }} else {{
+      next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
+      );
+    }}
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Simple delimiter-triggered CSD. Generate freely until "<<" appears, then
+// constrain; each constrained step calls CloseSpanIfComplete, which emits ">>"
+// once the parser accepts the span and is a no-op otherwise.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: In the unconstrained branch we only flip insideConstrainedOut
+//   to true when next renders with suffix "<<", and we set currentConstrainedOut := [] which is
+//   a valid prefix. In the constrained branch, CloseSpanIfComplete either closes
+//   the span (sets insideConstrainedOut to false, making the implication vacuous,
+//   and clears currentConstrainedOut to []) or leaves generated/inside/current
+//   unchanged (no-op). In the no-op path, ConstrainedStep plus AppendConstrainedToken
+//   preserves parser validity when IsTokenValidNext holds.
+// progress: Every branch appends at most one token to generated and steps grows
+//   by 1, so |generated| - |generatedPrefix| <= steps <= steps * stepTokenBudget.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else {{
+    var cg, ci, cc, closed := helpers.CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut);
+    steps := steps + 1;
+    if closed {{
+      generated := cg;
+      insideConstrainedOut := ci;
+      currentConstrainedOut := cc;
+    }} else {{
+      var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+      var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+      if next == eosToken {{
+        break;
+      }} else {{
+        var valid := helpers.IsTokenValidNext(parser, currentConstrainedOut, next);
+        if valid {{
+          var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+            lm, parser, generated, currentConstrainedOut, next
+          );
+          generated := appendedGenerated;
+          insideConstrainedOut := appendedInside;
+          currentConstrainedOut := appendedCurrent;
+        }}
+      }}
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Context-triggered CSD. The strategy tracks whether a neutral local marker has
+// recently appeared in the free text. When that marker is seen, the next
+// outside-span action opens a constrained span before returning to ordinary
+// delimiter-triggered behavior. Inside the span, parser validity remains the
+// hard authority.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Outside the span, the implication is vacuous. The
+//   context-triggered open branch uses OpenConstrainedSpan, which returns
+//   currentConstrainedOut == [], valid by parser.IsValidPrefix([]). If the
+//   free token itself is "<<", we enter with currentConstrainedOut := [].
+//   CloseConstrainedSpan exits constrained mode. ConstrainedStep plus
+//   AppendConstrainedToken preserves validity for non-EOS tokens.
+// progress: UnconstrainedStep, OpenConstrainedSpan, CloseConstrainedSpan, and
+//   ConstrainedStep each consume one step and append at most one token, so
+//   |generated| <= |generatedPrefix| + steps is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var markerArmed: bool := false;
+var markerToken: Token := ":";
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    if markerArmed {{
+      var openedGenerated, openedInside, openedCurrent := helpers.OpenConstrainedSpan(lm, generated);
+      generated := openedGenerated;
+      insideConstrainedOut := openedInside;
+      currentConstrainedOut := openedCurrent;
+      markerArmed := false;
+      steps := steps + 1;
+    }} else {{
+      var next := helpers.UnconstrainedStep(lm, prompt, generated);
+      steps := steps + 1;
+      if next == eosToken {{
+        break;
+      }} else {{
+        generated := generated + [next];
+        if RenderedEndsWith(generated, "<<") {{
+          insideConstrainedOut := true;
+          currentConstrainedOut := [];
+          markerArmed := false;
+        }} else if next == markerToken {{
+          markerArmed := true;
+        }}
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Group-aware constrained CSD. Generate freely until "<<" appears, then use
+// caller-supplied token groups as a soft preference while the parser remains
+// the hard validity authority.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Outside the span, the implication is vacuous unless next is
+//   "<<", in which case currentConstrainedOut := [] is valid by precondition.
+//   CloseConstrainedSpan flips insideConstrainedOut to false. In the active
+//   constrained branch, GroupBoostedConstrainedStep returns either EOS or a
+//   parser-valid next token, and AppendConstrainedToken preserves validity.
+// progress: Every branch appends at most one token and steps grows by 1, so
+//   |generated| <= |generatedPrefix| + steps is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.GroupBoostedConstrainedStep(
+      lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, eosToken
+    );
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Top-candidate constrained CSD. Inside a span, query a small ranked set of
+// parser-valid candidates and append the first non-EOS candidate if available.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Enter only when the unconstrained token renders with suffix "<<",
+//   at which point currentConstrainedOut := [] (valid). Complete-prefix branch
+//   flips insideConstrainedOut to false via CloseConstrainedSpan. TopValidCandidates
+//   returns only EOS or valid-next tokens; after excluding EOS, AppendConstrainedToken
+//   preserves validity.
+// progress: Every branch appends at most one token; attempts grows by 1, so
+//   |generated| <= |generatedPrefix| + attempts * stepTokenBudget holds.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var attempts: nat := 0;
+
+while attempts < maxSteps
+  invariant 0 <= attempts <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + attempts
+  decreases maxSteps - attempts
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    attempts := attempts + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    attempts := attempts + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var candidates := helpers.TopValidCandidates(
+      lm, parser, constrainedPrompt, currentConstrainedOut, 4, eosToken
+    );
+    var next := candidates[0];
+    if next == eosToken && |candidates| > 1 {{
+      next := candidates[1];
+    }}
+    attempts := attempts + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      assert next in candidates;
+      assert next in parser.ValidNextTokens(currentConstrainedOut);
+      assert parser.IsValidPrefix(currentConstrainedOut + [next]);
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := attempts;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Chunked-outside CSD. Outside a constrained span we generate unconstrained
+// tokens in a single multi-token call (`UnconstrainedChunk`) that breaks early
+// on EOS or on the open-span delimiter `"<<"`. Keep the outside chunk budget
+// large enough that the model can emit the task's surface prefix before the
+// span opens, but still bounded so it does not run away. Inside a
+// span we decode token by token using the parser the same way the simple
+// delimiter-triggered strategy does.
+// Multi-token chunking amortizes per-token dispatch overhead across the
+// unconstrained region without starving the prefix.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Outside the span, insideConstrainedOut stays false unless
+//   UnconstrainedChunk reports stoppedOnOpenSpan, in which case we set
+//   currentConstrainedOut := [], a valid prefix by the method precondition
+//   parser.IsValidPrefix([]). In the complete-prefix branch, CloseConstrainedSpan
+//   flips insideConstrainedOut to false, making the implication vacuous. In the
+//   constrained-step branch, AppendConstrainedToken is only invoked after
+//   ConstrainedStep returned a parser-valid next token (or EOS, which breaks).
+// progress: Chunk branch: |generatedOut| <= |generated| + stepsUsed and
+//   steps := steps + stepsUsed, so |new_generated| <= |generatedPrefix| +
+//   steps + stepsUsed = |generatedPrefix| + new_steps. Other branches append
+//   ≤1 token and steps += 1. Linear arithmetic throughout. ✓
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var chunkBudget: nat := maxSteps - steps;
+    if chunkBudget > 32 {{
+      chunkBudget := 32;
+    }}
+    var chunkedG, stoppedOpen, stoppedEos, stepsUsed := helpers.UnconstrainedChunk(
+      lm, prompt, generated, chunkBudget, "<<", eosToken
+    );
+    generated := chunkedG;
+    steps := steps + stepsUsed;
+    if stoppedEos {{
+      break;
+    }} else if stoppedOpen {{
+      insideConstrainedOut := true;
+      currentConstrainedOut := [];
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Symbol-step CSD. Each outer loop iteration is one "symbol step" — the model
+// is called for up to stepTokenBudget tokens at once, and the longest valid
+// parser prefix of the result is accepted. This aligns generation granularity
+// with the task's natural units: SQL keywords, arithmetic expressions, or
+// multi-subword identifiers can be emitted as a unit instead of being forced
+// token by token. Outside a constrained span the strategy generates one token
+// freely. Inside the span it uses ConstrainedSymbol, passing stepTokenBudget
+// as the per-step token allowance. Close as soon as the parser reports the
+// prefix is complete.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Opening a span sets currentConstrainedOut := [], valid by
+//   precondition. CloseConstrainedSpan flips insideConstrainedOut to false.
+//   ConstrainedSymbol postcondition: parser.IsValidPrefix(symbolOut).
+// progress: steps advances by exactly 1 for UnconstrainedStep and
+//   CloseConstrainedSpan (each appends ≤1 token), and by stepsUsed ≥ 1 for
+//   ConstrainedSymbol (postcondition). So decreases maxSteps - steps always
+//   decreases. The invariant |generated| <= |generatedPrefix| + steps is
+//   linear: each branch adds at most the consumed token budget to visible
+//   output and advances steps by that budget (or 1 for single-token branches). ✓
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var stablePrefix := generated[..|generated| - |currentConstrainedOut|];
+    var constrainedPrompt := prompt + stablePrefix;
+    var symbolBudget: nat := maxSteps - steps;
+    var symbolGenerated, symbolOut, hitEos, stepsUsed := helpers.ConstrainedSymbolInGenerated(
+      lm, parser, constrainedPrompt, generated, currentConstrainedOut, symbolBudget, eosToken
+    );
+    generated := symbolGenerated;
+    currentConstrainedOut := symbolOut;
+    steps := steps + stepsUsed;
+    if hitEos {{
+      break;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Adaptive-narrowness CSD. Inside a constrained span, query the parser's
+// valid-continuation count and choose between different constrained decoding
+// strategies based on branch factor. Uses caller-provided keyword groups and
+// penalty tokens for the adaptive phases.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: CloseConstrainedSpan makes implication vacuous. In the
+//   tight branch, GroupBoostedConstrainedStep returns a parser-valid next token
+//   and AppendConstrainedToken preserves validity. In the penalty branch,
+//   AdaptiveConstrainedStepWithPenalties returns EOS or parser-valid tokens.
+//   In the default branch, AdaptiveConstrainedStep returns EOS or parser-valid
+//   tokens. All preserve validity via AppendConstrainedToken.
+// progress: Every branch consumes one step and appends at most one visible
+//   token, so |generated| <= |generatedPrefix| + steps is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var narrowThreshold: nat := 20;
+var steps: nat := 0;
+var phase: nat := 0; // 0 = narrow (boost), 1 = penalty phase, 2 = default
+var keywordGroups: seq<seq<Token>> := validTokenGroups; // Caller-provided
+var penaltyTokens: seq<Token> := []; // Caller-provided tokens to penalize
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  invariant phase <= 2
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+        phase := 0;
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var validCount := helpers.ValidTokenCount(parser, currentConstrainedOut);
+    var next := eosToken;
+    if phase == 0 && validCount <= narrowThreshold {{
+      var groups := keywordGroups + validTokenGroups;
+      next := helpers.GroupBoostedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, groups, 6.0, eosToken
+      );
+      if validCount > narrowThreshold {{
+        phase := 1;
+      }}
+    }} else if phase == 1 && |penaltyTokens| > 0 {{
+      next := helpers.AdaptiveConstrainedStepWithPenalties(
+        lm, parser, constrainedPrompt, currentConstrainedOut,
+        validTokenGroups, 4.0, penaltyTokens, 5.0, 8, eosToken
+      );
+      if validCount <= narrowThreshold {{
+        phase := 0;
+      }} else {{
+        phase := 2;
+      }}
+    }} else {{
+      next := helpers.AdaptiveConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, validTokenGroups, 4.0, narrowThreshold, eosToken
+      );
+    }}
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Context-tracking CSD. Maintains a strategy-local seq<Token> across loop
+// iterations. After each constrained token append, it queries the span for
+// tokens following a caller-provided keyword via ExtractAfterKeyword. At
+// candidate-selection positions, it intersects parser-valid candidates with
+// that context set and boosts the intersection.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: GroupBoostedConstrainedStep returns either EOS or a
+//   parser-valid next token; the EOS branch breaks. AppendConstrainedToken
+//   preserves validity. CloseConstrainedSpan makes the implication vacuous.
+//   The context variable is never passed to the parser as authority, so it
+//   cannot affect parser_validity.
+// progress: Every branch increments steps by 1 and appends at most one token,
+//   so |generated| <= |generatedPrefix| + steps is preserved throughout.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var semanticContext: seq<Token> := [];
+var scopeKeyword: Token := ""; // Caller-provided keyword to track (e.g., "FROM", "=", "(")
+var steps: nat := 0;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    // Update semantic context from accumulated span content
+    if |scopeKeyword| > 0 {{
+      semanticContext := CSDHelpers.ExtractAfterKeyword(currentConstrainedOut, scopeKeyword);
+    }}
+
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var groups := validTokenGroups;
+    if |semanticContext| > 0 {{
+      groups := [semanticContext] + validTokenGroups;
+    }}
+    var next := helpers.GroupBoostedConstrainedStep(
+      lm, parser, constrainedPrompt, currentConstrainedOut, groups, 6.0, eosToken
+    );
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Rollback-on-stall CSD. Generate freely until "<<" appears. Inside the span,
+// generate parser-valid tokens, but if the active constrained content grows
+// beyond a local rollback limit before becoming complete, roll back only the
+// constrained suffix to the nearest valid non-dead prefix and continue from
+// that repaired state.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Opening a span sets currentConstrainedOut := [], which is
+//   valid. Closing a complete span exits constrained mode. ConstrainedStep plus
+//   AppendConstrainedToken preserves validity on non-EOS tokens. The rollback
+//   branch uses RollbackConstrainedSuffix, whose postcondition gives a valid
+//   repaired currentConstrainedOut.
+// progress: UnconstrainedStep, CloseConstrainedSpan, and ConstrainedStep each
+//   consume one step and append at most one token. RollbackConstrainedSuffix
+//   shrinks or preserves generated and we still increment steps by 1, so the
+//   output-length bound remains true while the loop metric decreases.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var rollbackLimit: nat := 24;
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else if |currentConstrainedOut| >= rollbackLimit {{
+    var rolledGenerated, rolledCurrent := helpers.RollbackConstrainedSuffix(
+      parser, generated, currentConstrainedOut
+    );
+    generated := rolledGenerated;
+    insideConstrainedOut := true;
+    currentConstrainedOut := rolledCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Logit-shaped constrained CSD. The strategy uses ordinary free generation
+// outside spans. Inside a span, parser validity remains hard; the only extra
+// policy is a local soft preference: avoid closing very short constrained
+// prefixes (using caller-provided penalty tokens) and softly prefer operator
+// tokens once the prefix has begun (using caller-provided boost tokens). The
+// safe helpers filter literal token lists internally, so the strategy does not
+// need separate vocabulary-membership state for those lists.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Outside the span the implication is vacuous unless a "<<"
+//   token is observed, in which case currentConstrainedOut becomes [].
+//   CloseConstrainedSpan exits constrained mode. Both safe constrained-step
+//   helpers return EOS or a token preserving parser validity, and
+//   AppendConstrainedToken carries that validity into currentConstrainedOut.
+// progress: UnconstrainedStep, CloseConstrainedSpan, and each safe constrained
+//   step consume one token-step and append at most one visible token, so
+//   |generated| <= |generatedPrefix| + steps is preserved.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+var minPrefixLength: nat := 2; // Minimum constrained prefix length before switching to boost mode
+var penaltyTokens: seq<Token> := []; // Caller-provided tokens to penalize (e.g., early terminators like ">>")
+var boostTokens: seq<Token> := []; // Caller-provided tokens to boost (e.g., operators)
+
+while steps < maxSteps
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  if !insideConstrainedOut {{
+    var next := helpers.UnconstrainedStep(lm, prompt, generated);
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      generated := generated + [next];
+      if RenderedEndsWith(generated, "<<") {{
+        insideConstrainedOut := true;
+        currentConstrainedOut := [];
+      }}
+    }}
+  }} else if parser.IsCompletePrefix(currentConstrainedOut) {{
+    var closedGenerated, closedInside, closedCurrent := helpers.CloseConstrainedSpan(
+      lm, parser, generated, currentConstrainedOut
+    );
+    generated := closedGenerated;
+    insideConstrainedOut := closedInside;
+    currentConstrainedOut := closedCurrent;
+    steps := steps + 1;
+  }} else {{
+    var constrainedPrompt := prompt + generated[..|generated| - |currentConstrainedOut|];
+    var next := eosToken;
+    if |currentConstrainedOut| < minPrefixLength && |penaltyTokens| > 0 {{
+      next := helpers.SafePenalizedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, penaltyTokens, 6.0, eosToken
+      );
+    }} else if |boostTokens| > 0 {{
+      next := helpers.SafeBoostedConstrainedStep(
+        lm, parser, constrainedPrompt, currentConstrainedOut, boostTokens, 2.0, eosToken
+      );
+    }} else {{
+      next := helpers.ConstrainedStep(lm, parser, constrainedPrompt, currentConstrainedOut, eosToken);
+    }}
+    steps := steps + 1;
+    if next == eosToken {{
+      break;
+    }} else {{
+      var appendedGenerated, appendedInside, appendedCurrent := helpers.AppendConstrainedToken(
+        lm, parser, generated, currentConstrainedOut, next
+      );
+      generated := appendedGenerated;
+      insideConstrainedOut := appendedInside;
+      currentConstrainedOut := appendedCurrent;
+    }}
+  }}
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Grounded-and-closed constrained CSD. Phase 1 generates unconstrained until
+// "<<" opens a visible span, reserving step budget. Phase 2 fills the span with
+// RegenerateUnitOnGroundingFailure using HALF the remaining budget, so a reserve
+// is kept for closing; the helper rewinds and resamples any completed unit whose
+// identifier-like tokens are not grounded in the prompt context. Phase 3 calls
+// CloseSpanWithinBudget on the remaining budget to bring the span to a completable
+// state and emit the closing ">>". Per-phase budgets keep the length/cost bounds.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Phase 1 sets insideConstrainedOut true only when next renders with suffix "<<",
+//   clearing currentConstrainedOut to [] (a valid prefix). Phase 2 stores the
+//   helper's result (parser-valid by its postcondition) into currentConstrainedOut.
+//   Phase 3 stores CloseSpanWithinBudget's result: on close, insideConstrainedOut is
+//   false and currentConstrainedOut == []; otherwise currentConstrainedOut stays a
+//   valid prefix. So !insideConstrainedOut ==> currentConstrainedOut == [] and
+//   insideConstrainedOut ==> IsValidPrefix(currentConstrainedOut) both hold.
+// length/cost: Phase 1 grows generated and steps by 1 per iteration, keeping
+//   |generated| <= |generatedPrefix| + steps. Phase 2 runs the helper with
+//   maxStepsPerUnit = fillBudget/4 (fillBudget = rem/2), maxRetries = 3; by its
+//   length/cost postconditions generated and cost grow by at most 4*(fillBudget/4)
+//   <= rem, added to steps. Phase 3 runs CloseSpanWithinBudget with closeBudget =
+//   maxSteps - steps; by its length/cost postconditions |generated| <=
+//   |generatedPrefix| + maxSteps, and we set steps := maxSteps.
+// progress: maxSteps > 0 ==> Phase 1 takes a step (cost > 0), or the span was open
+//   on entry and Phase 3 flips insideConstrainedOut.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps && !insideConstrainedOut
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  var next := helpers.UnconstrainedStep(lm, prompt, generated);
+  steps := steps + 1;
+  if next == eosToken {{
+    break;
+  }}
+  generated := generated + [next];
+  if RenderedEndsWith(generated, "<<") {{
+    insideConstrainedOut := true;
+    currentConstrainedOut := [];
+  }}
+}}
+
+if insideConstrainedOut && steps < maxSteps {{
+  var rem := maxSteps - steps;
+  var fillBudget := rem / 2;
+  if fillBudget >= 4 {{
+    var perUnit := fillBudget / 4;
+    assert fillBudget == 4 * (fillBudget / 4) + fillBudget % 4;
+    assert 4 * perUnit <= fillBudget;
+    assert 4 * perUnit <= rem;
+    var stable := generated[..|generated| - |currentConstrainedOut|];
+    var filled := helpers.RegenerateUnitOnGroundingFailure(
+      lm, parser, prompt + stable, currentConstrainedOut, eosToken, perUnit, 3, perUnit
+    );
+    generated := stable + filled;
+    currentConstrainedOut := filled;
+    steps := steps + 4 * perUnit;
+  }}
+}}
+
+if insideConstrainedOut && steps < maxSteps {{
+  var closeBudget := maxSteps - steps;
+  var cg, ci, cc := helpers.CloseSpanWithinBudget(
+    lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget
+  );
+  generated := cg;
+  insideConstrainedOut := ci;
+  currentConstrainedOut := cc;
+  steps := maxSteps;
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Open-then-reliably-close CSD. Phase 1 generates unconstrained until "<<" opens
+// a visible span. Phase 2 calls CloseSpanWithinBudget on the entire remaining
+// budget to advance the span to a completable state and emit the closing ">>",
+// leaving the span open only if no completable state is reachable within budget.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: Phase 1 flips insideConstrainedOut true only when next renders with suffix "<<",
+//   setting currentConstrainedOut := [] (valid). Phase 2's CloseSpanWithinBudget
+//   returns a closed span (insideConstrainedOut false, currentConstrainedOut [])
+//   or a still-open valid prefix, so both span invariants hold.
+// length/cost: Phase 1 grows generated and steps by 1 per iteration
+//   (|generated| <= |generatedPrefix| + steps). Phase 2 runs CloseSpanWithinBudget
+//   with closeBudget = maxSteps - steps; by its length/cost postconditions
+//   |generated| <= |generatedPrefix| + maxSteps, and we set steps := maxSteps.
+// progress: maxSteps > 0 ==> Phase 1 takes a step (cost > 0), or the span was open
+//   on entry and Phase 2 flips insideConstrainedOut.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+while steps < maxSteps && !insideConstrainedOut
+  invariant 0 <= steps <= maxSteps
+  invariant lm.ValidTokensIdsLogits()
+  invariant !insideConstrainedOut ==> currentConstrainedOut == []
+  invariant insideConstrainedOut ==> parser.IsValidPrefix(currentConstrainedOut)
+  invariant insideConstrainedOut ==> |currentConstrainedOut| <= |generated|
+  invariant |generated| <= |generatedPrefix| + steps
+  decreases maxSteps - steps
+{{
+  var next := helpers.UnconstrainedStep(lm, prompt, generated);
+  steps := steps + 1;
+  if next == eosToken {{
+    break;
+  }}
+  generated := generated + [next];
+  if RenderedEndsWith(generated, "<<") {{
+    insideConstrainedOut := true;
+    currentConstrainedOut := [];
+  }}
+}}
+
+if insideConstrainedOut && steps < maxSteps {{
+  var closeBudget := maxSteps - steps;
+  var cg, ci, cc := helpers.CloseSpanWithinBudget(
+    lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget
+  );
+  generated := cg;
+  insideConstrainedOut := ci;
+  currentConstrainedOut := cc;
+  steps := maxSteps;
+}}
+
+cost := steps;
+```
+
+```dafny
+// CSD_RATIONALE_BEGIN
+// Token-0 grounded constrained CSD. The eval surface is grammar-constrained from
+// the very first token and carries NO visible << >> delimiters, so this strategy
+// never emits "<<". If it is not already inside a constrained span it ENTERS one
+// silently via EnterObservedConstrainedSpan (sets inside=true, current=[], costs 0
+// tokens) instead of opening a visible span. It then GROUNDS the constrained
+// content unit-by-unit with RegenerateUnitOnGroundingFailure, which rewinds and
+// resamples any completed identifier whose tokens are unsupported by the prompt
+// context. Half the remaining step budget goes to grounding; the other half is
+// reserved so CloseSpanWithinBudget can always advance the span to a completable
+// state. Every budget is charged into `steps`, so the length and cost bounds hold.
+// CSD_RATIONALE_END
+// CSD_PROOF_SKETCH_BEGIN
+// parser_validity: EnterObservedConstrainedSpan returns current == [] (valid);
+//   RegenerateUnitOnGroundingFailure returns a valid prefix; CloseSpanWithinBudget
+//   returns either a closed span (current == []) or a valid open prefix. So both
+//   span invariants hold after every phase.
+// length/cost: steps starts at 0. The grounding phase spends fillBudget =
+//   (maxSteps - steps)/2 and raises steps by that amount; |generated| grows by at
+//   most fillBudget because the regenerated unit replaces a suffix of length
+//   |currentConstrainedOut| and RegenerateUnitOnGroundingFailure bounds the result
+//   by |currentConstrainedOut| + fillBudget. The close phase spends the rest
+//   (closeBudget = maxSteps - steps) and sets steps := maxSteps; by
+//   CloseSpanWithinBudget's |generatedOut| <= |generated| + closeBudget we get
+//   |generated| <= |generatedPrefix| + maxSteps. cost := steps <= maxSteps.
+// CSD_PROOF_SKETCH_END
+generated := generatedPrefix;
+insideConstrainedOut := insideConstrained;
+currentConstrainedOut := currentConstrained;
+cost := 0;
+
+var steps: nat := 0;
+
+// (1) Enter a constrained span with NO visible "<<" if not already inside.
+if !insideConstrainedOut {{
+  generated, insideConstrainedOut, currentConstrainedOut :=
+    helpers.EnterObservedConstrainedSpan(lm, generated);
+}}
+assert insideConstrainedOut;
+assert parser.IsValidPrefix(currentConstrainedOut);
+assert |currentConstrainedOut| <= |generated|;
+assert |generated| <= |generatedPrefix| + steps;
+
+// (2) Ground the constrained content unit-by-unit on half the remaining budget.
+if steps < maxSteps {{
+  var rem: nat := maxSteps - steps;
+  var fillBudget: nat := rem / 2;
+  if fillBudget >= 1 {{
+    assert |currentConstrainedOut| <= |generated|;
+    var stable := generated[..|generated| - |currentConstrainedOut|];
+    var filled := helpers.RegenerateUnitOnGroundingFailure(
+      lm, parser, prompt + stable, currentConstrainedOut, eosToken, fillBudget, 3, fillBudget);
+    generated := stable + filled;
+    currentConstrainedOut := filled;
+    steps := steps + fillBudget;
+    assert |generated| <= |generatedPrefix| + steps;
+  }}
+}}
+assert insideConstrainedOut;
+assert parser.IsValidPrefix(currentConstrainedOut);
+assert |currentConstrainedOut| <= |generated|;
+assert |generated| <= |generatedPrefix| + steps;
+assert steps <= maxSteps;
+
+// (3) Advance the span to a completable state on the reserved budget.
+if steps < maxSteps {{
+  var closeBudget: nat := maxSteps - steps;
+  generated, insideConstrainedOut, currentConstrainedOut :=
+    helpers.CloseSpanWithinBudget(
+      lm, parser, prompt, generated, currentConstrainedOut, eosToken, closeBudget);
+  steps := maxSteps;
+}}
+assert |generated| <= |generatedPrefix| + steps;
+assert steps <= maxSteps;
+
+cost := steps;
+```

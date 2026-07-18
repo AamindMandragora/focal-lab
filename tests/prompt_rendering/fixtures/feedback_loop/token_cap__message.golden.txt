@@ -1,0 +1,4 @@
+
+  ⚠ Token-budget exhaustion: 3/4 evaluated outputs ran all the way to the maxSteps cap (200 steps) and were CUT OFF mid-generation.
+    Why this hurts: a truncated output usually ends inside an unfinished sentence or span; the grader scores the LAST complete << >> span standing at the cutoff, which is often an intermediate expression — not the final answer — so accuracy and syntax both suffer even when the reasoning was on track.
+    Direction to consider: make the strategy TERMINATE generation (emit EOS / stop stepping) once the final answer span is complete, and budget reasoning length so the answer span is reached well before the cap. This is a decoding-mechanism change, not task guidance.

@@ -1,0 +1,92 @@
+Evaluation Results ({{ eval_count_label }} examples):
+  Accuracy: {{ accuracy_pct }} ({{ num_correct }}/{{ accuracy_denominator_display }})
+{% if show_contains_delimiters %}
+  Contains << >>: {{ contains_delimiters_yesno }}
+{% endif %}
+  Syntax Rate: {{ syntax_pct }}
+  Total Time: {{ total_time_str }}s
+  Slowest Example Time: {{ max_sample_time_str }}s
+{% if early_stopped %}
+  Early Stop: yes
+{% endif %}
+{% if early_stop_reason %}
+  Early Stop Reason: {{ early_stop_reason }}
+{% endif %}
+{% if accuracy_definition_display %}
+  Accuracy Definition: {{ accuracy_definition_display }}
+{% endif %}
+{% if invalid_outputs_excluded_from_accuracy %}
+  Invalid outputs excluded from accuracy denominator: {{ invalid_outputs_excluded_from_accuracy }}
+{% endif %}
+{% if task_guidance %}
+
+Prompt guidance used by this attempt:
+{% for guidance in task_guidance %}
+  - {{ guidance }}
+{% endfor %}
+{% endif %}
+{% if smiles_trial %}
+
+SMILES Quality Metrics (paper-aligned, single trial):
+  RDKit Validity: {{ smiles_trial.validity_pct }}
+  Membership: {{ smiles_trial.membership_pct }}
+  Diversity (avg pairwise Tanimoto distance): {{ smiles_trial.diversity_display }}
+  RetroStar score: {{ smiles_trial.retro_score_display }}
+  Samples to 100 unique valid (cap 1000): {{ smiles_trial.samples_to_target_display }}
+  Unique valid molecules: {{ smiles_trial.unique_valid_display }}
+{% endif %}
+{% if anti_degeneracy %}
+
+Anti-Degeneracy Diagnostics:
+  Delimiter churn ratio: {{ anti_degeneracy.churn_ratio_display }}
+  Tiny-span rate: {{ anti_degeneracy.tiny_span_pct }}
+  Max-steps hit rate: {{ anti_degeneracy.max_steps_hit_pct }}
+  Applied penalty: {{ anti_degeneracy.penalty_pct }}
+  Membership adjusted by penalty: {{ anti_degeneracy.adjusted_membership_pct }}
+{% endif %}
+{% if early_stop_metrics %}
+
+Early Stop:
+  Reason: {{ early_stop_metrics.reason }}
+  Max possible accuracy: {{ early_stop_metrics.max_possible_pct }}
+  Target accuracy: {{ early_stop_metrics.target_pct }}
+  Evaluated examples: {{ early_stop_metrics.evaluated_display }}
+{% endif %}
+{% if failure_modes %}
+
+Primary Failure Modes:
+{% for entry in failure_modes %}
+  - {{ entry.mode }}: {{ entry.count }} example(s) {{ entry.detail }}
+{% endfor %}
+{% endif %}
+{% if output_run_summary %}
+
+Output Run Summary:
+{% for metric in output_run_summary %}
+  {{ metric }}
+{% endfor %}
+{% endif %}
+{% if aggregate_failure_stats_lines %}
+
+Aggregate Failure Stats:
+{% for line in aggregate_failure_stats_lines %}
+{{ line }}
+{% endfor %}
+{% endif %}
+{% if diagnostic_metrics %}
+
+Diagnostic Error Decomposition:
+{% for metric in diagnostic_metrics %}
+  {{ metric }}
+{% endfor %}
+{% endif %}
+{% if show_structural_metrics %}
+
+Structural Generation Metrics:
+{% for metric in structural_metrics %}
+  {{ metric }}
+{% endfor %}
+{% endif %}
+{% if cluster_block %}
+{{ cluster_block }}
+{% endif %}

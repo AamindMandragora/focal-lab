@@ -101,7 +101,20 @@ def test_system_and_refinement_prompts_forbid_exact_delimiter_token_checks():
     required_rule = "Never detect a visible delimiter with exact token equality"
 
     assert required_rule in prompts.SYSTEM_PROMPT
-    assert required_rule in prompts.EVALUATION_FAILURE_REFINEMENT_PROMPT
+    # EVALUATION_FAILURE_REFINEMENT_PROMPT no longer exists as a standalone
+    # constant (jinja renders the live prompt) -- check the actual rendered
+    # text the author model receives instead.
+    _sys, rendered = prompts.build_evaluation_failure_prompt(
+        task_description="Solve the task.",
+        previous_strategy="// prev strategy",
+        previous_accuracy=0.25,
+        previous_syntax_rate=0.60,
+        num_examples=20,
+        goal_accuracy=0.50,
+        goal_syntax_rate=0.90,
+        evaluation_feedback="Accuracy 25.0%; syntax 60.0%.",
+    )
+    assert required_rule in rendered
 
 
 def test_grounding_helper_documentation_matches_verified_implementation():

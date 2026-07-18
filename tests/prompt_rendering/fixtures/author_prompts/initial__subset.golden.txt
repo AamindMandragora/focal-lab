@@ -1,0 +1,145 @@
+Generate a complete Dafny method body for this use-case.
+
+## Task
+
+Solve the task.
+Helper-call contract for this attempt:
+Only these `helpers.<Method>(...)` and `CSDHelpers.<Method>(...)` calls are allowed:
+`AdaptiveConstrainedStep`, `AdaptiveConstrainedStepWithPenalties`, `AppendConstrainedToken`
+Calls to helper or CSDHelpers methods outside this set are invalid for this attempt.
+
+## Available Tools
+
+### Runtime inputs
+```
+validTokenGroups: seq<seq<Token>>
+```
+`validTokenGroups` is caller-supplied contextual vocabulary. It may be empty,
+inner groups may be empty, groups may overlap, and groups may contain tokens
+outside `lm.Tokens`; safe helpers internally ignore non-vocabulary tokens.
+
+### Helper methods
+```
+var generated, insideConstrainedOut, currentConstrainedOut := helpers.AppendConstrainedToken(lm, parser, generated, currentConstrained, next);
+var next := helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, 12, eosToken);
+var nextPen := helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, validTokenGroups, 4.0, penaltyTokens, 4.0, 12, eosToken);
+```
+`OpenConstrainedSpan` appends a new `"<<"` token and costs 1 step. If `"<<"`
+was already emitted by `UnconstrainedStep` or `UnconstrainedChunk`, use
+`EnterObservedConstrainedSpan` to update span state without appending another
+delimiter or consuming additional token budget.
+
+### Parser queries
+```
+```
+
+## Tool API Reference
+
+
+Use this as API documentation for what each helper accomplishes in a constrained
+decoding strategy. These descriptions define library behavior, not task-specific
+revision rules.
+
+`cost` is token-step budget use, not wall-clock time and not a count of helper
+calls. LM-generated tokens count even if the token is EOS or later rejected from
+visible output. A delimiter token appended by a helper counts as one token-step.
+Bookkeeping, parser queries, token-set transforms, and logit edits do not
+consume token budget by themselves.
+
+### Inside-span generation and state updates
+
+- `helpers.AppendConstrainedToken(lm, parser, generated, currentConstrained, next)`
+  Role: commit a previously selected parser-valid token into visible and
+  constrained state.
+  Mechanics: appends `next` to both `generated` and `currentConstrained`.
+  Cost: +0; the token was already counted by the generation helper.
+  Control profile: state synchronization only.
+
+### Soft preferences and group-aware constrained decoding
+
+- `helpers.AdaptiveConstrainedStep(lm, parser, prompt, currentConstrained, validTokenGroups, amount, narrowThreshold, eosToken)`
+  Role: one parser-valid token choice with group preferences applied only at
+  narrower parser states.
+  Mechanics: same hard mask as `ConstrainedStep`; group boosts are applied only
+  when `parser.ValidNextTokenCount(currentConstrained) <= narrowThreshold`.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with conditional soft preference.
+
+- `helpers.AdaptiveConstrainedStepWithPenalties(lm, parser, prompt, currentConstrained, boostGroups, boostAmount, penaltyTokens, penaltyAmount, narrowThreshold, eosToken)`
+  Role: same adaptive group boosts as `AdaptiveConstrainedStep`, plus safe token
+  penalties before the hard mask.
+  Mechanics: `GenerateLogits`, conditional `BoostValidGroups`, `SafePenalizeTokenLogits`,
+  `MaskValidNextAndEos`, `ChooseNextToken`.
+  Cost: +1 token-step, including EOS.
+  Control profile: hard parser control with conditional boosts and penalties.
+
+## LM and `Parser` surface (for calls inside the strategy body)
+
+Strategy code may also invoke `lm` and `parser` members directly when proofs permit.
+Summaries align with `synthesis/verify/library/README.md`; the `.dfy` file states full contracts.
+
+- **`lm`:** `GenerateLogits`, `ChooseNextToken`, `ChooseNextTokenUnconstrained`, `GenerateUnconstrainedChunk`,
+  `MaskValidNextAndEos`, `BoostValidNextAndEos`, `MaskToken` / `MaskTokens` / `MaskTokensExcept`,
+  `IdToToken`, `TokenToId`, logit readers (`IdToLogit`, `TokenToLogit`, `TokensToLogits`,
+  `IdsToLogits`), `IsMasked`, `HasUnmaskedToken`.
+- **`parser`:** `IsValidPrefix`, `IsCompletePrefix`, `IsDeadPrefix`, `ValidNextTokenCount`, `ValidNextToken`,
+  `ValidNextTokens`, `ParseG`.
+
+### Verified rendered-text functions
+
+- `Contains(s, sub)` tests whether plain string `s` contains plain string `sub`.
+- `RenderPrefix(prefix)` concatenates token strings into the exact text they render.
+- `RenderedEndsWith(prefix, suffix)` tests the rendered text suffix without assuming
+  that a visible substring is one tokenizer token. After appending `next` to
+  `generated`, prefer `RenderedEndsWith(generated, "<<")` over `next == "<<"`:
+  it recognizes a space-prefixed token such as `" <<"` and a delimiter split across tokens.
+
+
+
+## What you are building
+
+A constrained decoding strategy (CSD) is a decoding loop, written as a Dafny
+method body, that produces output token by token by repeatedly calling the
+helper API above. At each step the strategy is either **outside** a
+constrained span (free generation, any token allowed) or **inside** one
+(parser-valid tokens only, tracked via `insideConstrained` /
+`currentConstrained`). A visible delimiter span is the part of the output
+between an opening marker like `<<` and a closing marker like `>>`; entering
+one switches the loop from free generation to parser-constrained generation,
+and closing it switches back. Track just enough state — which mode you're in,
+what has been generated inside the current span, and any counters your
+control logic needs — to decide the next helper call correctly and to make
+each helper's precondition provable at the point you call it.
+
+## Output format
+
+Return exactly the Dafny method body: rationale block, proof sketch block,
+then body statements — nothing else surrounds it.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
+
+## Verified Examples
+
+The examples below are complete, previously-verified strategies. Read them as
+a library of mechanisms — span entry, constrained progression,
+closing/termination, error repair, chunking, and preference shaping — rather
+than as one template to copy outright. Adapt or combine only the parts whose
+control flow matches the current task contract and the failures you've
+measured so far.
+
+// No verified examples are compatible with the active helper-call contract for this attempt.
+
+## Requirements
+- Output a COMPLETE method body with concrete Dafny statements in every required branch — no branch may be left as a stub.
+- The rationale block should briefly explain:
+  - what state the strategy tracks
+  - what conditions or observations it uses to choose its next action
+  - how the tracked state is meant to support valid generation for this task
+- Include the proof sketch block described in the system prompt. Dafny will
+  check your proof for you — your sketch just has to convince a careful reader
+  that each non-trivial loop invariant is preserved in every branch.
+- If you call helpers with preconditions, track enough verifier-friendly state
+  to make those preconditions provable at each call site — Dafny will reject a
+  call whose precondition it cannot establish from the state tracked so far.
+- Include a real decoding procedure, EOS handling, and state updates when
+  needed by your design — a strategy that never checks for EOS or never
+  updates its span state will misbehave at runtime even if it verifies.

@@ -1,0 +1,4 @@
+Structured verification analysis:
+1. Invariant failure at F.dfy:12
+   Message: msg
+   Remediation: the loop body must re-establish this invariant at the end of every iteration, and it must also hold on entry. Common misses: the |generated| <= |generatedPrefix| + steps bound (append exactly when you increment steps), or a parser-validity invariant (change span content only through steps whose postconditions preserve parser.IsValidPrefix).

@@ -1,0 +1,32 @@
+Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
+
+Verification and compilation are separate stages: the verifier proves your
+contracts hold, then a later step translates the verified Dafny into
+runnable Python. A compilation error means that translation step rejected
+some construct in your method body — often because it relies on a Dafny
+feature or a helper call shape the translator does not support — even though
+the verifier accepted the same code.
+
+{{ allowed_helpers_block }}{{ tool_reference_block }}
+{{ search_memory_block }}
+## Previous attempt
+
+```dafny
+{{ previous_strategy }}
+```
+
+## Compilation error
+
+```
+{{ error_message }}
+```
+
+## How to revise
+
+Fix the compilation error. Read the error for the exact construct or call
+that failed to translate, and prefer expressing the same logic with a
+simpler, more directly-translatable construct over adding complexity around
+it. If the loop's overall structure is the source of the problem rather than
+one call site, rewrite the method body instead of making only local edits.
+Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
+Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.

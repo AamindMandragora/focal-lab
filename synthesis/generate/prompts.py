@@ -15,6 +15,27 @@ The generator expects these entrypoints:
 
 import re
 
+try:
+    from synthesis.prompt_rendering import render as _render_prompt
+    from synthesis.prompt_rendering.models.author_prompts import (
+        CompilationErrorPromptModel,
+        EvaluationFailurePromptModel,
+        FormatRepairPromptModel,
+        InitialPromptModel,
+        RuntimeErrorPromptModel,
+        VerificationErrorPromptModel,
+    )
+except ImportError:
+    from prompt_rendering import render as _render_prompt
+    from prompt_rendering.models.author_prompts import (
+        CompilationErrorPromptModel,
+        EvaluationFailurePromptModel,
+        FormatRepairPromptModel,
+        InitialPromptModel,
+        RuntimeErrorPromptModel,
+        VerificationErrorPromptModel,
+    )
+
 # NOTE:
 # The synthesized output is injected into
 # `synthesis/verify/library/GeneratedCSD.dfy` as the BODY
@@ -537,6 +558,15 @@ consume token budget by themselves.
   Mechanics: computes the stable prefix from the current suffix length, rolls
   back only `currentConstrained` until parser-valid, and reconstructs
   `generatedOut`.
+  Cost: +0.
+  Control profile: parser repair by deletion.
+
+- `CSDHelpers.RollbackToValidPrefix(parser, prefix)` (static)
+  Role: shorten `prefix` from the end until it is a valid, non-dead-end parse
+  prefix (or empty).
+  Mechanics: drops trailing tokens while the prefix is not `IsValidPrefix` or is
+  a dead end (`IsDeadPrefix`); returns the longest prefix the parser can still
+  extend, or empty if none exists.
   Cost: +0.
   Control profile: parser repair by deletion.
 
@@ -2156,17 +2186,16 @@ cost := steps;
 """
 
 
+# NOTE: INITIAL_GENERATION_PROMPT is no longer rendered directly (the jinja
+# template author_prompts/initial_generation.j2 owns the live prompt text).
+# It is kept only as the source text the demonstration bank below is sliced
+# out of; do not add a new call site that formats it directly.
 _VERIFIED_EXAMPLES_HEADER = "## Verified Examples\n\n"
 _REQUIREMENTS_HEADER = "\n\n## Requirements"
 VERIFIED_EXAMPLES = INITIAL_GENERATION_PROMPT.split(_VERIFIED_EXAMPLES_HEADER, 1)[1].split(
     _REQUIREMENTS_HEADER,
     1,
 )[0]
-INITIAL_GENERATION_PROMPT = INITIAL_GENERATION_PROMPT.replace(
-    VERIFIED_EXAMPLES,
-    "{verified_examples}",
-    1,
-)
 
 _VERIFIED_EXAMPLE_PREFIXES = (
     "// Guided-adaptive CSD.",
@@ -2175,151 +2204,6 @@ _VERIFIED_EXAMPLE_PREFIXES = (
     "// Adaptive-narrowness CSD.",
     "// Open-then-reliably-close CSD.",
 )
-
-
-VERIFICATION_ERROR_REFINEMENT_PROMPT = """\
-Your previous method body failed Dafny verification.
-
-Task:
-{task_description}
-{allowed_helpers_block}{tool_reference_block}
-
-## Verified Examples
-
-These are verified reference CSD patterns available for reuse during verification repair.
-Use them as examples of valid helper usage, state tracking, loop structure, and proof style.
-
-{verified_examples}
-
-{search_memory_block}
-Previous attempt:
-```dafny
-{previous_strategy}
-```
-{strategy_context_block}
-
-Verification error:
-```
-{error_message}
-```
-{structured_feedback_block}{error_history_block}{behavioral_context_block}
-Revise the method body so it verifies.
-
-Dafny constraint reminder:
-- Methods cannot be called directly inside expression contexts.
-- Call the method first, bind its result to a local variable, then use that variable in the condition.
-
-Return exactly the corrected full Dafny method body: rationale block, proof sketch block, then body statements.
-Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
-Use only the contracts and tools provided above.
-"""
-
-
-RUNTIME_ERROR_REFINEMENT_PROMPT = """\
-Your method body passed Dafny verification but failed at runtime.
-
-Task:
-{task_description}
-{allowed_helpers_block}{tool_reference_block}
-
-{search_memory_block}
-Previous attempt:
-```dafny
-{previous_strategy}
-```
-
-Runtime error:
-```
-{error_traceback}
-```
-
-Fix the runtime error. If needed, rewrite the method body instead of making only local edits.
-Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
-Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
-"""
-
-
-COMPILATION_ERROR_REFINEMENT_PROMPT = """\
-Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
-
-{allowed_helpers_block}{tool_reference_block}
-{search_memory_block}
-Previous attempt:
-```dafny
-{previous_strategy}
-```
-
-Compilation error:
-```
-{error_message}
-```
-
-Fix the compilation error. If needed, rewrite the method body instead of making only local edits.
-Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
-Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
-"""
-
-
-FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing the required rationale block markers.
-
-Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
-
-{allowed_helpers_block}{tool_reference_block}
-{search_memory_block}
-Content to rewrite:
-```dafny
-{previous_strategy}
-```
-
-The corrected body must include the required rationale and proof sketch blocks.
-"""
-
-
-
-
-EVALUATION_FAILURE_REFINEMENT_PROMPT = """\
-Your method body passed verification and compilation, then was evaluated on the task,
-but did not meet evaluation thresholds.
-
-Task:
-{task_description}
-{allowed_helpers_block}{tool_reference_block}
-
-## Verified Dafny patterns (proof-style reference only)
-
-{verified_examples}
-
-{search_memory_block}## Previous attempt
-
-```dafny
-{previous_strategy}
-```
-
-Result: accuracy {previous_accuracy:.1%}, syntax {previous_syntax_rate:.1%} on {num_examples} examples.
-Goal:   accuracy ≥ {goal_accuracy:.1%}, syntax ≥ {goal_syntax_rate:.1%}.
-{eval_budget_block}Gap to goal accuracy: {accuracy_gap_pp:.1f}pp.
-Gap to goal syntax:   {syntax_gap_pp:.1f}pp.
-
-Evaluation feedback:
-```
-{evaluation_feedback}
-```
-{attempt_outcome_ledger_block}{mode_examples_block}{best_so_far_block}
-## How to revise
-
-Choose the change size that matches your diagnosis. Numeric tweaks, helper swaps, and structural rewrites are all on the table — pick whatever the failure pattern most directly calls for.
-Never detect a visible delimiter with exact token equality such as `next == "<<"` or `next == ">>"`; append the token and use `RenderedEndsWith` on the full relevant prefix.
-If the task contract includes exact content or visible delimiter spans, treat syntax failures as structural: prefer parser-controlled token generation and immediate span closure over longer unconstrained chunks.
-When a visible span is left unterminated or malformed, repair the active constrained state so the span returns to a point the parser can close cleanly, and emit the closing delimiter as soon as it can — before the step budget runs out.
-If the output uses visible spans, avoid opening them until the content is settled; once open, keep them to the smallest exact unit the contract allows.
-Do not place reasoning text inside a visible span; reserve visible spans for the final exact content only.
-When a visible span contains exact content, use parser-guided token selection and keep the span content to a single finished expression rather than a loose sequence of partial fragments.
-If a visible span is exact, keep it under hard parser control until the parser
-can close it cleanly, without falling back to `ConfidenceGatedStep`.
-
-Return exactly the corrected Dafny method body: rationale block, proof sketch block, then body statements.
-Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
-"""
 
 
 def _build_allowed_helpers_block(allowed_helpers: list[str] | None) -> str:
@@ -2373,12 +2257,13 @@ def build_initial_prompt(
     task_description: str,
     allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
-    user_prompt = INITIAL_GENERATION_PROMPT.format(
+    model = InitialPromptModel(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         verified_examples=_build_verified_examples_block(allowed_helpers),
     )
+    user_prompt = _render_prompt(model, "author_prompts/initial_generation.j2")
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -2423,7 +2308,7 @@ def build_verification_error_prompt(
             f"{error_history}\n"
             "```\n\n"
         )
-    user_prompt = VERIFICATION_ERROR_REFINEMENT_PROMPT.format(
+    model = VerificationErrorPromptModel(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
@@ -2436,6 +2321,7 @@ def build_verification_error_prompt(
         verified_examples=_build_verified_examples_block(allowed_helpers),
         search_memory_block=search_memory_block,
     )
+    user_prompt = _render_prompt(model, "author_prompts/verification_error.j2")
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -2447,7 +2333,7 @@ def build_runtime_error_prompt(
     allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
-    user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
+    model = RuntimeErrorPromptModel(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
@@ -2455,6 +2341,7 @@ def build_runtime_error_prompt(
         error_traceback=error_traceback,
         search_memory_block=search_memory_block,
     )
+    user_prompt = _render_prompt(model, "author_prompts/runtime_error.j2")
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -2465,13 +2352,14 @@ def build_compilation_error_prompt(
     allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
-    user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
+    model = CompilationErrorPromptModel(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         error_message=error_message,
         search_memory_block=search_memory_block,
     )
+    user_prompt = _render_prompt(model, "author_prompts/compilation_error.j2")
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -2481,12 +2369,13 @@ def build_format_repair_prompt(
     allowed_helpers: list[str] | None = None,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
-    user_prompt = FORMAT_REPAIR_PROMPT.format(
+    model = FormatRepairPromptModel(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
         search_memory_block=search_memory_block,
     )
+    user_prompt = _render_prompt(model, "author_prompts/format_repair.j2")
     return SYSTEM_PROMPT, user_prompt
 
 
@@ -2563,18 +2452,18 @@ def build_evaluation_failure_prompt(
     )
     accuracy_gap_pp = max(0.0, (goal_accuracy - previous_accuracy) * 100.0)
     syntax_gap_pp = max(0.0, (goal_syntax_rate - previous_syntax_rate) * 100.0)
-    user_prompt = EVALUATION_FAILURE_REFINEMENT_PROMPT.format(
+    model = EvaluationFailurePromptModel(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
         previous_strategy=previous_strategy,
-        previous_accuracy=previous_accuracy,
-        previous_syntax_rate=previous_syntax_rate,
+        previous_accuracy_str=f"{previous_accuracy:.1%}",
+        previous_syntax_rate_str=f"{previous_syntax_rate:.1%}",
         num_examples=num_examples,
-        goal_accuracy=goal_accuracy,
-        goal_syntax_rate=goal_syntax_rate,
-        accuracy_gap_pp=accuracy_gap_pp,
-        syntax_gap_pp=syntax_gap_pp,
+        goal_accuracy_str=f"{goal_accuracy:.1%}",
+        goal_syntax_rate_str=f"{goal_syntax_rate:.1%}",
+        accuracy_gap_pp_str=f"{accuracy_gap_pp:.1f}",
+        syntax_gap_pp_str=f"{syntax_gap_pp:.1f}",
         evaluation_feedback=evaluation_feedback,
         attempt_outcome_ledger_block=attempt_outcome_ledger_block,
         mode_examples_block=mode_examples_block,
@@ -2583,4 +2472,5 @@ def build_evaluation_failure_prompt(
         best_so_far_block=best_so_far_block,
         eval_budget_block=_build_eval_budget_block(eval_max_seconds_per_example),
     )
+    user_prompt = _render_prompt(model, "author_prompts/evaluation_failure.j2")
     return SYSTEM_PROMPT, user_prompt

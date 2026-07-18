@@ -1,0 +1,5 @@
+Structured verification analysis:
+1. Precondition failure at F.dfy:12
+   Message: msg
+   Related call: AppendToken(...)
+   Remediation: before calling AppendToken, its precondition must hold on every path that reaches the call. The required clause is shown in the contract excerpt above. Add a guard so the call is only reached in states where that clause holds, or compute and bind the value that establishes it first.

@@ -1,0 +1,79 @@
+Evaluation Results (3 examples):
+  Accuracy: 33.3% (1/3)
+  Contains << >>: yes
+  Syntax Rate: 66.7%
+  Total Time: 18.85s
+  Slowest Example Time: 8.05s
+
+Prompt guidance used by this attempt:
+  - Solve step by step using template variable names (no curly braces). At the very end, write the COMPLETE arithmetic expression inside << >>. The expression must include ALL relevant variables and operators (e.g., <<n1 * p1 + n2 * p2 + n3 * p3>> or <<total - n1 - mult * n1>>). Write the FULL expression, not just one variable name.
+
+Primary Failure Modes:
+  - missing_constrained_segment: 1 example(s) (no `<< >>` segment detected)
+  - other_observed_failure: 1 example(s) (uncategorized wrong answer; see representative rollout examples for observed output)
+
+Output Run Summary:
+  verification: passed
+  compilation: passed
+  generated-token outputs: 3/3 nonempty
+  All evaluated examples completed and returned generated output records.
+
+Diagnostic Error Decomposition:
+  Correctness by syntax bucket: syntax_valid_correct 1/3, syntax_valid_wrong 1/3, syntax_invalid_correct 0/3, syntax_invalid_wrong 1/3
+  No-complete-span wrong answers: 1/3
+  Answer extraction source: last_visible_span 2/3, text_fallback 0/3, hidden_or_task_extractor 0/3, none 1/3
+  Span usefulness: final_answer_span 2/3, valid_nonfinal_spans_only 0/3, no_valid_span 1/3
+  Constrained intervention activity: examples_with_activity 2/3, examples_without_activity 1/3, visible_span_without_activity 0/3
+  Correctness conditioned on constrained activity: correct_with_activity 1/3, wrong_with_activity 1/3, correct_without_activity 0/3, wrong_without_activity 1/3
+
+Structural Generation Metrics:
+  Examples with visible `<<`: 2/3
+  Examples with complete visible spans: 2/3
+  Examples without complete visible spans: 1/3
+  Examples with balanced visible spans: 2/3
+  Examples with unterminated visible spans: 0/3
+  Examples with unmatched visible close: 0/3
+  Visible span completion rate: 1.00
+  Avg complete visible spans/example: 0.67
+  Tokens before first visible open: avg 91.50, median 91.50
+  Visible span token length: avg 5.00, median 5.00
+  Valid visible span token length avg: 5.00
+  Examples with at least one valid span/chunk: 2/3
+  Examples with visible parser span failure: 0/3
+  Examples with valid span/chunk but wrong answer: 1/3
+  Examples syntax-valid but wrong answer: 1/3
+  Examples without extracted answer: 1/3
+  Examples with only tiny valid visible spans: 0/3
+  Examples with long visible span (>64 tokens): 0/3
+  Examples hitting max steps: 1/3
+  Generated tokens/example: avg 191.00, median 171.00, max 256
+  Runtime per generated token: 0.03s
+  Top helper calls: UnconstrainedChunk=11, AppendTaskGuidance=3, EnterObservedConstrainedSpan=2, ConstrainedSymbol=2, ConstrainedSymbolInGenerated=2, CloseConstrainedSpan=2
+  Constrained helper call fraction: 0.42
+
+Failure Clusters (17-axis fingerprint, Hamming ≤ 1):
+  Wrong samples: 2 grouped into 2 cluster(s).
+  Constant across all clusters: answer_source=none, runtime_exceeded=no, error_present=no, partial_valid_spans=no, tiny_span_dominant=no, long_span_dominant=no, token_budget_band=mid, accuracy_applicable=yes
+  Varying across clusters: syntax_valid, contains_delimiters, visible_delimiters, used_constrained, has_extracted_answer, hit_max_steps, zero_visible_spans, zero_valid_spans, gen_time_band
+
+  [cluster_1] 1 sample(s):
+    syntax_valid: yes (100%)
+    contains_delimiters: yes (100%)
+    visible_delimiters: yes (100%)
+    used_constrained: yes (100%)
+    has_extracted_answer: yes (100%)
+    hit_max_steps: no (100%)
+    zero_visible_spans: no (100%)
+    zero_valid_spans: no (100%)
+    gen_time_band: fast (100%)
+
+  [cluster_2] 1 sample(s):
+    syntax_valid: no (100%)
+    contains_delimiters: no (100%)
+    visible_delimiters: no (100%)
+    used_constrained: no (100%)
+    has_extracted_answer: no (100%)
+    hit_max_steps: yes (100%)
+    zero_visible_spans: yes (100%)
+    zero_valid_spans: yes (100%)
+    gen_time_band: mid (100%)
