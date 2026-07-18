@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -129,7 +130,7 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
     )
 
     cmd = [
-        "python",
+        sys.executable,
         "main.py",
         "--dataset", dataset,
         "--num_examples", num_examples_arg,
