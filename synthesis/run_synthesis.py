@@ -30,6 +30,7 @@ from synthesis.run_constants import (
     EVAL_BACKEND,
     EVAL_EARLY_STOP_ON_ANSWER,
     GSM_SOURCE_DIR,
+    MIN_EXAMPLES_BEFORE_THRESHOLD_STOP,
     OUTPUT_DIR,
     REQUIRE_DELIMITERS_BY_DATASET,
     SPLIT_FILE_BY_DATASET,
@@ -287,6 +288,15 @@ Examples:
     args = parser.parse_args()
     args.generation_backend = normalize_generation_backend(args.generation_backend)
 
+    # Warm-start ban: --initial-strategy-file is legitimate ONLY for pure
+    # re-evaluation (--max-iterations 1). Seeding further synthesis iterations
+    # from a prior strategy is banned (user ruling 2026-06-12: "it's cheating").
+    if args.initial_strategy_file is not None and args.max_iterations != 1:
+        parser.error(
+            "--initial-strategy-file is only allowed with --max-iterations 1 "
+            "(pure re-eval); warm-started synthesis is banned"
+        )
+
     # One canonical split per dataset; synthesis always evaluates the train side.
     split_file = SPLIT_FILE_BY_DATASET[args.dataset]
     split_name = SYNTHESIS_SPLIT_NAME if split_file is not None else None
@@ -471,9 +481,7 @@ Examples:
         require_delimiters=REQUIRE_DELIMITERS_BY_DATASET[args.dataset],
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
-        # Derived: threshold-impossible early stops may only fire once the
-        # whole per-iteration eval budget has been seen (was a 10-value flag).
-        min_examples_before_threshold_stop=feedback_sample_size,
+        min_examples_before_threshold_stop=MIN_EXAMPLES_BEFORE_THRESHOLD_STOP,
     )
 
     initial_strategy_code = None

@@ -96,7 +96,7 @@ def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sa
 def _token_cap_exhaustion_hint(sample_outputs, max_steps) -> str:
     """Causal diagnostic when most outputs ran all the way to the step cap.
 
-    Flag-gated (SynthesisPipeline token_cap_feedback, default OFF). Without
+    Flag-gated (SynthesisPipeline token_cap_feedback, default ON). Without
     this hint the author sees only counts ("Examples hitting max steps: X/N")
     with no explanation of WHY that produces wrong/invalid answers. Fires when
     >=50% of evaluated outputs hit max_steps. Names the mechanism (truncation

@@ -38,7 +38,7 @@ from .prompts import (
 )
 from .rationale import extract_rationale
 from .provider_names import normalize_generation_backend
-from ..run_constants import ANTHROPIC_EFFORT, ANTHROPIC_THINKING_DISPLAY
+from ..run_constants import ANTHROPIC_EFFORT, ANTHROPIC_THINKING_DISPLAY, VLLM_ENFORCE_EAGER
 
 
 LOGGER = logging.getLogger(__name__)
@@ -397,7 +397,7 @@ class StrategyGenerator:
                     pipeline_parallel_size=1,
                     gpu_memory_utilization=self.vllm_gpu_memory_utilization,
                     max_model_len=self.vllm_max_model_len,
-                    enforce_eager=True,
+                    enforce_eager=VLLM_ENFORCE_EAGER,
                 )
             return
 

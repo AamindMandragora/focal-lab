@@ -66,11 +66,17 @@ Compile is implemented under `verify` because compilation is only valid after ve
 
 ## Path Overrides
 
-Common filesystem/tool paths can be overridden via CLI flags or environment variables:
+`run_synthesis.py` does not take `--output-dir`, `--baseline-output-dir`, or
+`--grammars-dir` flags — those paths are settled constants in
+`run_constants.py` (`OUTPUT_DIR`, `GRAMMARS_DIR`). Remaining overrides:
 
-- `--output-dir` or `CSD_OUTPUT_DIR`
-- `--baseline-output-dir` or `CSD_BASELINE_OUTPUT_DIR`
-- `--grammars-dir` or `CSD_GRAMMARS_DIR`
+- `CSD_OUTPUT_DIR` — recovery-resume-only override (a resumed run keeps
+  writing under its original directory); not a general output-location knob.
+- `CSD_GRAMMARS_DIR` — honored by the evaluator when `GRAMMARS_DIR` is unset
+  (otherwise falls back to the built-in `synthesis/evaluate/grammars/`).
+- `run_all_tests.py` (the separate matrix runner) has its own
+  `--generated-output-dir` / `CSD_OUTPUT_DIR` and `--baseline-output-dir` /
+  `CSD_BASELINE_OUTPUT_DIR` flags.
 - `--dafny-path` or `DAFNY_PATH`
 - `DAFNY_EXTRA_PATH` (colon-separated PATH entries for Dafny subprocesses)
 - `VERIFIED_AGENT_SYNTHESIS_DFY` or `DAFNY_PROOFS_DIR` (override proof include source)

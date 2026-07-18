@@ -105,6 +105,7 @@ from synthesis.evaluate.benchmarks.smiles.rolling_prompt import (
     update_suffix as _update_smiles_rolling_suffix,
 )
 from synthesis.evaluate.metrics import choose_denominator_basis
+from synthesis.run_constants import VLLM_ENFORCE_EAGER
 
 
 class PerExampleTimeout(Exception):
@@ -1576,7 +1577,7 @@ class Evaluator:
         vllm_pipeline_parallel_size: int = 1,
         vllm_gpu_memory_utilization: float = 0.8,
         vllm_max_model_len: int = 16384,
-        vllm_enforce_eager: bool = True,
+        vllm_enforce_eager: bool = VLLM_ENFORCE_EAGER,
         sample_seed: Optional[int] = None,
         max_seconds_per_example: Optional[float] = None,
         step_token_budget: int = 1,

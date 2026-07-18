@@ -27,6 +27,10 @@ EVAL_EARLY_STOP_ON_ANSWER = True  # CRANE-style answer stopping; adopted 2026-07
 VLLM_GPU_MEMORY_UTILIZATION = 0.8  # GPU memory fraction reserved by vLLM
 VLLM_MAX_MODEL_LEN = 16384  # max context length passed to vLLM (must fit prompt + output)
 
+# Threshold-impossible early stops may only fire once at least this many
+# examples have been evaluated in the iteration (settled value; was a flag).
+MIN_EXAMPLES_BEFORE_THRESHOLD_STOP = 15
+
 # Per-dataset: whether evaluated outputs must contain a << >> span. This never
 # gated acceptance (meets_threshold ignores it); it shapes feedback hints and
 # the bandit score. GSM strategies live inside << >> spans; Spider and SMILES
