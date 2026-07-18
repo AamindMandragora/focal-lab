@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 
 from synthesis.evaluate.baselines import crane_repo_runner
@@ -10,6 +11,8 @@ def test_crane_child_uses_the_active_python_interpreter(monkeypatch, tmp_path):
     crane_src = crane_repo / "src"
     result_dir = crane_src / "logging" / "gsm_symbolic"
     result_dir.mkdir(parents=True)
+    vendored_iter_syncode = crane_src / "itergen" / "iter_syncode"
+    vendored_iter_syncode.mkdir(parents=True)
     (result_dir / "result.jsonl").write_text("{}\n")
 
     monkeypatch.setattr(crane_repo_runner, "CRANE_REPO_DIR", crane_repo)
@@ -51,3 +54,6 @@ def test_crane_child_uses_the_active_python_interpreter(monkeypatch, tmp_path):
     assert crane_repo_runner.run_crane_repo_baseline(args, "gsm_symbolic") == 0
     assert captured["cmd"][0] == sys.executable
     assert captured["kwargs"]["check"] is True
+    assert str(vendored_iter_syncode) in captured["kwargs"]["env"]["PYTHONPATH"].split(
+        os.pathsep
+    )

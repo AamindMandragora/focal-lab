@@ -166,6 +166,9 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
 
     env = os.environ.copy()
     extra_pythonpath = []
+    vendored_iter_syncode_dir = CRANE_SRC_DIR / "itergen" / "iter_syncode"
+    if vendored_iter_syncode_dir.exists():
+        extra_pythonpath.append(str(vendored_iter_syncode_dir))
     syncode_dir = CRANE_REPO_DIR / "syncode"
     if syncode_dir.exists():
         extra_pythonpath.append(str(syncode_dir))
