@@ -217,19 +217,8 @@ def _matrix_runner(tmp_path, *, dry_run=True):
         eval_max_steps_gsm="900",
         eval_max_steps_smiles="400",
         eval_max_seconds_per_example="90",
-        eval_min_examples_before_threshold_stop="15",
         accuracy_win_margin=0.03,
         synthesis_max_tokens="32768",
-        restart_after_stuck_iters="0",
-        helper_selection_policy="bandit",
-        refinement_beam_size="2",
-        anthropic_thinking="adaptive",
-        anthropic_effort="xhigh",
-        anthropic_thinking_display="summarized",
-        claude_executable="/test/bin/claude",
-        claude_config_dir="/test/claude-config",
-        claude_expected_account="aadivya@fermi.ai",
-        claude_timeout_seconds="321",
         vllm_gpu_memory_utilization="0.80",
         vllm_tensor_parallel_size=1,
         dafny_path="/tmp/dafny",
@@ -290,40 +279,12 @@ def test_sonnet_profile_migrates_to_claude_with_explicit_old_routes(tmp_path):
         runner.resolve_gen_profile("claude-bedrock-sonnet4.6")
 
 
-def test_sonnet_profile_forwards_only_claude_code_controls(tmp_path):
-    runner = _matrix_runner(tmp_path)
-    runner.ensure_csd_target_baselines = lambda *args: None
-    runner.best_csd_baseline_targets = lambda *args: (
-        0.42,
-        "crane",
-        "/tmp/crane.json",
-        "42.0%",
-        0.9,
-        "itergen",
-        "/tmp/itergen.json",
-        "90.0%",
-    )
-    calls = []
-    runner.run_cmd = lambda cmd, **kwargs: calls.append(cmd) or True
-
-    with pytest.warns(FutureWarning):
-        assert runner.run_metadecode_case(
-            "gsm_symbolic",
-            "Qwen/Qwen2.5-Coder-7B-Instruct",
-            "1",
-            "40",
-            "sonnet4.6",
-            "900",
-        )
-
-    command = calls[0]
-    assert _flag_value(command, "--generation-backend") == "claude"
-    assert _flag_value(command, "--generation-model") == "claude-sonnet-4-6"
-    assert _flag_value(command, "--claude-executable") == "/test/bin/claude"
-    assert _flag_value(command, "--claude-config-dir") == "/test/claude-config"
-    assert _flag_value(command, "--claude-expected-account") == "aadivya@fermi.ai"
-    assert _flag_value(command, "--claude-timeout-seconds") == "321"
-    assert "--anthropic-thinking" not in command
+# NOTE (2026-07-18): test_sonnet_profile_forwards_only_claude_code_controls was
+# removed here. It checked that --claude-executable/--claude-config-dir/
+# --claude-expected-account/--claude-timeout-seconds were forwarded into the
+# run_synthesis command. Those flags and their Config fields were deleted as
+# dead code in commit fabd206d; the backend/model migration behavior it also
+# touched on is already covered by test_sonnet_profile_migrates_to_claude_with_explicit_old_routes.
 
 
 def test_claude_access_marker_is_classified_as_author_quota():
@@ -600,8 +561,7 @@ def test_matrix_result_json_annotation_records_ablation_provenance(tmp_path):
     assert metadata["eval_step_token_budget"] == 1
     assert metadata["thresholds"]["min_accuracy"] == 0.53
     assert metadata["thresholds"]["min_syntax_rate"] == 0.9
-    assert metadata["synthesis_controls"]["helper_selection_policy"] == "bandit"
-    assert metadata["synthesis_controls"]["refinement_beam_size"] == 2
+    assert metadata["synthesis_controls"]["max_tokens"] == 32768
     assert metadata["splits"]["spider"]["split_name"] == "eval"
     assert metadata["command"] == "python -m synthesis.run_synthesis"
 
@@ -618,8 +578,15 @@ def _assert_flag_values(cmd, expected):
         assert _flag_value(cmd, flag) == str(value)
 
 
+# 2026-07-18: dropped the `dataset_flags` case (--gsm-split-file/--spider-split-file,
+# via add_generation_split_flags) plus --output-name, --output-dir,
+# --eval-backend, --adaptive-helper-mask, --vllm-gpu-memory-utilization,
+# --vllm-tensor-parallel-size, and the anthropic-*/restart/beam/helper-policy
+# flags below. run_metadecode_case no longer forwards any of these (dead flags
+# removed in commit fabd206d); the settled values now live hard-coded inside
+# synthesis.run_synthesis, not as CLI knobs this launcher controls.
 @pytest.mark.parametrize(
-    ("benchmark", "smiles_class", "max_steps", "sample_size", "expected_task", "dataset_flags"),
+    ("benchmark", "smiles_class", "max_steps", "sample_size", "expected_task"),
     [
         (
             "gsm_symbolic",
@@ -627,7 +594,6 @@ def _assert_flag_values(cmd, expected):
             "900",
             "51",
             "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
-            {"--gsm-split-file": "gsm_split.json", "--gsm-split-name": "train"},
         ),
         (
             "spider",
@@ -635,7 +601,6 @@ def _assert_flag_values(cmd, expected):
             "600",
             "52",
             "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the provided schema context.",
-            {"--spider-split-file": "spider_split.json", "--spider-split-name": "train"},
         ),
     ],
 )
@@ -646,7 +611,6 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
     max_steps,
     sample_size,
     expected_task,
-    dataset_flags,
 ):
     runner = _matrix_runner(tmp_path)
     captured = []
@@ -677,7 +641,6 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
     assert len(captured) == 1
     cmd = captured[0]
     assert cmd[:3] == ["python", "-m", "synthesis.run_synthesis"]
-    assert "--adaptive-helper-mask" in cmd
     assert "--temperature" not in cmd
     _assert_flag_values(
         cmd,
@@ -686,11 +649,7 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
             "--dataset": benchmark,
             "--generation-model": "claude-opus-4-7",
             "--generation-backend": "anthropic",
-            "--anthropic-thinking": "adaptive",
-            "--anthropic-effort": "xhigh",
-            "--anthropic-thinking-display": "summarized",
             "--eval-model": "Qwen/Qwen2.5-Coder-7B-Instruct",
-            "--eval-backend": "vllm",
             "--max-iterations": "10",
             "--min-accuracy": "0.45",
             "--min-syntax-rate": "0.88",
@@ -698,26 +657,10 @@ def test_full_test_runner_metadecode_command_forwards_complete_launch_contract(
             "--eval-max-steps": max_steps,
             "--eval-step-token-budget": "1",
             "--eval-max-seconds-per-example": "90",
-            "--eval-min-examples-before-threshold-stop": "15",
             "--max-tokens": "32768",
-            "--restart-after-stuck-iters": "0",
-            "--refinement-beam-size": "2",
-            "--helper-selection-policy": "bandit",
-            "--vllm-gpu-memory-utilization": "0.80",
-            "--vllm-tensor-parallel-size": "1",
             "--device": "auto",
-            "--output-dir": str(tmp_path / "generated"),
             "--dafny-path": "/tmp/dafny",
         },
-    )
-    for flag, value in dataset_flags.items():
-        actual = _flag_value(cmd, flag)
-        if flag.endswith("-file"):
-            assert actual == str(tmp_path / value)
-        else:
-            assert actual == value
-    assert _flag_value(cmd, "--output-name").startswith(
-        f"metadecode_{benchmark}_Qwen_Qwen2.5_Coder_7B_Instruct_opus4.7_iter10_tb1_ms{max_steps}"
     )
 
 
@@ -750,9 +693,14 @@ def test_full_test_runner_ablation_e_command_forwards_complete_launch_contract(t
     cmd, run_kwargs = captured[0]
     assert run_kwargs["abort_on_quota"] is False
     assert cmd[:3] == ["python", "-m", "synthesis.run_synthesis"]
-    assert "--adaptive-helper-mask" in cmd
     assert "--temperature" not in cmd
     assert "--anthropic-thinking" not in cmd
+    # 2026-07-18: dropped --eval-backend, --adaptive-helper-mask,
+    # --eval-min-examples-before-threshold-stop, --restart-after-stuck-iters,
+    # --refinement-beam-size, --helper-selection-policy,
+    # --vllm-gpu-memory-utilization, --vllm-tensor-parallel-size, --output-dir,
+    # and --spider-split-file/--spider-split-name — none of these are forwarded
+    # by run_ablation_e_case anymore (dead flags removed in commit fabd206d).
     _assert_flag_values(
         cmd,
         {
@@ -761,7 +709,6 @@ def test_full_test_runner_ablation_e_command_forwards_complete_launch_contract(t
             "--generation-backend": "openai",
             "--generation-model": "gpt-5.5",
             "--eval-model": "Qwen/Qwen2.5-Coder-7B-Instruct",
-            "--eval-backend": "vllm",
             "--max-iterations": "30",
             "--min-accuracy": "0.53",
             "--min-syntax-rate": "0.9",
@@ -769,17 +716,8 @@ def test_full_test_runner_ablation_e_command_forwards_complete_launch_contract(t
             "--eval-max-steps": "600",
             "--eval-step-token-budget": "1",
             "--eval-max-seconds-per-example": "90",
-            "--eval-min-examples-before-threshold-stop": "15",
             "--max-tokens": "32768",
-            "--restart-after-stuck-iters": "0",
-            "--refinement-beam-size": "2",
-            "--helper-selection-policy": "bandit",
-            "--vllm-gpu-memory-utilization": "0.80",
-            "--vllm-tensor-parallel-size": "1",
             "--device": "auto",
-            "--output-dir": str(tmp_path / "generated"),
-            "--spider-split-file": str(tmp_path / "spider_split.json"),
-            "--spider-split-name": "train",
             "--dafny-path": "/tmp/dafny",
         },
     )
