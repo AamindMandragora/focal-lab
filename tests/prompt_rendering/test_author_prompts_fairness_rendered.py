@@ -6,11 +6,12 @@ The old `synthesis/generate/test_prompt_fairness.py` and the fairness_cloud
 suite used to assert on module-level constants like `INITIAL_GENERATION_PROMPT`
 / `EVALUATION_FAILURE_REFINEMENT_PROMPT`. After the pydantic+Jinja conversion
 the `build_*_prompt` functions no longer render from those constants -- they
-render from `templates/author_prompts/*.j2`, and `INITIAL_GENERATION_PROMPT`
-survives only as the source text `VERIFIED_EXAMPLES` is sliced out of. So the
-old constant-based fairness test was auditing dead strings, not the prompt the
-author model actually receives, and has been deleted; the fairness_cloud suite
-was migrated to check the live rendered text instead.
+render from `templates/author_prompts/*.j2`. Those constants (including
+`INITIAL_GENERATION_PROMPT`) no longer exist at all; `VERIFIED_EXAMPLES` is now
+its own literal. So the old constant-based fairness test was auditing dead
+strings, not the prompt the author model actually receives, and has been
+deleted; the fairness_cloud suite was migrated to check the live rendered text
+instead.
 
 This file closes that gap: it renders each of the 6 build_*_prompt composers and
 asserts the fairness contract on the REAL rendered output --
