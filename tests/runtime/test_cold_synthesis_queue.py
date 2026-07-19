@@ -407,7 +407,11 @@ def test_cold_queue_service_uses_work_env_and_kills_its_process_group():
         / "csd-cold-synthesis-queue.service"
     ).read_text()
 
-    assert "run_cold_synthesis_queue.py" in unit
+    assert (
+        "ExecStart=/apps/conda/aadivyar/envs/csd/bin/python "
+        "-m scripts.runtime.run_cold_synthesis_queue "
+    ) in unit
+    assert "/scripts/runtime/run_cold_synthesis_queue.py" not in unit
     assert "EnvironmentFile=/home/aadivyar/csd-generation/.env" in unit
     assert "2026-07-19-exhaustive-cold-queue-manifest.json" in unit
     assert "KillMode=control-group" in unit
