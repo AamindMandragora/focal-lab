@@ -586,3 +586,45 @@ runtime verifier passed **133/133** with three unrelated warnings, and
 no second caller of `detect_gpu_slots` outside the persistent pool and the
 standalone sharded re-evaluator; both now respect the caller's existing GPU
 visibility. No model was loaded and no Bedrock or other paid call was made.
+
+### H99 preregistration — 2026-07-19T08:00Z
+
+Hypothesis: the isolated Qwen2.5-14B evaluator fails because synthesis still
+uses the shared vLLM memory fraction `0.80`, while this campaign's reviewed 14B
+runtime record already requires `0.81`. At `0.80`, the live engine loaded 27.57
+GiB of weights but had only 2.96 GiB of KV cache for a 16,384-token context that
+requires 3.0 GiB. Raising only the shared synthesis memory fraction to `0.81`
+will supply enough KV cache without changing examples, splits, prompts, model,
+context length, bars, grammar, grader, decoding, or scoring.
+
+Single variable / tweak: change `VLLM_GPU_MEMORY_UTILIZATION` from `0.80` to
+`0.81`. Keep the 16,384-token context length and every scientific setting
+unchanged. The four author calls completed before the safety monitor stopped the
+queue will be recorded as interrupted calls before any new cold launch.
+
+Prior: **99%**. The error reports a shortfall of only 0.04 GiB, while one
+percentage point of this 40 GiB GPU is about 0.40 GiB. The model was isolated on
+GPU 1, so no competing queue worker caused this shortfall.
+
+Falsifiable prediction: a focused constant test fails on current code at
+`0.80`; after the one-line change it passes. A disposable one-example 14B
+re-evaluation on one idle GPU with otherwise identical vLLM settings initializes
+at `0.81` and writes a valid result, and the existing runtime verifier remains
+green. The focused probe loads only the evaluation model; it makes no Bedrock,
+author-model, or other paid provider call.
+
+H99 result: **confirmed.** The focused test was red **1/1** on the original
+constant (`0.8 == 0.81` failed) and green **1/1** after the one-line change. The
+wider runtime verifier passed **134/134** with three unrelated warnings, and
+`py_compile` passed for the constants and synthesis entry point.
+
+The targeted one-example Qwen2.5-14B probe ran on isolated physical GPU 1 with
+the unchanged 16,384-token context. At `0.81`, vLLM loaded the same 27.57 GiB of
+weights, reported **3.35 GiB** available KV cache and an 18,304-token cache, then
+completed with exit code 0 and wrote one answer. The strategy's disposable
+one-example score was 0.0 accuracy and 0.0 syntax; score quality was not the
+probe variable. Two earlier probe commands stopped before model load because
+the first named a compiled directory instead of `module_.py` and the second
+named the split at repo root instead of its manifest-recorded path; neither
+allocated a GPU or called a provider. No Bedrock, author-model, or other paid
+provider call was made by H99.
