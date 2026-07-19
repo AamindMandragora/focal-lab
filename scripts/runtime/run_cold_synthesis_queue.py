@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import GSM_CRANE_COT_TASK
 from scripts.runtime.run_warm_task_recovery_queue import (
     choose_gpu,
     gpu_memory_snapshot,
@@ -44,10 +45,7 @@ PINNED_CODE_PATHS = (
     "environment/benchmark_splits",
     "legacy/CRANE/src/gsm_symbolic",
 )
-GSM_TASK = (
-    "Solve math word problems step by step, wrapping intermediate symbolic expressions "
-    "and the final answer inside << >> delimiters."
-)
+GSM_TASK = GSM_CRANE_COT_TASK
 SPIDER_TASK = (
     "Generate a single valid SQL query as exactly `SQL: <<YOUR QUERY>>`, using only the "
     "provided schema context."

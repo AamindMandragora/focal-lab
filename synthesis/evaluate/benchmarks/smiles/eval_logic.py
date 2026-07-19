@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from synthesis.evaluate.benchmarks.prompt_profiles import render_strategy_prompt
+
 
 def normalize_classes(evaluator: Any) -> list[str]:
     from synthesis.evaluate.benchmarks.smiles.dataset import normalize_smiles_classes
@@ -41,24 +43,21 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
     """Grammar-masked legacy adapters: single bare SMILES string."""
-    base_prompt = example.get("prompt", "")
-    return (
-        base_prompt.rstrip()
-        + "\n\nReturn exactly one line containing only the SMILES string "
-        "(example: CC(=O)OC=C).\n"
-        "Molecule: "
-    )
+    return render_strategy_prompt("smiles", "itergen", example)
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
     """CRANE-style adaptive SMILES: final answer is still a bare SMILES string."""
-    base_prompt = example.get("prompt", "")
-    return (
-        base_prompt.rstrip()
-        + "\n\nThink step by step about how to satisfy the structural constraints, "
-        "then output only the final SMILES string after `Molecule:` with no delimiters.\n"
-        "Molecule: "
-    )
+    return render_strategy_prompt("smiles", "crane", example)
+
+
+def format_prompt_for_strategy(
+    evaluator: Any,
+    example: dict[str, Any],
+    strategy: str,
+) -> str:
+    """Render GCD, IterGen, or CRANE from the shared SMILES YAML file."""
+    return render_strategy_prompt("smiles", strategy, example)
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:

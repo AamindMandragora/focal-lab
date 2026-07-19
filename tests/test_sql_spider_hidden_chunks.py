@@ -2,11 +2,11 @@ from synthesis.evaluate.benchmarks.sql_spider import eval_logic as sql_eval_logi
 from synthesis.evaluate.benchmarks.sql_spider import generation as sql_generation
 
 
-def test_spider_uses_visible_delimiters_for_syntax_accounting():
-    assert sql_eval_logic.uses_hidden_chunks() is False
+def test_spider_token0_mode_uses_hidden_chunks_for_syntax_accounting():
+    assert sql_eval_logic.uses_hidden_chunks() is True
 
 
-def test_spider_prompt_requires_visible_expression_only_sql_delimiters():
+def test_spider_default_prompt_is_exact_itergen_surface():
     prompt = sql_eval_logic.format_prompt(
         evaluator=object(),
         example={
@@ -16,8 +16,12 @@ def test_spider_prompt_requires_visible_expression_only_sql_delimiters():
         },
     )
 
-    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in prompt
-    assert "SQL: <<SELECT count(*) FROM singer>>" in prompt
+    assert prompt == (
+        "db_id: concert_singer\n"
+        "db_info: # singer ( singer_id , name )\n"
+        "question: How many singers do we have? Only output the SQL quey. \n"
+        "SQL:"
+    )
     assert "reason" not in prompt.lower()
 
 

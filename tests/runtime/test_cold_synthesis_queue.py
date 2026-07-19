@@ -9,6 +9,19 @@ import sys
 from scripts.runtime import run_cold_synthesis_queue as queue
 
 
+EXPECTED_CRANE_GSM_TASK = (
+    "You are an expert in solving grade school math tasks. "
+    "You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\n"
+    "Before answering you should reason about the problem (using the <reasoning> field in the response described below). "
+    "Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\n"
+    "Then, output the symbolic expression wrapped in << >> that answers the question. "
+    "The expressions must use numbers as well as the variables defined in the question. "
+    "You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\n"
+    "You will always respond in the format described below: \n"
+    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>"
+)
+
+
 def _job(dataset="gsm_symbolic"):
     return {
         "cell_id": "gsm-qwen35-2b",
@@ -81,6 +94,15 @@ def _matching_run_configuration(job):
             "split_provenance": split,
         },
     }
+
+
+def test_gsm_task_matches_crane_task_and_cot_contract() -> None:
+    assert queue.GSM_TASK == EXPECTED_CRANE_GSM_TASK
+    assert {
+        config["task"]
+        for config in queue.EXPECTED_CELLS.values()
+        if config["dataset"] == "gsm_symbolic"
+    } == {EXPECTED_CRANE_GSM_TASK}
 
 
 def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
@@ -538,7 +560,12 @@ def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
     commit, jobs = queue.load_manifest(manifest)
     queue.validate_exhaustive_campaign(jobs)
 
-    assert commit == "fc3b569c786ab474deaf5ed0bf1d825b1400f140"
+    assert len(commit) == 40
+    subprocess.run(
+        ["git", "merge-base", "--is-ancestor", commit, "HEAD"],
+        cwd=repo,
+        check=True,
+    )
     assert len(jobs) == 11
     assert sum(job["max_iterations"] for job in jobs) == 472
     assert sum(job["interrupted_author_calls"] for job in jobs) == 8

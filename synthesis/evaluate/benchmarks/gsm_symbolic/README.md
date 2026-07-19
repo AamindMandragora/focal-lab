@@ -12,7 +12,8 @@ This module evaluates synthesized CSD strategies on GSM-Symbolic style arithmeti
 ## Key Files
 
 - `dataset.py`: dataset loading, metadata enrichment, split utilities.
-- `prompts.py`: prompt formatting helpers.
+- `prompts.py`: prompt formatting helpers and the shared
+  `GSM_CRANE_COT_TASK` text used by both evaluation prompts and the cold queue.
 - `grammar.py`: grammar adaptation helpers for dynamic variable restrictions.
 - `generation.py`: benchmark generation wrappers used by evaluator.
   Resets task-guidance state before each example and records accepted guidance
@@ -25,3 +26,5 @@ This module evaluates synthesized CSD strategies on GSM-Symbolic style arithmeti
 - Variable-aware grammar specialization is used for faithful constrained decoding.
 - This benchmark is the primary synthesis target in current workflows.
 - Local CRANE JSON loads use the symbolic template (`question_parsed`) as the primary `question` field; instantiated prose is kept as `question_instantiated`. HuggingFace rows prefer `question_parsed`, then `original_question`, then `question` when building prompts.
+- The evaluator extracts and syntax-checks the final `<<expression>>` span, so
+  CRANE-formatted text such as `The final answer is <<x + 2>>` is accepted.

@@ -97,7 +97,7 @@ _GSM_STD_FEWSHOTS = [
 ]
 
 
-_GSM_REASONING_HEADER = (
+GSM_CRANE_COT_TASK = (
     "You are an expert in solving grade school math tasks. "
     "You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\n"
     "Before answering you should reason about the problem (using the <reasoning> field in the response described below). "
@@ -111,12 +111,12 @@ _GSM_REASONING_HEADER = (
     # original CRANE response 771/784 chars on eval-ex0; without it, diverges
     # at char 156). Byte-identical prompts are required for baseline parity.
     "You will always respond in the format described below: \n"
-    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>\n"
+    "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>"
 )
 
 
 def reasoning_with_symbolic_expr_prompt(question: str) -> str:
-    parts = [_GSM_REASONING_HEADER]
+    parts = [GSM_CRANE_COT_TASK + "\n"]
     for q, a in _GSM_FEWSHOTS:
         parts.append(f"\n{q}\n\n{a}\n")
     parts.append(f"\n{question}\n")
@@ -131,7 +131,7 @@ def reasoning_with_symbolic_expr_messages(question: str) -> list[dict]:
     far more reliably this way: on GSM-1.5B unconstrained this lifted accuracy
     22.0% -> 30.0% with zero content change. Used by eval_logic.format_prompt.
     """
-    messages = [{"role": "system", "content": _GSM_REASONING_HEADER.strip()}]
+    messages = [{"role": "system", "content": GSM_CRANE_COT_TASK}]
     for q, a in _GSM_FEWSHOTS:
         messages.append({"role": "user", "content": q})
         messages.append({"role": "assistant", "content": a})

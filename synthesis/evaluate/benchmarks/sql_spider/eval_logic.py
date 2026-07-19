@@ -7,6 +7,7 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
+from synthesis.evaluate.benchmarks.prompt_profiles import render_strategy_prompt
 from synthesis.evaluate.benchmarks.sql_spider.prompts import (
     format_spider_itergen_aligned_prompt,
     format_spider_messages,
@@ -112,33 +113,22 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Hard-mask / constrained decoders: emit only ``SQL: <<query>>``."""
-    return format_spider_prompt(
-        example,
-        instruction=(
-            "Write ONE SQL query using ONLY tables and columns shown in the schema.\n\n"
-            "Return exactly one line: `SQL: <<YOUR QUERY>>`."
-        ),
-        few_shot_answer_line="SQL: <<SELECT count(*) FROM singer>>",
-    )
+    """GCD and IterGen use the exact direct IterGen prompt from SQL YAML."""
+    return render_strategy_prompt("spider", "itergen", example)
 
 
-def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> list[dict]:
-    """Legacy CRANE-style runs: require explicit reasoning before the delimited query."""
-    return format_spider_messages(
-        example,
-        instruction=(
-            "Write a SINGLE SQL query answering the question, using ONLY the tables "
-            "and columns in the schema.\n\n"
-            "Reason step by step (tables, joins, filters). "
-            "Then output SQL: followed by your query wrapped in << >>. "
-            "Stop after the closing >>."
-        ),
-        few_shot_answer_line=(
-            "Let's think step by step. We only need the singer table. "
-            "SQL: <<SELECT count(*) FROM singer>>"
-        ),
-    )
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
+    """CRANE uses the CoT version of the same IterGen SQL prompt."""
+    return render_strategy_prompt("spider", "crane", example)
+
+
+def format_prompt_for_strategy(
+    evaluator: Any,
+    example: dict[str, Any],
+    strategy: str,
+) -> str:
+    """Render GCD, IterGen, or CRANE from the shared SQL YAML file."""
+    return render_strategy_prompt("spider", strategy, example)
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:

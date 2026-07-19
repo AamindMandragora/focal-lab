@@ -119,9 +119,7 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
 
     profile:
       - ``expression_only``: one delimited answer; used by IterGen and GCD.
-      - ``chain_of_thought``: explicit reasoning then answer; used by CRANE adaptive SMILES.
-        NOTE: for Spider, ``format_prompt_chain_of_thought`` returns a list[dict] (multi-turn
-        chat messages) — do NOT use this profile for Spider; use ``evaluator_default`` instead.
+      - ``chain_of_thought``: explicit reasoning then answer; used by every CRANE path.
       - ``evaluator_default``: ``logic.format_prompt``; for Spider this returns the flat
         few-shot string (the production format) and is the correct profile for all Spider
         legacy adapters.
@@ -136,6 +134,25 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
             return cot(evaluator, example)
         return logic.format_prompt(evaluator, example)
     raise ValueError(f"Unknown legacy prompt profile: {profile}")
+
+
+def _fixed_csd_prompt(
+    logic: Any,
+    evaluator: Any,
+    example: dict[str, Any],
+    strategy: str,
+) -> str:
+    """Resolve every fixed CSD through its dataset strategy prompt mapping."""
+    normalized = strategy.strip().lower()
+    if normalized not in {"gcd", "itergen", "crane"}:
+        raise ValueError(f"Unknown fixed CSD strategy: {strategy}")
+
+    strategy_formatter = getattr(logic, "format_prompt_for_strategy", None)
+    if callable(strategy_formatter):
+        return strategy_formatter(evaluator, example, normalized)
+
+    profile = "chain_of_thought" if normalized == "crane" else "expression_only"
+    return _legacy_benchmark_prompt(logic, evaluator, example, profile)
 
 
 def _cars_prompt_profile(dataset: str) -> str:
@@ -1017,7 +1034,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _fixed_csd_prompt(logic, eval_runtime, example, "gcd")
         gen_started = time.perf_counter()
         gcd_prompt = _gcd_prompt(prompt)
         completions = sc.infer(gcd_prompt, stop_words=_gcd_stop_words(dataset))
@@ -1247,7 +1264,7 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _fixed_csd_prompt(logic, eval_runtime, example, "itergen")
         if dataset == "gsm_symbolic":
             prompt = prompt.rstrip() + "<<"
 
@@ -1502,7 +1519,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
     max_new = max(32, int(args.eval_max_steps))
 
     for sample_index, example in enumerate(examples, start=1):
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
+        prompt = _fixed_csd_prompt(logic, eval_runtime, example, "crane")
         num_toks: int | None = None
         if args.eval_backend == "vllm":
             from vllm import SamplingParams as _SP

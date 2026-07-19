@@ -473,4 +473,4 @@ def test_model_facing_prompt_surfaces_use_positive_contract_language():
     assert "Call it once at method start" in combined
     assert "Return exactly the Dafny method body" in combined
     assert "Return exactly one line containing only the SMILES string" in combined
-    assert "Return exactly one line: `SQL: <<YOUR QUERY>>`" in combined
+    assert "Only output the SQL quey." in combined

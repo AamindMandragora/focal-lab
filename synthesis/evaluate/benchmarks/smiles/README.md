@@ -19,7 +19,13 @@ This module evaluates synthesized CSD strategies on constrained molecular-string
 
 ## Constraint mode
 
-Strategies decide their own constraint behavior. The prompt asks for one bare SMILES string after `Molecule:` and does not request visible `<< >>` delimiters. Grammar-guided SMILES generation starts inside a hidden constrained chunk, so the generated answer surface remains the SMILES string itself. The evaluator still prefers extracting from `<< >>` if an older strategy emits delimiters and falls back to `clean_smiles_output` on the raw text otherwise.
+Fixed-strategy prompts come from the single shared
+`../prompt_profiles/smiles.yaml` file. GCD and IterGen both select its `direct`
+profile; CRANE selects its `chain_of_thought` profile. Both finish at
+`Molecule:` and request a bare SMILES answer with no visible `<< >>`
+delimiters. Grammar-guided SMILES generation uses hidden constrained chunks;
+the evaluator still prefers an older visible span when present and otherwise
+cleans the raw output.
 
 ## Evaluation Behavior
 
