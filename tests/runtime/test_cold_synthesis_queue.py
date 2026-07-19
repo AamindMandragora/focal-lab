@@ -119,6 +119,25 @@ def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
     assert not any(flag.startswith("--initial-") for flag in command)
 
 
+def test_bedrock_author_enables_extended_thinking(monkeypatch):
+    from synthesis.generate.generator import StrategyGenerator
+
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "test-token")
+    author = StrategyGenerator(
+        backend="claude-bedrock",
+        model_name="us.anthropic.claude-sonnet-4-6",
+        max_new_tokens=8192,
+        reasoning_budget_tokens=4096,
+    )
+
+    assert author.anthropic_thinking == "always-on"
+    assert author.anthropic_effort == "high"
+    assert author.anthropic_thinking_display == "summarized"
+    assert author._bedrock_thinking_fields() == {
+        "thinking": {"type": "enabled", "budget_tokens": 4096}
+    }
+
+
 def test_synthesis_command_only_uses_run_synthesis_cli_flags():
     command = queue.synthesis_command(_job(), Path(sys.executable))
     help_result = subprocess.run(
