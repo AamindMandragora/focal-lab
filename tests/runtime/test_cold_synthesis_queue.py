@@ -537,6 +537,21 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
         "smiles-qwen35-4b-acrylates", "smiles-qwen35-9b-isocyanates",
     }
     assert set(queue.EXPECTED_CELLS) == expected_ids
+    interrupted = {
+        cell: spec["interrupted_author_calls"]
+        for cell, spec in queue.EXPECTED_CELLS.items()
+        if spec["interrupted_author_calls"]
+    }
+    assert interrupted == {
+        "gsm-qwen25-1p5b": 1,
+        "gsm-qwen25-7b": 1,
+        "gsm-qwen25-14b": 1,
+        "gsm-qwen35-2b": 1,
+    }
+    assert sum(
+        spec["max_iterations"] + spec["interrupted_author_calls"]
+        for spec in queue.EXPECTED_CELLS.values()
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 480
     jobs = []
     for cell, spec in queue.EXPECTED_CELLS.items():
         job = _job(spec["dataset"])
