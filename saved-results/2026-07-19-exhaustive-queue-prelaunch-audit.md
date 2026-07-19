@@ -38,11 +38,11 @@ Sixteen cells have reusable cold strategies:
 - Qwen3.5 SMILES 2B/acrylates, 2B/isocyanates, and 4B/isocyanates: recorded cold strategies with held-out N=100 artifacts.
 - Qwen3.5 SMILES July-10 `paid0708` cells: 2B/chain extenders, 4B/chain extenders, 9B/acrylates, and 9B/chain extenders. Their success reports record Sonnet-4.6, adaptive mask on, bandit selection, N=50 synthesis, and no initial-strategy field; each first author prompt is a fresh strategy request. Corrected held-out UV values are 0.510, 0.750, 0.460, and 0.660 respectively.
 
-## Missing baseline measurements
+## Completed baseline measurements
 
-- GSM CRANE train-49: all six model sizes. Qwen2.5-14B has completed; Qwen3.5 2B/4B/9B are running; Qwen2.5 1.5B/7B remain queued.
-- Spider IterGen train-300: all six model sizes. Qwen3.5-2B = 123/300, Qwen3.5-4B = 194/300, Qwen3.5-9B = 200/300, and Qwen2.5-7B = 197/300 have completed. Qwen2.5-1.5B/14B remain queued.
-- SMILES Qwen3.5-9B: no baseline run is needed. Existing CARS N=100 raw-answer files rescore to acrylates 12/100, chain extenders 34/100, and isocyanates 30/100 UV.
+- GSM CRANE train-49, in model order Qwen2.5 1.5B/7B/14B and Qwen3.5 2B/4B/9B: 8, 18, 20, 7, 16, and 15 correct. Each strict launch bar is exactly one additional correct example.
+- Spider IterGen train-300, in the same model order: 160, 198, 201, 123, 195, and 201 correct. Final counts replay each raw completion against the canonical `train_indices` with this repo's official `execute_accuracy(..., etype="exec")` scorer because the IterGen rows' embedded gold/`exec` fields are misaligned. The normalized queue evidence records that rescore method and its fixed database/table paths.
+- Matching SMILES queue baselines: Qwen3.5-4B/acrylates CARS = 18/50 and Qwen3.5-9B/isocyanates CARS = 18/50. Existing Qwen3.5-9B CARS N=100 raw-answer files also rescore to acrylates 12/100, chain extenders 34/100, and isocyanates 30/100 UV for the broader table audit.
 - SMILES Qwen3.5-9B/isocyanates: the old compiled strategy's current N=100 pure reevaluation completed at 0/100 UV and 100/100 syntax (`outputs/reeval/exhaustive_0719/smiles-qwen35-9b-isocyanates-existing.json`), confirming that this cell needs a new cold run.
 - Spider Qwen2.5-14B: current explicit-test pure reevaluation completed at 139/300 = 46.33% accuracy and 300/300 = 100% syntax; no author call was used.
 
@@ -56,8 +56,8 @@ Eleven cold launches allow at most 480 Sonnet author attempts. Scaling the prior
 
 ## Queue driver verification
 
-The implementation is isolated in focal worktree `/home/aadivyar/csd-generation-phaseb-python-fix` on branch `codex/phaseb-python-fix`. The 2026-07-19 focused suite completed with 126 passing tests. `git diff --check`, Python compilation, and systemd unit verification exited successfully; systemd printed one unrelated permission warning for `netplan-ovs-cleanup.service`.
+The implementation was built in focal worktree `/home/aadivyar/csd-generation-phaseb-python-fix` on branch `codex/phaseb-python-fix`. The 2026-07-19 main focused suite completed with 126 passing tests. A concrete prelaunch dry-run then exposed a broken direct-file systemd invocation; commit `46ca2a43b0ed9019eb2cc412f73130c86abd364f` changes it to `python -m scripts.runtime.run_cold_synthesis_queue`. The new test failed before that change and passed afterward; the post-fix focused subset completed with 81 passing tests, the real module printed its `--help`, and systemd unit verification exited successfully.
 
 The verified driver enforces the exact eleven-cell set, cold starts only, Sonnet 4.6 Bedrock author settings, canonical train-side synthesis, fixed held-out scoring without author credentials, held-out rows after accepted or exhausted synthesis, atomic result/state files, retryable blocked repairs, pinned code/data, exact comparator and train-split evidence, and restart validation of all saved provenance.
 
-The concrete manifest is intentionally not created until the remaining no-cost baseline measurements finish and their normalized evidence files are built. No paid author call has been made during this preparation.
+The concrete eleven-cell manifest, eleven normalized baseline records, combined evidence ledger, and train-baseline table are now materialized in the isolated manifest worktree. The driver loaded and validated all eleven records against their normalized and raw hashes, canonical splits, strict bars, cold-only commands, and pinned code commit. The older warm-recovery service and its restart monitor were found active during preparation and are now both disabled and inactive. No paid author call has been made during this preparation; the cold queue service remains uninstalled and stopped pending explicit billing approval.
