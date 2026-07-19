@@ -1,9 +1,9 @@
 {
-  "git_commit": "fc3b569c786ab474deaf5ed0bf1d825b1400f140",
+  "git_commit": "70405309244b90ecd7f93b94ef1d6944413bcfcf",
   "jobs": [
     {
       "cell_id": "gsm-qwen25-1p5b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
       "max_iterations": 38,
@@ -27,7 +27,7 @@
     },
     {
       "cell_id": "gsm-qwen25-7b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen2.5-7B-Instruct",
       "max_iterations": 38,
@@ -51,7 +51,7 @@
     },
     {
       "cell_id": "gsm-qwen25-14b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen2.5-14B-Instruct",
       "max_iterations": 78,
@@ -75,7 +75,7 @@
     },
     {
       "cell_id": "gsm-qwen35-2b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen3.5-2B",
       "max_iterations": 38,
@@ -99,7 +99,7 @@
     },
     {
       "cell_id": "gsm-qwen35-4b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen3.5-4B",
       "max_iterations": 40,
@@ -123,7 +123,7 @@
     },
     {
       "cell_id": "gsm-qwen35-9b",
-      "task": "Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.",
+      "task": "You are an expert in solving grade school math tasks. You will be presented with a grade-school math word problem with symbolic variables and be asked to solve it.\n\nBefore answering you should reason about the problem (using the <reasoning> field in the response described below). Intermediate symbolic expressions generated during reasoning should be wrapped in << >>.\n\nThen, output the symbolic expression wrapped in << >> that answers the question. The expressions must use numbers as well as the variables defined in the question. You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\nYou will always respond in the format described below: \nLet's think step by step. <reasoning> The final answer is <<symbolic expression>>",
       "dataset": "gsm_symbolic",
       "eval_model": "Qwen/Qwen3.5-9B",
       "max_iterations": 40,
