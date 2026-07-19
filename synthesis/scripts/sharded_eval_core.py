@@ -20,6 +20,7 @@ example.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -35,6 +36,26 @@ INDICES_KEYS = {
     "spider": {"train": "train_indices", "test": "test_indices"},
     "gsm_symbolic": {"train": "train_indices", "test": "test_indices"},
 }
+
+
+def visible_physical_gpu_ids() -> list[int] | None:
+    """Physical GPU indices allowed by CUDA_VISIBLE_DEVICES, or None when unset."""
+    raw = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
+    if not raw:
+        return None
+    visible: list[int] = []
+    for part in raw.split(","):
+        token = part.strip()
+        try:
+            index = int(token)
+        except ValueError as exc:
+            raise ValueError(
+                "CUDA_VISIBLE_DEVICES must use numeric physical GPU indices for "
+                f"sharded evaluation, got {token!r}"
+            ) from exc
+        if index >= 0 and index not in visible:
+            visible.append(index)
+    return visible
 
 
 def indices_key_for(dataset: str, split_name: str) -> str:
@@ -101,9 +122,18 @@ def detect_gpu_slots(workers_per_gpu: int, idle_util_threshold: int, min_free_mb
          "--format=csv,noheader,nounits"],
         capture_output=True, text=True, check=True,
     )
-    slots: list[int] = []
+    gpu_rows: dict[int, tuple[int, int, int]] = {}
     for line in q.stdout.strip().splitlines():
         idx, used, total, util = [int(x.strip()) for x in line.split(",")]
+        gpu_rows[idx] = (used, total, util)
+    visible = visible_physical_gpu_ids()
+    candidate_ids = visible if visible is not None else list(gpu_rows)
+    slots: list[int] = []
+    for idx in candidate_ids:
+        if idx not in gpu_rows:
+            print(f"{LOG} GPU {idx}: not reported by nvidia-smi, skipping", flush=True)
+            continue
+        used, total, util = gpu_rows[idx]
         free = total - used
         if util > idle_util_threshold:
             print(f"{LOG} GPU {idx}: busy (util {util}% > {idle_util_threshold}%), skipping", flush=True)

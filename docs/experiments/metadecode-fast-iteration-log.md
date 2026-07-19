@@ -547,3 +547,42 @@ re-ran **31/31** and **130/130** (one warning in its environment). A source sear
 found one remaining `systemctl start`, only inside the fully verified relaunch
 block. No synthesis, evaluation, GPU job, or paid provider call was made by
 H97's focused tests.
+
+### H98 preregistration — 2026-07-19T07:31Z
+
+Hypothesis: the queue's per-run `CUDA_VISIBLE_DEVICES` assignment is ignored by
+the persistent GSM/Spider evaluation pool because its shared GPU-slot detector
+reads every physical GPU from `nvidia-smi`. Four simultaneous cold runs
+therefore start workers on the same physical GPUs, causing the observed 14B OOM.
+
+Single variable / tweak: make the shared slot detector filter physical GPU
+indices through the process's existing `CUDA_VISIBLE_DEVICES`, and make the
+pool's no-idle-slot fallback use the first assigned visible GPU instead of
+physical GPU 0. Do not change worker count policy, evaluator settings, model
+memory settings, examples, splits, bars, grammars, graders, author prompts, or
+synthesis strategy behavior.
+
+Prior: **99%**. Each of the four interrupted run logs says `pool startup: 3
+worker(s) on GPU(s) [0, 1, 2]` even though the queue gave each process one
+different `CUDA_VISIBLE_DEVICES` value. The 14B log then reports only 375 MiB
+free on GPU 0 while the 7B and another process already hold memory there.
+
+Falsifiable prediction: on current code, a mocked four-idle-GPU detector with
+`CUDA_VISIBLE_DEVICES=3` returns `[0, 1, 2, 3]` instead of `[3]`, and an empty
+slot result with `CUDA_VISIBLE_DEVICES=2` falls back to GPU 0 instead of GPU 2.
+After the fix both tests pass, existing queue/evaluator tests remain green, and
+a no-model targeted probe for four queue assignments reports one distinct pool
+GPU per assignment. No synthesis, evaluation model load, Bedrock call, or paid
+provider call is part of the focused experiment.
+
+H98 result: **confirmed.** Before implementation, the two focused tests failed
+**2/2**: visibility `3` returned `[0, 1, 2, 3]`, and the empty-slot fallback
+created worker `(0, 0)` instead of `(0, 2)`. After filtering the detector by the
+process-visible physical GPU ids and using that same list for fallback, the
+focused file passed **2/2**. A no-model probe mocked four idle physical GPUs and
+reported `GPU_ASSIGNMENT_PROBE_OK {0: [0], 1: [1], 2: [2], 3: [3]}`. The wider
+runtime verifier passed **133/133** with three unrelated warnings, and
+`py_compile` passed for both changed runtime modules. A repository search found
+no second caller of `detect_gpu_slots` outside the persistent pool and the
+standalone sharded re-evaluator; both now respect the caller's existing GPU
+visibility. No model was loaded and no Bedrock or other paid call was made.
