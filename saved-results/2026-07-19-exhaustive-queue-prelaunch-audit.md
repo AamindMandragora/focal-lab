@@ -73,3 +73,17 @@ At 2026-07-19 06:44 UTC the repaired queue started, but the new incident monitor
 Commit `bd03e2993981b3e737feed68f9aa574834481c80` changes the incident monitor so any invalid, rejected, failed, or exceptional repair leaves every recovery service stopped. It also stops services before independently rolling back deployed files and restoring the old attestation. The red tests reproduced the invalid-result restart, partial multi-service restart, post-start status exception, and live-verifier exception. Final evidence: five focused tests passed, the monitor file passed 31/31, the wider verifier passed 130/130, and an independent judge returned PASS.
 
 Commit `f6ebfb20441cd2693506120e3055eb164afcf03b` accounts for those four calls in the queue contract. The four affected future caps are 39, 39, 79, and 39; the seven untouched caps remain 40. The future cap is therefore 476 and the total authorized exposure remains exactly 480. The campaign validator requires a nonnegative interrupted-call count for every cell and rejects any eleven-cell configuration whose remaining plus interrupted calls do not total 480. The budget test was red before the accounting fields existed; after the change the queue suite passed 20/20 and the wider verifier passed 130/130.
+
+### GPU-isolated evaluator pin
+
+The reviewed launch pin is now commit `3981f85d00a958f613b548052e5712c80cf49f8e`.
+That commit makes the persistent evaluation pool respect the single numeric
+physical GPU already assigned to each queue process through
+`CUDA_VISIBLE_DEVICES`; its no-idle-slot fallback also stays on that assigned
+GPU. Before the change, all four interrupted logs reported pool workers on GPUs
+`[0, 1, 2]` despite distinct queue assignments, and the 14B run then failed with
+only 375 MiB free on GPU 0. The focused tests were red 2/2 before implementation
+and green 2/2 afterward. The no-model assignment probe returned
+`{0: [0], 1: [1], 2: [2], 3: [3]}`, the wider runtime verifier passed 133/133,
+and the independent judge returned PASS. The change does not alter a grammar,
+grader, split, prompt, model, bar, worker-count policy, or scoring behavior.
