@@ -493,7 +493,7 @@ def test_all_recovery_rows_use_one_shared_retry_and_heldout_controller():
     monitor = (repo / "deploy/focal/systemd/csd-codex-incident-monitor.service").read_text(
         encoding="utf-8"
     )
-    assert "--recovery-service csd-claude-recovery-queue.service" in monitor
+    assert "--recovery-service csd-cold-synthesis-queue.service" in monitor
     assert "--recovery-service csd-gsm14b-claude-durable.service" not in monitor
 
 

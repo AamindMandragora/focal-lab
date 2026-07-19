@@ -197,6 +197,17 @@ def recovery_processes(
             for index, value in enumerate(arguments[:-1])
             if value == "--output-name"
         }
+        try:
+            environment = {
+                part.decode("utf-8", "replace").split("=", 1)[0]:
+                part.decode("utf-8", "replace").split("=", 1)[1]
+                for part in process_dir.joinpath("environ").read_bytes().split(b"\0")
+                if b"=" in part
+            }
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            environment = {}
+        if environment.get("CSD_OUTPUT_NAME"):
+            output_names.add(environment["CSD_OUTPUT_NAME"])
         if outputs & output_names:
             try:
                 same_repo = (

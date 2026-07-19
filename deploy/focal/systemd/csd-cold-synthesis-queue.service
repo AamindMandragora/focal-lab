@@ -1,0 +1,20 @@
+[Unit]
+Description=Dynamic CSD exhaustive cold synthesis queue
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/aadivyar/csd-generation
+EnvironmentFile=/home/aadivyar/csd-generation/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/apps/conda/aadivyar/envs/csd/bin/python /home/aadivyar/csd-generation/scripts/runtime/run_cold_synthesis_queue.py --repo /home/aadivyar/csd-generation --manifest /home/aadivyar/csd-generation/saved-results/2026-07-19-exhaustive-cold-queue-manifest.json --python /apps/conda/aadivyar/envs/csd/bin/python --lock-file /home/aadivyar/csd-generation/.context/exhaustive_cold_queue_0719/controller.lock --state-dir /home/aadivyar/csd-generation/.context/exhaustive_cold_queue_0719/state --repair-attestation /home/aadivyar/csd-generation/.context/codex_incident_monitor_coldq_0719/approved-repair.json --poll-seconds 30
+Restart=on-failure
+RestartSec=300
+KillMode=control-group
+TimeoutStopSec=60
+StandardOutput=append:/home/aadivyar/csd-generation/logs/coldq_controller.log
+StandardError=inherit
+
+[Install]
+WantedBy=default.target

@@ -166,6 +166,22 @@ def test_recovery_processes_reject_same_output_name_from_other_checkout(tmp_path
     ) == set()
 
 
+def test_recovery_processes_find_cold_workers_by_environment(tmp_path):
+    proc_root = tmp_path / "proc"
+    process = proc_root / "300"
+    process.mkdir(parents=True)
+    (process / "cmdline").write_bytes(b"python\0-m\0synthesis.run_synthesis\0")
+    (process / "environ").write_bytes(
+        b"CSD_OUTPUT_NAME=warmfix_gsm-qwen35-2b_0714_r2\0CUDA_VISIBLE_DEVICES=0\0"
+    )
+    (process / "status").write_text("Name:\ttest\nPPid:\t1\n")
+    (process / "cwd").symlink_to(tmp_path)
+
+    assert recovery_processes(
+        proc_root, [_job(tmp_path)], expected_repo=tmp_path
+    ) == {300}
+
+
 def test_supervisor_adopts_live_controller_then_finishes_pending_row(tmp_path):
     source = tmp_path / "source.log"
     history = tmp_path / "history.json"

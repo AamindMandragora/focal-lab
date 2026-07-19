@@ -21,7 +21,7 @@ var sandboxValue := 0;
 def test_warm_resume_refinement_keeps_real_task_context(tmp_path):
     """A replayed strategy must refine against its real task, not `Unknown task`."""
     captured_user_prompts: list[str] = []
-    generator = StrategyGenerator(backend="openai", api_key="fake", device="cpu")
+    generator = StrategyGenerator(backend="openai", device="cpu")
 
     def fake_generate(_system_prompt: str, user_prompt: str) -> str:
         captured_user_prompts.append(user_prompt)
@@ -33,6 +33,7 @@ def test_warm_resume_refinement_keeps_real_task_context(tmp_path):
         dataset_name="fake-dataset",
         max_steps=1,
         step_token_budget=1,
+        split_provenance=lambda _bar_split_name: {},
     )
     verifier = SimpleNamespace(
         verify=lambda _code: VerificationResult(
@@ -59,7 +60,6 @@ def test_warm_resume_refinement_keeps_real_task_context(tmp_path):
         compiler=compiler,
         max_iterations=2,
         output_dir=tmp_path,
-        save_reports=False,
     )
 
     with pytest.raises(SynthesisExhaustionError):
