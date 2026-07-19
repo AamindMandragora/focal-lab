@@ -538,10 +538,10 @@ def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
     commit, jobs = queue.load_manifest(manifest)
     queue.validate_exhaustive_campaign(jobs)
 
-    assert commit == "3981f85d00a958f613b548052e5712c80cf49f8e"
+    assert commit == "fc3b569c786ab474deaf5ed0bf1d825b1400f140"
     assert len(jobs) == 11
-    assert sum(job["max_iterations"] for job in jobs) == 476
-    assert sum(job["interrupted_author_calls"] for job in jobs) == 4
+    assert sum(job["max_iterations"] for job in jobs) == 472
+    assert sum(job["interrupted_author_calls"] for job in jobs) == 8
     assert sum(
         job["max_iterations"] + job["interrupted_author_calls"] for job in jobs
     ) == queue.APPROVED_AUTHOR_CALL_CAP == 480

@@ -87,3 +87,30 @@ and green 2/2 afterward. The no-model assignment probe returned
 `{0: [0], 1: [1], 2: [2], 3: [3]}`, the wider runtime verifier passed 133/133,
 and the independent judge returned PASS. The change does not alter a grammar,
 grader, split, prompt, model, bar, worker-count policy, or scoring behavior.
+
+### Isolated 14B startup repair and second interruption accounting
+
+The 2026-07-19 07:54:59 UTC launch proved that the evaluator pools stayed on
+their assigned GPUs, but Qwen2.5-14B then stopped at the shared synthesis vLLM
+fraction `0.80`: its 16,384-token context required 3.0 GiB of KV cache and only
+2.96 GiB was available. The incident monitor detected `gpu_memory_startup` at
+07:56:44 UTC, stopped the cold queue, rejected an invalid automated repair, and
+left the queue stopped. It did not automatically relaunch.
+
+Commit `70b21f6cdf420614b1d23acfccaba2de294690e7` changes only the shared
+synthesis vLLM fraction from `0.80` to `0.81`. The focused test was red 1/1 and
+green 1/1; the wider verifier passed 134/134. A disposable one-example
+Qwen2.5-14B probe on physical GPU 1 kept the 16,384-token context, loaded 27.57
+GiB of weights, reported 3.35 GiB KV cache and 18,304 cache tokens, then exited
+0 with one result. An independent judge returned PASS. The probe used local
+evaluation only and made no Bedrock or other provider call.
+
+The stopped launch completed one new initial author call in each of the same
+four GSM logs. Each previous recorded prefix still matches its saved SHA-256,
+and each appended portion has exactly one `Generating initial strategy`, one
+`Strategy:`, and one `Attempt 1/` marker. Commit
+`fc3b569c786ab474deaf5ed0bf1d825b1400f140` records two interrupted calls per
+affected cell and caps their next cold runs at 38, 38, 78, and 38. The other
+seven cells remain 40 with zero interruptions. The new launch exposure is 472
+future calls plus 8 already interrupted calls, exactly the approved 480 total.
+The manifest is pinned to `fc3b569c786ab474deaf5ed0bf1d825b1400f140`.
