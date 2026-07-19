@@ -56,18 +56,19 @@ SMILES_TASK = (
     "Generate valid SMILES strings that match the requested molecular class while "
     "maintaining parser-valid output."
 )
+APPROVED_AUTHOR_CALL_CAP = 480
 EXPECTED_CELLS: dict[str, dict[str, Any]] = {
-    "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-14b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-14B-Instruct", "max_iterations": 80, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-9b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen35-9b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "smiles-qwen35-4b-acrylates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-qwen35-9b-isocyanates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen25-14b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-14B-Instruct", "max_iterations": 79, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen35-9b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
+    "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
+    "spider-qwen35-9b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
+    "smiles-qwen35-4b-acrylates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
+    "smiles-qwen35-9b-isocyanates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
 }
 EXPECTED_RUNTIME_BY_MODEL = {
     "Qwen/Qwen2.5-1.5B-Instruct": {"memory_reservation_mib": 16000, "gpu_mem_util": 0.4},
@@ -538,6 +539,7 @@ def load_manifest(path: Path) -> tuple[str, list[dict[str, Any]]]:
     seen: set[str] = set()
     required = {
         "cell_id", "task", "dataset", "eval_model", "max_iterations",
+        "interrupted_author_calls",
         "eval_sample_size", "min_accuracy", "min_syntax_rate", "eval_max_steps",
         "eval_max_seconds", "memory_reservation_mib", "gpu_mem_util", "output_name",
         "heldout_sample_size", "heldout_split_name", "heldout_output_json",
@@ -552,8 +554,10 @@ def load_manifest(path: Path) -> tuple[str, list[dict[str, Any]]]:
         seen.add(cell)
         if not str(job["output_name"]).startswith("coldq_"):
             raise ConfigError(f"cold output_name required for {cell}")
-        if int(job["max_iterations"]) not in {40, 80}:
+        if not 1 <= int(job["max_iterations"]) <= 80:
             raise ConfigError(f"unapproved iteration cap for {cell}")
+        if int(job["interrupted_author_calls"]) < 0:
+            raise ConfigError(f"negative interrupted author-call count for {cell}")
     return commit, jobs
 
 
@@ -722,6 +726,15 @@ def validate_exhaustive_campaign(
             raise ConfigError(f"{cell} requires canonical heldout split {expected_split}")
         if expected_split and repo is not None:
             validate_heldout_split(cell, job, repo)
+    total_author_calls = sum(
+        int(job["max_iterations"]) + int(job["interrupted_author_calls"])
+        for job in jobs
+    )
+    if total_author_calls != APPROVED_AUTHOR_CALL_CAP:
+        raise ConfigError(
+            "campaign author-call accounting must total "
+            f"{APPROVED_AUTHOR_CALL_CAP}, got {total_author_calls}"
+        )
 
 
 def _write_state(path: Path, payload: dict[str, Any]) -> None:

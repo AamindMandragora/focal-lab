@@ -72,6 +72,7 @@ def test_monitor_loads_cold_manifest_and_its_log_paths(tmp_path):
         "dataset": "gsm_symbolic",
         "eval_model": "Qwen/Qwen3.5-2B",
         "max_iterations": 40,
+        "interrupted_author_calls": 0,
         "eval_sample_size": 49,
         "min_accuracy": 0.25,
         "min_syntax_rate": 0.9,
