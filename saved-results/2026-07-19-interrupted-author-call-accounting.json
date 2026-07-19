@@ -1,0 +1,58 @@
+{
+  "observed_at_utc": "2026-07-19T06:46:00Z",
+  "approved_author_call_cap": 480,
+  "interrupted_author_calls": 4,
+  "remaining_manifest_max_iterations": 476,
+  "accounted_total": 480,
+  "interpretation": "A completed initial strategy is one paid author call. Startup banners without a Generating initial strategy, Strategy, and Attempt 1 marker are not counted as completed author calls. Each observed_prefix_sha256 is the SHA-256 of the first observed_prefix_bytes bytes, so it remains checkable after the live log appends.",
+  "cells": {
+    "gsm-qwen25-1p5b": {
+      "log_file": "outputs/generated/coldq_gsm-qwen25-1p5b_20260719/run.log",
+      "observed_prefix_bytes": 15827,
+      "observed_prefix_sha256": "90e4df501b4568e21561fb4da79cd57f261f30095faf33948f8dd2ab5443072b",
+      "cold_start_markers": 6,
+      "author_model_banners": 5,
+      "generating_initial_strategy_markers": 1,
+      "strategy_markers": 1,
+      "attempt_1_markers": 1,
+      "interrupted_author_calls": 1,
+      "remaining_max_iterations": 39
+    },
+    "gsm-qwen25-7b": {
+      "log_file": "outputs/generated/coldq_gsm-qwen25-7b_20260719/run.log",
+      "observed_prefix_bytes": 15197,
+      "observed_prefix_sha256": "0a34fb6ec895db2cb8f31d1d8ac2c23174ab8714fea5b5af2fe0163340a6b893",
+      "cold_start_markers": 6,
+      "author_model_banners": 5,
+      "generating_initial_strategy_markers": 1,
+      "strategy_markers": 1,
+      "attempt_1_markers": 1,
+      "interrupted_author_calls": 1,
+      "remaining_max_iterations": 39
+    },
+    "gsm-qwen25-14b": {
+      "log_file": "outputs/generated/coldq_gsm-qwen25-14b_20260719/run.log",
+      "observed_prefix_bytes": 36074,
+      "observed_prefix_sha256": "f85554b8eebc3d825ef23a7d65d39198faea9ecf2bd38ee476238cb2f4996e85",
+      "cold_start_markers": 6,
+      "author_model_banners": 5,
+      "generating_initial_strategy_markers": 1,
+      "strategy_markers": 1,
+      "attempt_1_markers": 1,
+      "interrupted_author_calls": 1,
+      "remaining_max_iterations": 79
+    },
+    "gsm-qwen35-2b": {
+      "log_file": "outputs/generated/coldq_gsm-qwen35-2b_20260719/run.log",
+      "observed_prefix_bytes": 12407,
+      "observed_prefix_sha256": "2b40d804f89bd598c8fb8ebc32ca029b115f43e98a8853a2f45875b14e3cdc77",
+      "cold_start_markers": 6,
+      "author_model_banners": 5,
+      "generating_initial_strategy_markers": 1,
+      "strategy_markers": 1,
+      "attempt_1_markers": 1,
+      "interrupted_author_calls": 1,
+      "remaining_max_iterations": 39
+    }
+  }
+}

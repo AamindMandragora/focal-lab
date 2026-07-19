@@ -529,7 +529,27 @@ def test_verified_repair_attestation_allows_only_its_exact_dirty_code(tmp_path):
         raise AssertionError("code changed after attestation must block launch")
 
 
-def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(tmp_path):
+def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
+    repo = Path(__file__).parents[2]
+    manifest = (
+        repo / "saved-results" / "2026-07-19-exhaustive-cold-queue-manifest.json"
+    )
+
+    commit, jobs = queue.load_manifest(manifest)
+    queue.validate_exhaustive_campaign(jobs)
+
+    assert commit == "f6ebfb20441cd2693506120e3055eb164afcf03b"
+    assert len(jobs) == 11
+    assert sum(job["max_iterations"] for job in jobs) == 476
+    assert sum(job["interrupted_author_calls"] for job in jobs) == 4
+    assert sum(
+        job["max_iterations"] + job["interrupted_author_calls"] for job in jobs
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 480
+
+
+def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
+    tmp_path, monkeypatch
+):
     expected_ids = {
         "gsm-qwen25-1p5b", "gsm-qwen25-7b", "gsm-qwen25-14b",
         "gsm-qwen35-2b", "gsm-qwen35-4b", "gsm-qwen35-9b",
@@ -575,6 +595,15 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
         jobs.append(job)
 
     queue.validate_exhaustive_campaign(jobs)
+
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 479)
+    try:
+        queue.validate_exhaustive_campaign(jobs)
+    except queue.ConfigError as error:
+        assert "author-call accounting must total 479, got 480" in str(error)
+    else:
+        raise AssertionError("a campaign above the approved call cap must be rejected")
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 480)
 
     try:
         queue.validate_exhaustive_campaign(jobs, repo=tmp_path)
