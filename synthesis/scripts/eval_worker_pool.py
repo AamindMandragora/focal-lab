@@ -45,7 +45,11 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
-from synthesis.scripts.sharded_eval_core import detect_gpu_slots, plan_shards
+from synthesis.scripts.sharded_eval_core import (
+    detect_gpu_slots,
+    plan_shards,
+    visible_physical_gpu_ids,
+)
 
 LOG = "[sharded-eval]"
 
@@ -213,6 +217,10 @@ class EvalWorkerPool:
 
     def __init__(self, config: dict):
         gpu_slots = detect_gpu_slots(_WORKERS_PER_GPU, _IDLE_UTIL_THRESHOLD, _MIN_FREE_MB)
+        visible_gpus = visible_physical_gpu_ids()
+        fallback_gpus = visible_gpus if visible_gpus is not None else [0]
+        if not fallback_gpus:
+            raise RuntimeError("no CUDA devices are visible to the evaluation pool")
         # Test-only override: pin an exact worker count instead of reading
         # live nvidia-smi utilization, so the identity test (pool of 1 vs 2
         # vs 3) is reproducible regardless of what else is running on the
@@ -220,10 +228,10 @@ class EvalWorkerPool:
         size_override = os.environ.get("CSD_EVAL_POOL_SIZE")
         if size_override:
             n_workers = int(size_override)
-            gpu_slots = (gpu_slots or [0, 1, 2, 3])[:n_workers]
+            gpu_slots = (gpu_slots or fallback_gpus)[:n_workers]
         else:
             n_workers = min(len(gpu_slots), MAX_POOL_WORKERS) or 1
-            gpu_slots = gpu_slots[:n_workers] if gpu_slots else [0]
+            gpu_slots = gpu_slots[:n_workers] if gpu_slots else [fallback_gpus[0]]
         print(
             f"{LOG} pool startup: {len(gpu_slots)} worker(s) on GPU(s) {gpu_slots} "
             f"(idle slots found: {len(gpu_slots)}, cap {MAX_POOL_WORKERS})",
