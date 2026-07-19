@@ -482,17 +482,26 @@ def _stop_recovery(repo: Path, manifest: Path, services: list[str]) -> None:
         raise RuntimeError(f"recovery services still active after stop: {active}")
 
 
-def _restart_original_services(services: list[str]) -> bool:
-    healthy = True
-    for service in services:
-        start_status = _run(["systemctl", "--user", "start", service])
-        active_status = (
-            _run(["systemctl", "--user", "is-active", "--quiet", service])
-            if start_status == 0
-            else start_status
+def _log_recovery_stopped(services: list[str]) -> None:
+    LOGGER.error(
+        "[codex-incident] recovery remains stopped services=%s; "
+        "manual review is required before relaunch",
+        services,
+    )
+
+
+def _confirm_recovery_stopped(
+    args: argparse.Namespace, services: list[str]
+) -> None:
+    try:
+        _stop_recovery(args.repo, args.manifest, services)
+    except Exception:
+        LOGGER.exception(
+            "[codex-incident] REPAIR_BLOCKED could not confirm recovery stopped "
+            "services=%s",
+            services,
         )
-        healthy = healthy and start_status == 0 and active_status == 0
-    return healthy
+    _log_recovery_stopped(services)
 
 
 def _load_json_state(path: Path, default: object) -> object:
@@ -575,7 +584,7 @@ def _process_incidents(
                 getattr(args, "recovery_service", None)
                 or ["csd-warm-recovery.service"]
             )
-            _restart_original_services(services)
+            _confirm_recovery_stopped(args, services)
             repaired = False
         if repaired:
             seen.add(incident.fingerprint)
@@ -614,6 +623,29 @@ def _rollback(repo: Path, backup: Path, changes: dict[Path, str]) -> None:
             shutil.copy2(saved, live)
         elif kind == "added":
             live.unlink(missing_ok=True)
+
+
+def _clean_up_deployed_repair(
+    args: argparse.Namespace,
+    services: list[str],
+    backup: Path,
+    changes: dict[Path, str],
+    attestation_path: Path | None,
+    previous_attestation: bytes | None,
+) -> None:
+    _confirm_recovery_stopped(args, services)
+    try:
+        _rollback(args.repo, backup, changes)
+    except Exception:
+        LOGGER.exception(
+            "[codex-incident] REPAIR_BLOCKED could not roll back deployed repair"
+        )
+    try:
+        _restore_attestation(attestation_path, previous_attestation)
+    except Exception:
+        LOGGER.exception(
+            "[codex-incident] REPAIR_BLOCKED could not restore repair attestation"
+        )
 
 
 def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
@@ -658,7 +690,7 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
                 "[codex-incident] REPAIR_BLOCKED repair agent timed out after %gs",
                 args.claude_timeout_seconds,
             )
-            _restart_original_services(services)
+            _confirm_recovery_stopped(args, services)
             return False
         (incident_dir / "claude-envelope.json").write_text(agent.stdout or "", encoding="utf-8")
         (incident_dir / "claude-stderr.log").write_text(agent.stderr or "", encoding="utf-8")
@@ -669,7 +701,7 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
             result = parse_repair_result(agent.stdout or "")
         except (ValueError, json.JSONDecodeError) as error:
             LOGGER.error("[codex-incident] invalid repair result error=%r", error)
-            _restart_original_services(services)
+            _confirm_recovery_stopped(args, services)
             return False
         verifier = _verify(args.python, snapshot) if not unsafe_changed else 1
         if not repair_can_relaunch(
@@ -679,19 +711,39 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
             protected_changed=protected_changed or unsafe_changed,
         ) or not result_matches_changes(result, changes):
             LOGGER.error("[codex-incident] REPAIR_BLOCKED result=%s changes=%s", result, changes)
-            _restart_original_services(services)
+            _confirm_recovery_stopped(args, services)
             return False
         try:
             backup = _deploy_with_rollback(args.repo, snapshot, changes)
         except Exception as error:
             LOGGER.exception("[codex-incident] REPAIR_BLOCKED deployment failed error=%r", error)
-            _restart_original_services(services)
+            _confirm_recovery_stopped(args, services)
             return False
-        live_verifier = _verify(args.python, args.repo)
+        try:
+            live_verifier = _verify(args.python, args.repo)
+        except Exception:
+            LOGGER.exception(
+                "[codex-incident] REPAIR_BLOCKED live verifier raised"
+            )
+            _clean_up_deployed_repair(
+                args,
+                services,
+                backup,
+                changes,
+                attestation_path,
+                previous_attestation,
+            )
+            return False
         if live_verifier:
-            _rollback(args.repo, backup, changes)
             LOGGER.error("[codex-incident] REPAIR_BLOCKED live_verifier=%d rollback=%s", live_verifier, backup)
-            _restart_original_services(services)
+            _clean_up_deployed_repair(
+                args,
+                services,
+                backup,
+                changes,
+                attestation_path,
+                previous_attestation,
+            )
             return False
         try:
             manifest_payload = json.loads(args.manifest.read_text(encoding="utf-8"))
@@ -714,33 +766,57 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
                     incident_fingerprint=incident.fingerprint,
                 )
         except Exception as error:
-            _rollback(args.repo, backup, changes)
-            _restore_attestation(attestation_path, previous_attestation)
             LOGGER.exception(
                 "[codex-incident] REPAIR_BLOCKED attestation failed error=%r", error
             )
-            _restart_original_services(services)
+            _clean_up_deployed_repair(
+                args,
+                services,
+                backup,
+                changes,
+                attestation_path,
+                previous_attestation,
+            )
             return False
         LOGGER.warning("[codex-incident] repair verified changes=%s", sorted(map(str, changes)))
-    for service in services:
-        start_status = _run(["systemctl", "--user", "start", service])
-        active_status = (
-            _run(["systemctl", "--user", "is-active", "--quiet", service])
-            if start_status == 0
-            else start_status
-        )
-        if start_status or active_status:
-            _rollback(args.repo, backup, changes)
-            _restore_attestation(attestation_path, previous_attestation)
-            LOGGER.error(
-                "[codex-incident] REPAIR_BLOCKED recovery restart failed "
-                "service=%s start_status=%d active_status=%d; deployed files rolled back",
-                service,
-                start_status,
-                active_status,
+    try:
+        for service in services:
+            start_status = _run(["systemctl", "--user", "start", service])
+            active_status = (
+                _run(["systemctl", "--user", "is-active", "--quiet", service])
+                if start_status == 0
+                else start_status
             )
-            _restart_original_services(services)
-            return False
+            if start_status or active_status:
+                LOGGER.error(
+                    "[codex-incident] REPAIR_BLOCKED recovery restart failed "
+                    "service=%s start_status=%d active_status=%d",
+                    service,
+                    start_status,
+                    active_status,
+                )
+                _clean_up_deployed_repair(
+                    args,
+                    services,
+                    backup,
+                    changes,
+                    attestation_path,
+                    previous_attestation,
+                )
+                return False
+    except Exception:
+        LOGGER.exception(
+            "[codex-incident] REPAIR_BLOCKED recovery restart check raised"
+        )
+        _clean_up_deployed_repair(
+            args,
+            services,
+            backup,
+            changes,
+            attestation_path,
+            previous_attestation,
+        )
+        return False
     return True
 
 
