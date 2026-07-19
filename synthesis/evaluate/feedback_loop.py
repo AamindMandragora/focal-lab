@@ -50,6 +50,20 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def _write_json_atomic(path: Path, payload: object) -> None:
+    """Replace a JSON file only after its complete contents reach disk."""
+    temporary = path.with_name(f".{path.name}.{secrets.token_hex(8)}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def _delimiter_miss_hint(require_delimiters: bool, contains_delimiters: bool, sample_outputs=None) -> str:
     """Localized diagnostic when the eval required << >> spans but produced none.
 
@@ -768,6 +782,9 @@ class SynthesisPipeline:
                 "backend": getattr(generator, "backend", None),
                 "model": getattr(generator, "model_name", None),
                 "max_new_tokens": getattr(generator, "max_new_tokens", None),
+                "reasoning_budget_tokens": getattr(
+                    generator, "reasoning_budget_tokens", None
+                ),
                 "anthropic_thinking": getattr(generator, "anthropic_thinking", None),
                 "anthropic_effort": getattr(generator, "anthropic_effort", None),
                 "anthropic_thinking_display": getattr(
@@ -783,6 +800,7 @@ class SynthesisPipeline:
                 "eval_step_token_budget": getattr(evaluator, "step_token_budget", None),
                 "eval_max_seconds_per_example": self.eval_max_seconds_per_example,
                 "eval_seed": getattr(evaluator, "sample_seed", None),
+                "smiles_classes": getattr(evaluator, "smiles_classes", None),
                 "min_examples_before_threshold_stop": self.min_examples_before_threshold_stop,
                 # Which split file/side this run evaluated on, plus the declared
                 # split of the accuracy bar — absence of this field is what made
@@ -2233,8 +2251,7 @@ class SynthesisPipeline:
             "failure_patterns": self._analyze_failure_patterns(attempts),
         }
 
-        with open(report_path, "w") as f:
-            json.dump(report, f, indent=2)
+        _write_json_atomic(report_path, report)
 
         print(f"Failure report saved to: {report_path}")
 
@@ -2297,8 +2314,7 @@ class SynthesisPipeline:
             "sample_outputs": evaluation_result.sample_outputs,
         }
 
-        with open(report_path, "w") as f:
-            json.dump(report, f, indent=2)
+        _write_json_atomic(report_path, report)
 
         print(f"Strategy saved to: {dafny_path}")
         print(f"Success report saved to: {report_path}")

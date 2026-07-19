@@ -23,7 +23,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.runtime.run_warm_task_recovery_queue import load_manifest
+from scripts.runtime.run_cold_synthesis_queue import load_manifest as load_cold_manifest
+from scripts.runtime.run_warm_task_recovery_queue import load_manifest as load_warm_manifest
 from scripts.runtime.supervise_warm_task_recovery import recovery_processes
 
 LOGGER = logging.getLogger("codex-incident-monitor")
@@ -36,12 +37,22 @@ RULES = (
         ("engine core initialization failed", "valueerror: free memory on device"),
     ),
     ("disk_full", ("no space left on device",)),
-    ("configuration_error", ("[warm-recovery] configuration error",)),
+    (
+        "configuration_error",
+        ("[warm-recovery] configuration error", "[coldq] configuration error"),
+    ),
     (
         "missing_persisted_csd",
         ("synthesis returned success without persisted csd",),
     ),
-    ("worker_failed", ("[warm-recovery] done status=", "[warm-recovery] release cell=")),
+    (
+        "worker_failed",
+        (
+            "[warm-recovery] done status=",
+            "[warm-recovery] release cell=",
+            "[coldq] release cell=",
+        ),
+    ),
     (
         "claude_timeout",
         ("[claude] timeout request_sha256=",),
@@ -105,7 +116,9 @@ def detect_incidents(source: Path, text: str) -> list[Incident]:
                 continue
             if rule == "worker_failed" and ("status=0" in lowered or "exit=0" in lowered):
                 continue
-            if rule == "worker_failed" and "status=76" in lowered:
+            if rule == "worker_failed" and any(
+                status in lowered for status in ("status=75", "status=76")
+            ):
                 continue
             digest = hashlib.sha256(f"{rule}\0{source}\0{line}".encode()).hexdigest()[:20]
             incidents.append(Incident(rule, str(source), line, digest))
@@ -135,6 +148,18 @@ def should_escalate_incident(
     return len(recent) >= timeout_threshold
 
 
+def load_monitor_jobs(path: Path) -> list[dict[str, object]]:
+    """Load either the current cold manifest or the older warm manifest."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid monitor manifest {path}: {exc}") from exc
+    if isinstance(payload, dict) and isinstance(payload.get("jobs"), list):
+        _, jobs = load_cold_manifest(path)
+        return jobs
+    return load_warm_manifest(path)
+
+
 def is_protected_path(path: Path) -> bool:
     lowered = "/".join(path.parts).lower()
     name = path.name.lower()
@@ -161,6 +186,51 @@ def is_allowed_change(path: Path) -> bool:
 
 def _file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def write_repair_attestation(
+    target: Path,
+    *,
+    repo: Path,
+    base_commit: str,
+    changes: dict[Path, str],
+    incident_fingerprint: str,
+) -> None:
+    previous_files: dict[str, str] = {}
+    if target.is_file():
+        try:
+            previous = json.loads(target.read_text(encoding="utf-8"))
+            if previous.get("base_commit") == base_commit and isinstance(previous.get("files"), dict):
+                previous_files = {str(path): str(digest) for path, digest in previous["files"].items()}
+        except (OSError, json.JSONDecodeError):
+            previous_files = {}
+    candidates = set(previous_files) | {str(relative) for relative, kind in changes.items() if kind != "deleted"}
+    files = {
+        relative: _file_hash(repo / relative)
+        for relative in candidates
+        if (repo / relative).is_file()
+    }
+    payload = {
+        "base_commit": base_commit,
+        "verifier_exit": 0,
+        "incident_fingerprint": incident_fingerprint,
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "files": files,
+    }
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(target)
+
+
+def _restore_attestation(path: Path | None, previous: bytes | None) -> None:
+    if path is None:
+        return
+    if previous is None:
+        path.unlink(missing_ok=True)
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(previous)
 
 
 def _tree_files(root: Path) -> dict[Path, str]:
@@ -367,7 +437,9 @@ def _capture_evidence(repo: Path, incident: Incident, incident_dir: Path) -> Pat
     commands = {
         "gpu.txt": ["nvidia-smi"],
         "processes.txt": ["ps", "-eo", "pid,ppid,stat,etime,args"],
-        "recovery-service.txt": ["systemctl", "--user", "status", "csd-warm-recovery.service", "--no-pager"],
+        "recovery-service.txt": [
+            "systemctl", "--user", "status", "csd-cold-synthesis-queue.service", "--no-pager"
+        ],
     }
     for filename, command in commands.items():
         result = subprocess.run(command, capture_output=True, text=True, stdin=subprocess.DEVNULL)
@@ -381,8 +453,14 @@ def _capture_evidence(repo: Path, incident: Incident, incident_dir: Path) -> Pat
 
 def _stop_recovery(repo: Path, manifest: Path, services: list[str]) -> None:
     for service in services:
-        _run(["systemctl", "--user", "stop", service])
-    jobs = load_manifest(manifest)
+        stop_status = _run(["systemctl", "--user", "stop", service])
+        if stop_status != 0:
+            LOGGER.warning(
+                "[codex-incident] service stop returned status=%s service=%s",
+                stop_status,
+                service,
+            )
+    jobs = load_monitor_jobs(manifest)
     remaining = recovery_processes(Path("/proc"), jobs, expected_repo=repo)
     for sig in (signal.SIGTERM, signal.SIGKILL):
         for pid in remaining:
@@ -390,9 +468,122 @@ def _stop_recovery(repo: Path, manifest: Path, services: list[str]) -> None:
                 os.kill(pid, sig)
             except ProcessLookupError:
                 pass
-        if sig == signal.SIGTERM and remaining:
-            time.sleep(2)
-            remaining = {pid for pid in remaining if Path(f"/proc/{pid}").exists()}
+        if remaining:
+            time.sleep(2 if sig == signal.SIGTERM else 1)
+            remaining = recovery_processes(Path("/proc"), jobs, expected_repo=repo)
+    if remaining:
+        raise RuntimeError(f"recovery processes still running after stop: {sorted(remaining)}")
+    active = [
+        service
+        for service in services
+        if _run(["systemctl", "--user", "is-active", "--quiet", service]) == 0
+    ]
+    if active:
+        raise RuntimeError(f"recovery services still active after stop: {active}")
+
+
+def _restart_original_services(services: list[str]) -> bool:
+    healthy = True
+    for service in services:
+        start_status = _run(["systemctl", "--user", "start", service])
+        active_status = (
+            _run(["systemctl", "--user", "is-active", "--quiet", service])
+            if start_status == 0
+            else start_status
+        )
+        healthy = healthy and start_status == 0 and active_status == 0
+    return healthy
+
+
+def _load_json_state(path: Path, default: object) -> object:
+    if not path.is_file():
+        return default
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        LOGGER.warning(
+            "[codex-incident] ignoring damaged state file path=%s error=%s",
+            path,
+            exc,
+        )
+        return default
+    if not isinstance(payload, type(default)):
+        LOGGER.warning(
+            "[codex-incident] ignoring state file with wrong shape path=%s expected=%s",
+            path,
+            type(default).__name__,
+        )
+        return default
+    return payload
+
+
+def _write_json_atomic(path: Path, payload: object) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=path.parent,
+        delete=False,
+    ) as handle:
+        temporary = Path(handle.name)
+        try:
+            json.dump(payload, handle, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
+    try:
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _process_incidents(
+    args: argparse.Namespace,
+    incidents: Iterable[Incident],
+    seen: set[str],
+    timeout_state: dict[str, list[float]],
+) -> None:
+    for incident in incidents:
+        if incident.fingerprint in seen:
+            continue
+        LOGGER.error(
+            "[codex-incident] detected rule=%s source=%s line=%s",
+            incident.rule,
+            incident.source,
+            incident.line,
+        )
+        if not should_escalate_incident(incident, timeout_state):
+            seen.add(incident.fingerprint)
+            LOGGER.warning(
+                "[codex-incident] deterministic-retry rule=%s fingerprint=%s",
+                incident.rule,
+                incident.fingerprint,
+            )
+            continue
+        try:
+            repaired = repair_incident(args, incident)
+        except Exception:
+            LOGGER.exception(
+                "[codex-incident] REPAIR_BLOCKED unexpected monitor exception"
+            )
+            services = list(
+                getattr(args, "recovery_service", None)
+                or ["csd-warm-recovery.service"]
+            )
+            _restart_original_services(services)
+            repaired = False
+        if repaired:
+            seen.add(incident.fingerprint)
+        LOGGER.warning(
+            "[codex-incident] outcome=%s fingerprint=%s",
+            "repaired_and_relaunched" if repaired else "REPAIR_BLOCKED",
+            incident.fingerprint,
+        )
 
 
 def _deploy_with_rollback(repo: Path, snapshot: Path, changes: dict[Path, str]) -> Path:
@@ -433,6 +624,10 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         LOGGER.error("[codex-incident] REPAIR_BLOCKED account check failed error=%r", error)
         return False
+    attestation_path = getattr(args, "repair_attestation", None)
+    previous_attestation = (
+        attestation_path.read_bytes() if attestation_path is not None and attestation_path.is_file() else None
+    )
     incident_dir = args.state_dir / f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{incident.fingerprint}"
     evidence = _capture_evidence(args.repo, incident, incident_dir)
     services = list(getattr(args, "recovery_service", None) or ["csd-warm-recovery.service"])
@@ -463,6 +658,7 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
                 "[codex-incident] REPAIR_BLOCKED repair agent timed out after %gs",
                 args.claude_timeout_seconds,
             )
+            _restart_original_services(services)
             return False
         (incident_dir / "claude-envelope.json").write_text(agent.stdout or "", encoding="utf-8")
         (incident_dir / "claude-stderr.log").write_text(agent.stderr or "", encoding="utf-8")
@@ -473,6 +669,7 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
             result = parse_repair_result(agent.stdout or "")
         except (ValueError, json.JSONDecodeError) as error:
             LOGGER.error("[codex-incident] invalid repair result error=%r", error)
+            _restart_original_services(services)
             return False
         verifier = _verify(args.python, snapshot) if not unsafe_changed else 1
         if not repair_can_relaunch(
@@ -482,30 +679,73 @@ def repair_incident(args: argparse.Namespace, incident: Incident) -> bool:
             protected_changed=protected_changed or unsafe_changed,
         ) or not result_matches_changes(result, changes):
             LOGGER.error("[codex-incident] REPAIR_BLOCKED result=%s changes=%s", result, changes)
+            _restart_original_services(services)
             return False
-        backup = _deploy_with_rollback(args.repo, snapshot, changes)
+        try:
+            backup = _deploy_with_rollback(args.repo, snapshot, changes)
+        except Exception as error:
+            LOGGER.exception("[codex-incident] REPAIR_BLOCKED deployment failed error=%r", error)
+            _restart_original_services(services)
+            return False
         live_verifier = _verify(args.python, args.repo)
         if live_verifier:
             _rollback(args.repo, backup, changes)
             LOGGER.error("[codex-incident] REPAIR_BLOCKED live_verifier=%d rollback=%s", live_verifier, backup)
+            _restart_original_services(services)
+            return False
+        try:
+            manifest_payload = json.loads(args.manifest.read_text(encoding="utf-8"))
+            if isinstance(manifest_payload, dict):
+                base_commit = str(manifest_payload.get("git_commit", ""))
+            else:
+                base_commit = subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=args.repo,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                ).stdout.strip()
+            if attestation_path is not None:
+                write_repair_attestation(
+                    attestation_path,
+                    repo=args.repo,
+                    base_commit=base_commit,
+                    changes=changes,
+                    incident_fingerprint=incident.fingerprint,
+                )
+        except Exception as error:
+            _rollback(args.repo, backup, changes)
+            _restore_attestation(attestation_path, previous_attestation)
+            LOGGER.exception(
+                "[codex-incident] REPAIR_BLOCKED attestation failed error=%r", error
+            )
+            _restart_original_services(services)
             return False
         LOGGER.warning("[codex-incident] repair verified changes=%s", sorted(map(str, changes)))
     for service in services:
         start_status = _run(["systemctl", "--user", "start", service])
-        if start_status:
+        active_status = (
+            _run(["systemctl", "--user", "is-active", "--quiet", service])
+            if start_status == 0
+            else start_status
+        )
+        if start_status or active_status:
             _rollback(args.repo, backup, changes)
+            _restore_attestation(attestation_path, previous_attestation)
             LOGGER.error(
                 "[codex-incident] REPAIR_BLOCKED recovery restart failed "
-                "service=%s status=%d; deployed files rolled back",
+                "service=%s start_status=%d active_status=%d; deployed files rolled back",
                 service,
                 start_status,
+                active_status,
             )
+            _restart_original_services(services)
             return False
     return True
 
 
 def _log_paths(manifest: Path, extra_globs: Iterable[str], own_log: Path | None) -> list[Path]:
-    jobs = load_manifest(manifest)
+    jobs = load_monitor_jobs(manifest)
     paths = {Path(str(job["log_file"])) for job in jobs if job.get("log_file")}
     for pattern in extra_globs:
         paths.update(Path().glob(pattern) if not pattern.startswith("/") else Path("/").glob(pattern[1:]))
@@ -526,6 +766,7 @@ def main() -> int:
     parser.add_argument("--claude-timeout-seconds", type=float, default=7200)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--result-schema", type=Path, required=True)
+    parser.add_argument("--repair-attestation", type=Path)
     parser.add_argument("--extra-log-glob", action="append", default=[])
     parser.add_argument("--own-log", type=Path)
     parser.add_argument("--recovery-service", action="append", default=[])
@@ -537,32 +778,19 @@ def main() -> int:
     cursor_path = args.state_dir / "cursors.json"
     seen_path = args.state_dir / "seen.json"
     timeout_path = args.state_dir / "claude_timeout_events.json"
-    cursors = json.loads(cursor_path.read_text()) if cursor_path.is_file() else {}
-    seen = set(json.loads(seen_path.read_text())) if seen_path.is_file() else set()
-    timeout_state = json.loads(timeout_path.read_text()) if timeout_path.is_file() else {}
+    cursors = dict(_load_json_state(cursor_path, {}))
+    seen = set(_load_json_state(seen_path, []))
+    timeout_state = dict(_load_json_state(timeout_path, {}))
     while True:
         for path in _log_paths(args.manifest, args.extra_log_glob, args.own_log):
             # Every newly discovered file starts at its current end, including files added
             # after monitor startup. This prevents historical failures from being replayed.
             text, cursor = read_new_text(path, cursors.get(str(path)), bootstrap_at_end=True)
             cursors[str(path)] = cursor
-            for incident in detect_incidents(path, text):
-                if incident.fingerprint in seen:
-                    continue
-                seen.add(incident.fingerprint)
-                LOGGER.error("[codex-incident] detected rule=%s source=%s line=%s", incident.rule, incident.source, incident.line)
-                if not should_escalate_incident(incident, timeout_state):
-                    LOGGER.warning(
-                        "[codex-incident] deterministic-retry rule=%s fingerprint=%s",
-                        incident.rule,
-                        incident.fingerprint,
-                    )
-                    continue
-                repaired = repair_incident(args, incident)
-                LOGGER.warning("[codex-incident] outcome=%s fingerprint=%s", "repaired_and_relaunched" if repaired else "REPAIR_BLOCKED", incident.fingerprint)
-        cursor_path.write_text(json.dumps(cursors, indent=2) + "\n", encoding="utf-8")
-        seen_path.write_text(json.dumps(sorted(seen), indent=2) + "\n", encoding="utf-8")
-        timeout_path.write_text(json.dumps(timeout_state, indent=2) + "\n", encoding="utf-8")
+            _process_incidents(args, detect_incidents(path, text), seen, timeout_state)
+        _write_json_atomic(cursor_path, cursors)
+        _write_json_atomic(seen_path, sorted(seen))
+        _write_json_atomic(timeout_path, timeout_state)
         if args.once:
             return 0
         time.sleep(args.poll_seconds)

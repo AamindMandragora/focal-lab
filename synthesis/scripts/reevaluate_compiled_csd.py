@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,21 @@ from typing import Any
 from synthesis.evaluate.baseline_store import save_minimal_baseline_json
 from synthesis.evaluate.evaluator import Evaluator
 from synthesis.run_constants import SPLIT_FILE_BY_DATASET
+
+
+def build_reevaluation_provenance(args: argparse.Namespace, compiled: Path) -> dict[str, Any]:
+    return {
+        "cell_id": args.provenance_cell_id,
+        "manifest_commit": args.provenance_manifest_commit,
+        "dataset": args.dataset,
+        "eval_model": args.eval_model,
+        "compiled_csd_path": str(compiled.resolve()),
+        "compiled_csd_sha256": hashlib.sha256(compiled.read_bytes()).hexdigest(),
+        "sample_size": args.sample_size,
+        "max_steps": args.max_steps,
+        "step_token_budget": args.step_token_budget,
+        "smiles_class": args.smiles_classes,
+    }
 
 
 def _resolve_device(device: str, backend: str) -> str:
@@ -64,7 +80,13 @@ def main() -> None:
         "(required for base / non-instruction-tuned completion models).",
     )
     p.add_argument("--output-json", type=Path, default=None)
+    p.add_argument("--provenance-cell-id")
+    p.add_argument("--provenance-manifest-commit")
     args = p.parse_args()
+    if bool(args.provenance_cell_id) != bool(args.provenance_manifest_commit):
+        p.error(
+            "--provenance-cell-id and --provenance-manifest-commit must be given together"
+        )
 
     gsm_split_file = args.gsm_split_file or SPLIT_FILE_BY_DATASET["gsm_symbolic"]
     spider_split_file = args.spider_split_file or SPLIT_FILE_BY_DATASET["spider"]
@@ -128,7 +150,14 @@ def main() -> None:
         # Embed which split file/side this re-eval ran on, so the JSON is
         # self-describing (split-mismatch incident 2026-07-17).
         save_minimal_baseline_json(
-            res, args.output_json, eval_split=ev.split_provenance()
+            res,
+            args.output_json,
+            eval_split=ev.split_provenance(),
+            metadata=(
+                {"reevaluation_provenance": build_reevaluation_provenance(args, compiled)}
+                if args.provenance_cell_id
+                else None
+            ),
         )
         print(f"wrote_json: {args.output_json}")
 

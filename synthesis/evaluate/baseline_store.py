@@ -162,9 +162,14 @@ def save_minimal_baseline_json(
     result: EvaluationResult,
     json_path: Path,
     eval_split: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> Path:
     """Write a minimal baseline JSON file and return its path."""
     json_path.parent.mkdir(parents=True, exist_ok=True)
     payload = build_minimal_baseline_record(result, eval_split=eval_split)
-    json_path.write_text(json.dumps(payload, indent=2) + "\n")
+    if metadata:
+        payload.update(metadata)
+    temporary = json_path.with_suffix(json_path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n")
+    temporary.replace(json_path)
     return json_path

@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,6 +13,7 @@ from scripts.runtime.incident_repair.monitor import (
     detect_incidents,
     is_allowed_change,
     is_protected_path,
+    load_monitor_jobs,
     parse_repair_result,
     read_new_text,
     repair_can_relaunch,
@@ -19,6 +21,7 @@ from scripts.runtime.incident_repair.monitor import (
     result_matches_changes,
     should_escalate_incident,
     verify_repair_account,
+    write_repair_attestation,
 )
 
 
@@ -45,6 +48,49 @@ def test_detects_real_queue_release_and_claude_timeout_lines():
     )
 
     assert [incident.rule for incident in incidents] == ["claude_timeout"]
+
+
+def test_detects_cold_queue_worker_failures_but_not_completed_losses():
+    incidents = detect_incidents(
+        Path("cold-controller.log"),
+        "[coldq] release cell=bad gpu=0 status=3\n"
+        "[coldq] release cell=loss gpu=1 status=75\n"
+        "[coldq] release cell=good gpu=2 status=0\n",
+    )
+
+    assert [incident.rule for incident in incidents] == ["worker_failed"]
+
+
+def test_monitor_loads_cold_manifest_and_its_log_paths(tmp_path):
+    run_log = tmp_path / "outputs" / "generated" / "coldq_test" / "run.log"
+    run_log.parent.mkdir(parents=True)
+    run_log.write_text("ready\n")
+    manifest = tmp_path / "manifest.json"
+    job = {
+        "cell_id": "test-cell",
+        "task": "Solve math.",
+        "dataset": "gsm_symbolic",
+        "eval_model": "Qwen/Qwen3.5-2B",
+        "max_iterations": 40,
+        "eval_sample_size": 49,
+        "min_accuracy": 0.25,
+        "min_syntax_rate": 0.9,
+        "eval_max_steps": 900,
+        "eval_max_seconds": 600,
+        "memory_reservation_mib": 16000,
+        "gpu_mem_util": 0.4,
+        "output_name": "coldq_test",
+        "heldout_sample_size": 49,
+        "heldout_split_name": "test",
+        "heldout_output_json": str(tmp_path / "heldout.json"),
+        "log_file": str(run_log),
+    }
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": [job]}))
+
+    jobs = load_monitor_jobs(manifest)
+
+    assert jobs == [job]
+    assert monitor._log_paths(manifest, [], None) == [run_log]
 
 
 def test_one_timeout_is_counted_once_even_with_related_failure_lines():
@@ -327,7 +373,10 @@ def test_incident_service_is_separate_and_visible_in_combined_paid_logs():
     assert "--codex" not in unit
     assert "codex-cli" not in unit
     assert "paid_synth_codex_incident_monitor.log" in unit
-    assert "--recovery-service csd-claude-recovery-queue.service" in unit
+    assert "2026-07-19-exhaustive-cold-queue-manifest.json" in unit
+    assert "outputs/generated/coldq_*/run.log" in unit
+    assert "--recovery-service csd-cold-synthesis-queue.service" in unit
+    assert "--repair-attestation" in unit
     assert "--recovery-service csd-gsm14b-claude-durable.service" not in unit
     assert "AWS_BEARER_TOKEN_BEDROCK" not in unit
 
@@ -366,6 +415,7 @@ def _repair_args(tmp_path, repo, manifest, schema):
         claude_timeout_seconds=60.0,
         python=Path("/fake/python"),
         result_schema=schema,
+        repair_attestation=tmp_path / "approved-repair.json",
     )
 
 
@@ -373,6 +423,30 @@ def _fake_repair_envelope(payload):
     return json.dumps(
         {"type": "result", "subtype": "success", "is_error": False, "structured_output": payload}
     )
+
+
+def test_repair_attestation_records_exact_verified_live_file_hashes(tmp_path):
+    repo = tmp_path / "repo"
+    changed = repo / "synthesis" / "task_context.py"
+    changed.parent.mkdir(parents=True)
+    changed.write_text("TASK = 'gsm_symbolic'\n")
+    target = tmp_path / "approved-repair.json"
+
+    write_repair_attestation(
+        target,
+        repo=repo,
+        base_commit="a" * 40,
+        changes={Path("synthesis/task_context.py"): "modified"},
+        incident_fingerprint="abc123",
+    )
+
+    payload = json.loads(target.read_text())
+    assert payload["base_commit"] == "a" * 40
+    assert payload["verifier_exit"] == 0
+    assert payload["incident_fingerprint"] == "abc123"
+    assert payload["files"] == {
+        "synthesis/task_context.py": hashlib.sha256(changed.read_bytes()).hexdigest()
+    }
 
 
 def test_fake_unknown_task_is_repaired_verified_deployed_and_relaunched(tmp_path, monkeypatch):
@@ -383,7 +457,7 @@ def test_fake_unknown_task_is_repaired_verified_deployed_and_relaunched(tmp_path
     (repo / "tests").mkdir()
     (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
     manifest = repo / "manifest.json"
-    manifest.write_text("[]")
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
     evidence = tmp_path / "incident.json"
     evidence.write_text("{}")
     schema = tmp_path / "schema.json"
@@ -434,7 +508,12 @@ def test_fake_unknown_task_is_repaired_verified_deployed_and_relaunched(tmp_path
     assert monitor.repair_incident(args, incident)
     assert source.read_text() == "TASK = 'gsm_symbolic'\n"
     assert commands[0] == "stopped"
-    assert commands[-1] == ["systemctl", "--user", "start", "csd-warm-recovery.service"]
+    assert ["systemctl", "--user", "start", "csd-warm-recovery.service"] in commands
+    assert commands[-1] == [
+        "systemctl", "--user", "is-active", "--quiet", "csd-warm-recovery.service"
+    ]
+    attestation = json.loads(args.repair_attestation.read_text())
+    assert set(attestation["files"]) == {"synthesis/task_context.py"}
 
 
 def test_failed_relaunch_rolls_back_the_deployed_repair(tmp_path, monkeypatch):
@@ -445,7 +524,7 @@ def test_failed_relaunch_rolls_back_the_deployed_repair(tmp_path, monkeypatch):
     (repo / "tests").mkdir()
     (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
     manifest = repo / "manifest.json"
-    manifest.write_text("[]")
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
     evidence = tmp_path / "incident.json"
     evidence.write_text("{}")
     schema = tmp_path / "schema.json"
@@ -483,3 +562,104 @@ def test_failed_relaunch_rolls_back_the_deployed_repair(tmp_path, monkeypatch):
         args, Incident("unknown_task", "worker.log", "Unknown task", "rollback")
     )
     assert source.read_text() == "ORIGINAL = True\n"
+    assert not args.repair_attestation.exists()
+
+
+def test_rejected_repair_restarts_the_original_stopped_service(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    source = repo / "synthesis" / "task_context.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("ORIGINAL = True\n")
+    manifest = repo / "manifest.json"
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+    commands = []
+
+    def fake_capture(_repo, _incident, incident_dir):
+        incident_dir.mkdir(parents=True)
+        evidence = incident_dir / "incident.json"
+        evidence.write_text("{}")
+        return evidence
+
+    monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
+    monkeypatch.setattr(monitor, "_stop_recovery", lambda *_: commands.append("stopped"))
+    monkeypatch.setattr(monitor, "verify_repair_account", lambda *_: None)
+    monkeypatch.setattr(monitor, "_run", lambda command, **_: commands.append(command) or 0)
+    monkeypatch.setattr(
+        monitor.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="not-json", stderr=""),
+    )
+    args = _repair_args(tmp_path, repo, manifest, schema)
+
+    assert not monitor.repair_incident(
+        args, Incident("unknown_task", "worker.log", "Unknown task", "rejected")
+    )
+    assert commands[0] == "stopped"
+    assert ["systemctl", "--user", "start", "csd-warm-recovery.service"] in commands
+
+
+def test_blocked_repair_is_retried_when_the_same_incident_returns(tmp_path, monkeypatch):
+    calls = []
+    incident = Incident("worker_failed", "worker.log", "failed", "retry-me")
+    args = SimpleNamespace(recovery_service=["csd-cold-synthesis-queue.service"])
+    seen = set()
+    timeout_state = {}
+    monkeypatch.setattr(monitor, "repair_incident", lambda *_: calls.append(1) or False)
+
+    monitor._process_incidents(args, [incident], seen, timeout_state)
+    monitor._process_incidents(args, [incident], seen, timeout_state)
+
+    assert calls == [1, 1]
+    assert incident.fingerprint not in seen
+
+
+def test_monitor_state_recovers_from_truncated_json_and_replaces_atomically(
+    tmp_path, monkeypatch
+):
+    state = tmp_path / "seen.json"
+    state.write_text("{", encoding="utf-8")
+    assert monitor._load_json_state(state, []) == []
+    state.write_text("[]", encoding="utf-8")
+    assert monitor._load_json_state(state, {}) == {}
+
+    state.write_text('["old"]\n', encoding="utf-8")
+    original_dump = monitor.json.dump
+
+    def interrupted_dump(payload, handle, **kwargs):
+        handle.write("[")
+        raise OSError("interrupted")
+
+    monkeypatch.setattr(monitor.json, "dump", interrupted_dump)
+    try:
+        monitor._write_json_atomic(state, ["new"])
+    except OSError:
+        pass
+    else:
+        raise AssertionError("the simulated interrupted write must fail")
+    assert json.loads(state.read_text()) == ["old"]
+    monkeypatch.setattr(monitor.json, "dump", original_dump)
+    monitor._write_json_atomic(state, ["new"])
+    assert json.loads(state.read_text()) == ["new"]
+
+
+def test_stop_recovery_requires_the_service_to_be_inactive(tmp_path, monkeypatch):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text('{"jobs": []}', encoding="utf-8")
+    monkeypatch.setattr(monitor, "load_monitor_jobs", lambda *_: [])
+    monkeypatch.setattr(monitor, "recovery_processes", lambda *_args, **_kwargs: set())
+    monkeypatch.setattr(
+        monitor,
+        "_run",
+        lambda command, **_: 0,
+    )
+
+    try:
+        monitor._stop_recovery(
+            tmp_path, manifest, ["csd-cold-synthesis-queue.service"]
+        )
+    except RuntimeError as error:
+        assert "still active" in str(error)
+    else:
+        raise AssertionError("an active service must block live code replacement")
