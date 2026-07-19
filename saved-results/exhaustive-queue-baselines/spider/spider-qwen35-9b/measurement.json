@@ -1,0 +1,21 @@
+{
+  "dataset": "spider",
+  "eval_model": "Qwen/Qwen3.5-9B",
+  "split_name": "train",
+  "baseline_strategy": "itergen",
+  "num_correct": 201,
+  "num_examples": 300,
+  "split_file": "environment/benchmark_splits/spider_dev_proportional_300x300_seed334.json",
+  "split_file_sha256": "2424436b145c31e9607f367d5907b13d4b2071036b7a49db28194514b74b8a29",
+  "rescore": {
+    "example_source": "local",
+    "indices_field": "train_indices",
+    "scorer": "synthesis.evaluate.benchmarks.sql_spider.executor.execute_accuracy",
+    "etype": "exec",
+    "database_dir": "/home/aadivyar/csd-generation/synthesis/evaluate/syncode/syncode/utils/sql_spider_eval/databases",
+    "tables_json": "/home/aadivyar/spider_data/spider_data/tables.json"
+  },
+  "measured_at": "2026-07-19",
+  "raw_source_artifact": "/home/aadivyar/itergen/results/sql_results/Qwen/Qwen3.5-9B/itergen_seed334_TRAIN300_tempt:None_seed:0_rp:0.3_maxiter_20_num:300.jsonl",
+  "raw_source_sha256": "23d852ce10b23fb3c49501f39fd92fa204965277a027c0808518123abd5318fd"
+}

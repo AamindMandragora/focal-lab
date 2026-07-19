@@ -1,0 +1,115 @@
+{
+  "campaign": "exhaustive-cold-queue-2026-07-19",
+  "cells": {
+    "gsm-qwen25-1p5b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 8,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen25-1p5b/measurement.json",
+      "source_sha256": "a05260c24c7f80b4ebac4436c5e1714e25517776ba66a8df24c564fb93f4a636"
+    },
+    "gsm-qwen25-7b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 18,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen25-7b/measurement.json",
+      "source_sha256": "cc9a7b2cde7bc20747da27fa41baae2595b6e4c7ac1dfb26aebb6e7016ae36d4"
+    },
+    "gsm-qwen25-14b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen2.5-14B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 20,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen25-14b/measurement.json",
+      "source_sha256": "3d1f32bd47d38c8cd9189ddd07127d6d00f6258d79902d3115880ae66f3fcad4"
+    },
+    "gsm-qwen35-2b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 7,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen35-2b/measurement.json",
+      "source_sha256": "332ff419a04acb90f07b5cde9299272957c5bf6fc9b4ffe5475dc006a1836812"
+    },
+    "gsm-qwen35-4b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 16,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen35-4b/measurement.json",
+      "source_sha256": "4e9e3e02f2c62c80e174933d782d0691ca03e8860ec6a12cb204ee22be9a9235"
+    },
+    "gsm-qwen35-9b": {
+      "dataset": "gsm_symbolic",
+      "eval_model": "Qwen/Qwen3.5-9B",
+      "split_name": "train",
+      "baseline_strategy": "crane",
+      "num_correct": 15,
+      "num_examples": 49,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/gsm/gsm-qwen35-9b/measurement.json",
+      "source_sha256": "648ff5ac996cefbf5261a12ee1040b82daceed1fed0ec20a6bb90d356264582f"
+    },
+    "spider-qwen25-7b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "itergen",
+      "num_correct": 198,
+      "num_examples": 300,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/spider/spider-qwen25-7b/measurement.json",
+      "source_sha256": "2a5d64900d6ff0d3fb74ab091e946f44ba96ae4c0987b9baca28d4fd5ad31902"
+    },
+    "spider-qwen35-4b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "itergen",
+      "num_correct": 195,
+      "num_examples": 300,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/spider/spider-qwen35-4b/measurement.json",
+      "source_sha256": "b86f5086e85e383036c1ce132fc04348e885237fa66167a393392f6abba704e7"
+    },
+    "spider-qwen35-9b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen3.5-9B",
+      "split_name": "train",
+      "baseline_strategy": "itergen",
+      "num_correct": 201,
+      "num_examples": 300,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/spider/spider-qwen35-9b/measurement.json",
+      "source_sha256": "9234647152e69395bde2812ed3dfb5acdf5d7ffc7dd55a82f4d61735365abc52"
+    },
+    "smiles-qwen35-4b-acrylates": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 18,
+      "num_examples": 50,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/smiles/smiles-qwen35-4b-acrylates/measurement.json",
+      "source_sha256": "28f737bfd984eaf81593d64500bc7ade5ac1b4d5fe822d1ce0343ed63a0963b1"
+    },
+    "smiles-qwen35-9b-isocyanates": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-9B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 18,
+      "num_examples": 50,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/smiles/smiles-qwen35-9b-isocyanates/measurement.json",
+      "source_sha256": "fbdb48168d2a4a1ac290c49c375fbfaacc23914c5c0d8758b1975b2c10a77511"
+    }
+  }
+}
