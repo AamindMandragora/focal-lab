@@ -1,3 +1,4 @@
+import threading
 from types import SimpleNamespace
 
 from synthesis.scripts import eval_worker_pool
@@ -79,3 +80,58 @@ def test_worker_pool_uses_explicit_queue_gpu_bundle_without_global_detection(mon
 
     assert created_gpus == [(0, 3), (1, 1)]
     pool.shutdown()
+
+
+def test_dispatch_starts_all_worker_shards_before_waiting_for_results():
+    entered: list[int] = []
+    entered_lock = threading.Lock()
+    both_started = threading.Event()
+    release = threading.Event()
+
+    class FakeWorker:
+        alive = True
+
+        def __init__(self, worker_id):
+            self.worker_id = worker_id
+
+        def evaluate(self, _module, examples, _start_index, _dataset_len):
+            with entered_lock:
+                entered.append(self.worker_id)
+                if len(entered) == 2:
+                    both_started.set()
+            assert release.wait(timeout=2)
+            return [{"example": example} for example in examples]
+
+    pool = object.__new__(eval_worker_pool.EvalWorkerPool)
+    workers = [FakeWorker(0), FakeWorker(1)]
+    outcome = {}
+
+    def run_dispatch():
+        try:
+            outcome["results"] = pool._dispatch(
+                object(),
+                "/tmp/compiled.py",
+                list(enumerate(["a", "b", "c", "d"])),
+                workers,
+            )
+        except BaseException as exc:
+            outcome["error"] = exc
+
+    dispatch_thread = threading.Thread(target=run_dispatch)
+    dispatch_thread.start()
+    try:
+        assert both_started.wait(timeout=0.5), (
+            "the second worker did not start while the first shard was running"
+        )
+    finally:
+        release.set()
+        dispatch_thread.join(timeout=3)
+
+    assert not dispatch_thread.is_alive()
+    assert "error" not in outcome
+    assert outcome["results"] == [
+        {"example": "a"},
+        {"example": "b"},
+        {"example": "c"},
+        {"example": "d"},
+    ]

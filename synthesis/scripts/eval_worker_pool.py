@@ -36,6 +36,7 @@ worker is dead, the pool falls back to evaluating the whole batch in-process
 from __future__ import annotations
 
 import atexit
+import concurrent.futures
 import os
 import pickle
 import struct
@@ -305,20 +306,45 @@ class EvalWorkerPool:
         # retry over a redistributed subset of failed examples.
         position_of = {idx: pos for pos, (idx, _) in enumerate(indexed_examples)}
         failed_indices: list[int] = []
+        shard_calls = []
         for worker, (lo, hi) in zip(workers, shard_bounds):
             shard = indexed_examples[lo:hi]
             if not shard:
                 continue
             local_indices = [idx for idx, _ in shard]
             examples = [ex for _, ex in shard]
-            try:
-                shard_results = worker.evaluate(str(compiled_module_path), examples, lo, dataset_len)
-                for idx, r in zip(local_indices, shard_results):
-                    results[position_of[idx]] = r
-            except Exception as exc:
-                print(f"{LOG} worker {worker.worker_id} FAILED mid-shard: {exc!r}", flush=True)
-                worker.alive = False
-                failed_indices.extend(local_indices)
+            shard_calls.append((worker, local_indices, examples, lo))
+        if shard_calls:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=len(shard_calls)
+            ) as executor:
+                future_to_shard = {
+                    executor.submit(
+                        worker.evaluate,
+                        str(compiled_module_path),
+                        examples,
+                        lo,
+                        dataset_len,
+                    ): (worker, local_indices)
+                    for worker, local_indices, examples, lo in shard_calls
+                }
+                print(
+                    f"{LOG} parallel dispatch: {len(future_to_shard)} worker shard(s) started",
+                    flush=True,
+                )
+                for future in concurrent.futures.as_completed(future_to_shard):
+                    worker, local_indices = future_to_shard[future]
+                    try:
+                        shard_results = future.result()
+                        for idx, result in zip(local_indices, shard_results):
+                            results[position_of[idx]] = result
+                    except Exception as exc:
+                        print(
+                            f"{LOG} worker {worker.worker_id} FAILED mid-shard: {exc!r}",
+                            flush=True,
+                        )
+                        worker.alive = False
+                        failed_indices.extend(local_indices)
 
         if failed_indices:
             survivors = self._alive_workers()
