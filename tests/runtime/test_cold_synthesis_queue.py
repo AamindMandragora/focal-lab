@@ -563,11 +563,14 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
         if spec["interrupted_author_calls"]
     }
     assert interrupted == {
-        "gsm-qwen25-1p5b": 1,
-        "gsm-qwen25-7b": 1,
-        "gsm-qwen25-14b": 1,
-        "gsm-qwen35-2b": 1,
+        "gsm-qwen25-1p5b": 2,
+        "gsm-qwen25-7b": 2,
+        "gsm-qwen25-14b": 2,
+        "gsm-qwen35-2b": 2,
     }
+    assert sum(
+        spec["max_iterations"] for spec in queue.EXPECTED_CELLS.values()
+    ) == 472
     assert sum(
         spec["max_iterations"] + spec["interrupted_author_calls"]
         for spec in queue.EXPECTED_CELLS.values()

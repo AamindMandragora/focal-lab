@@ -58,10 +58,10 @@ SMILES_TASK = (
 )
 APPROVED_AUTHOR_CALL_CAP = 480
 EXPECTED_CELLS: dict[str, dict[str, Any]] = {
-    "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-14b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-14B-Instruct", "max_iterations": 79, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 39, "interrupted_author_calls": 1, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen25-14b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-14B-Instruct", "max_iterations": 78, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-9b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
