@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import json
 import hashlib
 import subprocess
+import sys
 
 from scripts.runtime import run_cold_synthesis_queue as queue
 
@@ -92,8 +93,27 @@ def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
     )
     assert command[command.index("--synthesizer-reasoning-budget") + 1] == "4096"
     assert command[command.index("--max-iterations") + 1] == "80"
-    assert command[command.index("--bar-split-name") + 1] == "train"
+    assert "--bar-split-name" not in command
     assert not any(flag.startswith("--initial-") for flag in command)
+
+
+def test_synthesis_command_only_uses_run_synthesis_cli_flags():
+    command = queue.synthesis_command(_job(), Path(sys.executable))
+    help_result = subprocess.run(
+        [sys.executable, "-m", "synthesis.run_synthesis", "--help"],
+        cwd=Path(__file__).parents[2],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    unsupported = [
+        argument
+        for argument in command
+        if argument.startswith("--") and argument not in help_result.stdout
+    ]
+
+    assert unsupported == []
 
 
 def test_synthesis_environment_names_the_isolated_cold_output():
