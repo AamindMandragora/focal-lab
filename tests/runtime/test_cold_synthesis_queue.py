@@ -636,10 +636,10 @@ def test_saved_exhaustive_manifest_matches_the_approved_call_budget():
     )
     assert len(jobs) == 11
     assert sum(job["max_iterations"] for job in jobs) == 472
-    assert sum(job["interrupted_author_calls"] for job in jobs) == 8
+    assert sum(job["interrupted_author_calls"] for job in jobs) == 10
     assert sum(
         job["max_iterations"] + job["interrupted_author_calls"] for job in jobs
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 480
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 482
 
 
 def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
@@ -658,8 +658,8 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
         if spec["interrupted_author_calls"]
     }
     assert interrupted == {
-        "gsm-qwen25-1p5b": 2,
-        "gsm-qwen25-7b": 2,
+        "gsm-qwen25-1p5b": 3,
+        "gsm-qwen25-7b": 3,
         "gsm-qwen25-14b": 2,
         "gsm-qwen35-2b": 2,
     }
@@ -669,7 +669,7 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
     assert sum(
         spec["max_iterations"] + spec["interrupted_author_calls"]
         for spec in queue.EXPECTED_CELLS.values()
-    ) == queue.APPROVED_AUTHOR_CALL_CAP == 480
+    ) == queue.APPROVED_AUTHOR_CALL_CAP == 482
     jobs = []
     for cell, spec in queue.EXPECTED_CELLS.items():
         job = _job(spec["dataset"])
@@ -694,14 +694,14 @@ def test_exhaustive_campaign_requires_all_eleven_exact_cells_and_unique_outputs(
 
     queue.validate_exhaustive_campaign(jobs)
 
-    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 479)
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 481)
     try:
         queue.validate_exhaustive_campaign(jobs)
     except queue.ConfigError as error:
-        assert "author-call accounting must total 479, got 480" in str(error)
+        assert "author-call accounting must total 481, got 482" in str(error)
     else:
         raise AssertionError("a campaign above the approved call cap must be rejected")
-    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 480)
+    monkeypatch.setattr(queue, "APPROVED_AUTHOR_CALL_CAP", 482)
 
     try:
         queue.validate_exhaustive_campaign(jobs, repo=tmp_path)
