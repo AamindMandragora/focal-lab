@@ -12,8 +12,10 @@ This module evaluates synthesized CSD strategies on GSM-Symbolic style arithmeti
 ## Key Files
 
 - `dataset.py`: dataset loading, metadata enrichment, split utilities.
-- `prompts.py`: prompt formatting helpers and the shared
-  `GSM_CRANE_COT_TASK` text used by both evaluation prompts and the cold queue.
+- `../prompt_profiles/gsm/profile.yaml`: single reviewable source for the
+  GCD/IterGen direct task, CRANE CoT task, and all eight paired few-shot examples.
+- `prompts.py`: renders the GSM YAML as flat or multi-turn prompts and exposes
+  `GSM_CRANE_COT_TASK` to the cold queue.
 - `grammar.py`: grammar adaptation helpers for dynamic variable restrictions.
 - `generation.py`: benchmark generation wrappers used by evaluator.
   Resets task-guidance state before each example and records accepted guidance

@@ -16,6 +16,8 @@ _DATASET_FILES = {
     "spider": "sql.yaml",
     "sql": "sql.yaml",
     "smiles": "smiles.yaml",
+    "gsm": "gsm/profile.yaml",
+    "gsm_symbolic": "gsm/profile.yaml",
 }
 _FIXED_CSD_STRATEGIES = {"gcd", "itergen", "crane"}
 
@@ -67,15 +69,59 @@ def prompt_profile_for_strategy(dataset: str, strategy: str) -> str:
     return str(_load_prompt_config(dataset)["strategy_profiles"][normalized_strategy])
 
 
+def prompt_data_for_strategy(dataset: str, strategy: str) -> dict[str, Any]:
+    """Return one validated profile, including materialized GSM few-shots."""
+    config = _load_prompt_config(dataset)
+    profile_name = prompt_profile_for_strategy(dataset, strategy)
+    raw_profile = config["profiles"][profile_name]
+    if not isinstance(raw_profile, dict):
+        raise ValueError(f"Prompt profile {profile_name!r} must be a mapping")
+    profile = dict(raw_profile)
+
+    task_template = profile.get("task_template")
+    if task_template is not None:
+        if not isinstance(task_template, str):
+            raise ValueError(f"Prompt profile {profile_name!r} task_template must be text")
+        values = profile.get("values", {})
+        if not isinstance(values, dict):
+            raise ValueError(f"Prompt profile {profile_name!r} values must be a mapping")
+        profile["task"] = task_template.format_map(values)
+
+    examples = config.get("examples")
+    if examples is not None:
+        if not isinstance(profile.get("task"), str):
+            raise ValueError(f"Prompt profile {profile_name!r} needs a task string")
+        if not isinstance(examples, list) or not examples:
+            raise ValueError("GSM prompt YAML needs a non-empty examples list")
+        answer_field = profile.get("answer_field")
+        question_field = profile.get("question_field")
+        if not isinstance(answer_field, str):
+            raise ValueError(f"Prompt profile {profile_name!r} needs answer_field")
+        fewshots = []
+        for index, example in enumerate(examples, start=1):
+            if not isinstance(example, dict):
+                raise ValueError(f"GSM example {index} must be a mapping")
+            question = example.get(question_field) if isinstance(question_field, str) else None
+            question = question or example.get("question")
+            answer = example.get(answer_field)
+            if not isinstance(question, str) or not isinstance(answer, str):
+                raise ValueError(
+                    f"GSM example {index} needs text question and {answer_field!r} answer"
+                )
+            fewshots.append({"question": question, "answer": answer})
+        profile["fewshots"] = fewshots
+
+    return profile
+
+
 def render_strategy_prompt(
     dataset: str,
     strategy: str,
     example: dict[str, Any],
 ) -> str:
     """Render the exact prompt selected by the dataset YAML and CSD strategy."""
-    config = _load_prompt_config(dataset)
     profile_name = prompt_profile_for_strategy(dataset, strategy)
-    profile = config["profiles"][profile_name]
+    profile = prompt_data_for_strategy(dataset, strategy)
     if not isinstance(profile, dict) or not isinstance(profile.get("template"), str):
         raise ValueError(f"Prompt profile {profile_name!r} needs a string template")
 
@@ -105,4 +151,3 @@ def render_strategy_prompt(
         len(rendered),
     )
     return rendered
-

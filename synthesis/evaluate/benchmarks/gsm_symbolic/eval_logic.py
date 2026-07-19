@@ -115,6 +115,20 @@ def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> l
     return format_prompt(evaluator, example)
 
 
+def format_prompt_for_strategy(
+    evaluator: Any,
+    example: dict[str, Any],
+    strategy: str,
+) -> list[dict] | str:
+    """Render GCD, IterGen, or CRANE from the shared GSM YAML profile."""
+    from synthesis.evaluate.benchmarks.prompt_profiles import prompt_profile_for_strategy
+
+    profile = prompt_profile_for_strategy("gsm_symbolic", strategy)
+    if profile == "chain_of_thought":
+        return format_prompt_chain_of_thought(evaluator, example)
+    return format_prompt_expression_only(evaluator, example)
+
+
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
     symbolic = example.get("answer_parsed", "")
     if symbolic:

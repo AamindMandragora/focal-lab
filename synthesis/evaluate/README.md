@@ -52,10 +52,11 @@ The evaluate stage executes compiled strategies on benchmark tasks and returns s
 - Fixed-strategy GSM baselines use the local CRANE GSM source rows so
   `unconstrained`, `gcd`, `crane`, `itergen`, and `cars` are compared on the
   same questions.
-- Fixed GCD, IterGen, and CRANE adapters resolve prompts by strategy. SQL and
-  SMILES use reviewable YAML mappings under `benchmarks/prompt_profiles/`;
-  GCD/IterGen share `direct`, while CRANE always selects
-  `chain_of_thought`. Baseline answer rows retain the exact `prompt_used` text.
+- Fixed GCD, IterGen, and CRANE adapters resolve prompts by strategy. SQL,
+  SMILES, and GSM use reviewable YAML mappings under
+  `benchmarks/prompt_profiles/`; GCD/IterGen share `direct`, while CRANE always
+  selects `chain_of_thought`. Baseline answer rows retain the exact
+  `prompt_used` text.
 - The GCD adapter uses Syncode DFA-mask decoding but keeps GSM-Symbolic generation scoped to expression bodies: it starts after `<<`, wraps the generated body for scoring, caps expression length, finalizes the longest parseable expression prefix, and restricts GSM variables to numeric placeholders observed in the evaluation sample.
 - GSM syntax checks use a numeric-only grammar when examples do not expose numeric symbolic variables; arbitrary identifiers such as `reasoning` must not pass syntax on instantiated GSM rows.
 - The legacy CARS adapter runs through the same benchmark registry as the other fixed strategies and raises on failed runs so incomplete artifacts are not mistaken for valid zero-score baselines; it uses the same GSM grammar tightening as the GCD adapter (allowed variables or numeric-only, inferred from the evaluation batch) and expression-only prompts for gsm_symbolic, Spider, and SMILES like IterGen/GCD.
