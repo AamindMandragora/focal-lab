@@ -180,8 +180,6 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
         str(job["min_accuracy"]),
         "--min-syntax-rate",
         str(job["min_syntax_rate"]),
-        "--bar-split-name",
-        "train",
         "--max-iterations",
         str(job["max_iterations"]),
         "--eval-model",
