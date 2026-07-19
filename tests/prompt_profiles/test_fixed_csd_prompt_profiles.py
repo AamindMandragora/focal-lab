@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from synthesis.evaluate.benchmarks import prompt_profiles
 from synthesis.evaluate.benchmarks.prompt_profiles import (
     prompt_profile_for_strategy,
     render_strategy_prompt,
@@ -84,3 +87,32 @@ def test_every_fixed_csd_runtime_route_resolves_through_strategy_mapping() -> No
     assert "Think step by step" in sql_crane
     assert "Think step by step" in smiles_crane
 
+
+def test_loader_rejects_equal_gcd_itergen_mapping_that_is_not_direct(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (tmp_path / "bad.yaml").write_text(
+        """\
+dataset: bad
+strategy_profiles:
+  gcd: shared_wrong
+  itergen: shared_wrong
+  crane: chain_of_thought
+profiles:
+  shared_wrong:
+    template: direct
+  chain_of_thought:
+    template: cot
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(prompt_profiles, "_PROFILE_DIR", tmp_path)
+    monkeypatch.setitem(prompt_profiles._DATASET_FILES, "bad", "bad.yaml")
+    prompt_profiles._load_prompt_config.cache_clear()
+
+    try:
+        with pytest.raises(ValueError, match="must use the direct prompt profile"):
+            prompt_profile_for_strategy("bad", "gcd")
+    finally:
+        prompt_profiles._load_prompt_config.cache_clear()

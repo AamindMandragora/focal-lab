@@ -42,8 +42,11 @@ def _load_prompt_config(dataset: str) -> dict[str, Any]:
         raise ValueError(
             f"Prompt YAML must map exactly {sorted(_FIXED_CSD_STRATEGIES)}: {path}"
         )
-    if strategy_profiles["gcd"] != strategy_profiles["itergen"]:
-        raise ValueError(f"GCD and IterGen must share one direct prompt profile: {path}")
+    if (
+        strategy_profiles["gcd"] != "direct"
+        or strategy_profiles["itergen"] != "direct"
+    ):
+        raise ValueError(f"GCD and IterGen must use the direct prompt profile: {path}")
     if strategy_profiles["crane"] != "chain_of_thought":
         raise ValueError(f"CRANE must use the chain_of_thought prompt profile: {path}")
     for strategy, profile_name in strategy_profiles.items():
