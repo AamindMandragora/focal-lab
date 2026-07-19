@@ -16,8 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import GSM_CRANE_COT_TASK
+from synthesis.run_constants import VLLM_GPU_MEMORY_UTILIZATION
 from scripts.runtime.run_warm_task_recovery_queue import (
-    choose_gpu,
+    GPU_SAFETY_MIB,
     gpu_memory_snapshot,
     required_memory_mib,
 )
@@ -25,7 +26,8 @@ from scripts.runtime.run_warm_task_recovery_queue import (
 
 AUTHOR_MODEL = "us.anthropic.claude-sonnet-4-6"
 TERMINAL_SYNTHESIS_FAILURE = 75
-SYNTHESIS_GPU_MEM_UTIL = 0.8
+POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
+POOLABLE_GPU_COUNT = 2
 BASELINE_STRATEGY_BY_DATASET = {
     "gsm_symbolic": "crane",
     "spider": "itergen",
@@ -217,17 +219,27 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
 
 
 def synthesis_environment(
-    job: dict[str, Any], gpu: int, inherited: dict[str, str], repo: Path
+    job: dict[str, Any], gpus: tuple[int, ...], inherited: dict[str, str], repo: Path
 ) -> dict[str, str]:
+    expected = required_gpu_count(job)
+    if len(gpus) != expected or len(set(gpus)) != len(gpus):
+        raise ConfigError(
+            f"{job['cell_id']} requires {expected} distinct GPU(s), got {gpus}"
+        )
+    gpu_list = ",".join(str(gpu) for gpu in gpus)
     env = dict(inherited)
+    env.pop("CSD_EVAL_POOL_SIZE", None)
+    env.pop("CSD_EVAL_GPU_SLOTS", None)
     env.update(
         {
-            "CUDA_VISIBLE_DEVICES": str(gpu),
+            "CUDA_VISIBLE_DEVICES": gpu_list,
             "CSD_OUTPUT_NAME": str(job["output_name"]),
             "CSD_OUTPUT_DIR": str(repo / "outputs" / "generated" / str(job["output_name"])),
             "PYTHONUNBUFFERED": "1",
         }
     )
+    if job["dataset"] in POOLABLE_DATASETS:
+        env["CSD_EVAL_GPU_SLOTS"] = gpu_list
     return env
 
 
@@ -237,13 +249,44 @@ def author_free_environment(inherited: dict[str, str], gpu: int) -> dict[str, st
         for key, value in inherited.items()
         if not key.startswith(("AWS_", "BEDROCK_")) and not key.endswith("_API_KEY")
     }
+    clean.pop("CSD_EVAL_GPU_SLOTS", None)
+    clean.pop("CSD_EVAL_POOL_SIZE", None)
     clean["CUDA_VISIBLE_DEVICES"] = str(gpu)
     return clean
 
 
 def synthesis_required_memory_mib(job: dict[str, Any], gpu_total_mib: int) -> int:
-    scheduling_job = {**job, "gpu_mem_util": SYNTHESIS_GPU_MEM_UTIL}
+    scheduling_job = {
+        **job,
+        "gpu_mem_util": VLLM_GPU_MEMORY_UTILIZATION,
+    }
     return required_memory_mib(scheduling_job, gpu_total_mib)
+
+
+def required_gpu_count(job: dict[str, Any]) -> int:
+    """Use two workers for stateless GSM/Spider and one for stateful SMILES."""
+    return POOLABLE_GPU_COUNT if job["dataset"] in POOLABLE_DATASETS else 1
+
+
+def choose_gpu_bundle(
+    job: dict[str, Any],
+    snapshots: dict[int, dict[str, int]],
+    reservations: dict[int, dict[str, int]],
+    baseline_snapshots: dict[int, dict[str, int]],
+) -> tuple[int, ...] | None:
+    """Return the least-used disjoint physical GPU bundle that fits one cell."""
+    candidates: list[tuple[int, int]] = []
+    for gpu, snapshot in snapshots.items():
+        required = synthesis_required_memory_mib(job, snapshot["total_mib"])
+        reserved = sum(reservations.get(gpu, {}).values())
+        baseline_used = baseline_snapshots.get(gpu, snapshot)["used_mib"]
+        projected_used = max(snapshot["used_mib"], baseline_used + reserved)
+        if projected_used + required <= snapshot["total_mib"] - GPU_SAFETY_MIB:
+            candidates.append((projected_used, gpu))
+    needed = required_gpu_count(job)
+    if len(candidates) < needed:
+        return None
+    return tuple(gpu for _, gpu in sorted(candidates)[:needed])
 
 
 def current_run_dir(repo: Path, output_name: str) -> Path | None:
@@ -742,8 +785,17 @@ def _write_state(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def run_job(job: dict[str, Any], gpu: int, *, repo: Path, python: Path, state_dir: Path) -> int:
+def run_job(
+    job: dict[str, Any],
+    gpus: tuple[int, ...],
+    *,
+    repo: Path,
+    python: Path,
+    state_dir: Path,
+) -> int:
     cell = str(job["cell_id"])
+    primary_gpu = gpus[0]
+    gpu_list = ",".join(str(gpu) for gpu in gpus)
     output_name = str(job["output_name"])
     output_root = repo / "outputs" / "generated" / output_name
     output_root.mkdir(parents=True, exist_ok=True)
@@ -766,13 +818,22 @@ def run_job(job: dict[str, Any], gpu: int, *, repo: Path, python: Path, state_di
     with log_path.open("a", encoding="utf-8") as log:
         if csd is None:
             previous_run_dir = current_run_dir(repo, output_name)
-            logger.warning("[coldq] synthesis start cell=%s gpu=%d output=%s", cell, gpu, output_name)
-            log.write(f"COLDQ_SYNTHESIS_START cell={cell} gpu={gpu} commit={job['git_commit']}\n")
+            logger.warning(
+                "[coldq] synthesis start cell=%s gpus=%s workers=%d output=%s",
+                cell,
+                gpu_list,
+                len(gpus),
+                output_name,
+            )
+            log.write(
+                f"COLDQ_SYNTHESIS_START cell={cell} gpus={gpu_list} "
+                f"workers={len(gpus)} commit={job['git_commit']}\n"
+            )
             log.flush()
             status = subprocess.run(
                 synthesis_command(job, python),
                 cwd=repo,
-                env=synthesis_environment(job, gpu, os.environ, repo),
+                env=synthesis_environment(job, gpus, os.environ, repo),
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 check=False,
@@ -805,11 +866,16 @@ def run_job(job: dict[str, Any], gpu: int, *, repo: Path, python: Path, state_di
         if synthesis_exhausted:
             logger.warning("[coldq] using best exhausted attempt cell=%s csd=%s", cell, csd)
         heldout_path.parent.mkdir(parents=True, exist_ok=True)
-        logger.warning("[coldq] heldout start cell=%s gpu=%d csd=%s", cell, gpu, csd)
+        logger.warning(
+            "[coldq] heldout start cell=%s gpu=%d csd=%s",
+            cell,
+            primary_gpu,
+            csd,
+        )
         status = subprocess.run(
             heldout_command(job, python, csd),
             cwd=repo,
-            env=author_free_environment(os.environ, gpu),
+            env=author_free_environment(os.environ, primary_gpu),
             stdout=log,
             stderr=subprocess.STDOUT,
             check=False,
@@ -827,7 +893,7 @@ def run_job(job: dict[str, Any], gpu: int, *, repo: Path, python: Path, state_di
 def dispatch(jobs, *, snapshot, worker, poll_seconds: float) -> None:
     pending = [dict(job) for job in jobs]
     reservations: dict[int, dict[str, int]] = {}
-    running: dict[concurrent.futures.Future[int], tuple[int, str]] = {}
+    running: dict[concurrent.futures.Future[int], tuple[tuple[int, ...], str]] = {}
     failures: list[tuple[str, int]] = []
     baseline = snapshot()
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as executor:
@@ -841,25 +907,36 @@ def dispatch(jobs, *, snapshot, worker, poll_seconds: float) -> None:
             while pending and launched:
                 launched = False
                 for index, job in enumerate(pending):
-                    scheduling_job = {**job, "gpu_mem_util": SYNTHESIS_GPU_MEM_UTIL}
-                    gpu = choose_gpu(scheduling_job, snapshots, reservations, baseline)
-                    if gpu is None:
+                    gpus = choose_gpu_bundle(job, snapshots, reservations, baseline)
+                    if gpus is None:
                         continue
                     cell = str(job["cell_id"])
-                    reservations[gpu][cell] = synthesis_required_memory_mib(
-                        job, snapshots[gpu]["total_mib"]
+                    for gpu in gpus:
+                        reservations[gpu][cell] = synthesis_required_memory_mib(
+                            job, snapshots[gpu]["total_mib"]
+                        )
+                    logger.warning(
+                        "[coldq] dispatch cell=%s gpus=%s workers=%d",
+                        cell,
+                        ",".join(str(gpu) for gpu in gpus),
+                        len(gpus),
                     )
-                    logger.warning("[coldq] dispatch cell=%s gpu=%d", cell, gpu)
-                    running[executor.submit(worker, job, gpu)] = (gpu, cell)
+                    running[executor.submit(worker, job, gpus)] = (gpus, cell)
                     pending.pop(index)
                     launched = True
                     break
             finished = [future for future in running if future.done()]
             for future in finished:
-                gpu, cell = running.pop(future)
+                gpus, cell = running.pop(future)
                 status = future.result()
-                reservations[gpu].pop(cell, None)
-                logger.warning("[coldq] release cell=%s gpu=%d status=%d", cell, gpu, status)
+                for gpu in gpus:
+                    reservations[gpu].pop(cell, None)
+                logger.warning(
+                    "[coldq] release cell=%s gpus=%s status=%d",
+                    cell,
+                    ",".join(str(gpu) for gpu in gpus),
+                    status,
+                )
                 if status not in {0, TERMINAL_SYNTHESIS_FAILURE}:
                     failures.append((cell, status))
             if pending and not running and not finished:
@@ -896,17 +973,22 @@ def main() -> int:
                 fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise ConfigError("another cold queue controller is active") from exc
-            def worker(job: dict[str, Any], gpu: int) -> int:
+            def worker(job: dict[str, Any], gpus: tuple[int, ...]) -> int:
                 return run_job(
                     job,
-                    gpu,
+                    gpus,
                     repo=args.repo,
                     python=args.python,
                     state_dir=args.state_dir,
                 )
             if args.dry_run:
-                for index, job in enumerate(jobs):
-                    logger.warning("[coldq] dry-run cell=%s gpu=%d command=%r", job["cell_id"], index % 4, synthesis_command(job, args.python))
+                for job in jobs:
+                    logger.warning(
+                        "[coldq] dry-run cell=%s required_gpus=%d command=%r",
+                        job["cell_id"],
+                        required_gpu_count(job),
+                        synthesis_command(job, args.python),
+                    )
             else:
                 dispatch(
                     jobs,

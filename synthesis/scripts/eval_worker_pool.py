@@ -68,6 +68,31 @@ _MIN_FREE_MB = 8000
 _HEADER = struct.Struct(">Q")
 
 
+def _queue_gpu_slots() -> list[int] | None:
+    """Return the queue-owned physical GPU bundle without a global GPU scan."""
+    raw = os.environ.get("CSD_EVAL_GPU_SLOTS", "").strip()
+    if not raw:
+        return None
+    try:
+        slots = [int(part.strip()) for part in raw.split(",")]
+    except ValueError as exc:
+        raise RuntimeError(
+            f"CSD_EVAL_GPU_SLOTS must contain numeric physical GPU IDs: {raw!r}"
+        ) from exc
+    if not slots or any(gpu < 0 for gpu in slots) or len(set(slots)) != len(slots):
+        raise RuntimeError(f"invalid CSD_EVAL_GPU_SLOTS bundle: {raw!r}")
+    if len(slots) > MAX_POOL_WORKERS:
+        raise RuntimeError(
+            f"CSD_EVAL_GPU_SLOTS requests {len(slots)} workers; cap is {MAX_POOL_WORKERS}"
+        )
+    visible = visible_physical_gpu_ids()
+    if visible is not None and any(gpu not in visible for gpu in slots):
+        raise RuntimeError(
+            f"queue GPU bundle {slots} is outside CUDA_VISIBLE_DEVICES={visible}"
+        )
+    return slots
+
+
 def send_msg(stream, obj: Any) -> None:
     data = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
     stream.write(_HEADER.pack(len(data)))
@@ -216,7 +241,10 @@ class EvalWorkerPool:
     call for the rest of the run's lifetime."""
 
     def __init__(self, config: dict):
-        gpu_slots = detect_gpu_slots(_WORKERS_PER_GPU, _IDLE_UTIL_THRESHOLD, _MIN_FREE_MB)
+        queue_slots = _queue_gpu_slots()
+        gpu_slots = queue_slots or detect_gpu_slots(
+            _WORKERS_PER_GPU, _IDLE_UTIL_THRESHOLD, _MIN_FREE_MB
+        )
         visible_gpus = visible_physical_gpu_ids()
         fallback_gpus = visible_gpus if visible_gpus is not None else [0]
         if not fallback_gpus:
@@ -226,7 +254,9 @@ class EvalWorkerPool:
         # vs 3) is reproducible regardless of what else is running on the
         # box. Production runs never set this.
         size_override = os.environ.get("CSD_EVAL_POOL_SIZE")
-        if size_override:
+        if queue_slots is not None:
+            n_workers = len(gpu_slots)
+        elif size_override:
             n_workers = int(size_override)
             gpu_slots = (gpu_slots or fallback_gpus)[:n_workers]
         else:

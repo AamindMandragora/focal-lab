@@ -158,11 +158,50 @@ def test_synthesis_command_only_uses_run_synthesis_cli_flags():
 
 
 def test_synthesis_environment_names_the_isolated_cold_output():
-    env = queue.synthesis_environment(_job(), 2, {"PATH": "/bin"}, Path("/repo"))
+    env = queue.synthesis_environment(
+        _job(), (2, 3), {"PATH": "/bin"}, Path("/repo")
+    )
 
-    assert env["CUDA_VISIBLE_DEVICES"] == "2"
+    assert env["CUDA_VISIBLE_DEVICES"] == "2,3"
+    assert env["CSD_EVAL_GPU_SLOTS"] == "2,3"
     assert env["CSD_OUTPUT_NAME"] == "coldq_gsm-qwen35-2b_0719"
     assert env["CSD_OUTPUT_DIR"] == "/repo/outputs/generated/coldq_gsm-qwen35-2b_0719"
+
+
+def test_poolable_synthesis_environment_uses_the_reserved_two_gpu_bundle():
+    env = queue.synthesis_environment(
+        _job(), (3, 1), {"PATH": "/bin"}, Path("/repo")
+    )
+
+    assert env["CUDA_VISIBLE_DEVICES"] == "3,1"
+    assert env["CSD_EVAL_GPU_SLOTS"] == "3,1"
+
+
+def test_bundle_allocator_runs_two_poolable_cells_without_gpu_overlap():
+    snapshots = {
+        gpu: {"used_mib": 0, "total_mib": 48_000}
+        for gpu in range(4)
+    }
+    baseline = {gpu: dict(snapshot) for gpu, snapshot in snapshots.items()}
+    reservations = {gpu: {} for gpu in snapshots}
+    job = _job()
+
+    first = queue.choose_gpu_bundle(job, snapshots, reservations, baseline)
+    assert first == (0, 1)
+    for gpu in first:
+        reservations[gpu]["first"] = queue.synthesis_required_memory_mib(
+            job, snapshots[gpu]["total_mib"]
+        )
+
+    second = queue.choose_gpu_bundle(job, snapshots, reservations, baseline)
+    assert second == (2, 3)
+    for gpu in second:
+        reservations[gpu]["second"] = queue.synthesis_required_memory_mib(
+            job, snapshots[gpu]["total_mib"]
+        )
+
+    assert queue.choose_gpu_bundle(job, snapshots, reservations, baseline) is None
+    assert queue.required_gpu_count(_job("smiles")) == 1
 
 
 def test_heldout_command_binds_result_to_cell_commit_and_strategy():
@@ -178,7 +217,13 @@ def test_heldout_command_binds_result_to_cell_commit_and_strategy():
 
 def test_heldout_environment_removes_paid_author_credentials():
     env = queue.author_free_environment(
-        {"PATH": "/bin", "AWS_BEARER_TOKEN_BEDROCK": "secret", "OPENAI_API_KEY": "secret"},
+        {
+            "PATH": "/bin",
+            "AWS_BEARER_TOKEN_BEDROCK": "secret",
+            "OPENAI_API_KEY": "secret",
+            "CSD_EVAL_GPU_SLOTS": "0,1",
+            "CSD_EVAL_POOL_SIZE": "2",
+        },
         1,
     )
 
@@ -186,14 +231,14 @@ def test_heldout_environment_removes_paid_author_credentials():
 
 
 def test_dispatch_preserves_manifest_priority_on_one_gpu():
-    first = _job()
+    first = _job("smiles")
     first["cell_id"] = "first"
-    second = _job()
+    second = _job("smiles")
     second["cell_id"] = "second"
     started = []
 
-    def worker(job, gpu):
-        started.append((job["cell_id"], gpu))
+    def worker(job, gpus):
+        started.append((job["cell_id"], gpus))
         return 0
 
     queue.dispatch(
@@ -203,14 +248,14 @@ def test_dispatch_preserves_manifest_priority_on_one_gpu():
         poll_seconds=0.001,
     )
 
-    assert started == [("first", 0), ("second", 0)]
+    assert started == [("first", (0,)), ("second", (0,))]
 
 
-def test_synthesis_reservation_uses_the_fixed_eighty_percent_runtime_setting():
+def test_synthesis_reservation_matches_the_live_vllm_runtime_setting():
     job = _job()
     job["gpu_mem_util"] = 0.4
 
-    assert queue.synthesis_required_memory_mib(job, 48_000) == 38_400
+    assert queue.synthesis_required_memory_mib(job, 48_000) == 38_880
 
 
 def test_compiled_csd_uses_best_threshold_candidate_after_exhaustion(tmp_path):
@@ -333,7 +378,7 @@ def test_exhausted_synthesis_still_runs_heldout_for_best_attempt(tmp_path, monke
 
     status = queue.run_job(
         job,
-        0,
+        (0, 1),
         repo=tmp_path,
         python=Path("/env/python"),
         state_dir=tmp_path / "state",
@@ -359,7 +404,7 @@ def test_unexpected_exit_one_is_an_error_not_a_scientific_loss(tmp_path, monkeyp
 
     status = queue.run_job(
         job,
-        0,
+        (0, 1),
         repo=tmp_path,
         python=Path("/env/python"),
         state_dir=tmp_path / "state",
@@ -418,7 +463,11 @@ def test_existing_heldout_must_be_complete_before_restart_skips_cell(tmp_path, m
     monkeypatch.setattr(queue.subprocess, "run", run)
 
     assert queue.run_job(
-        job, 0, repo=tmp_path, python=Path("/env/python"), state_dir=tmp_path / "state"
+        job,
+        (0, 1),
+        repo=tmp_path,
+        python=Path("/env/python"),
+        state_dir=tmp_path / "state",
     ) == 0
     assert len(calls) == 1
     assert queue.heldout_is_complete(heldout, job)
@@ -447,7 +496,7 @@ def test_restart_preserves_exhausted_state_while_running_heldout(tmp_path, monke
 
     status = queue.run_job(
         job,
-        0,
+        (0, 1),
         repo=tmp_path,
         python=Path("/env/python"),
         state_dir=tmp_path / "state",

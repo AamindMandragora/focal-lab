@@ -50,3 +50,32 @@ def test_worker_pool_fallback_stays_on_the_assigned_visible_gpu(monkeypatch):
 
     assert created_gpus == [(0, 2)]
     pool.shutdown()
+
+
+def test_worker_pool_uses_explicit_queue_gpu_bundle_without_global_detection(monkeypatch):
+    created_gpus = []
+
+    class FakeWorker:
+        def __init__(self, worker_id, gpu):
+            created_gpus.append((worker_id, gpu))
+
+        def configure(self, _config):
+            pass
+
+        def shutdown(self):
+            pass
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "3,1")
+    monkeypatch.setenv("CSD_EVAL_GPU_SLOTS", "3,1")
+    monkeypatch.delenv("CSD_EVAL_POOL_SIZE", raising=False)
+    monkeypatch.setattr(
+        eval_worker_pool,
+        "detect_gpu_slots",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("global scan used")),
+    )
+    monkeypatch.setattr(eval_worker_pool, "_Worker", FakeWorker)
+
+    pool = eval_worker_pool.EvalWorkerPool({})
+
+    assert created_gpus == [(0, 3), (1, 1)]
+    pool.shutdown()
