@@ -499,3 +499,51 @@ It also verified the two GSM14B attempt-55 blocks are separately claimed stages:
 the provider handoff and the one-time helper-refresh replay. Both final services
 had zero restarts, all active author commands used Claude Code Max account
 `aadivya@fermi.ai`, and no Bedrock author process was active.
+
+### H97 preregistration — 2026-07-19T06:55Z
+
+Hypothesis: the cold queue restart loop is caused by one monitor policy: after
+the monitor stops the paid queue, any repair result that is missing, invalid,
+rejected, fails verification, fails deployment, or fails attestation still calls
+`systemctl start` on the original service. A repair that is not independently
+verified safe must leave the paid queue stopped; only the fully verified success
+path may relaunch it.
+
+Single variable / tweak: remove automatic service restarts from every blocked or
+exceptional repair path while preserving the existing successful verified repair
+relaunch. Do not change incident detection, repair permissions, experiment
+settings, model choices, bars, grammars, graders, splits, or cold-run policy.
+
+Prior: **99%**. The live monitor log records an invalid repair result followed
+immediately by `systemctl --user start csd-cold-synthesis-queue.service` four
+times, and the source contains matching restart calls on blocked exits.
+
+Falsifiable prediction: the changed rejection test fails on the current code
+because it observes a `systemctl start`; after the smallest policy fix, that test
+and the full incident-monitor suite pass, a fake invalid repair records the stop
+but no start, and the existing successful-repair test still records exactly one
+verified relaunch. No synthesis, GPU evaluation, Bedrock call, or other paid call
+is part of this focused experiment.
+
+H97 result: **confirmed, with three same-bug edges found and covered before
+deployment.** The first changed test was red **1/1**: an invalid `not-json`
+repair result still produced `systemctl start csd-warm-recovery.service`. After
+removing blocked-path restarts, the rejection and verified-success tests passed.
+A two-service relaunch test then failed **1/1** because the first service stayed
+started when the second service failed; the cleanup now re-stops all configured
+services. A final exception-path test failed **1/1** because an exception from
+the post-start `is-active` check left the live file as `REPAIRED = True`; the
+relaunch block now stops all services, rolls back deployed files, restores the
+previous attestation, returns failure, and leaves the incident retryable.
+The same red result occurred when the post-deployment live verifier raised; that
+path now uses the same stop-first rollback and attestation cleanup.
+
+Final local evidence before deployment: the five focused rejection, partial
+relaunch, relaunch-exception, live-verifier-exception, and verified-success tests
+passed **5/5**; the full incident-monitor file passed **31/31**; the monitor's
+wider verifier command passed **130/130** with three unrelated
+deprecation/future warnings; and `py_compile` passed. The independent judge also
+re-ran **31/31** and **130/130** (one warning in its environment). A source search
+found one remaining `systemctl start`, only inside the fully verified relaunch
+block. No synthesis, evaluation, GPU job, or paid provider call was made by
+H97's focused tests.

@@ -550,22 +550,196 @@ def test_failed_relaunch_rolls_back_the_deployed_repair(tmp_path, monkeypatch):
             stderr="",
         )
 
+    stops = []
+    commands = []
+
     monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
-    monkeypatch.setattr(monitor, "_stop_recovery", lambda *_: None)
+    monkeypatch.setattr(
+        monitor,
+        "_stop_recovery",
+        lambda _repo, _manifest, services: stops.append(list(services)),
+    )
     monkeypatch.setattr(monitor, "_verify", lambda *_: 0)
     monkeypatch.setattr(monitor, "verify_repair_account", lambda *_: None)
     monkeypatch.setattr(monitor.subprocess, "run", fake_claude)
-    monkeypatch.setattr(monitor, "_run", lambda *_args, **_kwargs: 1)
+    def fake_run(command, **_kwargs):
+        commands.append(command)
+        if command[-1] == "first.service":
+            return 0
+        return 1
+
+    monkeypatch.setattr(monitor, "_run", fake_run)
     args = _repair_args(tmp_path, repo, manifest, schema)
+    args.recovery_service = ["first.service", "second.service"]
 
     assert not monitor.repair_incident(
         args, Incident("unknown_task", "worker.log", "Unknown task", "rollback")
     )
     assert source.read_text() == "ORIGINAL = True\n"
     assert not args.repair_attestation.exists()
+    assert stops == [
+        ["first.service", "second.service"],
+        ["first.service", "second.service"],
+    ]
+    assert commands == [
+        ["systemctl", "--user", "start", "first.service"],
+        ["systemctl", "--user", "is-active", "--quiet", "first.service"],
+        ["systemctl", "--user", "start", "second.service"],
+    ]
 
 
-def test_rejected_repair_restarts_the_original_stopped_service(tmp_path, monkeypatch):
+def test_relaunch_status_exception_stops_and_rolls_back_before_retry(
+    tmp_path, monkeypatch
+):
+    repo = tmp_path / "repo"
+    source = repo / "synthesis" / "task_context.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("ORIGINAL = True\n")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
+    manifest = repo / "manifest.json"
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
+    evidence = tmp_path / "incident.json"
+    evidence.write_text("{}")
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+    stops = []
+    commands = []
+
+    def fake_capture(_repo, _incident, incident_dir):
+        incident_dir.mkdir(parents=True)
+        return evidence
+
+    def fake_claude(command, *, cwd, env, input, text, capture_output, timeout):
+        (cwd / "synthesis" / "task_context.py").write_text("REPAIRED = True\n")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=_fake_repair_envelope(
+                {
+                    "status": "repaired",
+                    "summary": "fixed",
+                    "files_changed": ["synthesis/task_context.py"],
+                    "tests": ["pytest -q tests/test_task.py"],
+                    "safe_to_relaunch": True,
+                }
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
+    monkeypatch.setattr(
+        monitor,
+        "_stop_recovery",
+        lambda _repo, _manifest, services: stops.append(list(services)),
+    )
+    monkeypatch.setattr(monitor, "_verify", lambda *_: 0)
+    monkeypatch.setattr(monitor, "verify_repair_account", lambda *_: None)
+    monkeypatch.setattr(monitor.subprocess, "run", fake_claude)
+
+    def fake_run(command, **_kwargs):
+        commands.append(command)
+        if command[2] == "start":
+            return 0
+        raise RuntimeError("is-active check failed after service start")
+
+    monkeypatch.setattr(monitor, "_run", fake_run)
+    args = _repair_args(tmp_path, repo, manifest, schema)
+    args.recovery_service = ["csd-cold-synthesis-queue.service"]
+    incident = Incident("worker_failed", "worker.log", "failed", "status-error")
+    seen = set()
+
+    monitor._process_incidents(args, [incident], seen, {})
+
+    assert stops == [
+        ["csd-cold-synthesis-queue.service"],
+        ["csd-cold-synthesis-queue.service"],
+    ]
+    assert commands == [
+        ["systemctl", "--user", "start", "csd-cold-synthesis-queue.service"],
+        [
+            "systemctl",
+            "--user",
+            "is-active",
+            "--quiet",
+            "csd-cold-synthesis-queue.service",
+        ],
+    ]
+    assert source.read_text() == "ORIGINAL = True\n"
+    assert not args.repair_attestation.exists()
+    assert incident.fingerprint not in seen
+
+
+def test_live_verifier_exception_stops_and_rolls_back_before_retry(
+    tmp_path, monkeypatch
+):
+    repo = tmp_path / "repo"
+    source = repo / "synthesis" / "task_context.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("ORIGINAL = True\n")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_task.py").write_text("def test_placeholder(): pass\n")
+    manifest = repo / "manifest.json"
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
+    evidence = tmp_path / "incident.json"
+    evidence.write_text("{}")
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+    stops = []
+    verifier_calls = []
+
+    def fake_capture(_repo, _incident, incident_dir):
+        incident_dir.mkdir(parents=True)
+        return evidence
+
+    def fake_claude(command, *, cwd, env, input, text, capture_output, timeout):
+        (cwd / "synthesis" / "task_context.py").write_text("REPAIRED = True\n")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=_fake_repair_envelope(
+                {
+                    "status": "repaired",
+                    "summary": "fixed",
+                    "files_changed": ["synthesis/task_context.py"],
+                    "tests": ["pytest -q tests/test_task.py"],
+                    "safe_to_relaunch": True,
+                }
+            ),
+            stderr="",
+        )
+
+    def fake_verify(_python, target):
+        verifier_calls.append(target)
+        if target == repo:
+            raise OSError("live verifier could not start")
+        return 0
+
+    monkeypatch.setattr(monitor, "_capture_evidence", fake_capture)
+    monkeypatch.setattr(
+        monitor,
+        "_stop_recovery",
+        lambda _repo, _manifest, services: stops.append(list(services)),
+    )
+    monkeypatch.setattr(monitor, "_verify", fake_verify)
+    monkeypatch.setattr(monitor, "verify_repair_account", lambda *_: None)
+    monkeypatch.setattr(monitor.subprocess, "run", fake_claude)
+    args = _repair_args(tmp_path, repo, manifest, schema)
+    args.recovery_service = ["csd-cold-synthesis-queue.service"]
+    incident = Incident("worker_failed", "worker.log", "failed", "verify-error")
+    seen = set()
+
+    monitor._process_incidents(args, [incident], seen, {})
+
+    assert len(verifier_calls) == 2
+    assert stops == [
+        ["csd-cold-synthesis-queue.service"],
+        ["csd-cold-synthesis-queue.service"],
+    ]
+    assert source.read_text() == "ORIGINAL = True\n"
+    assert not args.repair_attestation.exists()
+    assert incident.fingerprint not in seen
+
+
+def test_rejected_repair_leaves_the_original_service_stopped(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     source = repo / "synthesis" / "task_context.py"
     source.parent.mkdir(parents=True)
@@ -597,7 +771,7 @@ def test_rejected_repair_restarts_the_original_stopped_service(tmp_path, monkeyp
         args, Incident("unknown_task", "worker.log", "Unknown task", "rejected")
     )
     assert commands[0] == "stopped"
-    assert ["systemctl", "--user", "start", "csd-warm-recovery.service"] in commands
+    assert ["systemctl", "--user", "start", "csd-warm-recovery.service"] not in commands
 
 
 def test_blocked_repair_is_retried_when_the_same_incident_returns(tmp_path, monkeypatch):
@@ -613,6 +787,37 @@ def test_blocked_repair_is_retried_when_the_same_incident_returns(tmp_path, monk
 
     assert calls == [1, 1]
     assert incident.fingerprint not in seen
+
+
+def test_unexpected_repair_exception_confirms_the_service_is_stopped(
+    tmp_path, monkeypatch
+):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"git_commit": "a" * 40, "jobs": []}))
+    services = ["csd-cold-synthesis-queue.service"]
+    stops = []
+    args = SimpleNamespace(
+        repo=tmp_path,
+        manifest=manifest,
+        recovery_service=services,
+    )
+
+    def fail_repair(*_args):
+        raise RuntimeError("service status check failed after start")
+
+    monkeypatch.setattr(monitor, "repair_incident", fail_repair)
+    monkeypatch.setattr(
+        monitor,
+        "_stop_recovery",
+        lambda repo, seen_manifest, seen_services: stops.append(
+            (repo, seen_manifest, list(seen_services))
+        ),
+    )
+
+    incident = Incident("worker_failed", "worker.log", "failed", "restart-error")
+    monitor._process_incidents(args, [incident], set(), {})
+
+    assert stops == [(tmp_path, manifest, services)]
 
 
 def test_monitor_state_recovers_from_truncated_json_and_replaces_atomically(
