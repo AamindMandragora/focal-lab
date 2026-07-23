@@ -266,8 +266,6 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
         AUTHOR_MODEL,
         "--generation-backend",
         "claude",
-        "--synthesizer-reasoning-budget",
-        "4096",
         "--synthesis-max-tokens",
         "8192",
         "--device",

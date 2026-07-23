@@ -33,7 +33,11 @@ class HumanLogWriter:
         line = line.rstrip() + "\n"
         with self.master_path.open("a", encoding="utf-8") as handle:
             handle.write(line)
-        lane = lane_name(cell_id)
+        try:
+            lane = lane_name(cell_id)
+        except ValueError:
+            # System markers (e.g. cell_id=watcher) go to master only.
+            return
         with self.lane_paths[lane].open("a", encoding="utf-8") as handle:
             handle.write(line)
 
