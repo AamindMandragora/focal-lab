@@ -24,10 +24,25 @@ from scripts.runtime.run_warm_task_recovery_queue import (
 )
 
 
-AUTHOR_MODEL = "us.anthropic.claude-sonnet-4-6"
+AUTHOR_MODEL = "claude-sonnet-4-6"
 TERMINAL_SYNTHESIS_FAILURE = 75
 POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
-POOLABLE_GPU_COUNT = 2
+POOLABLE_GPU_COUNT = 3
+
+
+def _human_log_emit(repo: Path, cell_id: str, marker: str, detail: str = "") -> None:
+    """Best-effort write to master + gsm/spider/smiles lane logs.
+
+    Callers: run_job COLDQ start/finish markers.
+    User instruction: human-logs (master + gsm/spider/smiles lane logs).
+    """
+    try:
+        from scripts.runtime.zero_acc_babysitter.human_logs import HumanLogWriter
+    except ImportError:
+        return
+    HumanLogWriter(repo).emit(cell_id, marker, detail)
+
+
 BASELINE_STRATEGY_BY_DATASET = {
     "gsm_symbolic": "crane",
     "spider": "itergen",
@@ -56,19 +71,28 @@ SMILES_TASK = (
     "Generate valid SMILES strings that match the requested molecular class while "
     "maintaining parser-valid output."
 )
-APPROVED_AUTHOR_CALL_CAP = 482
+APPROVED_AUTHOR_CALL_CAP = 802
 EXPECTED_CELLS: dict[str, dict[str, Any]] = {
     "gsm-qwen25-1p5b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen25-7b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 38, "interrupted_author_calls": 3, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen25-14b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen2.5-14B-Instruct", "max_iterations": 78, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-2b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 38, "interrupted_author_calls": 2, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
     "gsm-qwen35-4b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
-    "gsm-qwen35-9b": {"dataset": "gsm_symbolic", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 49, "heldout_sample_size": 49, "eval_max_steps": 900, "task": GSM_TASK},
+    "spider-qwen25-1p5b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
     "spider-qwen25-7b": {"dataset": "spider", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
+    "spider-qwen35-2b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
     "spider-qwen35-4b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "spider-qwen35-9b": {"dataset": "spider", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 300, "heldout_sample_size": 300, "eval_max_steps": 200, "task": SPIDER_TASK},
-    "smiles-qwen35-4b-acrylates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
-    "smiles-qwen35-9b-isocyanates": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-9B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "smiles-acrylates-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
+    "smiles-acrylates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
+    "smiles-acrylates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
+    "smiles-acrylates-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "acrylates"},
+    "smiles-chain_extenders-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
+    "smiles-chain_extenders-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
+    "smiles-chain_extenders-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
+    "smiles-chain_extenders-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "chain_extenders"},
+    "smiles-isocyanates-qwen25-1p5b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-1.5B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "smiles-isocyanates-qwen25-7b": {"dataset": "smiles", "eval_model": "Qwen/Qwen2.5-7B-Instruct", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "smiles-isocyanates-qwen35-2b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-2B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
+    "smiles-isocyanates-qwen35-4b": {"dataset": "smiles", "eval_model": "Qwen/Qwen3.5-4B", "max_iterations": 40, "interrupted_author_calls": 0, "eval_sample_size": 50, "heldout_sample_size": 100, "eval_max_steps": 400, "task": SMILES_TASK, "smiles_class": "isocyanates"},
 }
 EXPECTED_RUNTIME_BY_MODEL = {
     "Qwen/Qwen2.5-1.5B-Instruct": {"memory_reservation_mib": 16000, "gpu_mem_util": 0.4},
@@ -79,6 +103,51 @@ EXPECTED_RUNTIME_BY_MODEL = {
     "Qwen/Qwen3.5-9B": {"memory_reservation_mib": 25000, "gpu_mem_util": 0.6},
 }
 logger = logging.getLogger("cold-synthesis-queue")
+
+
+class _CombinedLogWriter:
+    """Duplicate writes to per-cell and shared campaign logs.
+
+    Do not implement fileno(): subprocess would otherwise dup2 only the first
+    stream and skip the combined campaign log.
+    """
+
+    def __init__(self, *streams):
+        self._streams = streams
+
+    def write(self, data: str) -> int:
+        for stream in self._streams:
+            stream.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        for stream in self._streams:
+            stream.flush()
+
+
+def _run_command_teeing_stdout(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None,
+    streams: tuple[Any, ...],
+) -> int:
+    """Run command and copy each stdout line to every stream (line-buffered)."""
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        for stream in streams:
+            stream.write(line)
+            stream.flush()
+    return int(process.wait())
 
 
 class ConfigError(ValueError):
@@ -196,7 +265,7 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
         "--generation-model",
         AUTHOR_MODEL,
         "--generation-backend",
-        "claude-bedrock",
+        "claude",
         "--synthesizer-reasoning-budget",
         "4096",
         "--synthesis-max-tokens",
@@ -236,6 +305,10 @@ def synthesis_environment(
             "CSD_OUTPUT_NAME": str(job["output_name"]),
             "CSD_OUTPUT_DIR": str(repo / "outputs" / "generated" / str(job["output_name"])),
             "PYTHONUNBUFFERED": "1",
+            # Claude Code Max author (matches incident-monitor account isolation)
+            "CSD_CLAUDE_EXECUTABLE": "/home/aadivyar/.local/bin/claude",
+            "CSD_CLAUDE_CONFIG_DIR": "/home/aadivyar/.claude-csd-synthesis",
+            "CSD_CLAUDE_EXPECTED_ACCOUNT": "aadivya@fermi.ai",
         }
     )
     if job["dataset"] in POOLABLE_DATASETS:
@@ -324,7 +397,7 @@ def report_matches_job(
             and config.get("output_name") == job["output_name"]
             and config.get("git_commit") == job.get("launch_commit", job["git_commit"])
             and int(config.get("max_iterations") or -1) == max_iterations
-            and author.get("backend") == "claude-bedrock"
+            and author.get("backend") == "claude"
             and author.get("model") == AUTHOR_MODEL
             and int(author.get("max_new_tokens") or -1) == 8192
             and int(author.get("reasoning_budget_tokens") or -1) == 4096
@@ -611,6 +684,17 @@ def validate_baseline_evidence(cell: str, job: dict[str, Any], repo: Path) -> No
     except (OSError, json.JSONDecodeError) as exc:
         raise ConfigError(f"{cell} baseline evidence is invalid: {exc}") from exc
     entry = (payload.get("cells") or {}).get(cell) or {}
+    if entry.get("pending_validity") or job.get("baseline_pending_validity"):
+        try:
+            pending_counts_match = (
+                int(entry.get("num_correct")) == int(job["baseline_num_correct"])
+                and int(entry.get("num_examples")) == int(job["baseline_num_examples"])
+            )
+        except (TypeError, ValueError):
+            pending_counts_match = False
+        if not pending_counts_match:
+            raise ConfigError(f"{cell} pending baseline counts do not match manifest")
+        return
     try:
         counts_match = (
             int(entry.get("num_correct")) == int(job["baseline_num_correct"])
@@ -707,7 +791,7 @@ def validate_exhaustive_campaign(
 ) -> None:
     by_cell = {str(job["cell_id"]): job for job in jobs}
     if set(by_cell) != set(EXPECTED_CELLS) or len(jobs) != len(EXPECTED_CELLS):
-        raise ConfigError("manifest must contain exactly the 11 approved cells")
+        raise ConfigError("manifest must contain exactly the 20 approved cells")
     output_names = [str(job["output_name"]) for job in jobs]
     heldout_outputs = [str(job["heldout_output_json"]) for job in jobs]
     if len(set(output_names)) != len(output_names):
@@ -815,7 +899,20 @@ def run_job(
     synthesis_exhausted = csd is not None and synthesis_was_exhausted(
         repo, output_name, job
     )
-    with log_path.open("a", encoding="utf-8") as log:
+    combined_log_path = Path(
+        os.environ.get(
+            "CSD_COMBINED_RUN_LOG",
+            str(repo / "logs" / "coldq_combined_run.log"),
+        )
+    )
+    combined_log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("a", encoding="utf-8") as log, combined_log_path.open(
+        "a", encoding="utf-8"
+    ) as combined_log:
+        combined_log.write(f"\n===== CELL {cell} BEGIN =====\n")
+        combined_log.flush()
+        _human_log_emit(repo, cell, "COLDQ_CELL_BEGIN", f"gpus={gpu_list}")
+        tee = _CombinedLogWriter(log, combined_log)
         if csd is None:
             previous_run_dir = current_run_dir(repo, output_name)
             logger.warning(
@@ -825,21 +922,26 @@ def run_job(
                 len(gpus),
                 output_name,
             )
-            log.write(
+            tee.write(
                 f"COLDQ_SYNTHESIS_START cell={cell} gpus={gpu_list} "
                 f"workers={len(gpus)} commit={job['git_commit']}\n"
             )
-            log.flush()
-            status = subprocess.run(
+            tee.flush()
+            _human_log_emit(
+                repo,
+                cell,
+                "COLDQ_SYNTHESIS_START",
+                f"gpus={gpu_list} workers={len(gpus)}",
+            )
+            status = _run_command_teeing_stdout(
                 synthesis_command(job, python),
                 cwd=repo,
                 env=synthesis_environment(job, gpus, os.environ, repo),
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                check=False,
-            ).returncode
-            log.write(f"COLDQ_SYNTHESIS_FINISH cell={cell} status={status}\n")
-            log.flush()
+                streams=(log, combined_log),
+            )
+            tee.write(f"COLDQ_SYNTHESIS_FINISH cell={cell} status={status}\n")
+            tee.flush()
+            _human_log_emit(repo, cell, "COLDQ_SYNTHESIS_FINISH", f"status={status}")
             synthesis_exhausted = status == 1 and synthesis_was_exhausted(
                 repo,
                 output_name,
@@ -872,14 +974,12 @@ def run_job(
             primary_gpu,
             csd,
         )
-        status = subprocess.run(
+        status = _run_command_teeing_stdout(
             heldout_command(job, python, csd),
             cwd=repo,
             env=author_free_environment(os.environ, primary_gpu),
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            check=False,
-        ).returncode
+            streams=(log, combined_log),
+        )
     heldout_complete = status == 0 and heldout_is_complete(heldout_path, job)
     if status == 0 and not heldout_complete:
         status = 4
@@ -957,6 +1057,15 @@ def main() -> int:
     parser.add_argument("--repair-attestation", type=Path)
     parser.add_argument("--nvidia-smi", default="nvidia-smi")
     parser.add_argument("--poll-seconds", type=float, default=30.0)
+    parser.add_argument(
+        "--exclude-cell-prefix",
+        action="append",
+        default=[],
+        help=(
+            "After validating the full 20-cell manifest, skip dispatch for cell_ids "
+            "with any of these prefixes (repeatable). Used to keep GSM blocked."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
@@ -967,6 +1076,26 @@ def main() -> int:
         for job in jobs:
             job["git_commit"] = commit
             job["launch_commit"] = launch_commit
+        prefixes = [str(p) for p in args.exclude_cell_prefix if str(p)]
+        if prefixes:
+            excluded = [
+                str(job["cell_id"])
+                for job in jobs
+                if any(str(job["cell_id"]).startswith(prefix) for prefix in prefixes)
+            ]
+            jobs = [
+                job
+                for job in jobs
+                if not any(str(job["cell_id"]).startswith(prefix) for prefix in prefixes)
+            ]
+            logger.warning(
+                "[coldq] exclude prefixes=%s excluded=%s remaining=%d",
+                ",".join(prefixes),
+                ",".join(excluded),
+                len(jobs),
+            )
+            if not jobs:
+                raise ConfigError("all cells excluded; nothing to dispatch")
         args.lock_file.parent.mkdir(parents=True, exist_ok=True)
         with args.lock_file.open("w", encoding="utf-8") as lock:
             try:
