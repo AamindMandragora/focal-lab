@@ -87,6 +87,14 @@ def _derive_output_name(dataset: str, eval_model: str) -> str:
     return f"{dataset}_{model_short}_{date.today().isoformat()}"
 
 
+def _resolve_vllm_gpu_memory_utilization() -> float:
+    """Prefer cold-queue per-job util when set; else the settled constant."""
+    raw = os.environ.get("CSD_VLLM_GPU_MEMORY_UTILIZATION")
+    if raw is None or not str(raw).strip():
+        return float(VLLM_GPU_MEMORY_UTILIZATION)
+    return float(raw)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Synthesize constrained decoding strategies (author: hosted large reasoning model; eval: vLLM)",
@@ -418,6 +426,7 @@ Examples:
     print("Initializing synthesis pipeline...")
 
     device = None if args.device == "auto" else args.device
+    vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization()
 
     generator = StrategyGenerator(
         model_name=args.generation_model,
@@ -425,7 +434,7 @@ Examples:
         device=device,
         max_new_tokens=args.synthesis_max_tokens,
         temperature=TEMPERATURE,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         reasoning_budget_tokens=args.synthesizer_reasoning_budget,
     )
@@ -447,6 +456,7 @@ Examples:
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
     print(f"  Evaluation model: {args.eval_model}")
+    print(f"  vLLM gpu_memory_utilization: {vllm_gpu_memory_utilization}")
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
@@ -455,7 +465,7 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         sample_seed=args.eval_seed,
         max_seconds_per_example=args.eval_max_seconds_per_example,
