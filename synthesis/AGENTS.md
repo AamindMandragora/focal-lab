@@ -11,6 +11,7 @@ Applies to the **`synthesis/`** Python package (pipeline implementation). Reposi
 - **Parser performance:** preserve DFA-mask (`DFAMaskStore`) validity paths; do not replace per-step validity with O(vocab) brute-force parsing.
 - **Dafny contracts:** do not weaken or remove formal contracts in **`verify/library/`** unless the change is required and reviewed.
 - **`run_synthesis.py` GSM-Symbolic:** the only supported data source is local CRANE-style JSONs (`--gsm-source-dir` auto-filled from vendored `legacy/CRANE/src/gsm_symbolic` when unset). HuggingFace loading has been removed; runs error out if no CRANE folder is resolvable.
+- **`run_synthesis.py` vLLM util:** honor `CSD_VLLM_GPU_MEMORY_UTILIZATION` when set (cold-queue per-job bar); otherwise use `VLLM_GPU_MEMORY_UTILIZATION`.
 
 ## Subfolder guides
 

@@ -159,22 +159,70 @@ def test_synthesis_command_only_uses_run_synthesis_cli_flags():
 
 def test_synthesis_environment_names_the_isolated_cold_output():
     env = queue.synthesis_environment(
-        _job(), (2, 3), {"PATH": "/bin"}, Path("/repo")
+        _job(), (0, 1, 2), {"PATH": "/bin"}, Path("/repo")
     )
 
-    assert env["CUDA_VISIBLE_DEVICES"] == "2,3"
-    assert env["CSD_EVAL_GPU_SLOTS"] == "2,3"
+    assert env["CUDA_VISIBLE_DEVICES"] == "0,1,2"
+    assert env["CSD_EVAL_GPU_SLOTS"] == "0,1,2"
     assert env["CSD_OUTPUT_NAME"] == "coldq_gsm-qwen35-2b_0719"
     assert env["CSD_OUTPUT_DIR"] == "/repo/outputs/generated/coldq_gsm-qwen35-2b_0719"
 
 
 def test_poolable_synthesis_environment_uses_the_reserved_two_gpu_bundle():
     env = queue.synthesis_environment(
-        _job(), (3, 1), {"PATH": "/bin"}, Path("/repo")
+        _job(), (3, 1, 0), {"PATH": "/bin"}, Path("/repo")
     )
 
-    assert env["CUDA_VISIBLE_DEVICES"] == "3,1"
-    assert env["CSD_EVAL_GPU_SLOTS"] == "3,1"
+    assert env["CUDA_VISIBLE_DEVICES"] == "3,1,0"
+    assert env["CSD_EVAL_GPU_SLOTS"] == "3,1,0"
+
+
+def test_smiles_synthesis_environment_enables_constrained_sampling_and_job_gpu_util():
+    """SMILES unique-valid scoring needs span sampling; jobs carry the util bar."""
+    job = _job("smiles")
+    job["cell_id"] = "smiles-acrylates-qwen25-1p5b"
+    job["output_name"] = "coldq_smiles-acrylates-qwen25-1p5b_20260724"
+    job["gpu_mem_util"] = 0.4
+    job["smiles_class"] = "acrylates"
+
+    env = queue.synthesis_environment(job, (3,), {"PATH": "/bin"}, Path("/repo"))
+
+    assert env["CSD_CONSTRAINED_TEMPERATURE"] == "0.7"
+    assert env["CSD_VLLM_GPU_MEMORY_UTILIZATION"] == "0.4"
+    assert env["CUDA_VISIBLE_DEVICES"] == "3"
+    assert "CSD_EVAL_GPU_SLOTS" not in env
+
+
+def test_non_smiles_synthesis_environment_does_not_force_constrained_temperature():
+    env = queue.synthesis_environment(
+        _job(), (0, 1, 2), {"PATH": "/bin"}, Path("/repo")
+    )
+
+    assert "CSD_CONSTRAINED_TEMPERATURE" not in env
+    assert env["CSD_VLLM_GPU_MEMORY_UTILIZATION"] == "0.8"
+
+
+def test_smiles_heldout_environment_enables_constrained_sampling():
+    env = queue.author_free_environment(
+        {"PATH": "/bin", "AWS_ACCESS_KEY_ID": "x"}, 3, dataset="smiles"
+    )
+
+    assert env["CSD_CONSTRAINED_TEMPERATURE"] == "0.7"
+    assert env["CUDA_VISIBLE_DEVICES"] == "3"
+    assert "AWS_ACCESS_KEY_ID" not in env
+
+
+def test_resolve_vllm_gpu_memory_utilization_prefers_env_override(monkeypatch):
+    from synthesis import run_synthesis as rs
+
+    monkeypatch.delenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", raising=False)
+    assert rs._resolve_vllm_gpu_memory_utilization() == float(rs.VLLM_GPU_MEMORY_UTILIZATION)
+
+    monkeypatch.setenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", "0.4")
+    assert rs._resolve_vllm_gpu_memory_utilization() == 0.4
+
+    monkeypatch.setenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", "  ")
+    assert rs._resolve_vllm_gpu_memory_utilization() == float(rs.VLLM_GPU_MEMORY_UTILIZATION)
 
 
 def test_bundle_allocator_runs_two_poolable_cells_without_gpu_overlap():
