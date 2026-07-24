@@ -1,16 +1,16 @@
 # Experiment progress
 
-_Last updated: 2026-07-24T05:44:13+00:00_
+_Last updated: 2026-07-24T06:51:42+00:00_
 
 ## Status: ⏹  NO RUN ACTIVE  (last launcher: launch_full_matrix_20260520_024953.sh)
 
 ## GPU
 
 ```
-0, 38225 MiB, 40960 MiB, 96 %
-1, 35737 MiB, 40960 MiB, 31 %
-2, 21339 MiB, 40960 MiB, 0 %
-3, 21361 MiB, 40960 MiB, 0 %
+0, 38177 MiB, 40960 MiB, 58 %
+1, 36269 MiB, 40960 MiB, 51 %
+2, 22209 MiB, 40960 MiB, 0 %
+3, 21364 MiB, 40960 MiB, 99 %
 ```
 
 ## Completed cells (since launch_full_matrix_20260520_024953.sh)
