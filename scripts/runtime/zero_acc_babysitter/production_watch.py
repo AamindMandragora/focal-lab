@@ -23,7 +23,11 @@ from scripts.runtime.zero_acc_babysitter.cloud import (
     NullCloudClient,
     probe_claude_code_cli,
 )
-from scripts.runtime.zero_acc_babysitter.constants import CellState, TIER_B_ACC_PCT
+from scripts.runtime.zero_acc_babysitter.constants import (
+    CellState,
+    PathKind,
+    TIER_B_ACC_PCT,
+)
 from scripts.runtime.zero_acc_babysitter.human_logs import HumanLogWriter
 from scripts.runtime.zero_acc_babysitter.orchestrator import (
     BabysitterHooks,
@@ -223,6 +227,7 @@ def run_watch_once(
     """Process one poll tick. Returns True if any wake ran the fix path."""
     any_wake = False
     ids = cell_ids or sorted(cell_logs)
+    store = orch.store if orch is not None else IncidentStore(live_repo.resolve())
     for cell_id, log_path in cell_logs.items():
         if not log_path.is_file():
             continue
@@ -249,6 +254,21 @@ def run_watch_once(
         # Missing Acc after finished attempt is TELEMETRY_FAIL — do not skip.
         key = (event.attempt_index, event.accuracy_pct, event.memory_ops)
         if seen.get(cell_id) == key:
+            continue
+        # A memory event whose (cell, attempt) already has a CLOSED memory
+        # incident is stale log content re-read after resume or watcher
+        # restart — the in-memory `seen` dedup does not survive restarts, and
+        # memory_resume does not advance the cell log past the old OOM marker.
+        # Re-waking here opens duplicate incidents in an endless loop.
+        if event.memory_ops and store.has_closed_incident(
+            cell_id, event.attempt_index, PathKind.MEMORY
+        ):
+            seen[cell_id] = key
+            emit(
+                cell_id,
+                "STALE_MEMORY_EVENT_SKIP",
+                f"attempt={event.attempt_index} acc={event.accuracy_pct}",
+            )
             continue
         seen[cell_id] = key
 

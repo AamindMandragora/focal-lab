@@ -52,6 +52,7 @@ _ACTIVATION_ROLES: dict[str, str] = {
     "INCIDENT_CLOSE": "OUTCOME",
     "blocked_needs_human": "OUTCOME",
     "INCIDENT_RESUME_FAIL": "OUTCOME",
+    "STALE_MEMORY_EVENT_SKIP": "SKIP",
     "STRATEGY_MISS": "SKIP",
     "LOW_ACC_STRATEGY_MISS": "SKIP",
 }

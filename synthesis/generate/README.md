@@ -18,7 +18,9 @@ The generate stage is responsible for producing candidate Dafny strategy bodies 
   - Prompt templates used for initial generation and iterative refinement.
   - Keep tool documentation here aligned with `synthesis/verify/library/README.md` and `VerifiedAgentSynthesis.dfy` when the strategy API changes.
   - Documents `helpers.AppendTaskGuidance(lm, guidance)` as a neutral API
-    contract: call only at the start of a CSD, before generation helpers.
+    contract: call only at the start of a CSD, before generation helpers;
+    guidance may carry task-semantic meaning/numeric conventions the grammar
+    does not encode (no benchmark tips).
 - `rationale.py`
   - Utilities for extracting or normalizing rationale sections embedded in strategy text.
 

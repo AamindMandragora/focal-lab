@@ -136,7 +136,7 @@ var nextTemp := helpers.TemperatureConstrainedStep(lm, parser, prompt, currentCo
 var rolloutGen, rolloutSteps, rolloutEos := helpers.RolloutConstrainedWithPenalties(lm, parser, prompt, startPrefix, budget, penalties, penaltyAmount, eosToken);
 var freeGenerated := helpers.UnconstrainedGeneration(lm, prompt, maxSteps);
 var constrainedGenerated, terminatedByEos := helpers.ConstrainedGeneration(lm, parser, prompt, maxSteps, eosToken);
-var craneGenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, validTokenGroups, eosToken);
+var craneGenerated := helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken);
 var topTok := helpers.GetHighestLogitToken(lm);
 var logitOne := helpers.GetTokenLogit(lm, token);
 helpers.ScaleAllLogits(lm, scalar);
@@ -192,7 +192,13 @@ consume token budget by themselves.
 
 - `helpers.AppendTaskGuidance(lm, guidance)`
   Role: append a CSD-chosen guidance block to the evaluator's existing task
-  prompt before generation begins.
+  prompt before generation begins. The grammar and parser already constrain the
+  output spans and enforce the format contract at decode time, so restating
+  format, delimiters, or syntax repeats what the parser already guarantees and
+  changes nothing. Spend the guidance string only on task-semantic meaning the
+  constrained spans cannot encode: what a quantity denotes, its numeric
+  convention (for example whether it must be a whole count), or how named
+  quantities keep their algebraic roles across the problem.
   Mechanics: forwards `guidance` to the runtime LM wrapper. The evaluator keeps
   its normal prompt, examples, schema, question, and output contract; the
   guidance is appended as an extra block. Runtime semantics are append-only and
@@ -224,14 +230,13 @@ consume token budget by themselves.
   Cost: +`maxSteps`.
   Control profile: full free generation with no EOS special case.
 
-- `helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, validTokenGroups, eosToken)`
-  Role: CRANE GSM adaptive baseline (IterGen-unit): free text outside spans,
-  then forward(VARIABLE)/view/valid_vars/backward inside << >>.
-  Mechanics: unconstrained until a token contains "<<"; inside the span, loops
-  ForwardUntilSymbol(var) with membership check against validTokenGroups
-  and BackwardToSymbol on failure (max_iter=80, backwards_limit=20).
+- `helpers.CraneGeneration(lm, parser, prompt, maxSteps, minReasoningSteps, eosToken)`
+  Role: CRANE-style baseline generation with free text outside constrained spans
+  and parser-aware decoding inside observed spans.
+  Mechanics: emits free tokens until constrained-span state is reached, then
+  uses confidence-gated parser control inside that span.
   Cost: at most +`maxSteps`.
-  Control profile: free outer continuation plus IterGen-unit constrained loop.
+  Control profile: free outer continuation plus parser fallback inside spans.
 
 - `helpers.OpenConstrainedSpan(lm, generated)`
   Role: explicit transition from free generation into constrained generation.
@@ -249,21 +254,6 @@ consume token budget by themselves.
 
 ### Inside-span generation and state updates
 
-
-- `helpers.CarsTrieStep(lm, parser, prompt, cur, eosToken, constrainFirst)`
-  Mechanics: one CARS decode step — `GenerateLogits`, oracle-trie score adjustment, then unconstrained sampling. Returns `(next, ok)`; when `ok` is false, call `RejectLastInTrieHelper` and roll back the constrained suffix.
-- `helpers.RejectLastInTrieHelper(lm)`
-  Mechanics: host oracle-trie rejection and upward `log_theta` recompute. Cost 0.
-- `helpers.ForwardUntilSymbol(lm, parser, prompt, cur, eosToken, unit, num, budget)`
-  Mechanics: IterGen forward — opportunistic `ConfidenceGatedStep` until `num`
-  new completions of `unit` (empty unit = SQL table_ref+column_ref), then crop
-  to unit end. Cost: at most +`budget`.
-- `helpers.BackwardToSymbol(parser, cur, unit, num)`
-  Mechanics: truncate `cur` to the start of the `num`-th-from-last completed `unit`. Cost 0.
-- `helpers.ViewLastSymbol(parser, cur, unit)`
-  Mechanics: render text of the last completed `unit` (named SymbolPosMap unit). Cost 0.
-- `helpers.ApplyTraceRecurrenceHelper(lm, factor)`
-  Mechanics: multiply logits for trace-recorded sibling token ids by `factor` before the next choice. Cost 0.
 - `helpers.ConstrainedStep(lm, parser, prompt, currentConstrained, eosToken)`
   Role: one parser-valid token choice inside a constrained span.
   Mechanics: calls the LM, hard-masks to parser-valid next tokens plus EOS, and
@@ -272,7 +262,6 @@ consume token budget by themselves.
   Control profile: strongest token-level parser control.
 
 - `helpers.ConfidenceGatedStep(lm, parser, prompt, currentConstrained, eosToken)`
-  Role: CRANE opportunistic constrained step (mask when narrow, else sample).
   Role: one inside-span token choice for non-exact spans that uses hard parser
   control only when the LM's current top token would not preserve parser
   validity.
@@ -561,14 +550,9 @@ consume token budget by themselves.
   budget; grammar-driven boundary detection; caller-supplied allowed-unit set.
 
 - `helpers.RegenerateUnitOnGroundingFailure(lm, parser, prompt, currentConstrained, eosToken, maxStepsPerUnit, maxRetries, maxRollbackBudget)`
-  Role: same control loop as `RegenerateUnitOnCheckFailure`, except the per-unit
-  acceptance test is `lm.SpanGrounded(renderedUnit)` (see below) instead of
-  membership of the whole rendered unit in a caller-supplied set. It therefore
-  tests the identifier-like tokens WITHIN each completed unit, not the unit as a
-  whole, and needs no `allowedUnits` argument.
-  When to use: when outputs are grammar-valid but score incorrect because of
-  WHICH content tokens were chosen, and the acceptable content tokens are
-  determined by identifiers already present in the per-example prompt context.
+  Role: generate a constrained span unit-by-unit, rewinding and resampling any
+  completed unit whose identifier-like tokens are not grounded in the prompt
+  context.
   Mechanics: generates tokens via dead-end-avoiding steps; at each grammar-unit
   boundary (`parser.IsCompletePrefix` becomes true) it renders the new unit and
   calls `lm.SpanGrounded` on it. On a false result and with remaining budget it
@@ -579,8 +563,6 @@ consume token budget by themselves.
   Cost: bounded by `(maxRetries + 1) * maxStepsPerUnit` total steps.
   Control profile: unit-level rollback-and-resample with bounded retry and
   budget; grammar-driven boundary detection; prompt-grounded acceptance test.
-  Suggested starting values: `maxStepsPerUnit := 20`, `maxRetries := 3`,
-  `maxRollbackBudget := 10`.
 
 - `lm.SpanGrounded(text)` (predicate)
   Returns true iff every identifier-like token in `text` appears in the support
@@ -764,13 +746,23 @@ _HELPER_CALL_RE = re.compile(
 _HELPER_REF_RE = re.compile(
     r"\b(?:helpers|CSDHelpers)\.([A-Za-z_][A-Za-z0-9_]*)\b"
 )
-_MENU_PRUNED_HELPERS = frozenset({
-    "SoftConstrainedStep",
-    "SafeSoftConstrainedStep",
-    "DeadEndAvoidingStep",
-})
-
-_ALL_HELPER_NAMES = set(_HELPER_REF_RE.findall(TOOL_REFERENCE)) - _MENU_PRUNED_HELPERS
+_MENU_PRUNED_HELPERS = {
+    "RollbackToValidPrefix",
+    "RollbackToCompletePrefix",
+    "RollbackConstrainedSpan",
+    "RollbackAndRegenerate",
+    "RollbackAndContinue",
+    "SaveLogitsSnapshot",
+    "RestoreLogitsSnapshot",
+    "RolloutConstrainedWithPenalties",
+    "SpeculativeConstrainedRollout",
+    "RegenerateUnitOnCheckFailure",
+}
+_ALL_HELPER_NAMES = (
+    set(_HELPER_REF_RE.findall(TOOL_REFERENCE))
+    - _MENU_PRUNED_HELPERS
+    | {"GenerateWithManagedSpan", "GenerateWithPrefixAndManagedSpan", "ManagedStep"}
+)
 
 
 def _filter_code_fence_lines(text: str, allowed: set[str]) -> str:
@@ -844,9 +836,6 @@ def _filter_tool_api_reference(text: str, allowed: set[str]) -> str:
 def _filter_tool_reference(allowed_helpers: list[str]) -> str:
     """Render a reduced tool catalog for the currently allowed helper set."""
     allowed = set(allowed_helpers)
-    if _ALL_HELPER_NAMES and _ALL_HELPER_NAMES.issubset(allowed):
-        return TOOL_REFERENCE
-
     if "\n## Tool API Reference\n" not in TOOL_REFERENCE:
         return _filter_code_fence_lines(TOOL_REFERENCE, allowed)
 
@@ -2098,9 +2087,7 @@ _VERIFIED_EXAMPLE_PREFIXES = (
     "// Simple delimiter-triggered CSD.",
     "// Group-aware constrained CSD.",
     "// Adaptive-narrowness CSD.",
-    "// Grounded-unit constrained CSD.",
     "// Open-then-reliably-close CSD.",
-    "// Token-0 grounded constrained CSD.",
 )
 
 
@@ -2130,7 +2117,7 @@ Verification error:
 {error_message}
 ```
 {structured_feedback_block}{error_history_block}{behavioral_context_block}
-Diagnose the verification failure from the error and related locations, then revise the method body so it verifies.
+Revise the method body so it verifies.
 
 Dafny constraint reminder:
 - Methods cannot be called directly inside expression contexts.
@@ -2160,7 +2147,7 @@ Runtime error:
 {error_traceback}
 ```
 
-Diagnose the runtime failure from the traceback, then fix it. If needed, rewrite the method body instead of making only local edits.
+Fix the runtime error. If needed, rewrite the method body instead of making only local edits.
 Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
 Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
@@ -2181,7 +2168,7 @@ Compilation error:
 {error_message}
 ```
 
-Diagnose the compilation failure from the error message, then fix it. If needed, rewrite the method body instead of making only local edits.
+Fix the compilation error. If needed, rewrite the method body instead of making only local edits.
 Return exactly the corrected method body: rationale block, proof sketch block, then body statements.
 Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
@@ -2212,7 +2199,7 @@ Task:
 {task_description}
 {allowed_helpers_block}{tool_reference_block}
 
-## Verified Dafny patterns (reference only)
+## Verified Dafny patterns (proof-style reference only)
 
 {verified_examples}
 
@@ -2234,14 +2221,16 @@ Evaluation feedback:
 {attempt_outcome_ledger_block}{mode_examples_block}{best_so_far_block}
 ## How to revise
 
-1. Diagnose: read Accuracy Definition, the accuracy/syntax gaps, Primary Failure Modes, and the concrete rollout evidence.
-2. Name the dominant failure mode from feedback (one sentence).
-3. Fix that mode: change the helper / control-flow / stop / budget mechanism that produces it — match change size to the diagnosis (tweak, helper swap, or structural rewrite).
-4. If syntax is near goal but accuracy is not, treat this as a graded-content problem under the Accuracy Definition (selection, completion, diversity/novelty of counted outputs) — not as a reason to add visible delimiters unless feedback says delimiters are required and missing.
-5. If this task requires visible delimiter spans (see feedback): treat syntax failures as structural; prefer parser-controlled token generation and immediate span closure; do not put reasoning inside a visible span; reserve visible spans for the final exact content only; keep exact content under hard parser control (no `ConfidenceGatedStep` fallback) until the parser can close cleanly.
+Choose the change size that matches your diagnosis. Numeric tweaks, helper swaps, and structural rewrites are all on the table — pick whatever the failure pattern most directly calls for.
+If the task contract includes exact content or visible delimiter spans, treat syntax failures as structural: prefer parser-controlled token generation and immediate span closure over longer unconstrained chunks.
+When a visible span is left unterminated or malformed, repair the active constrained state so the span returns to a point the parser can close cleanly, and emit the closing delimiter as soon as it can — before the step budget runs out.
+If the output uses visible spans, avoid opening them until the content is settled; once open, keep them to the smallest exact unit the contract allows.
+Do not place reasoning text inside a visible span; reserve visible spans for the final exact content only.
+When a visible span contains exact content, use parser-guided token selection and keep the span content to a single finished expression rather than a loose sequence of partial fragments.
+If a visible span is exact, keep it under hard parser control until the parser
+can close it cleanly, without falling back to `ConfidenceGatedStep`.
 
-Return exactly the corrected Dafny method body: rationale block, then body statements.
-Do not include a proof sketch block on this evaluation-driven revise (Dafny still checks the real invariants at verify time).
+Return exactly the corrected Dafny method body: rationale block, proof sketch block, then body statements.
 Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
 """
 
@@ -2262,7 +2251,7 @@ def _build_allowed_helpers_block(allowed_helpers: list[str] | None) -> str:
 def _build_tool_reference_block(allowed_helpers: list[str] | None) -> str:
     """Build the helper/API reference the model sees for this attempt."""
     if not allowed_helpers:
-        return TOOL_REFERENCE + "\n\n"
+        return _filter_tool_reference(sorted(_ALL_HELPER_NAMES)) + "\n\n"
     return _filter_tool_reference(allowed_helpers) + "\n\n"
 
 
@@ -2451,31 +2440,6 @@ def _build_eval_budget_block(eval_max_seconds_per_example: float | None) -> str:
     )
 
 
-
-
-def _system_prompt_for_eval_refine() -> str:
-    """System prompt for eval-driven revises: no proof-sketch requirement."""
-    text = SYSTEM_PROMPT
-    marker = "## Proof sketch discipline"
-    if marker in text:
-        text = text[: text.index(marker)].rstrip() + "\n"
-    lines = []
-    skip_next_fence = False
-    for line in text.splitlines():
-        if "Immediately after the rationale, emit a proof sketch block" in line:
-            lines.append(
-                "- Proof sketch blocks are optional on evaluation-driven revises; omit them."
-            )
-            skip_next_fence = True
-            continue
-        if skip_next_fence and "CSD_PROOF_SKETCH" in line:
-            skip_next_fence = False
-            continue
-        skip_next_fence = False
-        lines.append(line)
-    return "\n".join(lines) + "\n"
-
-
 def build_evaluation_failure_prompt(
     task_description: str,
     previous_strategy: str,
@@ -2532,4 +2496,4 @@ def build_evaluation_failure_prompt(
         best_so_far_block=best_so_far_block,
         eval_budget_block=_build_eval_budget_block(eval_max_seconds_per_example),
     )
-    return _system_prompt_for_eval_refine(), user_prompt
+    return SYSTEM_PROMPT, user_prompt

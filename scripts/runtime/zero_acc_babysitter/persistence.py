@@ -115,6 +115,16 @@ class IncidentStore:
             return None
         return CellRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
+    def has_closed_incident(
+        self, cell_id: str, attempt_index: int, path_kind: PathKind
+    ) -> bool:
+        prefix = f"{cell_id}:{attempt_index}:{path_kind.value}:".replace("/", "_")
+        for path in self.incidents_dir.glob(f"{prefix}*.json"):
+            record = IncidentRecord.from_dict(json.loads(path.read_text(encoding="utf-8")))
+            if record.closed:
+                return True
+        return False
+
     def list_open_incidents(self) -> list[IncidentRecord]:
         out: list[IncidentRecord] = []
         for path in self.incidents_dir.glob("*.json"):
