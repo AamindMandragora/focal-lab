@@ -30,23 +30,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-try:
-    from synthesis.prompt_rendering import render as _render_prompt
-    from synthesis.prompt_rendering.models.verify import (
-        DiagnosticEntry,
-        ErrorEntry,
-        StructuredFeedbackModel,
-        VerificationErrorSummaryModel,
-    )
-except ImportError:
-    from prompt_rendering import render as _render_prompt
-    from prompt_rendering.models.verify import (
-        DiagnosticEntry,
-        ErrorEntry,
-        StructuredFeedbackModel,
-        VerificationErrorSummaryModel,
-    )
-
 
 def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
     """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
@@ -212,55 +195,40 @@ class VerificationResult:
         if not self.errors:
             return self.raw_stderr or "Unknown verification failure"
 
-        model = VerificationErrorSummaryModel(
-            error_count=len(self.errors),
-            errors=[ErrorEntry(line=err.line, message=err.message) for err in self.errors],
-        )
-        rendered = _render_prompt(model, "verify/verification_error_summary.j2")
-        # Same trailing-newline idiom as CompilationResult.get_error_summary /
-        # EvaluationResult.get_feedback_summary.
-        if rendered.endswith("\n"):
-            rendered = rendered[:-1]
-        return rendered
+        lines = [f"Verification failed with {len(self.errors)} error(s):"]
+        for err in self.errors:
+            lines.append(f"  - Line {err.line}: {err.message}")
+        return "\n".join(lines)
 
     def get_structured_feedback(self) -> str:
         """Return a compact structured verifier summary for refinement prompts."""
         if self.success or not self.diagnostics:
             return ""
 
-        diagnostic_entries = []
+        lines = ["Structured verification analysis:"]
         for idx, diagnostic in enumerate(self.diagnostics, start=1):
-            related_display = None
+            location = f"{Path(diagnostic.file).name}:{diagnostic.line}"
+            lines.append(f"{idx}. {diagnostic.obligation_kind.title()} failure at {location}")
+            lines.append(f"   Message: {diagnostic.message}")
+            if diagnostic.call_name:
+                lines.append(f"   Related call: {diagnostic.call_name}(...)")
+            if diagnostic.failing_text:
+                lines.append(f"   Failing code: {diagnostic.failing_text}")
             if diagnostic.related_file and diagnostic.related_line:
                 related_location = f"{Path(diagnostic.related_file).name}:{diagnostic.related_line}"
                 related_message = diagnostic.related_message or "Related contract location from Dafny"
-                related_display = f"{related_location} ({related_message})"
+                lines.append(f"   Related contract: {related_location} ({related_message})")
+            if diagnostic.source_excerpt:
+                lines.append("   Local code excerpt:")
+                lines.extend(f"     {line}" for line in diagnostic.source_excerpt.splitlines())
+            if diagnostic.contract_excerpt:
+                lines.append("   Relevant contract excerpt:")
+                lines.extend(f"     {line}" for line in diagnostic.contract_excerpt.splitlines())
             remediation = _remediation_for(diagnostic)
-            diagnostic_entries.append(
-                DiagnosticEntry(
-                    index=idx,
-                    location=f"{Path(diagnostic.file).name}:{diagnostic.line}",
-                    obligation_kind_title=diagnostic.obligation_kind.title(),
-                    message=diagnostic.message,
-                    call_name=diagnostic.call_name or None,
-                    failing_text=diagnostic.failing_text or None,
-                    related_display=related_display,
-                    source_excerpt_lines=(
-                        diagnostic.source_excerpt.splitlines() if diagnostic.source_excerpt else []
-                    ),
-                    contract_excerpt_lines=(
-                        diagnostic.contract_excerpt.splitlines() if diagnostic.contract_excerpt else []
-                    ),
-                    remediation=remediation or None,
-                )
-            )
+            if remediation:
+                lines.append(f"   {remediation}")
 
-        model = StructuredFeedbackModel(diagnostics=diagnostic_entries)
-        rendered = _render_prompt(model, "verify/structured_feedback.j2")
-        # Same trailing-newline idiom as the other two builders.
-        if rendered.endswith("\n"):
-            rendered = rendered[:-1]
-        return rendered
+        return "\n".join(lines)
 
 
 class DafnyVerifier:

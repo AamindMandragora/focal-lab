@@ -1,16 +1,17 @@
-"""Repair-agent hooks: Cursor CLI (local headless) or local fake.
+"""Repair-agent hooks: Claude Code CLI (local headless) or local fake.
 
 Callers: orchestrator BabysitterHooks.run_cloud_debug; focal mock suite.
 API: RepairAgentClient protocol; NullCloudClient for local sim;
-      CursorCliClient for headless `agent -p --force` on a git checkout.
-Docs (checked 2026-07-24): https://cursor.com/docs/cli/headless
-  https://cursor.com/docs/cli/reference/parameters
-  https://cursor.com/docs/cli/reference/authentication
-User instruction: babysitter Cursor CLI instead of Cloud Agents API.
+      ClaudeCodeCliClient for headless `claude -p` on a git checkout.
+Docs (checked 2026-07-24): https://code.claude.com/docs/en/headless
+  https://code.claude.com/docs/en/cli-reference
+  https://code.claude.com/docs/en/model-config (claude-fable-5)
+User instruction: babysitter must use Claude Code CLI + Fable 5 (not Cursor).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -23,9 +24,8 @@ from scripts.runtime.zero_acc_babysitter.persistence import IncidentRecord
 
 LogEmit = Callable[[str, str, str], None]
 
-# Verified 2026-07-24 via `agent --list-models` after login (CLI slug, not Task-tool-only).
-# Docs: https://cursor.com/docs/cli/reference/parameters (`--model`)
-DEFAULT_CURSOR_AGENT_MODEL = "cursor-grok-4.5-high"
+# Anthropic / Claude Code model id for Fable 5 (docs 2026-07-24).
+DEFAULT_CLAUDE_CODE_MODEL = "claude-fable-5"
 
 
 class RepairAgentClient(Protocol):
@@ -52,13 +52,29 @@ def _safe_branch_slug(incident_id: str) -> str:
     return slug[:120] or "incident"
 
 
-def probe_cursor_cli(*, agent_bin: str | None = None) -> tuple[bool, str]:
+def _oauth_preferred_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    """Env for Claude Code Max/OAuth: strip API-key vars so subscription wins.
+
+    Docs (https://code.claude.com/docs/en/authentication): when
+    ``ANTHROPIC_API_KEY`` / ``ANTHROPIC_AUTH_TOKEN`` are set they outrank
+    subscription OAuth from ``claude auth login`` / ``/login``. Unset them so
+    Max OAuth credentials are used. Keep ``CLAUDE_CODE_OAUTH_TOKEN`` if set
+    (setup-token path).
+    """
+    env = dict(base if base is not None else os.environ)
+    for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"):
+        env.pop(key, None)
+    return env
+
+
+def probe_claude_code_cli(*, agent_bin: str | None = None) -> tuple[bool, str]:
     """Return (ready_for_autonomous_repair, note).
 
-    Ready means: agent binary exists AND (CURSOR_API_KEY / CURSOR_AUTH_TOKEN
-    set OR `agent status` reports logged in). Does not call Cloud Agents API.
+    Ready means: ``claude`` binary exists AND ``claude auth status`` reports
+    loggedIn under an OAuth-preferred env (API key stripped). Babysitter repair
+    uses Claude Max subscription OAuth, not API-key credits.
     """
-    bin_name = agent_bin or os.environ.get("CURSOR_AGENT_BIN", "agent")
+    bin_name = agent_bin or os.environ.get("CLAUDE_CODE_BIN", "claude")
     resolved = None
     if os.sep in bin_name or bin_name.startswith("."):
         if Path(bin_name).is_file():
@@ -66,7 +82,7 @@ def probe_cursor_cli(*, agent_bin: str | None = None) -> tuple[bool, str]:
     else:
         resolved = shutil.which(bin_name)
     if not resolved:
-        return False, f"agent binary missing ({bin_name!r} not on PATH / not a file)"
+        return False, f"claude binary missing ({bin_name!r} not on PATH / not a file)"
 
     version = "unknown"
     try:
@@ -80,64 +96,90 @@ def probe_cursor_cli(*, agent_bin: str | None = None) -> tuple[bool, str]:
         raw = (ver.stdout or ver.stderr or "").strip()
         version = raw.splitlines()[0] if raw else "unknown"
     except Exception as exc:  # noqa: BLE001
-        return False, f"agent --version failed: {type(exc).__name__}: {exc}"
+        return False, f"claude --version failed: {type(exc).__name__}: {exc}"
 
-    key = os.environ.get("CURSOR_API_KEY", "").strip()
-    auth_token = os.environ.get("CURSOR_AUTH_TOKEN", "").strip()
-    if key:
-        return True, f"agent={resolved} version={version}; CURSOR_API_KEY set"
-    if auth_token:
-        return True, f"agent={resolved} version={version}; CURSOR_AUTH_TOKEN set"
-
+    oauth_env = _oauth_preferred_env()
     try:
         status = subprocess.run(
-            [resolved, "status"],
+            [resolved, "auth", "status"],
             capture_output=True,
             text=True,
             timeout=30,
             check=False,
-            env={**os.environ},
+            env=oauth_env,
         )
     except Exception as exc:  # noqa: BLE001
         return False, (
-            f"agent={resolved} version={version}; status failed: "
-            f"{type(exc).__name__}: {exc}; set CURSOR_API_KEY / CURSOR_AUTH_TOKEN "
-            "or run agent login"
+            f"claude={resolved} version={version}; auth status failed: "
+            f"{type(exc).__name__}: {exc}; run `claude auth login --claudeai`"
         )
 
     text = ((status.stdout or "") + (status.stderr or "")).strip()
-    lower = text.lower()
-    if status.returncode == 0 and "not logged in" not in lower and text:
-        return True, f"agent={resolved} version={version}; status_ok={text[:200]!r}"
+    logged_in = False
+    try:
+        payload = json.loads(text)
+        logged_in = bool(payload.get("loggedIn"))
+    except json.JSONDecodeError:
+        logged_in = (
+            status.returncode == 0
+            and "logged" in text.lower()
+            and "not logged" not in text.lower()
+        )
+
+    if logged_in:
+        return True, f"claude={resolved} version={version}; oauth_auth_ok={text[:200]!r}"
     return False, (
-        f"agent={resolved} version={version}; not authenticated "
-        f"(status={text[:200]!r}). Set CURSOR_API_KEY / CURSOR_AUTH_TOKEN "
-        "or run `agent login`. "
-        "CLI does not use OPENAI_API_KEY/ANTHROPIC_API_KEY directly."
+        f"claude={resolved} version={version}; not authenticated for Max OAuth "
+        f"(status={text[:200]!r}). Run `claude auth login --claudeai` "
+        f"(API key is intentionally ignored for babysitter)."
     )
 
 
 @dataclass
-class CursorCliClient:
-    """Headless Cursor Agent CLI repair against a local git workspace.
+class ClaudeCodeCliClient:
+    """Headless Claude Code CLI repair against a local git workspace.
 
-    Docs-backed flags: ``agent -p/--print --force/--yolo --trust --workspace``
-    plus ``--model`` (default Cursor Grok 4.5). Auth: ``CURSOR_API_KEY``,
-    ``CURSOR_AUTH_TOKEN``, or prior ``agent login``.
-    This is NOT the Cloud Agents API; it runs on the host that invokes it.
+    Docs-backed flags: ``claude -p/--print --model claude-fable-5 --effort medium``
+    with ``--dangerously-skip-permissions`` for unattended edits.
+    Uses ``cwd=workspace`` (Claude has no ``--workspace`` flag).
+
+    Auth: prefer Claude Max subscription OAuth (``claude auth login --claudeai``).
+    Subprocess env strips ``ANTHROPIC_API_KEY`` / ``ANTHROPIC_AUTH_TOKEN`` so
+    API-key credits do not outrank Max OAuth (docs auth precedence). Default
+    is not ``--bare`` (bare is API-key oriented and skips OAuth token paths).
+
+    Production callers must set ``workspace`` to a sibling repair worktree,
+    not the live cold-queue checkout.
     """
 
     workspace: Path
-    agent_bin: str = field(default_factory=lambda: os.environ.get("CURSOR_AGENT_BIN", "agent"))
+    agent_bin: str = field(default_factory=lambda: os.environ.get("CLAUDE_CODE_BIN", "claude"))
     model: str | None = field(
-        default_factory=lambda: os.environ.get("CURSOR_AGENT_MODEL") or DEFAULT_CURSOR_AGENT_MODEL
+        default_factory=lambda: os.environ.get("CLAUDE_CODE_MODEL")
+        or os.environ.get("ANTHROPIC_MODEL")
+        or DEFAULT_CLAUDE_CODE_MODEL
+    )
+    effort: str = field(
+        default_factory=lambda: os.environ.get("CLAUDE_CODE_EFFORT", "medium")
     )
     timeout_sec: int = 1800
     create_pr: bool = True
     push: bool = True
     remote: str = "origin"
     base_ref: str = "HEAD"
-    sandbox: str = "disabled"
+    pr_base: str = field(
+        default_factory=lambda: os.environ.get(
+            "BABYSITTER_PR_BASE", "synthesis-snapshot-20260622"
+        )
+    )
+    permission_mode: str = field(
+        default_factory=lambda: os.environ.get(
+            "CLAUDE_CODE_PERMISSION_MODE", "bypassPermissions"
+        )
+    )
+    # None => False (OAuth Max default). Set True only for explicit API-key runs.
+    use_bare: bool | None = None
+    prefer_oauth: bool = True  # strip API key env for claude subprocess
     log_emit: LogEmit | None = None
     prompt_extra: str = ""
 
@@ -147,7 +189,7 @@ class CursorCliClient:
 
     def _build_prompt(self, incident: IncidentRecord) -> str:
         parts = [
-            "You are the zero-acc babysitter repair agent running in Cursor CLI headless mode.",
+            "You are the zero-acc babysitter repair agent running in Claude Code CLI headless mode.",
             "Debug and fix the failure for this incident. Prefer minimal, targeted edits.",
             f"incident_id={incident.incident_id}",
             f"cell_id={incident.cell_id}",
@@ -181,21 +223,37 @@ class CursorCliClient:
             )
         return branch
 
+    def _want_bare(self) -> bool:
+        if self.use_bare is not None:
+            return self.use_bare
+        # OAuth Max is default: do not auto-enable --bare from ANTHROPIC_API_KEY.
+        return False
+
+    def _claude_env(self) -> dict[str, str]:
+        if self.prefer_oauth:
+            return _oauth_preferred_env()
+        return dict(os.environ)
+
     def _agent_cmd(self, prompt: str) -> list[str]:
-        cmd = [
-            self.agent_bin,
-            "-p",
-            "--force",
-            "--trust",
-            "--sandbox",
-            self.sandbox,
-            "--workspace",
-            str(self.workspace),
-            "--output-format",
-            "text",
-        ]
+        cmd = [self.agent_bin]
+        if self._want_bare():
+            cmd.append("--bare")
+        cmd.extend(
+            [
+                "-p",
+                "--output-format",
+                "text",
+                "--no-session-persistence",
+                "--dangerously-skip-permissions",
+            ]
+        )
+        # permission-mode is redundant with dangerously-skip but kept configurable
+        if self.permission_mode and self.permission_mode != "bypassPermissions":
+            cmd.extend(["--permission-mode", self.permission_mode])
         if self.model:
             cmd.extend(["--model", self.model])
+        if self.effort:
+            cmd.extend(["--effort", self.effort])
         cmd.append(prompt)
         return cmd
 
@@ -208,7 +266,7 @@ class CursorCliClient:
         add = self._run_git("add", "-A")
         if add.returncode != 0:
             raise RuntimeError(f"git add failed: {(add.stderr or add.stdout)!r}")
-        msg = f"babysitter CLI repair {incident.incident_id}"
+        msg = f"babysitter Claude Code repair {incident.incident_id}"
         commit = self._run_git("commit", "-m", msg)
         if commit.returncode != 0:
             raise RuntimeError(f"git commit failed: {(commit.stderr or commit.stdout)!r}")
@@ -228,16 +286,19 @@ class CursorCliClient:
             return f"branch:{branch}"
         title = f"babysitter fix: {incident.cell_id} ({incident.path_kind})"
         body = (
-            f"Autonomous Cursor CLI repair for incident `{incident.incident_id}`.\n\n"
+            f"Autonomous Claude Code CLI repair for incident `{incident.incident_id}`.\n\n"
             f"- cell: `{incident.cell_id}`\n"
             f"- path_kind: `{incident.path_kind}`\n"
             f"- broken_sha: `{incident.broken_sha}`\n"
+            f"- model: `{self.model}`\n"
         )
         pr = subprocess.run(
             [
                 "gh",
                 "pr",
                 "create",
+                "--base",
+                self.pr_base,
                 "--title",
                 title,
                 "--body",
@@ -272,12 +333,13 @@ class CursorCliClient:
         self._emit(
             incident,
             "CLI_AGENT_START",
-            f"branch={branch} bin={self.agent_bin} model={self.model} attempt={incident.cloud_attempt_count}",
+            f"branch={branch} bin={self.agent_bin} model={self.model} "
+            f"bare={self._want_bare()} attempt={incident.cloud_attempt_count}",
         )
         self._emit(
             incident,
             "CLOUD_AGENT_START",
-            f"via=cursor_cli branch={branch}",
+            f"via=claude_code branch={branch} model={self.model}",
         )
 
         try:
@@ -288,7 +350,7 @@ class CursorCliClient:
                 text=True,
                 timeout=self.timeout_sec,
                 check=False,
-                env={**os.environ},
+                env=self._claude_env(),
             )
         except subprocess.TimeoutExpired as exc:
             self._emit(incident, "CLI_AGENT_FAIL", f"timeout={self.timeout_sec}")
@@ -300,7 +362,7 @@ class CursorCliClient:
             self._emit(incident, "CLI_AGENT_FAIL", f"rc={proc.returncode} err={detail!r}")
             self._emit(incident, "CLOUD_AGENT_FAIL", f"rc={proc.returncode}")
             raise RuntimeError(
-                f"CLI_AGENT_FAIL: agent exited {proc.returncode}: {detail!r}"
+                f"CLI_AGENT_FAIL: claude exited {proc.returncode}: {detail!r}"
             )
 
         dirty = self._commit_if_dirty(incident)
@@ -314,3 +376,17 @@ class CursorCliClient:
         if not dirty and not self.push:
             return f"branch:{branch}"
         return self._push_and_pr(branch, incident)
+
+
+# Removed Cursor path — keep name only as explicit error if old imports linger.
+def probe_cursor_cli(*_a, **_k):  # noqa: ANN001
+    raise RuntimeError(
+        "Cursor CLI repair is removed; use probe_claude_code_cli / ClaudeCodeCliClient"
+    )
+
+
+class CursorCliClient:  # pragma: no cover — hard fail on legacy use
+    def __init__(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        raise RuntimeError(
+            "CursorCliClient removed; use ClaudeCodeCliClient (model claude-fable-5)"
+        )

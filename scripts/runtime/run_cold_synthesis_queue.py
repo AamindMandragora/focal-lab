@@ -346,12 +346,24 @@ def choose_gpu_bundle(
     baseline_snapshots: dict[int, dict[str, int]],
 ) -> tuple[int, ...] | None:
     """Return the least-used disjoint physical GPU bundle that fits one cell."""
+    # Callers: cold-queue controller dispatch loop in this module (~L1100+).
+    # Existing file; purpose unchanged. No data-file schema change.
+    # User: "what's causing this error on focal for data collection rn? pls fix"
     candidates: list[tuple[int, int]] = []
     for gpu, snapshot in snapshots.items():
         required = synthesis_required_memory_mib(job, snapshot["total_mib"])
         reserved = sum(reservations.get(gpu, {}).values())
         baseline_used = baseline_snapshots.get(gpu, snapshot)["used_mib"]
         projected_used = max(snapshot["used_mib"], baseline_used + reserved)
+        # Match vLLM: free must be >= util * total (see EngineCore request_memory).
+        free_mib = int(
+            snapshot.get("free_mib", snapshot["total_mib"] - snapshot["used_mib"])
+        )
+        projected_free = snapshot["total_mib"] - projected_used
+        if free_mib < required + GPU_SAFETY_MIB:
+            continue
+        if projected_free < required + GPU_SAFETY_MIB:
+            continue
         if projected_used + required <= snapshot["total_mib"] - GPU_SAFETY_MIB:
             candidates.append((projected_used, gpu))
     needed = required_gpu_count(job)
@@ -1038,7 +1050,12 @@ def dispatch(jobs, *, snapshot, worker, poll_seconds: float) -> None:
                 if status not in {0, TERMINAL_SYNTHESIS_FAILURE}:
                     failures.append((cell, status))
             if pending and not running and not finished:
-                raise ConfigError("no queued cold job fits available GPU memory")
+                # Temporary contention (other users / Phase1 / twins) should wait,
+                # not abort the whole campaign. free_mib gate makes this common.
+                logger.warning(
+                    "[coldq] no queued cold job fits available GPU memory; waiting %.0fs",
+                    poll_seconds,
+                )
             if pending or running:
                 time.sleep(max(0.0, poll_seconds))
     if failures:

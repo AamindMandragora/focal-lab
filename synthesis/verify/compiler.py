@@ -33,19 +33,6 @@ from pathlib import Path
 import secrets
 from typing import Optional
 
-try:
-    from synthesis.prompt_rendering import render as _render_prompt
-    from synthesis.prompt_rendering.models.verify import (
-        CompilationErrorSummaryModel,
-        ErrorEntry,
-    )
-except ImportError:
-    from prompt_rendering import render as _render_prompt
-    from prompt_rendering.models.verify import (
-        CompilationErrorSummaryModel,
-        ErrorEntry,
-    )
-
 
 def _resolve_verified_agent_synthesis_path(default_proofs_dir: Path) -> Path:
     """Resolve VerifiedAgentSynthesis.dfy with env-based override support."""
@@ -87,23 +74,14 @@ class CompilationResult:
         """Get a human-readable summary of errors."""
         if self.success:
             return f"Compilation successful. Output: {self.output_dir}"
-
+        
         if not self.errors:
             return self.raw_output or self.raw_stderr
-
-        model = CompilationErrorSummaryModel(
-            error_count=len(self.errors),
-            errors=[ErrorEntry(line=err.line, message=err.message) for err in self.errors],
-        )
-        rendered = _render_prompt(model, "verify/compilation_error_summary.j2")
-        # The original implementation joined its lines with "\n" and never
-        # added a trailing newline; keep_trailing_newline on the shared Jinja
-        # environment means the template's own final line terminator survives
-        # rendering, so strip exactly that one trailing newline back off (same
-        # idiom as EvaluationResult.get_feedback_summary).
-        if rendered.endswith("\n"):
-            rendered = rendered[:-1]
-        return rendered
+        
+        lines = [f"Compilation failed with {len(self.errors)} error(s):"]
+        for err in self.errors:
+            lines.append(f"  - Line {err.line}: {err.message}")
+        return "\n".join(lines)
 
 
 class DafnyCompiler:

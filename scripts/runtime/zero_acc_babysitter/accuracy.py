@@ -28,12 +28,37 @@ def attempt_block(text: str, attempt_index: int) -> str | None:
     return None
 
 
+def _strip_claude_stream_noise(block: str) -> str:
+    """Drop [claude-stream] lines and their indented continuations (B12).
+
+    Blank lines end the continuation so a later real indented
+    ``Accuracy:`` line is not swallowed.
+    """
+    out: list[str] = []
+    skipping_stream = False
+    for line in block.splitlines(keepends=True):
+        if line.startswith("[claude-stream]"):
+            skipping_stream = True
+            continue
+        if skipping_stream:
+            if not line.strip():
+                skipping_stream = False
+                out.append(line)
+                continue
+            if line[:1] in (" ", "	"):
+                continue
+            skipping_stream = False
+        out.append(line)
+    return "".join(out)
+
+
 def parse_accuracy_in_block(block: str) -> float | None:
     """Return the eval Accuracy percent, ignoring Required-thresholds lines."""
+    cleaned = _strip_claude_stream_noise(block)
     cleaned = re.sub(
         r"Required thresholds:.*?(?=\n\S|\Z)",
         "",
-        block,
+        cleaned,
         flags=re.S,
     )
     matches = list(ACCURACY_LINE_RE.finditer(cleaned))

@@ -19,8 +19,6 @@ except Exception:  # pragma: no cover - depends on host environment
     AllChem = None  # type: ignore
 
 EOS_MARKERS = ("<|im_end|>", "<|eot_id|>", "<|endoftext|>")
-# Text-motif fallback, used only when RDKit is unavailable. The primary check is
-# the structure-based SMARTS match below (CLASS_SMARTS), which is what CARS uses.
 CLASS_MOTIFS: dict[str, tuple[str, ...]] = {
     "acrylates": (
         "C=CC(=O)O",
@@ -34,15 +32,6 @@ CLASS_MOTIFS: dict[str, tuple[str, ...]] = {
     ),
     "chain_extenders": ("OC", "CO", "N"),
     "isocyanates": ("N=C=O", "O=C=N"),
-}
-# Structure-based membership patterns, ported verbatim from CARS
-# legacy/cars/experiments/smiles/evaluate_molecules.py::eval_membership so both
-# sides of the comparison classify molecules identically regardless of how the
-# SMILES string happens to be written.
-CLASS_SMARTS: dict[str, tuple[str, ...]] = {
-    "acrylates": ("C=CC(=O)O*",),
-    "chain_extenders": ("CO", "OC", "N"),
-    "isocyanates": ("[*]N=C=O",),
 }
 
 
@@ -98,35 +87,11 @@ def rdkit_valid(smiles: str) -> bool | None:
         return False
 
 
-@lru_cache(maxsize=None)
-def _compiled_class_smarts(class_name: str) -> tuple[Any, ...]:
-    if Chem is None:
-        return ()
-    patterns = CLASS_SMARTS.get(class_name, ())
-    compiled = tuple(Chem.MolFromSmarts(p) for p in patterns)
-    return tuple(p for p in compiled if p is not None)
-
-
 def target_class_membership(class_name: str, smiles: str) -> bool:
-    if not smiles:
+    motifs = CLASS_MOTIFS.get(class_name)
+    if not motifs or not smiles:
         return False
-    if Chem is None:
-        # RDKit unavailable: fall back to the legacy literal-motif check so the
-        # metric stays measurable (weaker: sensitive to SMILES token order).
-        motifs = CLASS_MOTIFS.get(class_name)
-        if not motifs:
-            return False
-        return any(motif in smiles for motif in motifs)
-    patterns = _compiled_class_smarts(class_name)
-    if not patterns:
-        return False
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-    except Exception:
-        return False
-    if mol is None:
-        return False
-    return any(mol.HasSubstructMatch(p) for p in patterns)
+    return any(motif in smiles for motif in motifs)
 
 
 def is_prompt_exemplar(smiles: str, prompt_exemplars: Sequence[str]) -> bool:
@@ -153,6 +118,49 @@ def evaluate_smiles_output(
     exemplar = is_prompt_exemplar(smiles, prompt_exemplars)
     unique_valid_candidate = bool(smiles and syntax_ok and membership_ok and not exemplar)
     valid_class_membership = bool(syntax_ok and membership_ok)
+    # region agent log
+    try:
+        import json as _json
+        import time as _time
+        import os as _os
+        _cap_path = "/tmp/debug-d7d0bd-smiles-cap.count"
+        _n = 0
+        if _os.path.exists(_cap_path):
+            try:
+                _n = int(open(_cap_path).read().strip() or "0")
+            except Exception:
+                _n = 0
+        if _n < 5:
+            _motifs = CLASS_MOTIFS.get(class_name)
+            open("/tmp/debug-d7d0bd-focal.ndjson", "a").write(
+                _json.dumps(
+                    {
+                        "sessionId": "d7d0bd",
+                        "runId": "pre-fix",
+                        "hypothesisId": "D" if not _motifs else "C",
+                        "location": "metrics.py:evaluate_smiles_output",
+                        "message": "smiles evaluate_smiles_output",
+                        "data": {
+                            "class_name": class_name,
+                            "class_in_motifs": class_name in CLASS_MOTIFS,
+                            "motifs_empty": not bool(_motifs),
+                            "cleaned_smiles": smiles,
+                            "cleaned_len": len(smiles or ""),
+                            "grammar_ok": bool(grammar_ok),
+                            "rdkit_ok": rdkit_ok,
+                            "membership_ok": bool(membership_ok),
+                            "syntax_ok": bool(syntax_ok),
+                        },
+                        "timestamp": int(_time.time() * 1000),
+                    },
+                    default=str,
+                )
+                + "\n"
+            )
+            open(_cap_path, "w").write(str(_n + 1))
+    except Exception:
+        pass
+    # endregion
     return {
         "smiles": smiles,
         "grammar_valid": grammar_ok,

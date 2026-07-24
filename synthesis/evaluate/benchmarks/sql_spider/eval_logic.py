@@ -7,7 +7,6 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_sql_scored_output
-from synthesis.evaluate.benchmarks.prompt_profiles import render_strategy_prompt
 from synthesis.evaluate.benchmarks.sql_spider.prompts import (
     format_spider_itergen_aligned_prompt,
     format_spider_messages,
@@ -91,7 +90,12 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     # making the bare prompt safe (the recorded zero-shot collapse above was a
     # REACTIVE <<>> strategy, which no longer applies). SPIDER_ALIGNED_PROMPT=1
     # forces the aligned prompt even under the legacy <<>> opt-out path.
+    # SPIDER_PARITY_LEGACY_PROMPT=1: match run_itergen_legacy_adapter's
+    # expression_only few-shot prompt (used to freeze spider_legacy_n5).
     import os
+
+    if os.environ.get("SPIDER_PARITY_LEGACY_PROMPT") == "1":
+        return format_prompt_expression_only(evaluator, example)
 
     if _token0_enabled() or os.environ.get("SPIDER_ALIGNED_PROMPT") == "1":
         return format_spider_itergen_aligned_prompt(example)
@@ -113,22 +117,33 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """GCD and IterGen use the exact direct IterGen prompt from SQL YAML."""
-    return render_strategy_prompt("spider", "itergen", example)
+    """Hard-mask / constrained decoders: emit only ``SQL: <<query>>``."""
+    return format_spider_prompt(
+        example,
+        instruction=(
+            "Write ONE SQL query using ONLY tables and columns shown in the schema.\n\n"
+            "Return exactly one line: `SQL: <<YOUR QUERY>>`."
+        ),
+        few_shot_answer_line="SQL: <<SELECT count(*) FROM singer>>",
+    )
 
 
-def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """CRANE uses the CoT version of the same IterGen SQL prompt."""
-    return render_strategy_prompt("spider", "crane", example)
-
-
-def format_prompt_for_strategy(
-    evaluator: Any,
-    example: dict[str, Any],
-    strategy: str,
-) -> str:
-    """Render GCD, IterGen, or CRANE from the shared SQL YAML file."""
-    return render_strategy_prompt("spider", strategy, example)
+def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> list[dict]:
+    """Legacy CRANE-style runs: require explicit reasoning before the delimited query."""
+    return format_spider_messages(
+        example,
+        instruction=(
+            "Write a SINGLE SQL query answering the question, using ONLY the tables "
+            "and columns in the schema.\n\n"
+            "Reason step by step (tables, joins, filters). "
+            "Then output SQL: followed by your query wrapped in << >>. "
+            "Stop after the closing >>."
+        ),
+        few_shot_answer_line=(
+            "Let's think step by step. We only need the singer table. "
+            "SQL: <<SELECT count(*) FROM singer>>"
+        ),
+    )
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
@@ -178,11 +193,14 @@ def get_generation_runner():
 
     if _token0_enabled():
         # Begin inside a constrained chunk from token 0 (no leading << forced, no
-        # visible delimiters) — the IterGen-style decoding surface. completion_mode
-        # is left False so the instruct chat template is still applied (the same
-        # apply_chat_template call IterGen makes for instruct models).
+        # visible delimiters) — the IterGen-style decoding surface.
+        # completion_mode=True: IterGen `start(str)` tokenizes the raw prompt with
+        # NO apply_chat_template (chat template only when prompt is a message list).
+        # Our adapter always passes expression_only / aligned prompts as strings, so
+        # ChatML here was an asymmetry vs frozen IterGen (bare SELECT vs leading WS).
         def _token0_runner(*args, **kwargs):
             kwargs.setdefault("start_inside_constrained", True)
+            kwargs.setdefault("completion_mode", True)
             return run_crane_csd(*args, **kwargs)
 
         return _token0_runner

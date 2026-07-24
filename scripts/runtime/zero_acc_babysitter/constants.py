@@ -20,11 +20,17 @@ ATTEMPT_START_RE = re.compile(
     r"^Attempt\s+(?P<number>\d+)\s*/",
     re.MULTILINE,
 )
+# All signatures are lowercase; detect_memory_ops lowercases the log text.
 MEMORY_OPS_SIGNATURES = (
     "cuda out of memory",
-    "torch.OutOfMemoryError",
+    "torch.outofmemoryerror",
     "out of memory",
     "oom-kill",
+    "is less than desired gpu memory utilization",
+)
+SYNTHESIS_FINISH_RE = re.compile(
+    r"^COLDQ_SYNTHESIS_FINISH\b",
+    re.MULTILINE,
 )
 
 

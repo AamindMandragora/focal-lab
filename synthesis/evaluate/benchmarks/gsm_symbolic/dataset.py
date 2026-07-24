@@ -874,9 +874,7 @@ def make_gsm_stratified_train_eval_split(
         "crane_dir": str(crane_dir),
         "total_examples": len(rows),
         "train_indices": train_indices,
-        # Held-out side key is "test_indices" (renamed from "eval_indices"
-        # 2026-07-17 so GSM and Spider manifests share one vocabulary).
-        "test_indices": eval_indices,
+        "eval_indices": eval_indices,
         "train_size": len(train_indices),
         "eval_size": len(eval_indices),
         "train_counts_requested": train_counts,

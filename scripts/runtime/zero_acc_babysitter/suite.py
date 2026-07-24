@@ -1,13 +1,21 @@
 """Suite hooks: twin accuracy + helper micros.
 
-Callers: orchestrator via BabysitterHooks; focal_injectors.
-API: SuiteOutcome / classify_tier_a — no data files.
-User instruction: babysitter-implement (suite …).
+Callers: orchestrator via BabysitterHooks; production_hooks; focal_injectors.
+API: TWINS / SuiteOutcome / classify_tier_a — no data files.
+User instruction: babysitter-implement (suite …); gsm→Crane, spider→IterGen,
+                  smiles→CARS.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+
+TWINS = {
+    "gsm": "Crane",
+    "spider": "IterGen",
+    "smiles": "CARS",
+}
 
 
 @dataclass(frozen=True)

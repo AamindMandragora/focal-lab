@@ -20,13 +20,7 @@ This module evaluates synthesized CSD strategies on text-to-SQL tasks using the 
 
 ## Constraint mode
 
-Fixed-strategy prompts come from `../prompt_profiles/sql.yaml`. GCD and IterGen
-both select its byte-identical `direct` profile, which preserves IterGen's
-original `quey` typo and trailing space. CRANE selects the same file's
-`chain_of_thought` profile, retaining the same database fields and question
-while requesting reasoning and a final `<< >>` query. Token-0 SQL decoding uses
-hidden constrained chunks; the evaluator still accepts visible spans from
-older outputs and raw SQL from direct outputs.
+The evaluator exposes two prompt surfaces. `format_prompt_expression_only` renders the flattened string prompt used by hard-mask / constrained decoders, while `format_prompt_chain_of_thought` returns the chat-style legacy CRANE prompt. Both paths instruct the model to wrap its SQL query in `<< >>` delimiters — CRANE can reason before emitting `<<SELECT ...>>`, while GCD constrains from token 1. The evaluator extracts the answer from `<< >>` when present and falls back to the raw first paragraph for unconstrained baselines.
 
 ## Runtime Notes
 

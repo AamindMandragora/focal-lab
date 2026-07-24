@@ -51,17 +51,8 @@ def build_metrics_from_eval_samples(
     return metrics
 
 
-def build_minimal_baseline_record(
-    result: EvaluationResult,
-    eval_split: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Build the minimal baseline payload from an evaluation result.
-
-    ``eval_split`` is the split-provenance block (which split file/side the
-    numbers were measured on — see synthesis/split_provenance.py). Callers
-    should pass it so saved JSONs are self-describing; comparisons across
-    split sides caused wrong win/loss verdicts on 2026-07-17.
-    """
+def build_minimal_baseline_record(result: EvaluationResult) -> dict[str, Any]:
+    """Build the minimal baseline payload from an evaluation result."""
     samples = result.sample_outputs or []
     answers: list[dict[str, Any]] = []
     for sample in samples:
@@ -88,11 +79,6 @@ def build_minimal_baseline_record(
             row["num_tokens"] = int(sample["token_count"])
         if sample.get("time_seconds") is not None:
             row["generation_seconds"] = round(float(sample["time_seconds"]), 6)
-        # Per-example outcome flags so saved JSONs support offline diffing
-        # against baseline-side annotations without regrading.
-        for key in ("is_correct", "is_syntax_valid"):
-            if sample.get(key) is not None:
-                row[key] = bool(sample[key])
         answers.append(row)
 
     metrics = build_metrics_from_eval_samples(
@@ -107,8 +93,6 @@ def build_minimal_baseline_record(
         "metrics": metrics,
         "answers": answers,
     }
-    if eval_split is not None:
-        record["eval_split"] = eval_split
     # Preserve the CARS-paper SMILES metrics (unique_valid_count, diversity_tanimoto,
     # validity_rdkit, samples_to_target_unique_valid) so saved JSONs carry the real
     # comparison axes instead of just the headline accuracy. Inert for other datasets.
@@ -137,11 +121,6 @@ def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, An
             row["num_tokens"] = int(sample["token_count"])
         if sample.get("time_seconds") is not None:
             row["generation_seconds"] = round(float(sample["time_seconds"]), 6)
-        # Per-example outcome flags so saved JSONs support offline diffing
-        # against baseline-side annotations without regrading.
-        for key in ("is_correct", "is_syntax_valid"):
-            if sample.get(key) is not None:
-                row[key] = bool(sample[key])
         answers.append(row)
 
     metrics = build_metrics_from_eval_samples(
@@ -158,18 +137,9 @@ def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, An
     }
 
 
-def save_minimal_baseline_json(
-    result: EvaluationResult,
-    json_path: Path,
-    eval_split: dict[str, Any] | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> Path:
+def save_minimal_baseline_json(result: EvaluationResult, json_path: Path) -> Path:
     """Write a minimal baseline JSON file and return its path."""
     json_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = build_minimal_baseline_record(result, eval_split=eval_split)
-    if metadata:
-        payload.update(metadata)
-    temporary = json_path.with_suffix(json_path.suffix + ".tmp")
-    temporary.write_text(json.dumps(payload, indent=2) + "\n")
-    temporary.replace(json_path)
+    payload = build_minimal_baseline_record(result)
+    json_path.write_text(json.dumps(payload, indent=2) + "\n")
     return json_path

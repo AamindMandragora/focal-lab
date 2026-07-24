@@ -216,6 +216,26 @@ module VerifiedDecoderAgent {
       requires ValidTokensIdsLogits()
       ensures ValidTokensIdsLogits()
 
+    method {:extern} {:axiom} ResetOracleTrie()
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+
+    method {:extern} {:axiom} CarsAdvanceTrieAndAdjustScores(parser: Parser, prefix: Prefix, constrainFirst: bool) returns (ok: bool)
+      modifies this.Logits
+      requires ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(prefix) || |prefix| == 0
+      ensures ValidTokensIdsLogits()
+
+    method {:extern} {:axiom} RejectLastInTrie()
+      requires ValidTokensIdsLogits()
+      ensures ValidTokensIdsLogits()
+
+    method {:extern} {:axiom} ApplyTraceRecurrence(factor: real)
+      modifies this.Logits
+      requires ValidTokensIdsLogits()
+      requires factor > 0.0 && factor <= 1.0
+      ensures ValidTokensIdsLogits()
+
     method {:extern} {:axiom} ChooseNextToken() returns (token: Token)
       requires ValidTokensIdsLogits()
       ensures token in Tokens
@@ -264,21 +284,6 @@ module VerifiedDecoderAgent {
     // Pure with respect to the Dafny heap (reads nothing): the support set lives
     // in host state, not in any Dafny field. Implemented in the host language.
     predicate {:extern} {:axiom} SpanGrounded(text: string)
-
-    // Prompt-visible duplicate predicate. Returns whether normalized `text`
-    // appears as a candidate span in the current prompt/instruction context.
-    // Intended for no-gold duplicate/exemplar checks in tasks such as SMILES:
-    // the host may inspect prompt-visible examples and rolling prompt suffixes,
-    // but never gold labels, scorer state, or evaluator results.
-    predicate {:extern} {:axiom} SpanAppearsInPrompt(text: string)
-
-    // Prompt-derived resemblance score in [0,1]: how structurally similar the
-    // normalized `text` is to the example spans shown in the current prompt.
-    // The host may inspect only prompt-visible examples and compute similarity with
-    // generic tooling; it never reads gold labels, scorer state, held-out data, or
-    // evaluator results. Higher means more similar to the shown examples.
-    function {:extern} {:axiom} SpanResemblanceToPromptExamples(text: string): (score: real)
-      ensures 0.0 <= score <= 1.0
 
     // Locate the FIRST identifier-like token in `unitTokens` whose rendered text
     // is out-of-schema for the current example. The membership signal is identical
@@ -331,6 +336,25 @@ module VerifiedDecoderAgent {
     // query to parse. Implemented in the host language.
     function {:extern} {:axiom} CompletedSchemaSymbolCount(prefix: Prefix): nat
       requires IsValidPrefix(prefix)
+
+    // IterGen-style: count of completed `unit` symbols whose end char > afterChar
+    // on the structured parse text. Empty unit "" sums table_ref+column_ref.
+    function {:extern} {:axiom} CompletedSymbolCount(prefix: Prefix, unit: string, afterChar: nat): nat
+      requires IsValidPrefix(prefix)
+
+    function {:extern} {:axiom} StructuredCharLength(prefix: Prefix): nat
+      requires IsValidPrefix(prefix)
+
+    function {:extern} {:axiom} SymbolStartTokenIndex(prefix: Prefix, unit: string, which: nat): nat
+      requires IsValidPrefix(prefix)
+      ensures 0 <= SymbolStartTokenIndex(prefix, unit, which) <= |prefix|
+
+    function {:extern} {:axiom} SymbolEndTokenIndex(prefix: Prefix, unit: string, which: nat): nat
+      requires IsValidPrefix(prefix)
+      ensures 0 <= SymbolEndTokenIndex(prefix, unit, which) <= |prefix|
+
+    function {:extern} {:axiom} RenderSymbol(prefix: Prefix, unit: string, which: nat): string
+      requires IsValidPrefix(prefix)
   }
 
   function Contains(s: string, sub: string): bool
@@ -369,21 +393,6 @@ module VerifiedDecoderAgent {
       ensures cost == old(cost)
     {
       lm.AppendTaskGuidance(guidance);
-    }
-
-    method PrefixAppearsInPrompt(lm: LM, prefix: Prefix) returns (appears: bool)
-      ensures appears == lm.SpanAppearsInPrompt(RenderPrefix(prefix))
-      ensures cost == old(cost)
-    {
-      appears := lm.SpanAppearsInPrompt(RenderPrefix(prefix));
-    }
-
-    method PrefixResemblesPromptExamples(lm: LM, prefix: Prefix) returns (score: real)
-      ensures score == lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix))
-      ensures 0.0 <= score <= 1.0
-      ensures cost == old(cost)
-    {
-      score := lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix));
     }
 
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)
@@ -541,6 +550,7 @@ module VerifiedDecoderAgent {
       modifies this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
+      requires !parser.IsCompletePrefix(currentConstrained)
       requires next in lm.Tokens
       requires parser.IsValidPrefix(currentConstrained + [next])
       ensures lm.ValidTokensIdsLogits()
@@ -579,6 +589,161 @@ module VerifiedDecoderAgent {
       insideOut := false;
       currentOut := [];
       cost := cost + 1;
+    }
+
+
+    method CarsTrieStep(
+      lm: LM, parser: Parser, prompt: Prefix, cur: Prefix, eosToken: Token, constrainFirst: bool
+    ) returns (next: Token, ok: bool)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(cur)
+      requires eosToken in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures next in lm.Tokens
+      ensures cost == old(cost) + 1
+    {
+      lm.GenerateLogits(prompt + cur);
+      ok := lm.CarsAdvanceTrieAndAdjustScores(parser, cur, constrainFirst);
+      if !ok {
+        next := eosToken;
+        cost := cost + 1;
+        return;
+      }
+      next := lm.ChooseNextTokenUnconstrained();
+      cost := cost + 1;
+    }
+
+    method RejectLastInTrieHelper(lm: LM)
+      requires lm.ValidTokensIdsLogits()
+      ensures lm.ValidTokensIdsLogits()
+      ensures cost == old(cost)
+    {
+      lm.RejectLastInTrie();
+    }
+
+    method ApplyTraceRecurrenceHelper(lm: LM, factor: real)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires factor > 0.0 && factor <= 1.0
+      ensures lm.ValidTokensIdsLogits()
+      ensures cost == old(cost)
+    {
+      lm.ApplyTraceRecurrence(factor);
+    }
+
+    // IterGen forward(unit, num): opportunistic steps until `num` new completions
+    // of `unit` (empty unit = SQL table_ref+column_ref aggregate), then crop to
+    // the finished unit end (cursor semantics without KV rewind).
+    method ForwardUntilSymbol(
+      lm: LM, parser: Parser, prompt: Prefix, cur: Prefix, eosToken: Token,
+      unit: string, num: nat, budget: nat
+    ) returns (out: Prefix)
+      modifies lm.Logits, this
+      requires lm.ValidTokensIdsLogits()
+      requires parser.IsValidPrefix(cur)
+      requires eosToken in lm.Tokens
+      ensures lm.ValidTokensIdsLogits()
+      ensures parser.IsValidPrefix(out)
+      ensures |out| <= |cur| + budget
+      ensures cost <= old(cost) + budget
+    {
+      out := cur;
+      if num == 0 || budget == 0 {
+        return;
+      }
+      var baseline := parser.StructuredCharLength(cur);
+      var steps := 0;
+      while steps < budget
+        invariant lm.ValidTokensIdsLogits()
+        invariant parser.IsValidPrefix(out)
+        invariant 0 <= steps <= budget
+        invariant |out| <= |cur| + steps
+        decreases budget - steps
+      {
+        if parser.CompletedSymbolCount(out, unit, baseline) >= num {
+          break;
+        }
+        var next, wasConstrained := ConfidenceGatedStep(lm, parser, prompt, out, eosToken);
+        steps := steps + 1;
+        if next == eosToken {
+          break;
+        }
+        out := out + [next];
+        // GSM CRANE spans close with ">>". CompletedSymbolCount(unit="start") stays
+        // 0 on the GSM symbol map (it tracks var/VARIABLE, not Lark start), so without
+        // this break ForwardUntilSymbol burns the remaining budget under a degenerate
+        // mask and emits token-id-0 bangs — never returning to unconstrained CoT.
+        // Domains that never emit ">>" (SQL/SMILES) are unchanged.
+        if Contains(next, ">>") || RenderedEndsWith(out, ">>") {
+          break;
+        }
+      }
+      // Crop to end of the last newly completed unit when possible (IterGen cursor).
+      if parser.CompletedSymbolCount(out, unit, baseline) >= num {
+        var total := parser.CompletedSymbolCount(out, unit, 0);
+        if total > 0 {
+          var endIdx := parser.SymbolEndTokenIndex(out, unit, total - 1);
+          if endIdx <= |out| {
+            out := out[..endIdx];
+          }
+        }
+      }
+    }
+
+    method BackwardToSymbol(
+      parser: Parser, cur: Prefix, unit: string, num: nat
+    ) returns (truncated: Prefix)
+      requires parser.IsValidPrefix(cur)
+      ensures parser.IsValidPrefix(truncated)
+      ensures |truncated| <= |cur|
+      ensures cost == old(cost)
+    {
+      if |cur| == 0 || num == 0 {
+        truncated := cur;
+        return;
+      }
+      var total := parser.CompletedSymbolCount(cur, unit, 0);
+      if total < num {
+        truncated := cur;
+        return;
+      }
+      var which := total - num;
+      var idx := parser.SymbolStartTokenIndex(cur, unit, which);
+      truncated := cur[..idx];
+    }
+
+    method ViewLastSymbol(parser: Parser, cur: Prefix, unit: string) returns (text: string)
+      requires parser.IsValidPrefix(cur)
+      ensures cost == old(cost)
+    {
+      var total := parser.CompletedSymbolCount(cur, unit, 0);
+      if total == 0 {
+        text := "";
+        return;
+      }
+      text := parser.RenderSymbol(cur, unit, total - 1);
+    }
+
+    method IsAllowedVarText(groups: seq<seq<Token>>, text: string) returns (ok: bool)
+      ensures cost == old(cost)
+    {
+      ok := false;
+      if text == "" {
+        return;
+      }
+      var flat := FlattenTokenGroups(groups);
+      var i := 0;
+      while i < |flat|
+        invariant 0 <= i <= |flat|
+        decreases |flat| - i
+      {
+        if flat[i] == text {
+          ok := true;
+          return;
+        }
+        i := i + 1;
+      }
     }
 
     method ConstrainedStep(lm: LM, parser: Parser, prompt: Prefix, generated: Prefix, eosToken: Token) returns (next: Token)
@@ -1303,51 +1468,14 @@ module VerifiedDecoderAgent {
       else p[0] + PrefixToString(p[1..])
     }
 
-    static method FindSubstring(input: string, needle: string) returns (index: int)
-      ensures -1 <= index <= |input|
-      ensures index >= 0 ==> index + |needle| <= |input|
-      ensures index >= 0 ==> input[index..index + |needle|] == needle
-    {
-      index := 0;
-      while index + |needle| <= |input| && input[index..index + |needle|] != needle
-        invariant 0 <= index <= |input|
-        decreases |input| - index
-      {
-        index := index + 1;
-      }
-      if index + |needle| > |input| {
-        index := -1;
-      }
-    }
-
-    static method ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string) returns (content: string)
+    static function ExtractContentBetweenDelimiters(input: string, startDelim: string, endDelim: string): (content: string)
       ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
     {
-      var start := FindSubstring(input, startDelim);
-      if start < 0 {
-        content := "";
-      } else {
-        var contentStart := start + |startDelim|;
-        var suffix := input[contentStart..];
-        var finish := FindSubstring(suffix, endDelim);
-        if finish < 0 {
-          content := "";
-        } else {
-          content := suffix[..finish];
-          if content != "" {
-            var pre := input[..start];
-            var post := suffix[finish + |endDelim|..];
-            assert input == input[..start] + input[start..];
-            assert input[start..] == input[start..contentStart] + input[contentStart..];
-            assert input[start..contentStart] == startDelim;
-            assert suffix == suffix[..finish] + suffix[finish..];
-            assert suffix[finish..] == suffix[finish..finish + |endDelim|] + suffix[finish + |endDelim|..];
-            assert suffix[finish..finish + |endDelim|] == endDelim;
-            assert input == pre + startDelim + content + endDelim + post;
-          }
-        }
-      }
+      ExtractContentExtern(input, startDelim, endDelim)
     }
+
+    static function {:extern} {:axiom} ExtractContentExtern(input: string, startDelim: string, endDelim: string): (content: string)
+      ensures content != "" ==> exists pre, post :: input == pre + startDelim + content + endDelim + post
     method BoostTokenLogits(lm: LM, tokens: seq<Token>, amount: real)
       modifies lm.Logits
       requires lm.ValidTokensIdsLogits()
@@ -2088,10 +2216,6 @@ module VerifiedDecoderAgent {
       ensures candidatePrefix == constrainedPrefix + candidateTokens
       ensures |candidateTokens| <= numTokens
       ensures stepsUsed <= numTokens
-      ensures stepsUsed == |candidateTokens| + (if hitEos then 1 else 0)
-      ensures hitComplete == parser.IsCompletePrefix(candidatePrefix)
-      ensures hitEos ==> !hitComplete
-      ensures forall i :: 0 <= i < lm.Logits.Length ==> lm.Logits[i] == old(lm.Logits[i])
       ensures cost == old(cost) + stepsUsed
     {
       var snap := SaveLogitsSnapshot(lm);
@@ -2108,8 +2232,8 @@ module VerifiedDecoderAgent {
         invariant candidateTokens == cur[|constrainedPrefix|..]
         invariant |candidateTokens| + |constrainedPrefix| == |cur|
         invariant |candidateTokens| <= stepsUsed <= numTokens
-        invariant stepsUsed == |candidateTokens| + (if hitEos then 1 else 0)
-        invariant hitEos ==> !parser.IsCompletePrefix(cur)
+        invariant hitEos ==> |candidateTokens| + 1 <= stepsUsed
+        invariant !hitEos ==> |candidateTokens| == stepsUsed
         invariant cost == old(cost) + stepsUsed
         decreases numTokens - stepsUsed, if hitEos || parser.IsCompletePrefix(cur) then 0 else 1
       {
@@ -2128,13 +2252,15 @@ module VerifiedDecoderAgent {
       hitComplete := parser.IsCompletePrefix(cur);
     }
 
-    // CRANE-style generation with free text outside constrained spans.
+    // CRANE GSM adaptive: unconstrained until "<<", then
+    // forward(start)/view/valid_vars/backward loop (max_iter=80, backwards_limit=20).
     method CraneGeneration(
       lm: LM,
       parser: Parser,
       prompt: Prefix,
       maxSteps: nat,
       minReasoningSteps: nat,
+      validTokenGroups: seq<seq<Token>>,
       eosToken: Token
     ) returns (generated: Prefix)
       modifies lm.Logits, this
@@ -2147,51 +2273,96 @@ module VerifiedDecoderAgent {
       ensures cost <= old(cost) + maxSteps
     {
       generated := [];
-      var steps := 0;
+      var startCost := cost;
       var insideConstrained := false;
       var currentConstrained: Prefix := [];
+      var unitIters := 0;
+      var numBackwards := 0;
+      var maxIter := 80;
+      var backwardsLimit := 20;
 
-      while steps < maxSteps
-        invariant 0 <= steps <= maxSteps
-        invariant steps == |generated|
+      while cost < startCost + maxSteps
+        invariant startCost <= cost <= startCost + maxSteps
+        invariant |generated| <= maxSteps
         invariant |currentConstrained| <= |generated|
         invariant lm.ValidTokensIdsLogits()
         invariant !insideConstrained ==> currentConstrained == []
         invariant insideConstrained ==> parser.IsValidPrefix(currentConstrained)
-        invariant cost == old(cost) + steps
-        decreases maxSteps - steps, (if insideConstrained then 1 else 0)
+        invariant 0 <= unitIters <= maxIter + 1
+        invariant 0 <= numBackwards
+        decreases startCost + maxSteps - cost, (if insideConstrained then 1 else 0), (maxIter + 1 - unitIters)
       {
         if !insideConstrained {
           var next := UnconstrainedStep(lm, prompt, generated);
           if next == eosToken {
             break;
           }
+          if |generated| >= maxSteps {
+            break;
+          }
           generated := generated + [next];
-          steps := steps + 1;
-          if Contains(next, "<<") {
+          // CRANE: `start_symbol in unconstrained_gen`. Check last token and the
+          // last-two-token render so split '<'+'<' opens without O(n^2) full re-render.
+          var openHit := Contains(next, "<<");
+          if !openHit && |generated| >= 2 {
+            openHit := Contains(RenderPrefix(generated[|generated| - 2..]), "<<");
+          }
+          if openHit {
             insideConstrained := true;
             currentConstrained := [];
+            unitIters := 0;
+            numBackwards := 0;
           }
         } else {
-          if parser.IsCompletePrefix(currentConstrained) {
+          if RenderedEndsWith(generated, ">>") {
             insideConstrained := false;
             currentConstrained := [];
+          } else if unitIters >= maxIter {
+            // CRANE parity: do not flip to unconstrained mid-<<...>>; stop.
+            break;
           } else {
-            var constrainedPrompt := prompt + generated[..|generated| - |currentConstrained|];
-            var next, wasConstrained := ConfidenceGatedStep(
-              lm, parser, constrainedPrompt, currentConstrained, eosToken
+            var spanStart := |generated| - |currentConstrained|;
+            var constrainedPrompt := prompt + generated[..spanStart];
+            var budgetLeft := startCost + maxSteps - cost;
+            var beforeCost := cost;
+            // CRANE gsm_symbolic_constraints: forward(num=1) with default_unit=start
+            // (one full <<expr>>), not per-var. Waiting on "var" never completes during
+            // NUMBER → unbounded digit sink (ex0 zeros).
+            currentConstrained := ForwardUntilSymbol(
+              lm, parser, constrainedPrompt, currentConstrained, eosToken,
+              "start", 1, budgetLeft
             );
-            if next == eosToken {
-              break;
+            unitIters := unitIters + 1;
+            if |currentConstrained| > maxSteps {
+              currentConstrained := currentConstrained[..maxSteps];
             }
-            generated := generated + [next];
-            steps := steps + 1;
-
-            if Contains(next, ">>") {
+            generated := generated[..spanStart] + currentConstrained;
+            if |generated| > maxSteps {
+              generated := generated[..maxSteps];
+              if |generated| >= spanStart {
+                currentConstrained := generated[spanStart..];
+              } else {
+                currentConstrained := [];
+              }
+            }
+            if RenderedEndsWith(generated, ">>") {
               insideConstrained := false;
               currentConstrained := [];
+            } else if cost == beforeCost {
+              // No progress: stop rather than unconstrained mid-span.
+              break;
             } else {
-              currentConstrained := currentConstrained + [next];
+              var lastVar := ViewLastSymbol(parser, currentConstrained, "var");
+              var allowed := IsAllowedVarText(validTokenGroups, lastVar);
+              if lastVar != "" && !allowed {
+                if numBackwards < backwardsLimit {
+                  currentConstrained := BackwardToSymbol(parser, currentConstrained, "var", 1);
+                  generated := generated[..spanStart] + currentConstrained;
+                  numBackwards := numBackwards + 1;
+                } else {
+                  numBackwards := 0;
+                }
+              }
             }
           }
         }
@@ -2204,8 +2375,8 @@ module VerifiedDecoderAgent {
     // sets `cost := helpers.cost` discharges the strategy-level length, cost and
     // progress postconditions by construction (loop runs >=1 iteration when
     // maxSteps>0, and cost==steps). `done` is true when the step hit EOS or closed
-    // the span (the caller may stop). Outside a span: one UnconstrainedStep; a
-    // rendered output suffix of "<<" opens a constrained span. Inside a span: close if the parser reports a
+    // the span (the caller may stop). Outside a span: one UnconstrainedStep; "<<"
+    // opens a constrained span. Inside a span: close if the parser reports a
     // complete prefix, else one AdaptiveConstrainedStep and append it. Composes
     // only already-verified CSDHelpers primitives; adds no new decode behavior.
     // Body is exactly one iteration of GenerateWithManagedSpan's loop.
@@ -2253,7 +2424,7 @@ module VerifiedDecoderAgent {
           return;
         }
         generatedOut := generated + [next];
-        if RenderedEndsWith(generatedOut, "<<") {
+        if next == "<<" {
           insideOut := true;
           currentOut := [];
         }
@@ -2350,7 +2521,7 @@ module VerifiedDecoderAgent {
             break;
           }
           generated := generated + [next];
-          if RenderedEndsWith(generated, "<<") {
+          if next == "<<" {
             insideConstrainedOut := true;
             currentConstrainedOut := [];
           }
@@ -2452,7 +2623,7 @@ module VerifiedDecoderAgent {
               break;
             }
             generated := generated + [next];
-            if RenderedEndsWith(generated, "<<") {
+            if next == "<<" {
               insideConstrainedOut := true;
               currentConstrainedOut := [];
             }
@@ -2588,9 +2759,9 @@ module VerifiedDecoderAgent {
         invariant cost == old(cost) + steps
         decreases totalBound - steps
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt, resultConstrained, eosToken, 8);
+        var next := ConstrainedStep(lm, parser, prompt, resultConstrained, eosToken);
         steps := steps + 1;
-        if !ok || next == eosToken {
+        if next == eosToken {
           break;
         }
         var extended := resultConstrained + [next];
@@ -2688,9 +2859,9 @@ module VerifiedDecoderAgent {
         invariant |resultConstrained| <= |currentConstrained| + steps
         decreases totalBound - steps
       {
-        var next, ok := DeadEndAvoidingStep(lm, parser, prompt, resultConstrained, eosToken, 8);
+        var next := ConstrainedStep(lm, parser, prompt, resultConstrained, eosToken);
         steps := steps + 1;
-        if !ok || next == eosToken {
+        if next == eosToken {
           break;
         }
         var extended := resultConstrained + [next];

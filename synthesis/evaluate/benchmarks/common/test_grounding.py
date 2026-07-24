@@ -13,13 +13,9 @@ method RegenerateUnitOnGroundingFailure:
     the schema support set, and True (no-op) when the prompt has no schema.
 """
 
-import types
-
 from benchmarks.common.model_utils import (
     _parse_schema_support,
     _candidate_identifiers,
-    _candidate_smiles,
-    _smiles_resemblance,
     _TensorizedLMBase,
 )
 
@@ -110,124 +106,6 @@ def test_span_grounded_cache_is_stable():
     first = lm._grounding_support_set()
     second = lm._grounding_support_set()
     assert first == second and first is second
-
-
-def test_span_appears_in_prompt_detects_labeled_smiles_example():
-    prompt = (
-        "Generate valid molecules.\n"
-        "Class: alcohols\n"
-        "Molecule: CCO\n"
-        "Molecule: CCN\n"
-    )
-    lm = _StubLM(prompt)
-    assert lm.SpanAppearsInPrompt(" CCO ") is True
-    assert lm.SpanAppearsInPrompt("<<CCN>>") is True
-
-
-def test_span_appears_in_prompt_detects_rolling_suffix_smiles():
-    prompt = (
-        "Generate valid molecules.\n"
-        "Molecule:\n"
-        " O=C=Nc1ccccc1\n"
-        "Molecule:\n"
-    )
-    lm = _StubLM(prompt)
-    assert lm.SpanAppearsInPrompt("O=C=Nc1ccccc1") is True
-
-
-def test_span_appears_in_prompt_rejects_substring_false_positive():
-    prompt = "Generate valid molecules.\nMolecule: CCO\n"
-    lm = _StubLM(prompt)
-    assert lm.SpanAppearsInPrompt("CC") is False
-    assert lm.SpanAppearsInPrompt("CCO") is True
-
-
-def test_span_appears_in_prompt_rejects_empty_or_label_only_text():
-    lm = _StubLM("Generate valid molecules.\nMolecule: CCO\n")
-    assert lm.SpanAppearsInPrompt("") is False
-    assert lm.SpanAppearsInPrompt("Molecule:") is False
-
-
-# --- Fair resemblance helper (_smiles_resemblance / SpanResemblanceToPromptExamples) ---
-# Similarity is the max RDKit Tanimoto of the candidate to the prompt-visible
-# example molecules. No gold labels, no scorer, no CLASS_MOTIFS.
-
-# Two structurally close acrylate esters and one very different exemplar.
-_ACRYLATE_A = "C=CC(=O)OCC"       # ethyl acrylate
-_ACRYLATE_B = "C=CC(=O)OCCCC"     # butyl acrylate (close to A)
-_ISOCYANATE = "O=C=Nc1ccccc1"     # phenyl isocyanate (far from acrylates)
-
-
-def _has_rdkit():
-    try:
-        import rdkit  # noqa: F401
-        return True
-    except Exception:
-        return False
-
-
-def test_candidate_smiles_strips_label_and_delimiters():
-    assert _candidate_smiles("Molecule: CCO") == "CCO"
-    assert _candidate_smiles("<<CCN>>") == "CCN"
-    assert _candidate_smiles("  `C=CC(=O)OCC`  ") == "C=CC(=O)OCC"
-    assert _candidate_smiles("") == ""
-    assert _candidate_smiles("CCO extra tokens") == "CCO"
-
-
-def test_resemblance_identical_candidate_scores_one():
-    if not _has_rdkit():
-        return
-    cand, score = _smiles_resemblance(_ACRYLATE_A, [_ACRYLATE_A, _ISOCYANATE])
-    assert cand == _ACRYLATE_A
-    assert abs(score - 1.0) < 1e-9
-
-
-def test_resemblance_similar_beats_dissimilar():
-    if not _has_rdkit():
-        return
-    _, close = _smiles_resemblance(_ACRYLATE_B, [_ACRYLATE_A])
-    _, far = _smiles_resemblance(_ISOCYANATE, [_ACRYLATE_A])
-    assert close > far
-
-
-def test_resemblance_zero_without_exemplars():
-    if not _has_rdkit():
-        return
-    cand, score = _smiles_resemblance(_ACRYLATE_A, [])
-    assert cand == _ACRYLATE_A
-    assert score == 0.0
-
-
-def test_resemblance_zero_for_unparseable_candidate():
-    if not _has_rdkit():
-        return
-    cand, score = _smiles_resemblance("not_a_molecule)))(", [_ACRYLATE_A])
-    assert score == 0.0
-
-
-def test_resemblance_empty_candidate():
-    cand, score = _smiles_resemblance("", [_ACRYLATE_A])
-    assert cand == "" and score == 0.0
-
-
-def test_span_resemblance_class_method_grounds_on_prompt_examples():
-    if not _has_rdkit():
-        return
-    prompt = (
-        "Generate one new, valid, non-exemplar molecule.\n"
-        f"Molecule: {_ACRYLATE_A}\n"
-    )
-    lm = _StubLM(prompt)
-    lm._dafny = types.SimpleNamespace(BigRational=float)
-    close = lm.SpanResemblanceToPromptExamples(f"<<{_ACRYLATE_B}>>")
-    far = lm.SpanResemblanceToPromptExamples(f"<<{_ISOCYANATE}>>")
-    assert close > far
-
-
-def test_span_resemblance_zero_without_prompt_examples():
-    lm = _StubLM("Solve the math word problem.\n")
-    lm._dafny = types.SimpleNamespace(BigRational=float)
-    assert lm.SpanResemblanceToPromptExamples("C=CC(=O)OCC") == 0.0
 
 
 def _run():
