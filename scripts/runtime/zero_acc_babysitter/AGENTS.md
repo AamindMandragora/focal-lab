@@ -43,14 +43,33 @@ incident per cell; `acc >= 15` → no wake.
 ## Sandbox
 
 ```bash
-/usr/local/bin/python3 -m pytest \
+python -m pytest \
   tests/test_zero_acc_babysitter_local_sim.py \
-  tests/test_production_watch_merge.py \
-  tests/test_babysitter_repair_worktree.py -q
+  tests/runtime/test_smoke_stale_metrics.py \
+  tests/runtime/test_reevaluation_provenance.py -q
 
-PYTHONPATH=. /usr/local/bin/python3 -m scripts.runtime.zero_acc_babysitter \
+PYTHONPATH=. python -m scripts.runtime.zero_acc_babysitter \
   --local-sim-scenario tier_a_harness
 ```
+
+## Bootstrap recovery (smoke-infra fix deadlock)
+
+If the smoke *infrastructure itself* is what is broken (incident
+spider-qwen25-1p5b:2:telemetry:1784857356), the loop deadlocks: repair commits
+can only reach live via a smoke-gated merge, but the running watcher keeps
+executing its cached pre-fix decide (it reuses stale `smoke_process_rc` from
+`incident.extra` and never re-runs the smoke — instant same-second SMOKE_FAIL,
+no new `smoke_*` out dir). No cloud attempt can fix a running process; operator
+action is required:
+
+1. Stop the watcher (it caches modules at first use; commits are invisible to it).
+2. Either pull the repair branch's babysitter fixes into the live checkout, or
+   delete the stale `smoke_report_path` / `smoke_process_rc` / `smoke_metrics`
+   keys from `logs/zero_acc_babysitter/incidents/<incident>.json` so the
+   resumed decide re-runs a real smoke (the PR-tip reevaluate defaults the
+   split side to `train` for babysitter smoke report paths).
+3. Restart the watcher; resume re-runs the smoke on the PR tip and the normal
+   gate decides the merge. Never hand-write passing smoke metrics.
 
 ## See also
 
