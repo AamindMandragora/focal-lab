@@ -315,6 +315,8 @@ def synthesis_environment(
     if job["dataset"] in POOLABLE_DATASETS:
         env["CSD_EVAL_GPU_SLOTS"] = gpu_list
     if job["dataset"] == "smiles":
+        # Unique-valid / diversity need span sampling; default argmax collapses
+        # every example to the same tiny SMILES (zero unique-valid).
         env["CSD_CONSTRAINED_TEMPERATURE"] = "0.7"
     return env
 

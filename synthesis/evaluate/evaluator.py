@@ -1954,57 +1954,91 @@ class Evaluator:
                 return torch.cuda.device_count() > 1
             return False
 
-        last_error: Exception | None = None
         narrowed_visible_devices = False
-        for tp in tp_candidates:
-            if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
-                narrowed_visible_devices = True
-                _narrow_to_freest_gpu("a single GPU")
-            util_idx = 0
-            while util_idx < len(util_candidates):
-                util = util_candidates[util_idx]
-                try:
-                    if tp != requested_tp and util == util_candidates[0]:
-                        print(
-                            f"Retrying vLLM evaluator startup with "
-                            f"tensor_parallel_size={tp}"
-                        )
-                    elif util != self.vllm_gpu_memory_utilization:
-                        print(
-                            f"Retrying vLLM evaluator startup with lower "
-                            f"gpu_memory_utilization={util:.2f}"
-                        )
-                    env = _make_env(util, tp)
-                    self._env = env
-                    self._env_cache_key = env_cache_key
-                    return env
-                except Exception as exc:
-                    last_error = exc
-                    if not _is_vllm_startup_memory_error(exc):
-                        raise
-                    clear_vllm_engine_cache()
-                    if torch is not None and torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    if (
-                        tp == 1
-                        and not narrowed_visible_devices
-                        and _multiple_devices_visible()
-                    ):
-                        # A sibling process may hold the default visible device;
-                        # move to the freest GPU and restart the utilization ladder
-                        # instead of shrinking utilization on the occupied device.
-                        narrowed_visible_devices = True
-                        _narrow_to_freest_gpu("the freest GPU")
-                        util_idx = 0
-                        continue
-                    is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
-                    if is_last_attempt:
-                        raise
-                    util_idx += 1
 
-        if last_error is not None:
-            raise last_error
-        raise RuntimeError("Failed to initialize evaluation environment.")
+        def _try_startup_ladder() -> Dict[str, Any]:
+            nonlocal narrowed_visible_devices
+            last_error: Exception | None = None
+            for tp in tp_candidates:
+                if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
+                    narrowed_visible_devices = True
+                    _narrow_to_freest_gpu("a single GPU")
+                util_idx = 0
+                while util_idx < len(util_candidates):
+                    util = util_candidates[util_idx]
+                    try:
+                        if tp != requested_tp and util == util_candidates[0]:
+                            print(
+                                f"Retrying vLLM evaluator startup with "
+                                f"tensor_parallel_size={tp}"
+                            )
+                        elif util != self.vllm_gpu_memory_utilization:
+                            print(
+                                f"Retrying vLLM evaluator startup with lower "
+                                f"gpu_memory_utilization={util:.2f}"
+                            )
+                        return _make_env(util, tp)
+                    except Exception as exc:
+                        last_error = exc
+                        if not _is_vllm_startup_memory_error(exc):
+                            raise
+                        clear_vllm_engine_cache()
+                        if torch is not None and torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        if (
+                            tp == 1
+                            and not narrowed_visible_devices
+                            and _multiple_devices_visible()
+                        ):
+                            # A sibling process may hold the default visible device;
+                            # move to the freest GPU and restart the utilization ladder
+                            # instead of shrinking utilization on the occupied device.
+                            narrowed_visible_devices = True
+                            _narrow_to_freest_gpu("the freest GPU")
+                            util_idx = 0
+                            continue
+                        is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
+                        if is_last_attempt:
+                            raise
+                        util_idx += 1
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("Failed to initialize evaluation environment.")
+
+        # When the only visible GPU is transiently held by a sibling process,
+        # exhausting the utilization ladder in a few minutes kills the attempt
+        # without an Accuracy telemetry line. Wait out the pressure (bounded)
+        # and retry the whole ladder before giving up.
+        import time as _time
+
+        startup_wait_s = float(os.environ.get("CSD_VLLM_STARTUP_WAIT_S", "900"))
+        retry_interval_s = float(os.environ.get("CSD_VLLM_STARTUP_RETRY_INTERVAL_S", "30"))
+        deadline = _time.monotonic() + startup_wait_s
+        wait_round = 0
+        while True:
+            try:
+                env = _try_startup_ladder()
+                self._env = env
+                self._env_cache_key = env_cache_key
+                return env
+            except Exception as exc:
+                if not _is_vllm_startup_memory_error(exc):
+                    raise
+                remaining = deadline - _time.monotonic()
+                if remaining <= 0:
+                    raise
+                wait_round += 1
+                wait_s = min(retry_interval_s, remaining)
+                print(
+                    f"[vllm] Evaluator startup blocked by GPU memory pressure "
+                    f"(round {wait_round}); waiting {wait_s:.0f}s for a sibling "
+                    f"process to release memory ({remaining:.0f}s budget left)...",
+                    flush=True,
+                )
+                clear_vllm_engine_cache()
+                if torch is not None and torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                _time.sleep(wait_s)
 
     def _extract_constrained_content(self, output: str) -> List[str]:
         """Extract content within << >> delimiters.
