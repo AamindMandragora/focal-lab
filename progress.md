@@ -1,16 +1,16 @@
 # Experiment progress
 
-_Last updated: 2026-07-24T07:48:44+00:00_
+_Last updated: 2026-07-24T10:03:26+00:00_
 
 ## Status: ⏹  NO RUN ACTIVE  (last launcher: launch_full_matrix_20260520_024953.sh)
 
 ## GPU
 
 ```
-0, 38153 MiB, 40960 MiB, 23 %
-1, 36271 MiB, 40960 MiB, 10 %
-2, 23382 MiB, 40960 MiB, 0 %
-3, 33371 MiB, 40960 MiB, 0 %
+0, 10 MiB, 40960 MiB, 0 %
+1, 33578 MiB, 40960 MiB, 0 %
+2, 36617 MiB, 40960 MiB, 0 %
+3, 17271 MiB, 40960 MiB, 0 %
 ```
 
 ## Completed cells (since launch_full_matrix_20260520_024953.sh)
@@ -95,6 +95,7 @@ _Last updated: 2026-07-24T07:48:44+00:00_
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T15:18:08 |
 | crane | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 65.0% | ? | 100 | 2026-05-29T19:10:13 |
 | crane | Qwen_Qwen3-5-2B | spider_seed334_test300 | 3.0% | ? | 300 | 2026-07-05T02:10:50 |
+| crane | Qwen_Qwen3-5-4B | spider_seed334_test300 | 23.0% | ? | 300 | 2026-07-24T09:17:15 |
 | crane | Qwen_Qwen3-5-9B | spider_seed334_test300 | 22.0% | ? | 300 | 2026-07-10T12:07:21 |
 | gcd | Qwen_Qwen2.5_14B_Instruct | spider_seed334_test300 | 0.7% | ? | 300 | 2026-06-12T17:47:12 |
 | gcd | Qwen_Qwen2.5_14B_Instruct | spider | 16.0% | ? | 100 | 2026-06-01T11:30:33 |
@@ -106,6 +107,7 @@ _Last updated: 2026-07-24T07:48:44+00:00_
 | gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T15:12:22 |
 | gcd | Qwen_Qwen2.5_Coder_7B_Instruct | spider | 29.0% | ? | 100 | 2026-05-29T19:04:14 |
 | gcd | Qwen_Qwen3-5-2B | spider_seed334_test300 | 3.0% | ? | 300 | 2026-07-04T23:47:14 |
+| gcd | Qwen_Qwen3-5-4B | spider_seed334_test300 | 11.0% | ? | 300 | 2026-07-24T09:16:47 |
 | gcd | Qwen_Qwen3-5-9B | spider_seed334_test300 | 10.3% | ? | 300 | 2026-07-10T12:27:45 |
 | itergen | Qwen_Qwen2.5_14B_Instruct | gsm_symbolic | 33.0% | ? | 100 | 2026-06-01T15:01:29 |
 | itergen | Qwen_Qwen2.5_14B_Instruct | spider | 46.0% | ? | 100 | 2026-06-01T11:24:04 |
@@ -125,6 +127,8 @@ _Last updated: 2026-07-24T07:48:44+00:00_
 | unconstrained | Qwen_Qwen2.5_1.5B_Instruct | spider_seed334_test300_unconstrained_fixedprompt.json | 40.7% | ? | 300 | 2026-06-11T11:00:02 |
 | unconstrained | Qwen_Qwen2.5_7B_Instruct | spider_seed334_test300_unconstrained_fixedprompt.json | 47.0% | ? | 300 | 2026-06-11T11:14:27 |
 | unconstrained | Qwen_Qwen2.5_Coder_14B_Instruct | gsm_symbolic | 56.0% | ? | 50 | 2026-05-26T07:05:46 |
+| unconstrained | Qwen_Qwen3-5-2B | spider_seed334_test300 | 3.7% | ? | 300 | 2026-07-24T09:15:57 |
+| unconstrained | Qwen_Qwen3-5-4B | spider_seed334_test300 | 25.7% | ? | 300 | 2026-07-24T09:16:22 |
 | unconstrained | Qwen_Qwen3-5-9B | spider_seed334_test300 | 21.7% | ? | 300 | 2026-07-10T08:10:42 |
 
 ## Errors in latest log

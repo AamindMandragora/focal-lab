@@ -8,7 +8,10 @@ Strategy **generation and refinement** prompts and orchestration.
 
 - Follow root **`AGENTS.md`** Critical Prompting Rule: neutral tool/API reference is allowed as contract content, but prompts must not add strategy guidance.
 - When documenting `AppendTaskGuidance`, keep it as a neutral helper contract:
-  append-only, first-call-wins, start-of-CSD placement only.
+  append-only, first-call-wins, start-of-CSD placement only. The guidance
+  string may describe task-semantic meaning or numeric conventions the grammar
+  does not encode; do not add preferred strategies, benchmark tips, or
+  “use when accuracy is low” coaching.
 - Changes to **`prompts.py`** affect every synthesis run; keep diffs minimal and auditable.
 - **`generator.py`** coordinates LLM calls and failure feedback; avoid embedding benchmark-specific hacks here (delegate via feedback shape or benchmark modules).
 - Matrix model ablations must use direct thinking-mode hosted profiles. Do not
