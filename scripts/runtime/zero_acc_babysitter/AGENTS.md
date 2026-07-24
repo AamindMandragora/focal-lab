@@ -76,8 +76,14 @@ optional: `make_smoke_decide` discards any metrics whose `smoke_attempt` stamp
 is missing or differs from `cloud_attempt_count`, so a restart alone makes the
 resumed decide re-run a real smoke. Status 2026-07-24: `smoke.py` +
 `production_hooks.py` were synced into the live checkout at 04:47 UTC (the
-04:10 rc=2 smoke was the pre-fix command missing `--spider-split-name`); only
-the watcher restart remained and was scheduled detached.
+04:10 rc=2 smoke was the pre-fix command missing `--spider-split-name`). The
+restarted watcher correctly flagged the stale metrics at 04:54 and re-ran a
+real smoke, which failed for a new reason: vLLM engine init on cuda:0
+(1.75/39.5 GiB free — GPU 0 occupied by others; the smoke env never set
+`CUDA_VISIBLE_DEVICES`). Fix on the repair branch: smoke jobs setdefault
+`CUDA_VISIBLE_DEVICES` to the freest of GPUs 1/2 (`pick_smoke_gpu`) and
+`SMOKE_GPU_MEM_UTIL` dropped 0.4 → 0.3 so the 1.5B smoke fits beside
+neighbors. Sync `smoke.py` live + restart the watcher for it to take effect.
 
 Caution for step 2: do NOT pull/copy the whole repair branch into the live
 checkout — the live working tree can carry newer uncommitted deploy state (it
