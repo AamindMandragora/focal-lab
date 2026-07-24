@@ -54,23 +54,24 @@ PYTHONPATH=. /usr/local/bin/python3 -m scripts.runtime.zero_acc_babysitter \
 
 ## Bootstrap status — spider-qwen25-1p5b:2:telemetry:1784857356
 
-2026-07-24 ~05:30: smoke PASSED on the PR tip (acc 20%, rc=0,
-`smoke_spider-qwen25-1p5b_20260724T045916Z`), but `merge_and_pull` failed:
-git refuses to merge over uncommitted live deploy state (it refuses for any
-dirty path the merge updates, even byte-identical ones). Unblock, in the
-live checkout on `synthesis-snapshot-20260622`:
+RESOLVED 2026-07-24 ~06:00: the merge deadlock unblock has been **executed**
+— live's dirty deploy state was committed on `synthesis-snapshot-20260622`
+(`092fa159` snapshot + `2f320853` sync of smoke.py / production_hooks.py /
+this file to the repair-branch tip), and the exact watcher merge command
+(`git merge --no-edit origin/<repair-branch>`) was simulated in a detached
+worktree: rc=0, zero conflicts. The watcher's next resume merges cleanly —
+do NOT re-run the unblock or restart the watcher for this incident.
 
-```bash
-git commit -a -m "snapshot live deploy state before babysitter merge"
-```
-
-then let the watcher's next resume retry the merge (no restart needed). The
-repair branch now carries live's uncommitted Claude-CLI migration and
-gpu-scheduling edits verbatim, so the merge resolves cleanly; going forward
-`merge_pr_and_pull` auto-commits tracked dirty live state and merges with
-`-X theirs` (live's side stays recoverable in the snapshot commit). See
-`saved-results/2026-07-24-babysitter-merge-deadlock-unblock.md` for fixes
-dropped from the merge result that should be re-landed (none load-bearing).
+Lessons kept for future incidents:
+- git refuses to merge over ANY dirty path it updates, even byte-identical
+  ones — `merge_pr_and_pull` now auto-commits tracked dirty live state and
+  merges `-X theirs` (live's side stays recoverable in the snapshot commit).
+- Files that are add/add vs the merge base (e.g. this file,
+  `production_hooks.py`) conflict whenever live and branch copies differ at
+  all; when editing them on a repair branch, sync the same bytes to live and
+  commit there so the plain merge stays trivial.
+- See `saved-results/2026-07-24-babysitter-merge-deadlock-unblock.md` for
+  fixes dropped from the merge result to re-land (none load-bearing).
 
 ## See also
 
