@@ -229,6 +229,7 @@ def attach_smoke_report(
     incident.extra = dict(incident.extra or {})
     incident.extra["smoke_report_path"] = str(report_path)
     incident.extra["smoke_process_rc"] = int(process_rc)
+    incident.extra["smoke_attempt"] = incident.cloud_attempt_count
     if uniq_tokens is not None:
         incident.extra["smoke_uniq_tokens"] = int(uniq_tokens)
     return parse_smoke_report(
@@ -278,6 +279,19 @@ def make_smoke_decide(
     def _decide(incident: IncidentRecord) -> bool | SmokeDecision:
         criteria = smoke_criteria_for(incident.path_kind)
         measured = metrics_from_incident(incident)
+        # Metrics stamped by an earlier cloud attempt are stale: reusing them
+        # re-fails every later attempt without ever re-running the smoke on
+        # the new PR tip (incident spider-qwen25-1p5b:2:telemetry:1784857356).
+        if measured is not None and (incident.extra or {}).get(
+            "smoke_attempt"
+        ) != incident.cloud_attempt_count:
+            logger.info(
+                "smoke metrics stale cell=%s (from attempt %s, now %s) — rerunning smoke",
+                incident.cell_id,
+                (incident.extra or {}).get("smoke_attempt"),
+                incident.cloud_attempt_count,
+            )
+            measured = None
         if measured is None:
             env = os.environ.get("BABYSITTER_SMOKE_STUB", "").strip().lower()
             if env == "pass":

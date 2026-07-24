@@ -371,6 +371,7 @@ def run_hardened_smoke_job(
         incident.extra = dict(incident.extra or {})
         incident.extra["smoke_fail_reason"] = decision.reason
         incident.extra["smoke_process_rc"] = 2
+        incident.extra["smoke_attempt"] = incident.cloud_attempt_count
         incident.extra["smoke_metrics"] = {
             "process_rc": 2,
             "uniq_tokens": uniq_tokens,
@@ -459,6 +460,7 @@ def run_hardened_smoke_job(
     incident.extra = dict(incident.extra or {})
     incident.extra["smoke_report_path"] = str(report_path)
     incident.extra["smoke_process_rc"] = rc
+    incident.extra["smoke_attempt"] = incident.cloud_attempt_count
     incident.extra["smoke_out_dir"] = str(out_dir)
     if uniq_tokens is not None:
         incident.extra["smoke_uniq_tokens"] = int(uniq_tokens)
