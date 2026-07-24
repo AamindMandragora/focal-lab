@@ -38,6 +38,7 @@ from synthesis.run_constants import (
     SYNTHESIZER_REASONING_BUDGET_DEFAULT,
     TEMPERATURE,
     VLLM_GPU_MEMORY_UTILIZATION,
+    VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL,
     VLLM_MAX_MODEL_LEN,
 )
 try:
@@ -81,11 +82,13 @@ def _load_initial_attempt_history(path: Path):
     return attempts
 
 
-def _resolve_vllm_gpu_memory_utilization() -> float:
-    """Per-cell override from the cold-queue scheduler, else the global constant."""
+def _resolve_vllm_gpu_memory_utilization(eval_model: str | None = None) -> float:
+    """Per-cell override from the cold-queue scheduler, else the per-model default, else the global constant."""
     raw = os.environ.get("CSD_VLLM_GPU_MEMORY_UTILIZATION", "").strip()
     if raw:
         return float(raw)
+    if eval_model in VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL:
+        return float(VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL[eval_model])
     return float(VLLM_GPU_MEMORY_UTILIZATION)
 
 
@@ -308,7 +311,9 @@ Examples:
     args = parser.parse_args()
     args.generation_backend = normalize_generation_backend(args.generation_backend)
     if args.vllm_gpu_memory_utilization is None:
-        args.vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization()
+        args.vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization(
+            args.eval_model
+        )
 
     # Warm-start ban: --initial-strategy-file is legitimate ONLY for pure
     # re-evaluation (--max-iterations 1). Seeding further synthesis iterations
