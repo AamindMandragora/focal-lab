@@ -33,3 +33,14 @@ def test_reevaluation_provenance_binds_output_to_strategy_model_and_cell(tmp_pat
         "step_token_budget": 1,
         "smiles_class": "isocyanates",
     }
+
+
+def test_babysitter_smoke_split_fallback_only_for_smoke_report_path():
+    from synthesis.scripts.reevaluate_compiled_csd import babysitter_smoke_split_fallback
+
+    smoke = Path("/repo/logs/zero_acc_babysitter/smoke_spider-qwen25-1p5b_x/smoke_report.json")
+    assert babysitter_smoke_split_fallback(smoke) == "train"
+    assert babysitter_smoke_split_fallback(None) is None
+    assert babysitter_smoke_split_fallback(Path("/tmp/final_numbers.json")) is None
+    assert babysitter_smoke_split_fallback(Path("/repo/logs/other/smoke_report.json")) is None
+    assert babysitter_smoke_split_fallback(Path("/repo/logs/zero_acc_babysitter/x/report.json")) is None
