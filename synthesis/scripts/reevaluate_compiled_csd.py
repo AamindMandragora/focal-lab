@@ -55,6 +55,22 @@ def _resolve_device(device: str, backend: str) -> str:
 
 
 def main() -> None:
+    _seed = os.environ.get("CSD_PARITY_SEED", "").strip()
+    if _seed:
+        import random as _random
+        _random.seed(int(_seed))
+        try:
+            import numpy as _np
+            _np.random.seed(int(_seed))
+        except Exception:
+            pass
+        try:
+            import torch as _torch
+            _torch.manual_seed(int(_seed))
+            if _torch.cuda.is_available():
+                _torch.cuda.manual_seed_all(int(_seed))
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "compiled_generated_csd",

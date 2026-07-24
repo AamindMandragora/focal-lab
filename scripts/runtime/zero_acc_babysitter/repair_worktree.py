@@ -49,7 +49,7 @@ def ensure_repair_worktree(live_repo: Path, worktree_path: Path) -> Path:
     """Create or reuse a linked worktree for repair; never checkout the live tree.
 
     If ``worktree_path`` already exists as a worktree/repo, leave its branch alone
-    (repair checkouts happen later inside CursorCliClient on that path only).
+    (repair checkouts happen later inside ClaudeCodeCliClient on that path only).
     """
     live = live_repo.resolve()
     repair = worktree_path.resolve()

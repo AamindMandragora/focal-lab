@@ -81,6 +81,14 @@ def _load_initial_attempt_history(path: Path):
     return attempts
 
 
+def _resolve_vllm_gpu_memory_utilization() -> float:
+    """Per-cell override from the cold-queue scheduler, else the global constant."""
+    raw = os.environ.get("CSD_VLLM_GPU_MEMORY_UTILIZATION", "").strip()
+    if raw:
+        return float(raw)
+    return float(VLLM_GPU_MEMORY_UTILIZATION)
+
+
 def _derive_output_name(dataset: str, eval_model: str) -> str:
     """Auto-derive the run label as <dataset>_<model>_<date>."""
     model_short = eval_model.split("/")[-1].replace(".", "p").replace("-", "_").lower()
@@ -266,11 +274,12 @@ Examples:
     parser.add_argument(
         "--vllm-gpu-memory-utilization",
         type=float,
-        default=VLLM_GPU_MEMORY_UTILIZATION,
+        default=None,
         help=(
             "GPU memory fraction reserved by vLLM for this run. Must match the "
             "scheduler's per-cell reservation when GPUs are shared "
-            f"(default: {VLLM_GPU_MEMORY_UTILIZATION})."
+            "(default: CSD_VLLM_GPU_MEMORY_UTILIZATION env, else "
+            f"{VLLM_GPU_MEMORY_UTILIZATION})."
         ),
     )
 
@@ -298,6 +307,8 @@ Examples:
 
     args = parser.parse_args()
     args.generation_backend = normalize_generation_backend(args.generation_backend)
+    if args.vllm_gpu_memory_utilization is None:
+        args.vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization()
 
     # Warm-start ban: --initial-strategy-file is legitimate ONLY for pure
     # re-evaluation (--max-iterations 1). Seeding further synthesis iterations

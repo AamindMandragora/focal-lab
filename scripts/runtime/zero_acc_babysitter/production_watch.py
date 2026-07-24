@@ -2,7 +2,7 @@
 
 Callers: `python -m scripts.runtime.zero_acc_babysitter --watch` / systemd.
 API: run_watch_loop(...); handle_watch_wake(...); run_watch_once(...).
-Safety: CursorCliClient.debug_fix runs only in a sibling git worktree so
+Safety: ClaudeCodeCliClient.debug_fix runs only in a sibling git worktree so
 `git checkout -B babysitter-fix/...` never moves the live cold-queue tree.
 After smoke PASS, hooks.merge_and_pull merges into synthesis-snapshot-20260622
 and pulls on the live tree (Orchestrator logs MERGED sha=...).
@@ -18,10 +18,10 @@ from pathlib import Path
 from typing import Callable
 
 from scripts.runtime.zero_acc_babysitter.cloud import (
-    DEFAULT_CURSOR_AGENT_MODEL,
-    CursorCliClient,
+    DEFAULT_CLAUDE_CODE_MODEL,
+    ClaudeCodeCliClient,
     NullCloudClient,
-    probe_cursor_cli,
+    probe_claude_code_cli,
 )
 from scripts.runtime.zero_acc_babysitter.constants import CellState, TIER_B_ACC_PCT
 from scripts.runtime.zero_acc_babysitter.human_logs import HumanLogWriter
@@ -39,6 +39,7 @@ from scripts.runtime.zero_acc_babysitter.repair_worktree import (
 )
 from scripts.runtime.zero_acc_babysitter.watcher import (
     build_watch_event,
+    is_attempt_finished,
     latest_attempt_index,
 )
 
@@ -65,13 +66,13 @@ def build_watch_orchestrator(
     auto_repair: bool,
     hooks: BabysitterHooks | None = None,
     max_cloud_attempts: int | None = None,
-    client: CursorCliClient | None = None,
+    client: ClaudeCodeCliClient | None = None,
 ) -> Orchestrator:
     live = live_repo.resolve()
     repair = repair_worktree.resolve()
     if hooks is None:
         if auto_repair:
-            repair_client = client or CursorCliClient(
+            repair_client = client or ClaudeCodeCliClient(
                 workspace=repair,
                 base_ref=live_head_sha(live),
             )
@@ -103,7 +104,7 @@ def handle_watch_wake(
     hooks: BabysitterHooks | None = None,
     cell_ids: list[str] | None = None,
     orch: Orchestrator | None = None,
-    client: CursorCliClient | None = None,
+    client: ClaudeCodeCliClient | None = None,
     max_cloud_attempts: int | None = None,
 ) -> HandleResult:
     """Run one wake through Orchestrator (kill → Cloud → smoke → merge → recovery)."""
@@ -233,6 +234,17 @@ def run_watch_once(
         attempt = latest_attempt_index(text)
         if attempt is None:
             continue
+        # B1: do not treat an in-progress attempt as finished.
+        pid_file = (
+            live_repo
+            / "logs"
+            / "zero_acc_babysitter"
+            / "cells"
+            / f"{cell_id}.pid"
+        )
+        finished = is_attempt_finished(text, attempt, pid_file=pid_file)
+        if not finished:
+            continue
         event = build_watch_event(text, attempt, finished=True)
         # Missing Acc after finished attempt is TELEMETRY_FAIL — do not skip.
         key = (event.attempt_index, event.accuracy_pct, event.memory_ops)
@@ -286,9 +298,9 @@ def run_watch_loop(
 
     repair_path = (repair_worktree or default_repair_worktree_path(live)).resolve()
     if auto_repair:
-        ok, note = probe_cursor_cli()
+        ok, note = probe_claude_code_cli()
         ensure_repair_worktree(live, repair_path)
-        client: CursorCliClient | None = CursorCliClient(
+        client: ClaudeCodeCliClient | None = ClaudeCodeCliClient(
             workspace=repair_path,
             base_ref=live_head_sha(live),
             log_emit=lambda cell, marker, detail="": logs.emit(cell, marker, detail),
@@ -309,7 +321,7 @@ def run_watch_loop(
     if client is not None:
         client.log_emit = lambda cell, marker, detail="": logs.emit(cell, marker, detail)
 
-    model = getattr(client, "model", None) or DEFAULT_CURSOR_AGENT_MODEL
+    model = getattr(client, "model", None) or DEFAULT_CLAUDE_CODE_MODEL
     logs.emit(
         "watcher",
         "WATCHER_START",
@@ -317,12 +329,12 @@ def run_watch_loop(
     )
     if auto_repair and not ok:
         logs.emit("watcher", "CLI_PROBE_FAIL", note[:500])
-        raise RuntimeError(f"Cursor CLI probe failed: {note}")
+        raise RuntimeError(f"Claude Code CLI probe failed: {note}")
     if auto_repair:
         logs.emit("watcher", "CLI_PROBE_OK", f"model={model} {note[:300]}")
         logs.emit(
             "watcher",
-            "CURSOR_CLI_CLIENT_READY",
+            "CLAUDE_CODE_CLI_READY",
             f"class={type(client).__name__} model={model} workspace={repair_path}",
         )
 

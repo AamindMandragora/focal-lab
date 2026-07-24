@@ -13,7 +13,7 @@ CLI repair in a sibling worktree, hardened smoke, merge into
 1. Wake (MEMORY first, then Acc tier / TELEMETRY_FAIL)
 2. Kill cell process group; record `broken_sha`
 3. Tier A suite (twin + helper micros) / Tier B helpers / STRATEGY_MISS
-4. Cursor CLI `debug_fix` in repair worktree (not live checkout)
+4. Claude Code CLI `debug_fix` in repair worktree (not live checkout)
 5. Hardened smoke on PR tip — **no merge on FAIL**
 6. Smoke PASS → `merge_and_pull` into `synthesis-snapshot-20260622` → live pull → `MERGED sha=...`
 7. Recovery: harness/telemetry → rescore_all + siblings; helper → restart_from_K; memory → resume
@@ -23,13 +23,13 @@ incident per cell; `acc >= 15` → no wake.
 
 ## Rules
 
-- Never run `CursorCliClient.debug_fix` with `workspace` set to the live cold-queue
+- Never run `ClaudeCodeCliClient.debug_fix` with `workspace` set to the live cold-queue
   checkout. Use `repair_worktree.ensure_repair_worktree` (default
   `<repo-parent>/<repo-name>-babysitter-repair`).
 - Repair PRs must target `--base synthesis-snapshot-20260622` (override via
   `BABYSITTER_PR_BASE`), never `master`/`main`.
 - Observe-only: `--no-auto-repair` (no Cloud/smoke/merge).
-- Default repair model: Cursor Grok 4.5 (`cursor-grok-4.5-high`).
+- Default repair model: Claude Fable 5 (`claude-fable-5`) via Claude Code CLI.
 - Local sim (`--local-sim-scenario`) never authorizes a real queue.
 
 ## Smoke gate (locked)
@@ -43,57 +43,34 @@ incident per cell; `acc >= 15` → no wake.
 ## Sandbox
 
 ```bash
-python -m pytest \
+/usr/local/bin/python3 -m pytest \
   tests/test_zero_acc_babysitter_local_sim.py \
-  tests/runtime/test_smoke_stale_metrics.py \
-  tests/runtime/test_reevaluation_provenance.py -q
+  tests/test_production_watch_merge.py \
+  tests/test_babysitter_repair_worktree.py -q
 
-PYTHONPATH=. python -m scripts.runtime.zero_acc_babysitter \
+PYTHONPATH=. /usr/local/bin/python3 -m scripts.runtime.zero_acc_babysitter \
   --local-sim-scenario tier_a_harness
 ```
 
-## Bootstrap recovery (smoke-infra fix deadlock)
+## Bootstrap status — spider-qwen25-1p5b:2:telemetry:1784857356
 
-If the smoke *infrastructure itself* is what is broken (incident
-spider-qwen25-1p5b:2:telemetry:1784857356), the loop deadlocks: repair commits
-can only reach live via a smoke-gated merge, but the running watcher keeps
-executing its cached pre-fix decide (it reuses stale `smoke_process_rc` from
-`incident.extra` and never re-runs the smoke — instant same-second SMOKE_FAIL,
-no new `smoke_*` out dir). No cloud attempt can fix a running process; operator
-action is required:
+2026-07-24 ~05:30: smoke PASSED on the PR tip (acc 20%, rc=0,
+`smoke_spider-qwen25-1p5b_20260724T045916Z`), but `merge_and_pull` failed:
+git refuses to merge over uncommitted live deploy state (it refuses for any
+dirty path the merge updates, even byte-identical ones). Unblock, in the
+live checkout on `synthesis-snapshot-20260622`:
 
-1. Stop the watcher (it caches modules at first use; commits are invisible to it).
-2. Either pull the repair branch's babysitter fixes into the live checkout, or
-   delete the stale `smoke_report_path` / `smoke_process_rc` / `smoke_metrics`
-   keys from `logs/zero_acc_babysitter/incidents/<incident>.json` so the
-   resumed decide re-runs a real smoke (the PR-tip reevaluate defaults the
-   split side to `train` for babysitter smoke report paths).
-3. Restart the watcher; resume re-runs the smoke on the PR tip and the normal
-   gate decides the merge. Never hand-write passing smoke metrics.
+```bash
+git commit -a -m "snapshot live deploy state before babysitter merge"
+```
 
-Once the fixed `production_hooks.py` is live, step 2's JSON-key deletion is
-optional: `make_smoke_decide` discards any metrics whose `smoke_attempt` stamp
-is missing or differs from `cloud_attempt_count`, so a restart alone makes the
-resumed decide re-run a real smoke. Status 2026-07-24: `smoke.py` +
-`production_hooks.py` were synced into the live checkout at 04:47 UTC (the
-04:10 rc=2 smoke was the pre-fix command missing `--spider-split-name`). The
-restarted watcher correctly flagged the stale metrics at 04:54 and re-ran a
-real smoke, which failed for a new reason: vLLM engine init on cuda:0
-(1.75/39.5 GiB free — GPU 0 occupied by others; the smoke env never set
-`CUDA_VISIBLE_DEVICES`). Fix on the repair branch: smoke jobs setdefault
-`CUDA_VISIBLE_DEVICES` to the freest of GPUs 1/2 (`pick_smoke_gpu`) and
-`SMOKE_GPU_MEM_UTIL` dropped 0.4 → 0.3 so the 1.5B smoke fits beside
-neighbors. Sync `smoke.py` live + restart the watcher for it to take effect.
-
-Caution for step 2: do NOT pull/copy the whole repair branch into the live
-checkout — the live working tree can carry newer uncommitted deploy state (it
-was ahead on the Cursor→Claude Code CLI migration in `cloud.py` /
-`production_watch.py` / `__main__.py` on 2026-07-24). Diff each file first and
-sync only the fix-carrying files whose live copy has no unique lines
-(`smoke.py`, `production_hooks.py` for this incident). Restart may be scheduled
-detached (`systemd-run --user --on-active=N systemctl --user restart
-csd-zero-acc-babysitter.service`) since a direct restart kills the in-cgroup
-repair agent (`KillMode=control-group`).
+then let the watcher's next resume retry the merge (no restart needed). The
+repair branch now carries live's uncommitted Claude-CLI migration and
+gpu-scheduling edits verbatim, so the merge resolves cleanly; going forward
+`merge_pr_and_pull` auto-commits tracked dirty live state and merges with
+`-X theirs` (live's side stays recoverable in the snapshot commit). See
+`saved-results/2026-07-24-babysitter-merge-deadlock-unblock.md` for fixes
+dropped from the merge result that should be re-landed (none load-bearing).
 
 ## See also
 

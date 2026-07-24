@@ -1,14 +1,14 @@
-"""Zero-acc babysitter package (Cursor CLI repair; Cloud Agents unused).
+"""Zero-acc babysitter package (Claude Code CLI repair).
 
 Callers: tests, `python -m scripts.runtime.zero_acc_babysitter`, focal mock suite.
-API: exports CellState, PathKind, LocalBabysitterSim, CursorCliClient, NullCloudClient.
+API: exports CellState, PathKind, LocalBabysitterSim, ClaudeCodeCliClient, NullCloudClient.
 Data schemas: none (re-exports only).
-User instruction: "Replace/extend NullCloudClient with a real CursorCliClient".
+User instruction: repair agent is ClaudeCodeCliClient (claude-fable-5).
 """
 
 from scripts.runtime.zero_acc_babysitter.cloud import (
-    DEFAULT_CURSOR_AGENT_MODEL,
-    CursorCliClient,
+    DEFAULT_CLAUDE_CODE_MODEL,
+    ClaudeCodeCliClient,
     NullCloudClient,
 )
 from scripts.runtime.zero_acc_babysitter.constants import CellState, PathKind
@@ -18,7 +18,7 @@ __all__ = [
     "CellState",
     "PathKind",
     "LocalBabysitterSim",
-    "CursorCliClient",
-    "DEFAULT_CURSOR_AGENT_MODEL",
+    "ClaudeCodeCliClient",
+    "DEFAULT_CLAUDE_CODE_MODEL",
     "NullCloudClient",
 ]

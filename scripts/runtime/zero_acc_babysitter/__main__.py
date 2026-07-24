@@ -64,14 +64,14 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help=(
-            "Sibling git worktree for Cursor CLI repair checkouts "
+            "Sibling git worktree for Claude Code CLI repair checkouts "
             "(default: <repo-parent>/<repo-name>-babysitter-repair)."
         ),
     )
     parser.add_argument(
         "--no-auto-repair",
         action="store_true",
-        help="Observe-only: never run CursorCliClient.debug_fix.",
+        help="Observe-only: never run ClaudeCodeCliClient.debug_fix.",
     )
     args = parser.parse_args(argv)
     if args.watch:
