@@ -307,14 +307,22 @@ def synthesis_environment(
             "CSD_CLAUDE_EXECUTABLE": "/home/aadivyar/.local/bin/claude",
             "CSD_CLAUDE_CONFIG_DIR": "/home/aadivyar/.claude-csd-synthesis",
             "CSD_CLAUDE_EXPECTED_ACCOUNT": "aadivya@fermi.ai",
+            # Per-job vLLM share (run_synthesis reads this; CLI util flag is gone).
+            "CSD_VLLM_GPU_MEMORY_UTILIZATION": str(job["gpu_mem_util"]),
         }
     )
     if job["dataset"] in POOLABLE_DATASETS:
         env["CSD_EVAL_GPU_SLOTS"] = gpu_list
+    if job["dataset"] == "smiles":
+        # Unique-valid / diversity need span sampling; default argmax collapses
+        # every example to the same tiny SMILES (zero unique-valid).
+        env["CSD_CONSTRAINED_TEMPERATURE"] = "0.7"
     return env
 
 
-def author_free_environment(inherited: dict[str, str], gpu: int) -> dict[str, str]:
+def author_free_environment(
+    inherited: dict[str, str], gpu: int, *, dataset: str | None = None
+) -> dict[str, str]:
     clean = {
         key: value
         for key, value in inherited.items()
@@ -323,6 +331,8 @@ def author_free_environment(inherited: dict[str, str], gpu: int) -> dict[str, st
     clean.pop("CSD_EVAL_GPU_SLOTS", None)
     clean.pop("CSD_EVAL_POOL_SIZE", None)
     clean["CUDA_VISIBLE_DEVICES"] = str(gpu)
+    if dataset == "smiles":
+        clean["CSD_CONSTRAINED_TEMPERATURE"] = "0.7"
     return clean
 
 
@@ -987,7 +997,9 @@ def run_job(
         status = _run_command_teeing_stdout(
             heldout_command(job, python, csd),
             cwd=repo,
-            env=author_free_environment(os.environ, primary_gpu),
+            env=author_free_environment(
+                os.environ, primary_gpu, dataset=str(job["dataset"])
+            ),
             streams=(log, combined_log),
         )
     heldout_complete = status == 0 and heldout_is_complete(heldout_path, job)
