@@ -557,5 +557,93 @@ def run_hardened_smoke_job(
     return decision
 
 
+def run_twin_accuracy_probe(
+    cell_id: str,
+    *,
+    live_repo: Path,
+    runner: SmokeJobRunner | None = None,
+    python_bin: str | None = None,
+    sample_size: int = SMOKE_SAMPLE_SIZE,
+) -> float | None:
+    """Measure Tier-A twin accuracy: tiny re-eval of the newest GeneratedCSD
+    through the live harness under the smoke model.
+
+    Unlike run_hardened_smoke_job this never touches the repair worktree or
+    any repair branch — it runs before an incident exists, purely to answer
+    "can the live harness still produce a nonzero score?". Returns measured
+    accuracy percent, or None when nothing could be measured (missing CSD,
+    nonzero rc, unreadable report); callers map None to twin=0.
+    """
+    live = live_repo.resolve()
+    out_dir = (
+        live
+        / "logs"
+        / "zero_acc_babysitter"
+        / f"twin_{cell_id}_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}"
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    report_path = out_dir / "twin_report.json"
+
+    csd = find_latest_generated_csd(live, cell_id)
+    if csd is None:
+        logger.warning("twin probe: no GeneratedCSD for cell=%s", cell_id)
+        return None
+
+    dataset, smiles_class = cell_dataset_and_smiles_class(cell_id)
+    max_steps = (
+        SMOKE_MAX_STEPS_SMILES if dataset == "smiles" else SMOKE_MAX_STEPS_DEFAULT
+    )
+    py = python_bin or sys.executable
+    cmd = [
+        py,
+        "-m",
+        "synthesis.scripts.reevaluate_compiled_csd",
+        str(csd),
+        "--dataset",
+        dataset,
+        "--eval-model",
+        SMOKE_MODEL,
+        "--sample-size",
+        str(sample_size),
+        "--max-steps",
+        str(max_steps),
+        "--vllm-gpu-memory-utilization",
+        str(SMOKE_GPU_MEM_UTIL),
+        "--output-json",
+        str(report_path),
+    ]
+    if smiles_class:
+        cmd.extend(["--smiles-classes", smiles_class])
+    if dataset == "gsm_symbolic":
+        cmd.extend(["--gsm-split-name", "train"])
+    elif dataset == "spider":
+        cmd.extend(["--spider-split-name", "train"])
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(live) + (
+        os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""
+    )
+    env.setdefault("CSD_CONSTRAINED_TEMPERATURE", "0.7")
+    env.setdefault("CSD_VLLM_GPU_MEMORY_UTILIZATION", str(SMOKE_GPU_MEM_UTIL))
+    env.setdefault("CUDA_VISIBLE_DEVICES", pick_smoke_gpu())
+
+    job = runner or _default_subprocess_runner
+    logger.info(
+        "twin probe start cell=%s csd=%s out=%s cmd=%s",
+        cell_id,
+        csd,
+        out_dir,
+        " ".join(cmd),
+    )
+    rc = int(job(cmd, cwd=live, env=env, out_dir=out_dir))
+    metrics = parse_smoke_report(report_path, process_rc=rc)
+    logger.info(
+        "twin probe done cell=%s rc=%s acc=%s", cell_id, rc, metrics.accuracy_pct
+    )
+    if rc != 0:
+        return None
+    return metrics.accuracy_pct
+
+
 def path_requires_twin(path_kind: str) -> bool:
     return path_kind in {PathKind.HARNESS.value, PathKind.TELEMETRY.value}
