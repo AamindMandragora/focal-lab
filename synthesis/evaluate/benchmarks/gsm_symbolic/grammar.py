@@ -67,6 +67,45 @@ def build_numeric_only_grammar(base_grammar: str) -> str:
     )
 
 
+def crane_valid_vars_gsm_grammar(valid_vars: List[str]) -> str:
+    """Per-example GSM grammar matching CRANE ``get_valid_vars_gsm_grammar``.
+
+    Used for constrained decode (adaptive CRANE parity). Scoring syntax still uses
+    the static ``gsm.lark`` file via ``eval_logic._final_block_parser``.
+    """
+    if not valid_vars:
+        raise ValueError("crane_valid_vars_gsm_grammar requires at least one variable")
+    var_production = " | ".join(f'"{var}"' for var in valid_vars)
+    return f"""start: space? "<" "<" space? expr space? ">" ">" space?
+
+expr: expr space? "+" space? term
+     | expr space? "-" space? term
+     | term
+
+term: term space? "*" space? factor
+     | term space? "/" space? factor
+     | term space? "//" space? factor
+     | term space? "%" space? factor
+     | factor space?
+
+factor: "-" space? factor
+       | TYPE "(" space? expr space? ")"
+       | primary space?
+
+primary: NUMBER
+        | var
+        | "(" space? expr space? ")"
+
+var: {var_production}
+
+TYPE.4: "int"
+
+space: " "
+
+%import common.CNAME -> VARIABLE
+%import common.NUMBER"""
+
+
 def extract_variables_from_mapping(
     variable_mapping: dict,
     include_string_variables: bool = False,

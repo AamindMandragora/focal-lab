@@ -65,6 +65,7 @@ def setup_dafny_environment(
         _dafny,
         start="start",
         tokenizer=tok,
+        accept_mask_backend="llguidance",
     )
     parser = LarkDafnyParser(lm._Tokens)
 

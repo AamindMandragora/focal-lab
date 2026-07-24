@@ -20,7 +20,7 @@ For a concise index of every `LM`, `Parser`, and `CSDHelpers` member, see [`../l
 
 ## Design distinction: GCD vs CRANE
 
-GCD forces constrained mode from the first token (`OpenConstrainedSpan` immediately, all model-chosen tokens are grammar-masked). CRANE allows unconstrained reasoning before the constrained expression and uses adaptive switching. On benchmarks where the output is a formal expression, CRANE can reason before entering the constrained expression, while GCD constrains from token 1. Current Spider and SMILES evaluation prompts ask for bare SQL or bare SMILES rather than visible `<< >>` spans.
+GCD forces constrained mode from the first token (`OpenConstrainedSpan` immediately, all model-chosen tokens are grammar-masked). CRANE allows unconstrained reasoning before `<<` and uses adaptive switching. On benchmarks like Spider/SMILES where the output is a formal expression, CRANE can reason ("I need to join these tables...") before emitting `<<SELECT ...>>`, while GCD constrains from token 1.
 
 ## Verify
 

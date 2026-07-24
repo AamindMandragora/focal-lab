@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from synthesis.evaluate.benchmarks.prompt_profiles import render_strategy_prompt
-
 _SPIDER_FEW_SHOT = (
     "Example:\n"
     "db_id: concert_singer\n"
@@ -51,7 +49,14 @@ def format_spider_itergen_aligned_prompt(example: dict[str, Any]) -> str:
     No few-shot example and no ``<< >>`` instruction: span opening must come from
     a FORCING strategy (OpenConstrainedSpan), not from the model emitting ``<<``.
     """
-    return render_strategy_prompt("spider", "itergen", example)
+    db_id = example.get("db_id", "")
+    db_info = example.get("db_info", "")
+    question = example.get("question", "")
+    return (
+        f"db_id: {db_id}\n"
+        f"db_info: {db_info}\n"
+        f"question: {question} Only output the SQL quey. \nSQL:"
+    )
 
 
 def format_spider_messages(

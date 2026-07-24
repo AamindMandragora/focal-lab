@@ -25,6 +25,18 @@ TEMPERATURE = 0.7
 VLLM_ENFORCE_EAGER = True
 EVAL_EARLY_STOP_ON_ANSWER = True  # CRANE-style answer stopping; adopted 2026-07-17
 VLLM_GPU_MEMORY_UTILIZATION = 0.81  # GPU memory fraction reserved by vLLM
+# Per-eval-model vLLM budgets, mirrored by the cold-queue scheduler. The child
+# resolves these itself so a stale queue controller that fails to export
+# CSD_VLLM_GPU_MEMORY_UTILIZATION cannot push a small model to the global 0.81
+# share on a shared GPU (incident smiles-acrylates-qwen35-2b:2:memory:1784879589).
+VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL = {
+    "Qwen/Qwen2.5-1.5B-Instruct": 0.4,
+    "Qwen/Qwen2.5-7B-Instruct": 0.45,
+    "Qwen/Qwen2.5-14B-Instruct": 0.81,
+    "Qwen/Qwen3.5-2B": 0.4,
+    "Qwen/Qwen3.5-4B": 0.45,
+    "Qwen/Qwen3.5-9B": 0.6,
+}
 VLLM_MAX_MODEL_LEN = 16384  # max context length passed to vLLM (must fit prompt + output)
 
 # Threshold-impossible early stops may only fire once at least this many

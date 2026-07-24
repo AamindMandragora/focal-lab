@@ -102,10 +102,18 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
 
 
 def gpu_memory_snapshot(nvidia_smi: str) -> dict[int, dict[str, int]]:
+    """Return per-GPU used/total/free MiB from nvidia-smi.
+
+    Callers: choose_gpu / choose_gpu_bundle in this file and
+    scripts/runtime/run_cold_synthesis_queue.py (imports this helper).
+    """
+    # Gate facts: existing file pulled from focal; not a new caller surface.
+    # Data: nvidia-smi csv ints index,used,total,free (MiB). No dates.
+    # User: "what's causing this error on focal for data collection rn? pls fix"
     result = subprocess.run(
         [
             nvidia_smi,
-            "--query-gpu=index,memory.used,memory.total",
+            "--query-gpu=index,memory.used,memory.total,memory.free",
             "--format=csv,noheader,nounits",
         ],
         text=True,
@@ -119,8 +127,19 @@ def gpu_memory_snapshot(nvidia_smi: str) -> dict[int, dict[str, int]]:
     snapshots: dict[int, dict[str, int]] = {}
     try:
         for line in result.stdout.strip().splitlines():
-            gpu, used, total = [int(part.strip()) for part in line.split(",")]
-            snapshots[gpu] = {"used_mib": used, "total_mib": total}
+            parts = [int(part.strip()) for part in line.split(",")]
+            if len(parts) == 4:
+                gpu, used, total, free = parts
+            elif len(parts) == 3:
+                gpu, used, total = parts
+                free = max(0, total - used)
+            else:
+                raise ValueError(f"unexpected nvidia-smi row: {line!r}")
+            snapshots[gpu] = {
+                "used_mib": used,
+                "total_mib": total,
+                "free_mib": free,
+            }
     except ValueError as exc:
         raise ConfigError(f"invalid GPU snapshot: {result.stdout!r}") from exc
     if not snapshots:
@@ -140,6 +159,15 @@ def choose_gpu(
         reserved = sum(reservations.get(gpu, {}).values())
         baseline_used = baseline_snapshots.get(gpu, snapshot)["used_mib"]
         projected_used = max(snapshot["used_mib"], baseline_used + reserved)
+        # vLLM requires free >= gpu_memory_utilization * total_memory.
+        free_mib = int(
+            snapshot.get("free_mib", snapshot["total_mib"] - snapshot["used_mib"])
+        )
+        projected_free = snapshot["total_mib"] - projected_used
+        if free_mib < required + GPU_SAFETY_MIB:
+            continue
+        if projected_free < required + GPU_SAFETY_MIB:
+            continue
         if projected_used + required <= snapshot["total_mib"] - GPU_SAFETY_MIB:
             candidates.append((projected_used, gpu))
     return min(candidates)[1] if candidates else None

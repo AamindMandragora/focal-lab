@@ -628,3 +628,140 @@ the first named a compiled directory instead of `module_.py` and the second
 named the split at repo root instead of its manifest-recorded path; neither
 allocated a GPU or called a provider. No Bedrock, author-model, or other paid
 provider call was made by H99.
+
+### H100 preregistration — 2026-07-19T10:45Z
+
+Hypothesis: rationale summarization returns HTTP 401 because the configured
+Vertex path sends `GEMINI_API_KEY` to the project-scoped Vertex OAuth endpoint.
+Replacing only the rationale-summary transport with the authenticated FOCAL
+Codex CLI and `gpt-5.6-luna` will return the same one-sentence claim without a
+Google request, while leaving the Claude author transport and synthesis behavior
+unchanged.
+
+Single variable / tweak: change the rationale-summary backend from `vertex` to
+an isolated `codex` backend fixed to `gpt-5.6-luna`. Do not change the author
+model/backend, rationale prompt, synthesis strategy, helper policy, evaluation
+model, examples, bars, grammars, graders, splits, or queue state.
+
+Prior: **99%**. Four unique live summary attempts returned Google's HTTP 401.
+FOCAL's code selects `GEMINI_API_KEY` before `VERTEX_AI_ACCESS_TOKEN` for the
+project-scoped Vertex URL. FOCAL now has Codex CLI `0.144.1` authenticated as the
+user-approved ChatGPT Pro account `aadivya@fermi.ai`, and the CLI exposes
+non-interactive `codex exec -m gpt-5.6-luna`.
+
+Falsifiable prediction: a fake-executable transport test fails before the new
+backend exists; after the smallest implementation it passes and proves the
+exact rationale reaches Codex stdin from a clean temporary directory with an
+ephemeral, read-only, low-effort Luna invocation. One approved live call through
+`StrategyGenerator.summarize_rationale_claim` returns a non-empty sentence,
+records no `HTTP 401`, and makes no Google, AWS, Anthropic API, or OpenAI API-key
+request. The call uses the approved `aadivya@fermi.ai` Codex subscription
+allowance; no synthesis queue or GPU evaluation is launched.
+
+H100 result: **confirmed.** The tightened transport test was red **4/4** before
+the backend existed. The focused summary and process-cleanup checks were green
+**14/14** after the change. The added fourteenth check first failed **1/1** and
+then passed after removing the account-check cache, proving every launch
+re-reads the saved login. One approved call through the live FOCAL
+`StrategyGenerator` finished in 4.445 seconds and returned a non-empty 14-word
+summary without using the full-rationale fallback. Its log contains no match for
+`HTTP 401`, Vertex, Gemini, Anthropic, Bedrock, or provider API-key names. The
+live account guard verified `aadivya@fermi.ai` and the request log names
+`gpt-5.6-luna`. No synthesis or `run_cold` worker was launched; only pre-existing
+log-monitor processes were present after validation.
+
+### H101 preregistration — 2026-07-19T12:10Z
+
+H101 hypothesis: the exhaustive cold queue can combine cell-level and vLLM
+worker-level parallelism safely by making the queue the sole owner of physical
+GPU assignment. Two concurrent GSM/Spider cells should each receive one
+disjoint two-GPU bundle, and each persistent evaluation pool should create
+workers only on its assigned bundle. SMILES should retain its stateful
+single-GPU path.
+
+Single variable: replace the cold queue's scalar GPU reservation with an
+explicit dataset-aware GPU bundle and pass that same bundle to the persistent
+evaluation pool. GSM and Spider request two GPUs; SMILES requests one. Do not
+change prompts, grammars, graders, datasets, splits, evaluation examples,
+thresholds, model settings, author settings, iteration caps, or warm-start
+policy. Do not launch the paid queue as part of this implementation check.
+
+Prior: **90%** that explicit bundles remove the collision risk without changing
+evaluation results. The queue already owns memory reservations, and the worker
+pool already supports one process per GPU; the missing contract is an exact
+list of physical GPU IDs shared by both components. The main risk is mishandling
+physical versus CUDA-local numbering when a parent process sees multiple GPUs.
+
+Prediction: before implementation, focused tests will fail because queue jobs
+receive only one GPU and the worker pool independently scans all globally idle
+GPUs. After implementation, a four-GPU simulation will start exactly two
+GSM/Spider cells concurrently with two disjoint GPU IDs each, delay the next
+poolable cell until a full bundle is released, and preserve one-GPU SMILES
+execution. Worker-pool tests will prove that explicit physical IDs are consumed
+in queue order without global detection. Expected validation cost: **0** model
+calls, **0** GPU model launches, and **0** billed API calls.
+
+H101 implementation result: **confirmed in the isolated worktree; not launched.**
+The first focused run was red **3/3**: the scalar environment rendered `(3, 1)`
+instead of `3,1`, no bundle allocator existed, and the worker pool still called
+global GPU detection. A separate source-of-truth test was red **1/1** because
+the queue reserved `0.80` while the live evaluator uses `0.81` vLLM memory.
+
+After implementation, the focused queue/pool suite passed **28/28**, and the
+broader queue/pool/recovery regression set passed **66/66**. A no-model four-GPU
+simulation started two GSM cells concurrently on disjoint bundles `(0, 1)` and
+`(2, 3)`, never exceeded two poolable cells, and reported zero overlap. The
+same simulation ran four synthetic SMILES cells on four one-GPU bundles with
+zero overlap. Queue dispatch/release logs now record exact GPU lists and worker
+counts. Validation used **0** model calls, **0** GPU model launches, and **0**
+billed API calls; the paid service remained stopped.
+
+### H102 preregistration — 2026-07-19T13:28Z
+
+H102 hypothesis: H101 coordinates GPU ownership correctly, but its persistent
+pool still evaluates worker shards serially because `_dispatch` calls the
+blocking `worker.evaluate` inside a plain loop. Sending the already-independent
+shards concurrently will activate both queue-owned vLLM workers per cell and
+turn the live configuration from two cells by one active worker into the
+requested two cells by two active workers.
+
+Single variable: execute each non-empty worker shard concurrently inside
+`EvalWorkerPool._dispatch`, then merge results and preserve the existing
+dead-worker retry behavior. Do not change prompts, grammars, graders, datasets,
+splits, examples, model settings, queue bundle sizes, thresholds, author
+settings, iteration caps, or warm-start policy.
+
+Prior: **99%**. The first live H101 launch created four correctly pinned worker
+processes, but only two `VLLM::EngineCore` processes. GPUs 3 and 1 held about
+33 GiB each while the paired GPUs 0 and 2 stayed at 10 MiB. Source inspection
+shows `_dispatch` waiting synchronously for one worker before invoking the next.
+The paid queue was stopped after the first two author calls and before either
+49-example attempt produced a score.
+
+Falsifiable prediction: a focused timing/coordination test on current code will
+show worker 2 does not enter `evaluate` until worker 1 is released. After the
+fix, both workers enter before either is released, results remain in original
+example order, and a failing shard is still retried on a surviving worker. The
+existing pool and queue tests remain green. A restarted live run must show four
+simultaneous EngineCore processes and nontrivial memory allocation on all four
+assigned GPUs before its first score. The focused test itself uses **0** model
+loads and **0** paid provider calls.
+
+H102 result: **confirmed live.** The concurrency test was red **1/1** on the
+serial loop: worker 2 did not start within 0.5 seconds while worker 1 was
+blocked. After submitting non-empty shards through a thread pool, the focused
+worker-pool file passed **4/4** and the broader queue/pool/recovery set passed
+**67/67** with two unrelated warnings.
+
+The first paid H101 launch was stopped before either 49-example evaluation
+produced a score. Its two author calls were recorded by raising the campaign
+accounting from 480 to 482 calls without reducing any useful cold-run iteration
+cap. The two partial output trees and logs were preserved under
+`outputs/invalidated/2026-07-19-h101-serial-worker-launch` and were not reused.
+
+The cold queue restarted at **2026-07-19T13:37:22Z**. Live logs for both initial
+cells report `parallel dispatch: 2 worker shard(s) started`. Four simultaneous
+`VLLM::EngineCore` processes were present, and physical GPUs 0, 1, 2, and 3
+held approximately 33.9, 16.4, 16.4, and 33.9 GiB respectively. This confirms
+two concurrent cells with two active, disjoint vLLM workers each. The service
+remained active after the check.

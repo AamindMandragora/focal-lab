@@ -25,6 +25,25 @@ class default__:
 
         return _dafny.quantifier(_dafny.IntegerRange(0, ((len(s)) + (1)) + (1)), False, lambda0_)
 
+    @staticmethod
+    def RenderPrefix(p):
+        d_0___accumulator_ = _dafny.SeqWithoutIsStrInference([])
+        while True:
+            with _dafny.label():
+                if (len(p)) == (0):
+                    return (d_0___accumulator_) + (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))
+                elif True:
+                    d_0___accumulator_ = (d_0___accumulator_) + ((p)[0])
+                    in0_ = _dafny.SeqWithoutIsStrInference((p)[1::])
+                    p = in0_
+                    raise _dafny.TailCall()
+                break
+
+    @staticmethod
+    def RenderedEndsWith(p, suf):
+        d_0_s_ = default__.RenderPrefix(p)
+        return ((len(d_0_s_)) >= (len(suf))) and ((_dafny.SeqWithoutIsStrInference((d_0_s_)[(len(d_0_s_)) - (len(suf))::])) == (suf))
+
 
 class LM:
     def  __init__(self):
@@ -250,7 +269,7 @@ class CSDHelpers:
                     d_4_tok_ = (d_0_chunk_)[d_3_i_]
                     d_5_extended_: _dafny.Seq
                     d_5_extended_ = (currentOut) + (_dafny.SeqWithoutIsStrInference([d_4_tok_]))
-                    if (parser).IsValidPrefix(d_5_extended_):
+                    if ((parser).IsValidPrefix(d_5_extended_)) and (not((parser).IsDeadPrefix(d_5_extended_))):
                         currentOut = d_5_extended_
                     elif True:
                         raise _dafny.Break("0")
@@ -308,7 +327,7 @@ class CSDHelpers:
         generatedOut: _dafny.Seq = _dafny.Seq({})
         insideOut: bool = False
         currentOut: _dafny.Seq = _dafny.Seq({})
-        if ((len(currentConstrained)) > (0)) and (((currentConstrained)[(len(currentConstrained)) - (1)]) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>")))):
+        if default__.RenderedEndsWith(currentConstrained, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>"))):
             generatedOut = generated
         elif True:
             generatedOut = (generated) + (_dafny.SeqWithoutIsStrInference([_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>"))]))
@@ -316,6 +335,111 @@ class CSDHelpers:
         currentOut = _dafny.SeqWithoutIsStrInference([])
         (self).cost = (self.cost) + (1)
         return generatedOut, insideOut, currentOut
+
+    def CarsTrieStep(self, lm, parser, prompt, cur, eosToken, constrainFirst):
+        next_: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        ok: bool = False
+        (lm).GenerateLogits((prompt) + (cur))
+        out0_: bool
+        out0_ = (lm).CarsAdvanceTrieAndAdjustScores(parser, cur, constrainFirst)
+        ok = out0_
+        if not(ok):
+            next_ = eosToken
+            (self).cost = (self.cost) + (1)
+            return next_, ok
+        out1_: _dafny.Seq
+        out1_ = (lm).ChooseNextTokenUnconstrained()
+        next_ = out1_
+        (self).cost = (self.cost) + (1)
+        return next_, ok
+
+    def RejectLastInTrieHelper(self, lm):
+        (lm).RejectLastInTrie()
+
+    def ApplyTraceRecurrenceHelper(self, lm, factor):
+        (lm).ApplyTraceRecurrence(factor)
+
+    def ForwardUntilSymbol(self, lm, parser, prompt, cur, eosToken, unit, num, budget):
+        out: _dafny.Seq = _dafny.Seq({})
+        out = cur
+        if ((num) == (0)) or ((budget) == (0)):
+            return out
+        d_0_baseline_: int
+        d_0_baseline_ = (parser).StructuredCharLength(cur)
+        d_1_steps_: int
+        d_1_steps_ = 0
+        with _dafny.label("1"):
+            while (d_1_steps_) < (budget):
+                with _dafny.c_label("1"):
+                    if ((parser).CompletedSymbolCount(out, unit, d_0_baseline_)) >= (num):
+                        raise _dafny.Break("1")
+                    d_2_next_: _dafny.Seq
+                    d_3_wasConstrained_: bool
+                    out0_: _dafny.Seq
+                    out1_: bool
+                    out0_, out1_ = (self).ConfidenceGatedStep(lm, parser, prompt, out, eosToken)
+                    d_2_next_ = out0_
+                    d_3_wasConstrained_ = out1_
+                    d_1_steps_ = (d_1_steps_) + (1)
+                    if (d_2_next_) == (eosToken):
+                        raise _dafny.Break("1")
+                    out = (out) + (_dafny.SeqWithoutIsStrInference([d_2_next_]))
+                    pass
+            pass
+        if ((parser).CompletedSymbolCount(out, unit, d_0_baseline_)) >= (num):
+            d_4_total_: int
+            d_4_total_ = (parser).CompletedSymbolCount(out, unit, 0)
+            if (d_4_total_) > (0):
+                d_5_endIdx_: int
+                d_5_endIdx_ = (parser).SymbolEndTokenIndex(out, unit, (d_4_total_) - (1))
+                if (d_5_endIdx_) <= (len(out)):
+                    out = _dafny.SeqWithoutIsStrInference((out)[:d_5_endIdx_:])
+        return out
+
+    def BackwardToSymbol(self, parser, cur, unit, num):
+        truncated: _dafny.Seq = _dafny.Seq({})
+        if ((len(cur)) == (0)) or ((num) == (0)):
+            truncated = cur
+            return truncated
+        d_0_total_: int
+        d_0_total_ = (parser).CompletedSymbolCount(cur, unit, 0)
+        if (d_0_total_) < (num):
+            truncated = cur
+            return truncated
+        d_1_which_: int
+        d_1_which_ = (d_0_total_) - (num)
+        d_2_idx_: int
+        d_2_idx_ = (parser).SymbolStartTokenIndex(cur, unit, d_1_which_)
+        truncated = _dafny.SeqWithoutIsStrInference((cur)[:d_2_idx_:])
+        return truncated
+
+    def ViewLastSymbol(self, parser, cur, unit):
+        text: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        d_0_total_: int
+        d_0_total_ = (parser).CompletedSymbolCount(cur, unit, 0)
+        if (d_0_total_) == (0):
+            text = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+            return text
+        text = (parser).RenderSymbol(cur, unit, (d_0_total_) - (1))
+        return text
+
+    def IsAllowedVarText(self, groups, text):
+        ok: bool = False
+        ok = False
+        if (text) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))):
+            return ok
+        d_0_flat_: _dafny.Seq
+        out0_: _dafny.Seq
+        out0_ = CSDHelpers.FlattenTokenGroups(groups)
+        d_0_flat_ = out0_
+        d_1_i_: int
+        d_1_i_ = 0
+        while (d_1_i_) < (len(d_0_flat_)):
+            if ((d_0_flat_)[d_1_i_]) == (text):
+                ok = True
+                return ok
+            d_1_i_ = (d_1_i_) + (1)
+        return ok
 
     def ConstrainedStep(self, lm, parser, prompt, generated, eosToken):
         next_: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
@@ -326,6 +450,26 @@ class CSDHelpers:
         next_ = out0_
         (self).cost = (self.cost) + (1)
         return next_
+
+    def DeadEndAvoidingStep(self, lm, parser, prompt, generated, eosToken, maxRetries):
+        next_: _dafny.Seq = _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ""))
+        success: bool = False
+        (lm).GenerateLogits((prompt) + (generated))
+        (lm).MaskValidNextAndEos(parser, generated, eosToken)
+        out0_: _dafny.Seq
+        out0_ = (lm).ChooseNextToken()
+        next_ = out0_
+        d_0_tries_: int
+        d_0_tries_ = 0
+        while (((next_) != (eosToken)) and ((not((parser).IsValidPrefix((generated) + (_dafny.SeqWithoutIsStrInference([next_]))))) or ((parser).IsDeadPrefix((generated) + (_dafny.SeqWithoutIsStrInference([next_])))))) and ((d_0_tries_) < (maxRetries)):
+            (lm).MaskToken(next_)
+            out1_: _dafny.Seq
+            out1_ = (lm).ChooseNextToken()
+            next_ = out1_
+            d_0_tries_ = (d_0_tries_) + (1)
+        success = ((next_) == (eosToken)) or (((parser).IsValidPrefix((generated) + (_dafny.SeqWithoutIsStrInference([next_])))) and (not((parser).IsDeadPrefix((generated) + (_dafny.SeqWithoutIsStrInference([next_]))))))
+        (self).cost = (self.cost) + (1)
+        return next_, success
 
     def GroupHasValidMember(self, parser, prefix, group):
         anyValid: bool = False
@@ -458,9 +602,9 @@ class CSDHelpers:
         d_0_steps_: int
         d_0_steps_ = 0
         terminatedByEos = False
-        with _dafny.label("1"):
+        with _dafny.label("2"):
             while ((d_0_steps_) < (maxSteps)) and (not((parser).IsCompletePrefix(generated))):
-                with _dafny.c_label("1"):
+                with _dafny.c_label("2"):
                     d_1_next_: _dafny.Seq
                     out0_: _dafny.Seq
                     out0_ = (self).ConstrainedStep(lm, parser, prompt, generated, eosToken)
@@ -468,7 +612,7 @@ class CSDHelpers:
                     if (d_1_next_) == (eosToken):
                         d_0_steps_ = (d_0_steps_) + (1)
                         terminatedByEos = True
-                        raise _dafny.Break("1")
+                        raise _dafny.Break("2")
                     generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_1_next_]))
                     d_0_steps_ = (d_0_steps_) + (1)
                     pass
@@ -536,6 +680,89 @@ class CSDHelpers:
         out0_: _dafny.Seq
         out0_ = CSDHelpers.RollbackToValidPrefix(parser, currentConstrained)
         currentOut = out0_
+        generatedOut = (d_0_stablePrefix_) + (currentOut)
+        return generatedOut, currentOut
+
+    @staticmethod
+    def RollbackToCompletePrefix(parser, generated):
+        repaired: _dafny.Seq = _dafny.Seq({})
+        repaired = generated
+        while ((repaired) != (_dafny.SeqWithoutIsStrInference([]))) and (not((parser).IsCompletePrefix(repaired))):
+            repaired = _dafny.SeqWithoutIsStrInference((repaired)[:(len(repaired)) - (1):])
+        return repaired
+
+    def RollbackConstrainedToComplete(self, parser, generated, currentConstrained):
+        generatedOut: _dafny.Seq = _dafny.Seq({})
+        currentOut: _dafny.Seq = _dafny.Seq({})
+        d_0_stablePrefix_: _dafny.Seq
+        d_0_stablePrefix_ = _dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrained)):])
+        out0_: _dafny.Seq
+        out0_ = CSDHelpers.RollbackToCompletePrefix(parser, currentConstrained)
+        currentOut = out0_
+        generatedOut = (d_0_stablePrefix_) + (currentOut)
+        return generatedOut, currentOut
+
+    def RollbackAndRegenerate(self, lm, parser, prompt, generated, eosToken, maxSteps, maxRetries):
+        regenerated: _dafny.Seq = _dafny.Seq({})
+        d_0_repaired_: _dafny.Seq
+        out0_: _dafny.Seq
+        out0_ = CSDHelpers.RollbackToValidPrefix(parser, generated)
+        d_0_repaired_ = out0_
+        regenerated = d_0_repaired_
+        d_1_steps_: int
+        d_1_steps_ = 0
+        with _dafny.label("3"):
+            while ((d_1_steps_) < (maxSteps)) and (not((parser).IsCompletePrefix(regenerated))):
+                with _dafny.c_label("3"):
+                    d_2_next_: _dafny.Seq
+                    d_3_ok_: bool
+                    out1_: _dafny.Seq
+                    out2_: bool
+                    out1_, out2_ = (self).DeadEndAvoidingStep(lm, parser, prompt, regenerated, eosToken, maxRetries)
+                    d_2_next_ = out1_
+                    d_3_ok_ = out2_
+                    d_1_steps_ = (d_1_steps_) + (1)
+                    if (not(d_3_ok_)) or ((d_2_next_) == (eosToken)):
+                        raise _dafny.Break("3")
+                    regenerated = (regenerated) + (_dafny.SeqWithoutIsStrInference([d_2_next_]))
+                    pass
+            pass
+        return regenerated
+
+    def RollbackAndContinue(self, lm, parser, prompt, generated, currentConstrained, eosToken, maxSteps, closeReserve, maxRetries):
+        generatedOut: _dafny.Seq = _dafny.Seq({})
+        currentOut: _dafny.Seq = _dafny.Seq({})
+        d_0_stablePrefix_: _dafny.Seq
+        d_0_stablePrefix_ = _dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrained)):])
+        d_1_budget_: int
+        d_1_budget_ = (maxSteps) - (closeReserve)
+        d_2_bestComplete_: _dafny.Seq
+        out0_: _dafny.Seq
+        out0_ = CSDHelpers.RollbackToCompletePrefix(parser, currentConstrained)
+        d_2_bestComplete_ = out0_
+        d_3_running_: _dafny.Seq
+        d_3_running_ = d_2_bestComplete_
+        d_4_steps_: int
+        d_4_steps_ = 0
+        with _dafny.label("4"):
+            while (d_4_steps_) < (d_1_budget_):
+                with _dafny.c_label("4"):
+                    d_5_next_: _dafny.Seq
+                    d_6_ok_: bool
+                    out1_: _dafny.Seq
+                    out2_: bool
+                    out1_, out2_ = (self).DeadEndAvoidingStep(lm, parser, (prompt) + (d_0_stablePrefix_), d_3_running_, eosToken, maxRetries)
+                    d_5_next_ = out1_
+                    d_6_ok_ = out2_
+                    d_4_steps_ = (d_4_steps_) + (1)
+                    if (not(d_6_ok_)) or ((d_5_next_) == (eosToken)):
+                        raise _dafny.Break("4")
+                    d_3_running_ = (d_3_running_) + (_dafny.SeqWithoutIsStrInference([d_5_next_]))
+                    if (parser).IsCompletePrefix(d_3_running_):
+                        d_2_bestComplete_ = d_3_running_
+                    pass
+            pass
+        currentOut = d_2_bestComplete_
         generatedOut = (d_0_stablePrefix_) + (currentOut)
         return generatedOut, currentOut
 
@@ -668,7 +895,7 @@ class CSDHelpers:
         d_2_i_: int
         d_2_i_ = 0
         while (d_2_i_) < (len((lm).Tokens)):
-            if not((lm).IsMasked(((lm).Tokens)[d_2_i_])):
+            if ((lm.Logits)[d_2_i_]) > (_dafny.BigRational('-1e9')):
                 d_3_L_: _dafny.BigRational
                 d_3_L_ = (lm.Logits)[d_2_i_]
                 if (d_3_L_) > (d_0_top1_):
@@ -686,27 +913,26 @@ class CSDHelpers:
     def GetTopKTokens(self, lm, k):
         tokens: _dafny.Seq = _dafny.Seq({})
         tokens = _dafny.SeqWithoutIsStrInference([])
-        d_0_chosenIdx_: _dafny.Seq
-        d_0_chosenIdx_ = _dafny.SeqWithoutIsStrInference([])
-        d_1_picked_: int
-        d_1_picked_ = 0
-        while (d_1_picked_) < (k):
-            d_2_seed_: int
-            d_2_seed_ = 0
-            while ((d_2_seed_) < (len((lm).Tokens))) and ((d_2_seed_) in (d_0_chosenIdx_)):
-                d_2_seed_ = (d_2_seed_) + (1)
-            d_3_bestIdx_: int
-            d_3_bestIdx_ = d_2_seed_
-            d_4_j_: int
-            d_4_j_ = (d_2_seed_) + (1)
-            while (d_4_j_) < (len((lm).Tokens)):
-                if not((d_4_j_) in (d_0_chosenIdx_)):
-                    if (((lm.Logits)[d_4_j_]) > ((lm.Logits)[d_3_bestIdx_])) or ((((lm.Logits)[d_4_j_]) == ((lm.Logits)[d_3_bestIdx_])) and ((d_4_j_) < (d_3_bestIdx_))):
-                        d_3_bestIdx_ = d_4_j_
-                d_4_j_ = (d_4_j_) + (1)
-            d_0_chosenIdx_ = (d_0_chosenIdx_) + (_dafny.SeqWithoutIsStrInference([d_3_bestIdx_]))
-            tokens = (tokens) + (_dafny.SeqWithoutIsStrInference([((lm).Tokens)[d_3_bestIdx_]]))
-            d_1_picked_ = (d_1_picked_) + (1)
+        d_0_picked_: int
+        d_0_picked_ = 0
+        with _dafny.label("5"):
+            while (d_0_picked_) < (k):
+                with _dafny.c_label("5"):
+                    d_1_bestIdx_: int
+                    d_1_bestIdx_ = -1
+                    d_2_j_: int
+                    d_2_j_ = 0
+                    while (d_2_j_) < (len((lm).Tokens)):
+                        if not((((lm).Tokens)[d_2_j_]) in (tokens)):
+                            if ((d_1_bestIdx_) == (-1)) or (((lm.Logits)[d_2_j_]) > ((lm.Logits)[d_1_bestIdx_])):
+                                d_1_bestIdx_ = d_2_j_
+                        d_2_j_ = (d_2_j_) + (1)
+                    if (d_1_bestIdx_) == (-1):
+                        raise _dafny.Break("5")
+                    tokens = (tokens) + (_dafny.SeqWithoutIsStrInference([((lm).Tokens)[d_1_bestIdx_]]))
+                    d_0_picked_ = (d_0_picked_) + (1)
+                    pass
+            pass
         return tokens
 
     def DeadEndDetection(self, parser, prefix, minValidCount):
@@ -884,9 +1110,9 @@ class CSDHelpers:
             d_5_target_ = len(d_2_pool_)
         d_6_chosen_: _dafny.Seq
         d_6_chosen_ = _dafny.SeqWithoutIsStrInference([])
-        with _dafny.label("2"):
+        with _dafny.label("6"):
             while (len(d_6_chosen_)) < (d_5_target_):
-                with _dafny.c_label("2"):
+                with _dafny.c_label("6"):
                     d_7_bestTok_: _dafny.Seq
                     d_7_bestTok_ = (d_2_pool_)[0]
                     d_8_bestLogit_: _dafny.BigRational
@@ -909,7 +1135,7 @@ class CSDHelpers:
                     if d_9_found_:
                         d_6_chosen_ = (d_6_chosen_) + (_dafny.SeqWithoutIsStrInference([d_7_bestTok_]))
                     elif True:
-                        raise _dafny.Break("2")
+                        raise _dafny.Break("6")
                     pass
             pass
         if (len(d_6_chosen_)) == (0):
@@ -1004,9 +1230,9 @@ class CSDHelpers:
         generatedOut = startPrefix
         stepsUsed = 0
         terminatedByEos = False
-        with _dafny.label("3"):
+        with _dafny.label("7"):
             while ((stepsUsed) < (totalBudget)) and (not((parser).IsCompletePrefix(generatedOut))):
-                with _dafny.c_label("3"):
+                with _dafny.c_label("7"):
                     d_0_next_: _dafny.Seq
                     out0_: _dafny.Seq
                     out0_ = (self).SafePenalizedConstrainedStep(lm, parser, prompt, generatedOut, penalties, penaltyAmount, eosToken)
@@ -1014,7 +1240,7 @@ class CSDHelpers:
                     if (d_0_next_) == (eosToken):
                         terminatedByEos = True
                         stepsUsed = (stepsUsed) + (1)
-                        raise _dafny.Break("3")
+                        raise _dafny.Break("7")
                     generatedOut = (generatedOut) + (_dafny.SeqWithoutIsStrInference([d_0_next_]))
                     stepsUsed = (stepsUsed) + (1)
                     pass
@@ -1052,54 +1278,513 @@ class CSDHelpers:
         hitComplete = (parser).IsCompletePrefix(d_1_cur_)
         return candidateTokens, candidatePrefix, hitComplete, hitEos, stepsUsed
 
-    def CraneGeneration(self, lm, parser, prompt, maxSteps, minReasoningSteps, eosToken):
+    def CraneGeneration(self, lm, parser, prompt, maxSteps, minReasoningSteps, validTokenGroups, eosToken):
         generated: _dafny.Seq = _dafny.Seq({})
         generated = _dafny.SeqWithoutIsStrInference([])
-        d_0_steps_: int
-        d_0_steps_ = 0
+        d_0_startCost_: int
+        d_0_startCost_ = self.cost
         d_1_insideConstrained_: bool
         d_1_insideConstrained_ = False
         d_2_currentConstrained_: _dafny.Seq
         d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference([])
-        with _dafny.label("4"):
-            while (d_0_steps_) < (maxSteps):
-                with _dafny.c_label("4"):
+        d_3_unitIters_: int
+        d_3_unitIters_ = 0
+        d_4_numBackwards_: int
+        d_4_numBackwards_ = 0
+        d_5_maxIter_: int
+        d_5_maxIter_ = 80
+        d_6_backwardsLimit_: int
+        d_6_backwardsLimit_ = 20
+        with _dafny.label("8"):
+            while (self.cost) < ((d_0_startCost_) + (maxSteps)):
+                with _dafny.c_label("8"):
                     if not(d_1_insideConstrained_):
-                        d_3_next_: _dafny.Seq
+                        d_7_next_: _dafny.Seq
                         out0_: _dafny.Seq
                         out0_ = (self).UnconstrainedStep(lm, prompt, generated)
-                        d_3_next_ = out0_
-                        if (d_3_next_) == (eosToken):
-                            raise _dafny.Break("4")
-                        generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_3_next_]))
-                        d_0_steps_ = (d_0_steps_) + (1)
-                        if default__.Contains(d_3_next_, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                        d_7_next_ = out0_
+                        if (d_7_next_) == (eosToken):
+                            raise _dafny.Break("8")
+                        if (len(generated)) >= (maxSteps):
+                            raise _dafny.Break("8")
+                        generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_7_next_]))
+                        d_8_openHit_: bool
+                        d_8_openHit_ = default__.Contains(d_7_next_, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<")))
+                        if (not(d_8_openHit_)) and ((len(generated)) >= (2)):
+                            d_8_openHit_ = default__.Contains(default__.RenderPrefix(_dafny.SeqWithoutIsStrInference((generated)[(len(generated)) - (2)::])), _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<")))
+                        if d_8_openHit_:
                             d_1_insideConstrained_ = True
                             d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference([])
+                            d_3_unitIters_ = 0
+                            d_4_numBackwards_ = 0
                     elif True:
-                        if (parser).IsCompletePrefix(d_2_currentConstrained_):
+                        if default__.RenderedEndsWith(generated, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>"))):
                             d_1_insideConstrained_ = False
                             d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference([])
+                        elif (d_3_unitIters_) >= (d_5_maxIter_):
+                            raise _dafny.Break("8")
                         elif True:
-                            d_4_constrainedPrompt_: _dafny.Seq
-                            d_4_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(d_2_currentConstrained_)):]))
-                            d_5_next_: _dafny.Seq
-                            d_6_wasConstrained_: bool
+                            d_9_spanStart_: int
+                            d_9_spanStart_ = (len(generated)) - (len(d_2_currentConstrained_))
+                            d_10_constrainedPrompt_: _dafny.Seq
+                            d_10_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:d_9_spanStart_:]))
+                            d_11_budgetLeft_: int
+                            d_11_budgetLeft_ = ((d_0_startCost_) + (maxSteps)) - (self.cost)
+                            d_12_beforeCost_: int
+                            d_12_beforeCost_ = self.cost
                             out1_: _dafny.Seq
-                            out2_: bool
-                            out1_, out2_ = (self).ConfidenceGatedStep(lm, parser, d_4_constrainedPrompt_, d_2_currentConstrained_, eosToken)
-                            d_5_next_ = out1_
-                            d_6_wasConstrained_ = out2_
-                            if (d_5_next_) == (eosToken):
-                                raise _dafny.Break("4")
-                            generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_5_next_]))
-                            d_0_steps_ = (d_0_steps_) + (1)
-                            if default__.Contains(d_5_next_, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>"))):
+                            out1_ = (self).ForwardUntilSymbol(lm, parser, d_10_constrainedPrompt_, d_2_currentConstrained_, eosToken, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "start")), 1, d_11_budgetLeft_)
+                            d_2_currentConstrained_ = out1_
+                            d_3_unitIters_ = (d_3_unitIters_) + (1)
+                            if (len(d_2_currentConstrained_)) > (maxSteps):
+                                d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference((d_2_currentConstrained_)[:maxSteps:])
+                            generated = (_dafny.SeqWithoutIsStrInference((generated)[:d_9_spanStart_:])) + (d_2_currentConstrained_)
+                            if (len(generated)) > (maxSteps):
+                                generated = _dafny.SeqWithoutIsStrInference((generated)[:maxSteps:])
+                                if (len(generated)) >= (d_9_spanStart_):
+                                    d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference((generated)[d_9_spanStart_::])
+                                elif True:
+                                    d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference([])
+                            if default__.RenderedEndsWith(generated, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, ">>"))):
                                 d_1_insideConstrained_ = False
                                 d_2_currentConstrained_ = _dafny.SeqWithoutIsStrInference([])
+                            elif (self.cost) == (d_12_beforeCost_):
+                                raise _dafny.Break("8")
                             elif True:
-                                d_2_currentConstrained_ = (d_2_currentConstrained_) + (_dafny.SeqWithoutIsStrInference([d_5_next_]))
+                                d_13_lastVar_: _dafny.Seq
+                                out2_: _dafny.Seq
+                                out2_ = (self).ViewLastSymbol(parser, d_2_currentConstrained_, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "var")))
+                                d_13_lastVar_ = out2_
+                                d_14_allowed_: bool
+                                out3_: bool
+                                out3_ = (self).IsAllowedVarText(validTokenGroups, d_13_lastVar_)
+                                d_14_allowed_ = out3_
+                                if ((d_13_lastVar_) != (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "")))) and (not(d_14_allowed_)):
+                                    if (d_4_numBackwards_) < (d_6_backwardsLimit_):
+                                        out4_: _dafny.Seq
+                                        out4_ = (self).BackwardToSymbol(parser, d_2_currentConstrained_, _dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "var")), 1)
+                                        d_2_currentConstrained_ = out4_
+                                        generated = (_dafny.SeqWithoutIsStrInference((generated)[:d_9_spanStart_:])) + (d_2_currentConstrained_)
+                                        d_4_numBackwards_ = (d_4_numBackwards_) + (1)
+                                    elif True:
+                                        d_4_numBackwards_ = 0
                     pass
             pass
         return generated
+
+    def ManagedStep(self, lm, parser, prompt, generated, insideConstrained, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken):
+        generatedOut: _dafny.Seq = _dafny.Seq({})
+        insideOut: bool = False
+        currentOut: _dafny.Seq = _dafny.Seq({})
+        done: bool = False
+        generatedOut = generated
+        insideOut = insideConstrained
+        currentOut = currentConstrained
+        done = False
+        if not(insideConstrained):
+            d_0_next_: _dafny.Seq
+            out0_: _dafny.Seq
+            out0_ = (self).UnconstrainedStep(lm, prompt, generated)
+            d_0_next_ = out0_
+            if (d_0_next_) == (eosToken):
+                done = True
+                return generatedOut, insideOut, currentOut, done
+            generatedOut = (generated) + (_dafny.SeqWithoutIsStrInference([d_0_next_]))
+            if (d_0_next_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                insideOut = True
+                currentOut = _dafny.SeqWithoutIsStrInference([])
+        elif True:
+            d_1_cg_: _dafny.Seq
+            d_2_ci_: bool
+            d_3_cc_: _dafny.Seq
+            d_4_closed_: bool
+            out1_: _dafny.Seq
+            out2_: bool
+            out3_: _dafny.Seq
+            out4_: bool
+            out1_, out2_, out3_, out4_ = (self).CloseSpanIfComplete(lm, parser, generated, currentConstrained)
+            d_1_cg_ = out1_
+            d_2_ci_ = out2_
+            d_3_cc_ = out3_
+            d_4_closed_ = out4_
+            if d_4_closed_:
+                generatedOut = d_1_cg_
+                insideOut = d_2_ci_
+                currentOut = d_3_cc_
+                done = True
+                return generatedOut, insideOut, currentOut, done
+            elif True:
+                d_5_constrainedPrompt_: _dafny.Seq
+                d_5_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrained)):]))
+                d_6_next_: _dafny.Seq
+                out5_: _dafny.Seq
+                out5_ = (self).AdaptiveConstrainedStep(lm, parser, d_5_constrainedPrompt_, currentConstrained, validTokenGroups, boostAmount, narrowThreshold, eosToken)
+                d_6_next_ = out5_
+                if (d_6_next_) == (eosToken):
+                    done = True
+                    return generatedOut, insideOut, currentOut, done
+                elif True:
+                    d_7_appendedGenerated_: _dafny.Seq
+                    d_8_appendedInside_: bool
+                    d_9_appendedCurrent_: _dafny.Seq
+                    out6_: _dafny.Seq
+                    out7_: bool
+                    out8_: _dafny.Seq
+                    out6_, out7_, out8_ = (self).AppendConstrainedToken(lm, parser, generated, currentConstrained, d_6_next_)
+                    d_7_appendedGenerated_ = out6_
+                    d_8_appendedInside_ = out7_
+                    d_9_appendedCurrent_ = out8_
+                    generatedOut = d_7_appendedGenerated_
+                    insideOut = d_8_appendedInside_
+                    currentOut = d_9_appendedCurrent_
+        return generatedOut, insideOut, currentOut, done
+
+    def GenerateWithManagedSpan(self, lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, validTokenGroups, boostAmount, narrowThreshold, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        d_0_steps_: int
+        d_0_steps_ = 0
+        with _dafny.label("9"):
+            while (d_0_steps_) < (maxSteps):
+                with _dafny.c_label("9"):
+                    if not(insideConstrainedOut):
+                        d_1_next_: _dafny.Seq
+                        out0_: _dafny.Seq
+                        out0_ = (self).UnconstrainedStep(lm, prompt, generated)
+                        d_1_next_ = out0_
+                        d_0_steps_ = (d_0_steps_) + (1)
+                        if (d_1_next_) == (eosToken):
+                            raise _dafny.Break("9")
+                        generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_1_next_]))
+                        if (d_1_next_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                            insideConstrainedOut = True
+                            currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])
+                    elif True:
+                        d_2_cg_: _dafny.Seq
+                        d_3_ci_: bool
+                        d_4_cc_: _dafny.Seq
+                        d_5_closed_: bool
+                        out1_: _dafny.Seq
+                        out2_: bool
+                        out3_: _dafny.Seq
+                        out4_: bool
+                        out1_, out2_, out3_, out4_ = (self).CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut)
+                        d_2_cg_ = out1_
+                        d_3_ci_ = out2_
+                        d_4_cc_ = out3_
+                        d_5_closed_ = out4_
+                        d_0_steps_ = (d_0_steps_) + (1)
+                        if d_5_closed_:
+                            generated = d_2_cg_
+                            insideConstrainedOut = d_3_ci_
+                            currentConstrainedOut = d_4_cc_
+                            raise _dafny.Break("9")
+                        elif True:
+                            d_6_constrainedPrompt_: _dafny.Seq
+                            d_6_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrainedOut)):]))
+                            d_7_next_: _dafny.Seq
+                            out5_: _dafny.Seq
+                            out5_ = (self).AdaptiveConstrainedStep(lm, parser, d_6_constrainedPrompt_, currentConstrainedOut, validTokenGroups, boostAmount, narrowThreshold, eosToken)
+                            d_7_next_ = out5_
+                            if (d_7_next_) == (eosToken):
+                                raise _dafny.Break("9")
+                            elif True:
+                                d_8_appendedGenerated_: _dafny.Seq
+                                d_9_appendedInside_: bool
+                                d_10_appendedCurrent_: _dafny.Seq
+                                out6_: _dafny.Seq
+                                out7_: bool
+                                out8_: _dafny.Seq
+                                out6_, out7_, out8_ = (self).AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, d_7_next_)
+                                d_8_appendedGenerated_ = out6_
+                                d_9_appendedInside_ = out7_
+                                d_10_appendedCurrent_ = out8_
+                                generated = d_8_appendedGenerated_
+                                insideConstrainedOut = d_9_appendedInside_
+                                currentConstrainedOut = d_10_appendedCurrent_
+                    pass
+            pass
+        return generated, insideConstrainedOut, currentConstrainedOut
+
+    def GenerateWithPrefixAndManagedSpan(self, lm, parser, prompt, generatedPrefix, insideConstrained, currentConstrained, maxSteps, prefixBudget, validTokenGroups, boostAmount, narrowThreshold, eosToken):
+        generated: _dafny.Seq = _dafny.Seq({})
+        insideConstrainedOut: bool = False
+        currentConstrainedOut: _dafny.Seq = _dafny.Seq({})
+        generated = generatedPrefix
+        insideConstrainedOut = insideConstrained
+        currentConstrainedOut = currentConstrained
+        d_0_steps_: int
+        d_0_steps_ = 0
+        with _dafny.label("10"):
+            while (d_0_steps_) < (maxSteps):
+                with _dafny.c_label("10"):
+                    if not(insideConstrainedOut):
+                        if (d_0_steps_) < (prefixBudget):
+                            d_1_next_: _dafny.Seq
+                            out0_: _dafny.Seq
+                            out0_ = (self).UnconstrainedStep(lm, prompt, generated)
+                            d_1_next_ = out0_
+                            d_0_steps_ = (d_0_steps_) + (1)
+                            if (d_1_next_) == (eosToken):
+                                raise _dafny.Break("10")
+                            generated = (generated) + (_dafny.SeqWithoutIsStrInference([d_1_next_]))
+                            if (d_1_next_) == (_dafny.SeqWithoutIsStrInference(map(_dafny.CodePoint, "<<"))):
+                                insideConstrainedOut = True
+                                currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])
+                        elif True:
+                            d_2_go_: _dafny.Seq
+                            d_3_io_: bool
+                            d_4_co_: _dafny.Seq
+                            out1_: _dafny.Seq
+                            out2_: bool
+                            out3_: _dafny.Seq
+                            out1_, out2_, out3_ = (self).OpenConstrainedSpan(lm, generated)
+                            d_2_go_ = out1_
+                            d_3_io_ = out2_
+                            d_4_co_ = out3_
+                            d_0_steps_ = (d_0_steps_) + (1)
+                            generated = d_2_go_
+                            insideConstrainedOut = d_3_io_
+                            currentConstrainedOut = d_4_co_
+                    elif True:
+                        d_5_cg_: _dafny.Seq
+                        d_6_ci_: bool
+                        d_7_cc_: _dafny.Seq
+                        d_8_closed_: bool
+                        out4_: _dafny.Seq
+                        out5_: bool
+                        out6_: _dafny.Seq
+                        out7_: bool
+                        out4_, out5_, out6_, out7_ = (self).CloseSpanIfComplete(lm, parser, generated, currentConstrainedOut)
+                        d_5_cg_ = out4_
+                        d_6_ci_ = out5_
+                        d_7_cc_ = out6_
+                        d_8_closed_ = out7_
+                        d_0_steps_ = (d_0_steps_) + (1)
+                        if d_8_closed_:
+                            generated = d_5_cg_
+                            insideConstrainedOut = d_6_ci_
+                            currentConstrainedOut = d_7_cc_
+                            raise _dafny.Break("10")
+                        elif True:
+                            d_9_constrainedPrompt_: _dafny.Seq
+                            d_9_constrainedPrompt_ = (prompt) + (_dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrainedOut)):]))
+                            d_10_next_: _dafny.Seq
+                            out8_: _dafny.Seq
+                            out8_ = (self).AdaptiveConstrainedStep(lm, parser, d_9_constrainedPrompt_, currentConstrainedOut, validTokenGroups, boostAmount, narrowThreshold, eosToken)
+                            d_10_next_ = out8_
+                            if (d_10_next_) == (eosToken):
+                                raise _dafny.Break("10")
+                            elif True:
+                                d_11_appendedGenerated_: _dafny.Seq
+                                d_12_appendedInside_: bool
+                                d_13_appendedCurrent_: _dafny.Seq
+                                out9_: _dafny.Seq
+                                out10_: bool
+                                out11_: _dafny.Seq
+                                out9_, out10_, out11_ = (self).AppendConstrainedToken(lm, parser, generated, currentConstrainedOut, d_10_next_)
+                                d_11_appendedGenerated_ = out9_
+                                d_12_appendedInside_ = out10_
+                                d_13_appendedCurrent_ = out11_
+                                generated = d_11_appendedGenerated_
+                                insideConstrainedOut = d_12_appendedInside_
+                                currentConstrainedOut = d_13_appendedCurrent_
+                    pass
+            pass
+        return generated, insideConstrainedOut, currentConstrainedOut
+
+    def CloseSpanIfComplete(self, lm, parser, generated, currentConstrained):
+        generatedOut: _dafny.Seq = _dafny.Seq({})
+        insideOut: bool = False
+        currentOut: _dafny.Seq = _dafny.Seq({})
+        closed: bool = False
+        if (parser).IsCompletePrefix(currentConstrained):
+            out0_: _dafny.Seq
+            out1_: bool
+            out2_: _dafny.Seq
+            out0_, out1_, out2_ = (self).CloseConstrainedSpan(lm, parser, generated, currentConstrained)
+            generatedOut = out0_
+            insideOut = out1_
+            currentOut = out2_
+            closed = True
+        elif True:
+            generatedOut = generated
+            insideOut = True
+            currentOut = currentConstrained
+            closed = False
+        return generatedOut, insideOut, currentOut, closed
+
+    def RegenerateUnitOnCheckFailure(self, lm, parser, prompt, currentConstrained, eosToken, budget, maxRetries, maxRollbackBudget, allowedUnits):
+        resultConstrained: _dafny.Seq = _dafny.Seq({})
+        resultConstrained = currentConstrained
+        d_0_checkpointConstrained_: _dafny.Seq
+        d_0_checkpointConstrained_ = currentConstrained
+        d_1_retryCount_: int
+        d_1_retryCount_ = 0
+        d_2_rollbackBudgetUsed_: int
+        d_2_rollbackBudgetUsed_ = 0
+        d_3_steps_: int
+        d_3_steps_ = 0
+        d_4_totalBound_: int
+        d_4_totalBound_ = budget
+        with _dafny.label("11"):
+            while (d_3_steps_) < (d_4_totalBound_):
+                with _dafny.c_label("11"):
+                    d_5_next_: _dafny.Seq
+                    out0_: _dafny.Seq
+                    out0_ = (self).ConstrainedStep(lm, parser, prompt, resultConstrained, eosToken)
+                    d_5_next_ = out0_
+                    d_3_steps_ = (d_3_steps_) + (1)
+                    if (d_5_next_) == (eosToken):
+                        raise _dafny.Break("11")
+                    d_6_extended_: _dafny.Seq
+                    d_6_extended_ = (resultConstrained) + (_dafny.SeqWithoutIsStrInference([d_5_next_]))
+                    resultConstrained = d_6_extended_
+                    if (parser).IsCompletePrefix(resultConstrained):
+                        d_7_unitText_: _dafny.Seq
+                        d_7_unitText_ = default__.RenderPrefix(_dafny.SeqWithoutIsStrInference((resultConstrained)[len(d_0_checkpointConstrained_)::]))
+                        d_8_passes_: bool
+                        d_8_passes_ = ((len(allowedUnits)) == (0)) or ((d_7_unitText_) in (allowedUnits))
+                        if d_8_passes_:
+                            d_0_checkpointConstrained_ = resultConstrained
+                            d_1_retryCount_ = 0
+                        elif ((d_2_rollbackBudgetUsed_) < (maxRollbackBudget)) and ((d_1_retryCount_) < (maxRetries)):
+                            d_1_retryCount_ = (d_1_retryCount_) + (1)
+                            d_2_rollbackBudgetUsed_ = (d_2_rollbackBudgetUsed_) + (1)
+                            resultConstrained = d_0_checkpointConstrained_
+                            (lm).GenerateLogits((prompt) + (resultConstrained))
+                            (lm).MaskValidNextAndEos(parser, resultConstrained, eosToken)
+                            if (d_5_next_) in ((lm).Tokens):
+                                (lm).MaskToken(d_5_next_)
+                        elif True:
+                            d_0_checkpointConstrained_ = resultConstrained
+                            d_1_retryCount_ = 0
+                    pass
+            pass
+        return resultConstrained
+
+    def RegenerateUnitOnGroundingFailure(self, lm, parser, prompt, currentConstrained, eosToken, budget, maxRetries, maxRollbackBudget):
+        resultConstrained: _dafny.Seq = _dafny.Seq({})
+        resultConstrained = currentConstrained
+        d_0_checkpointConstrained_: _dafny.Seq
+        d_0_checkpointConstrained_ = currentConstrained
+        d_1_prevCount_: int
+        d_1_prevCount_ = (parser).CompletedSchemaSymbolCount(currentConstrained)
+        d_2_retryCount_: int
+        d_2_retryCount_ = 0
+        d_3_rollbackBudgetUsed_: int
+        d_3_rollbackBudgetUsed_ = 0
+        d_4_steps_: int
+        d_4_steps_ = 0
+        d_5_totalBound_: int
+        d_5_totalBound_ = budget
+        with _dafny.label("12"):
+            while (d_4_steps_) < (d_5_totalBound_):
+                with _dafny.c_label("12"):
+                    d_6_next_: _dafny.Seq
+                    out0_: _dafny.Seq
+                    out0_ = (self).ConstrainedStep(lm, parser, prompt, resultConstrained, eosToken)
+                    d_6_next_ = out0_
+                    d_4_steps_ = (d_4_steps_) + (1)
+                    if (d_6_next_) == (eosToken):
+                        raise _dafny.Break("12")
+                    d_7_extended_: _dafny.Seq
+                    d_7_extended_ = (resultConstrained) + (_dafny.SeqWithoutIsStrInference([d_6_next_]))
+                    resultConstrained = d_7_extended_
+                    d_8_newCount_: int
+                    d_8_newCount_ = (parser).CompletedSchemaSymbolCount(resultConstrained)
+                    if (d_8_newCount_) > (d_1_prevCount_):
+                        d_9_unit_: _dafny.Seq
+                        d_9_unit_ = _dafny.SeqWithoutIsStrInference((resultConstrained)[len(d_0_checkpointConstrained_)::])
+                        d_10_found_: bool
+                        d_11_idx_: int
+                        out1_: bool
+                        out2_: int
+                        out1_, out2_ = (lm).FirstUngroundedIdentifierTokenIdx(d_9_unit_)
+                        d_10_found_ = out1_
+                        d_11_idx_ = out2_
+                        if not(d_10_found_):
+                            d_0_checkpointConstrained_ = resultConstrained
+                            d_1_prevCount_ = d_8_newCount_
+                            d_2_retryCount_ = 0
+                        elif ((d_3_rollbackBudgetUsed_) < (maxRollbackBudget)) and ((d_2_retryCount_) < (maxRetries)):
+                            d_2_retryCount_ = (d_2_retryCount_) + (1)
+                            d_3_rollbackBudgetUsed_ = (d_3_rollbackBudgetUsed_) + (1)
+                            d_12_badPos_: int
+                            d_12_badPos_ = (len(d_0_checkpointConstrained_)) + (d_11_idx_)
+                            d_13_badToken_: _dafny.Seq
+                            d_13_badToken_ = (resultConstrained)[d_12_badPos_]
+                            d_14_penalizePrefix_: _dafny.Seq
+                            d_14_penalizePrefix_ = _dafny.SeqWithoutIsStrInference((resultConstrained)[:d_12_badPos_:])
+                            resultConstrained = d_0_checkpointConstrained_
+                            (lm).GenerateLogits((prompt) + (resultConstrained))
+                            (lm).MaskValidNextAndEos(parser, resultConstrained, eosToken)
+                            (lm).PenalizeTriedTokenAt((prompt) + (d_14_penalizePrefix_), d_13_badToken_)
+                        elif True:
+                            d_0_checkpointConstrained_ = resultConstrained
+                            d_1_prevCount_ = d_8_newCount_
+                            d_2_retryCount_ = 0
+                    pass
+            pass
+        return resultConstrained
+
+    def CloseSpanWithinBudget(self, lm, parser, prompt, generated, currentConstrained, eosToken, budget):
+        generatedOut: _dafny.Seq = _dafny.Seq({})
+        insideOut: bool = False
+        currentOut: _dafny.Seq = _dafny.Seq({})
+        d_0_stablePrefix_: _dafny.Seq
+        d_0_stablePrefix_ = _dafny.SeqWithoutIsStrInference((generated)[:(len(generated)) - (len(currentConstrained)):])
+        d_1_running_: _dafny.Seq
+        d_1_running_ = currentConstrained
+        d_2_bestComplete_: _dafny.Seq
+        d_2_bestComplete_ = _dafny.SeqWithoutIsStrInference([])
+        d_3_haveComplete_: bool
+        d_3_haveComplete_ = False
+        if (parser).IsCompletePrefix(currentConstrained):
+            d_2_bestComplete_ = currentConstrained
+            d_3_haveComplete_ = True
+        d_4_steps_: int
+        d_4_steps_ = 0
+        with _dafny.label("13"):
+            while ((d_4_steps_) + (1)) < (budget):
+                with _dafny.c_label("13"):
+                    d_5_next_: _dafny.Seq
+                    d_6_ok_: bool
+                    out0_: _dafny.Seq
+                    out1_: bool
+                    out0_, out1_ = (self).DeadEndAvoidingStep(lm, parser, (prompt) + (d_0_stablePrefix_), d_1_running_, eosToken, 8)
+                    d_5_next_ = out0_
+                    d_6_ok_ = out1_
+                    d_4_steps_ = (d_4_steps_) + (1)
+                    if (not(d_6_ok_)) or ((d_5_next_) == (eosToken)):
+                        raise _dafny.Break("13")
+                    d_1_running_ = (d_1_running_) + (_dafny.SeqWithoutIsStrInference([d_5_next_]))
+                    if (parser).IsCompletePrefix(d_1_running_):
+                        d_2_bestComplete_ = d_1_running_
+                        d_3_haveComplete_ = True
+                    pass
+            pass
+        if ((d_4_steps_) < (budget)) and (d_3_haveComplete_):
+            d_7_gc_: _dafny.Seq
+            d_8_ci_: bool
+            d_9_cc_: _dafny.Seq
+            out2_: _dafny.Seq
+            out3_: bool
+            out4_: _dafny.Seq
+            out2_, out3_, out4_ = (self).CloseConstrainedSpan(lm, parser, (d_0_stablePrefix_) + (d_2_bestComplete_), d_2_bestComplete_)
+            d_7_gc_ = out2_
+            d_8_ci_ = out3_
+            d_9_cc_ = out4_
+            generatedOut = d_7_gc_
+            insideOut = d_8_ci_
+            currentOut = d_9_cc_
+        elif True:
+            generatedOut = (d_0_stablePrefix_) + (d_1_running_)
+            insideOut = True
+            currentOut = d_1_running_
+        return generatedOut, insideOut, currentOut
 

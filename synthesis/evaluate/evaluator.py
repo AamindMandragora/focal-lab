@@ -62,9 +62,41 @@ def _anonymize_sql_preview(s: str) -> str:
 
 import time
 import signal
+import inspect
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+# region agent log
+_AGENT_DEBUG_SESSION = "d7d0bd"
+_AGENT_DEBUG_FOCAL_PATH = "/tmp/debug-d7d0bd-focal.ndjson"
+_AGENT_DEBUG_SMILES_CAP = 5
+_agent_debug_smiles_logged = 0
+
+
+def _agent_debug_log(
+    hypothesis_id: str,
+    location: str,
+    message: str,
+    data: Optional[Dict[str, Any]] = None,
+    run_id: str = "pre-fix",
+) -> None:
+    """Append one NDJSON debug line for session d7d0bd (focal-local file)."""
+    payload = {
+        "sessionId": _AGENT_DEBUG_SESSION,
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data or {},
+        "timestamp": int(time.time() * 1000),
+    }
+    try:
+        with open(_AGENT_DEBUG_FOCAL_PATH, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, default=str) + "\n")
+    except Exception:
+        pass
+# endregion
 
 try:
     from synthesis.failure_taxonomy import render_cluster_block
@@ -1869,6 +1901,7 @@ class Evaluator:
             clear_vllm_engine_cache,
             narrow_cuda_visible_devices_to_index,
             pick_cuda_device_index_with_most_free_memory,
+            visible_cuda_device_ids,
         )
 
         def _is_vllm_startup_memory_error(exc: Exception) -> bool:
@@ -1902,50 +1935,110 @@ class Evaluator:
             if candidate <= self.vllm_gpu_memory_utilization and candidate not in util_candidates:
                 util_candidates.append(candidate)
 
-        last_error: Exception | None = None
+        def _narrow_to_freest_gpu(reason: str) -> None:
+            best_idx = pick_cuda_device_index_with_most_free_memory()
+            chosen = narrow_cuda_visible_devices_to_index(best_idx)
+            print(
+                f"Retrying vLLM evaluator startup on {reason} "
+                f"(CUDA_VISIBLE_DEVICES={chosen})"
+            )
+            clear_vllm_engine_cache()
+            if torch is not None and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        def _multiple_devices_visible() -> bool:
+            visible_ids = visible_cuda_device_ids()
+            if visible_ids:
+                return len(visible_ids) > 1
+            if torch is not None and torch.cuda.is_available():
+                return torch.cuda.device_count() > 1
+            return False
+
         narrowed_visible_devices = False
-        for tp in tp_candidates:
-            if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
-                best_idx = pick_cuda_device_index_with_most_free_memory()
-                chosen = narrow_cuda_visible_devices_to_index(best_idx)
-                narrowed_visible_devices = True
+
+        def _try_startup_ladder() -> Dict[str, Any]:
+            nonlocal narrowed_visible_devices
+            last_error: Exception | None = None
+            for tp in tp_candidates:
+                if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
+                    narrowed_visible_devices = True
+                    _narrow_to_freest_gpu("a single GPU")
+                util_idx = 0
+                while util_idx < len(util_candidates):
+                    util = util_candidates[util_idx]
+                    try:
+                        if tp != requested_tp and util == util_candidates[0]:
+                            print(
+                                f"Retrying vLLM evaluator startup with "
+                                f"tensor_parallel_size={tp}"
+                            )
+                        elif util != self.vllm_gpu_memory_utilization:
+                            print(
+                                f"Retrying vLLM evaluator startup with lower "
+                                f"gpu_memory_utilization={util:.2f}"
+                            )
+                        return _make_env(util, tp)
+                    except Exception as exc:
+                        last_error = exc
+                        if not _is_vllm_startup_memory_error(exc):
+                            raise
+                        clear_vllm_engine_cache()
+                        if torch is not None and torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        if (
+                            tp == 1
+                            and not narrowed_visible_devices
+                            and _multiple_devices_visible()
+                        ):
+                            # A sibling process may hold the default visible device;
+                            # move to the freest GPU and restart the utilization ladder
+                            # instead of shrinking utilization on the occupied device.
+                            narrowed_visible_devices = True
+                            _narrow_to_freest_gpu("the freest GPU")
+                            util_idx = 0
+                            continue
+                        is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
+                        if is_last_attempt:
+                            raise
+                        util_idx += 1
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("Failed to initialize evaluation environment.")
+
+        # When the only visible GPU is transiently held by a sibling process,
+        # exhausting the utilization ladder in a few minutes kills the attempt
+        # without an Accuracy telemetry line. Wait out the pressure (bounded)
+        # and retry the whole ladder before giving up.
+        import time as _time
+
+        startup_wait_s = float(os.environ.get("CSD_VLLM_STARTUP_WAIT_S", "900"))
+        retry_interval_s = float(os.environ.get("CSD_VLLM_STARTUP_RETRY_INTERVAL_S", "30"))
+        deadline = _time.monotonic() + startup_wait_s
+        wait_round = 0
+        while True:
+            try:
+                env = _try_startup_ladder()
+                self._env = env
+                self._env_cache_key = env_cache_key
+                return env
+            except Exception as exc:
+                if not _is_vllm_startup_memory_error(exc):
+                    raise
+                remaining = deadline - _time.monotonic()
+                if remaining <= 0:
+                    raise
+                wait_round += 1
+                wait_s = min(retry_interval_s, remaining)
                 print(
-                    "Retrying vLLM evaluator startup on a single GPU "
-                    f"(CUDA_VISIBLE_DEVICES={chosen})"
+                    f"[vllm] Evaluator startup blocked by GPU memory pressure "
+                    f"(round {wait_round}); waiting {wait_s:.0f}s for a sibling "
+                    f"process to release memory ({remaining:.0f}s budget left)...",
+                    flush=True,
                 )
                 clear_vllm_engine_cache()
                 if torch is not None and torch.cuda.is_available():
                     torch.cuda.empty_cache()
-            for util in util_candidates:
-                try:
-                    if tp != requested_tp and util == util_candidates[0]:
-                        print(
-                            f"Retrying vLLM evaluator startup with "
-                            f"tensor_parallel_size={tp}"
-                        )
-                    elif util != self.vllm_gpu_memory_utilization:
-                        print(
-                            f"Retrying vLLM evaluator startup with lower "
-                            f"gpu_memory_utilization={util:.2f}"
-                        )
-                    env = _make_env(util, tp)
-                    self._env = env
-                    self._env_cache_key = env_cache_key
-                    return env
-                except Exception as exc:
-                    last_error = exc
-                    if not _is_vllm_startup_memory_error(exc):
-                        raise
-                    clear_vllm_engine_cache()
-                    if torch is not None and torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
-                    if is_last_attempt:
-                        raise
-
-        if last_error is not None:
-            raise last_error
-        raise RuntimeError("Failed to initialize evaluation environment.")
+                _time.sleep(wait_s)
 
     def _extract_constrained_content(self, output: str) -> List[str]:
         """Extract content within << >> delimiters.
@@ -2266,6 +2359,27 @@ class Evaluator:
                 require_rdkit=True,
             )
             smiles = eval_row["smiles"]
+            # region agent log
+            global _agent_debug_smiles_logged
+            if _agent_debug_smiles_logged < _AGENT_DEBUG_SMILES_CAP:
+                _agent_debug_smiles_logged += 1
+                _agent_debug_log(
+                    "C",
+                    "evaluator.py:_check_syntax_validity:smiles",
+                    "smiles score snapshot",
+                    {
+                        "class_name": class_name,
+                        "cleaned_smiles": smiles,
+                        "cleaned_len": len(smiles or ""),
+                        "grammar_ok": bool(eval_row.get("grammar_valid")),
+                        "rdkit_ok": eval_row.get("rdkit_valid"),
+                        "membership_ok": bool(eval_row.get("class_membership")),
+                        "syntax_ok": bool(eval_row.get("syntax_valid")),
+                        "raw_output_len": len(output or ""),
+                        "log_index": _agent_debug_smiles_logged,
+                    },
+                )
+            # endregion
             if not smiles:
                 return False, []
             return bool(eval_row["syntax_valid"]), [(smiles, bool(eval_row["syntax_valid"]))]
@@ -2384,6 +2498,30 @@ class Evaluator:
         try:
             print(f"  [EVAL]   Running CSD strategy (max_steps={self.max_steps})...", flush=True)
             dynamic_parser = logic.build_dynamic_parser(self, env, example)
+            # region agent log
+            try:
+                _sig = inspect.signature(run_crane_csd)
+                _params = list(_sig.parameters)
+                _agent_debug_log(
+                    "B",
+                    "evaluator.py:_evaluate_one_example:pre_run_crane_csd",
+                    "run_crane_csd signature vs early_stop_on_answer kwarg",
+                    {
+                        "dataset_name": self.dataset_name,
+                        "example_index": i,
+                        "early_stop_on_answer": bool(self.early_stop_on_answer),
+                        "has_early_stop_param": "early_stop_on_answer" in _sig.parameters,
+                        "param_names": _params,
+                    },
+                )
+            except Exception as _sig_exc:
+                _agent_debug_log(
+                    "B",
+                    "evaluator.py:_evaluate_one_example:pre_run_crane_csd",
+                    "failed to inspect run_crane_csd signature",
+                    {"error": repr(_sig_exc)},
+                )
+            # endregion
             with _PerExampleTimer(self.max_seconds_per_example):
                 output_text, token_count, gen_time, constrained_segments, helper_trace = run_crane_csd(
                     env=env,
@@ -2396,6 +2534,22 @@ class Evaluator:
                 )
             example_time = time.time() - example_start
             print(f"  [EVAL]   Generated {token_count} tokens in {example_time:.2f}s", flush=True)
+            # region agent log
+            _agent_debug_log(
+                "A",
+                "evaluator.py:_evaluate_one_example:success",
+                "generation succeeded",
+                {
+                    "dataset_name": self.dataset_name,
+                    "example_index": i,
+                    "token_count": int(token_count) if token_count is not None else None,
+                    "example_time": float(example_time),
+                    "gen_time": float(gen_time) if gen_time is not None else None,
+                    "output_empty": not bool((output_text or "").strip()),
+                    "output_len": len(output_text or ""),
+                },
+            )
+            # endregion
 
             from synthesis.evaluate.completion_text import completion_for_scoring
 
@@ -2521,6 +2675,25 @@ class Evaluator:
                     f"  [EVAL]   Timed out after {elapsed:.2f}s (per-example runtime budget)",
                     flush=True,
                 )
+            # region agent log
+            _err_msg = str(e)
+            _hyp = "B" if "early_stop_on_answer" in _err_msg else ("A" if self.dataset_name != "smiles" else "E")
+            _agent_debug_log(
+                _hyp,
+                "evaluator.py:_evaluate_one_example:except",
+                "exception swallowed into empty sample",
+                {
+                    "dataset_name": self.dataset_name,
+                    "example_index": i,
+                    "exc_type": type(e).__name__,
+                    "exc_message": _err_msg[:500],
+                    "elapsed": float(elapsed),
+                    "timed_out": bool(timed_out),
+                    "full_output_empty": True,
+                    "token_count": 0,
+                },
+            )
+            # endregion
             sample = {
                 "question": q_str,
                 "question_full": q_full,

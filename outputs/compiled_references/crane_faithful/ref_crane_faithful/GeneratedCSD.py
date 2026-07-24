@@ -25,7 +25,7 @@ class default__:
         nw0_.ctor__()
         d_0_helpers_ = nw0_
         out0_: _dafny.Seq
-        out0_ = (d_0_helpers_).CraneGeneration(lm, parser, prompt, maxSteps, 10, eosToken)
+        out0_ = (d_0_helpers_).CraneGeneration(lm, parser, prompt, maxSteps, 10, validTokenGroups, eosToken)
         generated = out0_
         insideConstrainedOut = False
         currentConstrainedOut = _dafny.SeqWithoutIsStrInference([])

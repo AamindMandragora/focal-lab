@@ -97,4 +97,6 @@ STRING: /'[^']*'/
 NUMBER: /-?\d+(\.\d+)?/
 
 %import common.WS_INLINE
+%import common.SQL_COMMENT
 %ignore WS_INLINE
+%ignore SQL_COMMENT

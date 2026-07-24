@@ -121,8 +121,10 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
                 isinstance(i, int) for i in gsm_split_indices
             ):
                 raise ValueError(f"{key} in {split_file} must be a list of integers")
+            if args.eval_sample_size > 0:
+                gsm_split_indices = gsm_split_indices[: args.eval_sample_size]
 
-    # With explicit indices, the example count is fixed by the split, not --eval-sample-size.
+    # With explicit indices, the example count is fixed by the split slice.
     num_examples_arg = (
         str(len(gsm_split_indices))
         if gsm_split_indices is not None
@@ -166,14 +168,17 @@ def run_crane_repo_baseline(args: argparse.Namespace, dataset: str) -> int:
 
     env = os.environ.copy()
     extra_pythonpath = []
-    vendored_iter_syncode_dir = CRANE_SRC_DIR / "itergen" / "iter_syncode"
-    if vendored_iter_syncode_dir.exists():
-        extra_pythonpath.append(str(vendored_iter_syncode_dir))
     syncode_dir = CRANE_REPO_DIR / "syncode"
     if syncode_dir.exists():
         extra_pythonpath.append(str(syncode_dir))
         if (syncode_dir / "syncode").exists():
             extra_pythonpath.append(str(syncode_dir / "syncode"))
+    for iter_root in (
+        CRANE_SRC_DIR / "itergen" / "iter_syncode",
+        CRANE_SRC_DIR / "itergen",
+    ):
+        if iter_root.exists():
+            extra_pythonpath.append(str(iter_root))
     if extra_pythonpath:
         existing = env.get("PYTHONPATH", "")
         env["PYTHONPATH"] = os.pathsep.join(

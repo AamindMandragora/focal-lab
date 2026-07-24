@@ -137,11 +137,6 @@ def baseline_payload_from_success_report(report: dict[str, Any]) -> dict[str, An
             row["num_tokens"] = int(sample["token_count"])
         if sample.get("time_seconds") is not None:
             row["generation_seconds"] = round(float(sample["time_seconds"]), 6)
-        # Per-example outcome flags so saved JSONs support offline diffing
-        # against baseline-side annotations without regrading.
-        for key in ("is_correct", "is_syntax_valid"):
-            if sample.get(key) is not None:
-                row[key] = bool(sample[key])
         answers.append(row)
 
     metrics = build_metrics_from_eval_samples(

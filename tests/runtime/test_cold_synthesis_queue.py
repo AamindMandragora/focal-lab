@@ -225,6 +225,30 @@ def test_resolve_vllm_gpu_memory_utilization_prefers_env_override(monkeypatch):
     assert rs._resolve_vllm_gpu_memory_utilization() == float(rs.VLLM_GPU_MEMORY_UTILIZATION)
 
 
+def test_resolve_vllm_gpu_memory_utilization_uses_per_model_default(monkeypatch):
+    """Stale controllers may not export the env var; the child must still pick
+    the per-model budget instead of the global 0.81 share
+    (incident smiles-acrylates-qwen35-2b:2:memory:1784879589)."""
+    from synthesis import run_synthesis as rs
+
+    monkeypatch.delenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", raising=False)
+    assert rs._resolve_vllm_gpu_memory_utilization("Qwen/Qwen3.5-2B") == 0.4
+    assert rs._resolve_vllm_gpu_memory_utilization("unknown/model") == float(
+        rs.VLLM_GPU_MEMORY_UTILIZATION
+    )
+
+    # Explicit env override still wins.
+    monkeypatch.setenv("CSD_VLLM_GPU_MEMORY_UTILIZATION", "0.5")
+    assert rs._resolve_vllm_gpu_memory_utilization("Qwen/Qwen3.5-2B") == 0.5
+
+
+def test_expected_runtime_gpu_mem_util_matches_shared_table():
+    from synthesis.run_constants import VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL
+
+    for model, runtime in queue.EXPECTED_RUNTIME_BY_MODEL.items():
+        assert runtime["gpu_mem_util"] == VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL[model]
+
+
 def test_bundle_allocator_runs_two_poolable_cells_without_gpu_overlap():
     snapshots = {
         gpu: {"used_mib": 0, "total_mib": 48_000}

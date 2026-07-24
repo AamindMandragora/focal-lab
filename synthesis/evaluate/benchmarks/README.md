@@ -13,10 +13,6 @@ Each benchmark module owns its own dataset loading, prompt formatting, answer ex
   - Text-to-SQL Spider benchmark implementation.
 - `smiles/`
   - Molecular-string generation benchmark implementation.
-- `prompt_profiles/`
-  - Reviewable SQL, SMILES, and GSM YAML prompt sources for fixed GCD, IterGen,
-    and CRANE adapters. The loader enforces GCD/IterGen direct-prompt equality
-    and CRANE chain-of-thought selection.
 
 ## Architecture Rule
 

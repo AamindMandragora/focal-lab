@@ -1,5 +1,5 @@
 {
-  "campaign": "exhaustive-cold-queue-2026-07-19",
+  "campaign": "zero-acc-20cell-2026-07-24",
   "cells": {
     "gsm-qwen25-1p5b": {
       "dataset": "gsm_symbolic",
@@ -110,6 +110,159 @@
       "num_examples": 50,
       "source_artifact": "saved-results/exhaustive-queue-baselines/smiles/smiles-qwen35-9b-isocyanates/measurement.json",
       "source_sha256": "fbdb48168d2a4a1ac290c49c375fbfaacc23914c5c0d8758b1975b2c10a77511"
+    },
+    "spider-qwen25-1p5b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "itergen",
+      "num_correct": 0,
+      "num_examples": 300,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "spider-qwen35-2b": {
+      "dataset": "spider",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "baseline_strategy": "itergen",
+      "num_correct": 0,
+      "num_examples": 300,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-acrylates-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-acrylates-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-acrylates-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-acrylates-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 18,
+      "num_examples": 50,
+      "source_artifact": "saved-results/exhaustive-queue-baselines/smiles/smiles-qwen35-4b-acrylates/measurement.json",
+      "source_sha256": "28f737bfd984eaf81593d64500bc7ade5ac1b4d5fe822d1ce0343ed63a0963b1"
+    },
+    "smiles-chain_extenders-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-chain_extenders-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-chain_extenders-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-chain_extenders-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-isocyanates-qwen25-1p5b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-isocyanates-qwen25-7b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen2.5-7B-Instruct",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-isocyanates-qwen35-2b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-2B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
+    },
+    "smiles-isocyanates-qwen35-4b": {
+      "dataset": "smiles",
+      "eval_model": "Qwen/Qwen3.5-4B",
+      "split_name": "train",
+      "baseline_strategy": "cars",
+      "num_correct": 0,
+      "num_examples": 50,
+      "pending_validity": true,
+      "source_artifact": "",
+      "source_sha256": ""
     }
   }
 }

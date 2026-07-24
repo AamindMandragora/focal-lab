@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import os
 import re
 from pathlib import Path
 from typing import Any
@@ -19,34 +18,14 @@ final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
 invalid_outputs_excluded = defaults.invalid_outputs_excluded_none
 accuracy_definition = defaults.accuracy_definition_standard
 
-_MAX_GSM_SCORING_EXPRESSION_CHARS = 512
-_MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
-_MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
-_MAX_GSM_SCORING_DIGIT_RUN = 64
-
-
-def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
-    """Return whether a generated GSM expression is too large for safe scoring.
-
-    The guard is intentionally much looser than the active split's gold answers:
-    a 2026-06-29 audit found max gold length 119 chars and max operator count
-    22 across train+eval. Larger generated strings are treated as invalid
-    before native parser/prover code can wedge the evaluator.
-    """
-
-    text = str(expression or "").strip()
-    if len(text) > _MAX_GSM_SCORING_EXPRESSION_CHARS:
-        return True
-    if len(text.split()) > _MAX_GSM_SCORING_EXPRESSION_TOKENS:
-        return True
-    if len(re.findall(r"[+\-*/%()]", text)) > _MAX_GSM_SCORING_EXPRESSION_OPERATORS:
-        return True
-    if re.search(r"\d{" + str(_MAX_GSM_SCORING_DIGIT_RUN) + r",}", text):
-        return True
-    return False
-
 
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
+    """Static ``gsm.lark`` for CRANE-faithful syntax scoring only.
+
+    Constrained decode uses dataset-owned ``crane_valid_vars_gsm_grammar`` per
+    example (see ``build_dynamic_parser``); ``--grammars-dir`` does not change
+    adaptive CRANE decode masks.
+    """
     return grammars_dir / "gsm.lark"
 
 
@@ -85,21 +64,13 @@ def _gsm_question_text(example: dict[str, Any]) -> str:
     )
 
 
-def format_prompt(evaluator: Any, example: dict[str, Any]) -> list[dict] | str:
+def format_prompt(evaluator: Any, example: dict[str, Any]) -> list[dict]:
     # Multi-turn chat delivery (system + 8 user/assistant pairs + question),
     # matching CRANE. Lifted GSM-1.5B unconstrained 22.0% -> 30.0% over the
     # flattened single-user-message form. generation.py passes a list straight
     # through as chat_messages; the CSD path templates from the same messages.
-    #
-    # CSD_GSM_FLAT_PROMPT=1 is a DIAGNOSTIC-ONLY escape back to the pre-June
-    # flattened single-user-message delivery; never set for recorded results.
-    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import (
-        reasoning_with_symbolic_expr_messages,
-        reasoning_with_symbolic_expr_prompt,
-    )
+    from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import reasoning_with_symbolic_expr_messages
 
-    if os.environ.get("CSD_GSM_FLAT_PROMPT") == "1":
-        return reasoning_with_symbolic_expr_prompt(_gsm_question_text(example))
     return reasoning_with_symbolic_expr_messages(_gsm_question_text(example))
 
 
@@ -113,20 +84,6 @@ def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> st
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> list[dict]:
     """Same instructions as ``format_prompt``: reasoning then ``<<expression>>``."""
     return format_prompt(evaluator, example)
-
-
-def format_prompt_for_strategy(
-    evaluator: Any,
-    example: dict[str, Any],
-    strategy: str,
-) -> list[dict] | str:
-    """Render GCD, IterGen, or CRANE from the shared GSM YAML profile."""
-    from synthesis.evaluate.benchmarks.prompt_profiles import prompt_profile_for_strategy
-
-    profile = prompt_profile_for_strategy("gsm_symbolic", strategy)
-    if profile == "chain_of_thought":
-        return format_prompt_chain_of_thought(evaluator, example)
-    return format_prompt_expression_only(evaluator, example)
 
 
 def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
@@ -143,7 +100,7 @@ def expected_answer(evaluator: Any, example: dict[str, Any]) -> str:
 def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str, Any]):
     from synthesis.evaluate.benchmarks.common.parser_utils import create_lark_dafny_parser
     from synthesis.evaluate.benchmarks.gsm_symbolic.grammar import (
-        build_dynamic_grammar,
+        crane_valid_vars_gsm_grammar,
         extract_variables_from_mapping,
     )
 
@@ -157,14 +114,17 @@ def build_dynamic_parser(evaluator: Any, env: dict[str, Any], example: dict[str,
     cache_key = tuple(sorted(allowed_variables))
     parser_factory = evaluator._dynamic_parser_factory_cache.get(cache_key)
     if parser_factory is None:
-        grammar_text = build_dynamic_grammar(evaluator._get_grammar_text(), list(cache_key))
+        grammar_text = crane_valid_vars_gsm_grammar(list(cache_key))
         parser_factory = create_lark_dafny_parser(
             grammar_text,
             env["VerifiedDecoderAgent"],
             env["_dafny"],
-            start="csd_start",
+            start="start",
             tokenizer=env["tokenizer"],
-            default_mask_mode="grammar_strict",
+            dfa_mode="grammar_strict",
+            apply_forbidden_token_filter=False,
+            constrained_span_opener="<<",
+            complete_start="expr",
         )
         evaluator._dynamic_parser_factory_cache[cache_key] = parser_factory
 
@@ -252,8 +212,8 @@ def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
 # This replaces the OLD metric (all visible spans + per-example variable
 # restriction) which was stricter than CRANE and caused phantom-variable
 # expressions to count as syntax failures even though CRANE would pass them.
-# The per-example dynamic grammar is still used at DECODE TIME (in
-# build_dynamic_parser) to restrict what the LM can generate — this only
+# The per-example CRANE-shaped grammar (see crane_valid_vars_gsm_grammar) is used at
+# DECODE TIME in build_dynamic_parser to restrict what the LM can generate — this only
 # changes the post-hoc scoring metric.
 # ---------------------------------------------------------------------------
 
@@ -280,8 +240,6 @@ def _extract_final_block(output: str) -> str:
 def _check_gsm_parsed(block: str, parser) -> bool:
     # Faithful port of CRANE src/get_avgs.py check_gsm_parsed.
     if block == "" or "{" in block or "}" in block or "round(" in block:
-        return False
-    if _is_pathological_gsm_scoring_expression(block):
         return False
     if not block.startswith("<<") or not block.endswith(">>"):
         return False
@@ -311,8 +269,6 @@ def check_syntax(
     block = _extract_final_block(output)
     if block == "":
         return False, []
-    if _is_pathological_gsm_scoring_expression(block):
-        return False, [(block, False)]
     parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
     return parses, [(block, parses)]
 
