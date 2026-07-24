@@ -291,33 +291,106 @@ SMOKE_GPU_MEM_UTIL = 0.3
 # GPUs 0 and 3 are routinely occupied by other users (see CLAUDE.md); smokes
 # must stay on 1/2 or vLLM engine init fails on a full cuda:0.
 SMOKE_ALLOWED_GPUS = ("1", "2")
+# vLLM refuses to start unless free >= util * total; headroom covers the gap
+# between the nvidia-smi snapshot and actual engine allocation.
+SMOKE_GPU_HEADROOM_MB = 1024
+SMOKE_GPU_WAIT_SECONDS = 900.0
+SMOKE_GPU_POLL_SECONDS = 30.0
+SMOKE_JOB_MAX_TRIES = 3
+# Engine-init failure signatures: nothing was measured, so the run is safe to
+# retry regardless of path kind (unlike a mid-run OOM, which the memory path
+# treats as a meaningful signal).
+GPU_CONTENTION_SIGNATURES = (
+    "free memory on device",
+    "engine core initialization failed",
+)
 
 
-def pick_smoke_gpu() -> str:
+def _allowed_gpu_inventory() -> list[tuple[str, int, int]] | None:
+    """(index, free_mb, total_mb) rows for SMOKE_ALLOWED_GPUS, or None when
+    nvidia-smi is unavailable (non-GPU host, tests)."""
     try:
         out = subprocess.run(
             [
                 "nvidia-smi",
-                "--query-gpu=index,memory.free",
+                "--query-gpu=index,memory.free,memory.total",
                 "--format=csv,noheader,nounits",
             ],
             capture_output=True,
             text=True,
             check=False,
         )
-        best: tuple[str, int] | None = None
-        for line in out.stdout.strip().splitlines():
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) != 2 or parts[0] not in SMOKE_ALLOWED_GPUS:
-                continue
-            free = int(parts[1])
-            if best is None or free > best[1]:
-                best = (parts[0], free)
-        if best is not None:
+    except OSError:
+        return None
+    rows: list[tuple[str, int, int]] = []
+    for line in out.stdout.strip().splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) != 3 or parts[0] not in SMOKE_ALLOWED_GPUS:
+            continue
+        try:
+            rows.append((parts[0], int(parts[1]), int(parts[2])))
+        except ValueError:
+            continue
+    return rows or None
+
+
+def smoke_gpu_required_free_mb(total_mb: int) -> int:
+    return int(total_mb * SMOKE_GPU_MEM_UTIL) + SMOKE_GPU_HEADROOM_MB
+
+
+def pick_smoke_gpu() -> str:
+    rows = _allowed_gpu_inventory()
+    if not rows:
+        return SMOKE_ALLOWED_GPUS[-1]
+    return max(rows, key=lambda r: r[1])[0]
+
+
+def wait_for_smoke_gpu(
+    *,
+    max_wait_seconds: float = SMOKE_GPU_WAIT_SECONDS,
+    poll_seconds: float = SMOKE_GPU_POLL_SECONDS,
+    sleep: Callable[[float], None] = time.sleep,
+    now: Callable[[], float] = time.monotonic,
+) -> str:
+    """Block until an allowed GPU has enough free memory for the smoke vLLM
+    engine (util * total + headroom), then return its physical index.
+
+    Incident spider-qwen25-1p5b:3:harness:1784874093: the smoke picked GPU 2
+    while it showed 19 GiB free, but another queue job loaded its engine in the
+    scan-to-init window and the smoke died with rc=1 ("Free memory on device
+    cuda:0 (4.5/39.49 GiB) ... desired 11.85 GiB"), burning a cloud repair
+    attempt on pure GPU contention. Picking only a GPU that currently fits the
+    engine — and waiting for one — closes that race window.
+
+    Falls back to the freest allowed GPU at the deadline (no worse than the
+    old behavior), or to the last allowed GPU when nvidia-smi is unavailable.
+    """
+    deadline = now() + max_wait_seconds
+    while True:
+        rows = _allowed_gpu_inventory()
+        if rows is None:
+            return SMOKE_ALLOWED_GPUS[-1]
+        ready = [r for r in rows if r[1] >= smoke_gpu_required_free_mb(r[2])]
+        if ready:
+            return max(ready, key=lambda r: r[1])[0]
+        if now() >= deadline:
+            best = max(rows, key=lambda r: r[1])
+            logger.warning(
+                "no smoke GPU freed within %.0fs; best-effort GPU %s (free %s MiB)",
+                max_wait_seconds,
+                best[0],
+                best[1],
+            )
             return best[0]
-    except (OSError, ValueError):
-        pass
-    return SMOKE_ALLOWED_GPUS[-1]
+        sleep(poll_seconds)
+
+
+def gpu_contention_in_log(out_dir: Path) -> bool:
+    log_path = out_dir / "smoke.log"
+    if not log_path.is_file():
+        return False
+    text = log_path.read_text(encoding="utf-8", errors="replace").lower()
+    return any(sig in text for sig in GPU_CONTENTION_SIGNATURES)
 
 
 def cell_dataset_and_smiles_class(cell_id: str) -> tuple[str, str | None]:
@@ -475,18 +548,34 @@ def run_hardened_smoke_job(
     )
     env.setdefault("CSD_CONSTRAINED_TEMPERATURE", "0.7")
     env.setdefault("CSD_VLLM_GPU_MEMORY_UTILIZATION", str(SMOKE_GPU_MEM_UTIL))
-    env.setdefault("CUDA_VISIBLE_DEVICES", pick_smoke_gpu())
 
     job = runner or _default_subprocess_runner
-    logger.info(
-        "smoke job start cell=%s kind=%s csd=%s out=%s cmd=%s",
-        incident.cell_id,
-        incident.path_kind,
-        csd,
-        out_dir,
-        " ".join(cmd),
-    )
-    rc = int(job(cmd, cwd=code_root, env=env, out_dir=out_dir))
+    rc = 1
+    for try_idx in range(1, SMOKE_JOB_MAX_TRIES + 1):
+        # Pin (not setdefault) to the awaited GPU: an inherited multi-GPU
+        # value would let the eval pool land on a device without room for
+        # the smoke engine.
+        env["CUDA_VISIBLE_DEVICES"] = wait_for_smoke_gpu()
+        logger.info(
+            "smoke job start cell=%s kind=%s try=%s gpu=%s csd=%s out=%s cmd=%s",
+            incident.cell_id,
+            incident.path_kind,
+            try_idx,
+            env["CUDA_VISIBLE_DEVICES"],
+            csd,
+            out_dir,
+            " ".join(cmd),
+        )
+        rc = int(job(cmd, cwd=code_root, env=env, out_dir=out_dir))
+        if rc == 0 or not gpu_contention_in_log(out_dir):
+            break
+        logger.warning(
+            "smoke job GPU contention cell=%s try=%s/%s rc=%s; retrying",
+            incident.cell_id,
+            try_idx,
+            SMOKE_JOB_MAX_TRIES,
+            rc,
+        )
 
     incident.extra = dict(incident.extra or {})
     incident.extra["smoke_report_path"] = str(report_path)
@@ -625,17 +714,30 @@ def run_twin_accuracy_probe(
     )
     env.setdefault("CSD_CONSTRAINED_TEMPERATURE", "0.7")
     env.setdefault("CSD_VLLM_GPU_MEMORY_UTILIZATION", str(SMOKE_GPU_MEM_UTIL))
-    env.setdefault("CUDA_VISIBLE_DEVICES", pick_smoke_gpu())
 
     job = runner or _default_subprocess_runner
-    logger.info(
-        "twin probe start cell=%s csd=%s out=%s cmd=%s",
-        cell_id,
-        csd,
-        out_dir,
-        " ".join(cmd),
-    )
-    rc = int(job(cmd, cwd=live, env=env, out_dir=out_dir))
+    rc = 1
+    for try_idx in range(1, SMOKE_JOB_MAX_TRIES + 1):
+        env["CUDA_VISIBLE_DEVICES"] = wait_for_smoke_gpu()
+        logger.info(
+            "twin probe start cell=%s try=%s gpu=%s csd=%s out=%s cmd=%s",
+            cell_id,
+            try_idx,
+            env["CUDA_VISIBLE_DEVICES"],
+            csd,
+            out_dir,
+            " ".join(cmd),
+        )
+        rc = int(job(cmd, cwd=live, env=env, out_dir=out_dir))
+        if rc == 0 or not gpu_contention_in_log(out_dir):
+            break
+        logger.warning(
+            "twin probe GPU contention cell=%s try=%s/%s rc=%s; retrying",
+            cell_id,
+            try_idx,
+            SMOKE_JOB_MAX_TRIES,
+            rc,
+        )
     metrics = parse_smoke_report(report_path, process_rc=rc)
     logger.info(
         "twin probe done cell=%s rc=%s acc=%s", cell_id, rc, metrics.accuracy_pct

@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+import scripts.runtime.zero_acc_babysitter.smoke as smoke
 from scripts.runtime.zero_acc_babysitter.production_hooks import (
     build_production_hooks,
     make_twin_accuracy,
@@ -17,6 +20,12 @@ from scripts.runtime.zero_acc_babysitter.production_hooks import (
 from scripts.runtime.zero_acc_babysitter.smoke import run_twin_accuracy_probe
 
 CELL = "spider-qwen25-1p5b"
+
+
+@pytest.fixture(autouse=True)
+def _pin_smoke_gpu(monkeypatch):
+    # Keep tests off the real nvidia-smi wait loop (can sleep on a busy host).
+    monkeypatch.setattr(smoke, "wait_for_smoke_gpu", lambda **_kw: "2")
 
 
 def _seed_csd(live: Path) -> Path:
