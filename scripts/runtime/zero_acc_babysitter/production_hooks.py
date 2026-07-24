@@ -29,6 +29,7 @@ from scripts.runtime.zero_acc_babysitter.smoke import (
     evaluate_smoke_metrics,
     parse_smoke_report,
     run_hardened_smoke_job,
+    run_twin_accuracy_probe,
     smoke_criteria_for,
 )
 from scripts.runtime.zero_acc_babysitter.suite import (
@@ -61,13 +62,27 @@ def twin_name_for_cell(cell_id: str) -> str:
     raise ValueError(f"no twin for {cell_id!r}")
 
 
-def default_stub_twin_accuracy(cell_id: str) -> float:
-    """Sandbox / unset-suite default: twin=0 → Tier A harness path.
+def make_twin_accuracy(*, live_repo: Path, runner=None) -> TwinFn:
+    """Production Tier-A twin: real tiny re-eval through the live harness.
 
-    Real GPU twin suite overrides via twin_accuracy=... in build_production_hooks.
+    A hardcoded twin=0.0 stub here fabricated harness incidents on every
+    Tier A wake (incident spider-qwen25-1p5b:3:harness:1784874093 — the
+    smoke measured 80% accuracy through the same harness one second before
+    the stub classified it as broken). Only a probe that fails to produce
+    any measurement maps to 0.0 (harness path).
     """
-    _ = twin_name_for_cell(cell_id)
-    return 0.0
+
+    def _twin(cell_id: str) -> float:
+        _ = twin_name_for_cell(cell_id)
+        acc = run_twin_accuracy_probe(cell_id, live_repo=live_repo, runner=runner)
+        if acc is None:
+            logger.warning(
+                "twin probe produced no measurement cell=%s -> twin=0.0", cell_id
+            )
+            return 0.0
+        return float(acc)
+
+    return _twin
 
 
 def default_stub_helper_failures(_cell_id: str) -> list[str]:
@@ -535,7 +550,9 @@ def build_production_hooks(
     _ = cell_ids
     _ = max_cloud_attempts_override
 
-    twin_fn = twin_accuracy or default_stub_twin_accuracy
+    twin_fn = twin_accuracy or make_twin_accuracy(
+        live_repo=live, runner=smoke_job_runner
+    )
     helpers_fn = helper_failures or default_stub_helper_failures
     decide = smoke_decide or make_smoke_decide(
         live_repo=live,
