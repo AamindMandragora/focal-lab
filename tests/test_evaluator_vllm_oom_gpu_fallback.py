@@ -118,6 +118,53 @@ def test_single_visible_gpu_still_walks_util_ladder(monkeypatch, tmp_path, evalu
     assert utils_tried == [0.6, 0.55, 0.5]
 
 
+def test_ladder_exhaustion_waits_for_sibling_release(monkeypatch, tmp_path, evaluator):
+    """Regression: smiles-acrylates-qwen25-1p5b:7:telemetry:1784876387 —
+    a sibling process held the only visible GPU; the utilization ladder
+    exhausted in minutes and the attempt died without an Accuracy line.
+    The evaluator must wait out transient pressure and retry the ladder."""
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1")
+    monkeypatch.setenv("CSD_VLLM_STARTUP_WAIT_S", "5")
+    monkeypatch.setenv("CSD_VLLM_STARTUP_RETRY_INTERVAL_S", "0.01")
+    narrowed_calls = []
+    _patch_common(monkeypatch, narrowed_calls)
+
+    calls = []
+    full_ladder = 5  # 0.6, 0.55, 0.5, 0.45, 0.4
+
+    def fake_setup(**kwargs):
+        calls.append(kwargs["vllm_gpu_memory_utilization"])
+        if len(calls) <= full_ladder:
+            raise STARTUP_OOM
+        return {"env": "ok"}
+
+    monkeypatch.setattr(spider_env, "setup_dafny_environment", fake_setup)
+
+    env = evaluator._setup_environment(tmp_path / "generated_csd" / "module.py")
+
+    assert env == {"env": "ok"}
+    assert narrowed_calls == []
+    # First ladder exhausts, then the retry round starts over from the top.
+    assert calls[:full_ladder] == [0.6, 0.55, 0.5, 0.45, 0.4]
+    assert calls[full_ladder] == 0.6
+
+
+def test_ladder_exhaustion_raises_after_wait_budget(monkeypatch, tmp_path, evaluator):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1")
+    monkeypatch.setenv("CSD_VLLM_STARTUP_WAIT_S", "0.05")
+    monkeypatch.setenv("CSD_VLLM_STARTUP_RETRY_INTERVAL_S", "0.01")
+    narrowed_calls = []
+    _patch_common(monkeypatch, narrowed_calls)
+
+    def fake_setup(**kwargs):
+        raise STARTUP_OOM
+
+    monkeypatch.setattr(spider_env, "setup_dafny_environment", fake_setup)
+
+    with pytest.raises(ValueError, match="Free memory on device"):
+        evaluator._setup_environment(tmp_path / "generated_csd" / "module.py")
+
+
 def test_non_memory_error_is_raised(monkeypatch, tmp_path, evaluator):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "3,2,1")
     narrowed_calls = []

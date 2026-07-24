@@ -440,6 +440,7 @@ Examples:
     print("Initializing synthesis pipeline...")
 
     device = None if args.device == "auto" else args.device
+    vllm_gpu_memory_utilization = args.vllm_gpu_memory_utilization
 
     generator = StrategyGenerator(
         model_name=args.generation_model,
@@ -469,6 +470,7 @@ Examples:
     print(f"Setting up evaluator for dataset: {args.dataset}")
     print(f"  Generation model: {args.generation_model}")
     print(f"  Evaluation model: {args.eval_model}")
+    print(f"  vLLM gpu_memory_utilization: {vllm_gpu_memory_utilization}")
     evaluator = Evaluator(
         dataset_name=args.dataset,
         model_name=args.eval_model,
