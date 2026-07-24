@@ -81,6 +81,14 @@ def _load_initial_attempt_history(path: Path):
     return attempts
 
 
+def _resolve_vllm_gpu_memory_utilization() -> float:
+    """Per-cell override from the cold-queue scheduler, else the global constant."""
+    raw = os.environ.get("CSD_VLLM_GPU_MEMORY_UTILIZATION", "").strip()
+    if raw:
+        return float(raw)
+    return float(VLLM_GPU_MEMORY_UTILIZATION)
+
+
 def _derive_output_name(dataset: str, eval_model: str) -> str:
     """Auto-derive the run label as <dataset>_<model>_<date>."""
     model_short = eval_model.split("/")[-1].replace(".", "p").replace("-", "_").lower()
@@ -263,6 +271,18 @@ Examples:
         help="Device for model inference (default: auto)"
     )
 
+    parser.add_argument(
+        "--vllm-gpu-memory-utilization",
+        type=float,
+        default=None,
+        help=(
+            "GPU memory fraction reserved by vLLM for this run. Must match the "
+            "scheduler's per-cell reservation when GPUs are shared "
+            "(default: CSD_VLLM_GPU_MEMORY_UTILIZATION env, else "
+            f"{VLLM_GPU_MEMORY_UTILIZATION})."
+        ),
+    )
+
     # --- SMILES-only -----------------------------------------------------
     parser.add_argument(
         "--smiles-samples-per-class",
@@ -287,6 +307,8 @@ Examples:
 
     args = parser.parse_args()
     args.generation_backend = normalize_generation_backend(args.generation_backend)
+    if args.vllm_gpu_memory_utilization is None:
+        args.vllm_gpu_memory_utilization = _resolve_vllm_gpu_memory_utilization()
 
     # Warm-start ban: --initial-strategy-file is legitimate ONLY for pure
     # re-evaluation (--max-iterations 1). Seeding further synthesis iterations
@@ -425,7 +447,7 @@ Examples:
         device=device,
         max_new_tokens=args.synthesis_max_tokens,
         temperature=TEMPERATURE,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         reasoning_budget_tokens=args.synthesizer_reasoning_budget,
     )
@@ -455,7 +477,7 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         sample_seed=args.eval_seed,
         max_seconds_per_example=args.eval_max_seconds_per_example,
