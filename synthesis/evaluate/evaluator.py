@@ -1901,6 +1901,7 @@ class Evaluator:
             clear_vllm_engine_cache,
             narrow_cuda_visible_devices_to_index,
             pick_cuda_device_index_with_most_free_memory,
+            visible_cuda_device_ids,
         )
 
         def _is_vllm_startup_memory_error(exc: Exception) -> bool:
@@ -1934,21 +1935,34 @@ class Evaluator:
             if candidate <= self.vllm_gpu_memory_utilization and candidate not in util_candidates:
                 util_candidates.append(candidate)
 
+        def _narrow_to_freest_gpu(reason: str) -> None:
+            best_idx = pick_cuda_device_index_with_most_free_memory()
+            chosen = narrow_cuda_visible_devices_to_index(best_idx)
+            print(
+                f"Retrying vLLM evaluator startup on {reason} "
+                f"(CUDA_VISIBLE_DEVICES={chosen})"
+            )
+            clear_vllm_engine_cache()
+            if torch is not None and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        def _multiple_devices_visible() -> bool:
+            visible_ids = visible_cuda_device_ids()
+            if visible_ids:
+                return len(visible_ids) > 1
+            if torch is not None and torch.cuda.is_available():
+                return torch.cuda.device_count() > 1
+            return False
+
         last_error: Exception | None = None
         narrowed_visible_devices = False
         for tp in tp_candidates:
             if tp == 1 and tp != requested_tp and not narrowed_visible_devices:
-                best_idx = pick_cuda_device_index_with_most_free_memory()
-                chosen = narrow_cuda_visible_devices_to_index(best_idx)
                 narrowed_visible_devices = True
-                print(
-                    "Retrying vLLM evaluator startup on a single GPU "
-                    f"(CUDA_VISIBLE_DEVICES={chosen})"
-                )
-                clear_vllm_engine_cache()
-                if torch is not None and torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            for util in util_candidates:
+                _narrow_to_freest_gpu("a single GPU")
+            util_idx = 0
+            while util_idx < len(util_candidates):
+                util = util_candidates[util_idx]
                 try:
                     if tp != requested_tp and util == util_candidates[0]:
                         print(
@@ -1971,9 +1985,22 @@ class Evaluator:
                     clear_vllm_engine_cache()
                     if torch is not None and torch.cuda.is_available():
                         torch.cuda.empty_cache()
+                    if (
+                        tp == 1
+                        and not narrowed_visible_devices
+                        and _multiple_devices_visible()
+                    ):
+                        # A sibling process may hold the default visible device;
+                        # move to the freest GPU and restart the utilization ladder
+                        # instead of shrinking utilization on the occupied device.
+                        narrowed_visible_devices = True
+                        _narrow_to_freest_gpu("the freest GPU")
+                        util_idx = 0
+                        continue
                     is_last_attempt = tp == tp_candidates[-1] and util == util_candidates[-1]
                     if is_last_attempt:
                         raise
+                    util_idx += 1
 
         if last_error is not None:
             raise last_error
