@@ -78,11 +78,18 @@ def is_attempt_finished(
 ) -> bool:
     """Attempt N is finished iff a later attempt started, a finish marker
     appears after N's header, or the cell pid file's process has exited.
+
+    Crashed runs appended to the same log restart attempt numbering, so the
+    same index can appear multiple times; bind to the LAST occurrence (the
+    run currently in progress), matching attempt_block. Binding to the first
+    occurrence declared an in-progress attempt finished (with no Accuracy
+    line yet), opening a false telemetry incident
+    (spider-qwen25-1p5b:2:telemetry:1784888533).
     """
     starts = list(ATTEMPT_START_RE.finditer(text))
     match_i = None
-    for i, match in enumerate(starts):
-        if int(match.group("number")) == attempt_index:
+    for i in range(len(starts) - 1, -1, -1):
+        if int(starts[i].group("number")) == attempt_index:
             match_i = i
             break
     if match_i is None:
