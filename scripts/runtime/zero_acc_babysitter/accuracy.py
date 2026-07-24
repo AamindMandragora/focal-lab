@@ -19,12 +19,15 @@ class AttemptAccuracy:
 
 
 def attempt_block(text: str, attempt_index: int) -> str | None:
+    # A crashed run appended to the same log restarts attempt numbering, so
+    # the same attempt index can appear more than once; the last one is the
+    # run that actually finished.
     starts = list(ATTEMPT_START_RE.finditer(text))
-    for i, match in enumerate(starts):
-        if int(match.group("number")) != attempt_index:
+    for i in range(len(starts) - 1, -1, -1):
+        if int(starts[i].group("number")) != attempt_index:
             continue
         end = starts[i + 1].start() if i + 1 < len(starts) else len(text)
-        return text[match.start() : end]
+        return text[starts[i].start() : end]
     return None
 
 
