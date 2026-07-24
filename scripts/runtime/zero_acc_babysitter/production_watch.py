@@ -270,6 +270,24 @@ def run_watch_once(
                 f"attempt={event.attempt_index} acc={event.accuracy_pct}",
             )
             continue
+        # Same stale-log hazard for telemetry: rescore_all recovery does not
+        # append an Accuracy line to the cell run log, so a finished attempt
+        # with acc=None re-read after incident close (e.g. watcher restart)
+        # would reopen a duplicate telemetry incident.
+        if (
+            not event.memory_ops
+            and event.accuracy_pct is None
+            and store.has_closed_incident(
+                cell_id, event.attempt_index, PathKind.TELEMETRY
+            )
+        ):
+            seen[cell_id] = key
+            emit(
+                cell_id,
+                "STALE_TELEMETRY_EVENT_SKIP",
+                f"attempt={event.attempt_index}",
+            )
+            continue
         seen[cell_id] = key
 
         if (
