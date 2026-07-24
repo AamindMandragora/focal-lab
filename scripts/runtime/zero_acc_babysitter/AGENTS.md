@@ -71,6 +71,14 @@ action is required:
 3. Restart the watcher; resume re-runs the smoke on the PR tip and the normal
    gate decides the merge. Never hand-write passing smoke metrics.
 
+Once the fixed `production_hooks.py` is live, step 2's JSON-key deletion is
+optional: `make_smoke_decide` discards any metrics whose `smoke_attempt` stamp
+is missing or differs from `cloud_attempt_count`, so a restart alone makes the
+resumed decide re-run a real smoke. Status 2026-07-24: `smoke.py` +
+`production_hooks.py` were synced into the live checkout at 04:47 UTC (the
+04:10 rc=2 smoke was the pre-fix command missing `--spider-split-name`); only
+the watcher restart remained and was scheduled detached.
+
 Caution for step 2: do NOT pull/copy the whole repair branch into the live
 checkout — the live working tree can carry newer uncommitted deploy state (it
 was ahead on the Cursor→Claude Code CLI migration in `cloud.py` /
