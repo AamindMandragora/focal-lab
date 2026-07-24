@@ -66,6 +66,11 @@ Lessons kept for future incidents:
 - git refuses to merge over ANY dirty path it updates, even byte-identical
   ones — `merge_pr_and_pull` now auto-commits tracked dirty live state and
   merges `-X theirs` (live's side stays recoverable in the snapshot commit).
+- git also aborts a merge over UNTRACKED live files the merge would write
+  ("untracked working tree files would be overwritten", incident
+  smiles-acrylates-qwen25-1p5b:7:telemetry:1784876387) — `commit_live_dirty_state`
+  now takes `incoming_ref` and stages colliding untracked paths into the
+  snapshot commit; unrelated untracked files stay uncommitted.
 - Files that are add/add vs the merge base (e.g. this file,
   `production_hooks.py`) conflict whenever live and branch copies differ at
   all; when editing them on a repair branch, sync the same bytes to live and

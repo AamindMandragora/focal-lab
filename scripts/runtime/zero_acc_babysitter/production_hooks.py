@@ -151,7 +151,9 @@ def kill_cell_process_group(cell_id: str, *, live_repo: Path) -> None:
             pass
 
 
-def commit_live_dirty_state(live: Path, incident_id: str) -> None:
+def commit_live_dirty_state(
+    live: Path, incident_id: str, *, incoming_ref: str | None = None
+) -> None:
     """Commit tracked dirty state on live so a repair merge can proceed.
 
     git refuses to merge over ANY dirty path it must update — even when the
@@ -161,7 +163,53 @@ def commit_live_dirty_state(live: Path, incident_id: str) -> None:
     (never stashing/discarding) is the only merge-unblock that cannot lose
     operator work; the pre-merge commit also preserves live's side of any
     hunk later resolved toward the repair branch by ``-X theirs``.
+
+    Untracked files also abort the merge when the incoming ref adds the same
+    path ("untracked working tree files would be overwritten by merge",
+    incident smiles-acrylates-qwen25-1p5b:7:telemetry:1784876387). When
+    ``incoming_ref`` is given, any untracked path the merge would write is
+    staged into the same snapshot commit; unrelated untracked files (logs,
+    outputs) are left alone.
     """
+    staged_untracked: list[str] = []
+    if incoming_ref:
+        incoming = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD", incoming_ref],
+            cwd=live,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=live,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if incoming.returncode == 0 and untracked.returncode == 0:
+            incoming_paths = set((incoming.stdout or "").splitlines())
+            untracked_paths = set((untracked.stdout or "").splitlines())
+            staged_untracked = sorted(incoming_paths & untracked_paths)
+        if staged_untracked:
+            add = subprocess.run(
+                ["git", "add", "--", *staged_untracked],
+                cwd=live,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if add.returncode != 0:
+                raise RuntimeError(
+                    "pre-merge add of untracked colliding files failed: "
+                    f"{(add.stderr or add.stdout or '')[:400]!r}"
+                )
+            logger.info(
+                "staged untracked files colliding with %s before merge (%s): %s",
+                incoming_ref,
+                incident_id,
+                " ".join(staged_untracked),
+            )
     status = subprocess.run(
         ["git", "status", "--porcelain", "--untracked-files=no"],
         cwd=live,
@@ -169,7 +217,7 @@ def commit_live_dirty_state(live: Path, incident_id: str) -> None:
         text=True,
         check=False,
     )
-    if not (status.stdout or "").strip():
+    if not (status.stdout or "").strip() and not staged_untracked:
         return
     commit = subprocess.run(
         [
@@ -244,7 +292,9 @@ def merge_pr_and_pull(
             raise RuntimeError(
                 f"git checkout {merge_branch} failed: {(checkout.stderr or checkout.stdout)!r}"
             )
-        commit_live_dirty_state(live, incident.incident_id)
+        commit_live_dirty_state(
+            live, incident.incident_id, incoming_ref=f"origin/{branch}"
+        )
         # -X theirs: the repair branch is the smoked/gated content, so any
         # divergent hunk resolves toward it; live's side survives in the
         # pre-merge snapshot commit above.
