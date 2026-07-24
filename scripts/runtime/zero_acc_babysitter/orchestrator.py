@@ -265,6 +265,27 @@ class Orchestrator:
         return HandleResult(woke=True, path_kind=path)
 
     def handle_memory(self, cell_id: str, attempt_index: int) -> HandleResult:
+        # Stale-marker guard at the orchestrator level: memory_resume does not
+        # advance the cell log past the old OOM marker, so any caller (not just
+        # run_watch_once, whose in-memory dedup can be bypassed by a watcher
+        # process running pre-guard code) may re-deliver the same OOM for a
+        # (cell, attempt) whose memory incident already closed. Re-opening
+        # would kill the healthy resumed run and loop incidents endlessly
+        # (incident smiles-acrylates-qwen35-2b:2:memory:1784887455).
+        cell = self.cells.get(cell_id)
+        has_open = bool(cell and cell.active_incident_id)
+        if has_open:
+            existing = self.store.load_incident(cell.active_incident_id)
+            has_open = bool(existing and not existing.closed)
+        if not has_open and self.store.has_closed_incident(
+            cell_id, attempt_index, PathKind.MEMORY
+        ):
+            self.logs.emit(
+                cell_id,
+                "STALE_MEMORY_EVENT_SKIP",
+                f"attempt={attempt_index} scope=orchestrator",
+            )
+            return HandleResult(woke=False, path_kind=None)
         self.logs.emit(cell_id, "MEMORY_OPS_START", f"attempt={attempt_index}")
         incident = self._open_incident(cell_id, attempt_index, PathKind.MEMORY)
         return self._run_fix_path(incident)

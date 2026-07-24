@@ -87,6 +87,95 @@ def test_stale_memory_event_skipped_after_incident_close(tmp_path: Path) -> None
     assert seen[CELL] == (3, 0.0, True)
 
 
+def _real_orchestrator(live: Path, cell: str = CELL):
+    """Real Orchestrator with recording stub hooks (no processes, no git)."""
+    from scripts.runtime.zero_acc_babysitter.orchestrator import (
+        BabysitterHooks,
+        Orchestrator,
+    )
+
+    calls: dict[str, list] = {"kill": [], "memory_resume": []}
+    hooks = BabysitterHooks(
+        twin_accuracy=lambda _c: 0.0,
+        helper_failures=lambda _c: [],
+        run_cloud_debug=lambda _i: "https://example.invalid/pr/1",
+        run_smoke=lambda _i: True,
+        merge_and_pull=lambda _i: "deadbeef",
+        kill_cell=lambda c: calls["kill"].append(c),
+        broken_sha=lambda: "cafebabe",
+        rescore_all=lambda _c, _s: None,
+        sibling_reeval=lambda _c, _s, _sib: None,
+        restart_from_k=lambda _c, _k: None,
+        memory_resume=lambda c, k: calls["memory_resume"].append((c, k)),
+    )
+    orch = Orchestrator(repo_root=live, cell_ids=[cell], hooks=hooks)
+    return orch, calls
+
+
+def test_orchestrator_skips_stale_memory_for_closed_attempt(tmp_path: Path) -> None:
+    """Regression for smiles-acrylates-qwen35-2b:2:memory:1784887455: a watcher
+    process running pre-guard code re-delivered attempt 2's stale OOM marker
+    seconds after the incident closed; handle_memory must refuse to re-open."""
+    live = tmp_path / "live"
+    live.mkdir()
+    orch, calls = _real_orchestrator(live)
+    _closed_memory_incident(orch.store, attempt=3, ts=1784879589)
+
+    markers: list[str] = []
+    orch.logs.emit = lambda _c, marker, _d="": markers.append(marker)
+
+    result = orch.handle_memory(CELL, 3)
+
+    assert not result.woke
+    assert calls["kill"] == []
+    assert "STALE_MEMORY_EVENT_SKIP" in markers
+    assert "INCIDENT_OPEN" not in markers
+    assert orch.store.list_open_incidents() == []
+
+
+def test_orchestrator_fresh_memory_attempt_still_handled(tmp_path: Path) -> None:
+    live = tmp_path / "live"
+    live.mkdir()
+    orch, calls = _real_orchestrator(live)
+    # Closed incident on attempt 3 must not suppress a genuine OOM on attempt 4.
+    _closed_memory_incident(orch.store, attempt=3, ts=1784879589)
+
+    result = orch.handle_memory(CELL, 4)
+
+    assert result.woke
+    assert calls["kill"] == [CELL]
+    assert calls["memory_resume"] == [(CELL, 4)]
+
+
+def test_orchestrator_open_incident_not_skipped_as_stale(tmp_path: Path) -> None:
+    """A still-open incident for the same (cell, attempt) must attach/resume,
+    even when an earlier memory incident for that attempt already closed."""
+    live = tmp_path / "live"
+    live.mkdir()
+    orch, calls = _real_orchestrator(live)
+    _closed_memory_incident(orch.store, attempt=3, ts=1784879589)
+    open_id = f"{CELL}:3:memory:1784887455"
+    orch.store.save_incident(
+        IncidentRecord(
+            incident_id=open_id,
+            cell_id=CELL,
+            attempt_index=3,
+            path_kind=PathKind.MEMORY.value,
+            trigger_unix_ts=1784887455,
+            closed=False,
+        )
+    )
+    orch.cells[CELL].active_incident_id = open_id
+    orch.store.save_cell(orch.cells[CELL])
+
+    result = orch.handle_memory(CELL, 3)
+
+    assert result.woke
+    assert calls["memory_resume"] == [(CELL, 3)]
+    closed = orch.store.load_incident(open_id)
+    assert closed is not None and closed.closed
+
+
 def test_fresh_memory_event_still_wakes(tmp_path: Path) -> None:
     live, log_path, orch = _setup(tmp_path)
     # Closed incident for a different attempt must not suppress attempt 3.
