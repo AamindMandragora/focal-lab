@@ -302,6 +302,25 @@ class Orchestrator:
             return HandleResult(woke=False)
 
         if accuracy_pct is None:
+            # Stale-marker guard, mirroring handle_memory: telemetry recovery
+            # (rescore_all) does not rewrite the cell run log with an Accuracy
+            # line, so a finished attempt with acc=None can be re-delivered
+            # after the telemetry incident already closed (incident
+            # smiles-chain_extenders-qwen25-1p5b:1:telemetry:1784887767).
+            cell = self.cells.get(cell_id)
+            has_open = bool(cell and cell.active_incident_id)
+            if has_open:
+                existing = self.store.load_incident(cell.active_incident_id)
+                has_open = bool(existing and not existing.closed)
+            if not has_open and self.store.has_closed_incident(
+                cell_id, attempt_index, PathKind.TELEMETRY
+            ):
+                self.logs.emit(
+                    cell_id,
+                    "STALE_TELEMETRY_EVENT_SKIP",
+                    f"attempt={attempt_index} scope=orchestrator",
+                )
+                return HandleResult(woke=False, path_kind=None)
             self.logs.emit(cell_id, "TELEMETRY_FAIL", f"attempt={attempt_index}")
             incident = self._open_incident(cell_id, attempt_index, PathKind.TELEMETRY)
             return self._run_fix_path(incident)
