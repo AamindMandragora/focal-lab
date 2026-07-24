@@ -71,6 +71,16 @@ action is required:
 3. Restart the watcher; resume re-runs the smoke on the PR tip and the normal
    gate decides the merge. Never hand-write passing smoke metrics.
 
+Caution for step 2: do NOT pull/copy the whole repair branch into the live
+checkout — the live working tree can carry newer uncommitted deploy state (it
+was ahead on the Cursor→Claude Code CLI migration in `cloud.py` /
+`production_watch.py` / `__main__.py` on 2026-07-24). Diff each file first and
+sync only the fix-carrying files whose live copy has no unique lines
+(`smoke.py`, `production_hooks.py` for this incident). Restart may be scheduled
+detached (`systemd-run --user --on-active=N systemctl --user restart
+csd-zero-acc-babysitter.service`) since a direct restart kills the in-cgroup
+repair agent (`KillMode=control-group`).
+
 ## See also
 
 - `production_watch.py`, `production_hooks.py`, `orchestrator.py`, `cloud.py`
