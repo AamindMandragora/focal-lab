@@ -431,6 +431,12 @@ def run_hardened_smoke_job(
     ]
     if smiles_class:
         cmd.extend(["--smiles-classes", smiles_class])
+    # Split name is required for gsm/spider (no default side); smoke is a
+    # sanity gate, so score the train side — test is reserved for final numbers.
+    if dataset == "gsm_symbolic":
+        cmd.extend(["--gsm-split-name", "train"])
+    elif dataset == "spider":
+        cmd.extend(["--spider-split-name", "train"])
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(code_root) + (
