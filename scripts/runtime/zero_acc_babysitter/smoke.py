@@ -287,7 +287,37 @@ SmokeJobRunner = Callable[..., int]
 SMOKE_SAMPLE_SIZE = 5
 SMOKE_MAX_STEPS_SMILES = 200
 SMOKE_MAX_STEPS_DEFAULT = 256
-SMOKE_GPU_MEM_UTIL = 0.4
+SMOKE_GPU_MEM_UTIL = 0.3
+# GPUs 0 and 3 are routinely occupied by other users (see CLAUDE.md); smokes
+# must stay on 1/2 or vLLM engine init fails on a full cuda:0.
+SMOKE_ALLOWED_GPUS = ("1", "2")
+
+
+def pick_smoke_gpu() -> str:
+    try:
+        out = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,memory.free",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        best: tuple[str, int] | None = None
+        for line in out.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) != 2 or parts[0] not in SMOKE_ALLOWED_GPUS:
+                continue
+            free = int(parts[1])
+            if best is None or free > best[1]:
+                best = (parts[0], free)
+        if best is not None:
+            return best[0]
+    except (OSError, ValueError):
+        pass
+    return SMOKE_ALLOWED_GPUS[-1]
 
 
 def cell_dataset_and_smiles_class(cell_id: str) -> tuple[str, str | None]:
@@ -445,6 +475,7 @@ def run_hardened_smoke_job(
     )
     env.setdefault("CSD_CONSTRAINED_TEMPERATURE", "0.7")
     env.setdefault("CSD_VLLM_GPU_MEMORY_UTILIZATION", str(SMOKE_GPU_MEM_UTIL))
+    env.setdefault("CUDA_VISIBLE_DEVICES", pick_smoke_gpu())
 
     job = runner or _default_subprocess_runner
     logger.info(

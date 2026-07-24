@@ -136,6 +136,50 @@ def kill_cell_process_group(cell_id: str, *, live_repo: Path) -> None:
             pass
 
 
+def commit_live_dirty_state(live: Path, incident_id: str) -> None:
+    """Commit tracked dirty state on live so a repair merge can proceed.
+
+    git refuses to merge over ANY dirty path it must update — even when the
+    working-tree bytes already equal the incoming content (verified on git
+    2.34, incident spider-qwen25-1p5b:2:telemetry:1784857356). The live
+    checkout routinely carries uncommitted deploy state, so committing it
+    (never stashing/discarding) is the only merge-unblock that cannot lose
+    operator work; the pre-merge commit also preserves live's side of any
+    hunk later resolved toward the repair branch by ``-X theirs``.
+    """
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=live,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if not (status.stdout or "").strip():
+        return
+    commit = subprocess.run(
+        [
+            "git",
+            "commit",
+            "-a",
+            "--no-verify",
+            "-m",
+            f"babysitter: snapshot live deploy state before merging {incident_id}",
+        ],
+        cwd=live,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if commit.returncode != 0:
+        raise RuntimeError(
+            "pre-merge commit of live dirty state failed: "
+            f"{(commit.stderr or commit.stdout or '')[:400]!r}"
+        )
+    logger.info(
+        "committed live dirty deploy state before merge (%s)", incident_id
+    )
+
+
 def merge_pr_and_pull(
     incident: IncidentRecord,
     *,
@@ -185,14 +229,25 @@ def merge_pr_and_pull(
             raise RuntimeError(
                 f"git checkout {merge_branch} failed: {(checkout.stderr or checkout.stdout)!r}"
             )
+        commit_live_dirty_state(live, incident.incident_id)
+        # -X theirs: the repair branch is the smoked/gated content, so any
+        # divergent hunk resolves toward it; live's side survives in the
+        # pre-merge snapshot commit above.
         merged = subprocess.run(
-            ["git", "merge", "--no-edit", f"origin/{branch}"],
+            ["git", "merge", "--no-edit", "-X", "theirs", f"origin/{branch}"],
             cwd=live,
             capture_output=True,
             text=True,
             check=False,
         )
         if merged.returncode != 0:
+            subprocess.run(
+                ["git", "merge", "--abort"],
+                cwd=live,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             raise RuntimeError(
                 f"git merge origin/{branch} failed: {(merged.stderr or merged.stdout)!r}"
             )
