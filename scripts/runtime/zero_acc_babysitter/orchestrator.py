@@ -62,6 +62,7 @@ class Orchestrator:
     cells: dict[str, CellRecord] = field(default_factory=dict)
     helper_trace_by_attempt: dict[str, dict[int, list[str]]] = field(default_factory=dict)
     crash_after_cloud_attempts: int | None = None
+    max_cloud_attempts: int = MAX_CLOUD_ATTEMPTS
     _cloud_attempts_this_run: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -137,7 +138,7 @@ class Orchestrator:
 
     def _cloud_smoke_merge(self, incident: IncidentRecord) -> bool:
         cell_id = incident.cell_id
-        while incident.cloud_attempt_count < MAX_CLOUD_ATTEMPTS:
+        while incident.cloud_attempt_count < self.max_cloud_attempts:
             incident.phase = IncidentPhase.CLOUD.value
             incident.cloud_attempt_count += 1
             self._cloud_attempts_this_run[cell_id] = (
@@ -166,9 +167,15 @@ class Orchestrator:
             self.logs.emit(cell_id, "SMOKE_START", "model=Qwen2.5-1.5B-Instruct")
             passed = self.hooks.run_smoke(incident)
             if not passed:
-                self.logs.emit(
-                    cell_id, "SMOKE_FAIL", f"attempt={incident.cloud_attempt_count}"
-                )
+                reason = ""
+                if incident.extra:
+                    reason = str(incident.extra.get("smoke_fail_reason") or "")
+                detail = f"attempt={incident.cloud_attempt_count}"
+                if reason:
+                    detail = f"{detail} reason={reason}"
+                self.logs.emit(cell_id, "SMOKE_FAIL", detail)
+                # Persist fail reason; do not merge — loop revises via next Cloud attempt.
+                self.store.save_incident(incident)
                 continue
             self.logs.emit(
                 cell_id, "SMOKE_PASS", f"attempt={incident.cloud_attempt_count}"

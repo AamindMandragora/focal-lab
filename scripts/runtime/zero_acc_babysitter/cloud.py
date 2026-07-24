@@ -125,6 +125,10 @@ class CursorCliClient:
     plus ``--model`` (default Cursor Grok 4.5). Auth: ``CURSOR_API_KEY``,
     ``CURSOR_AUTH_TOKEN``, or prior ``agent login``.
     This is NOT the Cloud Agents API; it runs on the host that invokes it.
+
+    Production callers must set ``workspace`` to a sibling repair worktree
+    (see ``repair_worktree.ensure_repair_worktree``), not the live cold-queue
+    checkout — ``debug_fix`` runs ``git checkout -B`` in ``workspace``.
     """
 
     workspace: Path
@@ -137,6 +141,12 @@ class CursorCliClient:
     push: bool = True
     remote: str = "origin"
     base_ref: str = "HEAD"
+    # GitHub PR merge target — live queue tip, never master/main.
+    pr_base: str = field(
+        default_factory=lambda: os.environ.get(
+            "BABYSITTER_PR_BASE", "synthesis-snapshot-20260622"
+        )
+    )
     sandbox: str = "disabled"
     log_emit: LogEmit | None = None
     prompt_extra: str = ""
@@ -238,6 +248,8 @@ class CursorCliClient:
                 "gh",
                 "pr",
                 "create",
+                "--base",
+                self.pr_base,
                 "--title",
                 title,
                 "--body",

@@ -59,6 +59,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--exclude-cell-prefix", action="append", default=[])
     parser.add_argument("--poll-seconds", type=float, default=15.0)
+    parser.add_argument(
+        "--repair-worktree",
+        type=Path,
+        default=None,
+        help=(
+            "Sibling git worktree for Cursor CLI repair checkouts "
+            "(default: <repo-parent>/<repo-name>-babysitter-repair)."
+        ),
+    )
+    parser.add_argument(
+        "--no-auto-repair",
+        action="store_true",
+        help="Observe-only: never run CursorCliClient.debug_fix.",
+    )
     args = parser.parse_args(argv)
     if args.watch:
         if args.manifest is None:
@@ -71,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
             args.repo_root.resolve(),
             cell_logs,
             poll_seconds=args.poll_seconds,
+            repair_worktree=args.repair_worktree,
+            auto_repair=not args.no_auto_repair,
         )
         return 0
     if not args.local_sim_scenario:

@@ -263,6 +263,17 @@ Examples:
         help="Device for model inference (default: auto)"
     )
 
+    parser.add_argument(
+        "--vllm-gpu-memory-utilization",
+        type=float,
+        default=VLLM_GPU_MEMORY_UTILIZATION,
+        help=(
+            "GPU memory fraction reserved by vLLM for this run. Must match the "
+            "scheduler's per-cell reservation when GPUs are shared "
+            f"(default: {VLLM_GPU_MEMORY_UTILIZATION})."
+        ),
+    )
+
     # --- SMILES-only -----------------------------------------------------
     parser.add_argument(
         "--smiles-samples-per-class",
@@ -425,7 +436,7 @@ Examples:
         device=device,
         max_new_tokens=args.synthesis_max_tokens,
         temperature=TEMPERATURE,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         reasoning_budget_tokens=args.synthesizer_reasoning_budget,
     )
@@ -455,7 +466,7 @@ Examples:
         sample_size=feedback_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
-        vllm_gpu_memory_utilization=VLLM_GPU_MEMORY_UTILIZATION,
+        vllm_gpu_memory_utilization=args.vllm_gpu_memory_utilization,
         vllm_max_model_len=VLLM_MAX_MODEL_LEN,
         sample_seed=args.eval_seed,
         max_seconds_per_example=args.eval_max_seconds_per_example,

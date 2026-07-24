@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any
 
 from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import GSM_CRANE_COT_TASK
-from synthesis.run_constants import VLLM_GPU_MEMORY_UTILIZATION
 from scripts.runtime.run_warm_task_recovery_queue import (
     GPU_SAFETY_MIB,
     gpu_memory_snapshot,
@@ -270,6 +269,8 @@ def synthesis_command(job: dict[str, Any], python: Path) -> list[str]:
         "8192",
         "--device",
         "auto",
+        "--vllm-gpu-memory-utilization",
+        str(job["gpu_mem_util"]),
     ]
     if job["dataset"] == "smiles":
         command.extend(
@@ -327,11 +328,9 @@ def author_free_environment(inherited: dict[str, str], gpu: int) -> dict[str, st
 
 
 def synthesis_required_memory_mib(job: dict[str, Any], gpu_total_mib: int) -> int:
-    scheduling_job = {
-        **job,
-        "gpu_mem_util": VLLM_GPU_MEMORY_UTILIZATION,
-    }
-    return required_memory_mib(scheduling_job, gpu_total_mib)
+    # synthesis_command passes the job's gpu_mem_util to run_synthesis, so the
+    # reservation must mirror the same per-cell fraction, not a global constant.
+    return required_memory_mib(job, gpu_total_mib)
 
 
 def required_gpu_count(job: dict[str, Any]) -> int:

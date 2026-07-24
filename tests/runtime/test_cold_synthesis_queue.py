@@ -115,6 +115,7 @@ def test_synthesis_command_is_cold_and_uses_large_bedrock_author():
     )
     assert command[command.index("--synthesizer-reasoning-budget") + 1] == "4096"
     assert command[command.index("--max-iterations") + 1] == "80"
+    assert command[command.index("--vllm-gpu-memory-utilization") + 1] == "0.8"
     assert "--bar-split-name" not in command
     assert not any(flag.startswith("--initial-") for flag in command)
 
@@ -251,11 +252,11 @@ def test_dispatch_preserves_manifest_priority_on_one_gpu():
     assert started == [("first", (0,)), ("second", (0,))]
 
 
-def test_synthesis_reservation_matches_the_live_vllm_runtime_setting():
+def test_synthesis_reservation_matches_the_per_cell_vllm_runtime_setting():
     job = _job()
     job["gpu_mem_util"] = 0.4
 
-    assert queue.synthesis_required_memory_mib(job, 48_000) == 38_880
+    assert queue.synthesis_required_memory_mib(job, 48_000) == 19_200
 
 
 def test_compiled_csd_uses_best_threshold_candidate_after_exhaustion(tmp_path):
