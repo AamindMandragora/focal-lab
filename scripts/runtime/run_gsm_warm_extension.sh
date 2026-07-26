@@ -68,7 +68,7 @@ cd "$REPO"
 nohup "$PY" "$REPO/scripts/runtime/vllm_orphan_reaper.py" \
   >>"$REPO/logs/vllm_orphan_reaper.log" 2>&1 </dev/null &
 
-task='Solve math word problems step by step, wrapping intermediate symbolic expressions and the final answer inside << >> delimiters.'
+task="$(python -c 'from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import GSM_CRANE_COT_TASK; print(GSM_CRANE_COT_TASK)')"
 args=(
   --generation-model us.anthropic.claude-sonnet-4-6 --generation-backend bedrock
   --eval-model "$MODEL" --eval-backend vllm

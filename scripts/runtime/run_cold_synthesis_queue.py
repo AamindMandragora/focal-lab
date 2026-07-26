@@ -30,7 +30,7 @@ from scripts.runtime.run_warm_task_recovery_queue import (
 AUTHOR_MODEL = "claude-sonnet-4-6"
 TERMINAL_SYNTHESIS_FAILURE = 75
 POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
-POOLABLE_GPU_COUNT = 3
+POOLABLE_GPU_COUNT = 1
 
 
 def _human_log_emit(repo: Path, cell_id: str, marker: str, detail: str = "") -> None:
@@ -363,18 +363,51 @@ def required_gpu_count(job: dict[str, Any]) -> int:
     return POOLABLE_GPU_COUNT if job["dataset"] in POOLABLE_DATASETS else 1
 
 
+def parse_gpu_list(raw: str) -> tuple[int, ...]:
+    """Parse a comma-separated GPU list like "0,3" into a sorted tuple of ints.
+
+    Raises ConfigError on anything that is not a clean list of distinct,
+    non-negative integers, so a typo in --gpus cannot quietly let the run
+    spread onto every GPU instead of the ones the caller meant.
+    """
+    fields = raw.split(",")
+    gpus: list[int] = []
+    for field in fields:
+        text = field.strip()
+        if not text:
+            raise ConfigError(f"--gpus has an empty entry in {raw!r}")
+        if not text.lstrip("-").isdigit():
+            raise ConfigError(f"--gpus entry {text!r} is not a whole number")
+        value = int(text)
+        if value < 0:
+            raise ConfigError(f"--gpus entry {text!r} must not be negative")
+        gpus.append(value)
+    if len(set(gpus)) != len(gpus):
+        raise ConfigError(f"--gpus lists the same GPU more than once: {raw!r}")
+    return tuple(sorted(gpus))
+
+
 def choose_gpu_bundle(
     job: dict[str, Any],
     snapshots: dict[int, dict[str, int]],
     reservations: dict[int, dict[str, int]],
     baseline_snapshots: dict[int, dict[str, int]],
+    allowed_gpus: tuple[int, ...] | None = None,
 ) -> tuple[int, ...] | None:
-    """Return the least-used disjoint physical GPU bundle that fits one cell."""
+    """Return the least-used disjoint physical GPU bundle that fits one cell.
+
+    If allowed_gpus is given, only those physical GPUs are considered, so the
+    queue leaves other people's cards alone. A GPU listed in allowed_gpus that
+    the machine does not have is simply not a candidate - it does not raise
+    and it is not swapped for a different GPU.
+    """
     # Callers: cold-queue controller dispatch loop in this module (~L1100+).
     # Existing file; purpose unchanged. No data-file schema change.
     # User: "what's causing this error on focal for data collection rn? pls fix"
     candidates: list[tuple[int, int]] = []
     for gpu, snapshot in snapshots.items():
+        if allowed_gpus is not None and gpu not in allowed_gpus:
+            continue
         required = synthesis_required_memory_mib(job, snapshot["total_mib"])
         reserved = sum(reservations.get(gpu, {}).values())
         baseline_used = baseline_snapshots.get(gpu, snapshot)["used_mib"]
@@ -1026,7 +1059,9 @@ def run_job(
     return status
 
 
-def dispatch(jobs, *, snapshot, worker, poll_seconds: float) -> None:
+def dispatch(
+    jobs, *, snapshot, worker, poll_seconds: float, allowed_gpus: tuple[int, ...] | None = None
+) -> None:
     pending = [dict(job) for job in jobs]
     reservations: dict[int, dict[str, int]] = {}
     running: dict[concurrent.futures.Future[int], tuple[tuple[int, ...], str]] = {}
@@ -1043,7 +1078,9 @@ def dispatch(jobs, *, snapshot, worker, poll_seconds: float) -> None:
             while pending and launched:
                 launched = False
                 for index, job in enumerate(pending):
-                    gpus = choose_gpu_bundle(job, snapshots, reservations, baseline)
+                    gpus = choose_gpu_bundle(
+                        job, snapshots, reservations, baseline, allowed_gpus=allowed_gpus
+                    )
                     if gpus is None:
                         continue
                     cell = str(job["cell_id"])
@@ -1108,6 +1145,15 @@ def main() -> int:
         ),
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--gpus",
+        type=parse_gpu_list,
+        default=None,
+        help=(
+            "Comma-separated physical GPU ids to restrict this run to (e.g. 0,3). "
+            "Leaves other people's cards alone instead of using every GPU on the box."
+        ),
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(message)s")
     try:
@@ -1165,6 +1211,7 @@ def main() -> int:
                     snapshot=lambda: gpu_memory_snapshot(args.nvidia_smi),
                     worker=worker,
                     poll_seconds=args.poll_seconds,
+                    allowed_gpus=args.gpus,
                 )
         return 0
     except (ConfigError, subprocess.CalledProcessError) as exc:

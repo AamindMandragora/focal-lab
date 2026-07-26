@@ -158,23 +158,28 @@ def test_synthesis_command_only_uses_run_synthesis_cli_flags():
 
 
 def test_synthesis_environment_names_the_isolated_cold_output():
+    gpus = tuple(range(queue.POOLABLE_GPU_COUNT))
     env = queue.synthesis_environment(
-        _job(), (0, 1, 2), {"PATH": "/bin"}, Path("/repo")
+        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
     )
+    joined = ",".join(str(gpu) for gpu in gpus)
 
-    assert env["CUDA_VISIBLE_DEVICES"] == "0,1,2"
-    assert env["CSD_EVAL_GPU_SLOTS"] == "0,1,2"
+    assert env["CUDA_VISIBLE_DEVICES"] == joined
+    assert env["CSD_EVAL_GPU_SLOTS"] == joined
     assert env["CSD_OUTPUT_NAME"] == "coldq_gsm-qwen35-2b_0719"
     assert env["CSD_OUTPUT_DIR"] == "/repo/outputs/generated/coldq_gsm-qwen35-2b_0719"
 
 
-def test_poolable_synthesis_environment_uses_the_reserved_two_gpu_bundle():
+def test_poolable_synthesis_environment_uses_the_reserved_gpu_bundle():
+    """The bundle reaches the worker in the order it was handed out."""
+    gpus = tuple(range(3, 3 - queue.POOLABLE_GPU_COUNT, -1))
     env = queue.synthesis_environment(
-        _job(), (3, 1, 0), {"PATH": "/bin"}, Path("/repo")
+        _job(), gpus, {"PATH": "/bin"}, Path("/repo")
     )
+    joined = ",".join(str(gpu) for gpu in gpus)
 
-    assert env["CUDA_VISIBLE_DEVICES"] == "3,1,0"
-    assert env["CSD_EVAL_GPU_SLOTS"] == "3,1,0"
+    assert env["CUDA_VISIBLE_DEVICES"] == joined
+    assert env["CSD_EVAL_GPU_SLOTS"] == joined
 
 
 def test_smiles_synthesis_environment_enables_constrained_sampling_and_job_gpu_util():
@@ -195,7 +200,7 @@ def test_smiles_synthesis_environment_enables_constrained_sampling_and_job_gpu_u
 
 def test_non_smiles_synthesis_environment_does_not_force_constrained_temperature():
     env = queue.synthesis_environment(
-        _job(), (0, 1, 2), {"PATH": "/bin"}, Path("/repo")
+        _job(), tuple(range(queue.POOLABLE_GPU_COUNT)), {"PATH": "/bin"}, Path("/repo")
     )
 
     assert "CSD_CONSTRAINED_TEMPERATURE" not in env
@@ -249,7 +254,9 @@ def test_expected_runtime_gpu_mem_util_matches_shared_table():
         assert runtime["gpu_mem_util"] == VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL[model]
 
 
-def test_bundle_allocator_runs_two_poolable_cells_without_gpu_overlap():
+def test_bundle_allocator_runs_poolable_cells_without_gpu_overlap():
+    """Every cell gets its own GPUs, and the box runs dry rather than sharing."""
+    width = queue.POOLABLE_GPU_COUNT
     snapshots = {
         gpu: {"used_mib": 0, "total_mib": 48_000}
         for gpu in range(4)
@@ -258,20 +265,19 @@ def test_bundle_allocator_runs_two_poolable_cells_without_gpu_overlap():
     reservations = {gpu: {} for gpu in snapshots}
     job = _job()
 
-    first = queue.choose_gpu_bundle(job, snapshots, reservations, baseline)
-    assert first == (0, 1)
-    for gpu in first:
-        reservations[gpu]["first"] = queue.synthesis_required_memory_mib(
-            job, snapshots[gpu]["total_mib"]
-        )
+    handed_out: list[int] = []
+    for cell in range(4 // width):
+        bundle = queue.choose_gpu_bundle(job, snapshots, reservations, baseline)
+        assert bundle is not None, f"cell {cell} got no bundle"
+        assert len(bundle) == width
+        assert not set(bundle) & set(handed_out), "a GPU was handed to two cells"
+        handed_out.extend(bundle)
+        for gpu in bundle:
+            reservations[gpu][f"cell{cell}"] = queue.synthesis_required_memory_mib(
+                job, snapshots[gpu]["total_mib"]
+            )
 
-    second = queue.choose_gpu_bundle(job, snapshots, reservations, baseline)
-    assert second == (2, 3)
-    for gpu in second:
-        reservations[gpu]["second"] = queue.synthesis_required_memory_mib(
-            job, snapshots[gpu]["total_mib"]
-        )
-
+    assert sorted(handed_out) == list(range((4 // width) * width))
     assert queue.choose_gpu_bundle(job, snapshots, reservations, baseline) is None
     assert queue.required_gpu_count(_job("smiles")) == 1
 
@@ -939,3 +945,68 @@ def test_baseline_evidence_binds_counts_model_train_side_and_source_hash(tmp_pat
         assert "does not match manifest counts" in str(error)
     else:
         raise AssertionError("baseline evidence with different counts must block launch")
+
+
+def test_choose_gpu_bundle_stays_inside_the_allowed_gpu_set():
+    """--gpus 3,0 has to keep the queue off cards other people are using."""
+    snapshots = {gpu: {"used_mib": 0, "total_mib": 48_000} for gpu in range(4)}
+    baseline = {gpu: dict(snapshot) for gpu, snapshot in snapshots.items()}
+    reservations = {gpu: {} for gpu in snapshots}
+    job = _job()
+
+    # Allow exactly the GPUs one cell needs, taken from the high end so a
+    # bundle drawn from anywhere else stands out.
+    allowed = tuple(range(4 - queue.POOLABLE_GPU_COUNT, 4))
+    bundle = queue.choose_gpu_bundle(
+        job, snapshots, reservations, baseline, allowed_gpus=allowed
+    )
+    assert bundle is not None
+    assert set(bundle) == set(allowed)
+
+    single = queue.choose_gpu_bundle(
+        _job("smiles"), snapshots, reservations, baseline, allowed_gpus=(3,)
+    )
+    assert single == (3,)
+
+    # One GPU short of what the cell needs: refuse, rather than quietly
+    # borrowing a card outside the allowed set from whoever is on it.
+    assert (
+        queue.choose_gpu_bundle(
+            job, snapshots, reservations, baseline, allowed_gpus=allowed[1:]
+        )
+        is None
+    )
+
+    # Left unrestricted it behaves exactly as before, so existing callers and
+    # the no-flag launch path are unaffected.
+    assert queue.choose_gpu_bundle(job, snapshots, reservations, baseline) == tuple(
+        range(queue.POOLABLE_GPU_COUNT)
+    )
+
+
+def test_choose_gpu_bundle_ignores_allowed_gpus_the_machine_does_not_have():
+    """A typo in --gpus must not silently widen the run onto every card."""
+    snapshots = {gpu: {"used_mib": 0, "total_mib": 48_000} for gpu in range(4)}
+    baseline = {gpu: dict(snapshot) for gpu, snapshot in snapshots.items()}
+    reservations = {gpu: {} for gpu in snapshots}
+
+    bundle = queue.choose_gpu_bundle(
+        _job(), snapshots, reservations, baseline, allowed_gpus=(8, 9)
+    )
+
+    assert bundle is None
+
+
+def test_parse_gpu_list_reads_a_comma_separated_set():
+    assert queue.parse_gpu_list("3,0") == (0, 3)
+    assert queue.parse_gpu_list("2") == (2,)
+    assert queue.parse_gpu_list(" 3 , 0 ") == (0, 3)
+
+
+def test_parse_gpu_list_rejects_junk_rather_than_running_everywhere():
+    for junk in ["", "  ", "3,3", "-1", "abc", "3,", "3,abc"]:
+        try:
+            queue.parse_gpu_list(junk)
+        except queue.ConfigError:
+            continue
+        raise AssertionError(f"parse_gpu_list accepted {junk!r}")

@@ -191,14 +191,26 @@ consume token budget by themselves.
 ### Task prompt guidance
 
 - `helpers.AppendTaskGuidance(lm, guidance)`
-  Role: append a CSD-chosen guidance block to the evaluator's existing task
-  prompt before generation begins. The grammar and parser already constrain the
-  output spans and enforce the format contract at decode time, so restating
-  format, delimiters, or syntax repeats what the parser already guarantees and
-  changes nothing. Spend the guidance string only on task-semantic meaning the
-  constrained spans cannot encode: what a quantity denotes, its numeric
-  convention (for example whether it must be a whole count), or how named
-  quantities keep their algebraic roles across the problem.
+  Role: split ownership. The constrained decode owns the answer's form — which
+  spans exist, where they sit, what surface syntax is legal — and the parser
+  reads that form back. Neither owns meaning: what the task's language refers to
+  and the conventions it obeys. No grammar can encode that, so this is the only
+  channel that can carry it.
+
+  The call is first-call-wins and the string it takes rides every later attempt,
+  so treat the first emission as final rather than as a draft to repair.
+
+  Say what the task's language means wherever the grammar leaves meaning open —
+  a named quantity, an operator or relation, or a convention holding across the
+  whole problem. To give a sense of the shape: in a math word problem this might
+  be that a quantity is a whole count rather than a fraction, or what "per"
+  distributes over; in text-to-SQL, which schema object an ambiguous phrase
+  picks out, or which direction "best" orders by; in a molecular string, which
+  bond or valence a token stands for. These are illustrations, not a checklist —
+  what a given task leaves open is yours to find.
+
+  Do not restate delimiters, output format, or syntax; the parser already
+  enforces those, so spending the sentence there changes nothing.
   Mechanics: forwards `guidance` to the runtime LM wrapper. The evaluator keeps
   its normal prompt, examples, schema, question, and output contract; the
   guidance is appended as an extra block. Runtime semantics are append-only and
