@@ -351,6 +351,51 @@ def test_synthesis_reservation_matches_what_the_worker_will_actually_take():
     assert queue.synthesis_required_memory_mib(job, 48_000) == 16_384
 
 
+def test_two_cells_share_one_card_without_overfilling_it():
+    """Stack two cells on one GPU in a single pass, and stop at two.
+
+    This is what the live spider run does on GPU 3. The allocator sees one
+    fixed memory reading for the whole pass, so the only thing telling it the
+    first cell is already there is the reservation it just wrote down. That
+    running total has to be added to the next cell's demand, and the pair has
+    to still leave the safety margin free.
+    """
+    total = 40_960
+    snapshots = {0: {"used_mib": 0, "total_mib": total}}
+    baseline = {0: dict(snapshots[0])}
+    reservations = {0: {}}
+
+    def spider_cell(cell_id, util, floor):
+        job = _job("smiles")
+        job["cell_id"] = cell_id
+        job["gpu_mem_util"] = util
+        job["memory_reservation_mib"] = floor
+        return job
+
+    # The two cells actually sharing GPU 3 right now.
+    first = spider_cell("spider-qwen35-4b", 0.45, 19_000)
+    second = spider_cell("spider-qwen25-1p5b", 0.4, 16_000)
+    third = spider_cell("spider-qwen35-2b", 0.4, 16_384)
+
+    bundle = queue.choose_gpu_bundle(first, snapshots, reservations, baseline)
+    assert bundle == (0,)
+    first_need = queue.synthesis_required_memory_mib(first, total)
+    reservations[0]["spider-qwen35-4b"] = first_need
+
+    # Same pass, same memory reading - only the reservation has changed.
+    bundle = queue.choose_gpu_bundle(second, snapshots, reservations, baseline)
+    assert bundle == (0,), "second cell was refused a card that has room for it"
+    second_need = queue.synthesis_required_memory_mib(second, total)
+    reservations[0]["spider-qwen25-1p5b"] = second_need
+
+    assert first_need + second_need + queue.GPU_SAFETY_MIB <= total, (
+        "the pair the allocator admitted does not actually fit with the margin"
+    )
+
+    # A third cell of the same size must be turned away, not squeezed in.
+    assert queue.choose_gpu_bundle(third, snapshots, reservations, baseline) is None
+
+
 def test_dispatch_starts_another_cell_as_soon_as_a_gpu_frees_up():
     """A card emptying mid-run has to pull the next cell in, not sit idle.
 
