@@ -17,7 +17,6 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.gsm_symbolic.prompts import GSM_CRANE_COT_TASK
 from synthesis.run_constants import (
-    VLLM_GPU_MEMORY_UTILIZATION,
     VLLM_GPU_MEMORY_UTILIZATION_BY_MODEL,
 )
 from scripts.runtime.run_warm_task_recovery_queue import (
@@ -351,11 +350,17 @@ def author_free_environment(
 
 
 def synthesis_required_memory_mib(job: dict[str, Any], gpu_total_mib: int) -> int:
-    scheduling_job = {
-        **job,
-        "gpu_mem_util": VLLM_GPU_MEMORY_UTILIZATION,
-    }
-    return required_memory_mib(scheduling_job, gpu_total_mib)
+    """Reserve as much memory as this job's own worker will actually demand.
+
+    vLLM will not start unless the free memory on the card is at least its
+    gpu_memory_utilization times the card's total size, and
+    synthesis_environment always exports this job's own gpu_mem_util as
+    CSD_VLLM_GPU_MEMORY_UTILIZATION for the worker to read. So the job's own
+    gpu_mem_util is the number that decides whether the worker can start, and
+    reserving anything else (like the shared module-wide default) either
+    under- or over-reserves compared to what will really happen.
+    """
+    return required_memory_mib(job, gpu_total_mib)
 
 
 def required_gpu_count(job: dict[str, Any]) -> int:

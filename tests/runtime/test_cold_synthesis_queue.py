@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import json
 import hashlib
 import subprocess
+import threading
 import sys
 
 from scripts.runtime import run_cold_synthesis_queue as queue
@@ -329,11 +330,76 @@ def test_dispatch_preserves_manifest_priority_on_one_gpu():
     assert started == [("first", (0,)), ("second", (0,))]
 
 
-def test_synthesis_reservation_matches_the_live_vllm_runtime_setting():
+def test_synthesis_reservation_matches_what_the_worker_will_actually_take():
+    """Reserve the job's own vLLM budget, not the module-wide default.
+
+    vLLM refuses to start unless free memory is at least its
+    gpu_memory_utilization times the card's total, and synthesis_environment
+    always exports the job's own value as CSD_VLLM_GPU_MEMORY_UTILIZATION
+    (asserted in the two synthesis_environment tests above), so the job's value
+    is what the process will really demand. Reserving the larger module default
+    instead just makes cards look too full to use.
+    """
     job = _job()
     job["gpu_mem_util"] = 0.4
 
-    assert queue.synthesis_required_memory_mib(job, 48_000) == 38_880
+    # max(memory_reservation_mib=16384, ceil(0.4 * 48000)=19200)
+    assert queue.synthesis_required_memory_mib(job, 48_000) == 19_200
+
+    # The floor still wins when the fraction lands under it.
+    job["gpu_mem_util"] = 0.1
+    assert queue.synthesis_required_memory_mib(job, 48_000) == 16_384
+
+
+def test_dispatch_starts_another_cell_as_soon_as_a_gpu_frees_up():
+    """A card emptying mid-run has to pull the next cell in, not sit idle.
+
+    GPU 0 has room for exactly one cell. GPU 1 starts full with someone else's
+    job and empties partway through. The second cell must land on GPU 1 once it
+    empties, rather than waiting for the first cell to finish.
+    """
+    first = _job("smiles")
+    first["cell_id"] = "first"
+    first["gpu_mem_util"] = 0.4
+    second = _job("smiles")
+    second["cell_id"] = "second"
+    second["gpu_mem_util"] = 0.4
+
+    started: list[tuple[str, tuple[int, ...]]] = []
+    second_started = threading.Event()
+
+    def worker(job, gpus):
+        started.append((str(job["cell_id"]), gpus))
+        if job["cell_id"] == "first":
+            # Hold GPU 0 so the queue cannot just reuse it for the second cell.
+            assert second_started.wait(timeout=5), "second cell never started"
+        else:
+            second_started.set()
+        return 0
+
+    polls = {"count": 0}
+
+    def snapshot():
+        polls["count"] += 1
+        if polls["count"] > 40:
+            raise AssertionError(
+                f"dispatch never placed both cells; started={started}"
+            )
+        # Room for one 19200 MiB cell plus the 2000 MiB safety margin, not two.
+        gpu1_used = 47_000 if polls["count"] < 4 else 20_000
+        return {
+            0: {"used_mib": 20_000, "total_mib": 48_000},
+            1: {"used_mib": gpu1_used, "total_mib": 48_000},
+        }
+
+    queue.dispatch(
+        [first, second], snapshot=snapshot, worker=worker, poll_seconds=0.001
+    )
+
+    assert [cell for cell, _ in started] == ["first", "second"]
+    assert dict(started)["first"] == (0,)
+    assert dict(started)["second"] == (1,), "second cell did not take the freed card"
+    assert polls["count"] >= 4, "second cell started before GPU 1 was free"
 
 
 def test_compiled_csd_uses_best_threshold_candidate_after_exhaustion(tmp_path):
