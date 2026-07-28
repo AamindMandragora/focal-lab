@@ -628,6 +628,23 @@ class _TaskGuidanceState:
         return text[: self.MAX_GUIDANCE_CHARS]
 
 
+def _eos_is_legal(parser, prefix, has_other_valid_token: bool) -> bool:
+    """Decide whether END-OF-TURN may be selected right now.
+
+    Stopping is legal when the prefix is already a complete query, or when
+    there is genuinely nothing else the model could write (a dead end). If
+    the parser can't answer "is this prefix complete", fall back to the old
+    permissive behaviour (always allow) rather than guessing.
+    """
+    if not hasattr(parser, "IsCompletePrefix"):
+        return True
+    try:
+        is_complete = bool(parser.IsCompletePrefix(prefix))
+    except Exception:
+        return True
+    return is_complete or not has_other_valid_token
+
+
 class _TensorizedLMBase:
     """Shared tensorized behavior for Dafny LM wrappers."""
 
@@ -1136,10 +1153,12 @@ class _TensorizedLMBase:
 
             eos_indices = self._token_indices_for_token(eosToken)
             if eos_indices:
-                subset_mask[eos_indices] = True
-                if full_mask is not None:
-                    eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
-                    full_mask[eos_full_ids] = True
+                has_other_valid_token = bool(torch.sum(subset_mask).item() > 0)
+                if _eos_is_legal(parser, prefix, has_other_valid_token):
+                    subset_mask[eos_indices] = True
+                    if full_mask is not None:
+                        eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
+                        full_mask[eos_full_ids] = True
 
             if torch.sum(subset_mask).item() == 0:
                 raise RuntimeError("MaskValidNextAndEos found no valid next tokens including EOS")
@@ -1163,10 +1182,12 @@ class _TensorizedLMBase:
 
             eos_indices = self._token_indices_for_token(eosToken)
             if eos_indices:
-                subset_mask[eos_indices] = True
-                if full_mask is not None:
-                    eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
-                    full_mask[eos_full_ids] = True
+                has_other_valid_token = bool(torch.sum(subset_mask).item() > 0)
+                if _eos_is_legal(parser, prefix, has_other_valid_token):
+                    subset_mask[eos_indices] = True
+                    if full_mask is not None:
+                        eos_full_ids = self._token_ids_tensor[eos_indices].to(full_mask.device)
+                        full_mask[eos_full_ids] = True
 
             self._logits_tensor[subset_mask] = torch.clamp(
                 self._logits_tensor[subset_mask] + amount_f, min=-1e9, max=1e9
