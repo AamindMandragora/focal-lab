@@ -26,6 +26,16 @@ except ImportError:
     pass
 
 
+def _seconds_or_no_cap(raw: str):
+    """Parse a seconds value where zero or less means "no cap at all".
+
+    Returned as None, which is what SynthesisPipeline already treats as
+    unlimited, so the "off" case needs no special handling downstream.
+    """
+    value = float(raw)
+    return value if value > 0 else None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Synthesize constrained decoding strategies (default generation: OpenAI; Bedrock optional for Claude; eval often vLLM)",
@@ -313,6 +323,20 @@ Examples:
         type=float,
         default=90.0,
         help="Runtime budget per evaluated example in seconds (default: 90)"
+    )
+
+    parser.add_argument(
+        "--max-attempt-seconds",
+        type=_seconds_or_no_cap,
+        default=3600.0,
+        help=(
+            "Wall-clock cap on a single synthesis attempt, in seconds "
+            "(default: 3600). An attempt that exceeds it is marked timed out "
+            "and the loop moves on instead of hanging. The clock covers the "
+            "whole attempt, but only the evaluation stage can be interrupted "
+            "part-way -- Dafny verification runs to completion. Pass 0 or a "
+            "negative number to remove the cap entirely."
+        ),
     )
 
     parser.add_argument(
@@ -749,6 +773,7 @@ Examples:
         require_delimiters=resolve_require_delimiters(args.dataset, args.require_delimiters),
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
+        max_attempt_seconds=args.max_attempt_seconds,
         min_examples_before_threshold_stop=args.eval_min_examples_before_threshold_stop,
         adaptive_helper_mask=args.adaptive_helper_mask,
         helper_selection_policy=args.helper_selection_policy,
