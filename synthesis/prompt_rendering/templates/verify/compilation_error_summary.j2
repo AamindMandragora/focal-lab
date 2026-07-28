@@ -1,0 +1,4 @@
+Compilation failed with {{ error_count }} error(s):
+{% for err in errors %}
+  - Line {{ err.line }}: {{ err.message }}
+{% endfor %}

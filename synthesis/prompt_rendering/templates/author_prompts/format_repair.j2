@@ -1,0 +1,21 @@
+Your output must be a Dafny method body and is missing the required rationale block markers.
+
+Every method body must begin with a rationale block
+(`// CSD_RATIONALE_BEGIN` ... `// CSD_RATIONALE_END`) immediately followed by
+a proof sketch block (`// CSD_PROOF_SKETCH_BEGIN` ... `// CSD_PROOF_SKETCH_END`),
+then the body statements — nothing else. Your previous output was missing one
+or both of these markers, or had extra prose or formatting around them.
+
+Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
+
+{{ allowed_helpers_block }}{{ tool_reference_block }}
+{{ search_memory_block }}
+## Content to rewrite
+
+```dafny
+{{ previous_strategy }}
+```
+
+The corrected body must include the required rationale and proof sketch
+blocks, in that order, with no prose or Markdown fence around them. This is a
+formatting fix — do not change the strategy's underlying decoding logic.
