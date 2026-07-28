@@ -126,6 +126,12 @@ def uses_hidden_chunks() -> bool:
     return False
 
 
+def emits_visible_delimiters() -> bool:
+    # SMILES has exactly one constrained span and no << >> markers around it,
+    # so delimiter diagnostics would just be a constant, not real feedback.
+    return False
+
+
 def example_syntax_pass(
     all_valid_syntax: bool,
     segments: list[tuple[str, bool]],
