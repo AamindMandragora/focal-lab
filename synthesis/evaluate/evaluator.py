@@ -347,6 +347,7 @@ class EvaluationResult:
             slow_threshold_seconds=30.0,
             persistent_ledger=getattr(self, "_failure_ledger", None),
             attempt_index=getattr(self, "_attempt_index", None),
+            require_delimiters=require_delimiters,
         )
         if cluster_block:
             lines.append(cluster_block)

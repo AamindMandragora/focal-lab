@@ -34,6 +34,14 @@ def uses_hidden_chunks() -> bool:
     return _token0_enabled()
 
 
+def emits_visible_delimiters() -> bool:
+    # In token-0 mode the whole answer is grammar-governed from the first
+    # token, so no << >> ever appears -- checked live (not cached) because a
+    # single process can flip SPIDER_TOKEN0_CONSTRAINED between runs. Turning
+    # that surface off restores the legacy path, which does force << >>.
+    return not _token0_enabled()
+
+
 def example_syntax_pass(
     all_valid_syntax: bool,
     segments: list,

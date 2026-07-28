@@ -661,6 +661,7 @@ Examples:
     from synthesis.verify.compiler import DafnyCompiler
     from synthesis.evaluate.evaluator import Evaluator
     from synthesis.evaluate.feedback_loop import SynthesisPipeline, SynthesisExhaustionError
+    from synthesis.evaluate.benchmarks.registry import resolve_require_delimiters
 
     # Create components
     print("Initializing synthesis pipeline...")
@@ -745,7 +746,7 @@ Examples:
         # Restart-from-scratch mechanism
         restart_after_stuck_iters=args.restart_after_stuck_iters,
         restart_cooldown_iters=args.restart_cooldown_iters,
-        require_delimiters=False if args.dataset == "smiles" else args.require_delimiters,
+        require_delimiters=resolve_require_delimiters(args.dataset, args.require_delimiters),
         eval_sample_size=feedback_sample_size,
         eval_max_seconds_per_example=args.eval_max_seconds_per_example,
         min_examples_before_threshold_stop=args.eval_min_examples_before_threshold_stop,
