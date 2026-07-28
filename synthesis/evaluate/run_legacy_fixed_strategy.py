@@ -310,6 +310,13 @@ def _gsm_symbolic_completion_to_delimited(
     return f"<<{expr}>>"
 
 
+def _resolve_device(device: str, backend: str) -> str:
+    """Turn the "auto" default into a device the vLLM backend accepts."""
+    if device == "auto" and backend == "vllm":
+        return "cuda"
+    return device
+
+
 def _legacy_local_cuda_device(device_arg: str) -> str:
     """CUDA device string valid for the GPUs visible in this process."""
     if device_arg and device_arg not in {"auto", "cuda"}:
@@ -560,7 +567,7 @@ def _annotate_legacy_rows_with_syntax(
         dataset_name=dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
@@ -804,7 +811,7 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         dataset_name=dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
@@ -957,7 +964,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         dataset_name=dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
@@ -1182,7 +1189,7 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
         dataset_name=dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
@@ -1470,7 +1477,7 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
         dataset_name="spider",
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
@@ -1616,7 +1623,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
         dataset_name=dataset,
         model_name=args.eval_model,
         backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
