@@ -1,6 +1,6 @@
 # Reference CSD strategies (Dafny)
 
-Verified **formal specifications** that mirror published strategy families (Unconstrained, GCD/SynCode, CRANE, IterGen, CARS) using only `CSDHelpers` from `library/VerifiedAgentSynthesis.dfy`.
+Verified **formal specifications** that mirror published strategy families (Unconstrained, GCD/SynCode, CRANE, IterGen, RS, CARS) using only `CSDHelpers` from `library/VerifiedAgentSynthesis.dfy`.
 
 ## Two evaluation paths
 
@@ -23,6 +23,7 @@ For a concise index of every `LM`, `Parser`, and `CSDHelpers` member, see [`../l
 | `crane_faithful.dfy` | Variant CRANE reference body. |
 | `itergen.dfy` | IterGen-style per-token soft-then-hard constrained steps inside the span. |
 | `cars.dfy` | CARS-style adaptive rejection sampling with rollback and penalties. |
+| `rejection_sampling.dfy` | RS-style memoryless rejection sampling: zero-boost proposals, post-hoc parser check, rollback to span entry with no accumulated state. |
 
 ## Design distinction: GCD vs CRANE
 
@@ -37,7 +38,8 @@ dafny verify synthesis/verify/reference/unconstrained.dfy \
                synthesis/verify/reference/gcd.dfy \
                synthesis/verify/reference/crane.dfy \
                synthesis/verify/reference/itergen.dfy \
-               synthesis/verify/reference/cars.dfy
+               synthesis/verify/reference/cars.dfy \
+               synthesis/verify/reference/rejection_sampling.dfy
 ```
 
 ## See also

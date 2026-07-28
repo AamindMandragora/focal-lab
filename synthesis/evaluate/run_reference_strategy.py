@@ -11,6 +11,7 @@ Available strategies:
   crane          Adaptive constrained-unconstrained switching (CRANE-style)
   itergen        Chunked constrained symbol generation (IterGen-style)
   cars           Adaptive group-boosted constrained steps (CARS-style)
+  rs             Memoryless full-attempt rejection sampling (RS-style)
 
 Usage:
   python -m synthesis.evaluate.run_reference_strategy \\
@@ -39,6 +40,7 @@ STRATEGY_DFY: dict[str, str] = {
     "crane_faithful": "crane_faithful.dfy",
     "itergen": "itergen.dfy",
     "cars": "cars.dfy",
+    "rs": "rejection_sampling.dfy",
 }
 
 REFERENCE_DIR = Path(__file__).resolve().parents[1] / "verify" / "reference"
