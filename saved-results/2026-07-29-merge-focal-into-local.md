@@ -205,16 +205,80 @@ cheaper than redoing the conversion. Cost grows with the square of answer length
 (the answer gets longer as you generate, and every step re-converts the whole
 thing).
 
-**Why it was dropped, and how to restore it.** The old cache keyed on the token
-list alone. focal's version derives *two* different texts from the same list —
-`_structured_text` prepends the `<<` span opener for CRANE, `_complete_text`
-does not — so one key had two correct answers and the cache would return the
-wrong string. The fix is to widen the key from `(id(prefix), len(prefix))` to
-`(id(prefix), len(prefix), which_text)`. Nothing else about the old cache was
-wrong.
+**The reason given for dropping it was wrong.** The claim was that focal derives
+*two* texts from one prefix — `_structured_text` prepends the `<<` span opener
+for CRANE, `_complete_text` does not — so a single key could not be right. Both
+halves of that are true except the conclusion: the two texts are built from the
+*same* `_tokens_to_text(prefix)` call and differ only by a string concatenation
+afterwards (`parser_utils.py:283` and `:290`). Caching the conversion therefore
+needs no wider key at all. It just has to sit on `_tokens_to_text`, not on the
+two texts above it — a cache at that higher level really would hand back one
+where the other was asked for.
 
-**Worth doing where answers are long (Spider, GSM), near-worthless for SMILES**,
-where a chain extender is 10-30 tokens and the whole table above rounds to zero.
+**Restored** in commit `5a3c16b1`, with
+`synthesis/evaluate/benchmarks/common/test_prefix_text_cache.py` as the guard
+(10 tests, ~11 s; they build the parser with `tokenizer=None`, which skips the
+341 MB mask store load). Verified red → green: 3 failed / 7 passed before,
+10 passed after.
+
+Two hazards the tests pin down:
+
+- Prefixes are not hashable, so the key is `id(prefix)`. But `parser_utils.py`
+  lines 611 and 625 convert *freshly built single-element lists* that die
+  immediately, and a dead object's id can be handed to a new one. Each entry
+  therefore stores the prefix next to its text, and a hit is only trusted when
+  the stored object **is** the one being asked about.
+- The cache is capped at 1024 entries and evicts oldest-first. A run makes a new
+  prefix object every decode step, so keeping them all would pin that memory for
+  the whole run.
+
+**After** (same benchmark, `saved-results/scripts/parser_cache_bench.py`):
+
+| answer length | before | after | speedup | saved per 50-example eval |
+|---|---|---|---|---|
+| 50 tokens | 79 µs | 0.40 µs | 196× | 0.5 s |
+| 100 | 156 µs | 0.41 µs | 383× | 1.9 s |
+| 200 | 316 µs | 0.46 µs | 683× | 7.9 s |
+| 400 | 627 µs | 0.46 µs | 1377× | 31 s |
+| 800 | 1251 µs | 0.45 µs | 2771× | 125 s |
+
+The cached call is flat at ~0.45 µs regardless of length — the conversion is now
+done once per prefix instead of once per question. **Matters for Spider and GSM,
+rounds to zero for SMILES**, where a chain extender is 10-30 tokens.
+
+## Does the unguarded `&` reach our `cars.dfy` too?
+
+Asked directly, and the answer is **yes, through a different door, and narrower.**
+
+The crash at `parser_utils.py:411` cannot currently fire in production: a size
+mismatch needs the token list to differ in length from the grammar mask, and no
+live call site passes a token id subset — `create_runtime_lm`'s `token_ids`
+parameter defaults to `list(range(len(tokenizer)))` and both production callers
+(`smiles/environment.py:45`, `gsm_symbolic/environment.py:782`) omit it. Measured
+lengths match at 151,665. So line 411 is a latent hazard, not an active bug.
+
+The broad `except Exception` on line 413 is the live problem, because it wraps
+the *whole* mask computation — `get_acceptable_next_terminals`,
+`compute_dfa_states`, `_lookup_next_tokens` — and any failure in there becomes an
+all-zero mask.
+
+Our `cars.dfy` never calls `ValidNextTokenCount` itself, but the helper it does
+call does. `VerifiedAgentSynthesis.dfy:1767`, inside `SoftConstrainedStep`:
+
+```dafny
+if softNext == eosToken && !(parser.IsCompletePrefix(constrainedPrefix) || parser.ValidNextTokenCount(constrainedPrefix) == 0) {
+```
+
+That guard exists to reject a premature stop. An all-zero mask makes the count 0,
+which switches the guard off, so a stop the model drew too early is accepted as
+legal. Back in `cars.dfy` that lands in the `next == eosToken` branch, and if the
+prefix happens to parse (a bare `"C"` does) the span closes there.
+
+**The difference is what it takes to trigger.** focal's break fires on the crash
+alone, whatever the model wanted. Ours additionally requires the model to have
+actually drawn eos at that step. Strictly less exposed, but not immune — and
+neither version is safe while a crash can present itself as "the grammar says
+this molecule is finished".
 
 ## Related finding, not yet chased
 
