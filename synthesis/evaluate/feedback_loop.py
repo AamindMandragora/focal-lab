@@ -764,6 +764,20 @@ class SynthesisPipeline:
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+    def _start_inside_constrained(self) -> bool:
+        """Whether the active benchmark's evaluation generation starts already
+        inside the constrained region. Passed to the author's prompt so it
+        knows to enter constrained mode with EnterObservedConstrainedSpan
+        (no visible "<<") instead of OpenConstrainedSpan on benchmarks like
+        Spider that never emit visible delimiters. Falls back to False
+        (visible-delimiter surface, the historical default) if the benchmark
+        doesn't declare it."""
+        from .benchmarks.registry import get_logic
+
+        logic = get_logic(self.evaluator.dataset_name)
+        hook = getattr(logic, "starts_inside_constrained", None)
+        return bool(hook()) if hook is not None else False
+
     def _run_configuration_metadata(self, task_description: str, output_name: str) -> dict:
         """Return run-level provenance that is useful for experiment analysis."""
         evaluator = self.evaluator
@@ -1640,6 +1654,7 @@ class SynthesisPipeline:
             strategy_code = self.generator.generate_initial(
                 task_description,
                 allowed_helpers=allowed_helpers,
+                start_inside_constrained=self._start_inside_constrained(),
             )
 
         # Index in `attempts` after which we last performed a fresh restart.
@@ -1726,6 +1741,7 @@ class SynthesisPipeline:
                     strategy_code = self.generator.generate_initial(
                         task_description,
                         allowed_helpers=next_allowed_helpers,
+                        start_inside_constrained=self._start_inside_constrained(),
                     )
                     last_restart_index = len(attempts)
                     continue
@@ -1754,6 +1770,7 @@ class SynthesisPipeline:
                     strategy_code = self.generator.generate_initial(
                         task_description,
                         allowed_helpers=next_allowed_helpers,
+                        start_inside_constrained=self._start_inside_constrained(),
                     )
                     last_restart_index = len(attempts)
                     continue
@@ -1968,6 +1985,7 @@ class SynthesisPipeline:
                         refine_once=lambda: self.generator.generate_initial(
                             task_description,
                             allowed_helpers=next_allowed_helpers,
+                            start_inside_constrained=self._start_inside_constrained(),
                         ),
                     )
                     self._apply_restart_cooldown()
@@ -2107,6 +2125,7 @@ class SynthesisPipeline:
                         refine_once=lambda: self.generator.generate_initial(
                             task_description,
                             allowed_helpers=next_allowed_helpers,
+                            start_inside_constrained=self._start_inside_constrained(),
                         ),
                     )
                     self._apply_restart_cooldown()

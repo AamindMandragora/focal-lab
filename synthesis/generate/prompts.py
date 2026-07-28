@@ -912,7 +912,7 @@ Generate a complete Dafny method body for this use-case.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 Return exactly the Dafny method body: rationale block, proof sketch block, then body statements.
 Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Markdown fence above it.
@@ -2153,7 +2153,7 @@ Your previous method body failed Dafny verification.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 ## Verified Examples
 
@@ -2191,7 +2191,7 @@ Your method body passed Dafny verification but failed at runtime.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 {search_memory_block}
 Previous attempt:
@@ -2213,7 +2213,7 @@ Begin your output with `// CSD_RATIONALE_BEGIN` — no prose, no preamble, no Ma
 COMPILATION_ERROR_REFINEMENT_PROMPT = """\
 Your method body passed Dafny verification but failed during Dafny-to-Python compilation.
 
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 {search_memory_block}
 Previous attempt:
 ```dafny
@@ -2235,7 +2235,7 @@ FORMAT_REPAIR_PROMPT = """Your output must be a Dafny method body and is missing
 
 Rewrite the following content into a valid Dafny method body that preserves the same strategy semantics and outputs ONLY the method body.
 
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 {search_memory_block}
 Content to rewrite:
 ```dafny
@@ -2254,7 +2254,7 @@ but did not meet evaluation thresholds.
 
 Task:
 {task_description}
-{allowed_helpers_block}{tool_reference_block}
+{allowed_helpers_block}{tool_reference_block}{decoding_surface_block}
 
 ## Verified Dafny patterns (proof-style reference only)
 
@@ -2312,6 +2312,39 @@ def _build_tool_reference_block(allowed_helpers: list[str] | None) -> str:
     return _filter_tool_reference(allowed_helpers) + "\n\n"
 
 
+def _build_decoding_surface_block(start_inside_constrained: bool) -> str:
+    """State which decoding surface this run uses.
+
+    Two different runs hand the strategy different starting points: one
+    starts outside the constrained region and must open it explicitly with
+    `OpenConstrainedSpan` (which emits a literal `<<`); the other starts
+    already inside the constrained region, entered with
+    `EnterObservedConstrainedSpan`, which emits nothing -- no `<<` token is
+    ever produced by anyone. Without this block a strategy written for one
+    surface silently does nothing on the other, e.g. a strategy that waits
+    for `next == "<<"` before constraining never constrains anything on a
+    run that starts inside the constrained region, because that token never
+    arrives.
+    """
+    if start_inside_constrained:
+        return (
+            "## Decoding surface\n\n"
+            "This run starts inside the constrained region already. Enter "
+            "constrained mode by calling `EnterObservedConstrainedSpan`, not "
+            "`OpenConstrainedSpan` -- no `<<` token will ever appear in the "
+            "output, from you or anyone else. Do not write logic that waits "
+            "for `<<` before entering constrained mode; that logic will "
+            "never run.\n\n"
+        )
+    return (
+        "## Decoding surface\n\n"
+        "This run starts outside the constrained region. Enter constrained "
+        "mode by calling `OpenConstrainedSpan`, which appends a literal "
+        "`<<` to the output. Call `CloseConstrainedSpan` to append `>>` and "
+        "exit constrained mode.\n\n"
+    )
+
+
 def _build_verified_examples_block(allowed_helpers: list[str] | None) -> str:
     """Keep only verified examples compatible with the active helper contract."""
     allowed = set(allowed_helpers) if allowed_helpers is not None else None
@@ -2342,11 +2375,13 @@ def _build_verified_examples_block(allowed_helpers: list[str] | None) -> str:
 def build_initial_prompt(
     task_description: str,
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     user_prompt = INITIAL_GENERATION_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         verified_examples=_build_verified_examples_block(allowed_helpers),
     )
     return SYSTEM_PROMPT, user_prompt
@@ -2362,6 +2397,7 @@ def build_verification_error_prompt(
     strategy_context: str = "",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     behavioral_context_block = ""
     structured_feedback_block = ""
@@ -2397,6 +2433,7 @@ def build_verification_error_prompt(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_message=error_message,
         strategy_context_block=strategy_context_block,
@@ -2415,12 +2452,14 @@ def build_runtime_error_prompt(
     task_description: str = "Unknown task",
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = RUNTIME_ERROR_REFINEMENT_PROMPT.format(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_traceback=error_traceback,
         search_memory_block=search_memory_block,
@@ -2433,11 +2472,13 @@ def build_compilation_error_prompt(
     error_message: str,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = COMPILATION_ERROR_REFINEMENT_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         error_message=error_message,
         search_memory_block=search_memory_block,
@@ -2449,11 +2490,13 @@ def build_format_repair_prompt(
     previous_strategy: str,
     search_memory: str = "",
     allowed_helpers: list[str] | None = None,
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     user_prompt = FORMAT_REPAIR_PROMPT.format(
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         search_memory_block=search_memory_block,
     )
@@ -2514,6 +2557,7 @@ def build_evaluation_failure_prompt(
     eval_max_seconds_per_example: float | None = None,
     mode_examples: str = "",
     attempt_outcome_ledger: str = "",
+    start_inside_constrained: bool = False,
 ) -> tuple[str, str]:
     search_memory_block = f"{search_memory}\n" if search_memory else ""
     best_so_far_block = _build_best_so_far_block(
@@ -2537,6 +2581,7 @@ def build_evaluation_failure_prompt(
         task_description=task_description,
         allowed_helpers_block=_build_allowed_helpers_block(allowed_helpers),
         tool_reference_block=_build_tool_reference_block(allowed_helpers),
+        decoding_surface_block=_build_decoding_surface_block(start_inside_constrained),
         previous_strategy=previous_strategy,
         previous_accuracy=previous_accuracy,
         previous_syntax_rate=previous_syntax_rate,
