@@ -120,6 +120,33 @@ def _evaluate(
     finally:
         evaluator.unload_runtime()
 
+    return _payload_from_result(result)
+
+
+def _payload_from_result(result: Any) -> dict[str, Any]:
+    """Turn an evaluation result into the payload written to --output-json.
+
+    Stops instead of reporting when the evaluation did not actually measure
+    anything. Both checks matter and they are not the same check: `success` is
+    False when the evaluator raised (a missing module, an ungradable row), and
+    `num_examples == 0` catches an evaluator that reported success while
+    running nothing, which is the shape Spider's fake 0% took.
+
+    Without this, a broken harness came out of here as `accuracy: 0.0` in a
+    saved results file and a printed "accuracy=0.000", with the underlying
+    error dropped on the floor -- indistinguishable from a model that answered
+    every question wrong. Same check as scripts/reevaluate_compiled_csd.py:94-97.
+    A genuine 0% over real examples is a measurement and still reports normally.
+    """
+    if not getattr(result, "success", False):
+        raise SystemExit(f"Evaluation failed: {getattr(result, 'error', None)}")
+    if not result.num_examples:
+        raise SystemExit(
+            "Evaluation failed: zero examples were evaluated, so the accuracy "
+            "below would not be a measurement. Underlying error: "
+            f"{getattr(result, 'error', None)}"
+        )
+
     answers: list[dict[str, Any]] = []
     for sample in result.sample_outputs or []:
         question = str(sample.get("question", ""))

@@ -297,6 +297,29 @@ class FailureStage(Enum):
     RUNTIME = "runtime"
     EVALUATION = "evaluation"
     TIMEOUT = "timeout"
+    HARNESS = "harness"
+
+
+def classify_eval_failure(eval_result) -> FailureStage:
+    """Tell a broken evaluator apart from a strategy that scored badly.
+
+    A failed evaluation can mean two very different things:
+      - the strategy actually ran against real examples and scored badly
+        (a genuine EVALUATION failure -- useful feedback for the next
+        attempt to act on), or
+      - the evaluator itself never ran any examples at all, for example
+        because a required Python module was missing (a HARNESS failure --
+        no amount of rewriting the strategy can fix a broken harness).
+
+    The distinguishing fact is `num_examples`: a real run, even a bad one,
+    still evaluates its examples. Zero examples evaluated means nothing was
+    measured, so this must be reported as a broken harness rather than a
+    bad strategy.
+    """
+    num_examples = getattr(eval_result, "num_examples", None)
+    if not num_examples:
+        return FailureStage.HARNESS
+    return FailureStage.EVALUATION
 
 
 def parse_strategy_type(strategy_code: str) -> dict:
@@ -2003,10 +2026,30 @@ class SynthesisPipeline:
 
             if not eval_result.success:
                 print(f"  ✗ Evaluation failed: {eval_result.error}")
-                attempt.failed_at = FailureStage.EVALUATION
+                failure_stage = classify_eval_failure(eval_result)
+                attempt.failed_at = failure_stage
                 attempt.error_summary = eval_result.error or "Evaluation failed"
                 attempts.append(attempt)
+                # Save what we have so far before doing anything else, so a
+                # harness failure below does not lose the attempts already
+                # recorded.
                 self._save_progress_report(attempts, task_description, output_name, run_results_dir)
+
+                if failure_stage is FailureStage.HARNESS:
+                    print(
+                        "  ✗✗✗ HARNESS FAILURE: the evaluator ran zero examples, "
+                        "so nothing was actually measured. This is not a bad "
+                        "strategy -- it is a broken evaluation setup (for "
+                        "example, a missing Python file), and no strategy "
+                        "rewrite can fix it."
+                    )
+                    print(f"      Underlying error: {eval_result.error}")
+                    raise SynthesisExhaustionError(
+                        "Synthesis stopped: the evaluator never ran any "
+                        f"examples (harness failure), not a bad strategy. "
+                        f"Underlying error: {eval_result.error}",
+                        attempts,
+                    )
 
                 self._unload_evaluator_runtime_before_refinement()
                 print("  Refining based on evaluation error...")

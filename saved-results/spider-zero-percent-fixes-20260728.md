@@ -262,19 +262,47 @@ isn't installed in that venv — pre-existing, unrelated to this work.
 
 ---
 
+## Correction (2026-07-28, later the same day)
+
+**The claim below that "the cause of the fake 0% is removed" was wrong when
+written.** Recorded here rather than edited away, because the mistake is the
+same one this document is about.
+
+The Fault 0 fix routed evaluation away from the missing worker-pool modules and
+onto the sequential path. That path calls `_setup_environment`
+(`evaluator.py:1940`), which imports
+`synthesis.evaluate.benchmarks.common.vllm_startup` — a module that **has never
+existed in any commit on any branch**. `--eval-backend` defaults to `vllm`
+(`run_synthesis.py:162`), so this is the normal path, not an edge case. The
+`ModuleNotFoundError` landed in the same kind of broad `except` and produced the
+identical `accuracy=0.0, syntax_rate=0.0, num_examples=0`.
+
+So the failure was moved one level deeper and reported as a cure. The check this
+very document recommends — prove `num_examples > 0` before believing anything —
+is the check that was not run against the fix itself.
+
+`vllm_startup.py` has since been written and is covered by
+`tests/test_vllm_startup_helpers.py`. That still does not prove Spider scores
+above zero; see "Still open".
+
+---
+
 ## Still open
 
 - These fixes are verified by tests and by Dafny. **They have not yet been shown
   to move the actual Spider score off 0%** — that needs a real evaluation run on
-  the GPU box (`focal`, needs the campus VPN). Until then the claim is "the cause
-  of the fake 0% is removed and four real defects are fixed", not "Spider now
-  scores X". Fault 0 makes a real score likely, but likely is not measured.
+  the GPU box (`focal`, needs the campus VPN). Until then the honest claim is
+  "several real defects are fixed and two fake-zero causes are removed", not
+  "Spider now scores X", and not "the cause is removed" — that was said once
+  already and was wrong.
 - **Restore the three pooled-eval modules?** Doing so would recover the ~24s
   per-iteration engine reload. They exist on
   `codex/verification-burden-reduction-20260725`. Not done here because they were
   never on this branch and cannot be tested without GPUs — needs a run on focal.
-- **Hunt the rest of this bug class.** The damaging pattern is a broad
-  `except Exception` that returns a normal-looking result. One instance caused
-  weeks of misdirected work. The repo has not been swept for others.
+- **Hunt the rest of this bug class.** DONE — 116 wide catches reviewed across
+  five areas. Findings and current status are in
+  `planning/silent-failure-sweep-plan.md`. Four are fixed; several remain open,
+  and two need a decision from Aadivya (delete two dead files; whether the
+  GSM reference-formula shortcut is deliberate CRANE parity).
 - The 3600s cap default is still a guess; re-check it now that eval runs
   sequentially and is therefore slower.

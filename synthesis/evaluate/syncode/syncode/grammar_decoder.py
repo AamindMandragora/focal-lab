@@ -94,6 +94,9 @@ class SyncodeLogitsProcessor(LogitsProcessor):
         self.last_valid_state = [0 for _ in range(self.batch_size)]
         self.function_ends = [None for _ in range(self.batch_size)]
         self.parse_failed = False
+        # Do NOT reset self.constraint_audit here: it must accumulate across
+        # the whole run, not just one sample, or per-sample resets erase the
+        # evidence that any step was ever unconstrained.
 
         prompt_tokens = self.tokenizer.encode(prompt, return_tensors='pt')[0]
         if self.parse_output_only:
@@ -107,6 +110,8 @@ class SyncodeLogitsProcessor(LogitsProcessor):
         self.last_valid_state = [0 for _ in range(self.batch_size)]
         self.function_ends = [None for _ in range(self.batch_size)]
         self.parse_failed = False
+        # Do NOT reset self.constraint_audit here either -- same reasoning as
+        # in reset(): it must keep counting across the whole run.
         self.start_from = start_from
         self.inc_parser.reset()
 
@@ -165,6 +170,7 @@ class SyncodeLogitsProcessor(LogitsProcessor):
                     print("-"*50)
                     print(f"Parsing failed! Falling back to unconstrained decoding.\nException: {e}\nPartial code: {partial_code}\nParsed lexical tokens: {self.inc_parser.parsed_lexer_tokens}")
                     print("-"*50)
+                self.constraint_audit.record_unconstrained_step("parse_error", str(e))
                 continue  # Skip altering the scores for this batch
         
             accept_mask = self.dfa_mask_store.get_accept_mask(r, logger=self.logger)
@@ -182,6 +188,7 @@ class SyncodeLogitsProcessor(LogitsProcessor):
             else: # Otherwise, report the error and mask no tokens
                 self.logger.log('No acceptable tokens for the current partial code!')
                 self._log_current_status(partial_code, r)
+                self.constraint_audit.record_unconstrained_step("no_valid_tokens", partial_code[-200:])
 
             # For debugging - remove later
             if DEBUG: self._debug_greedy(scores, idx, partial_code, r, greedy_token)

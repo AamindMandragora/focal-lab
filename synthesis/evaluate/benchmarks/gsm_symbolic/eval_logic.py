@@ -9,6 +9,7 @@ from typing import Any
 
 from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
+from synthesis.evaluate.benchmarks.common.ungradable import UngradableExample
 
 uses_hidden_chunks = defaults.uses_hidden_chunks
 starts_inside_constrained = defaults.starts_inside_constrained
@@ -169,20 +170,48 @@ def is_correct(
     scored_output: str,
 ) -> bool:
     vt = example.get("variable_types", {})
+    # Nothing here is caught, deliberately. Turning an unreadable field into an
+    # empty dict does not just lose the error -- {} is falsy, so the check below
+    # skips the symbolic grader entirely and scores this example by numeric
+    # comparison instead. That is a different measurement (a proof of algebraic
+    # equivalence versus "do these two numbers match"), averaged in with the
+    # rest of the split, with nothing recording that the method changed.
+    #
+    # Pinned by tests/test_unreadable_types_does_not_switch_graders.py.
     if isinstance(vt, str):
-        try:
-            vt = ast.literal_eval(vt)
-        except (ValueError, SyntaxError):
-            vt = {}
+        vt = ast.literal_eval(vt)
     if not isinstance(vt, dict):
-        vt = {}
-    if vt and example.get("answer_parsed"):
-        return evaluator._gsm_symbolic_equivalence(actual, expected, vt)
-    numeric_actual = evaluator._extract_answer_gsm(scored_output)
-    numeric_expected = re.search(r"####\s*([-+]?\d*\.?\d+)", example.get("answer", ""))
-    if numeric_expected:
-        return evaluator._answers_match(numeric_actual, numeric_expected.group(1))
-    return evaluator._answers_match(numeric_actual, expected)
+        raise UngradableExample(
+            "GSM variable_types must be a mapping of variable name to type, "
+            f"got {type(vt).__name__}: {vt!r}"
+        )
+    # There is exactly one way to grade GSM here, and it is CRANE's: prove the
+    # model's formula equals the gold's for every legal value of every variable.
+    #
+    # A numeric comparison used to sit below this as a fallback. It is gone.
+    # CRANE has no such thing -- its parse_answer (gsm_symbolic.py:28-56) either
+    # runs validate_expression_equivalence or leaves correct = False -- so every
+    # example that fallback graded was measured by a method CRANE does not have
+    # and then averaged into a figure reported against CRANE's published number.
+    # It was not a rare path either: answer_parsed defaults to '' (dataset.py:65
+    # and :164), which is falsy, so any source row missing that field took it.
+    #
+    # A row that cannot be graded this way is a dataset problem, not evidence
+    # about the model, so it stops the run.
+    # Pinned by tests/test_unreadable_types_does_not_switch_graders.py.
+    if not vt:
+        raise UngradableExample(
+            "GSM example has no variable_types, so its answer cannot be checked "
+            "for symbolic equivalence the way CRANE does. Refusing to fall back "
+            f"to a numeric comparison. Question: {str(example.get('question', ''))[:200]!r}"
+        )
+    if not example.get("answer_parsed"):
+        raise UngradableExample(
+            "GSM example has no parsed gold expression (answer_parsed), so there "
+            "is nothing to prove the model's answer equivalent to. Refusing to "
+            f"fall back to a numeric comparison. Question: {str(example.get('question', ''))[:200]!r}"
+        )
+    return evaluator._gsm_symbolic_equivalence(actual, expected, vt)
 
 
 def get_generation_runner():

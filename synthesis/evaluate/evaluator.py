@@ -137,6 +137,7 @@ from synthesis.evaluate.benchmarks.smiles.rolling_prompt import (
     apply_suffix as _apply_smiles_rolling_suffix,
     update_suffix as _update_smiles_rolling_suffix,
 )
+from synthesis.evaluate.benchmarks.common.ungradable import UngradableExample
 from synthesis.evaluate.metrics import choose_denominator_basis
 from synthesis.run_constants import VLLM_ENFORCE_EAGER
 
@@ -1490,16 +1491,26 @@ def _crane_test_expression_equivalence(expr1_gsm, expr2_gsm, var_names, var_type
     for _ in range(1000):
         test_case = {}
         for var in var_names:
-            vt = var_types.get(var)
+            # Plain indexing, not .get(), matching upstream (CRANE
+            # gsm_symbolic.py:101). A variable the regex picked up that has no
+            # entry at all raises KeyError and stops the run, exactly as it does
+            # upstream. Softening this to .get() returns a verdict upstream
+            # never produces. A variable that IS present but carries a type
+            # upstream does not recognise is the different case handled below.
+            vt = var_types[var]
             if vt == "float between 0 and 1":
                 test_case[var] = _rng.uniform(0.001, 1)
             elif vt == "float":
                 test_case[var] = _rng.uniform(0.001, 100)
             elif vt == "int":
                 test_case[var] = _rng.randint(1, 100)
-            else:
-                # untyped variable -> cannot sample reliably; treat as not provable
-                return False
+            # An untyped variable is deliberately left unassigned, matching
+            # upstream (CRANE gsm_symbolic.py:100-107). It survives into the
+            # substituted string, so the eval below raises NameError -- and
+            # which answer that produces depends on which expression it sits in,
+            # because the two catches are asymmetric. Refusing to sample instead
+            # is stricter than CRANE and undercounts against their published
+            # number. Pinned by tests/test_crane_parity_is_exact.py.
         expr1_sub = expr1_gsm
         expr2_sub = expr2_gsm
         for var, value in test_case.items():
@@ -1574,7 +1585,18 @@ def _crane_validate_expression_equivalence(expr1, expr2, var_types) -> bool:
 
     if "round(" in expr1:
         return False
-    expr2 = re.sub(r"round\(", "ToInt(", expr2)
+    # Deliberately dead, and it must stay dead. Upstream writes this pattern as
+    # r'\round\(' (CRANE gsm_symbolic.py:168), where \r is the carriage-return
+    # escape -- so it matches nothing and the gold keeps its round(. safe_eval
+    # then throws, because the eval environment has no builtins, and grading
+    # falls through to the random sampler, where a plain eval does have round()
+    # and computes it correctly.
+    #
+    # Repairing the typo is not a fix. ToInt truncates and round rounds, so
+    # rewriting both int( and round( to ToInt( makes them the same function: a
+    # model answering int(x/3) gets proved equal to a gold of round(x/3) and
+    # scored correct. Pinned by tests/test_crane_parity_is_exact.py.
+    expr2 = re.sub(r"\round\(", "ToInt(", expr2)
 
     if "//" in expr1:
         expr1 = _crane_floor_div_replacer(expr1)
@@ -1748,18 +1770,6 @@ class Evaluator:
                     torch.cuda.empty_cache()
             except Exception:
                 pass
-
-    def split_provenance(self, bar_split_name: str | None = None) -> dict:
-        """The split-provenance dict every output JSON embeds (one shape, one place)."""
-        from synthesis.split_provenance import build_split_provenance
-
-        return build_split_provenance(
-            gsm_split_file=self.gsm_split_file,
-            gsm_split_name=self.gsm_split_name if self.gsm_split_file is not None else None,
-            spider_split_file=self.spider_split_file,
-            spider_split_name=self.spider_split_name if self.spider_split_file is not None else None,
-            bar_split_name=bar_split_name,
-        )
 
     def _read_split_manifest(self, split_file: str | Path) -> dict:
         """Load a benchmark split manifest from a filesystem path."""
@@ -2095,195 +2105,22 @@ class Evaluator:
 
         return output[:min(cut_points)].rstrip()
 
-    def _parse_variable_assignments(self, text: str) -> dict:
-        """Parse variable assignments from text like 'a = 5', 'n1 = 72.5', etc."""
-        assignments = {}
-        pattern = r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([-+]?\d+(?:\.\d+)?)\b'
-        for match in re.finditer(pattern, text):
-            var_name = match.group(1)
-            try:
-                assignments[var_name] = float(match.group(2))
-            except ValueError:
-                pass
-        return assignments
+    # Seven more methods lived here, all of them only reachable from the
+    # deleted numeric grader below: _parse_variable_assignments,
+    # _parse_symbolic_assignments, _safe_eval_arithmetic,
+    # _evaluate_symbolic_expression, _resolve_symbolic_assignments,
+    # _extract_answer_expression_gsm and _evaluate_gsm_expression. Together
+    # they pulled variable values out of the model's prose and substituted them
+    # into its formula to get one number. Nothing needs a number any more.
 
-    def _parse_symbolic_assignments(self, text: str) -> dict[str, str]:
-        """Parse simple symbolic assignments like 'x = 2 * y' or 'y = 1/10'."""
-        assignments: dict[str, str] = {}
-        pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^,\n;]+)"
-        for match in re.finditer(pattern, text):
-            var_name = match.group(1)
-            expr = match.group(2).strip()
-            if expr.endswith(".") and len(expr) >= 2 and expr[-2].isdigit():
-                expr = expr
-            else:
-                expr = expr.rstrip(".").strip()
-            if expr:
-                assignments[var_name] = expr
-        return assignments
-
-    def _safe_eval_arithmetic(self, expr: str) -> Optional[float]:
-        """Safely evaluate a numeric arithmetic expression using AST (no eval())."""
-        import ast
-        import operator as op
-
-        ops = {
-            ast.Add: op.add, ast.Sub: op.sub,
-            ast.Mult: op.mul, ast.Div: op.truediv,
-            ast.FloorDiv: op.floordiv, ast.Mod: op.mod,
-            ast.Pow: op.pow,
-            ast.USub: op.neg, ast.UAdd: op.pos,
-        }
-
-        def _eval(node):
-            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-                return float(node.value)
-            elif isinstance(node, ast.Num):  # Python 3.7 compat
-                return float(node.n)
-            elif isinstance(node, ast.BinOp) and type(node.op) in ops:
-                return ops[type(node.op)](_eval(node.left), _eval(node.right))
-            elif isinstance(node, ast.UnaryOp) and type(node.op) in ops:
-                return ops[type(node.op)](_eval(node.operand))
-            elif (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                  and node.func.id == 'int' and len(node.args) == 1):
-                return float(int(_eval(node.args[0])))
-            else:
-                raise ValueError(f"Unsupported node: {type(node)}")
-
-        try:
-            tree = ast.parse(expr.strip(), mode='eval')
-            return _eval(tree.body)
-        except Exception:
-            return None
-
-    def _evaluate_symbolic_expression(self, expr: str, var_values: dict) -> Optional[float]:
-        """Substitute variable values into a symbolic expression and evaluate."""
-        substituted = expr
-        # Substitute longest names first to avoid partial replacement (n10 before n1)
-        for var in sorted(var_values.keys(), key=len, reverse=True):
-            substituted = re.sub(r'\b' + re.escape(var) + r'\b',
-                                 str(var_values[var]), substituted)
-        # If alphabetic chars remain, some variables were unresolved
-        if re.search(r'[a-zA-Z_]', substituted):
-            return None
-        return self._safe_eval_arithmetic(substituted)
-
-    def _resolve_symbolic_assignments(self, text: str) -> dict[str, float]:
-        """Resolve assignment chains like 'x = 2 * y, y = 14' into numeric values."""
-        raw_assignments = self._parse_symbolic_assignments(text)
-        resolved: dict[str, float] = {}
-
-        def resolve(name: str, stack: set[str]) -> Optional[float]:
-            if name in resolved:
-                return resolved[name]
-            if name in stack:
-                return None
-
-            expr = raw_assignments.get(name)
-            if expr is None:
-                return None
-
-            stack = set(stack)
-            stack.add(name)
-            substituted = expr
-            var_names = set(re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", expr))
-            for dep in sorted(var_names, key=len, reverse=True):
-                if dep == name:
-                    continue
-                dep_value = resolve(dep, stack)
-                if dep_value is None:
-                    continue
-                substituted = re.sub(r"\b" + re.escape(dep) + r"\b", str(dep_value), substituted)
-
-            if re.search(r"[a-zA-Z_]", substituted):
-                return None
-
-            value = self._safe_eval_arithmetic(substituted)
-            if value is None:
-                return None
-            resolved[name] = value
-            return value
-
-        for var_name in list(raw_assignments.keys()):
-            resolve(var_name, set())
-
-        return resolved
-
-    def _extract_answer_expression_gsm(self, output: str) -> Optional[str]:
-        """Extract the expression after 'The answer is ...' if present."""
-        match = re.search(
-            r"The answer is\s+(.+?)(?:\.\s*$|\n|$)",
-            output,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        if not match:
-            return None
-        expr = match.group(1).strip()
-        return expr.rstrip(".").strip() or None
-
-    def _evaluate_gsm_expression(self, expr: str, output: str) -> Optional[str]:
-        """Evaluate a GSM expression using resolved variable assignments when needed."""
-        if not expr:
-            return None
-
-        if not re.search(r"[a-zA-Z_]", expr):
-            result = self._safe_eval_arithmetic(expr)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        var_values = self._resolve_symbolic_assignments(output)
-        if not var_values:
-            var_values = self._parse_variable_assignments(output)
-
-        if var_values:
-            result = self._evaluate_symbolic_expression(expr, var_values)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        return None
-
-    def _extract_answer_gsm(self, output: str) -> Optional[str]:
-        """Extract numeric answer from GSM-Symbolic output within << >> delimiters."""
-        truncated_output = self._truncate_gsm_output(output)
-
-        answer_expr = self._extract_answer_expression_gsm(truncated_output)
-        if answer_expr is not None:
-            answer = self._evaluate_gsm_expression(answer_expr, truncated_output)
-            if answer is not None:
-                return answer
-
-        matches = self._extract_constrained_content(truncated_output)
-        if not matches:
-            return None
-
-        last_match = matches[-1].strip()
-
-        # Case 1: expression contains "=" — take the part after "=" (e.g. "a + b = 8")
-        if "=" in last_match:
-            answer_part = last_match.split("=")[-1].strip()
-            num_match = re.search(r"[-+]?\d*\.?\d+", answer_part)
-            if num_match:
-                return num_match.group()
-
-        # Case 2: purely numeric expression — evaluate directly (e.g. "5 + 3")
-        answer = self._evaluate_gsm_expression(last_match, truncated_output)
-        if answer is not None:
-            return answer
-
-        # Case 3: symbolic expression — parse variable assignments from surrounding text
-        # and substitute in (e.g. "a + b" with "a = 5, b = 3" defined earlier)
-        var_values = self._resolve_symbolic_assignments(truncated_output)
-        if not var_values:
-            var_values = self._parse_variable_assignments(truncated_output)
-        if var_values:
-            result = self._evaluate_symbolic_expression(last_match, var_values)
-            if result is not None:
-                val = int(result) if result == int(result) else result
-                return str(val)
-
-        return None
+    # _extract_answer_gsm used to live here. It pulled a single number out of the
+    # model's output so GSM answers could be graded by comparing that number to
+    # the gold. CRANE has no such grader -- its parse_answer (gsm_symbolic.py:28-56)
+    # either proves the two formulas equivalent or leaves correct = False -- so
+    # every example it scored was measured a way CRANE does not measure, then
+    # averaged into a figure reported against CRANE's published number. Deleted
+    # rather than left dormant behind a branch nobody takes. See
+    # tests/test_unreadable_types_does_not_switch_graders.py.
 
     def _extract_answer_smiles(self, output: str, example: Optional[dict] = None) -> Optional[str]:
         """Extract the generated SMILES string from raw output."""
@@ -2292,17 +2129,9 @@ class Evaluator:
         smiles = clean_smiles_output(output)
         return smiles or None
 
-    def _answers_match(self, actual: Optional[str], expected: str) -> bool:
-        """Check if actual and expected answers match, normalizing Uncertain/Unknown."""
-        if actual is None:
-            return False
-        a = str(actual).strip().lower()
-        e = str(expected).strip().lower()
-        if a in ("uncertain", "unknown"):
-            a = "unknown"
-        if e in ("uncertain", "unknown"):
-            e = "unknown"
-        return a == e
+    # _answers_match used to live here -- the string comparison the deleted
+    # numeric grader above ended in. GSM was its only caller anywhere in
+    # synthesis/, so it went with it.
 
     def _gsm_symbolic_equivalence(
         self, model_expr: Optional[str], expected_expr: str, variable_types: dict
@@ -2321,24 +2150,33 @@ class Evaluator:
         # CRANE rejects model completions containing ** (parse_answer guard).
         if "**" in model_expr:
             return False
+        # Nothing below is caught, deliberately. A variable_types field we cannot
+        # read, or a prover that will not run, is a fault in our setup -- not
+        # evidence about the model. Swallowing either one grades every example in
+        # the split as wrong and reports 0% accuracy, which is indistinguishable
+        # from a model that genuinely got everything wrong. That is the exact
+        # failure that cost weeks on Spider. Before this was removed, two
+        # identical formulas graded False on any machine without z3, because the
+        # ModuleNotFoundError landed in the catch below.
+        #
+        # Upstream CRANE has no catch here either: parse_answer calls plain
+        # eval() on this field (gsm_symbolic.py:40) and lets a bad value stop the
+        # run, so parity and honest reporting agree. Pinned by
+        # tests/test_gsm_grader_does_not_swallow_setup_failures.py.
         if isinstance(variable_types, str):
             import ast as _ast
 
-            try:
-                variable_types = _ast.literal_eval(variable_types)
-            except Exception:
-                variable_types = {}
+            variable_types = _ast.literal_eval(variable_types)
         if not isinstance(variable_types, dict):
-            variable_types = {}
-        try:
-            return bool(
-                _crane_validate_expression_equivalence(
-                    model_expr, expected_expr, variable_types
-                )
+            raise UngradableExample(
+                "GSM variable_types must be a mapping of variable name to type, "
+                f"got {type(variable_types).__name__}: {variable_types!r}"
             )
-        except Exception:
-            # Any hard failure in the proof path -> conservatively not-correct.
-            return False
+        return bool(
+            _crane_validate_expression_equivalence(
+                model_expr, expected_expr, variable_types
+            )
+        )
 
     def _get_expected_answer(self, example: dict) -> str:
         """Get the expected answer from a dataset example."""
@@ -2423,16 +2261,18 @@ class Evaluator:
         if not matches:
             return True, []
 
-        try:
-            parser = self._get_syntax_parser(example)
-            for match in matches:
-                try:
-                    parser.parse(match.strip())
-                    segments.append((match, True))
-                except LarkError:
-                    segments.append((match, False))
-        except Exception:
-            return True, [(m, True) for m in matches]
+        # If the grammar can't even be built (missing file, bad grammar, bad
+        # import), there is no honest value to return here -- the result can
+        # only say "valid" or "invalid", and neither is true when nothing was
+        # actually checked. So we let that error stop the run instead of
+        # quietly reporting a fake 100% valid result.
+        parser = self._get_syntax_parser(example)
+        for match in matches:
+            try:
+                parser.parse(match.strip())
+                segments.append((match, True))
+            except LarkError:
+                segments.append((match, False))
 
         all_valid = all(is_valid for _, is_valid in segments) if segments else True
         return all_valid, segments
@@ -2508,10 +2348,14 @@ class Evaluator:
         does not read or write any state beyond `smiles_suffix` (SMILES-only
         rolling-prompt carry, unused for GSM/Spider), so it is safe to call
         from a worker process on an arbitrary slice of examples in any order.
-        It never raises — failures are caught and returned as a sample dict —
-        and it never decides to stop early; that decision is made by the
-        caller (sequentially in-process, or post-hoc over a merged pool
-        result in `_posthoc_early_stop`).
+        Almost every failure is caught and returned as a sample dict rather
+        than raised. The two exceptions, listed explicitly at the catch below,
+        are a broken harness (ModuleNotFoundError/ImportError) and a row that
+        cannot be graded at all (UngradableExample) — neither of which produced
+        a measurement, so recording one would be inventing a result. It never
+        decides to stop early; that decision is made by the caller
+        (sequentially in-process, or post-hoc over a merged pool result in
+        `_posthoc_early_stop`).
         """
         print(f"  [EVAL] Processing example {i+1}/{dataset_len}...", flush=True)
         example_start = time.time()
@@ -2687,6 +2531,32 @@ class Evaluator:
             if self.dataset_name == "smiles":
                 sample["smiles_eval"] = benchmark_aux
             return EvaluationResult._annotate_sample_observability(sample)
+
+        except (ModuleNotFoundError, ImportError, UngradableExample):
+            # These two are not results, so they must not become one.
+            #
+            # A missing module means nothing ran: the sample dict built below
+            # records is_correct: False with accuracy_applicable: True, and
+            # that sample is counted in num_accuracy_examples (the accuracy
+            # denominator), so a lost file and a model that got the question
+            # wrong come out as the same number. That is exactly how Spider's
+            # 0% was mistaken for a model failure for weeks.
+            #
+            # An UngradableExample means the dataset row has no field to grade
+            # against, so there is no verdict to record either.
+            #
+            # Everything else stays caught on purpose. A model that produced
+            # nonsense, a timeout, a solver that fell over on one expression --
+            # those are real outcomes of running that example, and aborting the
+            # whole run over one of them loses every other example's result.
+            #
+            # This list is fixed at three names and is meant to stay that way;
+            # tests/test_harness_failures_are_not_scored_as_wrong_answers.py
+            # fails if it grows or shrinks. In particular it does not name
+            # TypeError or ValueError: those are what any ordinary bug in the
+            # generation path raises, and re-raising them would turn a stray
+            # None into an aborted evaluation run.
+            raise
 
         except Exception as e:
             if hasattr(example, "conclusion"):
