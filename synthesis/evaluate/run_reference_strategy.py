@@ -86,6 +86,13 @@ def _compile_reference(strategy: str, output_dir: Path) -> Path:
     return result.main_module_path
 
 
+def _resolve_device(device: str, backend: str) -> str:
+    """Turn the "auto" default into a device the vLLM backend accepts."""
+    if device == "auto" and backend == "vllm":
+        return "cuda"
+    return device
+
+
 def _evaluate(
     compiled_module: Path,
     dataset: str,
@@ -234,7 +241,7 @@ def main() -> None:
         dataset=args.dataset,
         eval_model=args.eval_model,
         eval_backend=args.eval_backend,
-        device=args.device,
+        device=_resolve_device(args.device, args.eval_backend),
         sample_size=args.eval_sample_size,
         max_steps=args.eval_max_steps,
         step_token_budget=args.eval_step_token_budget,
