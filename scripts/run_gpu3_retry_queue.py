@@ -86,6 +86,77 @@ def wait_for_gpu(args: argparse.Namespace) -> None:
         time.sleep(args.wait_seconds)
 
 
+PRECHECK_TIMEOUT_SECONDS = 180
+
+
+def precheck_cmd(cmd: list[str]) -> str | None:
+    """Catch what is knowable in seconds, before the GPU wait and the model load.
+
+    Two things used to surface only after waiting for the GPU to free up and
+    then paying a multi-minute model load:
+
+      1. a flag the launcher does not have -- it dies at argparse
+      2. a module that does not exist
+
+    The second is the worse one. A missing module has been swallowed into a
+    fake 0% score in this project before, which reads as a model result and
+    costs weeks rather than minutes.
+
+    Returns None when the command looks launchable, otherwise the reason it
+    does not. Deliberately loose: a check that wrongly blocks a good run is
+    worse than one that lets a bad run through, since the run itself is still
+    the real test.
+    """
+    module = None
+    for i, part in enumerate(cmd):
+        if part == "-m" and i + 1 < len(cmd):
+            module = cmd[i + 1]
+            break
+    if module is None:
+        return None  # not a `python -m ...` launch; nothing cheap to check here
+
+    python = cmd[0]
+
+    def _probe(argv: list[str]) -> subprocess.CompletedProcess | None:
+        try:
+            return subprocess.run(
+                argv,
+                cwd=ROOT_DIR,
+                capture_output=True,
+                text=True,
+                timeout=PRECHECK_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            return None
+
+    # 1. Does it import at all? This is the whole missing-module bug class.
+    imported = _probe([python, "-c", f"import {module}"])
+    if imported is None:
+        return f"importing {module} timed out after {PRECHECK_TIMEOUT_SECONDS}s"
+    if imported.returncode != 0:
+        last = (imported.stderr.strip().splitlines() or ["no output"])[-1]
+        return f"{module} does not import: {last}"
+
+    # 2. Does it accept every flag being passed? --help runs argparse and
+    #    exits, so this costs nothing next to loading a model.
+    helped = _probe([python, "-m", module, "--help"])
+    if helped is None:
+        return f"{module} --help timed out after {PRECHECK_TIMEOUT_SECONDS}s"
+    if helped.returncode != 0:
+        last = (helped.stderr.strip().splitlines() or ["no output"])[-1]
+        return f"{module} --help failed, so the run cannot start: {last}"
+
+    help_text = helped.stdout + helped.stderr
+    unknown = [
+        part for part in cmd
+        if part.startswith("--") and part.split("=")[0] not in help_text
+    ]
+    if unknown:
+        return f"{module} has no such flag(s): {', '.join(unknown)}"
+
+    return None
+
+
 def run_record(record: dict, *, gpu: str, log_dir: Path) -> int:
     cmd = [str(part) for part in record["cmd"]]
     record_id = str(record["id"])
@@ -122,6 +193,26 @@ def drain_once(args: argparse.Namespace) -> int:
         record_id = str(record["id"])
         if record_id in attempted:
             continue
+
+        # Before the GPU wait, not after it. Waiting for a free GPU and then
+        # loading a model only to die at argparse is the expensive way to find
+        # out something a --help call answers in seconds.
+        refusal = precheck_cmd([str(part) for part in record["cmd"]])
+        if refusal is not None:
+            print(f"[gpu3-retry] SKIPPING {record_id}: {refusal}")
+            attempted.add(record_id)
+            state["attempted_ids"] = sorted(attempted)
+            state.setdefault("attempts", {})[record_id] = {
+                "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "return_code": None,
+                "precheck_refusal": refusal,
+                "reason": record.get("reason"),
+                "case": record.get("case", {}),
+            }
+            save_json(state_path, state)
+            continue
+
         wait_for_gpu(args)
         started_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         return_code = run_record(record, gpu=str(args.gpu), log_dir=Path(args.log_dir))
