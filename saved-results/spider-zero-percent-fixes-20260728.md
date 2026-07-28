@@ -11,17 +11,74 @@ was checked, and what is still open.
 
 ## The short version
 
-Four separate faults were found. Three were fixed on their own branches and then
-merged; merging them together exposed two more faults that none of them hit
-alone. One proposed fix (number 5) was deliberately **not** made — see below.
+**Read the root cause section first.** The 0% was not caused by any of the four
+faults originally investigated. It was caused by a missing file. The other fixes
+are real improvements, but none of them could have moved the score, because not
+a single Spider example was ever evaluated.
 
 | # | Fault | Status |
 |---|---|---|
+| **0** | **A missing file made every Spider eval report a fake 0%** | **Fixed — this was the root cause** |
 | 1 | Decoding could stop in the middle of an unfinished query | Fixed (Python + Dafny) |
 | 3 | The strategy-writing AI was never told which decoding surface it was on | Fixed |
-| 4 | One slow attempt could hang a run; results only saved at the end | Fixed |
+| 4 | One slow attempt could hang a run; results only saved at the end | Fixed, now settable from the CLI |
 | 5 | Strip a leading newline before the constrained region | **Deliberately not done** |
 | — | SMILES said it had no delimiters but asked the model for them | Fixed |
+
+---
+
+## Fault 0 — the root cause: a missing file reported as a 0% score
+
+This is the one that actually explains the symptom.
+
+```
+POOLABLE_DATASETS = {"gsm_symbolic", "spider"}          evaluator.py:156
+        |
+        |  spider is in the set, so evaluation takes the pooled branch
+        v
+from synthesis.scripts.eval_worker_pool import ...      evaluator.py:3033
+        |
+        |  that module DOES NOT EXIST on this branch
+        v
+ModuleNotFoundError  (a subclass of Exception)
+        |
+        |  caught by the broad `except Exception` wrapping the whole method
+        v
+return EvaluationResult(accuracy=0.0, syntax_rate=0.0,  evaluator.py:3062
+                        num_examples=0, success=False)
+```
+
+So **a missing file was displayed as "the model got everything wrong"**, on every
+iteration, no matter what the strategy did. Nothing downstream could tell the two
+apart. `num_examples=0` was the tell: a genuine 0% run still evaluates its
+examples.
+
+Three files are absent — `eval_worker_pool.py`, `sharded_eval_core.py`,
+`eval_worker_main.py`. Verified with `git ls-tree`: absent from this branch, from
+`relaunch-spider-queue`, and from `origin/main`; present on
+`codex/verification-burden-reduction-20260725`. Likely lost in the big-file
+history rewrite that also dropped the `prompt_rendering` package.
+
+**The fix:** the pool is only a speed optimisation, and a working sequential path
+already exists in the same method. Choosing between them now goes through
+`_resolve_eval_pool_loader()`, which returns `None` instead of raising, and says
+loudly which path it took. A missing optimisation now costs time, not
+correctness.
+
+```
+[sharded-eval] eval worker pool unavailable (ModuleNotFoundError: No module
+named 'synthesis.scripts.eval_worker_pool'); falling back to the slower
+sequential eval path.
+```
+
+**The wider lesson:** a broad `except Exception` that returns a plausible-looking
+score is worse than a crash. A crash gets investigated; a 0% gets debugged for
+days in the wrong place. That is exactly what happened here.
+
+**Speed cost, still open:** Spider now reloads the vLLM engine (~24s) every
+iteration. Restoring the three pool modules would win that back, but they were
+never on this branch and would need GPU testing on `focal` — recommended as a
+follow-up, not done blind.
 
 ---
 
@@ -97,9 +154,16 @@ A per-attempt time cap (default 3600s) marks an over-running attempt as timed ou
 and lets the loop continue instead of hanging; partial records are kept; results
 are written to disk during the run rather than only at the end.
 
-**Open questions for review** (flagged, not settled): the 3600s default, the fact
-that the cap is scoped to the eval stage only, the absence of a CLI flag in
-`run_synthesis.py`, and a now-dead `eval_worker_pool` path.
+Four things were flagged for review here. Checking them found that **two of the
+four flags were wrong** — worth recording, because they were stated with more
+confidence than they had earned:
+
+| Flag | Verdict |
+|---|---|
+| "the cap is scoped to the eval stage only" | **Wrong.** `attempt_start_time` is set at `feedback_loop.py:1705`, before compile and verify, and `attempt_elapsed` at :1967 measures the whole attempt. The real limit is narrower: the clock covers everything, but only evaluation can be *interrupted* part-way — Dafny verification runs to completion. Now stated in the flag's help text. |
+| "a now-dead `eval_worker_pool` path" | **Badly wrong.** Not dead — live, reachable on Spider, and the root cause of the entire 0%. See Fault 0. |
+| "no CLI flag in `run_synthesis.py`" | **Right about the gap, wrong about the file** — the entry point is `synthesis/run_synthesis.py`, not repo root. Fixed: `--max-attempt-seconds` added and forwarded; 0 or less means no cap. |
+| "the 3600s default" | Kept. It is still a guess rather than a measured number, but it is no longer the only reachable value, which was the real problem. Worth re-checking now that eval runs sequentially and is slower. |
 
 ---
 
@@ -163,7 +227,7 @@ combination still failed.**
 Dafny:  /opt/homebrew/bin/dafny verify synthesis/verify/library/VerifiedAgentSynthesis.dfy
         -> Dafny program verifier finished with 179 verified, 0 errors
 
-Tests:  25 passed        (six files, run together, in the merged tree)
+Tests:  32 passed        (eight files, run together, in the merged tree)
 ```
 
 Checked that the Dafny result was **not** faked: no `requires`/`ensures` were
@@ -202,7 +266,15 @@ isn't installed in that venv — pre-existing, unrelated to this work.
 
 - These fixes are verified by tests and by Dafny. **They have not yet been shown
   to move the actual Spider score off 0%** — that needs a real evaluation run on
-  the GPU box (`focal`, needs the campus VPN). Until then the claim is "the four
-  known causes of 0% are removed", not "Spider now scores X".
-- Sign-off needed on the fix-4 items listed above (3600s default, eval-stage-only
-  scoping, no CLI flag, dead `eval_worker_pool` path).
+  the GPU box (`focal`, needs the campus VPN). Until then the claim is "the cause
+  of the fake 0% is removed and four real defects are fixed", not "Spider now
+  scores X". Fault 0 makes a real score likely, but likely is not measured.
+- **Restore the three pooled-eval modules?** Doing so would recover the ~24s
+  per-iteration engine reload. They exist on
+  `codex/verification-burden-reduction-20260725`. Not done here because they were
+  never on this branch and cannot be tested without GPUs — needs a run on focal.
+- **Hunt the rest of this bug class.** The damaging pattern is a broad
+  `except Exception` that returns a normal-looking result. One instance caused
+  weeks of misdirected work. The repo has not been swept for others.
+- The 3600s cap default is still a guess; re-check it now that eval runs
+  sequentially and is therefore slower.
