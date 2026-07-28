@@ -11,6 +11,7 @@ from synthesis.evaluate.benchmarks.common import benchmark_defaults as defaults
 from synthesis.evaluate.benchmarks.common.delimited_output import extract_last_delimited_span
 
 uses_hidden_chunks = defaults.uses_hidden_chunks
+starts_inside_constrained = defaults.starts_inside_constrained
 example_syntax_pass = defaults.example_syntax_pass_from_segments
 accuracy_applicable = defaults.accuracy_applicable_always
 accuracy_upper_bound = defaults.accuracy_upper_bound_with_remaining

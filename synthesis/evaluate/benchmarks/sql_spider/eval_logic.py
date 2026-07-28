@@ -42,6 +42,13 @@ def emits_visible_delimiters() -> bool:
     return not _token0_enabled()
 
 
+def starts_inside_constrained() -> bool:
+    # Same gate get_generation_runner() uses to set start_inside_constrained=True
+    # on the actual eval generation call -- kept in sync so the author's prompt
+    # never disagrees with how this benchmark actually decodes.
+    return _token0_enabled()
+
+
 def example_syntax_pass(
     all_valid_syntax: bool,
     segments: list,

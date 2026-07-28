@@ -34,29 +34,29 @@ def format_prompt(evaluator: Any, example: dict[str, Any]) -> str:
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
-        + "\n\nWrap your answer molecule in << >> delimiters, e.g. <<CC(=O)OC=C>>.\n"
+        + "\n\nGive exactly one SMILES molecule on a single line.\n"
         "Molecule: "
     )
 
 
 def format_prompt_expression_only(evaluator: Any, example: dict[str, Any]) -> str:
-    """Grammar-masked legacy adapters: single delimited SMILES span."""
+    """Grammar-masked legacy adapters: single SMILES span, no delimiters."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
-        + "\n\nReturn exactly one line containing `<<SMILES>>` "
-        "(example: <<CC(=O)OC=C>>).\n"
+        + "\n\nReturn exactly one line containing the SMILES molecule "
+        "(example: CC(=O)OC=C).\n"
         "Molecule: "
     )
 
 
 def format_prompt_chain_of_thought(evaluator: Any, example: dict[str, Any]) -> str:
-    """CRANE-style adaptive SMILES: reasoning allowed before the delimited molecule."""
+    """CRANE-style adaptive SMILES: reasoning allowed before the final molecule."""
     base_prompt = example.get("prompt", "")
     return (
         base_prompt.rstrip()
         + "\n\nThink step by step about how to satisfy the structural constraints, "
-        "then wrap your final SMILES in << >> delimiters.\n"
+        "then give your final SMILES molecule.\n"
         "Molecule: "
     )
 
@@ -126,6 +126,13 @@ def uses_hidden_chunks() -> bool:
     return False
 
 
+def starts_inside_constrained() -> bool:
+    # SMILES has no visible delimiters, so no `<<` is ever emitted for a
+    # strategy to detect; generation therefore begins already inside the
+    # constrained region.
+    return True
+
+
 def emits_visible_delimiters() -> bool:
     # SMILES has exactly one constrained span and no << >> markers around it,
     # so delimiter diagnostics would just be a constant, not real feedback.
@@ -148,7 +155,14 @@ def accuracy_applicable(aux: dict[str, Any] | None) -> bool:
 def get_generation_runner():
     from synthesis.evaluate.benchmarks.smiles.generation import run_crane_csd
 
-    return run_crane_csd
+    # SMILES has no visible delimiters (see starts_inside_constrained), so
+    # generation must start already inside the constrained region -- there is
+    # no leading `<<` to wait for.
+    def _runner(*args, **kwargs):
+        kwargs.setdefault("start_inside_constrained", True)
+        return run_crane_csd(*args, **kwargs)
+
+    return _runner
 
 
 def get_syntax_parser(evaluator: Any, example: dict[str, Any] | None):
