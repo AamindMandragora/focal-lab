@@ -31,15 +31,14 @@ VLLM_MAX_MODEL_LEN = 16384  # max context length passed to vLLM (must fit prompt
 # examples have been evaluated in the iteration (settled value; was a flag).
 MIN_EXAMPLES_BEFORE_THRESHOLD_STOP = 15
 
-# Per-dataset: whether evaluated outputs must contain a << >> span. This never
-# gated acceptance (meets_threshold ignores it); it shapes feedback hints and
-# the bandit score. GSM strategies live inside << >> spans; Spider and SMILES
-# generate whole outputs.
-REQUIRE_DELIMITERS_BY_DATASET = {
-    "gsm_symbolic": True,
-    "spider": False,
-    "smiles": False,
-}
+# Whether a dataset's outputs must contain a visible << >> span is NOT set
+# here. It is a fact about each benchmark's own output surface -- GSM
+# strategies live inside << >> spans, while Spider and SMILES generate whole
+# outputs and cannot emit that span at all -- so each benchmark answers for
+# itself via emits_visible_delimiters(), and callers go through
+# registry.resolve_require_delimiters(). Do not add a lookup table back here:
+# it would override the benchmark and silently make --require-delimiters dead.
+# Guarded by tests/test_delimiter_single_source_of_truth.py.
 
 # ---------------------------------------------------------------------------
 # Splits — one canonical split file per dataset (SMILES has none).

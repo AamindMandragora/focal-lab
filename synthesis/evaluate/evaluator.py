@@ -287,14 +287,18 @@ class EvaluationResult:
     def get_feedback_summary(self, require_delimiters: bool = True) -> str:
         """Generate a summary for feedback to the generator.
 
-        When ``require_delimiters`` is False (i.e. the dataset does not require
-        delimiters, per REQUIRE_DELIMITERS_BY_DATASET in run_constants.py — GSM
-        requires them, Spider and SMILES do not), the visible ``<<``/``>>`` span
-        diagnostics are
-        omitted: the "Contains << >>" header line, the whole "Structural
-        Generation Metrics" block, and the span-centric lines of the diagnostic
-        decomposition. Those statistics are meaningless when the model is not
-        asked to emit spans and have misled the author into chasing a non-issue.
+        When ``require_delimiters`` is False, the visible ``<<``/``>>`` span
+        diagnostics are omitted: the "Contains << >>" header line, the whole
+        "Structural Generation Metrics" block, and the span-centric lines of
+        the diagnostic decomposition. Those statistics are meaningless when the
+        model is not asked to emit spans and have misled the author into
+        chasing a non-issue.
+
+        Callers get that flag from
+        ``registry.resolve_require_delimiters(dataset, cli_value)``, which asks
+        the benchmark itself via ``emits_visible_delimiters()``. GSM can emit
+        spans, so there the CLI flag decides; Spider and SMILES generate whole
+        outputs and cannot emit a span at all, so for them it is always False.
         """
         eval_count_label = (
             f"{self.num_examples}/{self.planned_num_examples}"
