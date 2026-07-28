@@ -7,6 +7,7 @@ to enable feedback-driven refinement based on actual performance metrics.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
@@ -155,6 +156,27 @@ class PerExampleTimeout(Exception):
 # single-process path.
 POOLABLE_DATASETS = {"gsm_symbolic", "spider"}
 _POOL_LOG = "[sharded-eval]"
+
+
+def _resolve_eval_pool_loader():
+    """Return the parallel eval pool's entry point, or None if it is
+    unavailable (meaning: use the sequential path).
+
+    The pool is a speed optimisation, not a correctness requirement -- a
+    missing or broken pool module must never be allowed to blow up and get
+    laundered into a fake 0% score by the broad `except Exception` around the
+    eval method. So this catches everything and reports None instead.
+    """
+    try:
+        pool_module = importlib.import_module("synthesis.scripts.eval_worker_pool")
+        return pool_module.get_synthesis_eval_pool
+    except Exception as e:
+        print(
+            f"{_POOL_LOG} eval worker pool unavailable ({type(e).__name__}: {e}); "
+            "falling back to the slower sequential eval path.",
+            flush=True,
+        )
+        return None
 
 # Pathological-strategy guard: stop after this many timed-out examples. Also
 # used post-hoc by _posthoc_early_stop to replay the same decision over a
@@ -3020,7 +3042,13 @@ class Evaluator:
             # main process regardless of which branch below actually runs eval.
             logic = self._benchmark_logic()
 
-            if self.dataset_name in POOLABLE_DATASETS:
+            get_synthesis_eval_pool = (
+                _resolve_eval_pool_loader()
+                if self.dataset_name in POOLABLE_DATASETS
+                else None
+            )
+
+            if get_synthesis_eval_pool is not None:
                 # Do NOT call self._setup_environment() here: it loads a vLLM engine
                 # into the CALLING process. For the pooled path, each worker
                 # subprocess calls its own _setup_environment (and thus loads its own
@@ -3030,8 +3058,6 @@ class Evaluator:
                 # first identity-test run had the main process eagerly load an
                 # engine on GPU 0, leaving too little free memory for the pool's
                 # worker (also assigned GPU 0), which then failed immediately.
-                from synthesis.scripts.eval_worker_pool import get_synthesis_eval_pool
-
                 pool = get_synthesis_eval_pool(self)
                 sample_outputs = pool.evaluate_examples(self, compiled_module_path, dataset)
                 sample_outputs, early_stop_reason = self._posthoc_early_stop(
