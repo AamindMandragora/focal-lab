@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import sys
 import tempfile
 import time
@@ -113,6 +114,69 @@ def _legacy_benchmark_prompt(logic: Any, evaluator: Any, example: dict[str, Any]
     raise ValueError(f"Unknown legacy prompt profile: {profile}")
 
 
+def _cars_prompt_profile(dataset: str) -> str:
+    if dataset == "spider":
+        return "evaluator_default"
+    return "expression_only"
+
+
+_SPIDER_COMPLETION_MARKERS = (
+    r"\bHuman\s*:",
+    r"\bAssistant\s*:",
+    r"\bUser\s*:",
+    r"\bSystem\s*:",
+    r"\bdb_id\s*:",
+    r"\bdb_info\s*:",
+    r"\bquestion\s*:",
+    r"\bSQL\s*:",
+)
+
+
+def _spider_completion_has_clean_boundary(text: str) -> bool:
+    """True once later text would be discarded by Spider SQL cleanup."""
+    if not text:
+        return False
+    if "\n\n" in text:
+        return True
+    semicolon = text.find(";")
+    if semicolon > 0:
+        return True
+    repeated_select = re.search(r"\s+SelEct\s+", text)
+    if repeated_select and repeated_select.start() > 0:
+        return True
+    for marker in _SPIDER_COMPLETION_MARKERS:
+        match = re.search(marker, text, flags=re.IGNORECASE)
+        if match and match.start() > 0:
+            return True
+    return False
+
+
+def _spider_hf_stopping_criteria(tokenizer: Any, prompt_token_count: int) -> Any:
+    from transformers import StoppingCriteria, StoppingCriteriaList
+
+    class _StopAtCleanBoundary(StoppingCriteria):
+        def __call__(self, input_ids: Any, scores: Any, **kwargs: Any) -> bool:
+            new_ids = input_ids[0][prompt_token_count:]
+            if getattr(new_ids, "numel", lambda: 0)() == 0:
+                return False
+            suffix = tokenizer.decode(new_ids, skip_special_tokens=True)
+            return _spider_completion_has_clean_boundary(suffix)
+
+    return StoppingCriteriaList([_StopAtCleanBoundary()])
+
+
+def _gcd_stop_words(dataset: str) -> list[str] | None:
+    if dataset == "gsm_symbolic":
+        return [">>"]
+    if dataset == "spider":
+        return [";"]
+    return None
+
+
+def _crane_stop_words(dataset: str) -> list[str]:
+    return [">>"]
+
+
 def _legacy_gsm_symbolic_grammar_base(repo_root: Path, examples: list[dict[str, Any]]) -> str:
     """Tighten ``gsm.lark`` from a batch (allowed vars / numeric-only), matching GCD semantics.
 
@@ -174,6 +238,8 @@ def _gsm_symbolic_completion_to_delimited(
 def _legacy_local_cuda_device(device_arg: str) -> str:
     """CUDA device string valid for the GPUs visible in this process."""
     if device_arg and device_arg not in {"auto", "cuda"}:
+        if device_arg in {"mps", "cpu"}:
+            return device_arg
         if device_arg.startswith("cuda"):
             return device_arg
         return f"cuda:{device_arg}"
@@ -234,6 +300,34 @@ def _compose_baseline_answer_row(question: str, generated: str, row: dict[str, A
     if row.get("generation_seconds") is not None:
         entry["generation_seconds"] = round(float(row["generation_seconds"]), 6)
     return entry
+
+
+def _slice_eval_examples(
+    examples: list[dict[str, Any]],
+    args: argparse.Namespace,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    start = int(getattr(args, "eval_start_index", 0) or 0)
+    raw_end = getattr(args, "eval_end_index", None)
+    total = len(examples)
+    end = total if raw_end is None else int(raw_end)
+
+    if start < 0:
+        raise ValueError("--eval-start-index must be >= 0")
+    if end < start:
+        raise ValueError("--eval-end-index must be >= --eval-start-index")
+    if end > total:
+        raise ValueError(
+            f"--eval-end-index {end} is past the loaded sample size {total}"
+        )
+
+    if start == 0 and end == total:
+        return examples, {}
+
+    return examples[start:end], {
+        "eval_sample_total_examples": total,
+        "eval_start_index": start,
+        "eval_end_index": end,
+    }
 
 
 def _aggregate_run_metrics(
@@ -327,6 +421,29 @@ def _build_minimal_json(
     output_json.write_text(json.dumps(payload, indent=2) + "\n")
 
 
+def _cars_partial_json_path(output_json: Path) -> Path:
+    if output_json.suffix:
+        return output_json.with_name(f"{output_json.stem}.partial{output_json.suffix}")
+    return output_json.with_name(f"{output_json.name}.partial.json")
+
+
+def _write_cars_partial_json(
+    rows: list[dict[str, Any]],
+    output_json: Path,
+    *,
+    run_wall_time_seconds: float | None = None,
+    extra_metrics: dict[str, Any] | None = None,
+) -> Path:
+    partial_json = _cars_partial_json_path(output_json)
+    _build_minimal_json(
+        rows,
+        partial_json,
+        run_wall_time_seconds=run_wall_time_seconds,
+        extra_metrics=extra_metrics,
+    )
+    return partial_json
+
+
 def _load_latest_crane_results(crane_src_dir: Path, dataset: str) -> list[dict[str, Any]]:
     dataset_dir = crane_src_dir / "logging" / dataset
     if not dataset_dir.exists():
@@ -387,7 +504,10 @@ def _annotate_legacy_rows_with_syntax(
         ),
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
-    examples = logic.load_dataset_sample(eval_runtime)
+    examples, _slice_metrics = _slice_eval_examples(
+        logic.load_dataset_sample(eval_runtime),
+        args,
+    )
     examples_by_question: dict[str, dict[str, Any]] = {}
     for example in examples:
         if dataset == "gsm_symbolic":
@@ -628,7 +748,10 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
     )
     _configure_fixed_eval_runtime(eval_runtime, args, dataset)
 
-    examples = logic.load_dataset_sample(eval_runtime)
+    examples, slice_metrics = _slice_eval_examples(
+        logic.load_dataset_sample(eval_runtime),
+        args,
+    )
     cars_model = ConstrainedModel(model_id, None, torch_dtype=torch.bfloat16)
 
     rows: list[dict[str, Any]] = []
@@ -659,7 +782,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
             cls = str(example.get("class_name", ""))
             example["prompt"] = example["prompt"].rstrip() + smiles_prompt_suffix.get(cls, "")
 
-        prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
+        prompt = _legacy_benchmark_prompt(
+            logic,
+            eval_runtime,
+            example,
+            _cars_prompt_profile(dataset),
+        )
         gen_started = time.perf_counter()
         steps = _cars_sampler_steps(
             cars_model,
@@ -701,6 +829,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
                 "generation_seconds": gen_seconds,
             }
         )
+        _write_cars_partial_json(
+            rows,
+            args.output_json,
+            run_wall_time_seconds=time.perf_counter() - run_started,
+            extra_metrics=slice_metrics,
+        )
 
     if not rows:
         raise RuntimeError("CARS produced no rows; refusing to write an empty baseline JSON")
@@ -709,7 +843,12 @@ def run_cars_legacy_adapter(args: argparse.Namespace) -> int:
         rows,
         args.output_json,
         run_wall_time_seconds=time.perf_counter() - run_started,
+        extra_metrics=slice_metrics,
     )
+    try:
+        _cars_partial_json_path(args.output_json).unlink()
+    except FileNotFoundError:
+        pass
     print(f"Saved baseline JSON: {args.output_json}")
     return 0
 
@@ -826,7 +965,7 @@ def run_gcd_legacy_adapter(args: argparse.Namespace) -> int:
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "expression_only")
         gen_started = time.perf_counter()
         gcd_prompt = _gcd_prompt(prompt)
-        completions = sc.infer(gcd_prompt, stop_words=[">>"] if dataset == "gsm_symbolic" else None)
+        completions = sc.infer(gcd_prompt, stop_words=_gcd_stop_words(dataset))
         gen_seconds = time.perf_counter() - gen_started
         raw_output = _gcd_output(completions[0] if completions else "", example)
         completion = completion_for_scoring(gcd_prompt, raw_output)
@@ -888,6 +1027,49 @@ def _itergen_generate(iter_gen: Any, prompt: Any) -> str:
             return ""
         return str(generated[0])
     return str(generated)
+
+
+# Robustness guard, not an evaluation change: greedy (do_sample=False) IterGen can enter a
+# non-terminating regeneration loop on a degenerate example (e.g. an unbounded ``.``-repeated
+# SMILES) and never return from ``forward()``. A per-example wall-clock cap treats such a stuck
+# example as a non-answer (empty completion -> scored incorrect + syntax-invalid), which is exactly
+# how a fair harness handles a baseline that cannot produce an answer in bounded time. It does NOT
+# touch the grammar, grader, or scorer, and applies symmetrically to every method/example.
+# Override with CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS. Default 300s: a legitimate capped decode
+# (max_new_tokens 256 for SMILES) finishes in well under a minute on a 9B, so 300s only ever fires
+# on the pathological non-terminating case.
+_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS = float(
+    os.environ.get("CSD_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS", "300")
+)
+
+
+class _ItergenPerExampleTimeout(Exception):
+    """Raised when a single IterGen ``forward()`` exceeds the per-example wall-clock cap."""
+
+
+def _itergen_generate_with_timeout(
+    iter_gen: Any, prompt: Any, cap_seconds: float
+) -> tuple[str, bool]:
+    """Run ``_itergen_generate`` under a SIGALRM wall-clock cap.
+
+    Returns ``(completion, timed_out)``. On timeout returns ``("", True)`` so the caller scores the
+    example as a non-answer. A cap of <= 0 disables the guard (unbounded, legacy behaviour).
+    """
+    if cap_seconds <= 0:
+        return _itergen_generate(iter_gen, prompt), False
+
+    def _handler(signum: int, frame: Any) -> None:
+        raise _ItergenPerExampleTimeout()
+
+    old_handler = signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, cap_seconds)
+    try:
+        return _itergen_generate(iter_gen, prompt), False
+    except _ItergenPerExampleTimeout:
+        return "", True
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def run_itergen_legacy_adapter(args: argparse.Namespace) -> int:
@@ -1008,7 +1190,15 @@ def _run_itergen_legacy_adapter_inner(args: argparse.Namespace) -> int:
             prompt = prompt.rstrip() + "<<"
 
         gen_started = time.perf_counter()
-        raw_completion = _itergen_generate(iter_gen, prompt)
+        raw_completion, _timed_out = _itergen_generate_with_timeout(
+            iter_gen, prompt, _ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS
+        )
+        if _timed_out:
+            print(
+                f"[itergen] per-example wall-clock timeout after "
+                f"{_ITERGEN_PER_EXAMPLE_TIMEOUT_SECONDS:g}s on {dataset} example "
+                f"{example.get('class_name', example.get('id', '?'))} -- scoring as non-answer"
+            )
         if dataset == "gsm_symbolic":
             raw_completion = _gsm_symbolic_completion_to_delimited(
                 raw_completion, example, eval_runtime, logic
@@ -1257,6 +1447,9 @@ def run_unconstrained_spider_adapter(args: argparse.Namespace) -> int:
                     **inputs,
                     max_new_tokens=max_new,
                     do_sample=False,
+                    stopping_criteria=_spider_hf_stopping_criteria(
+                        tokenizer, inputs["input_ids"].shape[1]
+                    ),
                 )
             gen_seconds = time.perf_counter() - gen_started
             new_ids = out_ids[0][inputs["input_ids"].shape[1]:]
@@ -1411,7 +1604,7 @@ def _crane_via_adaptive_syncode(args: argparse.Namespace, dataset: str) -> int:
 
         prompt = _legacy_benchmark_prompt(logic, eval_runtime, example, "evaluator_default")
         gen_started = time.perf_counter()
-        completions = sc.infer(prompt)
+        completions = sc.infer(prompt, stop_words=_crane_stop_words(dataset))
         gen_seconds = time.perf_counter() - gen_started
         raw_output = completions[0] if completions else ""
         completion = completion_for_scoring(prompt, raw_output)
@@ -1566,6 +1759,18 @@ def main() -> None:
     parser.add_argument("--dataset", required=True, choices=["gsm", "gsm_symbolic", "spider", "smiles"])
     parser.add_argument("--eval-model", required=True)
     parser.add_argument("--eval-sample-size", type=int, default=10)
+    parser.add_argument(
+        "--eval-start-index",
+        type=int,
+        default=0,
+        help="Start index within the loaded evaluation sample, inclusive",
+    )
+    parser.add_argument(
+        "--eval-end-index",
+        type=int,
+        default=None,
+        help="End index within the loaded evaluation sample, exclusive",
+    )
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--eval-backend", default="vllm")
     parser.add_argument("--device", default="auto")

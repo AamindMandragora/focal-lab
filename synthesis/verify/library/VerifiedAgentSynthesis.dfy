@@ -265,6 +265,20 @@ module VerifiedDecoderAgent {
     // in host state, not in any Dafny field. Implemented in the host language.
     predicate {:extern} {:axiom} SpanGrounded(text: string)
 
+    // Prompt-visible duplicate predicate. Returns whether normalized `text`
+    // appears as a candidate span in the current prompt/instruction context.
+    // Intended for no-gold duplicate/exemplar checks in tasks such as SMILES:
+    // the host may inspect prompt-visible examples and rolling prompt suffixes,
+    // but never gold labels, scorer state, or evaluator results.
+    predicate {:extern} {:axiom} SpanAppearsInPrompt(text: string)
+
+    // Prompt-derived resemblance score in [0,1]: how structurally similar the
+    // normalized `text` is to the example spans shown in the current prompt.
+    // The host may inspect only prompt-visible examples and compute similarity with
+    // generic tooling; it never reads gold labels, scorer state, held-out data, or
+    // evaluator results. Higher means more similar to the shown examples.
+    function {:extern} {:axiom} SpanResemblanceToPromptExamples(text: string): real
+
     // Locate the FIRST identifier-like token in `unitTokens` whose rendered text
     // is out-of-schema for the current example. The membership signal is identical
     // to SpanGrounded (same prompt-derived support set, same identifier filtering);
@@ -354,6 +368,20 @@ module VerifiedDecoderAgent {
       ensures cost == old(cost)
     {
       lm.AppendTaskGuidance(guidance);
+    }
+
+    method PrefixAppearsInPrompt(lm: LM, prefix: Prefix) returns (appears: bool)
+      ensures appears == lm.SpanAppearsInPrompt(RenderPrefix(prefix))
+      ensures cost == old(cost)
+    {
+      appears := lm.SpanAppearsInPrompt(RenderPrefix(prefix));
+    }
+
+    method PrefixResemblesPromptExamples(lm: LM, prefix: Prefix) returns (score: real)
+      ensures score == lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix))
+      ensures cost == old(cost)
+    {
+      score := lm.SpanResemblanceToPromptExamples(RenderPrefix(prefix));
     }
 
     method UnconstrainedStep(lm: LM, prompt: Prefix, generated: Prefix) returns (next: Token)
@@ -511,7 +539,6 @@ module VerifiedDecoderAgent {
       modifies this
       requires lm.ValidTokensIdsLogits()
       requires parser.IsValidPrefix(currentConstrained)
-      requires !parser.IsCompletePrefix(currentConstrained)
       requires next in lm.Tokens
       requires parser.IsValidPrefix(currentConstrained + [next])
       ensures lm.ValidTokensIdsLogits()

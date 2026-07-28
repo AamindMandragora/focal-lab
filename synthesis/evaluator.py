@@ -1203,23 +1203,24 @@ class Evaluator:
         if self.backend != "vllm":
             return _make_env(self.vllm_gpu_memory_utilization)
 
-        util_candidates: List[float] = []
-        for candidate in [
-            self.vllm_gpu_memory_utilization,
-            0.55,
-            0.5,
-            0.45,
-            0.4,
-        ]:
-            if candidate <= self.vllm_gpu_memory_utilization and candidate not in util_candidates:
-                util_candidates.append(candidate)
+        from synthesis.evaluate.benchmarks.common.vllm_startup import (
+            is_vllm_startup_memory_error,
+            vllm_util_retry_candidates,
+        )
+
+        util_candidates = vllm_util_retry_candidates(self.vllm_gpu_memory_utilization)
 
         last_error: Exception | None = None
         for util in util_candidates:
             try:
                 if util != self.vllm_gpu_memory_utilization:
+                    direction = (
+                        "higher"
+                        if util > self.vllm_gpu_memory_utilization
+                        else "lower"
+                    )
                     print(
-                        f"Retrying vLLM evaluator startup with lower "
+                        f"Retrying vLLM evaluator startup with {direction} "
                         f"gpu_memory_utilization={util:.2f}"
                     )
                 env = _make_env(util)
@@ -1228,13 +1229,7 @@ class Evaluator:
                 return env
             except Exception as exc:
                 last_error = exc
-                message = str(exc)
-                startup_memory_error = (
-                    "desired GPU memory utilization" in message
-                    or "Free memory on device" in message
-                    or "Engine core initialization failed" in message
-                )
-                if not startup_memory_error or util == util_candidates[-1]:
+                if not is_vllm_startup_memory_error(exc) or util == util_candidates[-1]:
                     raise
 
         if last_error is not None:

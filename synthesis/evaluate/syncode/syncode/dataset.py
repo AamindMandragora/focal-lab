@@ -1,5 +1,4 @@
 from datasets import load_dataset
-from mxeval.data import get_data, get_examples
 
 class Dataset:
     """
@@ -12,6 +11,8 @@ class Dataset:
     def __init__(self, dataset, language=None, num_few_shot=0):
         dataset_dirmap = {"mbxp": "mbxp", "humaneval": "multi-humaneval", "mathqa-x": "mathqa-x"}
         if dataset in dataset_dirmap:
+            from mxeval.data import get_data, get_examples
+
             self.dataset_name = dataset_dirmap[dataset]
             self.type = "code"
             if num_few_shot > 0:

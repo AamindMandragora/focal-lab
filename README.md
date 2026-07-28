@@ -83,6 +83,12 @@ Logs from `run` / `matrix` / `synthesis` go to **`logs/tmux/<session>_<timestamp
 
 Use **`scripts/experiment_dashboard.py`** on the experiment host to inspect active matrix jobs, GPU use, the GPU3 retry queue, recent reports, and recent metric lines from logs in a browser. It serves a static HTML page plus `/api/status` using only the Python standard library.
 
+### Post-14B result finalization
+
+After the fixed synthesis queue finishes through Spider-14B, use `scripts/results_finalization/validate_pre_rebar.py` to validate terminal queue state and freeze the authoritative `results_matrix.md` SHA-256. `scan_metadecode_rebar.py` requires that complete matrix-bound snapshot plus a reviewed row file: every active and archived table row must be referenced as baseline/metaDecode evidence or explicitly excluded with a reason. The scanner computes independent accuracy and syntax maxima with exact counts, caps the syntax goal at 90%, and emits a candidate manifest only when coverage is complete and comparison cohorts are unambiguous.
+
+`.context/run_post14b_rebar_queue.sh` accepts only a candidate manifest whose prerequisite completion snapshot, matrix, scanner audit, manifest, exact cells, and synthesis-launcher hashes match a fresh approval record. It claims each cell atomically before the first author call, runs one cold 40-iteration cycle, and never launches that cell again after a restart or interruption. Accepted CSDs use direct compiled-CSD held-out evaluation with author credentials removed. Use `--dry-run` to inspect both commands without claiming a cell or invoking a model. See `scripts/results_finalization/README.md` for the file contracts.
+
 ```bash
 python scripts/experiment_dashboard.py --host 127.0.0.1 --port 8765
 ```

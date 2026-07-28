@@ -105,7 +105,12 @@ _GSM_REASONING_HEADER = (
     "Then, output the symbolic expression wrapped in << >> that answers the question. "
     "The expressions must use numbers as well as the variables defined in the question. "
     "You are only allowed to use the following operations: +, -, /, //, %, (), and int().\n\n"
-    "You will always respond in the format described below:\n"
+    # Trailing space before \n is deliberate: CRANE's gsm_symbolic.yaml has
+    # "described below: \n" and greedy Qwen3.5-2B output diverges without it
+    # (verified 2026-07-02: with the space, unconstrained greedy reproduces the
+    # original CRANE response 771/784 chars on eval-ex0; without it, diverges
+    # at char 156). Byte-identical prompts are required for baseline parity.
+    "You will always respond in the format described below: \n"
     "Let's think step by step. <reasoning> The final answer is <<symbolic expression>>\n"
 )
 

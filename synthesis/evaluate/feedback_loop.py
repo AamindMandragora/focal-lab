@@ -288,61 +288,6 @@ def _final_span_failure_hint(require_delimiters: bool, sample_outputs=None) -> s
     return "\n".join(lines) + "\n"
 
 
-def _unit_rewind_hint(strategy_source: str, sample_outputs) -> str:
-    """Nudge toward RegenerateUnitOnCheckFailure when semantic failures dominate.
-
-    Fires when BOTH:
-      (a) Failures are dominated by syntax-valid but semantically wrong outputs
-          (syntax_rate - accuracy >= 0.25, or most failing examples pass syntax).
-      (b) The strategy source does NOT reference RegenerateUnitOnCheckFailure.
-
-    The hint text is mechanism-level and task-agnostic: it describes what the
-    helper does (unit-level rewind and resample on check failure) without
-    mentioning SQL, joins, grammar specifics, or any other task detail.
-    Returns "" when conditions are not met.
-    """
-    if not sample_outputs:
-        return ""
-    src = strategy_source or ""
-    if "RegenerateUnitOnCheckFailure" in src or "RegenerateUnitOnGroundingFailure" in src:
-        return ""
-
-    n = len(sample_outputs)
-    if n == 0:
-        return ""
-
-    n_correct = sum(1 for s in sample_outputs if s.get("is_correct"))
-    n_syntax_valid = sum(1 for s in sample_outputs if s.get("is_syntax_valid"))
-    accuracy = n_correct / n
-    syntax_rate = n_syntax_valid / n
-
-    # Condition (a): failures dominated by well-formed-but-wrong outputs.
-    # Either the gap between syntax rate and accuracy is large (>= 0.25),
-    # or the majority of failing examples are syntax-valid.
-    n_failing = n - n_correct
-    if n_failing == 0:
-        return ""
-    n_syntax_valid_wrong = sum(
-        1 for s in sample_outputs
-        if s.get("is_syntax_valid") and not s.get("is_correct")
-    )
-    semantic_dominated = (
-        (syntax_rate - accuracy) >= 0.25
-        or (n_failing > 0 and n_syntax_valid_wrong / n_failing >= 0.5)
-    )
-    if not semantic_dominated:
-        return ""
-
-    return (
-        "\n  Unit-rewind opportunity: most failing examples produced well-formed output "
-        "that passed the syntax check but scored incorrect — the errors are semantic, "
-        "not structural. The library helper RegenerateUnitOnCheckFailure can check each "
-        "completed grammar unit during generation against a caller-supplied set of allowed "
-        "units and rewind-and-resample the unit on mismatch, catching wrong choices before "
-        "the full span is committed. Consider whether unit-level checking applies here.\n"
-    )
-
-
 class FailureStage(Enum):
     """Stage where synthesis attempt failed."""
 
@@ -642,6 +587,9 @@ class SynthesisPipeline:
         "ConstrainedGeneration",
         "CraneGeneration",
         "UnconstrainedChunk",
+        "ManagedStep",
+        "GenerateWithManagedSpan",
+        "GenerateWithPrefixAndManagedSpan",
         "ConstrainedSymbol",
         "ConstrainedSymbolInGenerated",
         "ConfidenceGatedStep",
@@ -693,6 +641,8 @@ class SynthesisPipeline:
         "CountTokenOccurrences",
         "OccurrencesInRange",
         "TokensSinceLastOccurrence",
+        "PrefixAppearsInPrompt",
+        "PrefixResemblesPromptExamples",
     }
     def __init__(
         self,
@@ -1985,9 +1935,6 @@ class SynthesisPipeline:
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
                     )
-                    + _unit_rewind_hint(
-                        strategy_code, eval_result.sample_outputs
-                    )
                 )
                 mode_examples = eval_result._render_mode_examples()
                 next_allowed_helpers, next_helper_status = self._compute_allowed_helpers(attempts)
@@ -2124,9 +2071,6 @@ class SynthesisPipeline:
                     )
                     + _final_span_failure_hint(
                         self.require_delimiters, eval_result.sample_outputs
-                    )
-                    + _unit_rewind_hint(
-                        strategy_code, eval_result.sample_outputs
                     )
                     + "\n"
                     + eval_result.get_feedback_summary(self.require_delimiters)

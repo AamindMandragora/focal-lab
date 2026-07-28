@@ -40,6 +40,7 @@ so baseline numbers remain interpretable.
 | GSM answers | May emit bare expressions | **`_cars_normalize_gsm_symbolic_output`** wraps delimiter-free bodies so **`extract_actual`** sees `<<…>>` spans (see `outputs/baselines/AGENTS.md` caveat on older artifacts). |
 | Spider syntax flag | N/A | Adapter sets syntax True when extracted SQL mentions **`SELECT`** (legacy rows lacked rich syntax metadata). |
 | Model id coverage (2026-06-09) | `HF_CHAT_MODELS` in `cars/lib.py` and `mcmc/lib.py` did not include `Qwen/Qwen2.5-1.5B-Instruct`, `Qwen/Qwen2.5-Coder-1.5B-Instruct`, or `Qwen/Qwen2.5-Coder-14B-Instruct`, causing `ValueError: Unknown model type` at runtime. | Added all three ids to `HF_CHAT_MODELS` in both files so CARS uses the standard chat template for those models. Tracked in `environment/legacy_patches/cars/010-add-qwen-coder-model-ids.patch`. |
+| Qwen thinking mode (2026-07-09) | Qwen3 chat templates default to an open `<think>` block unless callers pass `enable_thinking=False`. | `cars/lib.py` and `mcmc/lib.py` now pass `enable_thinking=False` when formatting chat prompts, matching the non-CARS Hugging Face evaluator paths. Tracked in `environment/legacy_patches/cars/011-disable-qwen-thinking.patch`. |
 
 ## GCD baseline (no `legacy/` tree)
 

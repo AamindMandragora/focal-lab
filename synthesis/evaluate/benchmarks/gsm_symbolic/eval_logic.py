@@ -18,6 +18,32 @@ final_accuracy_denominator = defaults.final_accuracy_denominator_all_examples
 invalid_outputs_excluded = defaults.invalid_outputs_excluded_none
 accuracy_definition = defaults.accuracy_definition_standard
 
+_MAX_GSM_SCORING_EXPRESSION_CHARS = 512
+_MAX_GSM_SCORING_EXPRESSION_TOKENS = 160
+_MAX_GSM_SCORING_EXPRESSION_OPERATORS = 80
+_MAX_GSM_SCORING_DIGIT_RUN = 64
+
+
+def _is_pathological_gsm_scoring_expression(expression: str) -> bool:
+    """Return whether a generated GSM expression is too large for safe scoring.
+
+    The guard is intentionally much looser than the active split's gold answers:
+    a 2026-06-29 audit found max gold length 119 chars and max operator count
+    22 across train+eval. Larger generated strings are treated as invalid
+    before native parser/prover code can wedge the evaluator.
+    """
+
+    text = str(expression or "").strip()
+    if len(text) > _MAX_GSM_SCORING_EXPRESSION_CHARS:
+        return True
+    if len(text.split()) > _MAX_GSM_SCORING_EXPRESSION_TOKENS:
+        return True
+    if len(re.findall(r"[+\-*/%()]", text)) > _MAX_GSM_SCORING_EXPRESSION_OPERATORS:
+        return True
+    if re.search(r"\d{" + str(_MAX_GSM_SCORING_DIGIT_RUN) + r",}", text):
+        return True
+    return False
+
 
 def get_grammar_file(evaluator: Any, grammars_dir: Path) -> Path:
     return grammars_dir / "gsm.lark"
@@ -231,6 +257,8 @@ def _check_gsm_parsed(block: str, parser) -> bool:
     # Faithful port of CRANE src/get_avgs.py check_gsm_parsed.
     if block == "" or "{" in block or "}" in block or "round(" in block:
         return False
+    if _is_pathological_gsm_scoring_expression(block):
+        return False
     if not block.startswith("<<") or not block.endswith(">>"):
         return False
     try:
@@ -259,6 +287,8 @@ def check_syntax(
     block = _extract_final_block(output)
     if block == "":
         return False, []
+    if _is_pathological_gsm_scoring_expression(block):
+        return False, [(block, False)]
     parses = _check_gsm_parsed(block, _final_block_parser(evaluator))
     return parses, [(block, parses)]
 
